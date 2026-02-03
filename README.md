@@ -74,7 +74,7 @@ pip install -e .
 cd ..
 ```
 
-**Important**: Make sure to use the specific commit version (`2361d353d0895d5908156aec71341d4ad09dd3c2`) as different versions of MetaWorld may have incompatible APIs.
+**Important**: Make sure to use the specific commit version (`c822f28f582ba1ad49eb5dcf61016566f28003ba`) as different versions of MetaWorld may have incompatible APIs.
 
 ### 4. Install Additional Dependencies
 
