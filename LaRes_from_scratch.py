@@ -29,7 +29,7 @@ Ares_ROOT_DIR = os.getcwd()
 import time
 from openai import OpenAI
 
-client = OpenAI(api_key="input your key first")
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 from datetime import datetime
 from replay_buffer import replay_buffer
@@ -69,6 +69,7 @@ def evluate(current_index, env, Nan_Net,  actor_net, args, buffer, reward_functi
         # input the actions into the environment
         obs_, reward, done, info = env.step(env.action_space.high * action)
         org_info = env._env.get_dict()
+        org_info['actions'] = action
         Reward_recorder.add_rewards(reward)
         ep_reward += reward
         other_rewards= []

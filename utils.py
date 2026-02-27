@@ -5,10 +5,8 @@ import torch
 from torch.distributions.normal import Normal
 from torch.distributions import Distribution
 from rlkit.envs.wrappers import NormalizedBoxEnv
-import metaworld.envs.mujoco.env_dict as _env_dict
+import metaworld.env_dict as _env_dict
 from gym.wrappers.time_limit import TimeLimit
-
-
 
 
 criteria_code_dict = {
@@ -16,11 +14,11 @@ criteria_code_dict = {
     "basketball-v2": """success = float(obj_to_target <= self.TARGET_RADIUS)
                 near_object = float(tcp_to_obj <= 0.05)
                 grasp_success = float((tcp_open > 0) and (obj[2] - 0.03 > self.obj_init_pos[2]))""",
-    "push-back-v2":  """success = float(target_to_obj <= 0.07)
+    "push-back-v2": """success = float(target_to_obj <= 0.07)
                 near_object = float(tcp_to_obj <= 0.03)
                 grasp_success = float(self.touching_object  and (tcp_opened > 0) and (obj[2] - 0.02 > self.obj_init_pos[2]))""",
     "dial-turn-v2": "success = float(target_to_obj <= self.TARGET_RADIUS) "
-                    "near_object = float(tcp_to_obj <= 0.01)",
+    "near_object = float(tcp_to_obj <= 0.01)",
     "hand-insert-v2": """success =float(obj_to_target <= 0.05)
             near_object = float(tcp_to_obj <= 0.03),
             grasp_success = float( self.touching_main_object and (tcp_open > 0) and (obj[2] - 0.02 > self.obj_init_pos[2]))""",
@@ -32,7 +30,7 @@ criteria_code_dict = {
             near_object = float(tcp_to_obj <= 0.03)
             grasp_success = float(self.touching_object and (tcp_open > 0))""",
     "reach-v2": "success = float(reach_dist <= 0.05)",
-    "peg-unplug-side-v2":"""success = float(obj_to_target <= 0.07)
+    "peg-unplug-side-v2": """success = float(obj_to_target <= 0.07)
         near_object = float(tcp_to_obj <= 0.03)""",
     "soccer-v2": """success = float(target_to_obj <= 0.07)
         near_object = float(tcp_to_obj <= 0.03)
@@ -51,26 +49,27 @@ criteria_code_dict = {
         success = float(obj_to_target <= 0.07)
         near_object = float(tcp_to_obj <= 0.03)
         """,
-     "sweep-into-v2": """grasp_success = float(self.touching_main_object and (tcp_opened > 0))
+    "sweep-into-v2": """grasp_success = float(self.touching_main_object and (tcp_opened > 0))
         success = float(target_to_obj <= 0.05)
         near_object= float(tcp_to_obj <= 0.03),
-    """
+    """,
 }
 task_description_dict = {
-"button-press-topdown-v2": "Press a button from the top",
-"basketball-v2": "Dunk the basketball into the basket",
-"push-back-v2": "first grab the target and then place it at the target point.",
-"dial-turn-v2": "Rotate a dial 180 degrees.",
-"hand-insert-v2": "Insert the gripper into a hole.",
-"pick-out-of-hole-v2": "Pick up a puck from a hole.",
-"hammer-v2": "Hammer a screw on the wall.",
-"coffee-pull-v2": "Pull a mug from a coffee machine",
-"reach-v2": "reach a goal position.",
-"peg-unplug-side-v2":"Unplug a peg sideways",
-"soccer-v2": "Kick a soccer into the goal.",
-"coffee-push-v2": "Push the coffee cup to the target point.",
-"peg-insert-side-v2":"Picking up a stick and inserting it into a square hole in the wall",
-"sweep-into-v2": "Sweep a puck into a hole"}
+    "button-press-topdown-v2": "Press a button from the top",
+    "basketball-v2": "Dunk the basketball into the basket",
+    "push-back-v2": "first grab the target and then place it at the target point.",
+    "dial-turn-v2": "Rotate a dial 180 degrees.",
+    "hand-insert-v2": "Insert the gripper into a hole.",
+    "pick-out-of-hole-v2": "Pick up a puck from a hole.",
+    "hammer-v2": "Hammer a screw on the wall.",
+    "coffee-pull-v2": "Pull a mug from a coffee machine",
+    "reach-v2": "reach a goal position.",
+    "peg-unplug-side-v2": "Unplug a peg sideways",
+    "soccer-v2": "Kick a soccer into the goal.",
+    "coffee-push-v2": "Push the coffee cup to the target point.",
+    "peg-insert-side-v2": "Picking up a stick and inserting it into a square hole in the wall",
+    "sweep-into-v2": "Sweep a puck into a hole",
+}
 input_dict = {
     "button-press-topdown-v2": """List = ["tcp_center", "action", "_obj_to_target_init","obs",  "init_tcp","_target_pos"]""",
     "basketball-v2": """["init_tcp", "obj_init_pos", "TARGET_RADIUS","_target_pos", "tcp_center", "left_pad",
@@ -96,7 +95,7 @@ input_dict = {
                 "right_pad", "obs",
                 "action"]""",
     "reach-v2": """List = ["hand_init_pos", "init_right_pad", "init_left_pad", "obs", "action"]""",
-    "peg-unplug-side-v2":"""List = ["init_tcp", "obj_init_pos",
+    "peg-unplug-side-v2": """List = ["init_tcp", "obj_init_pos",
                 "_target_pos", "tcp_center",
                 "left_pad",
                 "right_pad", "obs",
@@ -125,11 +124,10 @@ input_dict = {
             "tlc_col_box_1",
             "brc_col_box_2",
             "tlc_col_box_2" , "left_pad", "right_pad", "obs",
-            "action": action}"""
-
+            "action": action}""",
 }
 parents_function_dict = {
-"button-press-topdown-v2": """def _gripper_caging_reward():
+    "button-press-topdown-v2": """def _gripper_caging_reward():
     pass""",
     "basketball-v2": """def _gripper_caging_reward(
         leftpad,
@@ -263,7 +261,7 @@ parents_function_dict = {
             sigmoid="long_tail",
         )
         return caging_and_gripping, reach""",
-"push-back-v2": """
+    "push-back-v2": """
 def _gripper_caging_reward(tcp_center, left_pad, right_pad,init_left_pad, init_right_pad, obj_init_pos, init_tcp, action, obj_position, obj_radius):
     pad_success_margin = 0.05
     grip_success_margin = obj_radius + 0.003
@@ -342,9 +340,9 @@ def _gripper_caging_reward(tcp_center, left_pad, right_pad,init_left_pad, init_r
     assert caging_and_gripping >= 0 and caging_and_gripping <= 1
 
     return caging_and_gripping""",
-"dial-turn-v2": """def _gripper_caging_reward():
+    "dial-turn-v2": """def _gripper_caging_reward():
     pass""",
-"hand-insert-v2": """def _gripper_caging_reward(
+    "hand-insert-v2": """def _gripper_caging_reward(
         leftpad,
         rightpad,
         tcp_center,
@@ -476,7 +474,7 @@ def _gripper_caging_reward(tcp_center, left_pad, right_pad,init_left_pad, init_r
             sigmoid="long_tail",
         )
         return caging_and_gripping, reach""",
-"pick-out-of-hole-v2":'''
+    "pick-out-of-hole-v2": '''
 def _gripper_caging_reward(
         leftpad,
         rightpad,
@@ -609,8 +607,8 @@ def _gripper_caging_reward(
             sigmoid="long_tail",
         )
         return caging_and_gripping, reach
-'''  ,
-"hammer-v2":'''
+''',
+    "hammer-v2": '''
 def _gripper_caging_reward(
         leftpad,
         rightpad,
@@ -743,8 +741,8 @@ def _gripper_caging_reward(
             sigmoid="long_tail",
         )
         return caging_and_gripping, reach
-'''  ,
-"coffee-pull-v2":'''
+''',
+    "coffee-pull-v2": '''
 def _gripper_caging_reward(
         leftpad,
         rightpad,
@@ -877,11 +875,11 @@ def _gripper_caging_reward(
             sigmoid="long_tail",
         )
         return caging_and_gripping, reach
-'''  ,
-"reach-v2": """
+''',
+    "reach-v2": """
 def _gripper_caging_reward():
     pass""",
-"peg-unplug-side-v2":'''
+    "peg-unplug-side-v2": '''
 def _gripper_caging_reward(
         leftpad,
         rightpad,
@@ -1014,8 +1012,8 @@ def _gripper_caging_reward(
             sigmoid="long_tail",
         )
         return caging_and_gripping, reach
-'''  ,
-"soccer-v2": """def _gripper_caging_reward(action, obj_init_pos, left_pad,  right_pad, init_left_pad, init_right_pad, tcp_center,init_tcp, obj_position, obj_radius):
+''',
+    "soccer-v2": """def _gripper_caging_reward(action, obj_init_pos, left_pad,  right_pad, init_left_pad, init_right_pad, tcp_center,init_tcp, obj_position, obj_radius):
     pad_success_margin = 0.05
     grip_success_margin = obj_radius + 0.01
     x_z_success_margin = 0.005
@@ -1097,7 +1095,7 @@ def _gripper_caging_reward(
     assert caging_and_gripping >= 0 and caging_and_gripping <= 1
 
     return caging_and_gripping""",
-"coffee-push-v2":'''
+    "coffee-push-v2": '''
 def _gripper_caging_reward(
         leftpad,
         rightpad,
@@ -1230,8 +1228,8 @@ def _gripper_caging_reward(
             sigmoid="long_tail",
         )
         return caging_and_gripping, reach
-'''  ,
-"sweep-into-v2": """def _gripper_caging_reward(action, obj_position, obj_radius, tcp_center, left_pad, right_pad, init_tcp, init_left_pad, init_right_pad, obj_init_pos):
+''',
+    "sweep-into-v2": """def _gripper_caging_reward(action, obj_position, obj_radius, tcp_center, left_pad, right_pad, init_tcp, init_left_pad, init_right_pad, obj_init_pos):
     pad_success_margin = 0.05
     grip_success_margin = obj_radius + 0.005
     x_z_success_margin = 0.01
@@ -1315,7 +1313,7 @@ def _gripper_caging_reward(
     assert caging_and_gripping >= 0 and caging_and_gripping <= 1
 
     return caging_and_gripping""",
-"peg-insert-side-v2":'''def _gripper_caging_reward(
+    "peg-insert-side-v2": '''def _gripper_caging_reward(
         leftpad,
         rightpad,
         tcp_center,
@@ -1449,9 +1447,10 @@ def _gripper_caging_reward(
         caging_and_gripping = (caging_and_gripping + reach) / 2
 
     return caging_and_gripping
-'''}
+''',
+}
 reward_function_dict = {
-"button-press-topdown-v2": """def compute_reward(action, obs, tcp_center, _target_pos, init_tcp, _obj_to_target_init):
+    "button-press-topdown-v2": """def compute_reward(action, obs, tcp_center, _target_pos, init_tcp, _obj_to_target_init):
     del action
     obj = obs[4:7]
     tcp = tcp_center
@@ -1475,7 +1474,7 @@ reward_function_dict = {
     if tcp_to_obj <= 0.03:
         reward += 5 * button_pressed
     return (reward, tcp_to_obj, obs[3], obj_to_target, near_button, button_pressed)""",
-"basketball-v2": """def compute_reward(action, obs, _target_pos, obj_init_pos, TARGET_RADIUS, tcp_center, left_pad, right_pad, init_tcp):
+    "basketball-v2": """def compute_reward(action, obs, _target_pos, obj_init_pos, TARGET_RADIUS, tcp_center, left_pad, right_pad, init_tcp):
     obj = obs[4:7]
     # Force target to be slightly above basketball hoop
     target = _target_pos
@@ -1530,7 +1529,7 @@ reward_function_dict = {
     if target_to_obj < TARGET_RADIUS:
         reward = 10.0
     return (reward, tcp_to_obj, tcp_opened, target_to_obj, object_grasped, in_place)""",
-"push-back-v2": """def compute_reward(action, obs, tcp_center, _target_pos, obj_init_pos, TARGET_RADIUS, OBJ_RADIUS, left_pad, right_pad, init_left_pad, init_right_pad, init_tcp):
+    "push-back-v2": """def compute_reward(action, obs, tcp_center, _target_pos, obj_init_pos, TARGET_RADIUS, OBJ_RADIUS, left_pad, right_pad, init_left_pad, init_right_pad, init_tcp):
     obj = obs[4:7]
     tcp_opened = obs[3]
     tcp_to_obj = np.linalg.norm(obj - tcp_center)
@@ -1553,7 +1552,7 @@ reward_function_dict = {
     if target_to_obj < TARGET_RADIUS:
         reward = 10.0
     return (reward, tcp_to_obj, tcp_opened, target_to_obj, object_grasped, in_place)""",
-"dial-turn-v2": """
+    "dial-turn-v2": """
 def compute_reward(action, obs, obj, tcp_center, _target_pos, pos_objects, TARGET_RADIUS, init_tcp):
     dial_push_position = pos_objects + np.array([0.05, 0.02, 0.09])
     tcp = tcp_center
@@ -1594,8 +1593,8 @@ def compute_reward(action, obs, obj, tcp_center, _target_pos, pos_objects, TARGE
         target_to_obj,
         object_grasped,
         in_place,
-    )""" ,
-"hand-insert-v2": """def compute_reward(action, obs, _target_pos, obj_init_pos, TARGET_RADIUS, tcp_center, left_pad, right_pad, init_tcp):
+    )""",
+    "hand-insert-v2": """def compute_reward(action, obs, _target_pos, obj_init_pos, TARGET_RADIUS, tcp_center, left_pad, right_pad, init_tcp):
     obj = obs[4:7]
 
     target_to_obj = np.linalg.norm(obj - _target_pos)
@@ -1633,7 +1632,7 @@ def compute_reward(action, obs, obj, tcp_center, _target_pos, pos_objects, TARGE
     if target_to_obj < TARGET_RADIUS:
         reward = 10.0
     return (reward, tcp_to_obj, tcp_opened, target_to_obj, object_grasped, in_place)""",
-"pick-out-of-hole-v2": """
+    "pick-out-of-hole-v2": """
 def compute_reward(action, obs, tcp_center, _target_pos, obj_init_pos, TARGET_RADIUS, left_pad, right_pad, init_tcp):
     obj = obs[4:7]
     gripper = tcp_center
@@ -1700,7 +1699,7 @@ def compute_reward(action, obs, tcp_center, _target_pos, obj_init_pos, TARGET_RA
         object_grasped,
         in_place,
     )""",
-"hammer-v2": """
+    "hammer-v2": """
 def compute_reward(action, obs, HAMMER_HANDLE_LENGTH, _target_pos, NailSlideJoint_qpos, left_pad, right_pad, tcp_center, obj_init_pos, init_tcp):
     hand = obs[:3]
     hammer = obs[4:7]
@@ -1758,7 +1757,7 @@ def compute_reward(action, obs, HAMMER_HANDLE_LENGTH, _target_pos, NailSlideJoin
         reward_in_place,
         success,
     )""",
-"coffee-pull-v2": """def compute_reward(action, obs, _target_pos, obj_init_pos, tcp_center,left_pad, right_pad, init_tcp):
+    "coffee-pull-v2": """def compute_reward(action, obs, _target_pos, obj_init_pos, tcp_center,left_pad, right_pad, init_tcp):
     obj = obs[4:7]
     target = _target_pos.copy()
 
@@ -1808,7 +1807,7 @@ def compute_reward(action, obs, HAMMER_HANDLE_LENGTH, _target_pos, NailSlideJoin
         object_grasped,
         in_place,
     )""",
-"reach-v2": """def compute_reward(actions, obs, tcp_center,_target_pos, hand_init_pos):
+    "reach-v2": """def compute_reward(actions, obs, tcp_center,_target_pos, hand_init_pos):
     _TARGET_RADIUS = 0.05
     tcp = tcp_center
     # obj = obs[4:7]
@@ -1827,7 +1826,7 @@ def compute_reward(action, obs, HAMMER_HANDLE_LENGTH, _target_pos, NailSlideJoin
     )
     reward = 10* in_place
     return [reward, tcp_to_target, in_place]""",
-"peg-unplug-side-v2": """def compute_reward(action, obs, tcp_center,_target_pos, obj_init_pos, left_pad, right_pad, init_tcp):
+    "peg-unplug-side-v2": """def compute_reward(action, obs, tcp_center,_target_pos, obj_init_pos, left_pad, right_pad, init_tcp):
     tcp = tcp_center
     obj = obs[4:7]
     tcp_opened = obs[3]
@@ -1882,7 +1881,7 @@ def compute_reward(action, obs, HAMMER_HANDLE_LENGTH, _target_pos, NailSlideJoin
         in_place,
         float(grasp_success),
     )""",
-"soccer-v2": """def compute_reward(tcp_center,_target_pos, obj_init_pos, action, obs, TARGET_RADIUS, left_pad,  right_pad, init_left_pad, init_right_pad, init_tcp, OBJ_RADIUS):
+    "soccer-v2": """def compute_reward(tcp_center,_target_pos, obj_init_pos, action, obs, TARGET_RADIUS, left_pad,  right_pad, init_left_pad, init_right_pad, init_tcp, OBJ_RADIUS):
     obj = obs[4:7]
     tcp_opened = obs[3]
     x_scaling = np.array([3.0, 1.0, 1.0])
@@ -1916,7 +1915,7 @@ def compute_reward(action, obs, HAMMER_HANDLE_LENGTH, _target_pos, NailSlideJoin
         object_grasped,
         in_place,
     )""",
-"coffee-push-v2":"""
+    "coffee-push-v2": """
 def compute_reward(action, obs, _target_pos, obj_init_pos, tcp_center, left_pad, right_pad, init_tcp):
     obj = obs[4:7]
 
@@ -1968,8 +1967,7 @@ def compute_reward(action, obs, _target_pos, obj_init_pos, tcp_center, left_pad,
         np.linalg.norm(obj - _target_pos),  # recompute to avoid `scale` above
         object_grasped,
         in_place,
-    )"""
-    ,
+    )""",
     "peg-insert-side-v2": """def compute_reward(init_tcp, left_pad, right_pad, action, obs, tcp_center, obj_head, obj_init_pos, peg_head_pos_init,
                    _target_pos, TARGET_RADIUS, bottom_right_corner_collision_box_1, bottom_right_corner_collision_box_2,
                    top_left_corner_collision_box_1, top_left_corner_collision_box_2):
@@ -2053,21 +2051,40 @@ def compute_reward(action, obs, _target_pos, obj_init_pos, tcp_center, left_pad,
         in_place,
         collision_boxes,
         ip_orig,
-    ]"""
+    ]""",
 }
 
 
 import sys
 import multiprocessing as mp
-mp.set_start_method('spawn', force=True)
+
+mp.set_start_method("spawn", force=True)
 from sac import sac_agent
 
 import random
 import time
 from replay_buffer import replay_buffer
 import pickle
+
+
 class Worker(mp.Process):
-    def __init__(self, replaybuffer, p_id , buffer_size, memory_path , model_path, target_update_interval, seed, parameters, queue, model, env_name, env, eval_env, args):
+    def __init__(
+        self,
+        replaybuffer,
+        p_id,
+        buffer_size,
+        memory_path,
+        model_path,
+        target_update_interval,
+        seed,
+        parameters,
+        queue,
+        model,
+        env_name,
+        env,
+        eval_env,
+        args,
+    ):
         super(Worker, self).__init__()
         self.p_id = p_id
         self.memory_path = memory_path
@@ -2079,18 +2096,22 @@ class Worker(mp.Process):
         self.env = env
         self.env_name = env_name
         self.eval_env = eval_env
-        self.args =args
-        self.sac_trainer = sac_agent(self.model, self.env_name, self.env, self.eval_env, self.args, None)
+        self.args = args
+        self.sac_trainer = sac_agent(
+            self.model, self.env_name, self.env, self.eval_env, self.args, None
+        )
         self.seed = seed
         self.All_buffer = copy.deepcopy(replaybuffer)
 
         t1 = time.time()
-        print("load net time cost ", time.time()-t1)
+        print("load net time cost ", time.time() - t1)
         self.start_to_elite = False
         self.target_index = None
         self.dynamic_weight = 1.0
         self.current_step = 0
-        temp_agent = sac_agent(self.model, self.env_name, self.env, self.eval_env, self.args, None)
+        temp_agent = sac_agent(
+            self.model, self.env_name, self.env, self.eval_env, self.args, None
+        )
         self.elite_actor = temp_agent.actor_net
         self.elite_q1 = temp_agent.qf1
         self.elite_q2 = temp_agent.qf2
@@ -2106,33 +2127,64 @@ class Worker(mp.Process):
             while self.p_id not in self.parameters:
                 time.sleep(0.0001)
 
-
             t1 = time.time()
-            main_process_buffer_size, train_num, added_data, next_idx, update_model_flag, log_alpha , best_index, reward_list, global_best_one  = self.parameters[self.p_id]
+            (
+                main_process_buffer_size,
+                train_num,
+                added_data,
+                next_idx,
+                update_model_flag,
+                log_alpha,
+                best_index,
+                reward_list,
+                global_best_one,
+            ) = self.parameters[self.p_id]
             del self.parameters[self.p_id]
             t2 = time.time()
 
             if update_model_flag and self.p_id not in best_index:
-                print("Update ", self.p_id, " To Best ",best_index)
+                print("Update ", self.p_id, " To Best ", best_index)
                 print(self.p_id, "worker before", self.sac_trainer.log_alpha)
                 print("worker get log_alpha", log_alpha, " best index", best_index)
-                self.sac_trainer.actor_net.load_state_dict(torch.load(self.model_path + "/best_actor_net.pth"))
+                self.sac_trainer.actor_net.load_state_dict(
+                    torch.load(self.model_path + "/best_actor_net.pth")
+                )
                 if self.p_id != 5:
                     self.constraint_kl = True
                     self.start_to_elite = True
-                    self.elite_actor.load_state_dict(torch.load(self.model_path + "/best_actor_net.pth"))
-                    self.elite_q1.load_state_dict(torch.load(self.model_path + "/best_qf1.pth"))
-                    self.elite_q2.load_state_dict(torch.load(self.model_path + "/best_qf2.pth"))
+                    self.elite_actor.load_state_dict(
+                        torch.load(self.model_path + "/best_actor_net.pth")
+                    )
+                    self.elite_q1.load_state_dict(
+                        torch.load(self.model_path + "/best_qf1.pth")
+                    )
+                    self.elite_q2.load_state_dict(
+                        torch.load(self.model_path + "/best_qf2.pth")
+                    )
 
-                    self.sac_trainer.qf1.load_state_dict(torch.load(self.model_path + "/best_qf1.pth"))
-                    self.sac_trainer.qf2.load_state_dict(torch.load(self.model_path + "/best_qf2.pth"))
-                    self.sac_trainer.target_qf1.load_state_dict(torch.load(self.model_path + "/best_target_qf1.pth"))
-                    self.sac_trainer.target_qf2.load_state_dict(torch.load(self.model_path + "/best_target_qf2.pth"))
+                    self.sac_trainer.qf1.load_state_dict(
+                        torch.load(self.model_path + "/best_qf1.pth")
+                    )
+                    self.sac_trainer.qf2.load_state_dict(
+                        torch.load(self.model_path + "/best_qf2.pth")
+                    )
+                    self.sac_trainer.target_qf1.load_state_dict(
+                        torch.load(self.model_path + "/best_target_qf1.pth")
+                    )
+                    self.sac_trainer.target_qf2.load_state_dict(
+                        torch.load(self.model_path + "/best_target_qf2.pth")
+                    )
                     self.sac_trainer.log_alpha.data = copy.deepcopy(log_alpha)
 
-                    self.sac_trainer.actor_optim.load_state_dict(torch.load(self.model_path + "/best_actor_optim.pth"))
-                    self.sac_trainer.qf1_optim.load_state_dict(torch.load(self.model_path + "/best_qf1_optim.pth"))
-                    self.sac_trainer.qf2_optim.load_state_dict(torch.load(self.model_path + "/best_qf2_optim.pth"))
+                    self.sac_trainer.actor_optim.load_state_dict(
+                        torch.load(self.model_path + "/best_actor_optim.pth")
+                    )
+                    self.sac_trainer.qf1_optim.load_state_dict(
+                        torch.load(self.model_path + "/best_qf1_optim.pth")
+                    )
+                    self.sac_trainer.qf2_optim.load_state_dict(
+                        torch.load(self.model_path + "/best_qf2_optim.pth")
+                    )
                 print("Done ....")
 
             if update_model_flag:
@@ -2142,22 +2194,34 @@ class Worker(mp.Process):
             t3 = time.time()
 
             if update_model_flag and self.p_id not in best_index:
-                assert  len(self.All_buffer.storge) == len(reward_list)
-                sys.stdout.write(f"assert equal????? {len(self.All_buffer.storge)} == {len(reward_list)}\n")
-                print("Relabel all data .....", len(self.All_buffer.storge), " ", len(reward_list))
+                assert len(self.All_buffer.storge) == len(reward_list)
+                sys.stdout.write(
+                    f"assert equal????? {len(self.All_buffer.storge)} == {len(reward_list)}\n"
+                )
+                print(
+                    "Relabel all data .....",
+                    len(self.All_buffer.storge),
+                    " ",
+                    len(reward_list),
+                )
                 for index_index, data in enumerate(self.All_buffer.storge):
                     org_data, obs, action, _, obs_, done = data
-                    self.All_buffer.storge[index_index]= ([], obs, action, reward_list[index_index], obs_, done )
+                    self.All_buffer.storge[index_index] = (
+                        [],
+                        obs,
+                        action,
+                        reward_list[index_index],
+                        obs_,
+                        done,
+                    )
                 print("Relabel Done .....")
             t4 = time.time()
-
 
             for data in added_data:
                 self.All_buffer.add(*data)
 
-            assert  main_process_buffer_size == len(self.All_buffer.storge)
+            assert main_process_buffer_size == len(self.All_buffer.storge)
 
-          
             self.All_buffer.next_idx = next_idx
             mean_actor_fau = []
             mean_q1_fau = []
@@ -2165,11 +2229,35 @@ class Worker(mp.Process):
 
             t5 = time.time()
             # load memory
-            if train_num > 0 :
-                train_time_cost_list =[]
+            if train_num > 0:
+                train_time_cost_list = []
                 for _ in range(train_num):
                     temp_weight = 1.0
-                    qf1_loss, qf2_loss, actor_loss, alpha, alpha_loss, actor_fau, q1_fau, q2_fau, kl_loss, q1_kl_loss, q2_kl_loss , one_train_time_cost_list= self.sac_trainer._update_newtork(self.All_buffer, self.p_id, self.target_index, self.dynamic_weight,False, self.constraint_kl, temp_weight, self.elite_actor, self.elite_q1, self.elite_q2)
+                    (
+                        qf1_loss,
+                        qf2_loss,
+                        actor_loss,
+                        alpha,
+                        alpha_loss,
+                        actor_fau,
+                        q1_fau,
+                        q2_fau,
+                        kl_loss,
+                        q1_kl_loss,
+                        q2_kl_loss,
+                        one_train_time_cost_list,
+                    ) = self.sac_trainer._update_newtork(
+                        self.All_buffer,
+                        self.p_id,
+                        self.target_index,
+                        self.dynamic_weight,
+                        False,
+                        self.constraint_kl,
+                        temp_weight,
+                        self.elite_actor,
+                        self.elite_q1,
+                        self.elite_q2,
+                    )
 
                     train_time_cost_list.append(one_train_time_cost_list)
                     mean_actor_fau.append(actor_fau)
@@ -2177,35 +2265,124 @@ class Worker(mp.Process):
                     mean_q2_fau.append(q2_fau)
                     # update the target network
                     if _ % self.target_update_interval == 0:
-                        self.sac_trainer._update_target_network(self.sac_trainer.target_qf1, self.sac_trainer.qf1)
-                        self.sac_trainer._update_target_network(self.sac_trainer.target_qf2, self.sac_trainer.qf2)
+                        self.sac_trainer._update_target_network(
+                            self.sac_trainer.target_qf1, self.sac_trainer.qf1
+                        )
+                        self.sac_trainer._update_target_network(
+                            self.sac_trainer.target_qf2, self.sac_trainer.qf2
+                        )
                 total_train_time = np.sum(train_time_cost_list)
-                train_sub_space_time = np.mean(train_time_cost_list, axis=0)/train_num
+                train_sub_space_time = np.mean(train_time_cost_list, axis=0) / train_num
 
                 t6 = time.time()
 
-                time_cost_list = [t6-t5, t5-t4, t4-t3, t3-t2, t2-t1]
-                self.queue.put((self.p_id, self.sac_trainer.actor_net.state_dict(), self.sac_trainer.qf1.state_dict(), self.sac_trainer.qf2.state_dict(),  self.sac_trainer.target_qf1.state_dict(), self.sac_trainer.target_qf2.state_dict(),  self.sac_trainer.actor_optim.state_dict(),  self.sac_trainer.qf1_optim.state_dict(),  self.sac_trainer.qf2_optim.state_dict(), qf1_loss, qf2_loss, actor_loss, alpha, alpha_loss, self.sac_trainer.log_alpha.data,  np.mean(mean_actor_fau), np.mean(mean_q1_fau), np.mean(mean_q2_fau),kl_loss,  q1_kl_loss, q2_kl_loss, time_cost_list, total_train_time, train_sub_space_time))
+                time_cost_list = [t6 - t5, t5 - t4, t4 - t3, t3 - t2, t2 - t1]
+                self.queue.put(
+                    (
+                        self.p_id,
+                        self.sac_trainer.actor_net.state_dict(),
+                        self.sac_trainer.qf1.state_dict(),
+                        self.sac_trainer.qf2.state_dict(),
+                        self.sac_trainer.target_qf1.state_dict(),
+                        self.sac_trainer.target_qf2.state_dict(),
+                        self.sac_trainer.actor_optim.state_dict(),
+                        self.sac_trainer.qf1_optim.state_dict(),
+                        self.sac_trainer.qf2_optim.state_dict(),
+                        qf1_loss,
+                        qf2_loss,
+                        actor_loss,
+                        alpha,
+                        alpha_loss,
+                        self.sac_trainer.log_alpha.data,
+                        np.mean(mean_actor_fau),
+                        np.mean(mean_q1_fau),
+                        np.mean(mean_q2_fau),
+                        kl_loss,
+                        q1_kl_loss,
+                        q2_kl_loss,
+                        time_cost_list,
+                        total_train_time,
+                        train_sub_space_time,
+                    )
+                )
+
+
+class _GetDict:
+    """Picklable callable that implements the V2 get_dict() API for a V3 metaworld env.
+
+    Defined at module level (not as a closure) so multiprocessing spawn can
+    pickle it when serialising worker objects.
+    """
+
+    def __init__(self, env_instance):
+        self.env = env_instance
+
+    def __call__(self):
+        env = self.env
+        tcp = env.get_endeff_pos().copy()
+        target = getattr(env, '_target_pos', np.zeros(3)).copy()
+        init_tcp = np.array(getattr(env, 'init_tcp', tcp))
+        obj_init_pos = np.array(getattr(env, 'obj_init_pos', np.zeros(3)))
+        hand_init_pos = np.array(getattr(env, 'hand_init_pos', tcp))
+
+        # Object position: try MuJoCo named body access first, fall back to observation
+        try:
+            obj = env.data.body("obj").xpos.copy()
+        except Exception:
+            try:
+                obs = env._get_obs()
+                obj = obs[4:7].copy()
+            except Exception:
+                obj = np.zeros(3)
+
+        return {
+            'tcp': tcp,
+            'obj': obj,
+            'target': target,
+            'init_tcp': init_tcp,
+            'hand_pos': tcp,
+            'gripper': tcp,
+            'handle': obj,
+            '_target_pos': target,
+            'target_pos': target,
+            'current_pos': obj,
+            'obj_init_pos': obj_init_pos,
+            'hand_init_pos': hand_init_pos,
+            'actions': np.zeros(env.action_space.shape[0]),  # overwritten at call sites
+        }
+
+
+def _patch_get_dict(env_instance):
+    """Attach a picklable get_dict() to a V3 metaworld env instance."""
+    env_instance.get_dict = _GetDict(env_instance)
 
 
 def make_metaworld_env(cfg, seed):
     env_name = cfg.env_name
-    if env_name in _env_dict.ALL_V2_ENVIRONMENTS:
-        env_cls = _env_dict.ALL_V2_ENVIRONMENTS[env_name]
-    else:
-        env_cls = _env_dict.ALL_V1_ENVIRONMENTS[env_name]
+    # metaworld 2.0+ uses ALL_V3_ENVIRONMENTS; map v1/v2 suffixes to v3
+    env_name_v3 = env_name.replace("-v2", "-v3").replace("-v1", "-v3")
+    if env_name_v3 not in _env_dict.ALL_V3_ENVIRONMENTS:
+        raise ValueError(
+            f"Environment '{env_name}' (looked up as '{env_name_v3}') not found in ALL_V3_ENVIRONMENTS"
+        )
+    env_cls = _env_dict.ALL_V3_ENVIRONMENTS[env_name_v3]
 
     env = env_cls()
+    _patch_get_dict(env)
 
     env._freeze_rand_vec = False
     env._set_task_called = True
     env.seed(seed)
 
     return TimeLimit(NormalizedBoxEnv(env), env.max_path_length)
+
+
 """
 the tanhnormal distributions from rlkit may not stable
 
 """
+
+
 class tanh_normal(Distribution):
     def __init__(self, normal_mean, normal_std, epsilon=1e-6, cuda=False):
         self.normal_mean = normal_mean
@@ -2229,7 +2406,9 @@ class tanh_normal(Distribution):
         """
         if pre_tanh_value is None:
             pre_tanh_value = torch.log((1 + value) / (1 - value)) / 2
-        return self.normal.log_prob(pre_tanh_value) - torch.log(1 - value * value + self.epsilon)
+        return self.normal.log_prob(pre_tanh_value) - torch.log(
+            1 - value * value + self.epsilon
+        )
 
     def sample(self, return_pretanh_value=False):
         """
@@ -2247,14 +2426,26 @@ class tanh_normal(Distribution):
         """
         Sampling in the reparameterization case.
         """
-        sample_mean = torch.zeros(self.normal_mean.size(), dtype=torch.float32, device='cuda' if self.cuda else 'cpu')
-        sample_std = torch.ones(self.normal_std.size(), dtype=torch.float32, device='cuda' if self.cuda else 'cpu')
-        z = (self.normal_mean + self.normal_std * Normal(sample_mean, sample_std).sample())
+        sample_mean = torch.zeros(
+            self.normal_mean.size(),
+            dtype=torch.float32,
+            device="cuda" if self.cuda else "cpu",
+        )
+        sample_std = torch.ones(
+            self.normal_std.size(),
+            dtype=torch.float32,
+            device="cuda" if self.cuda else "cpu",
+        )
+        z = (
+            self.normal_mean
+            + self.normal_std * Normal(sample_mean, sample_std).sample()
+        )
         z.requires_grad_()
         if return_pretanh_value:
             return torch.tanh(z), z
         else:
             return torch.tanh(z)
+
 
 # get action_infos
 class get_action_info:
@@ -2278,6 +2469,7 @@ class get_action_info:
         log_prob = self.dist.log_prob(actions, pre_tanh_value=pre_tanh_value)
         return log_prob.sum(dim=1, keepdim=True)
 
+
 # env wrapper
 class env_wrapper:
     def __init__(self, env, args):
@@ -2299,7 +2491,7 @@ class env_wrapper:
         if self.timesteps >= self.args.episode_length:
             done = True
         return obs, reward, done, info
-    
+
     def render(self):
         """
         to be Implemented during execute the demo
@@ -2311,6 +2503,7 @@ class env_wrapper:
         set environment seeds
         """
         self._env.seed(seed)
+
 
 # record the reward info of the dqn experiments
 class reward_recorder:

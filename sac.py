@@ -9,6 +9,7 @@ import copy, os
 from torch.distributions.normal import Normal
 from torch.distributions import Distribution
 from rlkit.envs.wrappers import NormalizedBoxEnv
+
 """
 The sac is modified to train the sawyer environment
 
@@ -17,6 +18,8 @@ The sac is modified to train the sawyer environment
 the tanhnormal distributions from rlkit may not stable
 
 """
+
+
 class tanh_normal(Distribution):
     def __init__(self, normal_mean, normal_std, epsilon=1e-6, cuda=False):
         self.normal_mean = normal_mean
@@ -40,7 +43,9 @@ class tanh_normal(Distribution):
         """
         if pre_tanh_value is None:
             pre_tanh_value = torch.log((1 + value) / (1 - value)) / 2
-        return self.normal.log_prob(pre_tanh_value) - torch.log(1 - value * value + self.epsilon)
+        return self.normal.log_prob(pre_tanh_value) - torch.log(
+            1 - value * value + self.epsilon
+        )
 
     def sample(self, return_pretanh_value=False):
         """
@@ -58,9 +63,20 @@ class tanh_normal(Distribution):
         """
         Sampling in the reparameterization case.
         """
-        sample_mean = torch.zeros(self.normal_mean.size(), dtype=torch.float32, device='cuda' if self.cuda else 'cpu')
-        sample_std = torch.ones(self.normal_std.size(), dtype=torch.float32, device='cuda' if self.cuda else 'cpu')
-        z = (self.normal_mean + self.normal_std * Normal(sample_mean, sample_std).sample())
+        sample_mean = torch.zeros(
+            self.normal_mean.size(),
+            dtype=torch.float32,
+            device="cuda" if self.cuda else "cpu",
+        )
+        sample_std = torch.ones(
+            self.normal_std.size(),
+            dtype=torch.float32,
+            device="cuda" if self.cuda else "cpu",
+        )
+        z = (
+            self.normal_mean
+            + self.normal_std * Normal(sample_mean, sample_std).sample()
+        )
         z.requires_grad_()
         if return_pretanh_value:
             return torch.tanh(z), z
@@ -103,7 +119,6 @@ class reward_recorder:
         return self._episode_length
 
 
-
 class get_action_info:
     def __init__(self, pis, cuda=False):
         self.mean, self.std = pis
@@ -124,11 +139,14 @@ class get_action_info:
     def get_log_prob(self, actions, pre_tanh_value):
         log_prob = self.dist.log_prob(actions, pre_tanh_value=pre_tanh_value)
         return log_prob.sum(dim=1, keepdim=True)
+
+
 from torch.distributions import Normal, kl_divergence
+
 
 class sac_agent:
     def __init__(self, model, env_name, env, eval_env, args, our_wandb):
-        self.our_wandb= our_wandb
+        self.our_wandb = our_wandb
         self.args = args
         self.env = env
         # create eval environment
@@ -140,27 +158,51 @@ class sac_agent:
         self.pop = []
 
         for _ in range(args.pop_size):
-            self.pop.append(tanh_gaussian_actor(self.env.observation_space.shape[0], self.env.action_space.shape[0], self.args.hidden_size,self.args.log_std_min, self.args.log_std_max))
+            self.pop.append(
+                tanh_gaussian_actor(
+                    self.env.observation_space.shape[0],
+                    self.env.action_space.shape[0],
+                    self.args.hidden_size,
+                    self.args.log_std_min,
+                    self.args.log_std_max,
+                )
+            )
 
-
-        self.qf1 = flatten_mlp(self.env.observation_space.shape[0], self.args.hidden_size, self.env.action_space.shape[0])
-        self.qf2 = flatten_mlp(self.env.observation_space.shape[0], self.args.hidden_size, self.env.action_space.shape[0])
+        self.qf1 = flatten_mlp(
+            self.env.observation_space.shape[0],
+            self.args.hidden_size,
+            self.env.action_space.shape[0],
+        )
+        self.qf2 = flatten_mlp(
+            self.env.observation_space.shape[0],
+            self.args.hidden_size,
+            self.env.action_space.shape[0],
+        )
         # set the target q functions
         self.target_qf1 = copy.deepcopy(self.qf1)
         self.target_qf2 = copy.deepcopy(self.qf2)
         # build up the policy network
 
-        self.actor_net = tanh_gaussian_actor(self.env.observation_space.shape[0], self.env.action_space.shape[0], self.args.hidden_size,self.args.log_std_min, self.args.log_std_max)
+        self.actor_net = tanh_gaussian_actor(
+            self.env.observation_space.shape[0],
+            self.env.action_space.shape[0],
+            self.args.hidden_size,
+            self.args.log_std_min,
+            self.args.log_std_max,
+        )
         # define the optimizer for them
         self.qf1_optim = torch.optim.Adam(self.qf1.parameters(), lr=self.args.q_lr)
         self.qf2_optim = torch.optim.Adam(self.qf2.parameters(), lr=self.args.q_lr)
         # the optimizer for the policy network
-        self.actor_optim = torch.optim.Adam(self.actor_net.parameters(), lr=self.args.p_lr)
+        self.actor_optim = torch.optim.Adam(
+            self.actor_net.parameters(), lr=self.args.p_lr
+        )
         # entorpy target
         self.target_entropy = -1 * self.env.action_space.shape[0]
 
-
-        self.log_alpha = torch.zeros(1, requires_grad=True, device='cuda' if self.args.cuda else 'cpu')
+        self.log_alpha = torch.zeros(
+            1, requires_grad=True, device="cuda" if self.args.cuda else "cpu"
+        )
         # define the optimizer
         self.alpha_optim = torch.optim.Adam([self.log_alpha], lr=self.args.p_lr)
         # define the replay buffer
@@ -190,8 +232,6 @@ class sac_agent:
 
         self.rl_index = None
 
-
-
     def evluate(self, actor_net):
         ep_steps = 0
         ep_reward = 0
@@ -202,7 +242,9 @@ class sac_agent:
             with torch.no_grad():
                 obs_tensor = self._get_tensor_inputs(obs)
                 pi = actor_net(obs_tensor)
-                action = get_action_info(pi, cuda=self.args.cuda).select_actions(reparameterize=False)
+                action = get_action_info(pi, cuda=self.args.cuda).select_actions(
+                    reparameterize=False
+                )
                 action = action.cpu().numpy()[0]
             # input the actions into the environment
             obs_, reward, done, info = self.env.step(self.action_max * action)
@@ -214,7 +256,7 @@ class sac_agent:
             obs = obs_
             if done:
                 self.reward_recorder.start_new_episode()
-                self.success_recorder.add_rewards(info['success'])
+                self.success_recorder.add_rewards(info["success"])
                 self.success_recorder.start_new_episode()
 
         return ep_reward, ep_steps
@@ -223,9 +265,9 @@ class sac_agent:
     def learn(self):
         global_timesteps = 0
         # before the official training, do the initial exploration to add episodes into the replay buffer
-        self._initial_exploration(exploration_policy=self.args.init_exploration_policy) 
+        self._initial_exploration(exploration_policy=self.args.init_exploration_policy)
         # reset the environment
-        while self.total_steps  < self.args.total_timesteps:
+        while self.total_steps < self.args.total_timesteps:
 
             es_params = self.CEM.ask(self.args.pop_size)
             if not self.RL2EA:
@@ -244,9 +286,8 @@ class sac_agent:
             fitness = np.zeros(len(self.pop))
             for index, actor_net in enumerate(self.pop):
                 ep_reward, ep_steps = self.evluate(actor_net)
-                total_ep_reward +=ep_steps
+                total_ep_reward += ep_steps
                 fitness[index] += ep_reward
-
 
             print("Fitness", fitness)
             self.CEM.tell(es_params, fitness)
@@ -257,24 +298,44 @@ class sac_agent:
 
             self.total_steps += total_ep_reward
 
-
             best_index = np.argmax(fitness)
-            print("best index ", best_index, np.max(fitness), " RL index ", self.rl_index, fitness[self.rl_index])
+            print(
+                "best index ",
+                best_index,
+                np.max(fitness),
+                " RL index ",
+                self.rl_index,
+                fitness[self.rl_index],
+            )
 
             if self.total_steps - self.previous_print > self.args.display_interval:
                 # start to do the evaluation
-                EA_mean_rewards, EA_mean_success = self._evaluate_agent(self.pop[np.argmax(fitness)])
+                EA_mean_rewards, EA_mean_success = self._evaluate_agent(
+                    self.pop[np.argmax(fitness)]
+                )
 
                 self.our_wandb.log(
-                    {'EA_Rewards': EA_mean_rewards, 'EA_Success': EA_mean_success,'time_steps': self.total_steps})
-                print('[{}] Frames: {}, EA Rewards: {:.3f}, Success: {:.3f}'.format(
-                        datetime.now(), \
-                        self.total_steps, EA_mean_rewards, EA_mean_success))
+                    {
+                        "EA_Rewards": EA_mean_rewards,
+                        "EA_Success": EA_mean_success,
+                        "time_steps": self.total_steps,
+                    }
+                )
+                print(
+                    "[{}] Frames: {}, EA Rewards: {:.3f}, Success: {:.3f}".format(
+                        datetime.now(),
+                        self.total_steps,
+                        EA_mean_rewards,
+                        EA_mean_success,
+                    )
+                )
 
-            #print("current ", self.total_steps ,  self.ep_num , ep_reward, info['success'])
+            # print("current ", self.total_steps ,  self.ep_num , ep_reward, info['success'])
             # after collect the samples, start to update the network
             for _ in range(self.args.update_cycles * total_ep_reward):
-                qf1_loss, qf2_loss, actor_loss, alpha, alpha_loss = self._update_newtork(self.pop + [self.actor_net])
+                qf1_loss, qf2_loss, actor_loss, alpha, alpha_loss = (
+                    self._update_newtork(self.pop + [self.actor_net])
+                )
                 # update the target network
                 if global_timesteps % self.args.target_update_interval == 0:
                     self._update_target_network(self.target_qf1, self.qf1)
@@ -289,40 +350,84 @@ class sac_agent:
             self.RL2EA = True
             self.rl_index = replace_index
             # self.evolver.rl_policy = replace_index
-            print('Sync from RL --> Nevo')
+            print("Sync from RL --> Nevo")
 
-            if self.total_steps - self.previous_print >  self.args.display_interval:
+            if self.total_steps - self.previous_print > self.args.display_interval:
                 self.previous_print = self.total_steps
                 # start to do the evaluation
                 mean_rewards, mean_success = self._evaluate_agent(self.actor_net)
 
-                self.total_eval_num +=1.0
+                self.total_eval_num += 1.0
                 if mean_success > EA_mean_success:
-                    self.ea_better +=1.0
+                    self.ea_better += 1.0
 
                 self.our_wandb.log(
-                {'EA_better_ratio':self.ea_better/self.total_eval_num ,'Rewards': np.max([mean_rewards, EA_mean_rewards]), 'Success': np.max([EA_mean_success, mean_success]),  'RL_Rewards': mean_rewards, 'RL_Success': mean_success, 'T_Reward': self.reward_recorder.mean, 'Q_loss': qf1_loss ,  'Actor_loss': actor_loss, 'Alpha_loss':alpha_loss, 'Alpha':alpha, 'time_steps': self.total_steps })
-                print('[{}] Frames: {}, RL ewards: {:.3f}, Success: {:.3f}, T_Reward: {:.3f}, QF1: {:.3f}, QF2: {:.3f}, AL: {:.3f}, Alpha: {:.3f}, AlphaL: {:.3f}'.format(datetime.now(), \
-                        self.total_steps , mean_rewards, mean_success, self.reward_recorder.mean, qf1_loss, qf2_loss, actor_loss, alpha, alpha_loss))
+                    {
+                        "EA_better_ratio": self.ea_better / self.total_eval_num,
+                        "Rewards": np.max([mean_rewards, EA_mean_rewards]),
+                        "Success": np.max([EA_mean_success, mean_success]),
+                        "RL_Rewards": mean_rewards,
+                        "RL_Success": mean_success,
+                        "T_Reward": self.reward_recorder.mean,
+                        "Q_loss": qf1_loss,
+                        "Actor_loss": actor_loss,
+                        "Alpha_loss": alpha_loss,
+                        "Alpha": alpha,
+                        "time_steps": self.total_steps,
+                    }
+                )
+                print(
+                    "[{}] Frames: {}, RL ewards: {:.3f}, Success: {:.3f}, T_Reward: {:.3f}, QF1: {:.3f}, QF2: {:.3f}, AL: {:.3f}, Alpha: {:.3f}, AlphaL: {:.3f}".format(
+                        datetime.now(),
+                        self.total_steps,
+                        mean_rewards,
+                        mean_success,
+                        self.reward_recorder.mean,
+                        qf1_loss,
+                        qf2_loss,
+                        actor_loss,
+                        alpha,
+                        alpha_loss,
+                    )
+                )
 
-                torch.save(self.actor_net.state_dict(), self.model_path + '/model.pt' if self.args.random_init else self.model_path + '/fixed_model.pt')
+                torch.save(
+                    self.actor_net.state_dict(),
+                    (
+                        self.model_path + "/model.pt"
+                        if self.args.random_init
+                        else self.model_path + "/fixed_model.pt"
+                    ),
+                )
                 if mean_success == 1:
-                    torch.save(self.actor_net.state_dict(), self.model_path + '/best_model.pt' if self.args.random_init else self.model_path + '/fixed_best_model.pt')
+                    torch.save(
+                        self.actor_net.state_dict(),
+                        (
+                            self.model_path + "/best_model.pt"
+                            if self.args.random_init
+                            else self.model_path + "/fixed_best_model.pt"
+                        ),
+                    )
 
     def rl_to_evo(self, rl_agent, evo_net):
         for target_param, param in zip(evo_net.parameters(), rl_agent.parameters()):
             target_param.data.copy_(param.data)
 
-
-    def _initial_exploration_and_store(self, bufer, reward_function_pop, reward_input_name_pop, exploration_policy='gaussian'):
+    def _initial_exploration_and_store(
+        self,
+        bufer,
+        reward_function_pop,
+        reward_input_name_pop,
+        exploration_policy="gaussian",
+    ):
         # get the action information of the environment
-        obs,_ = self.env.reset()
+        obs, _ = self.env.reset()
 
         store = []
         for _ in range(self.args.init_exploration_steps):
-            if exploration_policy == 'uniform':
-                action = np.random.uniform(-1, 1, (self.env.action_space.shape[0], ))
-            elif exploration_policy == 'gaussian':
+            if exploration_policy == "uniform":
+                action = np.random.uniform(-1, 1, (self.env.action_space.shape[0],))
+            elif exploration_policy == "gaussian":
                 # the sac does not need normalize?
                 with torch.no_grad():
                     obs_tensor = self._get_tensor_inputs(obs)
@@ -333,6 +438,7 @@ class sac_agent:
             # input the action input the environment
             obs_, reward, done, _ = self.env.step(self.action_max * action)
             org_info = self.env._env.get_dict()
+            org_info["actions"] = action
 
             other_rewards = []
             for index_index, rf in enumerate(reward_function_pop):
@@ -349,7 +455,7 @@ class sac_agent:
             other_rewards.append(reward)
             # store the episodes
             bufer.add(org_info, obs, action, other_rewards, obs_, float(done))
-            #buffer.add(org_info, obs, action, other_rewards, obs_, float(done))
+            # buffer.add(org_info, obs, action, other_rewards, obs_, float(done))
             obs = obs_
             if done:
                 # if done, reset the environment
@@ -357,15 +463,15 @@ class sac_agent:
         print("Initial exploration has been finished!")
 
     # do the initial exploration by using the uniform policy
-    def _initial_exploration(self, exploration_policy='gaussian'):
+    def _initial_exploration(self, exploration_policy="gaussian"):
         # get the action information of the environment
-        obs,_ = self.env.reset()
+        obs, _ = self.env.reset()
 
         store = []
         for _ in range(100):
-            if exploration_policy == 'uniform':
-                action = np.random.uniform(-1, 1, (self.env.action_space.shape[0], ))
-            elif exploration_policy == 'gaussian':
+            if exploration_policy == "uniform":
+                action = np.random.uniform(-1, 1, (self.env.action_space.shape[0],))
+            elif exploration_policy == "gaussian":
                 # the sac does not need normalize?
                 with torch.no_grad():
                     obs_tensor = self._get_tensor_inputs(obs)
@@ -375,20 +481,24 @@ class sac_agent:
                     action = action.cpu().numpy()[0]
             # input the action input the environment
             obs_, reward, done, _ = self.env.step(self.action_max * action)
-            store.append(self.env._env.get_dict())
+            state_dict = self.env._env.get_dict()
+            state_dict["actions"] = action
+            store.append(state_dict)
 
             # store the episodes
-            #self.buffer.add(obs, action, reward, obs_, float(done))
+            # self.buffer.add(obs, action, reward, obs_, float(done))
             obs = obs_
             if done:
                 # if done, reset the environment
                 obs, _ = self.env.reset()
-        #print("Initial exploration has been finished!")
+        # print("Initial exploration has been finished!")
         return store
 
     # get tensors
     def _get_tensor_inputs(self, obs):
-        obs_tensor = torch.tensor(obs, dtype=torch.float32, device='cuda' if self.args.cuda else 'cpu').unsqueeze(0)
+        obs_tensor = torch.tensor(
+            obs, dtype=torch.float32, device="cuda" if self.args.cuda else "cpu"
+        ).unsqueeze(0)
         return obs_tensor
 
     def compute_kl(self, pi_pis, elite_pis):
@@ -411,20 +521,44 @@ class sac_agent:
         return l2_distance
 
     # update the network
-    def _update_newtork(self, All_buffer, agent_index, elite_index,  dynamic_weight, use_dynamic = False, constraint_kl=False, temp_weight=0.0, elite_net = None, elite_q1 = None, elite_q2 = None):
+    def _update_newtork(
+        self,
+        All_buffer,
+        agent_index,
+        elite_index,
+        dynamic_weight,
+        use_dynamic=False,
+        constraint_kl=False,
+        temp_weight=0.0,
+        elite_net=None,
+        elite_q1=None,
+        elite_q2=None,
+    ):
         # smaple batch of samples from the replay buffer
 
         t1 = time.time()
         # if use_dynamic:
         #     obses, actions, rewards, obses_, dones = All_buffer.sample_with_elite(self.args.batch_size, agent_index, elite_index,  dynamic_weight)
         # else:
-        obses, actions, rewards, obses_, dones = All_buffer.sample(self.args.batch_size, agent_index)
+        obses, actions, rewards, obses_, dones = All_buffer.sample(
+            self.args.batch_size, agent_index
+        )
         # preprocessing the data into the tensors, will support GPU later
-        obses = torch.tensor(obses, dtype=torch.float32, device='cuda' if self.args.cuda else 'cpu')
-        actions = torch.tensor(actions, dtype=torch.float32, device='cuda' if self.args.cuda else 'cpu')
-        rewards = torch.tensor(rewards, dtype=torch.float32, device='cuda' if self.args.cuda else 'cpu').unsqueeze(-1)
-        obses_ = torch.tensor(obses_, dtype=torch.float32, device='cuda' if self.args.cuda else 'cpu')
-        inverse_dones = torch.tensor(1 - dones, dtype=torch.float32, device='cuda' if self.args.cuda else 'cpu').unsqueeze(-1)
+        obses = torch.tensor(
+            obses, dtype=torch.float32, device="cuda" if self.args.cuda else "cpu"
+        )
+        actions = torch.tensor(
+            actions, dtype=torch.float32, device="cuda" if self.args.cuda else "cpu"
+        )
+        rewards = torch.tensor(
+            rewards, dtype=torch.float32, device="cuda" if self.args.cuda else "cpu"
+        ).unsqueeze(-1)
+        obses_ = torch.tensor(
+            obses_, dtype=torch.float32, device="cuda" if self.args.cuda else "cpu"
+        )
+        inverse_dones = torch.tensor(
+            1 - dones, dtype=torch.float32, device="cuda" if self.args.cuda else "cpu"
+        ).unsqueeze(-1)
         t2 = time.time()
         # start to update the actor network
         actor_fau = 0.0
@@ -444,7 +578,9 @@ class sac_agent:
             kl_return = 0.0
 
         t5 = time.time()
-        alpha_loss = -(self.log_alpha * (log_prob + self.target_entropy).detach()).mean()
+        alpha_loss = -(
+            self.log_alpha * (log_prob + self.target_entropy).detach()
+        ).mean()
         # use the automatically tuning
         self.alpha_optim.zero_grad()
         alpha_loss.backward()
@@ -456,9 +592,9 @@ class sac_agent:
         # get the q_value for new actions
         q_actions_ = torch.min(self.qf1(obses, actions_), self.qf2(obses, actions_))
         actor_loss = (alpha * log_prob - q_actions_).mean()
-        factor_weight = 1.0 #(torch.abs(actor_loss)/ (kl_loss + 1e-20)).detach()
+        factor_weight = 1.0  # (torch.abs(actor_loss)/ (kl_loss + 1e-20)).detach()
 
-        total_actor_loss =  actor_loss  + factor_weight *kl_loss
+        total_actor_loss = actor_loss + factor_weight * kl_loss
 
         t7 = time.time()
         # q value function loss
@@ -468,10 +604,23 @@ class sac_agent:
 
             pis_next = self.actor_net(obses_)
             actions_info_next = get_action_info(pis_next, cuda=self.args.cuda)
-            actions_next_, pre_tanh_value_next = actions_info_next.select_actions(reparameterize=True)
-            log_prob_next = actions_info_next.get_log_prob(actions_next_, pre_tanh_value_next)
-            target_q_value_next = torch.min(self.target_qf1(obses_, actions_next_), self.target_qf2(obses_, actions_next_)) - alpha * log_prob_next
-            target_q_value = self.args.reward_scale * rewards + inverse_dones * self.args.gamma * target_q_value_next
+            actions_next_, pre_tanh_value_next = actions_info_next.select_actions(
+                reparameterize=True
+            )
+            log_prob_next = actions_info_next.get_log_prob(
+                actions_next_, pre_tanh_value_next
+            )
+            target_q_value_next = (
+                torch.min(
+                    self.target_qf1(obses_, actions_next_),
+                    self.target_qf2(obses_, actions_next_),
+                )
+                - alpha * log_prob_next
+            )
+            target_q_value = (
+                self.args.reward_scale * rewards
+                + inverse_dones * self.args.gamma * target_q_value_next
+            )
         t8 = time.time()
         if constraint_kl:
             q1_kl_loss = self.compute_l2_distance(self.qf1, elite_q1)
@@ -484,31 +633,65 @@ class sac_agent:
             q1_kl_loss_return = 0.0
             q2_kl_loss_return = 0.0
         t9 = time.time()
-        qf1_loss = (q1_value - target_q_value).pow(2).mean() +factor_weight* q1_kl_loss
-        qf2_loss = (q2_value - target_q_value).pow(2).mean() +factor_weight* q2_kl_loss
+        qf1_loss = (q1_value - target_q_value).pow(
+            2
+        ).mean() + factor_weight * q1_kl_loss
+        qf2_loss = (q2_value - target_q_value).pow(
+            2
+        ).mean() + factor_weight * q2_kl_loss
 
+        # Actor backward must come BEFORE qf optimizer steps: total_actor_loss was
+        # built from qf1/qf2 forward passes (q_actions_), and qf optimizer .step()
+        # modifies qf parameters in-place, which invalidates that computation graph.
+        self.actor_optim.zero_grad()
+        total_actor_loss.backward()
+        self.actor_optim.step()
+        t10 = time.time()
+
+        # qf1 — safe to step now: actor_optim.step() only touched actor_net params
         self.qf1_optim.zero_grad()
         qf1_loss.backward()
         self.qf1_optim.step()
-        t10 = time.time()
+        t11 = time.time()
         # qf2
         self.qf2_optim.zero_grad()
         qf2_loss.backward()
         self.qf2_optim.step()
-        t11 = time.time()
-        # policy loss
-
-        self.actor_optim.zero_grad()
-        total_actor_loss.backward()
-        self.actor_optim.step()
         t12 = time.time()
-        time_cost_list =[t12-t11, t11-t10, t10-t9, t9-t8, t8-t7, t7-t6, t6-t5, t5-t4, t4-t3, t3-t2, t2-t1]
-        return qf1_loss.item(), qf2_loss.item(), actor_loss.item(), alpha.item(), alpha_loss.item(), actor_fau, q1_fau, q2_fau, kl_return, q1_kl_loss_return, q2_kl_loss_return, time_cost_list
-    
+        time_cost_list = [
+            t12 - t11,
+            t11 - t10,
+            t10 - t9,
+            t9 - t8,
+            t8 - t7,
+            t7 - t6,
+            t6 - t5,
+            t5 - t4,
+            t4 - t3,
+            t3 - t2,
+            t2 - t1,
+        ]
+        return (
+            qf1_loss.item(),
+            qf2_loss.item(),
+            actor_loss.item(),
+            alpha.item(),
+            alpha_loss.item(),
+            actor_fau,
+            q1_fau,
+            q2_fau,
+            kl_return,
+            q1_kl_loss_return,
+            q2_kl_loss_return,
+            time_cost_list,
+        )
+
     # update the target network
     def _update_target_network(self, target, source):
         for target_param, param in zip(target.parameters(), source.parameters()):
-            target_param.data.copy_(self.args.tau * param.data + (1 - self.args.tau) * target_param.data)
+            target_param.data.copy_(
+                self.args.tau * param.data + (1 - self.args.tau) * target_param.data
+            )
 
     # evaluate the agent
     def _evaluate_agent(self, actor_net, reward_function=None, reward_input_name=None):
@@ -518,33 +701,36 @@ class sac_agent:
         all_infos = []
         for _ in range(self.args.eval_episodes):
             obs, _ = self.eval_env.reset()
-            episode_reward = 0 
+            episode_reward = 0
             success_flag = False
             while True:
                 with torch.no_grad():
                     obs_tensor = self._get_tensor_inputs(obs)
 
                     pi = actor_net(obs_tensor)
-                    action = get_action_info(pi, cuda=self.args.cuda).select_actions(exploration=False, reparameterize=False)
+                    action = get_action_info(pi, cuda=self.args.cuda).select_actions(
+                        exploration=False, reparameterize=False
+                    )
                     action = action.detach().cpu().numpy()[0]
 
                     if np.isnan(action).any() or np.isinf(action).any():
                         print(pi)
                         print(action)
                         print("Action contains NaN values.")
-                        return None, None ,None, None
+                        return None, None, None, None
                 # input the action into the environment
                 obs_, reward, done, info = self.eval_env.step(self.action_max * action)
 
                 if reward_function is not None:
                     org_info = self.eval_env._env.get_dict()
+                    org_info["actions"] = action
                     input = []
                     for name in reward_input_name:
                         input.append(org_info[name])
-                    total_own_reward +=reward_function(*input)[0]
+                    total_own_reward += reward_function(*input)[0]
 
                 episode_reward += reward
-                success_flag = success_flag or info['success']
+                success_flag = success_flag or info["success"]
                 if done:
                     break
                 obs = obs_
@@ -552,4 +738,9 @@ class sac_agent:
             total_reward += episode_reward
             total_success += 1 if success_flag else 0
 
-        return total_reward / self.args.eval_episodes, total_success / self.args.eval_episodes, all_infos, total_own_reward/self.args.eval_episodes
+        return (
+            total_reward / self.args.eval_episodes,
+            total_success / self.args.eval_episodes,
+            all_infos,
+            total_own_reward / self.args.eval_episodes,
+        )

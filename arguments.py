@@ -54,8 +54,8 @@ def get_args():
     parse.add_argument('--use_dynamic', type=int, default=0, help='use_dynamic')
     parse.add_argument('--Type', type=int, default=0, help='the size of population')
     parse.add_argument('--elite_num', type=int, default=1, help='elite_num')
-    parse.add_argument('-sigma_init', default=1e-3, type=float)  ### 初始sigma大小
-    parse.add_argument('-damp', default=1e-3, type=float)  ### 噪声大小
-    parse.add_argument('-damp_limit', default=1e-5, type=float)  ### 噪声衰减因子
-    parse.add_argument('-elitism', action='store_true')  ### 保护1st精英
+    parse.add_argument('--sigma_init', default=1e-3, type=float)  ### 初始sigma大小
+    parse.add_argument('--damp', default=1e-3, type=float)  ### 噪声大小
+    parse.add_argument('--damp_limit', default=1e-5, type=float)  ### 噪声衰减因子
+    parse.add_argument('--elitism', action='store_true')  ### 保护1st精英
     return parse.parse_args()

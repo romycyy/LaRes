@@ -1,5 +1,6 @@
 name: Metaworld-v2
 channels:
+  - conda-forge
   - defaults
 dependencies:
   - _libgcc_mutex=0.1=main
@@ -12,7 +13,9 @@ dependencies:
   - libstdcxx-ng=11.2.0=h1234567_1
   - ncurses=6.4=h6a678d5_0
   - openssl=3.0.12=h7f8727e_0
-  - python=3.8.18=h955ad1f_0
+  - "python>=3.9,<3.11"
+  - setuptools
+  - grpcio  # install from conda to avoid pip build (pkg_resources) failure
   - readline=8.2=h5eee18b_0
   - sqlite=3.41.2=h5eee18b_0
   - tk=8.6.12=h1ccaba5_0
@@ -60,10 +63,9 @@ dependencies:
     - google-auth==2.34.0
     - google-auth-oauthlib==0.4.6
     - gpustat==1.1.1
-    - grpcio==1.43.0
     - gym==0.23.1
     - gym-notices==0.0.8
-    - gymnasium==0.29.1
+    - gymnasium>=1.1
     - h11==0.14.0
     - httpcore==1.0.5
     - httpx==0.27.2
@@ -85,11 +87,11 @@ dependencies:
     - markdown==3.7
     - markupsafe==2.1.5
     - matplotlib==3.7.5
-    - metaworld==2.0.0
+    # metaworld==2.0.0 was yanked; installed via git below
     - mpmath==1.3.0
     - msgpack==1.0.8
-    - mujoco==2.3.7
-    - mujoco-py==2.0.2.8
+    - "mujoco>=3.0.0"  # metaworld 3.0.0 requires mujoco>=3.0.0
+    - "metaworld @ git+https://github.com/Farama-Foundation/Metaworld.git@master"  # replaces yanked metaworld==2.0.0
     - multidict==6.0.5
     - mypy-extensions==1.0.0
     - networkx==3.1
@@ -171,8 +173,8 @@ dependencies:
     - tensorboardx==2.6.2.2
     - termcolor==2.4.0
     - threadpoolctl==3.5.0
-    - torch==1.4.0
-    - torchvision==0.19.0
+    - torch==1.11.0
+    - torchvision==0.12.0
     - tqdm==4.66.5
     - triton==2.0.0
     - typing-extensions==4.12.2
@@ -180,11 +182,11 @@ dependencies:
     - tzdata==2023.4
     - urllib3==2.1.0
     - virtualenv==20.26.3
-    - wandb==0.22.3
+    - "wandb>=0.12.11,<0.13.0"  # rl-games 1.6.1 requires this range
     - wcwidth==0.2.13
     - werkzeug==3.0.4
     - wheel==0.45.1
     - yarl==1.9.8
     - zipp==3.17.0
-prefix: /home/lpy/anaconda3/envs/Metaworld-v2
+prefix: /scratch/yiyuc/anaconda3/envs/Metaworld-v2
 
