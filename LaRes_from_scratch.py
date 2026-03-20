@@ -2,14 +2,15 @@ import copy
 import os
 import torch
 import wandb
+
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 cpu_num = 1
-os.environ ['OMP_NUM_THREADS'] = str(cpu_num)
-os.environ ['OPENBLAS_NUM_THREADS'] = str(cpu_num)
-os.environ ['MKL_NUM_THREADS'] = str(cpu_num)
-os.environ ['VECLIB_MAXIMUM_THREADS'] = str(cpu_num)
-os.environ ['NUMEXPR_NUM_THREADS'] = str(cpu_num)
+os.environ["OMP_NUM_THREADS"] = str(cpu_num)
+os.environ["OPENBLAS_NUM_THREADS"] = str(cpu_num)
+os.environ["MKL_NUM_THREADS"] = str(cpu_num)
+os.environ["VECLIB_MAXIMUM_THREADS"] = str(cpu_num)
+os.environ["NUMEXPR_NUM_THREADS"] = str(cpu_num)
 
 # If necessary, config the OPENAI_BASE_URL
 # os.environ["OPENAI_BASE_URL"]=""
@@ -19,11 +20,25 @@ import numpy as np
 import random
 from arguments import get_args
 from sac import sac_agent
+
+
 def file_to_string(filename):
-    with open(filename, 'r') as file:
+    with open(filename, "r") as file:
         return file.read()
+
+
 import utils
-from utils import get_action_info, reward_recorder, env_wrapper, Worker,  reward_function_dict, parents_function_dict, input_dict, criteria_code_dict, task_description_dict
+from utils import (
+    get_action_info,
+    reward_recorder,
+    env_wrapper,
+    Worker,
+    reward_function_dict,
+    parents_function_dict,
+    input_dict,
+    criteria_code_dict,
+    task_description_dict,
+)
 
 Ares_ROOT_DIR = os.getcwd()
 import time
@@ -34,15 +49,36 @@ client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 from datetime import datetime
 from replay_buffer import replay_buffer
 
+
 def _get_tensor_inputs(obs, args):
-    obs_tensor = torch.tensor(obs, dtype=torch.float32, device='cuda' if args.cuda else 'cpu').unsqueeze(0)
+    obs_tensor = torch.tensor(
+        obs, dtype=torch.float32, device="cuda" if args.cuda else "cpu"
+    ).unsqueeze(0)
     return obs_tensor
+
 
 Reward_recorder = reward_recorder(10)
 Success_recorder = reward_recorder(10)
 
 
-def evluate(current_index, env, Nan_Net,  actor_net, args, buffer, reward_function_pop, reward_input_name_pop, responses_list, dir_path, LLM_iter, reward_string_pop,project_name, Final_reward_scale, Final_reward_mu_elite,Final_reward_mu_new):
+def evluate(
+    current_index,
+    env,
+    Nan_Net,
+    actor_net,
+    args,
+    buffer,
+    reward_function_pop,
+    reward_input_name_pop,
+    responses_list,
+    dir_path,
+    LLM_iter,
+    reward_string_pop,
+    project_name,
+    Final_reward_scale,
+    Final_reward_mu_elite,
+    Final_reward_mu_new,
+):
     ep_steps = 0
     ep_reward = 0
     done = False
@@ -56,7 +92,9 @@ def evluate(current_index, env, Nan_Net,  actor_net, args, buffer, reward_functi
         with torch.no_grad():
             obs_tensor = _get_tensor_inputs(obs, args)
             pi = actor_net(obs_tensor)
-            action = get_action_info(pi, cuda=args.cuda).select_actions(reparameterize=False)
+            action = get_action_info(pi, cuda=args.cuda).select_actions(
+                reparameterize=False
+            )
             action = action.cpu().numpy()[0]
 
             if np.isnan(action).any() or np.isinf(action).any():
@@ -65,16 +103,13 @@ def evluate(current_index, env, Nan_Net,  actor_net, args, buffer, reward_functi
                 print("Action contains NaN values.")
                 return None, None, None, None
 
-
         # input the actions into the environment
         obs_, reward, done, info = env.step(env.action_space.high * action)
         org_info = env._env.get_dict()
-        org_info['actions'] = action
+        org_info["actions"] = action
         Reward_recorder.add_rewards(reward)
         ep_reward += reward
-        other_rewards= []
-
-
+        other_rewards = []
 
         for index_index, rf in enumerate(reward_function_pop):
 
@@ -87,9 +122,13 @@ def evluate(current_index, env, Nan_Net,  actor_net, args, buffer, reward_functi
                 input.append(org_info[name])
             while True:
                 try:
-                   # other_rewards.append(rf(*input)[0]*Final_reward_scale[index_index])
+                    # other_rewards.append(rf(*input)[0]*Final_reward_scale[index_index])
 
-                    other_rewards.append((rf(*input)[0] - Final_reward_mu_new[index_index]) * Final_reward_scale[index_index] + Final_reward_mu_elite)
+                    other_rewards.append(
+                        (rf(*input)[0] - Final_reward_mu_new[index_index])
+                        * Final_reward_scale[index_index]
+                        + Final_reward_mu_elite
+                    )
 
                     break
                 except Exception as e:
@@ -102,13 +141,13 @@ def evluate(current_index, env, Nan_Net,  actor_net, args, buffer, reward_functi
                         if index_index not in Nan_Net:
                             Nan_Net.append(index_index)
                     other_rewards.append(0.0)
-                    with open('./logs/' + project_name + '/data.pkl', 'wb') as f:
+                    with open("./logs/" + project_name + "/data.pkl", "wb") as f:
                         pickle.dump([org_info], f)
                     stdout_str = str(e)
                     break
-                    #print("Find error", stdout_str, index_index, " Current Nan Net", Nan_Net)
-                    #print("error in evaluation")
-                    #return None, None, None, None
+                    # print("Find error", stdout_str, index_index, " Current Nan Net", Nan_Net)
+                    # print("error in evaluation")
+                    # return None, None, None, None
 
                     # reward_function_pop_one, reward_input_name_pop_one, reward_string_pop_one, response_list_one = reward_function_error_improve(dir_path, LLM_iter, args, responses_list[index_index], stdout_str, suggestion_list[index_index], initial_system,
                     #                                   initial_user, task_obs_code_string_1, criteria_code_string,
@@ -119,20 +158,23 @@ def evluate(current_index, env, Nan_Net,  actor_net, args, buffer, reward_functi
                     # responses_list[index_index] = response_list_one[0]
                     # time.sleep(1.0)
 
-        #other_rewards.append(reward)
-        #print(other_rewards)
+        # other_rewards.append(reward)
+        # print(other_rewards)
 
         # store the samples
         buffer.add(org_info, obs, action, other_rewards, obs_, float(done))
-        data_list.append(copy.deepcopy(([], obs, action, other_rewards, obs_, float(done))))
+        data_list.append(
+            copy.deepcopy(([], obs, action, other_rewards, obs_, float(done)))
+        )
         # reassign the observations
         obs = obs_
         if done:
             Reward_recorder.start_new_episode()
-            Success_recorder.add_rewards(info['success'])
+            Success_recorder.add_rewards(info["success"])
             Success_recorder.start_new_episode()
-    print("time cost", (time.time()-s)/ep_steps)
-    return ep_reward, ep_steps, data_list, info['success']
+    print("time cost", (time.time() - s) / ep_steps)
+    return ep_reward, ep_steps, data_list, info["success"]
+
 
 def get_LLM_reward_function(sample_size, model, messages, temperature):
 
@@ -154,7 +196,7 @@ def get_LLM_reward_function(sample_size, model, messages, temperature):
                     model=model,
                     messages=messages,
                     temperature=temperature,
-                    n=chunk_size
+                    n=chunk_size,
                 )
                 total_samples += chunk_size
                 break
@@ -174,8 +216,11 @@ def get_LLM_reward_function(sample_size, model, messages, temperature):
         total_token += response_cur.usage.total_tokens
 
     return responses, prompt_tokens, total_completion_token, total_token
+
+
 import logging
-logging.basicConfig(filename='error.log', level=logging.ERROR)
+
+logging.basicConfig(filename="error.log", level=logging.ERROR)
 
 import re
 import ast
@@ -183,40 +228,87 @@ import subprocess
 import pickle
 
 
-def get_reward_functions(dir_path, LLM_iter, args, temp_org_info, suggestions, initial_system, initial_user, task, input_dict_string, code_output_tip , RL_best=False, provided_response = None, code_feedback = None, real_num = 5):
+def get_reward_functions(
+    dir_path,
+    LLM_iter,
+    args,
+    temp_org_info,
+    suggestions,
+    initial_system,
+    initial_user,
+    task,
+    input_dict_string,
+    code_output_tip,
+    RL_best=False,
+    provided_response=None,
+    code_feedback=None,
+    real_num=5,
+):
     reward_function_pop = []
     code_string_list = []
-    namespace= {}
+    namespace = {}
     get_res_try_num = 0
     reward_string_pop = []
-    response_list =[]
+    response_list = []
 
     if RL_best:
-        messages = [{"role": "system", "content": initial_system}, {"role": "user", "content": initial_user.format(
-            task=task,
-            reward_function_format=reward_function_format,
-            input_dict_string=input_dict_string) + "\n" + code_feedback + "\n" + code_output_tip}]
+        messages = [
+            {"role": "system", "content": initial_system},
+            {
+                "role": "user",
+                "content": initial_user.format(
+                    task=task,
+                    reward_function_format=reward_function_format,
+                    input_dict_string=input_dict_string,
+                )
+                + "\n"
+                + code_feedback
+                + "\n"
+                + code_output_tip,
+            },
+        ]
     else:
-        messages = [{"role": "system", "content": initial_system}, {"role": "user", "content": initial_user.format(
-            task=task,
-            reward_function_format=reward_function_format,
-            input_dict_string=input_dict_string) +  "\n" + code_output_tip}]
+        messages = [
+            {"role": "system", "content": initial_system},
+            {
+                "role": "user",
+                "content": initial_user.format(
+                    task=task,
+                    reward_function_format=reward_function_format,
+                    input_dict_string=input_dict_string,
+                )
+                + "\n"
+                + code_output_tip,
+            },
+        ]
     if provided_response is not None:
-        messages.extend([{"role": "system", "content": provided_response}, {"role": "user", "content": code_feedback + "\n" + code_output_tip}])
+        messages.extend(
+            [
+                {"role": "system", "content": provided_response},
+                {"role": "user", "content": code_feedback + "\n" + code_output_tip},
+            ]
+        )
     try_num = 1
     success_num = 0
     while True:
         if success_num == real_num:
             break
-        responses, prompt_tokens, total_completion_token, total_token = get_LLM_reward_function(real_num*2, args.model, messages, 1.0)
+        responses, prompt_tokens, total_completion_token, total_token = (
+            get_LLM_reward_function(real_num * 2, args.model, messages, 1.0)
+        )
 
         for iiii in range(len(responses)):
             response_cur = responses[iiii].message.content
-            print(f"Try generate num {try_num}", prompt_tokens, total_completion_token, total_token)
+            print(
+                f"Try generate num {try_num}",
+                prompt_tokens,
+                total_completion_token,
+                total_token,
+            )
             try_num += 1
             patterns = [
-                r'```python(.*?)```',
-                r'```(.*?)```',
+                r"```python(.*?)```",
+                r"```(.*?)```",
                 r'"""(.*?)"""',
                 r'""(.*?)""',
                 r'"(.*?)"',
@@ -233,57 +325,96 @@ def get_reward_functions(dir_path, LLM_iter, args, temp_org_info, suggestions, i
                     code_string = "\n".join(lines[i:])
                     break  # Add this break statement
 
-            code = "import numpy as np" + '\n' + "import reward_utils" + '\n'  + "from reward_utils import *" + '\n'+ code_string
+            code = (
+                "import numpy as np"
+                + "\n"
+                + "import reward_utils"
+                + "\n"
+                + "from reward_utils import *"
+                + "\n"
+                + code_string
+            )
 
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            temp_file_path = dir_path + "/" + timestamp + '_generated_code.py'
+            temp_file_path = dir_path + "/" + timestamp + "_generated_code.py"
 
-            with open('./test_generate_code.py', 'r') as f:
+            with open("./test_generate_code.py", "r") as f:
                 test_code = f.read()
-            with open(temp_file_path, 'w', encoding='utf-8') as f:
-                head = "import os" + "\n" +  "import sys" + "\n" + "current_dir = os.path.dirname(os.path.abspath(__file__))" + "\n" + """parent_dir = os.path.abspath(os.path.join(current_dir, "../../"))""" + "\n" + "sys.path.insert(0, parent_dir)" + "\n"
+            with open(temp_file_path, "w", encoding="utf-8") as f:
+                head = (
+                    "import os"
+                    + "\n"
+                    + "import sys"
+                    + "\n"
+                    + "current_dir = os.path.dirname(os.path.abspath(__file__))"
+                    + "\n"
+                    + """parent_dir = os.path.abspath(os.path.join(current_dir, "../../"))"""
+                    + "\n"
+                    + "sys.path.insert(0, parent_dir)"
+                    + "\n"
+                )
 
                 f.write(head)
                 f.write(code)
                 f.write("\n# Test code appended\n")
                 f.write(test_code)
 
-            filter_filepath =  dir_path +  f"/RF_{get_res_try_num}_response.txt"
-            with open(filter_filepath, 'w') as f:
-                process = subprocess.Popen(['python', '-u', temp_file_path, dir_path + "/" + "data.pkl"], stdout=f, stderr=f)
+            filter_filepath = dir_path + f"/RF_{get_res_try_num}_response.txt"
+            with open(filter_filepath, "w") as f:
+                process = subprocess.Popen(
+                    ["python", "-u", temp_file_path, dir_path + "/" + "data.pkl"],
+                    stdout=f,
+                    stderr=f,
+                )
             process.communicate()
 
-            with open(filter_filepath, 'r') as f:
+            with open(filter_filepath, "r") as f:
                 stdout_str = f.read()
             print(stdout_str)
             if "Success!" not in stdout_str:
-                print("Fail ", iiii , stdout_str)
+                print("Fail ", iiii, stdout_str)
                 continue
             else:
-                response_txt = dir_path + "/" + "Iter_" + str(LLM_iter) + "_Response_" + str(success_num) + ".txt"
-                with open(response_txt, 'w', encoding='utf-8') as f:
+                response_txt = (
+                    dir_path
+                    + "/"
+                    + "Iter_"
+                    + str(LLM_iter)
+                    + "_Response_"
+                    + str(success_num)
+                    + ".txt"
+                )
+                with open(response_txt, "w", encoding="utf-8") as f:
                     f.write(response_cur)
                 pattern = r"(def\s+\w+\s*\(.*?\):[\s\S]*?)(?=\ndef\s|\Z)"
                 matches = re.findall(pattern, code_string, re.DOTALL)
                 response_list.append(response_cur)
                 for i, match in enumerate(matches, 1):
                     if "def compute_reward" in match.strip():
-                        code_1 =  match.strip()
-                #print("Test code 1  ==================")
-                #print(code_1)
-                #print("Test code 2  ==================")
-                #print(code_2)
+                        code_1 = match.strip()
+                # print("Test code 1  ==================")
+                # print(code_1)
+                # print("Test code 2  ==================")
+                # print(code_2)
 
-                #assert 1 == 2
+                # assert 1 == 2
                 reward_string_pop.append([code_1])
                 code_string_list.append(code)
 
             pattern = r"Conclusion:\s*(.*)"
 
             match = re.search(pattern, response_cur)
-            temp_file_path = dir_path + "/" +  "Iter_"+str(LLM_iter)+"_Reward_Code_" + str(get_res_try_num) + ".py"
-            with open(temp_file_path, 'w', encoding='utf-8') as f:
+            temp_file_path = (
+                dir_path
+                + "/"
+                + "Iter_"
+                + str(LLM_iter)
+                + "_Reward_Code_"
+                + str(get_res_try_num)
+                + ".py"
+            )
+            with open(temp_file_path, "w", encoding="utf-8") as f:
                 f.write(code)
             get_res_try_num += 1
             success_num += 1
@@ -316,13 +447,8 @@ def get_reward_functions(dir_path, LLM_iter, args, temp_org_info, suggestions, i
     return reward_function_pop, reward_input_name_pop, reward_string_pop, response_list
 
 
-
-
-
-
-
-
 from scipy.stats import beta
+
 
 class ThompsonSampling:
     def __init__(self, n_arms, c, windows_length):
@@ -336,8 +462,10 @@ class ThompsonSampling:
             self.failures.append([0])
 
     def select_arm(self, Nan_Net):
-        sampled_theta = [beta.rvs(1 + np.sum(self.successes[i]), 1 + np.sum(self.failures[i])) for i in
-                         range(self.n_arms)]
+        sampled_theta = [
+            beta.rvs(1 + np.sum(self.successes[i]), 1 + np.sum(self.failures[i]))
+            for i in range(self.n_arms)
+        ]
 
         for index, value in enumerate(sampled_theta):
             if index in Nan_Net:
@@ -346,41 +474,68 @@ class ThompsonSampling:
         return np.argmax(sampled_theta)
 
     def get_scores(self):
-        sampled_theta = [beta.rvs(1 + np.sum(self.successes[i]), 1 + np.sum(self.failures[i])) for i in
-                         range(self.n_arms)]
+        sampled_theta = [
+            beta.rvs(1 + np.sum(self.successes[i]), 1 + np.sum(self.failures[i]))
+            for i in range(self.n_arms)
+        ]
 
         return sampled_theta
-
 
     def update(self, chosen_arm, reward):
         if reward > 0.5:
             self.successes[chosen_arm].append(1)
-            self.successes[chosen_arm] = self.successes[chosen_arm][-self.windows_length:]
+            self.successes[chosen_arm] = self.successes[chosen_arm][
+                -self.windows_length :
+            ]
         else:
             self.failures[chosen_arm].append(1)
-            self.failures[chosen_arm] = self.failures[chosen_arm][-self.windows_length:]
-
-
-
-
+            self.failures[chosen_arm] = self.failures[chosen_arm][
+                -self.windows_length :
+            ]
 
 
 import pickle
 import math
 import multiprocessing as mp
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     args = get_args()
     # build the environment
 
-    name = "From_Scratch_"+ str(args.model)+"_TS_"+str(args.windows_length) +"_win_rate_Q_Pi_Net_mean_std_scale_distance_1.0_fixed_elite_num_"+str(args.elite_num)+"_Inner_Loop_"+str(args.Inter_Loop_freq)+"_Buffer_transfer_"+str(args.buffer_transfer)+"_No_sugg_"+ str(args.model)+"_Right_"+str(args.Type)+"_ARes_"+str(args.LLM_freq)+"_SAC_Env_"+ str(args.pop_size) + "_" + str(args.batch_size) + "_" + str(args.env_name) + "_steps_" + str(args.total_timesteps)
+    name = (
+        "From_Scratch_"
+        + str(args.model)
+        + "_TS_"
+        + str(args.windows_length)
+        + "_win_rate_Q_Pi_Net_mean_std_scale_distance_1.0_fixed_elite_num_"
+        + str(args.elite_num)
+        + "_Inner_Loop_"
+        + str(args.Inter_Loop_freq)
+        + "_Buffer_transfer_"
+        + str(args.buffer_transfer)
+        + "_No_sugg_"
+        + str(args.model)
+        + "_Right_"
+        + str(args.Type)
+        + "_ARes_"
+        + str(args.LLM_freq)
+        + "_SAC_Env_"
+        + str(args.pop_size)
+        + "_"
+        + str(args.batch_size)
+        + "_"
+        + str(args.env_name)
+        + "_steps_"
+        + str(args.total_timesteps)
+    )
     our_wandb = wandb.init(project="Ares-MetaWorld-v2", name=name)
 
-    name  = str(args.seed) + "_" + name
+    name = str(args.seed) + "_" + name
     # env = TASKS[args.env_name]()
     if not os.path.exists("./logs/" + name):
         os.makedirs("./logs/" + name)
     env = utils.make_metaworld_env(args, args.seed)
-    #env = TASKS[args.env_name](random_init=args.random_init, obs_type=args.obs_type)
+    # env = TASKS[args.env_name](random_init=args.random_init, obs_type=args.obs_type)
     env = env_wrapper(env, args)
     # create the eval env
     # eval_env = TASKS[args.env_name]()
@@ -394,12 +549,12 @@ if __name__ == '__main__':
     if args.cuda:
         torch.cuda.manual_seed(args.seed)
 
-    prompt_dir = f'{Ares_ROOT_DIR}/utils/no_init_prompts'
-    initial_system = file_to_string(f'{prompt_dir}/initial_system.txt')
-    code_output_tip = file_to_string(f'{prompt_dir}/new_code_output_tip.txt')
-    code_feedback = file_to_string(f'{prompt_dir}/code_feedback.txt')
+    prompt_dir = f"{Ares_ROOT_DIR}/utils/no_init_prompts"
+    initial_system = file_to_string(f"{prompt_dir}/initial_system.txt")
+    code_output_tip = file_to_string(f"{prompt_dir}/new_code_output_tip.txt")
+    code_feedback = file_to_string(f"{prompt_dir}/code_feedback.txt")
 
-    initial_user = file_to_string(f'{prompt_dir}/new_initial_user.txt')
+    initial_user = file_to_string(f"{prompt_dir}/new_initial_user.txt")
     # if args.Type == 0 :
     #     improvement_suggesstion = file_to_string(f'{prompt_dir}/suggesstions.txt')
     #     init_suggesstion = file_to_string(f'{prompt_dir}/init_suggestions.txt')
@@ -412,32 +567,26 @@ if __name__ == '__main__':
         "window-open-v2": "Control the robotic arm to open the window",
         "button-press-v2": "Control the robotic arm to press the button",
         "door-close-v2": "Control the robotic arm to close the open door",
-        "drawer-open-v2": "Control the robotic arm to open the drawer"
+        "drawer-open-v2": "Control the robotic arm to open the drawer",
     }
 
     reward_function_format_dict = {
         "window-close-v2": """    def compute_reward(tcp, obj, target, actions):        
         ...
         return reward, reward_component_dict""",
-
         "window-open-v2": """    def compute_reward(tcp, obj, target, actions):        
         ...
         return reward, reward_component_dict""",
-
         "button-press-v2": """    def compute_reward(tcp, init_tcp, target_pos, current_pos, action):
         ...
         return reward, reward_component_dict""",
-
         "door-close-v2": """    def compute_reward(  actions, tcp, target, obj, obj_init_pos, hand_init_pos):
         ...
         return reward, reward_component_dict""",
-
         "drawer-open-v2": """    def compute_reward(handle, _target_pos, gripper, init_tcp, actions):        
         ...
-        return reward, reward_component_dict"""
+        return reward, reward_component_dict""",
     }
-
-
 
     reward_function_format = reward_function_format_dict[args.env_name]
 
@@ -446,30 +595,25 @@ if __name__ == '__main__':
         "window-open-v2": "Control the robotic arm to open the window",
         "button-press-v2": "Control the robotic arm to press the button",
         "door-close-v2": "Control the robotic arm to close the open door",
-        "drawer-open-v2": "Control the robotic arm to open the drawer"
+        "drawer-open-v2": "Control the robotic arm to open the drawer",
     }
-
-
 
     input_dict = {
         "window-close-v2": """{"tcp": "Position of the robotic arm",
             "obj": "Position of the window handle",
             "target": "Target position the window should move to",
             "actions": "Actions taken"}""",
-
         "window-open-v2": """{"tcp": "Position of the robotic arm",
             "obj": "Position of the window handle",
             "target": "Target position the window should move to",
             "actions": "Actions taken"}""",
-
-    "button-press-v2": """{
+        "button-press-v2": """{
         "tcp": "Position of the robotic arm",
         "init_tcp": "Initial position of the robotic arm",
         "target_pos": "Target position of the button",
         "current_pos": "Current position of the button",
         "action": "The selected action"}""",
-
-    "door-close-v2": """{
+        "door-close-v2": """{
       "actions": "The selected actions",
       "tcp": "Position of the robotic arm",
       "target": "Target position",
@@ -477,17 +621,14 @@ if __name__ == '__main__':
       "obj_init_pos": "Initial position of the door",
       "hand_init_pos": "Initial position of the door handle"
     }""",
-
         "drawer-open-v2": """"{"handle": "Position of the handle","_target_pos": "drawer target position",
     "gripper": "Position of the gripper", "actions": "the selected action",
-    "init_tcp": "Initial position of the robotic arm"}"""
+    "init_tcp": "Initial position of the robotic arm"}""",
     }
-
-
 
     task_description = task_description_dict[args.env_name]
 
-    criteria_code_string =  criteria_code_dict[args.env_name]
+    criteria_code_string = criteria_code_dict[args.env_name]
 
     input_dict_string = input_dict[args.env_name]
 
@@ -497,19 +638,19 @@ if __name__ == '__main__':
 
     global_timesteps = 0
 
-    temp_org_info = sac_trainer._initial_exploration(exploration_policy=args.init_exploration_policy)
+    temp_org_info = sac_trainer._initial_exploration(
+        exploration_policy=args.init_exploration_policy
+    )
     print(temp_org_info[0])
     # print(temp_org_info[10])
-    with open('./logs/'+name+'/data.pkl', 'wb') as f:
+    with open("./logs/" + name + "/data.pkl", "wb") as f:
         pickle.dump(temp_org_info, f)
-
 
     use_LLM_for_Reward_search_freq = args.LLM_freq
 
-
     LLM_generate_num = 0
 
-    memory_path = "./logs/"+ name + "/memory.pkl"
+    memory_path = "./logs/" + name + "/memory.pkl"
     model_path = "./logs/" + name + "/"
 
     manager = mp.Manager()
@@ -520,26 +661,57 @@ if __name__ == '__main__':
     for _ in range(args.pop_size):
         pop.append(sac_agent(args.model, args.env_name, env, eval_env, args, our_wandb))
 
-    all_individual =  pop   #+  [sac_trainer]
+    all_individual = pop  # +  [sac_trainer]
 
+    # assert  1 == 2
 
-    #assert  1 == 2
-
-    #print("???????????==============")
-    reward_function_pop, reward_input_name_pop, reward_string_pop, responses_list = get_reward_functions("./logs/" + name , LLM_generate_num, args, temp_org_info, None, initial_system, initial_user, task_description, input_dict_string, code_output_tip)
-
+    # print("???????????==============")
+    reward_function_pop, reward_input_name_pop, reward_string_pop, responses_list = (
+        get_reward_functions(
+            "./logs/" + name,
+            LLM_generate_num,
+            args,
+            temp_org_info,
+            None,
+            initial_system,
+            initial_user,
+            task_description,
+            input_dict_string,
+            code_output_tip,
+        )
+    )
 
     # before the official training, do the initial exploration to add episodes into the replay buffer
     # reset the environment
     All_buffer = replay_buffer(args.buffer_size)
     previous_print = 0
     previous_LLM = 0
-    sac_trainer._initial_exploration_and_store(All_buffer, reward_function_pop, reward_input_name_pop, exploration_policy=args.init_exploration_policy)
+    sac_trainer._initial_exploration_and_store(
+        All_buffer,
+        reward_function_pop,
+        reward_input_name_pop,
+        exploration_policy=args.init_exploration_policy,
+    )
 
     worker_pop = []
     for p_id in range(len(all_individual)):
 
-        wok = Worker(All_buffer, p_id, args.buffer_size, memory_path, model_path, args.target_update_interval,  args.seed, parameters, queue, args.model, args.env_name, env, eval_env, args)
+        wok = Worker(
+            All_buffer,
+            p_id,
+            args.buffer_size,
+            memory_path,
+            model_path,
+            args.target_update_interval,
+            args.seed,
+            parameters,
+            queue,
+            args.model,
+            args.env_name,
+            env,
+            eval_env,
+            args,
+        )
         worker_pop.append(wok)
         wok.start()
 
@@ -550,11 +722,10 @@ if __name__ == '__main__':
     Nan_Net = []
     global_best_one = -1
 
-
     times_recorder = {}
     for index in range(args.pop_size):
         times_recorder[index] = 0
-    total_inter_num= 0
+    total_inter_num = 0
 
     TS = ThompsonSampling(len(pop), args.c, args.windows_length)
 
@@ -581,12 +752,12 @@ if __name__ == '__main__':
             total_inter_num = 0
             t1 = time.time()
             all_data_temp = []
-            for d  in All_buffer.storge:
+            for d in All_buffer.storge:
                 all_data_temp.append(d[0])
 
-            with open('./logs/' + name + '/data.pkl', 'wb') as f:
+            with open("./logs/" + name + "/data.pkl", "wb") as f:
                 pickle.dump(all_data_temp, f)
-            print("Save all data", time.time()-t1)
+            print("Save all data", time.time() - t1)
             all_individual_success_rates = []
             all_individual_rewards = []
             all_individual_infos = []
@@ -596,37 +767,63 @@ if __name__ == '__main__':
 
                 if index in Nan_Net:
                     all_individual_own_rewards.append(-1000000)
-                    mean_rewards, mean_success, all_infos = -1000000, 0.0, ["Nan or Inf"]
+                    mean_rewards, mean_success, all_infos = (
+                        -1000000,
+                        0.0,
+                        ["Nan or Inf"],
+                    )
                 else:
                     if index == ea_num:
-                        mean_rewards, mean_success, all_infos, _ = sac_trainer._evaluate_agent(ea_agent.actor_net)
+                        mean_rewards, mean_success, all_infos, _ = (
+                            sac_trainer._evaluate_agent(ea_agent.actor_net)
+                        )
                         all_individual_own_rewards.append(mean_rewards)
                     else:
-                        mean_rewards, mean_success, all_infos, mean_own_reward = sac_trainer._evaluate_agent(ea_agent.actor_net, reward_function_pop[index], reward_input_name_pop[index])
+                        mean_rewards, mean_success, all_infos, mean_own_reward = (
+                            sac_trainer._evaluate_agent(
+                                ea_agent.actor_net,
+                                reward_function_pop[index],
+                                reward_input_name_pop[index],
+                            )
+                        )
                         all_individual_own_rewards.append(mean_own_reward)
                 all_individual_success_rates.append(mean_success)
                 all_individual_rewards.append(mean_rewards)
                 all_individual_infos.append(all_infos)
-
 
             print("all_individual_success_rates", all_individual_success_rates)
             print("all_individual_rewards", all_individual_rewards)
             print("all_individual_own_rewards", all_individual_own_rewards)
             if np.mean(all_individual_success_rates) == 0:
                 best_code_index = np.argmax(all_individual_rewards)
-                elite_index_list = np.argsort(all_individual_rewards)[-args.elite_num:][::-1]
+                elite_index_list = np.argsort(all_individual_rewards)[
+                    -args.elite_num :
+                ][::-1]
 
                 rrrrank = np.argsort(all_individual_rewards)[::-1]
             else:
                 best_code_index = np.argmax(all_individual_success_rates)
-                elite_index_list = np.argsort(all_individual_success_rates)[-args.elite_num:][::-1]
+                elite_index_list = np.argsort(all_individual_success_rates)[
+                    -args.elite_num :
+                ][::-1]
                 rrrrank = np.argsort(all_individual_success_rates)[::-1]
             global_best_one = best_code_index
             our_wandb.log(
-                {'RL_inter_num': RL_inter_num, 'EA_inter_num': EA_inter_num, 'Best_code_index':best_code_index,'Best_policy_win_rate': np.max(all_individual_success_rates), 'Best_policy_reward': np.max(all_individual_rewards),
-                 'Best_EA_policy_win_rate': np.max(all_individual_success_rates[:ea_num]),
-                 'Best_EA_policy_reward': np.max(all_individual_rewards[:ea_num]), 'LLM_generate_num': LLM_generate_num, 'time_steps': global_timesteps})
-            LLM_generate_num +=1
+                {
+                    "RL_inter_num": RL_inter_num,
+                    "EA_inter_num": EA_inter_num,
+                    "Best_code_index": best_code_index,
+                    "Best_policy_win_rate": np.max(all_individual_success_rates),
+                    "Best_policy_reward": np.max(all_individual_rewards),
+                    "Best_EA_policy_win_rate": np.max(
+                        all_individual_success_rates[:ea_num]
+                    ),
+                    "Best_EA_policy_reward": np.max(all_individual_rewards[:ea_num]),
+                    "LLM_generate_num": LLM_generate_num,
+                    "time_steps": global_timesteps,
+                }
+            )
+            LLM_generate_num += 1
             best_info = all_individual_infos[best_code_index]
             previous_LLM = global_timesteps
 
@@ -636,14 +833,17 @@ if __name__ == '__main__':
 
             for iiii, string_r in enumerate(reward_string_pop):
                 file_content += "============================"
-                file_content += str(iiii)+"_" + str(string_r) + "\n"
+                file_content += str(iiii) + "_" + str(string_r) + "\n"
                 file_content += str(responses_list[iiii]) + "\n"
 
-            with open("./logs/"+name + "_" + str(global_timesteps) +".txt", "w", encoding="utf-8") as file:
+            with open(
+                "./logs/" + name + "_" + str(global_timesteps) + ".txt",
+                "w",
+                encoding="utf-8",
+            ) as file:
                 file.write(file_content)
 
-            our_wandb.save("./logs/"+name + "_" + str(global_timesteps) +".txt") 
-
+            our_wandb.save("./logs/" + name + "_" + str(global_timesteps) + ".txt")
 
             # diversity_message = [{"role": "system", "content": init_suggesstion + "\n" + initial_suggestion_user},
             #                      {"role": "user", "content":  current_code_feedback + "\n"+ improvement_suggesstion}]
@@ -651,13 +851,35 @@ if __name__ == '__main__':
             current_code_feedback = code_feedback.format(
                 win_rate=str(all_individual_success_rates[best_code_index]),
                 current_score=str(all_individual_rewards[-1]),
-                current_our_score=str(all_individual_own_rewards[best_code_index]), current_output=str(best_info))
+                current_our_score=str(all_individual_own_rewards[best_code_index]),
+                current_output=str(best_info),
+            )
 
             # get new reward function
-            temp_reward_function_pop, temp_reward_input_name_pop, temp_reward_string_pop, temp_responses_list = get_reward_functions("./logs/" + name , LLM_generate_num, args, temp_org_info,None,initial_system,
-                                                                                                 initial_user, task_description,
-                                                                                                 input_dict_string,code_output_tip,  False, responses_list[best_code_index] , "We train the RL policy for " + str(args.LLM_freq) + " environment steps. \n"+current_code_feedback, real_num= len(pop)+1 - args.elite_num)
-
+            (
+                temp_reward_function_pop,
+                temp_reward_input_name_pop,
+                temp_reward_string_pop,
+                temp_responses_list,
+            ) = get_reward_functions(
+                "./logs/" + name,
+                LLM_generate_num,
+                args,
+                temp_org_info,
+                None,
+                initial_system,
+                initial_user,
+                task_description,
+                input_dict_string,
+                code_output_tip,
+                False,
+                responses_list[best_code_index],
+                "We train the RL policy for "
+                + str(args.LLM_freq)
+                + " environment steps. \n"
+                + current_code_feedback,
+                real_num=len(pop) + 1 - args.elite_num,
+            )
 
             agent_index_list = list(range(len(pop)))
             no_elite_list = list(set(agent_index_list) - set(elite_index_list))
@@ -684,7 +906,9 @@ if __name__ == '__main__':
 
                 for index_index, rf in enumerate(reward_function_pop):
                     if index_index in elite_index_list:
-                        new_reward_list_dict[index_index].append(reward_list[index_index])
+                        new_reward_list_dict[index_index].append(
+                            reward_list[index_index]
+                        )
                     else:
                         input = []
                         for input_name in reward_input_name_pop[index_index]:
@@ -694,32 +918,66 @@ if __name__ == '__main__':
                 # new_reward_list_dict[5].append(reward_list[-1])
 
             Elite_reward_scale = []
-            best_reward_std =  np.std(reward_list_dict[int(best_code_index)]) if len(reward_list_dict[int(best_code_index)]) > 0 else 0.0
+            best_reward_std = (
+                np.std(reward_list_dict[int(best_code_index)])
+                if len(reward_list_dict[int(best_code_index)]) > 0
+                else 0.0
+            )
             Final_reward_mu_elite = np.mean(reward_list_dict[int(best_code_index)])
-            our_wandb.log({'Scale/Individual_elite_std': best_reward_std,
-                            'Scale/Individual_elite_mean': Final_reward_mu_elite, 'time_steps': global_timesteps})
+            our_wandb.log(
+                {
+                    "Scale/Individual_elite_std": best_reward_std,
+                    "Scale/Individual_elite_mean": Final_reward_mu_elite,
+                    "time_steps": global_timesteps,
+                }
+            )
             for ___ in range(len(pop)):
                 if len(reward_list_dict[___]) == 0:
                     continue
                 std_dev = np.std(reward_list_dict[___])
-                curr_max =  np.max(reward_list_dict[___])
+                curr_max = np.max(reward_list_dict[___])
                 curr_min = np.min(reward_list_dict[___])
                 curr_mean = np.mean(reward_list_dict[___])
 
                 new_std_dev = np.std(new_reward_list_dict[___])
-                new_curr_max =  np.max(new_reward_list_dict[___])
+                new_curr_max = np.max(new_reward_list_dict[___])
                 new_curr_min = np.min(new_reward_list_dict[___])
                 new_curr_mean = np.mean(new_reward_list_dict[___])
 
                 Final_reward_mu_new[___] = new_curr_mean
 
-                Elite_reward_scale.append(best_reward_std/new_std_dev)
+                Elite_reward_scale.append(best_reward_std / new_std_dev)
 
-                our_wandb.log({'Scale/Individual_'+ str(___) + "_Reward_std": std_dev, 'Scale/Individual_'+ str(___) + "_Reward_mean": curr_mean,'Scale/Individual_'+ str(___) + "_Reward_max": curr_max, 'Scale/Individual_'+ str(___) + "_Reward_min": curr_min,'time_steps': global_timesteps})
-                our_wandb.log({'Scale/scale_elite_'+ str(___) + "_std": best_reward_std/new_std_dev, 'Scale/scale_pre_and_new' + str(___) + "_std": std_dev/new_std_dev,'Scale/Individual_' + str(___) + "_New_Reward_std": new_std_dev,
-                               'Scale/Individual_' + str(___) + "_New_Reward_mean": new_curr_mean,
-                               'Scale/Individual_' + str(___) + "_New_Reward_max": new_curr_max,
-                               'Scale/Individual_' + str(___) + "_New_Reward_min": new_curr_min, 'time_steps': global_timesteps})
+                our_wandb.log(
+                    {
+                        "Scale/Individual_" + str(___) + "_Reward_std": std_dev,
+                        "Scale/Individual_" + str(___) + "_Reward_mean": curr_mean,
+                        "Scale/Individual_" + str(___) + "_Reward_max": curr_max,
+                        "Scale/Individual_" + str(___) + "_Reward_min": curr_min,
+                        "time_steps": global_timesteps,
+                    }
+                )
+                our_wandb.log(
+                    {
+                        "Scale/scale_elite_"
+                        + str(___)
+                        + "_std": best_reward_std / new_std_dev,
+                        "Scale/scale_pre_and_new"
+                        + str(___)
+                        + "_std": std_dev / new_std_dev,
+                        "Scale/Individual_" + str(___) + "_New_Reward_std": new_std_dev,
+                        "Scale/Individual_"
+                        + str(___)
+                        + "_New_Reward_mean": new_curr_mean,
+                        "Scale/Individual_"
+                        + str(___)
+                        + "_New_Reward_max": new_curr_max,
+                        "Scale/Individual_"
+                        + str(___)
+                        + "_New_Reward_min": new_curr_min,
+                        "time_steps": global_timesteps,
+                    }
+                )
 
             # data refresh
             print("Refresh all data start.....")
@@ -728,7 +986,7 @@ if __name__ == '__main__':
             # for all elites，do not scale
             for iiii in elite_index_list:
                 Final_reward_mu_new[iiii] = Final_reward_mu_elite
-                Final_reward_scale[iiii] =  1.0
+                Final_reward_scale[iiii] = 1.0
 
             for data_index, single_data in enumerate(All_buffer.storge):
                 org_info, obs, action, reward_list, obs_, done = single_data
@@ -749,7 +1007,11 @@ if __name__ == '__main__':
                             for input_name in reward_input_name_pop[index_index]:
                                 input.append(org_info[input_name])
                             try:
-                                other_rewards.append((rf(*input)[0] - Final_reward_mu_new[index_index])* Final_reward_scale[index_index] + Final_reward_mu_elite)
+                                other_rewards.append(
+                                    (rf(*input)[0] - Final_reward_mu_new[index_index])
+                                    * Final_reward_scale[index_index]
+                                    + Final_reward_mu_elite
+                                )
                             except Exception as e:
                                 print("!!!! Big error !!! Data refresh error", e)
                                 print(index_index, Final_reward_scale)
@@ -757,23 +1019,51 @@ if __name__ == '__main__':
                                 exit()
                                 Nan_Net.append(index_index)
                                 other_rewards.append(0.0)
-                    #other_rewards.append(reward_list[-1])
+                    # other_rewards.append(reward_list[-1])
 
                 reward_refine.append(other_rewards)
-                All_buffer.storge[data_index] = copy.deepcopy((org_info, obs, action, other_rewards, obs_, done))
+                All_buffer.storge[data_index] = copy.deepcopy(
+                    (org_info, obs, action, other_rewards, obs_, done)
+                )
             print("Data Refresh done .....")
 
             print("Refresh all agent start.....")
 
-            torch.save(all_individual[best_code_index].actor_net.state_dict(), model_path  + "/best_actor_net.pth")
-            torch.save(all_individual[best_code_index].qf1.state_dict(), model_path + "/best_qf1.pth")
-            torch.save(all_individual[best_code_index].qf2.state_dict(), model_path + "/best_qf2.pth")
-            torch.save(all_individual[best_code_index].target_qf1.state_dict(), model_path + "/best_target_qf1.pth")
-            torch.save(all_individual[best_code_index].target_qf2.state_dict(), model_path + "/best_target_qf2.pth")
-            torch.save(all_individual[best_code_index].actor_optim.state_dict(), model_path + "/best_actor_optim.pth")
-            torch.save(all_individual[best_code_index].qf1_optim.state_dict(), model_path + "/best_qf1_optim.pth")
-            torch.save(all_individual[best_code_index].qf2_optim.state_dict(), model_path + "/best_qf2_optim.pth")
-            best_log_alpha = copy.deepcopy(all_individual[best_code_index].log_alpha.detach().clone().data)
+            torch.save(
+                all_individual[best_code_index].actor_net.state_dict(),
+                model_path + "/best_actor_net.pth",
+            )
+            torch.save(
+                all_individual[best_code_index].qf1.state_dict(),
+                model_path + "/best_qf1.pth",
+            )
+            torch.save(
+                all_individual[best_code_index].qf2.state_dict(),
+                model_path + "/best_qf2.pth",
+            )
+            torch.save(
+                all_individual[best_code_index].target_qf1.state_dict(),
+                model_path + "/best_target_qf1.pth",
+            )
+            torch.save(
+                all_individual[best_code_index].target_qf2.state_dict(),
+                model_path + "/best_target_qf2.pth",
+            )
+            torch.save(
+                all_individual[best_code_index].actor_optim.state_dict(),
+                model_path + "/best_actor_optim.pth",
+            )
+            torch.save(
+                all_individual[best_code_index].qf1_optim.state_dict(),
+                model_path + "/best_qf1_optim.pth",
+            )
+            torch.save(
+                all_individual[best_code_index].qf2_optim.state_dict(),
+                model_path + "/best_qf2_optim.pth",
+            )
+            best_log_alpha = copy.deepcopy(
+                all_individual[best_code_index].log_alpha.detach().clone().data
+            )
 
             print("get current best_log_alpha", best_log_alpha)
             global_best_index_num = elite_index_list
@@ -782,14 +1072,13 @@ if __name__ == '__main__':
             RL_inter_num = 0
             EA_inter_num = 0
 
-
         if global_timesteps - reset_ucb_time_steps > args.Inter_Loop_freq:
             reset_ucb_time_steps = global_timesteps
-            
+
             times_recorder = {}
-            for index in range(args.pop_size ):
+            for index in range(args.pop_size):
                 times_recorder[index] = 0
-          # ucb_ma = UCBManager(len(pop), args.ucb_type)
+            # ucb_ma = UCBManager(len(pop), args.ucb_type)
             total_inter_num = 0
 
         total_ep_reward = 0
@@ -811,27 +1100,61 @@ if __name__ == '__main__':
                 continue
             inter_list.append(worker_idx)
             ea_agent = pop[worker_idx]
-            EA_inter_num +=1
-            times_recorder[worker_idx] = times_recorder[worker_idx]  + 1
-            total_inter_num +=1
+            EA_inter_num += 1
+            times_recorder[worker_idx] = times_recorder[worker_idx] + 1
+            total_inter_num += 1
             # if index in Nan_Net:
             #     fitness[index] = -100000
             #     continue
-            ep_reward, ep_steps, data_list, success = evluate(worker_idx, env, Nan_Net, ea_agent.actor_net, args, All_buffer, reward_function_pop, reward_input_name_pop, responses_list, "./logs/" + name , LLM_generate_num, reward_string_pop, name, Final_reward_scale, Final_reward_mu_elite,Final_reward_mu_new)
+            ep_reward, ep_steps, data_list, success = evluate(
+                worker_idx,
+                env,
+                Nan_Net,
+                ea_agent.actor_net,
+                args,
+                All_buffer,
+                reward_function_pop,
+                reward_input_name_pop,
+                responses_list,
+                "./logs/" + name,
+                LLM_generate_num,
+                reward_string_pop,
+                name,
+                Final_reward_scale,
+                Final_reward_mu_elite,
+                Final_reward_mu_new,
+            )
             if ep_reward is None:
                 Nan_Net.append(worker_idx)
                 continue
-            all_data_list +=data_list
+            all_data_list += data_list
             total_ep_reward += ep_steps
             fitness[worker_idx] = ep_reward
 
             TS.update(worker_idx, float(success))
             temp_best.append(ep_reward)
-            print(worker_idx, " worker ",ep_reward)
+            print(worker_idx, " worker ", ep_reward)
 
-        rl_ep_reward, ep_steps, data_list, success = evluate(len(pop), env,Nan_Net, sac_trainer.actor_net, args, All_buffer, reward_function_pop, reward_input_name_pop, responses_list, "./logs/" + name , LLM_generate_num, reward_string_pop, name, Final_reward_scale, Final_reward_mu_elite,Final_reward_mu_new)
+        rl_ep_reward, ep_steps, data_list, success = evluate(
+            len(pop),
+            env,
+            Nan_Net,
+            sac_trainer.actor_net,
+            args,
+            All_buffer,
+            reward_function_pop,
+            reward_input_name_pop,
+            responses_list,
+            "./logs/" + name,
+            LLM_generate_num,
+            reward_string_pop,
+            name,
+            Final_reward_scale,
+            Final_reward_mu_elite,
+            Final_reward_mu_new,
+        )
         # temp_best.append(ep_reward)
-        RL_inter_num +=1
+        RL_inter_num += 1
         all_data_list += data_list
         total_ep_reward += ep_steps
         fitness[len(pop)] = rl_ep_reward
@@ -847,16 +1170,36 @@ if __name__ == '__main__':
 
         global_timesteps += total_ep_reward
 
-        t1 = time.time()# save data
+        t1 = time.time()  # save data
         # with open(memory_path, 'wb') as f:
         #     pickle.dump(all_data_list, f)
         # print("Save memory time cost", time.time() - t1)
-        for agent_index,  _ in enumerate(worker_pop):
-            #print(agent_index, "send best log alpha", best_log_alpha)
+        for agent_index, _ in enumerate(worker_pop):
+            # print(agent_index, "send best log alpha", best_log_alpha)
             if agent_index not in Nan_Net:
-                parameters[agent_index] = (len(All_buffer.storge), total_ep_reward,all_data_list, All_buffer.next_idx, update_model_flag, best_log_alpha, global_best_index_num, reward_refine, global_best_one)
+                parameters[agent_index] = (
+                    len(All_buffer.storge),
+                    total_ep_reward,
+                    all_data_list,
+                    All_buffer.next_idx,
+                    update_model_flag,
+                    best_log_alpha,
+                    global_best_index_num,
+                    reward_refine,
+                    global_best_one,
+                )
             else:
-                parameters[agent_index] = (len(All_buffer.storge), 0, all_data_list, All_buffer.next_idx, update_model_flag,best_log_alpha, global_best_index_num, reward_refine, global_best_one)
+                parameters[agent_index] = (
+                    len(All_buffer.storge),
+                    0,
+                    all_data_list,
+                    All_buffer.next_idx,
+                    update_model_flag,
+                    best_log_alpha,
+                    global_best_index_num,
+                    reward_refine,
+                    global_best_one,
+                )
 
         best_log_alpha = None
         reward_refine = []
@@ -868,7 +1211,9 @@ if __name__ == '__main__':
             best_EA_win_rates = []
             for index, ea_agent in enumerate(pop):
 
-                mean_rewards, mean_success, _ , _= sac_trainer._evaluate_agent(ea_agent.actor_net)
+                mean_rewards, mean_success, _, _ = sac_trainer._evaluate_agent(
+                    ea_agent.actor_net
+                )
                 if mean_rewards is None:
                     if index not in Nan_Net:
                         Nan_Net.append(index)
@@ -877,24 +1222,63 @@ if __name__ == '__main__':
                 best_EA_rewards.append(mean_rewards)
                 best_EA_win_rates.append(mean_success)
 
-
-                agent_string = "EA_" + str(index) +"_"
-                our_wandb.log({ agent_string+'Rewards': mean_rewards, agent_string+'Success': mean_success,'time_steps': global_timesteps})
+                agent_string = "EA_" + str(index) + "_"
+                our_wandb.log(
+                    {
+                        agent_string + "Rewards": mean_rewards,
+                        agent_string + "Success": mean_success,
+                        "time_steps": global_timesteps,
+                    }
+                )
 
             EA_best_rewards = np.max(best_EA_rewards)
             EA_best_success = np.max(best_EA_win_rates)
-            our_wandb.log({'Nan_num':len(Nan_Net), 'EA_Rewards': EA_best_rewards, 'EA_Success': EA_best_success, 'time_steps': global_timesteps})
-            print('[{}] Frames: {}, EA Rewards: {:.3f}, Success: {:.3f}'.format(
-                datetime.now(), global_timesteps, EA_best_rewards, EA_best_success))
+            our_wandb.log(
+                {
+                    "Nan_num": len(Nan_Net),
+                    "EA_Rewards": EA_best_rewards,
+                    "EA_Success": EA_best_success,
+                    "time_steps": global_timesteps,
+                }
+            )
+            print(
+                "[{}] Frames: {}, EA Rewards: {:.3f}, Success: {:.3f}".format(
+                    datetime.now(), global_timesteps, EA_best_rewards, EA_best_success
+                )
+            )
 
         # after collect the samples, start to update the network
 
-
         t1 = time.time()
 
-        for _ in range(len(all_individual)- len(Nan_Net)):
+        for _ in range(len(all_individual) - len(Nan_Net)):
             tt = time.time()
-            agent_index, actor_state_dict, qf1_state_dict, qf2_state_dict, q1_target_state_dict, q2_target_state_dict, actor_opt_state_dict, q1_opt_state_dict, q2_opt_state_dict, qf1_loss, qf2_loss, actor_loss, alpha, alpha_loss , current_alpha, actor_fau, Q1_fau, Q2_fau , KL_loss, kl_q1_loss, kl_q2_loss, time_cost_list, total_train_time, train_sub_space_time = queue.get()
+            (
+                agent_index,
+                actor_state_dict,
+                qf1_state_dict,
+                qf2_state_dict,
+                q1_target_state_dict,
+                q2_target_state_dict,
+                actor_opt_state_dict,
+                q1_opt_state_dict,
+                q2_opt_state_dict,
+                qf1_loss,
+                qf2_loss,
+                actor_loss,
+                alpha,
+                alpha_loss,
+                current_alpha,
+                actor_fau,
+                Q1_fau,
+                Q2_fau,
+                KL_loss,
+                kl_q1_loss,
+                kl_q2_loss,
+                time_cost_list,
+                total_train_time,
+                train_sub_space_time,
+            ) = queue.get()
 
             t2 = time.time()
 
@@ -903,29 +1287,51 @@ if __name__ == '__main__':
             all_individual[agent_index].qf2.load_state_dict(qf2_state_dict)
             all_individual[agent_index].target_qf1.load_state_dict(q1_target_state_dict)
             all_individual[agent_index].target_qf2.load_state_dict(q2_target_state_dict)
-            all_individual[agent_index].actor_optim.load_state_dict(actor_opt_state_dict)
+            all_individual[agent_index].actor_optim.load_state_dict(
+                actor_opt_state_dict
+            )
             all_individual[agent_index].qf1_optim.load_state_dict(q1_opt_state_dict)
             all_individual[agent_index].qf2_optim.load_state_dict(q2_opt_state_dict)
             all_individual[agent_index].log_alpha.data = current_alpha
 
-           # print(agent_index, "Get optimized apha", current_alpha)
+            # print(agent_index, "Get optimized apha", current_alpha)
 
             agent_string = "EA_" + str(agent_index)
 
             if agent_index in fitness.keys():
                 our_wandb.log(
-                    {agent_string + '/Learning_Reward': fitness[agent_index],
-                     'time_steps': global_timesteps})
+                    {
+                        agent_string + "/Learning_Reward": fitness[agent_index],
+                        "time_steps": global_timesteps,
+                    }
+                )
 
-            our_wandb.log({agent_string + "_q1_KL": kl_q1_loss,  agent_string + "_q2_KL": kl_q2_loss, agent_string + "_KL": KL_loss, agent_string +'_selected_ratio': times_recorder[agent_index]/total_inter_num, 'total_inter_num':total_inter_num,agent_string + '/actor_fau': actor_fau, agent_string + '/Q1_fau': Q1_fau, agent_string + '/Q2_fau': Q2_fau, agent_string +'/Q_loss': qf1_loss, agent_string+'/Actor_loss': actor_loss, agent_string+'/Alpha_loss': alpha_loss, agent_string+'/Alpha': alpha,'time_steps': global_timesteps})
-           # print("process", time.time() - t2 )
-        print("Avg train time ", (time.time()-t1)/total_ep_reward)
+            our_wandb.log(
+                {
+                    agent_string + "_q1_KL": kl_q1_loss,
+                    agent_string + "_q2_KL": kl_q2_loss,
+                    agent_string + "_KL": KL_loss,
+                    agent_string
+                    + "_selected_ratio": times_recorder[agent_index] / total_inter_num,
+                    "total_inter_num": total_inter_num,
+                    agent_string + "/actor_fau": actor_fau,
+                    agent_string + "/Q1_fau": Q1_fau,
+                    agent_string + "/Q2_fau": Q2_fau,
+                    agent_string + "/Q_loss": qf1_loss,
+                    agent_string + "/Actor_loss": actor_loss,
+                    agent_string + "/Alpha_loss": alpha_loss,
+                    agent_string + "/Alpha": alpha,
+                    "time_steps": global_timesteps,
+                }
+            )
+        # print("process", time.time() - t2 )
+        print("Avg train time ", (time.time() - t1) / total_ep_reward)
         update_model_flag = 0
 
         if global_timesteps - previous_print > args.display_interval:
             previous_print = global_timesteps
             # start to do the evaluation
-            #mean_rewards, mean_success, _, _ = sac_trainer._evaluate_agent(sac_trainer.actor_net)
+            # mean_rewards, mean_success, _, _ = sac_trainer._evaluate_agent(sac_trainer.actor_net)
 
             mean_rewards = -1000
             mean_success = 0.0
@@ -936,22 +1342,52 @@ if __name__ == '__main__':
                 ea_better = 1.0
 
             our_wandb.log(
-                {'EA_better_ratio': ea_better,
-                 'Rewards': np.max([mean_rewards, EA_best_rewards]), 'Success': np.max([EA_best_success, mean_success]),
-                 'RL_Rewards': mean_rewards, 'RL_Success': mean_success, 'T_Reward': Reward_recorder.mean,
-                 'Q_loss': qf1_loss, 'Actor_loss': actor_loss, 'Alpha_loss': alpha_loss, 'Alpha': alpha,
-                 'time_steps': global_timesteps})
+                {
+                    "EA_better_ratio": ea_better,
+                    "Rewards": np.max([mean_rewards, EA_best_rewards]),
+                    "Success": np.max([EA_best_success, mean_success]),
+                    "RL_Rewards": mean_rewards,
+                    "RL_Success": mean_success,
+                    "T_Reward": Reward_recorder.mean,
+                    "Q_loss": qf1_loss,
+                    "Actor_loss": actor_loss,
+                    "Alpha_loss": alpha_loss,
+                    "Alpha": alpha,
+                    "time_steps": global_timesteps,
+                }
+            )
             print(
-                '[{}] Frames: {}, RL ewards: {:.3f}, Success: {:.3f}, T_Reward: {:.3f}, QF1: {:.3f}, QF2: {:.3f}, AL: {:.3f}, Alpha: {:.3f}, AlphaL: {:.3f}'.format(
-                    datetime.now(), \
-                    global_timesteps, mean_rewards, mean_success, Reward_recorder.mean, qf1_loss, qf2_loss,
-                    actor_loss, alpha, alpha_loss))
+                "[{}] Frames: {}, RL ewards: {:.3f}, Success: {:.3f}, T_Reward: {:.3f}, QF1: {:.3f}, QF2: {:.3f}, AL: {:.3f}, Alpha: {:.3f}, AlphaL: {:.3f}".format(
+                    datetime.now(),
+                    global_timesteps,
+                    mean_rewards,
+                    mean_success,
+                    Reward_recorder.mean,
+                    qf1_loss,
+                    qf2_loss,
+                    actor_loss,
+                    alpha,
+                    alpha_loss,
+                )
+            )
 
-            torch.save(sac_trainer.actor_net.state_dict(),
-                       sac_trainer.model_path + '/model.pt' if args.random_init else sac_trainer.model_path + '/fixed_model.pt')
+            torch.save(
+                sac_trainer.actor_net.state_dict(),
+                (
+                    sac_trainer.model_path + "/model.pt"
+                    if args.random_init
+                    else sac_trainer.model_path + "/fixed_model.pt"
+                ),
+            )
             if mean_success == 1:
-                torch.save(sac_trainer.actor_net.state_dict(),
-                           sac_trainer.model_path + '/best_model.pt' if args.random_init else sac_trainer.model_path + '/fixed_best_model.pt')
+                torch.save(
+                    sac_trainer.actor_net.state_dict(),
+                    (
+                        sac_trainer.model_path + "/best_model.pt"
+                        if args.random_init
+                        else sac_trainer.model_path + "/fixed_best_model.pt"
+                    ),
+                )
 
     for _, worker in enumerate(worker_pop):
         worker.terminate()

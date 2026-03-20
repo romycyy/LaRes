@@ -64,3 +64,51 @@ class replay_buffer:
         else:
             idxes = list(range(len(self.storge)))
         return self._encode_sample(idxes, index)
+
+
+class SimpleReplayBuffer:
+    """Single-reward replay buffer for symbolic policy training.
+
+    Stores (obs, action, reward, next_obs, done) — no org_info or reward_list.
+    Used by the BC/RL pipeline where only the environment reward is needed.
+    """
+
+    def __init__(self, memory_size):
+        self.storage = []
+        self.memory_size = memory_size
+        self.next_idx = 0
+
+    def add(self, obs, action, reward, next_obs, done):
+        data = (
+            np.array(obs, copy=False),
+            np.array(action, copy=False),
+            float(reward),
+            np.array(next_obs, copy=False),
+            float(done),
+        )
+        if self.next_idx >= len(self.storage):
+            self.storage.append(data)
+        else:
+            self.storage[self.next_idx] = data
+        self.next_idx = (self.next_idx + 1) % self.memory_size
+
+    def __len__(self):
+        return len(self.storage)
+
+    def sample(self, batch_size):
+        idxes = [random.randint(0, len(self.storage) - 1) for _ in range(batch_size)]
+        obses, actions, rewards, next_obses, dones = [], [], [], [], []
+        for i in idxes:
+            obs, action, reward, next_obs, done = self.storage[i]
+            obses.append(obs)
+            actions.append(action)
+            rewards.append(reward)
+            next_obses.append(next_obs)
+            dones.append(done)
+        return (
+            np.array(obses),
+            np.array(actions),
+            np.array(rewards),
+            np.array(next_obses),
+            np.array(dones),
+        )
