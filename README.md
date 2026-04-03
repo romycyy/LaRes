@@ -28,8 +28,10 @@
 
 LaRes integrates Evolutionary Algorithms (EAs) with Reinforcement Learning (RL) to improve policy learning through adaptive reward function search. The framework includes two main training scripts:
 
-- **`LaRes_from_scratch.py`**: Training without human-designed reward initialization
-- **`LaRes_with_init.py`**: Training with human-designed reward initialization
+- **`scripts/LaRes_from_scratch.py`**: Training without human-designed reward initialization
+- **`scripts/LaRes_with_init.py`**: Training with human-designed reward initialization
+
+All commands below assume you are in the LaRes project root directory.
 
 ### Key Components
 
@@ -58,7 +60,7 @@ cd LaRes
 ### 2. Create Conda Environment
 
 ```bash
-conda env create -f environment.yaml
+conda env create -f config/environment.yaml
 conda activate Metaworld-v2
 ```
 
@@ -84,7 +86,7 @@ pip install openai wandb scipy
 
 ### 5. Configure API Keys
 
-Edit the main training files (`LaRes_from_scratch.py` or `LaRes_with_init.py`) and set your OpenAI API key:
+Edit the main training files (`scripts/LaRes_from_scratch.py` or `scripts/LaRes_with_init.py`) and set your OpenAI API key:
 
 ```python
 client = OpenAI(api_key="your-api-key-here")
@@ -119,7 +121,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Use CPU
 ### Training from Scratch (No Human Reward Initialization)
 
 ```bash
-python LaRes_from_scratch.py \
+python scripts/LaRes_from_scratch.py \
     --env-name='window-close-v2' \
     --buffer_transfer=0 \
     --scale_type=2 \
@@ -141,7 +143,7 @@ python LaRes_from_scratch.py \
 ### Training with Human Reward Initialization
 
 ```bash
-python LaRes_with_init.py \
+python scripts/LaRes_with_init.py \
     --env-name='coffee-pull-v2' \
     --buffer_transfer=0 \
     --scale_type=2 \
@@ -163,12 +165,14 @@ python LaRes_with_init.py \
 
 ### Using the Provided Scripts
 
-We provide example scripts in `run.sh` for both settings. You can uncomment and modify the commands as needed:
+We provide example scripts in `config/run.sh` for both settings. Run from project root:
 
 ```bash
-# Edit run.sh to uncomment desired commands
-bash run.sh
+# Edit config/run.sh to uncomment desired commands, then:
+bash config/run.sh
 ```
+
+The script automatically changes to the project root, so you can run it from anywhere.
 
 ### Key Parameters
 
@@ -197,9 +201,9 @@ Training logs are saved to `./logs/` directory. Each run creates a subdirectory 
 
 ## 📝 Adding New Tasks
 
-To add a new MetaWorld task, you need to configure four dictionaries in the training script. The format differs slightly between `LaRes_from_scratch.py` and `LaRes_with_init.py`:
+To add a new MetaWorld task, you need to configure four dictionaries in the training script. The format differs slightly between `scripts/LaRes_from_scratch.py` and `scripts/LaRes_with_init.py`:
 
-### For LaRes_from_scratch.py
+### For scripts/LaRes_from_scratch.py
 
 Add entries to the dictionaries defined in the main function:
 
@@ -417,28 +421,20 @@ print("Available variables:", org_info.keys())
 
 ```
 LaRes/
-├── LaRes_from_scratch.py      # Main training script (without human reward initialization)
-├── LaRes_with_init.py          # Main training script (with human reward initialization)
-├── run.sh                      # Example training commands
-├── environment.yaml            # Conda environment configuration
-├── utils.py                    # Utility functions and task dictionaries (for LaRes_with_init.py)
-├── sac.py                      # SAC algorithm implementation
-├── models.py                   # Neural network models
-├── replay_buffer.py            # Experience replay buffer
-├── reward_utils.py             # Reward utility functions
-├── arguments.py                # Command-line argument parser
-├── test_generate_code.py       # Code generation testing utility
-├── utils/
-│   ├── prompts/                # Prompt templates (for LaRes_with_init.py)
-│   │   ├── initial_system.txt
-│   │   ├── new_initial_user.txt
-│   │   ├── code_feedback.txt
-│   │   └── ...
-│   └── no_init_prompts/        # Prompt templates (for LaRes_from_scratch.py)
-│       ├── initial_system.txt
-│       ├── new_initial_user.txt
-│       ├── code_feedback.txt
-│       └── ...
+├── scripts/
+│   ├── LaRes_from_scratch.py   # Training without human reward initialization
+│   ├── LaRes_with_init.py      # Training with human reward initialization
+│   ├── run_demo.py             # 4-stage symbolic policy pipeline demo
+│   └── plot_training_dynamics.py  # Plot training curves from logs
+├── config/
+│   ├── run.sh                  # Example batch training commands (bash config/run.sh)
+│   └── environment.yaml        # Conda environment configuration
+├── lares/                      # Main Python package
+│   ├── core/                   # symbolic_policy, training_*, models, replay_buffer, reward_utils
+│   ├── rl/                     # sac, arguments
+│   ├── envs/rlkit/             # Environment wrappers
+│   └── utils/                  # env_wrapper, reward functions, prompts
+├── tests/                      # test_training_pipeline, test_phase1_phase2, test_generate_*
 └── logs/                       # Training logs and outputs (created during training)
 ```
 

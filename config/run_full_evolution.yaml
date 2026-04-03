@@ -1,0 +1,36 @@
+# ============================================================
+#  Full LLM-based symbolic policy evolution — configuration
+#
+#  Used by:  scripts/run_full_evolution.py
+# ============================================================
+
+# ---------- Environment ----------
+env_name: "push-v2"        # MetaWorld task name (see EXPERT_POLICY_MAP)
+seed: 42
+
+# ---------- Stage 1: Expert dataset ----------
+dataset_episodes: 150       # Number of expert episodes to collect
+
+# Optionally point to a pre-collected demo buffer to skip Stage 1:
+# demo_buffer_path: "./logs/demo_reach-v2.pkl"
+
+# ---------- Stage 2+3: BC + RL inner loop ----------
+bc_steps: 2000              # Behavioural-cloning gradient steps per candidate
+rl_iterations: 10           # GRPO RL outer iterations per candidate 
+rl_episodes: 30             # Rollout episodes per RL iteration (parallelize)
+
+# ---------- Evaluation ----------
+eval_episodes: 10           # Episodes used to score each candidate
+
+# ---------- Stage 4: LLM structure search ----------
+model: "gpt-5"             # OpenAI model for policy generation
+num_generations: 2         # Evolution generations
+pop_size: 5                 # Candidates generated per generation
+elite_num: 2                # Top-k results fed back to the next generation
+
+# ---------- Logging ----------
+log_dir: "./logs/evolution"
+
+# After each generation, record a demo of the best candidate as a GIF under
+# ``log_dir/gen_<N>/``.  Set to false on headless machines if rendering fails.
+record_demo_gif: true
