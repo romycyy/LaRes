@@ -81,6 +81,14 @@ def load_config(path: str) -> SimpleNamespace:
     if missing:
         raise KeyError(f"Config {path} is missing required keys: {missing}")
     raw["record_demo_gif"] = bool(raw["record_demo_gif"])
+    if "episode_length" not in raw:
+        raw["episode_length"] = 200
+    else:
+        raw["episode_length"] = int(raw["episode_length"])
+    if "use_mt1" not in raw:
+        raw["use_mt1"] = False
+    else:
+        raw["use_mt1"] = bool(raw["use_mt1"])
     return SimpleNamespace(**raw)
 
 
@@ -107,13 +115,22 @@ def parse_args() -> str:
 # ---------------------------------------------------------------------------
 
 
-def make_env(env_name: str, seed: int):
-    """Create a wrapped MetaWorld environment."""
+def make_env(cfg):
+    """Create a wrapped MetaWorld environment.
+
+    Expects the same fields as :func:`load_config` (``env_name``, ``seed``,
+    ``episode_length``, optional ``use_mt1``).
+    """
     from lares.utils import make_metaworld_env, env_wrapper
 
-    cfg = SimpleNamespace(env_name=env_name, episode_length=200)
-    raw_env = make_metaworld_env(cfg, seed)
-    return env_wrapper(raw_env, cfg)
+    env_cfg = SimpleNamespace(
+        env_name=cfg.env_name,
+        seed=cfg.seed,
+        episode_length=cfg.episode_length,
+        use_mt1=getattr(cfg, "use_mt1", False),
+    )
+    raw_env = make_metaworld_env(env_cfg, cfg.seed)
+    return env_wrapper(raw_env, env_cfg)
 
 
 def policy_space_dims(env) -> tuple[int, int]:
@@ -197,7 +214,7 @@ def main() -> None:
     separator("Environment Setup")
     # Headless SSH: MuJoCo must load EGL before MujocoEnv / first rgb_array render.
     ensure_mujoco_headless_gl()
-    env = make_env(cfg.env_name, cfg.seed)
+    env = make_env(cfg)
     obs_dim, action_dim = policy_space_dims(env)
     obs, _ = env.reset()
     print(f"  obs_dim={obs_dim}, action_dim={action_dim}")

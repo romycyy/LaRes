@@ -45,17 +45,12 @@ class SawyerPushV3Policy(Policy):
 
         # If error in the XY plane is greater than 0.02, place end effector above the puck
         if np.linalg.norm(pos_curr[:2] - pos_puck[:2]) > 0.02:
-            print("Moving to the puck")
-            print(f"Puck position: {pos_puck}, current position: {pos_curr}")
             return pos_puck + np.array([0.0, 0.0, 0.2])
         # Once XY error is low enough, drop end effector down on top of puck
         elif abs(pos_curr[2] - pos_puck[2]) > 0.04:
-            print("Moving down on top of the puck")
             return pos_puck + np.array([0.0, 0.0, 0.03])
         # Move to the goal
         else:
-            print("Moving to the goal")
-            print(f"Goal position: {pos_goal}, current position: {pos_curr}")
             # return
             return pos_goal
 

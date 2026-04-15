@@ -60,7 +60,7 @@ def main():
     cfg = load_config(os.path.abspath(DEFAULT_CONFIG_PATH))
     np.random.seed(cfg.seed)
     ensure_mujoco_headless_gl()
-    env = make_env(cfg.env_name, cfg.seed)
+    env = make_env(cfg)
     try:
         probe_first_three(env, seed=cfg.seed)
         # print(f"rows: {rows}")

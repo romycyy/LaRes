@@ -793,7 +793,15 @@ def _grab_frame_from_env(env_leaf):
     return None
 
 
-def record_episode_gif(policy, env, path, max_steps=150, fps=20, verbose=True):
+def record_episode_gif(
+    policy,
+    env,
+    path,
+    max_steps=150,
+    fps=20,
+    verbose=True,
+    deterministic=False,
+):
     """Run one deterministic episode and save it as a GIF.
 
     Unwraps to the innermost env before calling ``render``, so OpenAI Gym
@@ -816,6 +824,9 @@ def record_episode_gif(policy, env, path, max_steps=150, fps=20, verbose=True):
         fps: Playback frame rate of the saved GIF (converted to per-frame
             ``duration`` in ms for imageio/Pillow; must be > 0).
         verbose: If True, print capture/write diagnostics (set False in unit tests).
+        deterministic: If True, use the policy mean as the action (clipped to
+            ``[-1, 1]``) with no Gaussian sampling. Matches Stage 1 expert rollout
+            when the policy forward returns expert actions in that range.
 
     Returns:
         dict with keys ``episode_reward`` (float), ``success`` (bool),
@@ -837,8 +848,7 @@ def record_episode_gif(policy, env, path, max_steps=150, fps=20, verbose=True):
     episode_reward = 0.0
     success = False
 
-    for i in range(max_steps):
-        print(f"Step {i} of {max_steps}")
+    for _ in range(max_steps):
         frame = _grab_frame_from_env(env)
         if frame is not None:
             frames.append(frame)
@@ -846,18 +856,24 @@ def record_episode_gif(policy, env, path, max_steps=150, fps=20, verbose=True):
         obs_t = torch.tensor(obs, dtype=torch.float32).unsqueeze(0)
         with torch.no_grad():
             mean, std = policy(obs_t)
-            # print(f"Mean: {mean}, Std: {std}")
-            dist = torch.distributions.Normal(mean, std)
-            pretanh_action = dist.sample()
-            action = torch.clamp(pretanh_action, -0.999999, 0.999999).squeeze(0).numpy()
+            if deterministic:
+                action = (
+                    mean.squeeze(0).detach().cpu().numpy().astype(np.float32, copy=False)
+                )
+                action = np.clip(action, -1.0, 1.0)
+            else:
+                dist = torch.distributions.Normal(mean, std)
+                pretanh_action = dist.sample()
+                action = (
+                    torch.clamp(pretanh_action, -0.999999, 0.999999)
+                    .squeeze(0)
+                    .numpy()
+                )
         try:
-            print(f"cur_obs: {obs}")
-            print(f"Action: {env.action_space.high * action}")
             next_obs, reward, done, info = env.step(env.action_space.high * action)
-            print(f"next_obs: {next_obs[:3]}")
         except Exception as e:
-            print(f"Error: {action}")
-            print(f"Error: {e}")
+            if verbose:
+                print(f"  [record_gif] step failed: {e!r}; action={action!r}")
             break
 
         episode_reward += reward

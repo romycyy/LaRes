@@ -2358,15 +2358,66 @@ def _patch_get_dict(env_instance):
     env_instance.get_dict = _GetDict(env_instance)
 
 
+def _unwrap_through_wrappers(env):
+    """Walk ``TimeLimit`` / ``NormalizedBoxEnv`` (``ProxyEnv``) to the inner env."""
+    cur = env
+    seen = set()
+    for _ in range(32):
+        if id(cur) in seen:
+            break
+        seen.add(id(cur))
+        nxt = None
+        if hasattr(cur, "env"):
+            nxt = cur.env
+        elif hasattr(cur, "_wrapped_env"):
+            nxt = cur._wrapped_env
+        if nxt is None or nxt is cur:
+            break
+        cur = nxt
+    return cur
+
+
 def make_metaworld_env(cfg, seed):
     env_name = cfg.env_name
     # metaworld 2.0+ uses ALL_V3_ENVIRONMENTS; map v1/v2 suffixes to v3
     env_name_v3 = env_name.replace("-v2", "-v3").replace("-v1", "-v3")
-    print(env_name_v3)
     if env_name_v3 not in _env_dict.ALL_V3_ENVIRONMENTS:
         raise ValueError(
             f"Environment '{env_name}' (looked up as '{env_name_v3}') not found in ALL_V3_ENVIRONMENTS"
         )
+
+    use_mt1 = getattr(cfg, "use_mt1", False)
+    if use_mt1:
+        import metaworld as mw
+
+        try:
+            mt1 = mw.MT1(env_name_v3)
+        except Exception as e:
+            raise ValueError(
+                f"use_mt1=True but MT1({env_name_v3!r}) failed. "
+                f"Use a benchmark name MT1 supports (e.g. push-v3). Original error: {e}"
+            ) from e
+        if env_name_v3 not in mt1.train_classes:
+            raise ValueError(
+                f"use_mt1=True but {env_name_v3!r} not in MT1.train_classes "
+                f"(keys sample: {list(mt1.train_classes.keys())[:5]} ...)"
+            )
+        env_cls = mt1.train_classes[env_name_v3]
+        try:
+            env = env_cls(render_mode="rgb_array", camera_id=2)
+        except TypeError:
+            env = env_cls()
+        _patch_get_dict(env)
+        train_tasks = tuple(mt1.train_tasks)
+        if not train_tasks:
+            raise ValueError(f"MT1({env_name_v3!r}) returned no train_tasks")
+        # Stash for env_wrapper to sample a task each reset; one set_task now
+        # so observation_space matches the first benchmark task before reset().
+        env.mt1_train_tasks = train_tasks
+        env.seed(seed)
+        env.set_task(train_tasks[int(seed) % len(train_tasks)])
+        return TimeLimit(NormalizedBoxEnv(env), env.max_path_length)
+
     env_cls = _env_dict.ALL_V3_ENVIRONMENTS[env_name_v3]
 
     # Gymnasium MetaWorld: pixel frames require render_mode at construction;
@@ -2488,15 +2539,23 @@ class env_wrapper:
 
     def reset(self):
         self.timesteps = 0
-        obs = self._env.reset()
-        return obs
+        inner = _unwrap_through_wrappers(self._env)
+        tasks = getattr(inner, "mt1_train_tasks", None)
+        if tasks is not None:
+            if not hasattr(self, "_mt1_rng"):
+                self._mt1_rng = np.random.default_rng(int(getattr(self.args, "seed", 0)))
+            idx = int(self._mt1_rng.integers(0, len(tasks)))
+            inner.set_task(tasks[idx])
+        obs, info = self._env.reset()
+        return obs, info
 
     def step(self, action):
         # revise the correct action range
         obs, reward, done, info = self._env.step(action)
         # increase the timesteps
         self.timesteps += 1
-        if self.timesteps >= self.args.episode_length:
+        ep_len = self.args.episode_length
+        if self.timesteps >= ep_len:
             done = True
         return obs, reward, done, info
 
