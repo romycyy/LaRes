@@ -308,8 +308,8 @@ def behavioral_cloning(
         validation, provide a separate val_buffer and compute val loss
         periodically outside the optimization loop.
     """
-    optimizer = torch.optim.Adam(policy.parameters(), lr=lr)
-    stats = {"bc_loss": [], "mean_loss": [], "std_loss": []}
+    optimizer = torch.optim.Adam(policy.parameters(), lr=lr)    
+    stats = {"bc_loss": [], "log_prob": []}
 
     policy.train()
     for step in range(num_steps):
@@ -319,9 +319,16 @@ def behavioral_cloning(
 
         mean, std = policy(obs_t)
 
-        mean_loss = nn.functional.mse_loss(mean, actions_t)
-        std_loss = 0.01 * std.mean()
-        loss = mean_loss + std_loss
+        eps = 1e-6
+        actions_clamped = torch.clamp(actions_t, -1 + eps, 1 - eps)
+        pretanh_actions = 0.5 * torch.log((1 + actions_clamped) / (1 - actions_clamped))
+
+        dist = torch.distributions.Normal(mean, std)
+        log_probs = dist.log_prob(pretanh_actions) - torch.log(1 - actions_clamped.pow(2) + eps)
+        log_probs = log_probs.sum(dim=-1)
+
+        loss = -log_probs.mean()
+        #--- new code end
 
         optimizer.zero_grad()
         loss.backward()
@@ -336,9 +343,9 @@ def behavioral_cloning(
         optimizer.step()
         policy.clip_params()
 
+
         stats["bc_loss"].append(loss.item())
-        stats["mean_loss"].append(mean_loss.item())
-        stats["std_loss"].append(std_loss.item())
+        stats["log_prob"].append(log_probs.mean().item())
 
         # Structured logging for training dynamics (task_name enables per-task plots)
         if logger is not None and step % log_every_n_steps == 0:
@@ -347,8 +354,8 @@ def behavioral_cloning(
                 update=step,
                 metrics={
                     BC_TRAIN_LOSS: loss.item(),
-                    BC_MEAN_LOSS: mean_loss.item(),
-                    BC_STD_LOSS: std_loss.item(),
+                    BC_MEAN_LOSS: (-log_probs.mean()).item(),
+                    BC_STD_LOSS: std.mean().item(),
                     BC_GRAD_NORM_PRE_CLIP: float(grad_norm_pre),
                     BC_GRAD_NORM_POST_CLIP: float(grad_norm_post),
                 },
@@ -360,8 +367,7 @@ def behavioral_cloning(
             print(
                 f"  [Stage 2] step {step + 1}/{num_steps}: "
                 f"loss={np.mean(recent):.6f}, "
-                f"mean_loss={np.mean(stats['mean_loss'][-log_interval:]):.6f}, "
-                f"std_loss={np.mean(stats['std_loss'][-log_interval:]):.6f}"
+                f"log_prob={np.mean(stats['log_prob'][-log_interval:]):.6f}"
             )
 
     stats["final_loss"] = float(np.mean(stats["bc_loss"][-min(100, num_steps) :]))
@@ -1382,3 +1388,4 @@ class EvolutionOrchestrator:
                 )
 
         return self.best_overall
+        
