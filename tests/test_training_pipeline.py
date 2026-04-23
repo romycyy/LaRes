@@ -57,21 +57,6 @@ print()
 from lares.core.symbolic_policy import SymbolicPolicy  # noqa: E402
 from lares.core.replay_buffer import SimpleReplayBuffer  # noqa: E402
 
-# from lares.core.training_pipeline import (  # noqa: E402
-#     DemoBuffer,
-#     generate_dataset,
-#     behavioral_cloning,
-#     rl_finetune,
-#     evaluate_policy,
-#     SymbolicPolicyPipeline,
-#     llm_evolution,
-#     EXPERT_POLICY_MAP,
-#     TASK_DESCRIPTIONS,
-#     get_expert_policy,
-#     _collect_trajectories,
-#     _compute_grpo_advantages,
-# )
-
 from lares.core.training_pipeline import (
     DemoBuffer,
     generate_dataset,

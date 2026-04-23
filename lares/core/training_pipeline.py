@@ -308,8 +308,7 @@ def behavioral_cloning(
         validation, provide a separate val_buffer and compute val loss
         periodically outside the optimization loop.
     """
-    optimizer = torch.optim.Adam(policy.parameters(), lr=lr)
-    # stats = {"bc_loss": [], "mean_loss": [], "std_loss": []} old code
+    optimizer = torch.optim.Adam(policy.parameters(), lr=lr)    
     stats = {"bc_loss": [], "log_prob": []}
 
     policy.train()
@@ -318,15 +317,6 @@ def behavioral_cloning(
         obs_t = torch.tensor(obs_np, dtype=torch.float32)
         actions_t = torch.tensor(actions_np, dtype=torch.float32)
 
-        mean, std = policy(obs_t)
-
-        # old code
-        # mean_loss = nn.functional.mse_loss(mean, actions_t)
-        # std_loss = 0.01 * std.mean()
-        # loss = mean_loss + std_loss
-
-
-        #--- new code start
         mean, std = policy(obs_t)
 
         eps = 1e-6
@@ -353,30 +343,11 @@ def behavioral_cloning(
         optimizer.step()
         policy.clip_params()
 
-        # old code
-        # stats["bc_loss"].append(loss.item())
-        # stats["mean_loss"].append(mean_loss.item())
-        # stats["std_loss"].append(std_loss.item())
 
-
-        # new code
         stats["bc_loss"].append(loss.item())
         stats["log_prob"].append(log_probs.mean().item())
 
         # Structured logging for training dynamics (task_name enables per-task plots)
-        # if logger is not None and step % log_every_n_steps == 0:
-        #     logger.log_metrics(
-        #         stage="bc",
-        #         update=step,
-        #         metrics={
-        #             BC_TRAIN_LOSS: loss.item(),
-        #             BC_MEAN_LOSS: mean_loss.item(),
-        #             BC_STD_LOSS: std_loss.item(),
-        #             BC_GRAD_NORM_PRE_CLIP: float(grad_norm_pre),
-        #             BC_GRAD_NORM_POST_CLIP: float(grad_norm_post),
-        #         },
-        #         task_name=task_name,
-        #     )
         if logger is not None and step % log_every_n_steps == 0:
             logger.log_metrics(
                 stage="bc",
@@ -393,13 +364,6 @@ def behavioral_cloning(
 
         if log_interval > 0 and (step + 1) % log_interval == 0:
             recent = stats["bc_loss"][-log_interval:]
-            # old code
-            # print(
-            #     f"  [Stage 2] step {step + 1}/{num_steps}: "
-            #     f"loss={np.mean(recent):.6f}, "
-            #     f"mean_loss={np.mean(stats['mean_loss'][-log_interval:]):.6f}, "
-            #     f"std_loss={np.mean(stats['std_loss'][-log_interval:]):.6f}"
-            # )
             print(
                 f"  [Stage 2] step {step + 1}/{num_steps}: "
                 f"loss={np.mean(recent):.6f}, "
@@ -1425,7 +1389,7 @@ class EvolutionOrchestrator:
 
         return self.best_overall
 
-# dummy ti escapde testfile error---
+# dummy POJO code testfile error---
 
 class SymbolicPolicyPipeline:
     """Backward-compatible wrapper for older tests/code paths."""
