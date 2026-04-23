@@ -309,7 +309,8 @@ def behavioral_cloning(
         periodically outside the optimization loop.
     """
     optimizer = torch.optim.Adam(policy.parameters(), lr=lr)
-    stats = {"bc_loss": [], "mean_loss": [], "std_loss": []}
+    # stats = {"bc_loss": [], "mean_loss": [], "std_loss": []} old code
+    stats = {"bc_loss": [], "log_prob": []}
 
     policy.train()
     for step in range(num_steps):
@@ -319,9 +320,25 @@ def behavioral_cloning(
 
         mean, std = policy(obs_t)
 
-        mean_loss = nn.functional.mse_loss(mean, actions_t)
-        std_loss = 0.01 * std.mean()
-        loss = mean_loss + std_loss
+        # old code
+        # mean_loss = nn.functional.mse_loss(mean, actions_t)
+        # std_loss = 0.01 * std.mean()
+        # loss = mean_loss + std_loss
+
+
+        #--- new code start
+        mean, std = policy(obs_t)
+
+        eps = 1e-6
+        actions_clamped = torch.clamp(actions_t, -1 + eps, 1 - eps)
+        pretanh_actions = 0.5 * torch.log((1 + actions_clamped) / (1 - actions_clamped))
+
+        dist = torch.distributions.Normal(mean, std)
+        log_probs = dist.log_prob(pretanh_actions) - torch.log(1 - actions_clamped.pow(2) + eps)
+        log_probs = log_probs.sum(dim=-1)
+
+        loss = -log_probs.mean()
+        #--- new code end
 
         optimizer.zero_grad()
         loss.backward()
@@ -336,19 +353,38 @@ def behavioral_cloning(
         optimizer.step()
         policy.clip_params()
 
+        # old code
+        # stats["bc_loss"].append(loss.item())
+        # stats["mean_loss"].append(mean_loss.item())
+        # stats["std_loss"].append(std_loss.item())
+
+
+        # new code
         stats["bc_loss"].append(loss.item())
-        stats["mean_loss"].append(mean_loss.item())
-        stats["std_loss"].append(std_loss.item())
+        stats["log_prob"].append(log_probs.mean().item())
 
         # Structured logging for training dynamics (task_name enables per-task plots)
+        # if logger is not None and step % log_every_n_steps == 0:
+        #     logger.log_metrics(
+        #         stage="bc",
+        #         update=step,
+        #         metrics={
+        #             BC_TRAIN_LOSS: loss.item(),
+        #             BC_MEAN_LOSS: mean_loss.item(),
+        #             BC_STD_LOSS: std_loss.item(),
+        #             BC_GRAD_NORM_PRE_CLIP: float(grad_norm_pre),
+        #             BC_GRAD_NORM_POST_CLIP: float(grad_norm_post),
+        #         },
+        #         task_name=task_name,
+        #     )
         if logger is not None and step % log_every_n_steps == 0:
             logger.log_metrics(
                 stage="bc",
                 update=step,
                 metrics={
                     BC_TRAIN_LOSS: loss.item(),
-                    BC_MEAN_LOSS: mean_loss.item(),
-                    BC_STD_LOSS: std_loss.item(),
+                    BC_MEAN_LOSS: (-log_probs.mean()).item(),
+                    BC_STD_LOSS: std.mean().item(),
                     BC_GRAD_NORM_PRE_CLIP: float(grad_norm_pre),
                     BC_GRAD_NORM_POST_CLIP: float(grad_norm_post),
                 },
@@ -357,11 +393,17 @@ def behavioral_cloning(
 
         if log_interval > 0 and (step + 1) % log_interval == 0:
             recent = stats["bc_loss"][-log_interval:]
+            # old code
+            # print(
+            #     f"  [Stage 2] step {step + 1}/{num_steps}: "
+            #     f"loss={np.mean(recent):.6f}, "
+            #     f"mean_loss={np.mean(stats['mean_loss'][-log_interval:]):.6f}, "
+            #     f"std_loss={np.mean(stats['std_loss'][-log_interval:]):.6f}"
+            # )
             print(
                 f"  [Stage 2] step {step + 1}/{num_steps}: "
                 f"loss={np.mean(recent):.6f}, "
-                f"mean_loss={np.mean(stats['mean_loss'][-log_interval:]):.6f}, "
-                f"std_loss={np.mean(stats['std_loss'][-log_interval:]):.6f}"
+                f"log_prob={np.mean(stats['log_prob'][-log_interval:]):.6f}"
             )
 
     stats["final_loss"] = float(np.mean(stats["bc_loss"][-min(100, num_steps) :]))
@@ -932,6 +974,8 @@ def load_policy_prompt_assets(env_name):
         "initial_user": _read("new_initial_user.txt"),
         "code_output_tip": _read("new_code_output_tip.txt"),
         "code_feedback_tmpl": _read("code_feedback.txt"),
+        "ideas_system": _read("ideas_system.txt"),
+        "ideas_user": _read("ideas_user.txt"),
         "task_description": TASK_DESCRIPTIONS.get(env_name, env_name),
         "obs_description": obs_description_dict.get(env_name, ""),
         "input_dict_string": input_dict_for_policy.get(env_name, ""),
@@ -948,6 +992,9 @@ def bootstrap_symbolic_policy_from_llm(
     llm_transcript_path=None,
 ):
     """Generate one validated symbolic policy via the LLM (no hand-crafted policy).
+
+    If ``args.policy_gen_two_phase`` is true, uses ideation then implementation
+    (see :func:`~lares.core.policy_generation.get_symbolic_policies`).
 
     Returns:
         (policy, code, response_text) or (None, None, None) if generation failed.
@@ -976,6 +1023,8 @@ def bootstrap_symbolic_policy_from_llm(
         data_pkl_path=data_pkl_path,
         real_num=1,
         llm_transcript_path=llm_transcript_path,
+        ideas_system=prompts.get("ideas_system"),
+        ideas_user=prompts.get("ideas_user"),
     )
     if not policy_pop:
         return None, None, None
@@ -1007,7 +1056,9 @@ def llm_evolution(
         env_name: MetaWorld task identifier.
         obs_dim: Observation dimensionality.
         action_dim: Action dimensionality.
-        args: Namespace with at least a ``model`` attribute.
+        args: Namespace with at least a ``model`` attribute.  Optional:
+            ``policy_gen_two_phase`` (bool), ``policy_impl_mode`` (``"batched"``
+            or ``"per_idea"``) forwarded to :func:`~lares.core.policy_generation.get_symbolic_policies`.
         previous_results: List of dicts, each with keys ``code`` (str),
             ``eval`` (dict with ``mean_reward`` and ``success_rate``),
             ``score`` (float), ``response`` (str), and optionally
@@ -1066,6 +1117,8 @@ def llm_evolution(
         code_feedback=code_feedback,
         real_num=pop_size,
         llm_transcript_path=llm_transcript_path,
+        ideas_system=prompts.get("ideas_system"),
+        ideas_user=prompts.get("ideas_user"),
     )
 
     if logger is not None:
@@ -1207,6 +1260,8 @@ class EvolutionOrchestrator:
                 f"LLM evolution transcript\n"
                 f"task={self.env_name}\n"
                 f"model={getattr(args, 'model', '')}\n"
+                f"policy_gen_two_phase={getattr(args, 'policy_gen_two_phase', False)}\n"
+                f"policy_impl_mode={getattr(args, 'policy_impl_mode', 'batched')}\n"
                 f"---\n"
             )
         print(f"  LLM message log: {llm_transcript_path}")
@@ -1369,3 +1424,58 @@ class EvolutionOrchestrator:
                 )
 
         return self.best_overall
+
+# dummy ti escapde testfile error---
+
+class SymbolicPolicyPipeline:
+    """Backward-compatible wrapper for older tests/code paths."""
+
+    def __init__(self, env_name, obs_dim=39, action_dim=4):
+        self.env_name = env_name
+        self.obs_dim = obs_dim
+        self.action_dim = action_dim
+        self.demo_buffer = None
+        self.best_policy = None
+        self.best_code = None
+
+    def stage1_generate_dataset(self, env, num_episodes=100, **kwargs):
+        self.demo_buffer, stats = generate_dataset(
+            env, self.env_name, num_episodes=num_episodes, **kwargs
+        )
+        return self.demo_buffer, stats
+
+    def stage2_behavioral_cloning(self, policy, demo_buffer=None, **kwargs):
+        buf = demo_buffer if demo_buffer is not None else self.demo_buffer
+        if buf is None:
+            raise ValueError("No demo buffer available. Run stage1 first or pass demo_buffer.")
+        return behavioral_cloning(policy, buf, **kwargs)
+
+    def stage3_rl_finetune(self, policy, env, **kwargs):
+        return rl_finetune(policy, env, **kwargs)
+
+    def run_single_policy(
+        self,
+        policy,
+        env,
+        demo_buffer=None,
+        bc_steps=5000,
+        rl_iterations=50,
+        rl_episodes=20,
+    ):
+        bc_stats = self.stage2_behavioral_cloning(
+            policy,
+            demo_buffer=demo_buffer,
+            num_steps=bc_steps,
+        )
+        rl_stats = self.stage3_rl_finetune(
+            policy,
+            env,
+            num_iterations=rl_iterations,
+            episodes_per_iter=rl_episodes,
+        )
+        eval_result = evaluate_policy(policy, env)
+        return {
+            "bc_stats": bc_stats,
+            "rl_stats": rl_stats,
+            "eval": eval_result,
+        }

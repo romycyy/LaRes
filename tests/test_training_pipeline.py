@@ -29,7 +29,8 @@ import torch.nn as nn
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
 sys.path.insert(0, _PROJECT_ROOT)
-
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # ---------------------------------------------------------------------------
 #  Detect available resources
 # ---------------------------------------------------------------------------
@@ -56,13 +57,29 @@ print()
 from lares.core.symbolic_policy import SymbolicPolicy  # noqa: E402
 from lares.core.replay_buffer import SimpleReplayBuffer  # noqa: E402
 
-from lares.core.training_pipeline import (  # noqa: E402
+# from lares.core.training_pipeline import (  # noqa: E402
+#     DemoBuffer,
+#     generate_dataset,
+#     behavioral_cloning,
+#     rl_finetune,
+#     evaluate_policy,
+#     SymbolicPolicyPipeline,
+#     llm_evolution,
+#     EXPERT_POLICY_MAP,
+#     TASK_DESCRIPTIONS,
+#     get_expert_policy,
+#     _collect_trajectories,
+#     _compute_grpo_advantages,
+# )
+
+from lares.core.training_pipeline import (
     DemoBuffer,
     generate_dataset,
     behavioral_cloning,
     rl_finetune,
     evaluate_policy,
     SymbolicPolicyPipeline,
+    EvolutionOrchestrator,
     llm_evolution,
     EXPERT_POLICY_MAP,
     TASK_DESCRIPTIONS,
@@ -358,8 +375,9 @@ bc_stats = behavioral_cloning(
 )
 check("BC: returns stats dict", isinstance(bc_stats, dict))
 check("BC: has bc_loss key", "bc_loss" in bc_stats)
-check("BC: has mean_loss key", "mean_loss" in bc_stats)
-check("BC: has std_loss key", "std_loss" in bc_stats)
+# check("BC: has mean_loss key", "mean_loss" in bc_stats) old
+# check("BC: has std_loss key", "std_loss" in bc_stats)
+check("BC: has log_prob key", "log_prob" in bc_stats)
 check("BC: has final_loss key", "final_loss" in bc_stats)
 check("BC: correct number of loss entries", len(bc_stats["bc_loss"]) == 300)
 
@@ -907,12 +925,9 @@ if HAS_OPENAI_KEY:
 
     try:
         evo_dir = os.path.join(ROOT, "_test_llm_evo")
-        evo_result = llm_evolution(
-            client=llm_client,
-            env=env_mock,
+
+        orchestrator = EvolutionOrchestrator(
             env_name="window-close-v2",
-            demo_buffer=demo_buf,
-            args=llm_args,
             obs_dim=OBS_DIM,
             action_dim=ACT_DIM,
             num_generations=1,
@@ -922,17 +937,64 @@ if HAS_OPENAI_KEY:
             rl_iterations=3,
             rl_episodes_per_iter=2,
             log_dir=evo_dir,
+            record_demo_gif=False,
         )
+
+        evo_result = orchestrator.run(
+            client=llm_client,
+            env=env_mock,
+            demo_buffer=demo_buf,
+            args=llm_args,
+            eval_episodes=3,
+        )
+
         check("Stage4: returns dict", isinstance(evo_result, dict))
         check("Stage4: has policy", evo_result["policy"] is not None)
-        check("Stage4: has code", evo_result["code"] is not None and len(evo_result["code"]) > 20)
+        check(
+            "Stage4: has code",
+            evo_result["code"] is not None and len(evo_result["code"]) > 20,
+        )
         check("Stage4: has score", isinstance(evo_result["score"], (int, float)))
-        check("Stage4: policy is SymbolicPolicy", isinstance(evo_result["policy"], SymbolicPolicy))
+        check(
+            "Stage4: policy is SymbolicPolicy",
+            isinstance(evo_result["policy"], SymbolicPolicy),
+        )
 
         evo_m, evo_s = evo_result["policy"](torch.randn(4, OBS_DIM))
-        check("Stage4: policy forward works", evo_m.shape == (4, ACT_DIM) and (evo_s > 0).all())
+        check(
+            "Stage4: policy forward works",
+            evo_m.shape == (4, ACT_DIM) and (evo_s > 0).all(),
+        )
     except Exception:
         check("Stage4 LLM evolution", False, traceback.format_exc())
+    # try:
+    #     evo_dir = os.path.join(ROOT, "_test_llm_evo")
+    #     evo_result = llm_evolution(
+    #         client=llm_client,
+    #         env=env_mock,
+    #         env_name="window-close-v2",
+    #         demo_buffer=demo_buf,
+    #         args=llm_args,
+    #         obs_dim=OBS_DIM,
+    #         action_dim=ACT_DIM,
+    #         num_generations=1,
+    #         pop_size=1,
+    #         elite_num=1,
+    #         bc_steps=100,
+    #         rl_iterations=3,
+    #         rl_episodes_per_iter=2,
+    #         log_dir=evo_dir,
+    #     )
+    #     check("Stage4: returns dict", isinstance(evo_result, dict))
+    #     check("Stage4: has policy", evo_result["policy"] is not None)
+    #     check("Stage4: has code", evo_result["code"] is not None and len(evo_result["code"]) > 20)
+    #     check("Stage4: has score", isinstance(evo_result["score"], (int, float)))
+    #     check("Stage4: policy is SymbolicPolicy", isinstance(evo_result["policy"], SymbolicPolicy))
+
+    #     evo_m, evo_s = evo_result["policy"](torch.randn(4, OBS_DIM))
+    #     check("Stage4: policy forward works", evo_m.shape == (4, ACT_DIM) and (evo_s > 0).all())
+    # except Exception:
+    #     check("Stage4 LLM evolution", False, traceback.format_exc())
 
     # Cleanup
     import shutil  # noqa: E402
