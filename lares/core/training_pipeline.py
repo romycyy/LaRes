@@ -932,6 +932,8 @@ def load_policy_prompt_assets(env_name):
         "initial_user": _read("new_initial_user.txt"),
         "code_output_tip": _read("new_code_output_tip.txt"),
         "code_feedback_tmpl": _read("code_feedback.txt"),
+        "ideas_system": _read("ideas_system.txt"),
+        "ideas_user": _read("ideas_user.txt"),
         "task_description": TASK_DESCRIPTIONS.get(env_name, env_name),
         "obs_description": obs_description_dict.get(env_name, ""),
         "input_dict_string": input_dict_for_policy.get(env_name, ""),
@@ -948,6 +950,9 @@ def bootstrap_symbolic_policy_from_llm(
     llm_transcript_path=None,
 ):
     """Generate one validated symbolic policy via the LLM (no hand-crafted policy).
+
+    If ``args.policy_gen_two_phase`` is true, uses ideation then implementation
+    (see :func:`~lares.core.policy_generation.get_symbolic_policies`).
 
     Returns:
         (policy, code, response_text) or (None, None, None) if generation failed.
@@ -976,6 +981,8 @@ def bootstrap_symbolic_policy_from_llm(
         data_pkl_path=data_pkl_path,
         real_num=1,
         llm_transcript_path=llm_transcript_path,
+        ideas_system=prompts.get("ideas_system"),
+        ideas_user=prompts.get("ideas_user"),
     )
     if not policy_pop:
         return None, None, None
@@ -1007,7 +1014,9 @@ def llm_evolution(
         env_name: MetaWorld task identifier.
         obs_dim: Observation dimensionality.
         action_dim: Action dimensionality.
-        args: Namespace with at least a ``model`` attribute.
+        args: Namespace with at least a ``model`` attribute.  Optional:
+            ``policy_gen_two_phase`` (bool), ``policy_impl_mode`` (``"batched"``
+            or ``"per_idea"``) forwarded to :func:`~lares.core.policy_generation.get_symbolic_policies`.
         previous_results: List of dicts, each with keys ``code`` (str),
             ``eval`` (dict with ``mean_reward`` and ``success_rate``),
             ``score`` (float), ``response`` (str), and optionally
@@ -1066,6 +1075,8 @@ def llm_evolution(
         code_feedback=code_feedback,
         real_num=pop_size,
         llm_transcript_path=llm_transcript_path,
+        ideas_system=prompts.get("ideas_system"),
+        ideas_user=prompts.get("ideas_user"),
     )
 
     if logger is not None:
@@ -1207,6 +1218,8 @@ class EvolutionOrchestrator:
                 f"LLM evolution transcript\n"
                 f"task={self.env_name}\n"
                 f"model={getattr(args, 'model', '')}\n"
+                f"policy_gen_two_phase={getattr(args, 'policy_gen_two_phase', False)}\n"
+                f"policy_impl_mode={getattr(args, 'policy_impl_mode', 'batched')}\n"
                 f"---\n"
             )
         print(f"  LLM message log: {llm_transcript_path}")

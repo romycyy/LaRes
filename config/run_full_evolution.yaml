@@ -26,6 +26,10 @@ eval_episodes: 10           # Episodes used to score each candidate
 
 # ---------- Stage 4: LLM structure search ----------
 model: "gpt-5"             # OpenAI model for policy generation
+# If true: one LLM call for JSON design hypotheses, then implementation (batched or per-idea).
+policy_gen_two_phase: True
+# When policy_gen_two_phase is true: "batched" (default) or "per_idea".
+policy_impl_mode: batched
 num_generations: 1         # Evolution generations
 pop_size: 5                 # Candidates generated per generation
 elite_num: 2                # Top-k results fed back to the next generation

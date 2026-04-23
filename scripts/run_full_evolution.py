@@ -89,6 +89,14 @@ def load_config(path: str) -> SimpleNamespace:
         raw["use_mt1"] = False
     else:
         raw["use_mt1"] = bool(raw["use_mt1"])
+    if "policy_gen_two_phase" not in raw:
+        raw["policy_gen_two_phase"] = False
+    else:
+        raw["policy_gen_two_phase"] = bool(raw["policy_gen_two_phase"])
+    if "policy_impl_mode" not in raw:
+        raw["policy_impl_mode"] = "batched"
+    else:
+        raw["policy_impl_mode"] = str(raw["policy_impl_mode"]).strip().lower()
     return SimpleNamespace(**raw)
 
 
@@ -264,7 +272,11 @@ def main() -> None:
     from openai import OpenAI
 
     client = OpenAI(api_key=api_key)
-    llm_args = SimpleNamespace(model=cfg.model)
+    llm_args = SimpleNamespace(
+        model=cfg.model,
+        policy_gen_two_phase=getattr(cfg, "policy_gen_two_phase", False),
+        policy_impl_mode=getattr(cfg, "policy_impl_mode", "batched"),
+    )
     print(f"\n  LLM model      : {cfg.model}")
     print(f"  Generations    : {cfg.num_generations}")
     print(f"  Pop size       : {cfg.pop_size}")
@@ -272,6 +284,8 @@ def main() -> None:
     print(f"  BC steps       : {cfg.bc_steps}")
     print(f"  RL iterations  : {cfg.rl_iterations}  ×  {cfg.rl_episodes} episodes")
     print(f"  Record demo GIF: {cfg.record_demo_gif}")
+    print(f"  Policy two-phase: {llm_args.policy_gen_two_phase}")
+    print(f"  Policy impl mode: {llm_args.policy_impl_mode}")
 
     # -----------------------------------------------------------------------
     #  Stages 2-4: LLM-based evolution with BC+RL inner loop
