@@ -39,7 +39,7 @@ Appended to LLM-generated code and run as a subprocess (same pattern as `test_ge
 
 All local variables use `_` prefix to avoid name collisions with generated code.
 
-### `utils/policy_prompts/` — Prompt Templates
+### `lares/utils/policy_prompts/` — Prompt Templates
 
 | File | Purpose | Format Placeholders |
 |------|---------|-------------------|
@@ -47,6 +47,10 @@ All local variables use `_` prefix to avoid name collisions with generated code.
 | `new_initial_user.txt` | Task + interface specification | `{task}`, `{obs_dim}`, `{action_dim}`, `{obs_description}`, `{input_dict_string}` |
 | `new_code_output_tip.txt` | 10 design guidelines | None |
 | `code_feedback.txt` | Performance feedback + improvement tips | `{train_steps}`, `{win_rate}`, `{mean_reward}`, `{current_output}` |
+| `ideas_system.txt` | Two-phase ideation: design hypotheses only (no code) | None |
+| `ideas_user.txt` | Ideation task + JSON schema for `n` ideas | `{task}`, `{obs_dim}`, `{action_dim}`, `{obs_description}`, `{input_dict_string}`, `{n}` |
+
+A legacy copy may exist under `utils/policy_prompts/`; the canonical path is `lares/utils/policy_prompts/` (see `load_policy_prompt_assets`).
 
 Key design choices:
 - The user prompt includes the full `SymbolicPolicy` interface so the LLM knows exactly what to implement.
@@ -64,7 +68,10 @@ Contains:
 Generation flow:
 ```
 1. Format prompts with task/env info
-2. Build message list (supports initial generation OR feedback-based evolution)
+2. Build message list (initial or evolution feedback). Optional two-phase: ideation
+   (`ideas_system.txt`, `ideas_user.txt`) then implementation (`policy_impl_mode`
+   batched or per-idea); controlled by `args.policy_gen_two_phase` / YAML in
+   `run_full_evolution.yaml`.
 3. Call LLM, extract code block from response (regex)
 4. Find "class GeneratedPolicy" definition
 5. Write temp file: path_setup + imports + generated_code + test_harness
@@ -77,7 +84,7 @@ Generation flow:
 
 Comprehensive test covering 25+ checks across Phase 1 and Phase 2. Run with:
 ```bash
-python test_phase1_phase2.py
+python tests/test_phase1_phase2.py
 ```
 
 ---

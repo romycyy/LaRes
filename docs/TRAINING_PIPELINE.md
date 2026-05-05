@@ -143,7 +143,7 @@ stats = rl_finetune(policy, env, num_iterations=50, episodes_per_iter=20, lr=3e-
 **Function:** `llm_evolution(client, env, env_name, demo_buffer, args, ...)`
 
 **How it works:**
-1. **Generate:** Call `get_symbolic_policies()` (from `policy_generation.py`) to produce `pop_size` validated symbolic policy structures
+1. **Generate:** Call `get_symbolic_policies()` (from `policy_generation.py`) to produce `pop_size` validated symbolic policy structures. Optional two-phase mode: set `args.policy_gen_two_phase=True` and `args.policy_impl_mode` (`"batched"` default, or `"per_idea"`) after loading `ideas_system` / `ideas_user` via `load_policy_prompt_assets()`.
 2. **Train:** For each candidate:
    - Initialise parameters (from the `__init__` method)
    - Run **behavioral cloning** (Stage 2)
@@ -155,20 +155,17 @@ stats = rl_finetune(policy, env, num_iterations=50, episodes_per_iter=20, lr=3e-
 This reuses the **entire existing LLM pipeline** (`policy_generation.py`, prompt templates, subprocess validation) — no separate infrastructure needed.
 
 ```python
-from training_pipeline import llm_evolution
-result = llm_evolution(
+from lares.core.training_pipeline import llm_evolution
+
+policy_pop, code_pop, response_pop = llm_evolution(
     client=openai_client,
-    env=env,
     env_name="window-close-v2",
-    demo_buffer=demo_buffer,
-    args=args,
     obs_dim=39,
     action_dim=4,
-    num_generations=5,
+    args=args,
     pop_size=5,
+    log_dir="./logs/evolution",
 )
-best_policy = result["policy"]
-best_code = result["code"]
 ```
 
 ---
@@ -178,7 +175,7 @@ best_code = result["code"]
 `SymbolicPolicyPipeline` wraps all four stages:
 
 ```python
-from training_pipeline import SymbolicPolicyPipeline
+from lares.core.training_pipeline import SymbolicPolicyPipeline
 
 pipeline = SymbolicPolicyPipeline("window-close-v2")
 
@@ -206,7 +203,7 @@ Added `SimpleReplayBuffer` to `replay_buffer.py`:
 ## Testing
 
 ```bash
-python test_training_pipeline.py
+python tests/test_training_pipeline.py
 ```
 
 50+ checks across three tiers:

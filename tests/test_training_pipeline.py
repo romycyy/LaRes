@@ -560,8 +560,15 @@ print("-" * 40)
 print("1.11 Prompt templates & policy_generation dicts")
 print("-" * 40)
 
-prompt_dir = os.path.join(ROOT, "utils", "policy_prompts")
-for pf in ["initial_system.txt", "new_initial_user.txt", "new_code_output_tip.txt", "code_feedback.txt"]:
+prompt_dir = os.path.join(ROOT, "lares", "utils", "policy_prompts")
+for pf in [
+    "initial_system.txt",
+    "new_initial_user.txt",
+    "new_code_output_tip.txt",
+    "code_feedback.txt",
+    "ideas_system.txt",
+    "ideas_user.txt",
+]:
     path = os.path.join(prompt_dir, pf)
     check(f"Prompt: '{pf}' exists", os.path.isfile(path))
 
