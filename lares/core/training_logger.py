@@ -11,6 +11,11 @@ import json
 #  Canonical metric names (shared by pipeline and plot_training_dynamics)
 # ---------------------------------------------------------------------------
 
+# Dataset stage
+DATASET_EPISODE_RETURN = "dataset/episode_return"
+DATASET_SUCCESS = "dataset/success"
+DATASET_SPIN_RATE = "dataset/spin_rate"
+
 # BC stage
 BC_TRAIN_LOSS = "bc/train_loss"
 BC_MEAN_LOSS = "bc/mean_loss"

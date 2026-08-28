@@ -48,6 +48,9 @@ from lares.core.training_logger import (
     BC_MEAN_LOSS,
     BC_STD_LOSS,
     BC_TRAIN_LOSS,
+    DATASET_EPISODE_RETURN,
+    DATASET_SPIN_RATE,
+    DATASET_SUCCESS,
     EVO_FITNESS_BEST,
     EVO_FITNESS_ELITE_MEAN,
     EVO_FITNESS_MEAN,
@@ -123,6 +126,12 @@ EVO_METRICS = [
     (EVO_FITNESS_ELITE_MEAN, "Elite mean"),
 ]
 
+DATASET_METRICS = [
+    (DATASET_EPISODE_RETURN, "Episode return"),
+    (DATASET_SUCCESS, "Success"),
+    (DATASET_SPIN_RATE, "Spin rate"),
+]
+
 
 # ---------------------------------------------------------------------------
 #  Log loading
@@ -179,6 +188,7 @@ def group_by_stage_metric_task(
         when a new candidate RL/BC inner loop starts.
     """
     grouped: dict[str, dict[str, dict[str, dict[tuple[str, int], list[tuple[float, float]]]]]] = {
+        "dataset": {},
         "bc": {},
         "rl": {},
         "evolutionary": {},
@@ -187,7 +197,7 @@ def group_by_stage_metric_task(
     def _norm_stage(stage: str) -> str | None:
         if stage in {"evolutionary", "evo"}:
             return "evolutionary"
-        if stage in {"bc", "rl"}:
+        if stage in {"dataset", "bc", "rl"}:
             return stage
         return None
 
@@ -349,6 +359,14 @@ def plot_bc(grouped: dict, output_dir: Path) -> None:
     )
 
 
+def plot_dataset(grouped: dict, output_dir: Path) -> None:
+    """Dataset collection: one figure per process per metric."""
+    dataset_data = grouped.get("dataset", {})
+    plot_stage_per_process(
+        dataset_data, DATASET_METRICS, "Dataset Collection", output_dir, x_label="Episode"
+    )
+
+
 def plot_rl(grouped: dict, output_dir: Path) -> None:
     """RL (GRPO): one figure per process per metric (stability per candidate)."""
     rl_data = grouped.get("rl", {})
@@ -382,6 +400,7 @@ def run_plots(log_paths: list[Path], output_dir: Path) -> None:
     grouped = group_by_stage_metric_task(records)
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    plot_dataset(grouped, output_dir)
     plot_bc(grouped, output_dir)
     plot_rl(grouped, output_dir)
     plot_evolutionary(grouped, output_dir)

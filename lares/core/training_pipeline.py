@@ -282,9 +282,8 @@ def behavioral_cloning(
 ):
     """Train a symbolic policy to imitate expert actions via supervised learning.
 
-    Uses MSE loss between ``policy.forward(obs)[0]`` (mean) and the expert
-    action, plus a small penalty on std to encourage determinism near the
-    expert trajectory.
+    Uses NLL loss between ``policy.forward(obs)[0]`` (mean) and the expert
+    action.
 
     Args:
         policy: SymbolicPolicy instance with uninitialised or random params.
