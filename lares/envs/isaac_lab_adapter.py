@@ -106,9 +106,12 @@ class IsaacLabSingleEnvAdapter:
 
         env_cfg = parse_env_cfg(task_name, device=device, num_envs=self.num_envs)
         if render_mode == "rgb_array":
-            env_cfg.viewer.cam_prim_path = "/World/ShadowHandGifCamera"
-            env_cfg.viewer.eye = (1.0, -1.35, 1.0)
-            env_cfg.viewer.lookat = (0.0, -0.39, 0.55)
+            # Keep the default cam_prim_path (/OmniverseKit_Persp). It is the viewport
+            # camera the renderer actually draws into; a freshly created Camera prim is
+            # attached to no viewport and yields no LdrColorSD buffer, so the annotator
+            # returns empty data forever and every frame silently falls back.
+            env_cfg.viewer.eye = (0.6, -0.8, 0.6)
+            env_cfg.viewer.lookat = (0.0, -0.2, 0.5)
             env_cfg.viewer.resolution = (640, 480)
         make_kwargs = {"cfg": env_cfg}
         if render_mode is not None:
@@ -164,16 +167,38 @@ class IsaacLabSingleEnvAdapter:
         self.env.close()
 
     def render(self):
-        """Return an RGB frame when the wrapped Isaac Lab env was created with ``rgb_array`` rendering."""
+        """Return an RGB frame, or ``None`` if the renderer produced nothing usable.
+
+        Isaac Lab's own ``DirectRLEnv.render`` builds the render product and rgb annotator
+        against the viewport camera, so prefer it; the replicator path stays as a fallback
+        for envs that do not implement it. While the renderer warms up Isaac Lab returns an
+        all-zero frame rather than ``None`` — treat that as "not ready" so callers do not
+        record black frames as if they were real output.
+        """
+        frame = None
         render_fn = getattr(self.env, "render", None)
         if callable(render_fn):
             try:
                 frame = self._coerce_rgb_frame(render_fn())
-                if frame is not None:
-                    return frame
             except Exception:
-                pass
-        return self._render_with_replicator()
+                frame = None
+        if frame is None:
+            frame = self._render_with_replicator()
+        if frame is not None and not frame.any():
+            return None
+        return frame
+
+    def warmup_renderer(self, max_attempts: int = 30):
+        """Render repeatedly until the first non-blank frame appears.
+
+        The RTX renderer needs several frames before it produces colour data. Without
+        this the first recorded frames are blank (or the whole recording falls back).
+        Returns the number of attempts used, or ``None`` if it never became ready.
+        """
+        for attempt in range(1, max_attempts + 1):
+            if self.render() is not None:
+                return attempt
+        return None
 
     def _first_obs(self, obs):
         if isinstance(obs, dict):
@@ -248,21 +273,16 @@ class IsaacLabSingleEnvAdapter:
             return None
 
     def _ensure_render_camera(self):
-        try:
-            import isaacsim.core.utils.prims as prim_utils
-            from pxr import UsdGeom
+        """Point the existing viewport camera at the scene.
 
+        Only aims the camera — it must not *create* a prim. The viewport camera already
+        exists and is wired into the render pipeline; a hand-made Camera prim is not.
+        """
+        try:
             viewer = self.env.unwrapped.cfg.viewer
-            if not prim_utils.is_prim_path_valid(viewer.cam_prim_path):
-                cam_prim = prim_utils.create_prim(viewer.cam_prim_path, prim_type="Camera")
-                UsdGeom.Camera(cam_prim)
-            self.env.unwrapped.sim.set_camera_view(
-                eye=viewer.eye,
-                target=viewer.lookat,
-                camera_prim_path=viewer.cam_prim_path,
-            )
-        except Exception:
-            pass
+            self.env.unwrapped.sim.set_camera_view(eye=viewer.eye, target=viewer.lookat)
+        except Exception as exc:
+            print(f"[isaac_adapter] Could not aim viewport camera: {exc!r}")
 
     @staticmethod
     def _coerce_rgb_frame(frame):

@@ -176,6 +176,13 @@ def record_shadowhand_gif(
     tracked: dict[str, list[float]] = {"spin_rate": [], "center_dist": [], "axis_error": []}
 
     obs, _ = env.reset()
+    # The RTX renderer emits blank frames for the first few calls; prime it before
+    # step 0 decides whether this recording uses real frames or the fallback.
+    warmup = getattr(env, "warmup_renderer", None)
+    if callable(warmup):
+        attempts = warmup()
+        print(f"  [stage_gif] renderer warmup: {'ready after %s attempts' % attempts if attempts else 'never became ready'}")
+
     for step in range(max_steps):
         action = action_fn(obs, step)
         obs, reward, done, info = env.step(action)
@@ -215,6 +222,9 @@ def record_shadowhand_gif(
     return {
         "path": path,
         "saved": saved,
+        # Whether the GIF shows the simulator or the synthetic status bars. Without this
+        # a failed camera still reports saved=true and looks like a successful recording.
+        "frame_source": ("render" if use_render else "fallback") if frames else "none",
         "num_frames": len(frames),
         "episode_return": episode_return,
         "success": success,
@@ -323,7 +333,13 @@ def main() -> None:
         if not record_gifs:
             return
         print(f"\nRecording {stage_key} GIF")
-        summary["gifs"][stage_key] = record_stage_gif(gif_name, env, cfg, run_dir, policy=policy)
+        result = record_stage_gif(gif_name, env, cfg, run_dir, policy=policy)
+        summary["gifs"][stage_key] = result
+        if result.get("frame_source") == "fallback":
+            print(
+                f"  [stage_gif] WARNING: {gif_name}.gif contains synthetic status bars, "
+                "not simulator frames — the renderer produced no image."
+            )
 
     env = None
     try:
