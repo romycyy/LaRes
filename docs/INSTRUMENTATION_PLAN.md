@@ -2,7 +2,7 @@
 
 This document maps the codebase for adding per-stage loss logging, RL gradient norm logging, and multi-task plotting across MetaWorld tasks.
 
-**Run from project root:** `python scripts/run_demo.py`, `python scripts/plot_training_dynamics.py --log-path ./logs/...`
+**Run from project root:** `python scripts/run_full_evolution.py`, `python scripts/plot_training_dynamics.py --log-path ./logs/...`
 
 ---
 
@@ -21,7 +21,7 @@ This document maps the codebase for adding per-stage loss logging, RL gradient n
 | `_compute_grpo_advantages()` | fn | Helper for Stage 3 advantage computation |
 | `evaluate_policy()` | fn | Evaluation helper (used after BC, RL, and in Stage 4) |
 | `llm_evolution()` | fn | **Stage 4**: LLM structure search with BC+RL inner loop |
-| `SymbolicPolicyPipeline` | class | Orchestrator for all 4 stages |
+| `EvolutionOrchestrator` | class | Orchestrator for multi-generation evolution |
 | `DemoBuffer` | class | Stage 1 output; Stage 2 input |
 
 ### Supporting Files
@@ -30,8 +30,8 @@ This document maps the codebase for adding per-stage loss logging, RL gradient n
 |------|------|
 | `lares/core/policy_generation.py` | `get_symbolic_policies()`, `obs_description_dict`, `input_dict_for_policy` — used by Stage 4 |
 | `lares/core/symbolic_policy.py` | `SymbolicPolicy` base class, `clip_params()` |
-| `lares/utils/utils.py` | `make_metaworld_env()`, `env_wrapper` — env creation |
-| `scripts/run_demo.py` | Single-task demo (reach-v2); calls stages 1–4 directly |
+| `lares/utils/metaworld_env.py` | `make_metaworld_env()`, `env_wrapper` — env creation |
+| `scripts/run_full_evolution.py` | Full pipeline entry; calls `EvolutionOrchestrator` |
 
 ---
 
@@ -83,15 +83,14 @@ grad_norm = torch.nn.utils.clip_grad_norm_(policy.parameters(), clip_grad_norm)
 ## 6. MetaWorld Task Specification and Looping
 
 ### Current behavior
-- **Single-task only**: Each run uses one `env_name` (e.g. `reach-v2`, `window-close-v2`).
-- `run_demo.py`: hardcodes `ENV_NAME = "reach-v2"`.
-- `training_pipeline.py` CLI: `--env-name` defaults to `window-close-v2`.
-- No multi-task loop exists; each call to `generate_dataset`, `behavioral_cloning`, `rl_finetune`, `llm_evolution` operates on one task.
+- **Single-task per run**: Each run uses one `env_name` from `config/run_full_evolution.yaml`.
+- `run_full_evolution.py` loads config and passes `env_name` through to env creation and LLM prompts.
+- No multi-task loop exists; each call operates on one task.
 
 ### Task sources
 - `EXPERT_POLICY_MAP` keys: 25+ task names with expert policies.
-- `obs_description_dict` / `input_dict_for_policy` in `policy_generation.py`: 6 tasks (window-close, window-open, button-press, door-close, drawer-open, reach).
-- `run_demo.py` and `SymbolicPolicyPipeline`: pass `env_name` through to env creation and LLM prompts.
+- `obs_description_dict` / `input_dict_for_policy` in `policy_generation.py`: per-task LLM prompt strings.
+- `run_full_evolution.py` passes `env_name` through to env creation and LLM prompts.
 
 ### Task difficulty
 - MetaWorld docs describe MT1 < MT10 < MT50 but **do not** provide an explicit per-task difficulty ordering.

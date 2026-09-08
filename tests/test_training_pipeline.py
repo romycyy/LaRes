@@ -55,15 +55,12 @@ print()
 #  Imports from the codebase
 # ---------------------------------------------------------------------------
 from lares.core.symbolic_policy import SymbolicPolicy  # noqa: E402
-from lares.core.replay_buffer import SimpleReplayBuffer  # noqa: E402
-
 from lares.core.training_pipeline import (
     DemoBuffer,
     generate_dataset,
     behavioral_cloning,
     rl_finetune,
     evaluate_policy,
-    SymbolicPolicyPipeline,
     EvolutionOrchestrator,
     llm_evolution,
     EXPERT_POLICY_MAP,
@@ -310,31 +307,11 @@ check("DemoBuffer: data matches after load", np.allclose(o1, o2) and np.allclose
 os.remove(tmp_path)
 
 # ===========================================================================
-#  1.2 SimpleReplayBuffer
+#  1.2 Behavioral Cloning (Stage 2) with mock data
 # ===========================================================================
 print()
 print("-" * 40)
-print("1.2 SimpleReplayBuffer")
-print("-" * 40)
-
-srb = SimpleReplayBuffer(50)
-check("SRB: empty", len(srb) == 0)
-
-for i in range(100):
-    srb.add(np.random.randn(OBS_DIM), np.random.randn(ACT_DIM), np.random.randn(), np.random.randn(OBS_DIM), 0.0)
-check("SRB: circular buffer capped at 50", len(srb) == 50)
-
-o, a, r, no, d = srb.sample(16)
-check("SRB: sample obs shape", o.shape == (16, OBS_DIM))
-check("SRB: sample action shape", a.shape == (16, ACT_DIM))
-check("SRB: sample reward shape", r.shape == (16,))
-
-# ===========================================================================
-#  1.3 Behavioral Cloning (Stage 2) with mock data
-# ===========================================================================
-print()
-print("-" * 40)
-print("1.3 Behavioral Cloning (Stage 2)")
+print("1.2 Behavioral Cloning (Stage 2)")
 print("-" * 40)
 
 policy_bc = TestPolicy(OBS_DIM, ACT_DIM)
@@ -391,11 +368,11 @@ for pname, (lo, hi) in ranges.items():
           param.min().item() >= lo - 1e-6 and param.max().item() <= hi + 1e-6)
 
 # ===========================================================================
-#  1.4 Trajectory collection & GRPO advantages
+#  1.3 Trajectory collection & GRPO advantages
 # ===========================================================================
 print()
 print("-" * 40)
-print("1.4 Trajectory collection & GRPO")
+print("1.3 Trajectory collection & GRPO")
 print("-" * 40)
 
 trajectories = _collect_trajectories(policy_bc, env_mock, num_episodes=5, max_steps=20)
@@ -415,11 +392,11 @@ all_adv = np.concatenate([t["advantages"] for t in trajectories])
 check("GRPO: advantages centered", abs(np.mean(all_adv)) < 2.0, f"mean={np.mean(all_adv):.4f}")
 
 # ===========================================================================
-#  1.5 RL Fine-tuning (Stage 3)
+#  1.4 RL Fine-tuning (Stage 3)
 # ===========================================================================
 print()
 print("-" * 40)
-print("1.5 RL Fine-tuning (Stage 3)")
+print("1.4 RL Fine-tuning (Stage 3)")
 print("-" * 40)
 
 policy_rl = TestPolicy(OBS_DIM, ACT_DIM)
@@ -450,11 +427,11 @@ check("RL: output valid", mean.shape == (4, ACT_DIM) and (std > 0).all().item())
 check("RL: no NaN after RL", not torch.isnan(mean).any() and not torch.isnan(std).any())
 
 # ===========================================================================
-#  1.6 evaluate_policy
+#  1.5 evaluate_policy
 # ===========================================================================
 print()
 print("-" * 40)
-print("1.6 evaluate_policy")
+print("1.5 evaluate_policy")
 print("-" * 40)
 
 eval_result = evaluate_policy(policy_rl, env_mock, num_episodes=5, max_steps=20)
@@ -465,34 +442,11 @@ check("Eval: success_rate in [0,1]", 0.0 <= eval_result["success_rate"] <= 1.0)
 check("Eval: mean_reward is finite", math.isfinite(eval_result["mean_reward"]))
 
 # ===========================================================================
-#  1.7 SymbolicPolicyPipeline orchestrator
+#  1.6 Multi-phase policy (WindowClosePolicy)
 # ===========================================================================
 print()
 print("-" * 40)
-print("1.7 SymbolicPolicyPipeline orchestrator")
-print("-" * 40)
-
-pipeline = SymbolicPolicyPipeline("window-close-v2", OBS_DIM, ACT_DIM)
-check("Pipeline: env_name", pipeline.env_name == "window-close-v2")
-check("Pipeline: obs_dim", pipeline.obs_dim == OBS_DIM)
-check("Pipeline: action_dim", pipeline.action_dim == ACT_DIM)
-check("Pipeline: no demo buffer yet", pipeline.demo_buffer is None)
-
-pipeline.demo_buffer = demo_buf
-p_pipe = TestPolicy(OBS_DIM, ACT_DIM)
-result = pipeline.run_single_policy(p_pipe, env_mock, bc_steps=100, rl_iterations=3, rl_episodes=3)
-check("Pipeline: returns dict", isinstance(result, dict))
-check("Pipeline: has bc_stats", "bc_stats" in result)
-check("Pipeline: has rl_stats", "rl_stats" in result)
-check("Pipeline: has eval", "eval" in result)
-check("Pipeline: eval success_rate", "success_rate" in result["eval"])
-
-# ===========================================================================
-#  1.8 Multi-phase policy (WindowClosePolicy)
-# ===========================================================================
-print()
-print("-" * 40)
-print("1.8 Multi-phase WindowClosePolicy")
+print("1.6 Multi-phase WindowClosePolicy")
 print("-" * 40)
 
 wc = WindowClosePolicy(OBS_DIM, ACT_DIM)
@@ -510,11 +464,11 @@ wc_eval = evaluate_policy(wc, env_mock, num_episodes=3, max_steps=20)
 check("WC: eval completes", "mean_reward" in wc_eval)
 
 # ===========================================================================
-#  1.9 End-to-end gradient flow across BC -> RL
+#  1.7 End-to-end gradient flow across BC -> RL
 # ===========================================================================
 print()
 print("-" * 40)
-print("1.9 End-to-end gradient flow")
+print("1.7 End-to-end gradient flow")
 print("-" * 40)
 
 p_e2e = TestPolicy(OBS_DIM, ACT_DIM)
@@ -741,28 +695,6 @@ if HAS_METAWORLD:
                     print(f"    Eval: reward={eval_real['mean_reward']:.2f}, success={eval_real['success_rate']:.2f}")
                 except Exception:
                     check("Eval real", False, traceback.format_exc())
-
-        # --- 2.7 Full pipeline orchestrator with real env ---
-        if real_demo is not None and len(real_demo) > 100:
-            print()
-            print("-" * 40)
-            print("2.7 Pipeline orchestrator with real env")
-            print("-" * 40)
-
-            try:
-                pipe_real = SymbolicPolicyPipeline("window-close-v2", OBS_DIM, ACT_DIM)
-                pipe_real.demo_buffer = real_demo
-                p_pipe_real = WindowClosePolicy(OBS_DIM, ACT_DIM)
-                pipe_result = pipe_real.run_single_policy(
-                    p_pipe_real, real_env, bc_steps=500, rl_iterations=3, rl_episodes=2,
-                )
-                check("Pipeline real: completes", "eval" in pipe_result)
-                check("Pipeline real: eval has fields",
-                      "success_rate" in pipe_result["eval"] and "mean_reward" in pipe_result["eval"])
-                print(f"    Pipeline result: reward={pipe_result['eval']['mean_reward']:.2f}, "
-                      f"success={pipe_result['eval']['success_rate']:.2f}")
-            except Exception:
-                check("Pipeline real", False, traceback.format_exc())
 
 else:
     skip("Tier 2: All MetaWorld tests", "metaworld not installed")

@@ -2,9 +2,8 @@
 Policy generation pipeline for LLM-generated symbolic policies.
 
 Generates, validates, and instantiates SymbolicPolicy subclasses from LLM
-output.  Follows the same pattern as reward-function generation in
-LaRes_from_scratch.py but produces policy *structures* instead of reward
-functions.
+output using prompt templates, subprocess validation, and optional two-phase
+ideation/implementation.
 """
 
 import json
@@ -163,8 +162,7 @@ def _call_llm(
     transcript_counter=None,
     transcript_label="completion",
 ):
-    """Call the OpenAI chat completion API.  Same retry logic as
-    ``get_LLM_reward_function`` in ``LaRes_from_scratch.py``."""
+    """Call the OpenAI chat completion API with retry logic."""
     total_samples = 0
     total_token = 0
     total_completion_token = 0

@@ -6,8 +6,8 @@ Stage 2 — Behavioral Cloning:  supervised imitation of expert actions
 Stage 3 — RL Fine-tuning:      GRPO-style policy gradient improvement
 Stage 4 — LLM Evolution:       structure search with BC+RL inner loop
 
-Each stage is usable independently or as part of the full pipeline via
-``SymbolicPolicyPipeline``.
+Each stage is usable independently or orchestrated via
+:class:`EvolutionOrchestrator`.
 """
 
 import inspect
@@ -944,55 +944,6 @@ def load_policy_prompt_assets(env_name):
         "obs_description": obs_description_dict.get(env_name, ""),
         "input_dict_string": input_dict_for_policy.get(env_name, ""),
     }
-
-
-def bootstrap_symbolic_policy_from_llm(
-    client,
-    env_name,
-    obs_dim,
-    action_dim,
-    args,
-    log_dir,
-    llm_transcript_path=None,
-):
-    """Generate one validated symbolic policy via the LLM (no hand-crafted policy).
-
-    If ``args.policy_gen_two_phase`` is true, uses ideation then implementation
-    (see :func:`~lares.core.policy_generation.get_symbolic_policies`).
-
-    Returns:
-        (policy, code, response_text) or (None, None, None) if generation failed.
-    """
-    from lares.core.policy_generation import get_symbolic_policies
-
-    os.makedirs(log_dir, exist_ok=True)
-    data_pkl_path = os.path.join(log_dir, "data.pkl")
-    with open(data_pkl_path, "wb") as f:
-        pickle.dump([{"obs": np.zeros(obs_dim)}], f)
-
-    prompts = load_policy_prompt_assets(env_name)
-    policy_pop, code_pop, resp_list = get_symbolic_policies(
-        client=client,
-        dir_path=log_dir,
-        llm_iter=0,
-        args=args,
-        obs_dim=obs_dim,
-        action_dim=action_dim,
-        initial_system=prompts["initial_system"],
-        initial_user=prompts["initial_user"],
-        task_description=prompts["task_description"],
-        obs_description=prompts["obs_description"],
-        input_dict_string=prompts["input_dict_string"],
-        code_output_tip=prompts["code_output_tip"],
-        data_pkl_path=data_pkl_path,
-        real_num=1,
-        llm_transcript_path=llm_transcript_path,
-        ideas_system=prompts.get("ideas_system"),
-        ideas_user=prompts.get("ideas_user"),
-    )
-    if not policy_pop:
-        return None, None, None
-    return policy_pop[0], code_pop[0], resp_list[0]
 
 
 def llm_evolution(

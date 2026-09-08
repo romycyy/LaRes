@@ -1,3 +1,5 @@
 sync.sh
 __pycache__/
 *.pyc
+logs/
+*.pkl

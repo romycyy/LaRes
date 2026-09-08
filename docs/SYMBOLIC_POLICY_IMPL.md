@@ -28,7 +28,7 @@ The `SymbolicPolicy(nn.Module)` base class provides:
 
 ### `test_generate_policy.py` — Subprocess Validation Harness
 
-Appended to LLM-generated code and run as a subprocess (same pattern as `test_generate_code.py`). Validates:
+Appended to LLM-generated code and run as a subprocess. Validates:
 
 1. `GeneratedPolicy` can be instantiated with `(obs_dim, action_dim)`
 2. No forbidden NN modules

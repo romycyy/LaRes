@@ -14,7 +14,7 @@ verified without a display.
 was constructed without ``render_mode='rgb_array'``, so ``env.render()`` returned
 ``None``, and (2) ``env_wrapper.render`` did not forward ``**kwargs``, so
 ``render(mode='rgb_array')`` raised before reaching the inner env.  See
-``make_metaworld_env`` and ``env_wrapper`` in ``lares.utils.utils``.
+``make_metaworld_env`` and ``env_wrapper`` in ``lares.utils.metaworld_env``.
 
 Tests call ``record_episode_gif(..., verbose=False)`` so expected no-frame cases
 and headless MetaWorld skips do not print ``[record_gif]`` lines. Pipeline runs
@@ -277,8 +277,8 @@ class TestRecordEpisodeGif(unittest.TestCase):
 @unittest.skipUnless(HAS_METAWORLD, "metaworld is required for reach-v2 env factory tests")
 class TestRecordEpisodeGifReachV2MetaWorld(unittest.TestCase):
     def test_make_metaworld_reach_v2_records_gif(self):
-        """End-to-end: same factory as ``run_full_evolution`` / ``run_demo`` for reach-v2."""
-        from lares.utils.utils import env_wrapper, make_metaworld_env
+        """End-to-end: same factory as ``run_full_evolution`` for reach-v2."""
+        from lares.utils import env_wrapper, make_metaworld_env
 
         # Headless SSH: default is GLFW/X11 (needs DISPLAY). MuJoCo must load EGL/OSMesa
         # before the env is created; otherwise render() raises FatalError.

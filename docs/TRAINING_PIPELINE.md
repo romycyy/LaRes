@@ -44,18 +44,19 @@ The symbolic policy outputs `(mean, std)` defining a Gaussian distribution over 
 
 ## Files
 
-| File | Role | Status |
-|------|------|--------|
-| `lares/core/training_pipeline.py` | Main pipeline: all 4 stages + `SymbolicPolicyPipeline` orchestrator | New |
-| `tests/test_training_pipeline.py` | 50+ checks across 3 tiers (mock / MetaWorld / LLM) | New |
-| `lares/core/symbolic_policy.py` | Base class for symbolic policies | Existing |
-| `lares/core/policy_generation.py` | LLM generation pipeline | Existing |
-| `tests/test_generate_policy.py` | Subprocess validation harness | Existing |
-| `lares/core/replay_buffer.py` | Added `SimpleReplayBuffer` for single-reward storage | Modified |
-| `lares/utils/policy_prompts/` | Prompt templates for LLM policy generation | Existing |
-| `scripts/run_demo.py` | End-to-end demo on reach-v2 | New |
+| File | Role |
+|------|------|
+| `scripts/run_full_evolution.py` | Main entry: YAML config + full evolution run |
+| `lares/core/training_pipeline.py` | All 4 stages + `EvolutionOrchestrator` |
+| `lares/core/training_logger.py` | JSONL metrics (BC / RL / evolution) |
+| `lares/core/symbolic_policy.py` | Base class for symbolic policies |
+| `lares/core/policy_generation.py` | LLM generation pipeline |
+| `lares/utils/metaworld_env.py` | MetaWorld env factory and episode wrapper |
+| `lares/utils/policy_prompts/` | Prompt templates for LLM policy generation |
+| `tests/test_generate_policy.py` | Subprocess validation harness |
+| `tests/test_training_pipeline.py` | Mock / MetaWorld / LLM checks |
 
-**Run commands** (from project root): `python scripts/run_demo.py`, `python tests/test_training_pipeline.py`
+**Run commands** (from project root): `python scripts/run_full_evolution.py`, `python tests/test_training_pipeline.py`
 
 ---
 
@@ -172,31 +173,34 @@ policy_pop, code_pop, response_pop = llm_evolution(
 
 ## Orchestrator
 
-`SymbolicPolicyPipeline` wraps all four stages:
+`EvolutionOrchestrator` runs the full multi-generation evolution loop (Stages 2–4):
 
 ```python
-from lares.core.training_pipeline import SymbolicPolicyPipeline
+from lares.core.training_pipeline import EvolutionOrchestrator
 
-pipeline = SymbolicPolicyPipeline("window-close-v2")
-
-# Stage 1
-demo_buffer, stats = pipeline.stage1_generate_dataset(env, num_episodes=100)
-
-# Stages 2+3 on a single policy (no LLM)
-result = pipeline.run_single_policy(my_policy, env, bc_steps=5000, rl_iterations=50)
-
-# Full Stage 4 with LLM
-best = pipeline.stage4_llm_evolution(client, env, args, num_generations=5)
+orchestrator = EvolutionOrchestrator(
+    env_name="push-v2",
+    obs_dim=39,
+    action_dim=4,
+    num_generations=3,
+    pop_size=5,
+    elite_num=2,
+    bc_steps=2000,
+    rl_iterations=10,
+    rl_episodes_per_iter=30,
+    log_dir="./logs/evolution",
+)
+best = orchestrator.run(
+    client=openai_client,
+    env=env,
+    demo_buffer=demo_buf,
+    args=llm_args,
+    logger=logger,
+    eval_episodes=10,
+)
 ```
 
----
-
-## Replay Buffer Changes
-
-Added `SimpleReplayBuffer` to `replay_buffer.py`:
-- Stores `(obs, action, reward, next_obs, done)` — single reward, no `org_info`
-- Circular buffer with configurable size
-- Used internally by the training pipeline; the original `replay_buffer` class is unchanged for backward compatibility
+See `scripts/run_full_evolution.py` for the complete wiring.
 
 ---
 
@@ -210,12 +214,11 @@ python tests/test_training_pipeline.py
 
 **Tier 1 (mock-based, always runs):**
 - `DemoBuffer` operations (add, sample, save/load roundtrip)
-- `SimpleReplayBuffer` (capacity, sampling)
 - Behavioral cloning (loss decrease, parameter update, output validity)
 - Trajectory collection and GRPO advantage computation
 - RL fine-tuning (parameter change, stats, output validity)
 - `evaluate_policy` (return format, value ranges)
-- `SymbolicPolicyPipeline` orchestrator
+- `EvolutionOrchestrator` (Tier 3)
 - Expert policy mapping completeness
 - End-to-end gradient flow (BC → RL → backward)
 - Prompt templates and policy generation dicts
@@ -223,7 +226,6 @@ python tests/test_training_pipeline.py
 **Tier 2 (requires MetaWorld):**
 - Real environment creation and expert policy loading
 - Stages 1–3 with real MetaWorld data and environments
-- Full pipeline orchestration on real environments
 
 **Tier 3 (requires OPENAI_API_KEY):**
 - LLM API connectivity
@@ -232,13 +234,4 @@ python tests/test_training_pipeline.py
 
 All Tier 1 tests use a `MockEnv` and `MockExpertPolicy` — **no MetaWorld or OpenAI API key needed**.
 
----
-
-## Minimal Changes to Existing Code
-
-| Module | Change | Reason |
-|--------|--------|--------|
-| `replay_buffer.py` | Added `SimpleReplayBuffer` class | Single-reward storage for the pipeline |
-| Everything else | **No changes** | Pipeline is additive — all new functionality lives in `training_pipeline.py` |
-
-The pipeline is designed to be **non-invasive**: it imports from the existing codebase (`symbolic_policy.py`, `policy_generation.py`) but does not modify any existing functions or classes.
+The pipeline uses `DemoBuffer` in `training_pipeline.py` for expert demonstrations; it imports from `symbolic_policy.py` and `policy_generation.py` without modifying those modules.
