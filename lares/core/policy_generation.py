@@ -19,6 +19,19 @@ from datetime import datetime
 # ---------------------------------------------------------------------------
 
 obs_description_dict = {
+    "push-v2": """The 39-dimensional observation vector contains:
+  obs[0:3]   - End-effector (gripper/TCP) position (x, y, z)
+  obs[3]     - Normalized gripper opening (1.0 = fully open)
+  obs[4:7]   - Puck position (x, y, z) - the object to push
+  obs[7:11]  - Puck quaternion orientation (4 values)
+  obs[11:18] - Second object slot (unused for push; always zeros)
+  obs[18:36] - Previous timestep's obs[0:18] (so obs[18:21] is the previous
+               end-effector position and obs[22:25] the previous puck position;
+               finite-difference these against obs[0:3] / obs[4:7] for velocity)
+  obs[36:39] - Goal position (x, y, z) - where the puck must end up
+Actions are 4-dimensional: (dx, dy, dz, gripper) controlling movement and gripper.
+The task requires reaching the puck and pushing it along the table to the goal.
+The gripper stays closed on the puck; this is a planar push, not a pick-and-place.""",
     "window-close-v2": """The 39-dimensional observation vector contains:
   obs[0:3]   - End-effector (gripper/TCP) position (x, y, z)
   obs[3]     - Normalized gripper opening distance
@@ -74,6 +87,11 @@ The task is simply to move the end-effector to the target position. No grasping 
 
 # Reuse the existing input_dict strings so the LLM understands variable names
 input_dict_for_policy = {
+    "push-v2": """{
+  "tcp": "3D position of the robotic arm end-effector",
+  "obj": "3D position of the puck to be pushed",
+  "target": "3D goal position the puck must be pushed to",
+  "actions": "4D action vector (dx, dy, dz, gripper)"}""",
     "window-close-v2": """{
   "tcp": "3D position of the robotic arm end-effector",
   "obj": "3D position of the window handle",

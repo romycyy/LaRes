@@ -30,7 +30,7 @@ model: "gpt-5"             # OpenAI model for policy generation
 policy_gen_two_phase: true
 # When policy_gen_two_phase is true: "batched" (default) or "per_idea".
 policy_impl_mode: batched
-num_generations: 1         # Evolution generations
+num_generations: 3         # Evolution generations
 pop_size: 5                 # Candidates generated per generation
 elite_num: 2                # Top-k results fed back to the next generation
 
