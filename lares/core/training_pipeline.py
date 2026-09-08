@@ -282,9 +282,8 @@ def behavioral_cloning(
 ):
     """Train a symbolic policy to imitate expert actions via supervised learning.
 
-    Uses MSE loss between ``policy.forward(obs)[0]`` (mean) and the expert
-    action, plus a small penalty on std to encourage determinism near the
-    expert trajectory.
+    Uses NLL loss between ``policy.forward(obs)[0]`` (mean) and the expert
+    action.
 
     Args:
         policy: SymbolicPolicy instance with uninitialised or random params.
@@ -309,7 +308,7 @@ def behavioral_cloning(
         periodically outside the optimization loop.
     """
     optimizer = torch.optim.Adam(policy.parameters(), lr=lr)    
-    stats = {"bc_loss": [], "log_prob": []}
+    stats = {"bc_loss": [], "mean_loss": [], "std_loss": []}
 
     policy.train()
     for step in range(num_steps):
@@ -319,16 +318,13 @@ def behavioral_cloning(
 
         mean, std = policy(obs_t)
 
-        eps = 1e-6
-        actions_clamped = torch.clamp(actions_t, -1 + eps, 1 - eps)
-        pretanh_actions = 0.5 * torch.log((1 + actions_clamped) / (1 - actions_clamped))
-
-        dist = torch.distributions.Normal(mean, std)
-        log_probs = dist.log_prob(pretanh_actions) - torch.log(1 - actions_clamped.pow(2) + eps)
-        log_probs = log_probs.sum(dim=-1)
-
-        loss = -log_probs.mean()
-        #--- new code end
+        # Fit the action that is actually executed: evaluate_policy / _collect_trajectories
+        # squash through tanh, so BC must regress tanh(mean) onto the expert action.
+        # Regressing the pre-tanh target instead sends saturated expert actions to
+        # atanh(+-1) = +-7.25, far outside get_param_ranges() / clip_params().
+        mean_loss = nn.functional.mse_loss(torch.tanh(mean), actions_t)
+        std_loss = 0.01 * std.mean()
+        loss = mean_loss + std_loss
 
         optimizer.zero_grad()
         loss.backward()
@@ -345,7 +341,8 @@ def behavioral_cloning(
 
 
         stats["bc_loss"].append(loss.item())
-        stats["log_prob"].append(log_probs.mean().item())
+        stats["mean_loss"].append(mean_loss.item())
+        stats["std_loss"].append(std_loss.item())
 
         # Structured logging for training dynamics (task_name enables per-task plots)
         if logger is not None and step % log_every_n_steps == 0:
@@ -354,8 +351,8 @@ def behavioral_cloning(
                 update=step,
                 metrics={
                     BC_TRAIN_LOSS: loss.item(),
-                    BC_MEAN_LOSS: (-log_probs.mean()).item(),
-                    BC_STD_LOSS: std.mean().item(),
+                    BC_MEAN_LOSS: mean_loss.item(),
+                    BC_STD_LOSS: std_loss.item(),
                     BC_GRAD_NORM_PRE_CLIP: float(grad_norm_pre),
                     BC_GRAD_NORM_POST_CLIP: float(grad_norm_post),
                 },
@@ -367,7 +364,7 @@ def behavioral_cloning(
             print(
                 f"  [Stage 2] step {step + 1}/{num_steps}: "
                 f"loss={np.mean(recent):.6f}, "
-                f"log_prob={np.mean(stats['log_prob'][-log_interval:]):.6f}"
+                f"mean_loss={np.mean(stats['mean_loss'][-log_interval:]):.6f}"
             )
 
     stats["final_loss"] = float(np.mean(stats["bc_loss"][-min(100, num_steps) :]))
@@ -862,19 +859,23 @@ def record_episode_gif(
         obs_t = torch.tensor(obs, dtype=torch.float32).unsqueeze(0)
         with torch.no_grad():
             mean, std = policy(obs_t)
+            # Must match evaluate_policy / _collect_trajectories: the policy's
+            # output is a pre-tanh Gaussian, so the executed action is tanh(...).
+            # Clipping the pre-tanh value instead records a different controller
+            # than the one whose score is reported alongside the GIF.
             if deterministic:
                 action = (
-                    mean.squeeze(0).detach().cpu().numpy().astype(np.float32, copy=False)
+                    torch.tanh(mean)
+                    .squeeze(0)
+                    .detach()
+                    .cpu()
+                    .numpy()
+                    .astype(np.float32, copy=False)
                 )
-                action = np.clip(action, -1.0, 1.0)
             else:
                 dist = torch.distributions.Normal(mean, std)
                 pretanh_action = dist.sample()
-                action = (
-                    torch.clamp(pretanh_action, -0.999999, 0.999999)
-                    .squeeze(0)
-                    .numpy()
-                )
+                action = torch.tanh(pretanh_action).squeeze(0).numpy()
         try:
             next_obs, reward, done, info = env.step(env.action_space.high * action)
         except Exception as e:
@@ -933,7 +934,7 @@ def load_policy_prompt_assets(env_name):
         with open(os.path.join(prompt_dir, filename), "r", encoding="utf-8") as f:
             return f.read()
 
-    return {
+    assets = {
         "initial_system": _read("initial_system.txt"),
         "initial_user": _read("new_initial_user.txt"),
         "code_output_tip": _read("new_code_output_tip.txt"),
@@ -944,6 +945,19 @@ def load_policy_prompt_assets(env_name):
         "obs_description": obs_description_dict.get(env_name, ""),
         "input_dict_string": input_dict_for_policy.get(env_name, ""),
     }
+    # A missing entry silently sends a blank observation layout to the LLM, which then
+    # invents indices and every generated policy reads the wrong obs slots.
+    for key, table in (
+        ("obs_description", obs_description_dict),
+        ("input_dict_string", input_dict_for_policy),
+    ):
+        if env_name not in table:
+            print(
+                f"  WARNING: no {key} for '{env_name}' in policy_generation.py; "
+                f"the LLM will be prompted with a blank observation layout and will "
+                f"guess the obs indices. Add an entry before trusting these results."
+            )
+    return assets
 
 
 def llm_evolution(
@@ -1293,7 +1307,10 @@ class EvolutionOrchestrator:
                 print(f"\n  Recording demo GIF → {gif_path}")
                 try:
                     gif_info = record_episode_gif(
-                        gen_results[0]["policy"], env, path=gif_path
+                        gen_results[0]["policy"],
+                        env,
+                        path=gif_path,
+                        deterministic=True,
                     )
                 except Exception as exc:
                     print(

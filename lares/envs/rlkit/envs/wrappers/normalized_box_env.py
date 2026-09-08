@@ -51,12 +51,17 @@ class NormalizedBoxEnv(ProxyEnv):
         scaled_action = np.clip(scaled_action, lb, ub)
 
         wrapped_step = self._wrapped_env.step(scaled_action)
-        next_obs, reward, terminated, truncated, info = wrapped_step
-        # next_obs, reward, done, info = wrapped_step
-        done = terminated or truncated
+        if len(wrapped_step) == 5:
+            next_obs, reward, terminated, truncated, info = wrapped_step
+        else:
+            next_obs, reward, done, info = wrapped_step
+            terminated = bool(done)
+            truncated = False
         if self._should_normalize:
             next_obs = self._apply_normalize_obs(next_obs)
-        return next_obs, reward * self._reward_scale, done, info
+        reward = reward * self._reward_scale
+        # Gym 0.26+ TimeLimit expects a Gymnasium-style 5-tuple from the inner env.
+        return next_obs, reward, terminated, truncated, info
 
     def __str__(self):
         return "Normalized: %s" % self._wrapped_env

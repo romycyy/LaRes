@@ -1,5 +1,6 @@
 sync.sh
 __pycache__/
 *.pyc
+.venv-metaworld/
 logs/
 *.pkl

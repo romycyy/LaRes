@@ -148,7 +148,12 @@ class env_wrapper:
         return obs, info
 
     def step(self, action):
-        obs, reward, done, info = self._env.step(action)
+        out = self._env.step(action)
+        if len(out) == 5:
+            obs, reward, terminated, truncated, info = out
+            done = terminated or truncated
+        else:
+            obs, reward, done, info = out
         self.timesteps += 1
         ep_len = self.args.episode_length
         if self.timesteps >= ep_len:

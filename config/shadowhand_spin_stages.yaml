@@ -1,0 +1,31 @@
+task_name: "ShadowHandSpin"
+isaaclab_root: "/home/ubuntu/IsaacLab"
+device: "cuda:0"
+
+stage1_task: "Isaac-ShadowHandSpin-Stage1-Direct-v0"
+stage2_task: "Isaac-ShadowHandSpin-Stage2-Direct-v0"
+stage3_task: "Isaac-ShadowHandSpin-Stage3-Direct-v0"
+pipeline_task: "Isaac-ShadowHandSpin-Stage3-Direct-v0"
+
+log_dir: "./logs/shadowhand_spin"
+num_envs: 1
+max_steps: 32
+
+dataset_episodes: 4
+scripted_noise: 0.05
+
+bc_steps: 20
+bc_batch_size: 32
+bc_lr: 0.01
+
+rl_iterations: 2
+rl_episodes_per_iter: 2
+rl_lr: 0.003
+
+eval_episodes: 2
+
+record_stage_gifs: true
+gif_dir: "gifs"
+gif_fps: 20
+gif_max_steps: 32
+gif_deterministic: true
