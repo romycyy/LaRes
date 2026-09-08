@@ -42,6 +42,7 @@ and exposes every key as a `SimpleNamespace` attribute.
 | Key | Default | Purpose |
 |-----|---------|---------|
 | `env_name` | `push-v2` | MetaWorld task |
+| `use_mt1` | `true` | Build the env via the Farama MT1 benchmark (full observability, valid `rand_vec`s) instead of plain construction |
 | `seed` | `42` | NumPy + PyTorch seed |
 | `dataset_episodes` | `150` | Expert episodes to collect |
 | `bc_steps` | `2000` | Gradient steps for BC |
@@ -51,7 +52,7 @@ and exposes every key as a `SimpleNamespace` attribute.
 | `model` | `gpt-5` | OpenAI model for policy generation |
 | `policy_gen_two_phase` | `true` | Use ideation + implementation flow |
 | `policy_impl_mode` | `batched` | `batched` or `per_idea` implementation |
-| `num_generations` | `1` | Evolution generations |
+| `num_generations` | `3` | Evolution generations |
 | `pop_size` | `5` | Candidates per generation |
 | `elite_num` | `2` | Top-k fed back as context |
 | `log_dir` | `./logs/evolution` | Artefact output directory |
@@ -79,9 +80,11 @@ and exposes every key as a `SimpleNamespace` attribute.
 
 **File:** `lares/core/training_pipeline.py` — `behavioral_cloning()`
 
-- Maximises the **log-probability of expert actions** under the candidate policy's Gaussian output.
-- The policy outputs `(mean, std)` for a Normal distribution over pre-tanh actions; the
-  expert actions are inverse-tanh'd before evaluating log-prob with the Jacobian correction.
+- Minimises `MSE(tanh(mean), expert_action) + 0.01 * std.mean()`.
+- The policy outputs `(mean, std)` as pre-tanh Gaussian parameters, so the loss compares the
+  squashed mean against the expert action; the std penalty pushes toward near-deterministic
+  behaviour. (An earlier NLL-on-inverse-tanh formulation with a Jacobian correction was tried
+  and reverted — see `docs/PIPELINE_REFINEMENT_SPEC.md`.)
 - Uses Adam, gradient clipping, and calls `policy.clip_params()` after each step to enforce
   the parameter bounds declared in `get_param_ranges()`.
 - Logs BC metrics (`bc/train_loss`, grad norms, etc.) to `TrainingLogger`.
@@ -128,7 +131,7 @@ and exposes every key as a `SimpleNamespace` attribute.
 Two modes, selected by `policy_gen_two_phase`:
 
 #### Single-shot mode (`policy_gen_two_phase: false`)
-1. Build a prompt from `initial_system.txt` + `initial_user.txt` + task/obs description.
+1. Build a prompt from `initial_system.txt` + `new_initial_user.txt` + task/obs description.
 2. Call the LLM with `n=pop_size*2` completions.
 3. For each response: extract the `GeneratedPolicy` class with regex, validate via subprocess,
    repair up to `max_repair_per_candidate` times if validation fails (error fed back to LLM).

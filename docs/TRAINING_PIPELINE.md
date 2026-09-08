@@ -93,7 +93,7 @@ buffer.save("./logs/demo_window-close-v2.pkl")
 **How it works:**
 1. Samples mini-batches `(obs, expert_action)` from the `DemoBuffer`
 2. Computes `mean, std = policy(obs)`
-3. Optimises `MSE(mean, expert_action) + 0.01 * mean(std)` — the std penalty encourages near-deterministic behaviour
+3. Optimises `MSE(tanh(mean), expert_action) + 0.01 * std.mean()` — `mean` is a pre-tanh Gaussian parameter, so it is squashed before comparison; the std penalty encourages near-deterministic behaviour
 4. Clips parameters to declared ranges after each gradient step
 5. Uses Adam optimiser with gradient clipping
 
@@ -141,7 +141,7 @@ stats = rl_finetune(policy, env, num_iterations=50, episodes_per_iter=20, lr=3e-
 
 **Purpose:** Use the LLM to propose and evolve symbolic policy *structures*, training each through the BC→RL inner loop.
 
-**Function:** `llm_evolution(client, env, env_name, demo_buffer, args, ...)`
+**Function:** `llm_evolution(client, env_name, obs_dim, action_dim, args, previous_results=None, pop_size=5, generation=0, log_dir=..., logger=None, llm_transcript_path=None)`
 
 **How it works:**
 1. **Generate:** Call `get_symbolic_policies()` (from `policy_generation.py`) to produce `pop_size` validated symbolic policy structures. Optional two-phase mode: set `args.policy_gen_two_phase=True` and `args.policy_impl_mode` (`"batched"` default, or `"per_idea"`) after loading `ideas_system` / `ideas_user` via `load_policy_prompt_assets()`.

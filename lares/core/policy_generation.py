@@ -283,7 +283,7 @@ def _extract_code_string(response_text):
     return code_string
 
 
-def _build_error_feedback(code_string, error_output, obs_dim, action_dim):
+def _build_error_feedback(code_string, error_output):
     """Build a concise error message to feed back to the LLM for self-repair."""
     error_lines = error_output.strip().split("\n")
     short_error = "\n".join(error_lines[:20])
@@ -296,8 +296,6 @@ def _build_error_feedback(code_string, error_output, obs_dim, action_dim):
     )
 
 
-GENERATION_MODE_SINGLE_SHOT = "single_shot"
-GENERATION_MODE_TWO_PHASE = "two_phase"
 POLICY_IMPL_BATCHED = "batched"
 POLICY_IMPL_PER_IDEA = "per_idea"
 
@@ -685,7 +683,7 @@ def _get_symbolic_policies_two_phase(
                 f"Policy validation failed (two_phase repair {repair_attempt}/"
                 f"{max_repair_per_candidate}): {stdout_str[:200]}"
             )
-            fb = _build_error_feedback(code_string, stdout_str, obs_dim, action_dim)
+            fb = _build_error_feedback(code_string, stdout_str)
             repair_messages = [
                 {"role": "system", "content": initial_system},
                 {
@@ -911,10 +909,11 @@ def get_symbolic_policies(
         raw_impl = getattr(args, "policy_impl_mode", POLICY_IMPL_BATCHED)
         if isinstance(raw_impl, str):
             raw_impl = raw_impl.strip().lower().replace("-", "_")
-        if raw_impl in ("per_idea",):
-            impl_mode = POLICY_IMPL_PER_IDEA
-        else:
-            impl_mode = POLICY_IMPL_BATCHED
+        impl_mode = (
+            POLICY_IMPL_PER_IDEA
+            if raw_impl == POLICY_IMPL_PER_IDEA
+            else POLICY_IMPL_BATCHED
+        )
         if ideas_system is None or ideas_user is None:
             raise ValueError(
                 "args.policy_gen_two_phase requires ideas_system and ideas_user "
@@ -1055,9 +1054,7 @@ def get_symbolic_policies(
                     f"{stdout_str[:200]}"
                 )
 
-                error_fb = _build_error_feedback(
-                    code_string, stdout_str, obs_dim, action_dim
-                )
+                error_fb = _build_error_feedback(code_string, stdout_str)
                 repair_messages = base_messages + [
                     {"role": "assistant", "content": response_cur},
                     {"role": "user", "content": error_fb + "\n" + code_output_tip},

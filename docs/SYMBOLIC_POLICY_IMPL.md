@@ -50,7 +50,7 @@ All local variables use `_` prefix to avoid name collisions with generated code.
 | `ideas_system.txt` | Two-phase ideation: design hypotheses only (no code) | None |
 | `ideas_user.txt` | Ideation task + JSON schema for `n` ideas | `{task}`, `{obs_dim}`, `{action_dim}`, `{obs_description}`, `{input_dict_string}`, `{n}` |
 
-A legacy copy may exist under `utils/policy_prompts/`; the canonical path is `lares/utils/policy_prompts/` (see `load_policy_prompt_assets`).
+The canonical path is `lares/utils/policy_prompts/` (see `load_policy_prompt_assets` in `lares/core/training_pipeline.py`).
 
 Key design choices:
 - The user prompt includes the full `SymbolicPolicy` interface so the LLM knows exactly what to implement.
@@ -62,7 +62,7 @@ Key design choices:
 Contains:
 - **`obs_description_dict`**: Per-task documentation of MetaWorld V2 observation indices (what obs[0:3], obs[4:7], obs[36:39] mean for each task).
 - **`input_dict_for_policy`**: Per-task named state variable descriptions.
-- **`_call_llm()`**: OpenAI API wrapper with retry/backoff (same pattern as `get_LLM_reward_function`).
+- **`_call_llm()`**: OpenAI API wrapper with retry/backoff.
 - **`get_symbolic_policies()`**: Main entry point. Returns `(policy_pop, code_string_pop, response_list)`.
 
 Generation flow:

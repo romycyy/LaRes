@@ -1,5 +1,13 @@
 # Training Dynamics Instrumentation & Visualization Plan
 
+> **Status: historical.** This plan is mostly **implemented** — `lares/core/training_logger.py`,
+> per-stage BC/RL metric logging, gradient-norm capture, and `scripts/plot_training_dynamics.py`
+> all exist. Only the multi-task pieces (`TASK_DIFFICULTY_ORDER`, `run_multi_task.py`, the
+> multi-task comparison plot) are still outstanding. **Every line number below is stale** — the
+> file grew substantially after this plan was written; treat the tables as a map of *which
+> functions* to touch, not where they live. For the current state, read
+> `docs/TRAINING_PIPELINE.md` and `docs/Codespace_explanation.md`.
+
 This document maps the codebase for adding per-stage loss logging, RL gradient norm logging, and multi-task plotting across MetaWorld tasks.
 
 **Run from project root:** `python scripts/run_full_evolution.py`, `python scripts/plot_training_dynamics.py --log-path ./logs/...`
@@ -50,7 +58,7 @@ This document maps the codebase for adding per-stage loss logging, RL gradient n
 
 | Stage | Location | Loss | Variable / Key |
 |-------|----------|------|----------------|
-| **2 (BC)** | 279–281 | `mean_loss = MSE(mean, actions_t)`, `std_loss = 0.01 * std.mean()`, `loss = mean_loss + std_loss` | `stats["bc_loss"]`, `stats["mean_loss"]`, `stats["std_loss"]` |
+| **2 (BC)** | 279–281 | `mean_loss = MSE(tanh(mean), actions_t)`, `std_loss = 0.01 * std.mean()`, `loss = mean_loss + std_loss` | `stats["bc_loss"]`, `stats["mean_loss"]`, `stats["std_loss"]` |
 | **3 (RL)** | 456, 350, 353–356, 360 | `policy_loss`, `entropy`, `kl_loss`, `total_loss` | `stats["policy_loss"]`, `stats["entropy"]`, `stats["kl"]` |
 
 Stage 1 has no trainable loss; it collects episode_rewards, episode_successes, episode_lengths.
@@ -160,25 +168,25 @@ grad_norm = torch.nn.utils.clip_grad_norm_(policy.parameters(), clip_grad_norm)
 2. **Stage 4 logging granularity**: Log per-candidate, per-generation, or both? Recommend both for debugging and summary.
 3. **Run ID / experiment naming**: No current convention; suggest timestamp + `env_name` or `multi_task`.
 
-### Missing infrastructure
-1. **Logger abstraction**: Only `print()` and returned `stats` dicts; no shared logger.
-2. **Log directory layout**: `./logs/` exists; need `./logs/training_dynamics/`, `./logs/multi_task/` and conventions.
-3. **WandB / TensorBoard**: Not used by `training_pipeline.py`; optional integration for live monitoring.
-4. **Multi-task loop**: No script that runs multiple tasks in sequence; must be added.
-5. **Plotting code**: No matplotlib/plotly scripts for training dynamics or multi-task comparison.
+### Missing infrastructure (as of writing — items 1, 2 and 5 are now built)
+1. ~~**Logger abstraction**~~ — built: `lares/core/training_logger.py` (`TrainingLogger`, `BC_*`/`RL_*`/`EVO_*` key constants).
+2. ~~**Log directory layout**~~ — settled: `<log_dir>/<run_id>.jsonl` plus per-generation `gen_<N>/` dirs.
+3. **WandB / TensorBoard**: still not used; optional integration for live monitoring.
+4. **Multi-task loop**: still missing — no script runs multiple tasks in sequence.
+5. ~~**Plotting code**~~ — built: `scripts/plot_training_dynamics.py`.
 
 ---
 
 ## 10. Implementation Checklist
 
-- [ ] Add `TrainingLogger` (or integrate wandb/tensorboard) with structured logging
-- [ ] Instrument Stage 2: log `bc_loss`, `mean_loss`, `std_loss` per step via logger
-- [ ] Instrument Stage 3: log `policy_loss`, `entropy`, `kl` per iteration via logger
-- [ ] Instrument Stage 3: capture and log `grad_norm` before clipping
-- [ ] (Optional) Instrument Stage 2: capture and log BC `grad_norm`
-- [ ] Instrument Stage 1: log per-episode and summary stats via logger
-- [ ] Instrument Stage 4: log per-candidate and per-generation aggregates
+- [x] Add `TrainingLogger` (or integrate wandb/tensorboard) with structured logging
+- [x] Instrument Stage 2: log `bc_loss`, `mean_loss`, `std_loss` per step via logger
+- [x] Instrument Stage 3: log `policy_loss`, `entropy`, `kl` per iteration via logger
+- [x] Instrument Stage 3: capture and log `grad_norm` before clipping
+- [x] (Optional) Instrument Stage 2: capture and log BC `grad_norm`
+- [x] Instrument Stage 1: log per-episode and summary stats via logger
+- [x] Instrument Stage 4: log per-candidate and per-generation aggregates
 - [ ] Add `TASK_DIFFICULTY_ORDER` for supported tasks
 - [ ] Add `run_multi_task.py` to run pipeline across tasks
-- [ ] Add `plot_training_dynamics.py` for loss curves and gradient norms
+- [x] Add `plot_training_dynamics.py` for loss curves and gradient norms
 - [ ] Add multi-task comparison plot (task vs success/reward)

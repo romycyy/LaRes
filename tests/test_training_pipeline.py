@@ -29,8 +29,7 @@ import torch.nn as nn
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
 sys.path.insert(0, _PROJECT_ROOT)
-import os
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = _PROJECT_ROOT
 # ---------------------------------------------------------------------------
 #  Detect available resources
 # ---------------------------------------------------------------------------

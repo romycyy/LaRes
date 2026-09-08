@@ -96,6 +96,15 @@ class TrainingLogger:
         except (TypeError, ValueError):
             return  # Skip invalid values; fail gracefully
 
+        record = self._build_record(stage, task, metric_name, val, wall_time, update, epoch)
+
+        with open(self.log_path, "a") as f:
+            f.write(json.dumps(record) + "\n")
+
+        self._mirror(metric_name, metric_value)
+
+    def _build_record(self, stage, task, metric_name, val, wall_time, update, epoch):
+        """Assemble one JSONL record, omitting None fields for cleaner output."""
         record = {
             "stage": stage,
             "task_name": task,
@@ -106,13 +115,10 @@ class TrainingLogger:
             "metric_name": metric_name,
             "metric_value": val,
         }
-        # Omit None for cleaner output
-        record = {k: v for k, v in record.items() if v is not None}
+        return {k: v for k, v in record.items() if v is not None}
 
-        with open(self.log_path, "a") as f:
-            f.write(json.dumps(record) + "\n")
-
-        # Mirror to wandb / tensorboard if configured
+    def _mirror(self, metric_name, metric_value) -> None:
+        """Mirror one metric to wandb / tensorboard if configured."""
         if self.wandb_run is not None:
             try:
                 self.wandb_run.log(
@@ -140,15 +146,27 @@ class TrainingLogger:
 
         Invalid or missing values in metrics dict are skipped without raising.
         """
+        wall_time = time.time() - self.start_time
+        task = task_name if task_name is not None else self.task_name
+
+        records = []
         for name, value in metrics.items():
-            self.log(
-                stage=stage,
-                metric_name=name,
-                metric_value=value,
-                update=update,
-                epoch=epoch,
-                task_name=task_name,
+            try:
+                val = float(value)
+            except (TypeError, ValueError):
+                continue  # Skip invalid values; fail gracefully
+            records.append(
+                (name, value, self._build_record(stage, task, name, val, wall_time, update, epoch))
             )
+
+        # One open() per update rather than one per metric — BC logs 5 metrics per
+        # gradient step, so this is thousands of syscalls saved per run.
+        if records:
+            with open(self.log_path, "a") as f:
+                f.write("".join(json.dumps(r) + "\n" for _, _, r in records))
+            for name, value, _ in records:
+                self._mirror(name, value)
+
         self.global_step += 1
 
     def advance_step(self, n: int = 1) -> None:

@@ -15,6 +15,7 @@ import os
 import copy
 import pickle
 from collections import defaultdict
+from functools import lru_cache
 
 import numpy as np
 import torch
@@ -428,17 +429,8 @@ def _compute_grpo_advantages(trajectories, gamma=0.99):
     for traj in trajectories:
         T = len(traj["rewards"])
         traj_advantage = (traj["return"] - mean_return) / std_return
-        traj["advantages"] = traj_advantage * np.ones(T)
+        traj["advantages"] = np.full(T, traj_advantage)
     return trajectories
-
-
-def _grad_norm(params):
-    """Global L2 norm of gradients over parameters that have grads. Skips params with None grad."""
-    total_sq = 0.0
-    for p in params:
-        if p.grad is not None:
-            total_sq += p.grad.data.norm(2).item() ** 2
-    return total_sq**0.5
 
 
 def _rl_metrics_from_trajectories(trajectories, all_advantages):
@@ -570,13 +562,11 @@ def rl_finetune(
         # the optimizer param set). Used to diagnose GRPO stability; large norms may
         # indicate instability. Skips params with no gradients.
         rl_params = list(policy.parameters())
-        grad_norm_pre = _grad_norm(rl_params)
-
-        if clip_grad_norm > 0:
-            torch.nn.utils.clip_grad_norm_(rl_params, clip_grad_norm)
-            grad_norm_post = min(grad_norm_pre, clip_grad_norm)
-        else:
-            grad_norm_post = grad_norm_pre
+        max_norm = clip_grad_norm if clip_grad_norm > 0 else float("inf")
+        grad_norm_pre = float(torch.nn.utils.clip_grad_norm_(rl_params, max_norm))
+        grad_norm_post = (
+            min(grad_norm_pre, clip_grad_norm) if clip_grad_norm > 0 else grad_norm_pre
+        )
 
         optimizer.step()
         policy.clip_params()
@@ -918,13 +908,9 @@ def record_episode_gif(
 # ===========================================================================
 
 
-def load_policy_prompt_assets(env_name):
-    """Load policy prompt files and per-task strings for LLM policy generation."""
-    from lares.core.policy_generation import (
-        obs_description_dict,
-        input_dict_for_policy,
-    )
-
+@lru_cache(maxsize=1)
+def _read_policy_prompt_templates():
+    """Read the six prompt templates from disk. Cached: called once per generation."""
     root_dir = os.path.dirname(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     )
@@ -934,13 +920,25 @@ def load_policy_prompt_assets(env_name):
         with open(os.path.join(prompt_dir, filename), "r", encoding="utf-8") as f:
             return f.read()
 
-    assets = {
+    return {
         "initial_system": _read("initial_system.txt"),
         "initial_user": _read("new_initial_user.txt"),
         "code_output_tip": _read("new_code_output_tip.txt"),
         "code_feedback_tmpl": _read("code_feedback.txt"),
         "ideas_system": _read("ideas_system.txt"),
         "ideas_user": _read("ideas_user.txt"),
+    }
+
+
+def load_policy_prompt_assets(env_name):
+    """Load policy prompt files and per-task strings for LLM policy generation."""
+    from lares.core.policy_generation import (
+        obs_description_dict,
+        input_dict_for_policy,
+    )
+
+    assets = {
+        **_read_policy_prompt_templates(),
         "task_description": TASK_DESCRIPTIONS.get(env_name, env_name),
         "obs_description": obs_description_dict.get(env_name, ""),
         "input_dict_string": input_dict_for_policy.get(env_name, ""),

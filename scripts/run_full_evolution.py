@@ -224,7 +224,7 @@ def main() -> None:
     ensure_mujoco_headless_gl()
     env = make_env(cfg)
     obs_dim, action_dim = policy_space_dims(env)
-    obs, _ = env.reset()
+    env.reset()
     print(f"  obs_dim={obs_dim}, action_dim={action_dim}")
 
     # -----------------------------------------------------------------------

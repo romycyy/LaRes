@@ -83,24 +83,45 @@ Outputs under `log_dir` include `demo_<task>.pkl`, JSONL training logs, `best_po
 |--------|---------|
 | [`scripts/plot_training_dynamics.py`](scripts/plot_training_dynamics.py) | Plot BC/RL/evolution metrics from JSONL logs |
 | [`scripts/visualize_expert_policy.py`](scripts/visualize_expert_policy.py) | Record expert-policy GIF rollouts |
+| [`scripts/run_shadowhand_spin_stages.py`](scripts/run_shadowhand_spin_stages.py) | Isaac Lab ShadowHandSpin 3-stage run (`--config config/shadowhand_spin_stages.yaml`) |
+
+## Isaac Lab pipeline
+
+A second environment backend runs the same Stage 1→3 recipe on Isaac Lab's `ShadowHandSpin`
+instead of MetaWorld. It needs a CUDA machine with Isaac Lab installed at the config's
+`isaaclab_root`:
+
+```bash
+python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml
+```
+
+[`lares/envs/isaac_lab_adapter.py`](lares/envs/isaac_lab_adapter.py) (`IsaacLabSingleEnvAdapter`)
+presents Isaac's batched vector env with the same `reset() -> (obs, info)` / 4-tuple `step()` /
+`info["success"]` contract the MetaWorld wrapper provides. Design notes and open issues:
+[`docs/PIPELINE_REFINEMENT_SPEC.md`](docs/PIPELINE_REFINEMENT_SPEC.md).
 
 ## Project Structure
 
 ```
 LaRes/
 ├── scripts/
-│   ├── run_full_evolution.py       # Main entry
+│   ├── run_full_evolution.py       # Main entry (MetaWorld)
+│   ├── run_shadowhand_spin_stages.py  # Isaac Lab ShadowHandSpin entry
 │   ├── plot_training_dynamics.py
 │   └── visualize_expert_policy.py
 ├── config/
 │   ├── run_full_evolution.yaml
+│   ├── shadowhand_spin_stages.yaml
 │   └── environment.yaml
 ├── lares/
-│   ├── core/                       # training_pipeline, policy_generation, symbolic_policy
+│   ├── core/                       # training_pipeline, policy_generation,
+│   │                               #   symbolic_policy, training_logger
 │   ├── utils/
 │   │   ├── metaworld_env.py        # MetaWorld env factory + wrapper
 │   │   └── policy_prompts/         # LLM prompt templates
-│   └── envs/rlkit/                 # Gym wrappers
+│   └── envs/
+│       ├── isaac_lab_adapter.py    # Isaac Lab single-env adapter
+│       └── rlkit/                  # Gym wrappers
 ├── tests/
 └── docs/
 ```

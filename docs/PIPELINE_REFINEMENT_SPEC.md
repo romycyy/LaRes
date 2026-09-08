@@ -310,7 +310,7 @@ These interact with the loss choice; worth deciding together.
 
 ## 4. Ranking validity (found while writing this — possibly the biggest item)
 
-`env_wrapper.reset()` (`lares/utils/utils.py:2540`) resamples an MT1 task on **every**
+`env_wrapper.reset()` (`lares/utils/metaworld_env.py:138`) resamples an MT1 task on **every**
 reset, from a `_mt1_rng` created once and never reset:
 
 ```python
