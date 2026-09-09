@@ -8,28 +8,45 @@
 env_name: "push-v2"        # MetaWorld task name (see EXPERT_POLICY_MAP); maps to push-v3
 seed: 42
 # Use Farama MT1 benchmark tasks for push-v3 (full observability + valid rand_vec per task).
+# The task placements themselves come from the committed manifests below, never from an
+# unseeded MT1 construction: MT1 without a seed draws different goals on every run.
 use_mt1: true
 
+# ---------- Evaluation contract ----------
+# Committed manifests define which placements each split runs on. Rebuild with:
+#   python scripts/lock_baseline.py --build-manifests
+manifest_dir: "./config/manifests"
+eval_max_steps: 150         # Rollout horizon; must match the manifests' `horizon`
+
 # ---------- Stage 1: Expert dataset ----------
-dataset_episodes: 150       # Number of expert episodes to collect
+dataset_episodes: 150       # Expert episodes, taken from the head of the train manifest
 
 # Optionally point to a pre-collected demo buffer to skip Stage 1:
 # demo_buffer_path: "./logs/demo_reach-v2.pkl"
 
 # ---------- Stage 2+3: BC + RL inner loop ----------
 bc_steps: 2000              # Behavioural-cloning gradient steps per candidate
-rl_iterations: 0           # GRPO RL outer iterations per candidate 
+rl_iterations: 0           # GRPO RL outer iterations per candidate
 rl_episodes: 30             # Rollout episodes per RL iteration (parallelize)
 
-# ---------- Evaluation ----------
-eval_episodes: 10           # Episodes used to score each candidate
+# ---------- Evaluation: staged development budget (spec.md section 12) ----------
+# Every candidate is screened on `screen_episodes`, and only those clearing the
+# declared screening rule are re-scored on `expanded_episodes`. The screening set
+# is a prefix of the expanded one, so the two stay paired.
+screen_episodes: 10
+expanded_episodes: 30
+eval_episodes: 30           # legacy alias; used as `expanded_episodes` if that is unset
 
 # ---------- Stage 4: LLM structure search ----------
 model: "gpt-5"             # OpenAI model for policy generation
 # If true: one LLM call for JSON design hypotheses, then implementation (batched or per-idea).
 policy_gen_two_phase: true
-# When policy_gen_two_phase is true: "batched" (default) or "per_idea".
-policy_impl_mode: batched
+# When policy_gen_two_phase is true: "batched" or "per_idea".
+# Measured on 2026-09-09 with gpt-4o-mini, 4 policies per generation, 3 replicates each:
+# both modes returned 12/12 valid candidates, and per_idea cost 0.73x the tokens per
+# usable candidate because a batched request repeats every hypothesis in one long prompt.
+# See logs/generation_modes/ and scripts/compare_generation_modes.py.
+policy_impl_mode: per_idea
 num_generations: 3         # Evolution generations
 pop_size: 5                 # Candidates generated per generation
 elite_num: 2                # Top-k results fed back to the next generation

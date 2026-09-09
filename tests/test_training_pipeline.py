@@ -74,6 +74,8 @@ from lares.core.policy_generation import (  # noqa: E402
     obs_description_dict,
     input_dict_for_policy,
 )
+from lares.eval import PipelineEnvs  # noqa: E402
+from lares.eval.manifest import synthetic_cases, synthetic_manifest  # noqa: E402
 
 if HAS_METAWORLD:
     from lares.utils import env_wrapper, make_metaworld_env  # noqa: E402
@@ -150,7 +152,7 @@ class MockEnv:
         self._episode_length = episode_length
         self._step_count = 0
 
-    def reset(self):
+    def reset(self, case=None):
         self._step_count = 0
         obs = np.random.randn(self.obs_dim).astype(np.float32)
         return obs, {}
@@ -320,12 +322,15 @@ expert = MockExpertPolicy()
 demo_buf = DemoBuffer()
 env_mock = MockEnv(OBS_DIM, ACT_DIM, episode_length=20)
 
-for _ in range(200):
-    obs, _ = env_mock.reset()
+MOCK_CASES = synthetic_cases(200, prefix="mock")
+MOCK_MANIFEST = synthetic_manifest(5, label="mock", action_dim=ACT_DIM)
+
+for _case in MOCK_CASES:
+    obs, _ = env_mock.reset(_case)
     for __ in range(20):
         action = expert.get_action(obs)
         next_obs, reward, done, info = env_mock.step(env_mock.action_space.high * action)
-        demo_buf.add(obs, action, reward, next_obs, float(done))
+        demo_buf.add(obs, action, reward, next_obs, float(done), episode_id=_case.case_id)
         obs = next_obs
         if done:
             break
@@ -336,9 +341,8 @@ bc_stats = behavioral_cloning(
 )
 check("BC: returns stats dict", isinstance(bc_stats, dict))
 check("BC: has bc_loss key", "bc_loss" in bc_stats)
-# check("BC: has mean_loss key", "mean_loss" in bc_stats) old
-# check("BC: has std_loss key", "std_loss" in bc_stats)
-check("BC: has log_prob key", "log_prob" in bc_stats)
+check("BC: has mean_loss key", "mean_loss" in bc_stats)
+check("BC: has std_loss key", "std_loss" in bc_stats)
 check("BC: has final_loss key", "final_loss" in bc_stats)
 check("BC: correct number of loss entries", len(bc_stats["bc_loss"]) == 300)
 
@@ -374,7 +378,7 @@ print("-" * 40)
 print("1.3 Trajectory collection & GRPO")
 print("-" * 40)
 
-trajectories = _collect_trajectories(policy_bc, env_mock, num_episodes=5, max_steps=20)
+trajectories = _collect_trajectories(policy_bc, env_mock, MOCK_CASES[:5], max_steps=20)
 check("Traj: correct count", len(trajectories) == 5)
 check("Traj: required keys",
       all(k in trajectories[0] for k in ("obs", "pretanh", "rewards", "return", "success", "length")))
@@ -403,7 +407,7 @@ behavioral_cloning(policy_rl, demo_buf, num_steps=100, batch_size=64, lr=1e-3, l
 pre_rl_sd = copy.deepcopy(policy_rl.state_dict())
 
 rl_stats = rl_finetune(
-    policy_rl, env_mock, num_iterations=5, episodes_per_iter=3,
+    policy_rl, env_mock, MOCK_CASES, num_iterations=5, episodes_per_iter=3,
     lr=1e-3, max_steps=20, log_interval=0,
 )
 check("RL: returns stats dict", isinstance(rl_stats, dict))
@@ -433,7 +437,11 @@ print("-" * 40)
 print("1.5 evaluate_policy")
 print("-" * 40)
 
-eval_result = evaluate_policy(policy_rl, env_mock, num_episodes=5, max_steps=20)
+eval_record = evaluate_policy(policy_rl, env_mock, MOCK_MANIFEST, max_steps=20)
+eval_result = eval_record.fitness_dict()
+check("Eval: per-episode table matches manifest", len(eval_record.episodes) == len(MOCK_MANIFEST))
+check("Eval: episode order matches manifest",
+      [e.case_id for e in eval_record.episodes] == [c.case_id for c in MOCK_MANIFEST.episodes])
 check("Eval: returns dict", isinstance(eval_result, dict))
 check("Eval: has mean_reward", "mean_reward" in eval_result)
 check("Eval: has success_rate", "success_rate" in eval_result)
@@ -459,7 +467,7 @@ for bs in [1, 4, 16]:
 wc_bc = behavioral_cloning(wc, demo_buf, num_steps=200, batch_size=64, lr=1e-3, log_interval=0)
 check("WC: BC training completes", "final_loss" in wc_bc)
 
-wc_eval = evaluate_policy(wc, env_mock, num_episodes=3, max_steps=20)
+wc_eval = evaluate_policy(wc, env_mock, MOCK_MANIFEST.head(3), max_steps=20).fitness_dict()
 check("WC: eval completes", "mean_reward" in wc_eval)
 
 # ===========================================================================
@@ -482,7 +490,7 @@ m, s = p_e2e(torch.randn(4, OBS_DIM))
 (m.sum() + s.sum()).backward()
 check("E2E: grads after BC", any(p.grad is not None and p.grad.abs().sum() > 0 for p in p_e2e.parameters()))
 
-rl_finetune(p_e2e, env_mock, num_iterations=2, episodes_per_iter=2, max_steps=10, log_interval=0)
+rl_finetune(p_e2e, env_mock, MOCK_CASES, num_iterations=2, episodes_per_iter=2, max_steps=10, log_interval=0)
 p_e2e.zero_grad()
 m, s = p_e2e(torch.randn(4, OBS_DIM))
 (m.sum() + s.sum()).backward()
@@ -530,12 +538,18 @@ for task in EXPECTED_TASKS:
     check(f"input_dict: '{task}'", task in input_dict_for_policy and len(input_dict_for_policy[task]) > 20)
 
 try:
+    # The feedback template is guidance only. Performance numbers arrive in the
+    # structured evidence block from lares/search/feedback.py, because a success
+    # rate and a mean return cannot separate a structural mistake from a tuning
+    # one, and the template used to be the only thing the generator saw.
     with open(os.path.join(prompt_dir, "code_feedback.txt"), "r") as f:
         tmpl = f.read()
-    fb = tmpl.format(train_steps=10000, win_rate=0.5, mean_reward=100.0, current_output="test")
-    check("Prompt: feedback template formats", "10000" in fb and "0.5" in fb)
+    check(
+        "Prompt: feedback template is placeholder-free guidance",
+        "{" not in tmpl and "failure labels" in tmpl and "GeneratedPolicy" in tmpl,
+    )
 except Exception as e:
-    check("Prompt: feedback template formats", False, str(e))
+    check("Prompt: feedback template is placeholder-free guidance", False, str(e))
 
 try:
     with open(os.path.join(prompt_dir, "new_initial_user.txt"), "r") as f:
@@ -588,9 +602,11 @@ if HAS_METAWORLD:
     print("-" * 40)
 
     try:
+        MW_CASES = synthetic_cases(20, prefix="mw", base_seed=SEED)
+        MW_MANIFEST = synthetic_manifest(5, label="window-close-v2", action_dim=ACT_DIM)
         real_env = make_metaworld_env(args_mw, SEED)
         real_env = env_wrapper(real_env, args_mw)
-        obs, info_or_none = real_env.reset()
+        obs, info_or_none = real_env.reset(MW_CASES[0])
         check("MW env: created", True)
         check("MW env: obs shape", obs.shape == (OBS_DIM,))
         check("MW env: action_space", real_env.action_space.shape == (ACT_DIM,))
@@ -621,7 +637,7 @@ if HAS_METAWORLD:
         print("-" * 40)
 
         try:
-            real_demo, real_stats = generate_dataset(real_env, "window-close-v2", num_episodes=10, max_steps=150)
+            real_demo, real_stats = generate_dataset(real_env, "window-close-v2", MW_CASES[:10], max_steps=150)
             check("Stage1 real: buffer size", len(real_demo) > 100)
             check("Stage1 real: stats keys", "mean_reward" in real_stats and "mean_success" in real_stats)
             check("Stage1 real: num_transitions", real_stats["num_transitions"] == len(real_demo))
@@ -670,8 +686,8 @@ if HAS_METAWORLD:
 
                 try:
                     rl_real_stats = rl_finetune(
-                        p_real_bc, real_env, num_iterations=5, episodes_per_iter=3,
-                        lr=3e-4, max_steps=150, log_interval=5,
+                        p_real_bc, real_env, MW_CASES, num_iterations=5,
+                        episodes_per_iter=3, lr=3e-4, max_steps=150, log_interval=5,
                     )
                     check("Stage3 real: completes", "best_success_rate" in rl_real_stats)
                     check("Stage3 real: has returns", len(rl_real_stats["returns"]) == 15)
@@ -688,7 +704,7 @@ if HAS_METAWORLD:
                 print("-" * 40)
 
                 try:
-                    eval_real = evaluate_policy(p_real_bc, real_env, num_episodes=5, max_steps=150)
+                    eval_real = evaluate_policy(p_real_bc, real_env, MW_MANIFEST, max_steps=150).fitness_dict()
                     check("Eval real: completes", "success_rate" in eval_real)
                     check("Eval real: success_rate in [0,1]", 0 <= eval_real["success_rate"] <= 1)
                     print(f"    Eval: reward={eval_real['mean_reward']:.2f}, success={eval_real['success_rate']:.2f}")
@@ -755,6 +771,7 @@ if HAS_OPENAI_KEY:
             args=llm_args,
             obs_dim=OBS_DIM,
             action_dim=ACT_DIM,
+            env_name="window-close-v2",
             initial_system=_read_prompt("initial_system.txt"),
             initial_user=_read_prompt("new_initial_user.txt"),
             task_description="Control the robotic arm to close the window",
@@ -802,10 +819,10 @@ if HAS_OPENAI_KEY:
             gen_bc = behavioral_cloning(gen_p, demo_buf, num_steps=200, batch_size=64, lr=1e-3, log_interval=0)
             check("LLM BC: completes", "final_loss" in gen_bc)
 
-            gen_rl = rl_finetune(gen_p, env_mock, num_iterations=3, episodes_per_iter=3, max_steps=20, log_interval=0)
+            gen_rl = rl_finetune(gen_p, env_mock, MOCK_CASES, num_iterations=3, episodes_per_iter=3, max_steps=20, log_interval=0)
             check("LLM RL: completes", "best_success_rate" in gen_rl)
 
-            gen_eval = evaluate_policy(gen_p, env_mock, num_episodes=3, max_steps=20)
+            gen_eval = evaluate_policy(gen_p, env_mock, MOCK_MANIFEST.head(3), max_steps=20).fitness_dict()
             check("LLM eval: completes", "success_rate" in gen_eval)
         except Exception:
             check("LLM BC+RL", False, traceback.format_exc())
@@ -828,12 +845,14 @@ if HAS_OPENAI_KEY:
             check("LLM+MW BC: completes", "final_loss" in bc_r)
 
             rl_r = rl_finetune(
-                gen_p_real_copy, real_env, num_iterations=3,
+                gen_p_real_copy, real_env, MW_CASES, num_iterations=3,
                 episodes_per_iter=2, max_steps=150, log_interval=3,
             )
             check("LLM+MW RL: completes", "best_success_rate" in rl_r)
 
-            eval_r = evaluate_policy(gen_p_real_copy, real_env, num_episodes=3, max_steps=150)
+            eval_r = evaluate_policy(
+                gen_p_real_copy, real_env, MW_MANIFEST.head(3), max_steps=150
+            ).fitness_dict()
             check("LLM+MW eval: completes", "success_rate" in eval_r)
             print(f"    LLM policy on real env: reward={eval_r['mean_reward']:.2f}, "
                   f"success={eval_r['success_rate']:.2f}")
@@ -861,14 +880,17 @@ if HAS_OPENAI_KEY:
             rl_episodes_per_iter=2,
             log_dir=evo_dir,
             record_demo_gif=False,
+            dev_manifest=MOCK_MANIFEST.head(3),
+            train_cases=MOCK_CASES,
         )
 
+        # allow_shared: the mock holds no simulator state, so one instance cannot
+        # leak between streams the way a real MuJoCo env would.
         evo_result = orchestrator.run(
             client=llm_client,
-            env=env_mock,
+            envs=PipelineEnvs(env_mock, env_mock, env_mock, allow_shared=True),
             demo_buffer=demo_buf,
             args=llm_args,
-            eval_episodes=3,
         )
 
         check("Stage4: returns dict", isinstance(evo_result, dict))

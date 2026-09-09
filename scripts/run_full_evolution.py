@@ -42,11 +42,22 @@ from lares.core.training_pipeline import (  # noqa: E402
     TASK_DESCRIPTIONS,
     ensure_mujoco_headless_gl,
     generate_dataset,
-    get_expert_policy,
 )
 from lares.core.training_logger import TrainingLogger  # noqa: E402
+from lares.eval import (  # noqa: E402
+    EvaluationManifest,
+    ExpertActor,
+    PipelineEnvs,
+    PromotionPolicy,
+    build_report,
+    episode_table,
+    evaluate_manifest,
+    make_manifest_env,
+)
+from lares.eval.manifest import SPLIT_DEVELOPMENT, SPLIT_TRAIN  # noqa: E402
 
 DEFAULT_CONFIG_PATH = os.path.join(_PROJECT_ROOT, "config", "run_full_evolution.yaml")
+MANIFEST_DIR = os.path.join(_PROJECT_ROOT, "config", "manifests")
 
 # Required config keys (validated on load)
 _REQUIRED_KEYS = (
@@ -97,7 +108,37 @@ def load_config(path: str) -> SimpleNamespace:
         raw["policy_impl_mode"] = "batched"
     else:
         raw["policy_impl_mode"] = str(raw["policy_impl_mode"]).strip().lower()
+    raw.setdefault("eval_max_steps", 150)
+    raw["eval_max_steps"] = int(raw["eval_max_steps"])
+    # Staged development budget (spec.md section 12). ``eval_episodes`` is kept as
+    # the expanded budget so older configs keep their meaning.
+    raw.setdefault("screen_episodes", 10)
+    raw["screen_episodes"] = int(raw["screen_episodes"])
+    raw.setdefault("expanded_episodes", int(raw["eval_episodes"]))
+    raw["expanded_episodes"] = int(raw["expanded_episodes"])
+    raw.setdefault("manifest_dir", MANIFEST_DIR)
     return SimpleNamespace(**raw)
+
+
+def manifest_path(cfg, split: str) -> str:
+    # Resolve against the project root, not the shell's cwd, so a config that
+    # names "./config/manifests" keeps working from anywhere.
+    base = cfg.manifest_dir
+    if not os.path.isabs(base):
+        base = os.path.join(_PROJECT_ROOT, base)
+    return os.path.join(base, f"{cfg.env_name}_{split}.yaml")
+
+
+def load_split(cfg, split: str):
+    """Load one committed manifest and rebuild the placements it names."""
+    path = manifest_path(cfg, split)
+    if not os.path.isfile(path):
+        raise FileNotFoundError(
+            f"Missing {split} manifest: {path}. Build the evaluation contract first "
+            f"with: python scripts/lock_baseline.py --build-manifests"
+        )
+    manifest = EvaluationManifest.load(path)
+    return manifest, manifest.resolve_pool()
 
 
 def parse_args() -> str:
@@ -123,11 +164,11 @@ def parse_args() -> str:
 # ---------------------------------------------------------------------------
 
 
-def make_env(cfg):
-    """Create a wrapped MetaWorld environment.
+def make_env(cfg, pool):
+    """Create one wrapped MetaWorld environment bound to ``pool``.
 
-    Expects the same fields as :func:`load_config` (``env_name``, ``seed``,
-    ``episode_length``, optional ``use_mt1``).
+    Call once per stream. Two streams must never share an instance: the whole
+    point of the manifest is that an episode depends only on its own case.
     """
     from lares.utils import make_metaworld_env, env_wrapper
 
@@ -137,8 +178,9 @@ def make_env(cfg):
         episode_length=cfg.episode_length,
         use_mt1=getattr(cfg, "use_mt1", False),
     )
-    raw_env = make_metaworld_env(env_cfg, cfg.seed)
-    return env_wrapper(raw_env, env_cfg)
+    tasks = pool.task_index() if pool is not None else None
+    raw_env = make_metaworld_env(env_cfg, cfg.seed, tasks=tasks)
+    return env_wrapper(raw_env, env_cfg, tasks=tasks)
 
 
 def policy_space_dims(env) -> tuple[int, int]:
@@ -166,28 +208,13 @@ def print_eval(label: str, result: dict) -> None:
     )
 
 
-def evaluate_expert_policy(env, env_name: str, num_episodes: int = 10) -> dict:
-    """Run the MetaWorld built-in expert and return evaluation stats."""
-    expert = get_expert_policy(env_name)
-    total_reward, total_success = 0.0, 0.0
-    for _ in range(num_episodes):
-        obs, _ = env.reset()
-        ep_reward, success = 0.0, False
-        for _ in range(150):
-            action = np.clip(expert.get_action(obs), -1.0, 1.0)
-            next_obs, reward, done, info = env.step(env.action_space.high * action)
-            ep_reward += reward
-            if info.get("success", 0) > 0:
-                success = True
-            obs = next_obs
-            if done:
-                break
-        total_reward += ep_reward
-        total_success += float(success)
-    return {
-        "mean_reward": total_reward / num_episodes,
-        "success_rate": total_success / num_episodes,
-    }
+def evaluate_expert_policy(env, env_name: str, manifest, max_steps: int = 150):
+    """Run the MetaWorld built-in expert over a manifest.
+
+    Uses the same runner as every candidate, so the expert reference and the
+    policies under test are scored on identical ordered cases.
+    """
+    return evaluate_manifest(ExpertActor(env_name), manifest, env, max_steps=max_steps)
 
 
 # ---------------------------------------------------------------------------
@@ -222,19 +249,51 @@ def main() -> None:
     separator("Environment Setup")
     # Headless SSH: MuJoCo must load EGL before MujocoEnv / first rgb_array render.
     ensure_mujoco_headless_gl()
-    env = make_env(cfg)
-    obs_dim, action_dim = policy_space_dims(env)
-    env.reset()
+
+    train_manifest, train_pool = load_split(cfg, SPLIT_TRAIN)
+    dev_manifest_full, dev_pool = load_split(cfg, SPLIT_DEVELOPMENT)
+    promotion = PromotionPolicy(
+        screen_episodes=cfg.screen_episodes,
+        expanded_episodes=cfg.expanded_episodes,
+    )
+    # The orchestrator carves the screening and expanded subsets out of this, so
+    # hand it enough cases for the larger of the two.
+    dev_manifest = dev_manifest_full.head(
+        min(max(cfg.screen_episodes, cfg.expanded_episodes), len(dev_manifest_full))
+    )
+
+    # One env per stream. Collection, evaluation and recording must not be able
+    # to disturb each other's placements.
+    collect_env = make_env(cfg, train_pool)
+    rl_env = make_env(cfg, train_pool)
+    dev_env = make_env(cfg, dev_pool)
+    gif_env = make_env(cfg, dev_pool)
+    envs = PipelineEnvs(development=dev_env, rl=rl_env, gif=gif_env)
+
+    obs_dim, action_dim = policy_space_dims(dev_env)
     print(f"  obs_dim={obs_dim}, action_dim={action_dim}")
+    print(f"  train manifest      : {train_manifest.manifest_id} ({len(train_manifest)} cases)")
+    print(f"  development manifest: {dev_manifest.manifest_id} ({len(dev_manifest)} cases)")
+    print(f"  development budget  : screen {promotion.screen_episodes}, "
+          f"expanded {promotion.expanded_episodes} (nested prefixes)")
+    print(f"  metaworld           : {dev_manifest.environment.version_or_commit}")
+    print(f"  success rule        : {dev_manifest.environment.success_rule}")
 
     # -----------------------------------------------------------------------
     #  Expert baseline
     # -----------------------------------------------------------------------
     separator("Expert Baseline")
-    expert_result = evaluate_expert_policy(
-        env, cfg.env_name, num_episodes=cfg.eval_episodes
+    expert_record = evaluate_expert_policy(
+        dev_env, cfg.env_name, dev_manifest, max_steps=cfg.eval_max_steps
     )
+    expert_result = expert_record.fitness_dict()
     print_eval("MetaWorld built-in expert", expert_result)
+    expert_report = build_report(
+        expert_record, candidate_id="scripted_expert", checkpoint="fitted",
+        action_dim=action_dim,
+    )
+    expert_report.save(os.path.join(log_dir, "expert_report.json"))
+    print("\n" + episode_table(expert_report, limit=5))
 
     # -----------------------------------------------------------------------
     #  Stage 1: Expert dataset generation (or load cached buffer)
@@ -246,10 +305,17 @@ def main() -> None:
         demo_buf = DemoBuffer.load(demo_buffer_path)
         print(f"  Loaded {len(demo_buf)} transitions.")
     else:
+        dataset_cases = train_manifest.episodes[: cfg.dataset_episodes]
+        if len(dataset_cases) < cfg.dataset_episodes:
+            print(
+                f"  WARNING: train manifest has {len(train_manifest)} cases, "
+                f"dataset_episodes={cfg.dataset_episodes}; collecting "
+                f"{len(dataset_cases)}."
+            )
         demo_buf, dataset_stats = generate_dataset(
-            env,
+            collect_env,
             cfg.env_name,
-            num_episodes=cfg.dataset_episodes,
+            dataset_cases,
             max_steps=150,
         )
         buf_path = os.path.join(log_dir, f"demo_{cfg.env_name}.pkl")
@@ -304,16 +370,19 @@ def main() -> None:
         rl_episodes_per_iter=cfg.rl_episodes,
         log_dir=log_dir,
         record_demo_gif=cfg.record_demo_gif,
+        dev_manifest=dev_manifest,
+        train_cases=train_manifest.episodes,
+        eval_max_steps=cfg.eval_max_steps,
+        promotion_policy=promotion,
     )
 
     t0 = time.time()
     best = orchestrator.run(
         client=client,
-        env=env,
+        envs=envs,
         demo_buffer=demo_buf,
         args=llm_args,
         logger=logger,
-        eval_episodes=cfg.eval_episodes,
     )
     elapsed = time.time() - t0
 
@@ -346,7 +415,8 @@ def main() -> None:
         print("\n  WARNING: Evolution produced no valid policies.")
 
     print()
-    env.close()
+    collect_env.close()
+    envs.close()
 
 
 if __name__ == "__main__":
