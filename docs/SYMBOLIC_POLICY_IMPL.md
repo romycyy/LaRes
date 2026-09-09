@@ -1,5 +1,12 @@
 # Symbolic Policy Implementation Summary
 
+> **Status: partly superseded.** The base class and harness described below still exist, but the
+> contract has grown. Generated policies now read the observation through named accessors rather
+> than raw indices, every parameter must initialise inside its declared range, batch coupling and
+> insensitivity to a required field are rejected, and the subprocess harness delegates to
+> `lares/core/policy_validator.py` instead of carrying its own checks. See the `SymbolicPolicy`
+> contract section of `CLAUDE.md` for the current rules.
+
 ## Objective
 
 Modify the LaRes system so the LLM proposes **learnable symbolic policies** instead of reward functions. The generated policies must be purely symbolic (no neural networks), contain learnable parameters with defined weight ranges, output action probability distributions, and conform to a default policy class interface.
@@ -20,6 +27,9 @@ Modify the LaRes system so the LLM proposes **learnable symbolic policies** inst
 The `SymbolicPolicy(nn.Module)` base class provides:
 
 - **Interface**: `forward(obs) -> (mean, std)` — outputs `(batch, action_dim)` mean and std for a Gaussian action distribution.
+- **`obs_field(obs, name)`**: named view of one observation field. The only sanctioned way to read the
+  observation; raw slicing is rejected by a static check.
+- **`record_gate(name, value)` / `reset_diagnostics()`**: optional detached phase-gate telemetry.
 - **`get_param_ranges()`**: Abstract method returning `{param_name: (min, max)}` for every `nn.Parameter`.
 - **`validate()`**: Checks that no forbidden NN modules (Linear, Conv, LSTM, Transformer, etc.) are present in the policy.
 - **`clip_params()`**: Projects parameters onto their declared ranges after gradient steps.
@@ -28,14 +38,20 @@ The `SymbolicPolicy(nn.Module)` base class provides:
 
 ### `test_generate_policy.py` — Subprocess Validation Harness
 
-Appended to LLM-generated code and run as a subprocess. Validates:
+Appended to LLM-generated code and run as a subprocess. It binds the observation schema named by
+`--env_name`, recovers the generated source by splitting its own file on the harness banner, and
+delegates every rule to `lares.core.policy_validator.validate_policy`, which checks:
 
-1. `GeneratedPolicy` can be instantiated with `(obs_dim, action_dim)`
-2. No forbidden NN modules
-3. `get_param_ranges()` returns valid `dict` with `(lo < hi)` bounds
-4. `forward()` produces correct `(mean, std)` shapes at batch sizes 1, 4, 16
-5. `std > 0` everywhere, no NaN/Inf
-6. Gradients flow through `backward()` to `nn.Parameter`s
+1. no raw observation indexing in the source
+2. `GeneratedPolicy` instantiates with `(obs_dim, action_dim)`
+3. no forbidden NN modules
+4. every parameter declared, bounded, and initialised inside its own range
+5. correct `(mean, std)` shapes at batch sizes 1, 4, 16, with `std > 0` and no NaN/Inf
+6. row `i` of a batched forward equals that row evaluated alone
+7. the action responds to every field the schema marks required
+8. gradients reach the parameters
+9. gate telemetry is detached, batch-shaped and inert
+10. `state_dict` round-trips
 
 All local variables use `_` prefix to avoid name collisions with generated code.
 

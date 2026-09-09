@@ -67,8 +67,8 @@ and exposes every key as a `SimpleNamespace` attribute.
 
 - Loads the MetaWorld built-in expert policy for the task via `EXPERT_POLICY_MAP`
   (e.g. `push-v2` → `SawyerPushV3Policy`).
-- Runs `num_episodes` rollouts (up to 150 steps each), storing every
-  `(obs, action, reward, next_obs, done)` tuple into a `DemoBuffer`.
+- Runs one rollout per training-manifest case (up to 150 steps each), storing every
+  `(obs, action, reward, next_obs, done, episode_id)` tuple into a `DemoBuffer`.
 - `DemoBuffer` is a plain Python list-backed structure with `add()`, `sample(batch_size)`,
   `save(path)` / `load(path)` (pickle).
 - The buffer is saved to `log_dir/demo_<env_name>.pkl` and can be reloaded in future runs
@@ -164,7 +164,7 @@ for gen in range(num_generations):
     for candidate in policy_pop:
         behavioral_cloning(candidate, ...)   # Stage 2
         rl_finetune(candidate, ...)          # Stage 3
-        score = evaluate_policy(candidate)   # success_rate*1000 + mean_reward
+        score = evaluate_policy(candidate, dev_env, dev_manifest)   # same cases for all candidates
     sort candidates by score
     update global best
     record GIF of best candidate

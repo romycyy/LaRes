@@ -63,8 +63,17 @@ Configuration lives in `config/`: `run_full_evolution.yaml` (MetaWorld),
 
 ### `lares/utils/metaworld_env.py`
 
-- `make_metaworld_env(cfg, seed)` — creates MetaWorld V3 env with `NormalizedBoxEnv` + `TimeLimit`
-- `env_wrapper` — episode length cap, MT1 task sampling on reset
+- `make_metaworld_env(cfg, seed, tasks=None)` — creates MetaWorld V3 env with `NormalizedBoxEnv` +
+  `TimeLimit`. `tasks` is required when `cfg.use_mt1`: the env never draws its own placements.
+- `env_wrapper` — episode length cap; `reset(case)` installs the named placement and reset seed.
+  Calling `reset()` with no case raises.
+
+### `lares/eval/`
+
+- `manifest.py` — `EvaluationManifest`, `EpisodeCase`, `TaskPool`, `build_manifest`, `assert_disjoint`
+- `runner.py` — `evaluate_manifest`, `ManifestResult`, the actor adapters, `PipelineEnvs`,
+  `paired_difference`
+- Committed splits live in `config/manifests/`; rebuild with `scripts/lock_baseline.py --build-manifests`
 
 ### `lares/envs/isaac_lab_adapter.py`
 
@@ -104,6 +113,8 @@ Configuration lives in `config/`: `run_full_evolution.yaml` (MetaWorld),
 | `tests/test_two_phase_policy_generation.py` | Two-phase LLM generation |
 | `tests/test_phase1_phase2.py` | Policy generation phases |
 | `tests/test_record_episode_gif.py` | GIF recording |
+| `tests/test_evaluation_manifest.py` | manifest schema, task-pool reproducibility, committed splits |
+| `tests/test_manifest_runner.py` | manifest replay, RNG isolation, paired comparison |
 | `tests/test_env_action_response.py` | Env action scaling |
 
 ## Pipeline Flow

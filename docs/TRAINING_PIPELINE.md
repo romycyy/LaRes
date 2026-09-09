@@ -64,11 +64,12 @@ The symbolic policy outputs `(mean, std)` defining a Gaussian distribution over 
 
 **Purpose:** Collect expert demonstration trajectories from MetaWorld's built-in semi-optimal policies.
 
-**Function:** `generate_dataset(env, env_name, num_episodes=100)`
+**Function:** `generate_dataset(env, env_name, cases)`
 
 **How it works:**
 1. Loads the MetaWorld expert policy via `get_expert_policy(env_name)` (maps e.g. `window-close-v2` → `SawyerWindowCloseV3Policy`)
-2. Runs the expert in the environment for `num_episodes` episodes
+2. Runs the expert once per `EpisodeCase` in `cases`, normally the head of the *train* manifest.
+   Collection must never touch development or final-test placements.
 3. Clips expert actions to `[-1, 1]` for compatibility with the normalised action space
 4. Stores `(obs, action, reward, next_obs, done)` tuples in a `DemoBuffer`
 
@@ -78,8 +79,11 @@ The symbolic policy outputs `(mean, std)` defining a Gaussian distribution over 
 
 ```python
 from lares.core.training_pipeline import generate_dataset
-buffer, stats = generate_dataset(env, "window-close-v2", num_episodes=100)
-buffer.save("./logs/demo_window-close-v2.pkl")
+from lares.eval.manifest import SPLIT_TRAIN, EvaluationManifest
+
+manifest = EvaluationManifest.load("config/manifests/push-v2_train.yaml")
+buffer, stats = generate_dataset(env, "push-v2", manifest.episodes[:100])
+buffer.save("./logs/demo_push-v2.pkl")
 ```
 
 ---
@@ -217,7 +221,7 @@ python tests/test_training_pipeline.py
 - Behavioral cloning (loss decrease, parameter update, output validity)
 - Trajectory collection and GRPO advantage computation
 - RL fine-tuning (parameter change, stats, output validity)
-- `evaluate_policy` (return format, value ranges)
+- `evaluate_policy` (returns a `ManifestResult`; call `.fitness_dict()` for the two-scalar pair)
 - `EvolutionOrchestrator` (Tier 3)
 - Expert policy mapping completeness
 - End-to-end gradient flow (BC → RL → backward)

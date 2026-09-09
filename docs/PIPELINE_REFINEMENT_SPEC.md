@@ -1,6 +1,11 @@
 # Pipeline Refinement Spec — making `push-v2` work reliably
 
-**Status:** draft for discussion. Nothing here is implemented.
+**Status:** draft for discussion, partly superseded. Section 4 (ranking validity) is **implemented**
+and went further than proposed: rather than reseeding the shared stream, the hidden stream is gone
+and every episode names its placement. See `lares/eval/`, `config/manifests/`, and the Phase 0
+results in `RESEARCH_HANDOFF.md`. Section 4's suspicion is confirmed: the saved winner re-scores at
+0.00 success, not the 0.30 its run reported. Sections 1, 2, 3 and 5 remain proposals; `spec.md` is
+the authoritative plan.
 **Scope:** the symbolic-policy evolution loop (`lares/core/training_pipeline.py`,
 `lares/core/policy_generation.py`, `lares/utils/policy_prompts/*`).
 **Baseline to beat:** best evolved policy on `push-v2` = 402.76 reward / 0.30 success as
