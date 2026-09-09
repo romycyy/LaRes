@@ -54,8 +54,12 @@ print("IMPORTING MODULES")
 print("=" * 70)
 
 try:
+    from lares.core.obs_schema import get_obs_schema, set_active_schema
     from lares.core.symbolic_policy import SymbolicPolicy
 
+    # Policies read the observation by name, so a schema has to be bound before
+    # any of them is constructed, exactly as the generation pipeline does.
+    set_active_schema(get_obs_schema("push-v2"))
     check("import symbolic_policy", True)
 except Exception as e:
     check("import symbolic_policy", False, str(e))
@@ -90,9 +94,9 @@ class ValidPolicy(SymbolicPolicy):
         self.threshold = nn.Parameter(torch.tensor(0.05))
 
     def forward(self, obs):
-        tcp = obs[:, 0:3]
-        obj = obs[:, 4:7]
-        target = obs[:, 36:39]
+        tcp = self.obs_field(obs, "tcp")
+        obj = self.obs_field(obs, "obj")
+        target = self.obs_field(obs, "goal")
 
         diff_obj = obj - tcp
         dist_obj = torch.norm(diff_obj, dim=-1, keepdim=True) + 1e-8
@@ -259,22 +263,25 @@ class GeneratedPolicy(SymbolicPolicy):
     def __init__(self, obs_dim, action_dim):
         super().__init__(obs_dim, action_dim)
         self.w = nn.Parameter(torch.tensor(2.0))
+        self.w_goal = nn.Parameter(torch.tensor(0.5))
         self.log_std = nn.Parameter(torch.tensor(-1.0))
 
     def forward(self, obs):
-        tcp = obs[:, 0:3]
-        obj = obs[:, 4:7]
+        tcp = self.obs_field(obs, "tcp")
+        obj = self.obs_field(obs, "obj")
+        goal = self.obs_field(obs, "goal")
         diff = obj - tcp
         dist = torch.norm(diff, dim=-1, keepdim=True) + 1e-8
         direction = diff / dist
-        move = self.w * direction
+        to_goal = goal - obj
+        move = self.w * direction + self.w_goal * to_goal
         grip = torch.zeros(obs.shape[0], 1)
         mean = torch.cat([move, grip], dim=-1)[:, :self.action_dim]
         std = torch.exp(self.log_std) * torch.ones_like(mean)
         return (mean, std)
 
     def get_param_ranges(self):
-        return {'w': (0.1, 10.0), 'log_std': (-5.0, 0.0)}
+        return {'w': (0.1, 10.0), 'w_goal': (0.0, 5.0), 'log_std': (-5.0, 0.0)}
 '''
 
 INVALID_NN_POLICY_CODE = '''
@@ -310,7 +317,7 @@ class GeneratedPolicy(SymbolicPolicy):
 
     def forward(self, obs):
         # Wrong: returns (batch, 3) instead of (batch, action_dim=4)
-        mean = obs[:, 0:3] * self.w
+        mean = self.obs_field(obs, "tcp") * self.w
         std = torch.exp(self.log_std) * torch.ones_like(mean)
         return (mean, std)
 
@@ -343,6 +350,8 @@ def run_validation_subprocess(policy_code, label):
                 "39",
                 "--action_dim",
                 "4",
+                "--env_name",
+                "push-v2",
             ],
             capture_output=True,
             text=True,
@@ -435,25 +444,27 @@ try:
         "close the window" in formatted
         and "39" in formatted
         and "4" in formatted
-        and "obs[0:3]" in formatted
+        and "obs_field" in formatted
         and "GeneratedPolicy" in formatted
     )
     check("2.4  initial_user formats correctly", ok)
 except Exception as e:
     check("2.4  initial_user formats correctly", False, str(e))
 
-# --- 2.5 code_feedback template formatting ---
+# --- 2.5 code_feedback is guidance, appended to a structured evidence block ---
+# The template no longer interpolates a success rate and a mean return: those two
+# scalars could not separate a structural mistake from a tuning one, and the
+# numbers now arrive in the evidence block that lares/search/feedback.py builds.
 try:
-    fb = code_feedback_tmpl.format(
-        train_steps=200000,
-        win_rate=0.35,
-        mean_reward=123.4,
-        current_output="[{'success': 1.0}, {'success': 0.0}]",
+    ok = (
+        "{" not in code_feedback_tmpl
+        and "failure labels" in code_feedback_tmpl
+        and "signed goal progress" in code_feedback_tmpl.lower()
+        and "GeneratedPolicy" in code_feedback_tmpl
     )
-    ok = "200000" in fb and "0.35" in fb and "123.4" in fb
-    check("2.5  code_feedback formats correctly", ok)
+    check("2.5  code_feedback is placeholder-free guidance", ok)
 except Exception as e:
-    check("2.5  code_feedback formats correctly", False, str(e))
+    check("2.5  code_feedback is placeholder-free guidance", False, str(e))
 
 # --- 2.6 Escaped braces render as dict literal in template ---
 try:
@@ -497,7 +508,7 @@ class GeneratedPolicy(SymbolicPolicy):
         self.log_std = nn.Parameter(torch.tensor(-1.0))
 
     def forward(self, obs):
-        mean = obs[:, :self.action_dim] * self.w
+        mean = self.obs_field(obs, "tcp") * self.w
         std = torch.exp(self.log_std) * torch.ones_like(mean)
         return (mean, std)
 

@@ -13,9 +13,9 @@ class GeneratedPolicy(SymbolicPolicy):
         self.log_std = nn.Parameter(torch.tensor(-1.0))
 
     def forward(self, obs):
-        # obs shape: (batch_size, obs_dim)
-        tcp = obs[:, 0:3]       # (batch_size, 3)
-        obj = obs[:, 4:7]       # (batch_size, 3)
+        # Read the observation by NAME. Raw indices such as obs[:, 0:3] are rejected.
+        tcp = self.obs_field(obs, "tcp")   # (batch_size, 3)
+        obj = self.obs_field(obs, "obj")   # (batch_size, 3)
         diff = obj - tcp        # (batch_size, 3)
         dist = torch.norm(diff, dim=-1, keepdim=True) + 1e-8  # (batch_size, 1) — keepdim!
         direction = diff / dist  # (batch_size, 3)
@@ -31,12 +31,39 @@ class GeneratedPolicy(SymbolicPolicy):
         return {"w_move": (0.1, 10.0), "grip_bias": (-1.0, 1.0), "log_std": (-5.0, 0.0)}
 ```
 
+OBSERVATION ACCESS (violations will cause rejection):
+- Read every observation quantity with `self.obs_field(obs, "<name>")`, which returns a
+  `(batch_size, size)` tensor. The available names are listed in the observation layout above.
+- NEVER slice the observation directly. `obs[:, 0:3]`, `obs[..., 4:7]`, `obs.narrow(1, 36, 3)` and
+  `torch.split(obs, ...)` are all rejected before the policy is run. The layout is owned by a schema
+  that is checked against the simulator; hard-coded indices silently read the wrong quantity.
+- `obs.shape[0]` is fine — that is the batch size, not an observation value.
+- Asking for a name that does not exist raises immediately, which is the intended behaviour: it tells
+  you the field is unavailable rather than handing you the wrong numbers.
+
 CRITICAL SHAPE RULES (violations will cause rejection):
 - forward() receives obs of shape (batch_size, obs_dim) and must return (mean, std) each of shape (batch_size, action_dim).
 - ALWAYS use keepdim=True in torch.norm(), torch.sum(), torch.mean() etc. when the result will be broadcast. E.g. torch.norm(diff, dim=-1, keepdim=True) gives (B, 1), not (B,).
+- Every reduction must name `dim`. A reduction without `dim` collapses the batch, which couples the
+  rows of a batch together; that is detected and rejected.
 - Scalar nn.Parameter has shape () — you MUST reshape it to (batch_size, 1) before concatenation. Use param.unsqueeze(0).expand(obs.shape[0], 1) or param * torch.ones(obs.shape[0], 1).
 - Use torch.cat([...], dim=1) to combine tensors along the action dimension, NOT torch.stack.
 - If you slice 3D movement from a (B, 3) tensor and add a (B, 1) gripper, the result via torch.cat is (B, 4). Verify this matches action_dim.
+
+KNOWN CODE-GENERATION TRAPS (each of these has broken real candidates):
+- `torch.clamp(x, some_float, some_tensor)` is invalid. Use `torch.minimum` / `torch.maximum` when
+  either bound is a tensor or an nn.Parameter.
+- A parameter used as a bound is a tensor, so `torch.clamp(x, 0.0, self.v_cap)` fails. Same fix.
+- `torch.norm(v, dim=-1)` without `keepdim=True` gives (B,), which broadcasts wrongly against (B, 3).
+- Dividing by a norm without an epsilon produces NaN when the two positions coincide.
+- Every nn.Parameter must appear in get_param_ranges(); an undeclared parameter is unconstrained and
+  the policy is rejected.
+- The initial value of every parameter must lie inside its own declared range.
+
+OPTIONAL DIAGNOSTICS:
+- If your policy has phase gates, expose them with `self.record_gate("name", gate_tensor)` inside
+  forward(). The value is detached, so it cannot change the action. Reports then show whether each
+  gate ever activated, which is what tells you a phase never fired versus fired at the wrong time.
 
 Design guidelines for the symbolic policy:
 
@@ -52,14 +79,20 @@ Design guidelines for the symbolic policy:
 (5) Direction Normalization: Always normalize direction vectors before scaling:
     direction = diff / (torch.norm(diff, dim=-1, keepdim=True) + 1e-8)
 
-(6) Batch Compatibility: All operations must work on (batch_size, ...) tensors. Use keepdim=True for reductions that will be broadcast.
+(6) Batch Compatibility: All operations must work on (batch_size, ...) tensors, and row i of the
+    output must depend only on row i of the input. Use keepdim=True for reductions that will be
+    broadcast.
 
 (7) Action Dimension: Concatenate with torch.cat along dim=1 to produce exactly action_dim outputs. Typically: 3D movement + 1D gripper = 4D.
 
-(8) Initial Values: Choose initial parameter values that produce reasonable default behavior (e.g., move toward the object at moderate speed).
+(8) Initial Values: Choose initial parameter values that produce reasonable default behaviour before
+    any training at all. State what the untrained policy should do; it is evaluated before fitting.
 
 (9) Parameter Ranges: Estimate based on physical intuition — distance thresholds in [0.01, 0.5], direction weights in [0.1, 10.0], log-std in [-5.0, 0.0], sharpness in [1.0, 200.0].
 
 (10) Differentiability: All expressions must be differentiable with respect to nn.Parameters so that gradient-based optimization works. Avoid hard if/else on tensor values; use torch.sigmoid or torch.where instead.
+
+(11) Required Fields: The action must actually depend on every field marked [required] in the
+    observation layout. A policy whose output does not change when the goal changes is rejected.
 
 Finally, briefly explain your design reasoning: what phases you identified, what each parameter controls, and why the initial values and ranges are appropriate.

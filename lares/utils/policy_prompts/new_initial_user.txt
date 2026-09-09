@@ -4,7 +4,7 @@ Environment details:
 - Observation space: {obs_dim} dimensions (continuous)
 - Action space: {action_dim} dimensions (continuous, the output mean is passed through tanh so final actions are in [-1, 1])
 
-Observation structure:
+Observation layout (read these by NAME with self.obs_field(obs, "<name>"); raw indices are rejected):
 {obs_description}
 
 Additional state variables available in the environment (for understanding task semantics):
@@ -28,6 +28,8 @@ class GeneratedPolicy(SymbolicPolicy):
 
     def forward(self, obs):
         # obs: (batch_size, obs_dim) tensor
+        # Read named fields:  tcp = self.obs_field(obs, "tcp")   -> (batch_size, 3)
+        # Optional telemetry: self.record_gate("contact", gate)  -> detached, cannot change the action
         # Must return (mean, std) where:
         #   mean: (batch_size, action_dim) — centre of the pre-tanh Gaussian
         #   std:  (batch_size, action_dim) — scale, must be strictly > 0
@@ -48,3 +50,8 @@ Requirements:
 6. Design the policy to decompose the task into logical phases (e.g., approach the object, then manipulate it toward the target). Use smooth switching between phases via torch.sigmoid.
 7. Normalize direction vectors before scaling them to avoid magnitude issues.
 8. The class must be named exactly `GeneratedPolicy`.
+9. Read the observation ONLY through `self.obs_field(obs, "<name>")`. Direct indexing such as
+   `obs[:, 0:3]`, `obs[..., 4:7]` or `obs.narrow(...)` is rejected before the policy is run.
+10. Row i of the output must depend only on row i of the input. Give every reduction an explicit
+   `dim`; a reduction over the batch is detected and rejected.
+11. The action must change when each [required] field changes.

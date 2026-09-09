@@ -9,6 +9,7 @@ ideation/implementation.
 import json
 import os
 import re
+import sys
 import time
 import subprocess
 from datetime import datetime
@@ -17,6 +18,56 @@ from datetime import datetime
 #  Per-task observation descriptions for MetaWorld V2
 # ---------------------------------------------------------------------------
 
+# Task narrative that the machine-checked observation schema cannot carry: what the
+# task is, and what the manipulation actually requires. The layout itself comes from
+# ``lares.core.obs_schema``, which is verified against the simulator.
+TASK_NOTES = {
+    "push-v2": (
+        "Actions are 4-dimensional: (dx, dy, dz, gripper).\n"
+        "The task requires reaching the puck and pushing it along the table to the goal.\n"
+        "The gripper stays closed on the puck; this is a planar push, not a pick-and-place.\n"
+        "Finite-difference 'tcp' against 'prev_tcp', and 'obj' against 'prev_obj', for velocity."
+    ),
+    "reach-v2": (
+        "Actions are 4-dimensional: (dx, dy, dz, gripper).\n"
+        "Move the end-effector to the goal position. No grasping is needed."
+    ),
+    "pick-place-v2": (
+        "Actions are 4-dimensional: (dx, dy, dz, gripper).\n"
+        "Reach the object, close the gripper on it, lift, and carry it to the goal."
+    ),
+    "window-close-v2": (
+        "Actions are 4-dimensional: (dx, dy, dz, gripper).\n"
+        "'obj' is the window handle. Move the gripper to it and push it closed."
+    ),
+    "window-open-v2": (
+        "Actions are 4-dimensional: (dx, dy, dz, gripper).\n"
+        "'obj' is the window handle. Move the gripper to it and pull it open."
+    ),
+    "button-press-v2": (
+        "Actions are 4-dimensional: (dx, dy, dz, gripper).\n"
+        "'obj' is the button. Move above it and press downward."
+    ),
+    "door-close-v2": (
+        "Actions are 4-dimensional: (dx, dy, dz, gripper).\n"
+        "'obj' is the door handle. Push the door to the closed goal position."
+    ),
+    "door-open-v2": (
+        "Actions are 4-dimensional: (dx, dy, dz, gripper).\n"
+        "'obj' is the door handle. Pull the door to the open goal position."
+    ),
+    "drawer-open-v2": (
+        "Actions are 4-dimensional: (dx, dy, dz, gripper).\n"
+        "'obj' is the drawer handle. Grasp it and pull the drawer open."
+    ),
+    "drawer-close-v2": (
+        "Actions are 4-dimensional: (dx, dy, dz, gripper).\n"
+        "'obj' is the drawer handle. Push the drawer closed."
+    ),
+}
+
+# Legacy index-based layout text. Superseded by ObsSchema.describe(); kept because
+# older artefacts and tests reference it, and it documents what the LLM used to see.
 obs_description_dict = {
     "push-v2": """The 39-dimensional observation vector contains:
   obs[0:3]   - End-effector (gripper/TCP) position (x, y, z)
@@ -283,6 +334,27 @@ def _extract_code_string(response_text):
     return code_string
 
 
+def _record_failure(failure_log, candidate_id, stage, code_string, error_output, attempts):
+    """Preserve a candidate that never reached evaluation.
+
+    A dropped failure is a slot the population lost for a reason nobody can see
+    later. The next generation is told about these, so the same mistake is not
+    repeated (``spec.md`` FR-5, FR-10).
+    """
+    if failure_log is None:
+        return
+    lines = [ln for ln in (error_output or "").strip().splitlines() if ln.strip()]
+    failure_log.append(
+        {
+            "candidate_id": candidate_id,
+            "stage": stage,
+            "repair_attempts": attempts,
+            "error": "\n".join(lines[-6:]),
+            "code": code_string,
+        }
+    )
+
+
 def _build_error_feedback(code_string, error_output):
     """Build a concise error message to feed back to the LLM for self-repair."""
     error_lines = error_output.strip().split("\n")
@@ -310,8 +382,13 @@ def _run_policy_validation_subprocess(
     data_pkl_path,
     obs_dim,
     action_dim,
+    env_name="",
 ):
-    """Write policy code plus harness, run subprocess validation. Returns (ok, stdout, full_code)."""
+    """Write policy code plus harness, run subprocess validation. Returns (ok, stdout, full_code).
+
+    ``env_name`` selects the observation schema the harness binds, so the generated
+    source is checked against the layout it claims to read.
+    """
     full_code = head + imports + code_str
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S_%f")
     temp_file_path = os.path.join(dir_path, f"{timestamp}_generated_policy.py")
@@ -324,7 +401,10 @@ def _run_policy_validation_subprocess(
     with open(filter_filepath, "w") as f:
         process = subprocess.Popen(
             [
-                "python",
+                # sys.executable, not "python": the venv is usually invoked by
+                # absolute path rather than activated, so bare "python" is not
+                # on PATH and every candidate fails validation with ENOENT.
+                sys.executable,
                 "-u",
                 temp_file_path,
                 data_pkl_path,
@@ -332,6 +412,8 @@ def _run_policy_validation_subprocess(
                 str(obs_dim),
                 "--action_dim",
                 str(action_dim),
+                "--env_name",
+                str(env_name),
             ],
             stdout=f,
             stderr=f,
@@ -343,13 +425,33 @@ def _run_policy_validation_subprocess(
     return "Success!" in stdout_str, stdout_str, full_code
 
 
-def _try_instantiate_policy(imports, code_str, obs_dim, action_dim):
-    """exec generated code and instantiate ``GeneratedPolicy``."""
+def _try_instantiate_policy(imports, code_str, obs_dim, action_dim, env_name=""):
+    """exec generated code in-process and instantiate ``GeneratedPolicy``.
+
+    Only reached after the subprocess harness passed, so the source has already
+    survived a full validation pass in an isolated process. The in-process run
+    re-validates because the object that goes into training is this one, not the
+    subprocess copy.
+    """
+    from lares.core.obs_schema import active_schema, get_obs_schema
+    from lares.core.policy_validator import validate_policy
+
+    schema = get_obs_schema(env_name) if env_name else None
     namespace = {}
     exec_code = imports + code_str
     exec(exec_code, namespace)
-    policy = namespace["GeneratedPolicy"](obs_dim, action_dim)
-    policy.validate()
+    with active_schema(schema):
+        policy = namespace["GeneratedPolicy"](obs_dim, action_dim)
+    report = validate_policy(
+        policy,
+        obs_dim,
+        action_dim,
+        source=code_str,
+        schema=schema,
+        require_schema=bool(env_name),
+    )
+    if not report.ok:
+        raise ValueError(f"policy failed in-process validation:\n{report.summary()}")
     return policy
 
 
@@ -555,6 +657,7 @@ def _get_symbolic_policies_two_phase(
     args,
     obs_dim,
     action_dim,
+    env_name,
     initial_system,
     initial_user,
     task_description,
@@ -569,8 +672,9 @@ def _get_symbolic_policies_two_phase(
     code_feedback=None,
     real_num=5,
     max_total_attempts=50,
-    max_repair_per_candidate=3,
+    max_repair_per_candidate=1,
     llm_transcript_path=None,
+    failure_log=None,
 ):
     """Ideation LLM call then batched or per-idea implementation calls."""
     policy_pop = []
@@ -642,6 +746,7 @@ def _get_symbolic_policies_two_phase(
             data_pkl_path,
             obs_dim,
             action_dim,
+            env_name=env_name,
         )
 
     # --- process one slot: validate + repair; returns (policy, code, response) or None ---
@@ -661,7 +766,9 @@ def _get_symbolic_policies_two_phase(
         with open(saved_code_path, "w", encoding="utf-8") as f:
             f.write(full_code)
         try:
-            policy = _try_instantiate_policy(imports, code_string, obs_dim, action_dim)
+            policy = _try_instantiate_policy(
+                imports, code_string, obs_dim, action_dim, env_name=env_name
+            )
         except Exception as e:
             print(f"Error instantiating policy after validation: {e}")
             return None
@@ -715,8 +822,18 @@ def _get_symbolic_policies_two_phase(
             ok, stdout_str, full_code = _validate(code_string)
         if not ok:
             print(f"Policy validation failed after repairs: {stdout_str[:200]}")
+            _record_failure(
+                failure_log, f"iter{llm_iter}_slot{get_res_try_num}", "validation",
+                code_string, stdout_str, repair_attempt,
+            )
             return None
-        return _finalize_slot(code_string, response_cur, stdout_str, full_code)
+        policy = _finalize_slot(code_string, response_cur, stdout_str, full_code)
+        if policy is None:
+            _record_failure(
+                failure_log, f"iter{llm_iter}_slot{get_res_try_num}", "instantiation",
+                code_string, "in-process instantiation or validation failed", repair_attempt,
+            )
+        return policy
 
     # --- Batched implementation: one LLM response, n fences ---
     if policy_impl_mode == POLICY_IMPL_BATCHED:
@@ -868,14 +985,16 @@ def get_symbolic_policies(
     input_dict_string,
     code_output_tip,
     data_pkl_path,
+    env_name="",
     provided_response=None,
     code_feedback=None,
     real_num=5,
     max_total_attempts=50,
-    max_repair_per_candidate=3,
+    max_repair_per_candidate=1,
     llm_transcript_path=None,
     ideas_system=None,
     ideas_user=None,
+    failure_log=None,
 ):
     """Generate and validate symbolic policies via the LLM.
 
@@ -905,6 +1024,13 @@ def get_symbolic_policies(
     response_list : list[str]
         Full LLM response texts (for feedback in later iterations).
     """
+    if not env_name:
+        raise ValueError(
+            "get_symbolic_policies requires env_name: it selects the observation schema "
+            "the generated policy reads through. Without it every candidate raises on its "
+            "first self.obs_field(...) call and the population comes back empty."
+        )
+
     if bool(getattr(args, "policy_gen_two_phase", False)):
         raw_impl = getattr(args, "policy_impl_mode", POLICY_IMPL_BATCHED)
         if isinstance(raw_impl, str):
@@ -926,6 +1052,7 @@ def get_symbolic_policies(
             args=args,
             obs_dim=obs_dim,
             action_dim=action_dim,
+            env_name=env_name,
             initial_system=initial_system,
             initial_user=initial_user,
             task_description=task_description,
@@ -942,6 +1069,7 @@ def get_symbolic_policies(
             max_total_attempts=max_total_attempts,
             max_repair_per_candidate=max_repair_per_candidate,
             llm_transcript_path=llm_transcript_path,
+            failure_log=failure_log,
         )
 
     policy_pop = []
@@ -1009,6 +1137,7 @@ def get_symbolic_policies(
             data_pkl_path,
             obs_dim,
             action_dim,
+            env_name=env_name,
         )
 
     # ---- generation loop ----
@@ -1083,6 +1212,10 @@ def get_symbolic_policies(
                     f"Policy validation failed after {repair_attempt} repairs "
                     f"(attempt {resp_idx}): {stdout_str[:200]}"
                 )
+                _record_failure(
+                    failure_log, f"iter{llm_iter}_try{try_num}", "validation",
+                    code_string, stdout_str, repair_attempt,
+                )
                 continue
 
             print(stdout_str)
@@ -1103,9 +1236,15 @@ def get_symbolic_policies(
                 f.write(full_code)
 
             try:
-                policy = _try_instantiate_policy(imports, code_string, obs_dim, action_dim)
+                policy = _try_instantiate_policy(
+                    imports, code_string, obs_dim, action_dim, env_name=env_name
+                )
             except Exception as e:
                 print(f"Error instantiating policy after validation: {e}")
+                _record_failure(
+                    failure_log, f"iter{llm_iter}_try{try_num}", "instantiation",
+                    code_string, str(e), repair_attempt,
+                )
                 continue
 
             policy_pop.append(policy)

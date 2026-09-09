@@ -4,10 +4,10 @@ Environment:
 - Observation dimension: {obs_dim} (continuous)
 - Action dimension: {action_dim} (continuous; policy outputs Gaussian mean/std before environment-specific squashing)
 
-Observation layout:
+Observation layout (the implementation reads these by name, never by index):
 {obs_description}
 
-Semantic keys (for reasoning only; the implementation will use raw obs indices):
+Semantic keys (for reasoning about task structure):
 {input_dict_string}
 
 You will propose exactly {n} distinct design hypotheses for a future symbolic policy class (subclassing SymbolicPolicy). Each policy will use only torch math on observations and nn.Parameter scalars/vectors — no nn.Linear, no convolutions, no recurrent nets.
@@ -16,4 +16,4 @@ Output format (required):
 Return a single JSON object and nothing else before or after it (no markdown fences around the JSON). Schema:
 {{"ideas": ["<hypothesis 1 text>", "<hypothesis 2 text>", ...]}}
 
-There must be exactly {n} non-empty strings in "ideas". Each string should be 3–8 sentences: concrete enough that an engineer could implement it as GeneratedPolicy without guessing the high-level structure.
+There must be exactly {n} non-empty strings in "ideas". Each string should be 3–8 sentences: concrete enough that an engineer could implement it as GeneratedPolicy without guessing the high-level structure. Name the observation fields the hypothesis uses, say what the policy should do at its initial parameter values before any training, and name the failure mode you expect.

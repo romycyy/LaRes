@@ -18,29 +18,33 @@ from lares.core import policy_generation as pg
 from lares.core.training_pipeline import load_policy_prompt_assets
 
 
-# Minimal valid GeneratedPolicy (matches new_code_output_tip reach-style; obs_dim>=7, action_dim=4)
+# Minimal valid GeneratedPolicy matching the current contract: named observation
+# accessors, every parameter declared, and a dependence on each required field.
 _VALID_POLICY = """
 class GeneratedPolicy(SymbolicPolicy):
     def __init__(self, obs_dim, action_dim):
         super().__init__(obs_dim, action_dim)
         self.w_move = nn.Parameter(torch.tensor(3.0))
+        self.w_goal = nn.Parameter(torch.tensor(1.0))
         self.grip_bias = nn.Parameter(torch.tensor(0.0))
         self.log_std = nn.Parameter(torch.tensor(-1.0))
 
     def forward(self, obs):
-        tcp = obs[:, 0:3]
-        obj = obs[:, 4:7]
+        tcp = self.obs_field(obs, "tcp")
+        obj = self.obs_field(obs, "obj")
+        goal = self.obs_field(obs, "goal")
         diff = obj - tcp
         dist = torch.norm(diff, dim=-1, keepdim=True) + 1e-8
         direction = diff / dist
-        move = self.w_move * direction
+        move = self.w_move * direction + self.w_goal * (goal - obj)
         grip = self.grip_bias.unsqueeze(0).expand(obs.shape[0], 1)
         mean = torch.cat([move, grip], dim=1)
         std = torch.exp(self.log_std) * torch.ones_like(mean)
         return (mean, std)
 
     def get_param_ranges(self):
-        return {"w_move": (0.1, 10.0), "grip_bias": (-1.0, 1.0), "log_std": (-5.0, 0.0)}
+        return {"w_move": (0.1, 10.0), "w_goal": (0.0, 5.0),
+                "grip_bias": (-1.0, 1.0), "log_std": (-5.0, 0.0)}
 """
 
 
@@ -129,6 +133,7 @@ class TestTwoPhaseIntegration(unittest.TestCase):
                     args=args,
                     obs_dim=39,
                     action_dim=4,
+                    env_name="push-v2",
                     initial_system=prompts["initial_system"],
                     initial_user=prompts["initial_user"],
                     task_description=prompts["task_description"],
@@ -179,6 +184,7 @@ class TestTwoPhaseIntegration(unittest.TestCase):
                     args=args,
                     obs_dim=39,
                     action_dim=4,
+                    env_name="push-v2",
                     initial_system=prompts["initial_system"],
                     initial_user=prompts["initial_user"],
                     task_description=prompts["task_description"],

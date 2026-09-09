@@ -36,6 +36,11 @@ _PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
 sys.path.insert(0, _PROJECT_ROOT)
 
 from lares.core.training_pipeline import record_episode_gif  # noqa: E402
+from lares.eval.manifest import synthetic_cases  # noqa: E402
+
+# Recording names the episode it replays, so a GIF can be matched to the case a
+# report cites. The mocks ignore the placement and use only the seed.
+TEST_CASE = synthetic_cases(1, prefix="gif-test")[0]
 
 try:
     import imageio  # noqa: F401
@@ -80,7 +85,7 @@ class RenderableMockEnv:
         self._step_count = 0
         self._h, self._w = frame_size
 
-    def reset(self):
+    def reset(self, case=None):
         self._step_count = 0
         obs = np.zeros(self.obs_dim, dtype=np.float32)
         return obs, {}
@@ -110,7 +115,7 @@ class WrappedRenderableEnv:
         self.action_space = inner.action_space
         self.observation_space = inner.observation_space
 
-    def reset(self):
+    def reset(self, case=None):
         return self._env.reset()
 
     def step(self, action):
@@ -133,7 +138,7 @@ class GymnasiumStyleReachLikeEnv:
         self.observation_space = MockObsSpace(REACH_V2_OBS_DIM)
         self._step_count = 0
 
-    def reset(self, **kwargs):
+    def reset(self, case=None, **kwargs):
         self._step_count = 0
         obs = np.zeros(REACH_V2_OBS_DIM, dtype=np.float32)
         return obs, {}
@@ -166,7 +171,7 @@ class ProductionLikeEnvWrapper:
         self.action_space = inner.action_space
         self.timesteps = 0
 
-    def reset(self):
+    def reset(self, case=None):
         self.timesteps = 0
         return self._env.reset()
 
@@ -205,7 +210,7 @@ class TestRecordEpisodeGif(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "episode.gif")
             out = record_episode_gif(
-                policy, env, path, max_steps=50, fps=10, verbose=False
+                policy, env, path, TEST_CASE, max_steps=50, fps=10, verbose=False
             )
             self.assertTrue(out["saved"], msg="GIF should be written when render returns rgb_array")
             self.assertGreater(out["num_frames"], 0)
@@ -222,7 +227,7 @@ class TestRecordEpisodeGif(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "wrapped.gif")
             out = record_episode_gif(
-                policy, env, path, max_steps=20, fps=10, verbose=False
+                policy, env, path, TEST_CASE, max_steps=20, fps=10, verbose=False
             )
             self.assertTrue(out["saved"])
             self.assertGreaterEqual(out["num_frames"], 1)
@@ -234,7 +239,7 @@ class TestRecordEpisodeGif(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "empty.gif")
             out = record_episode_gif(
-                policy, env, path, max_steps=10, fps=10, verbose=False
+                policy, env, path, TEST_CASE, max_steps=10, fps=10, verbose=False
             )
             self.assertFalse(out["saved"])
             self.assertEqual(out["num_frames"], 0)
@@ -249,7 +254,7 @@ class TestRecordEpisodeGif(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "reach_like.gif")
             out = record_episode_gif(
-                policy, env, path, max_steps=30, fps=10, verbose=False
+                policy, env, path, TEST_CASE, max_steps=30, fps=10, verbose=False
             )
             self.assertTrue(
                 out["saved"],
@@ -267,7 +272,7 @@ class TestRecordEpisodeGif(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "no_mode.gif")
             out = record_episode_gif(
-                policy, env, path, max_steps=15, fps=10, verbose=False
+                policy, env, path, TEST_CASE, max_steps=15, fps=10, verbose=False
             )
             self.assertFalse(out["saved"])
             self.assertEqual(out["num_frames"], 0)
@@ -300,6 +305,7 @@ class TestRecordEpisodeGifReachV2MetaWorld(unittest.TestCase):
                         policy,
                         env,
                         path,
+                        TEST_CASE,
                         max_steps=25,
                         fps=10,
                         verbose=False,

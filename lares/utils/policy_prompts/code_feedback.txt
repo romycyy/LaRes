@@ -1,24 +1,42 @@
-Based on the current symbolic policy, after training for {train_steps} environment steps:
-- Success rate: {win_rate}
-- Mean episode reward (environment reward): {mean_reward}
+Propose the next generation of symbolic policies using the evidence above.
 
-Evaluation details across multiple episodes:
-{current_output}
+How to use it:
 
-Please carefully analyze the policy feedback and propose structural improvements. Some helpful tips:
+(1) Read the failure labels first. `never_reached_object` means the approach phase is
+    wrong or too weak; the manipulation expressions are irrelevant until it is fixed.
+    `pushed_away_from_goal` means the arm does reach the object and then drives it in the
+    wrong direction, which is a geometry or sign error in the push term, not a gain
+    problem. `object_not_moved` means contact is being made without force transfer.
+    `stopped_short_of_goal` is the only label where increasing a gain is the obvious fix.
 
-(1) If the success rate is always near zero, the policy structure likely needs fundamental changes — reconsider the phase decomposition, observation index usage, or the overall symbolic expression structure. Rewrite the entire policy.
+(2) Signed goal progress is the discriminating measure when every candidate scores zero
+    success. Positive means the object ended closer to the goal than it started. A
+    candidate at +0.05 and one at -0.05 have opposite faults, not different amounts of the
+    same fault.
 
-(2) If the agent reaches the object but fails to manipulate it, focus on improving the manipulation phase expressions and the transition logic between approach and manipulation.
+(3) Check the closest-approach distance against the contact threshold the policy declares.
+    A policy whose gate opens at 0.06 m but whose arm never gets closer than 0.09 m has a
+    phase that never fires, and its push expression has never been tested.
 
-(3) If actions seem too noisy or unstable, consider tightening the std parameter range or reducing its initial value.
+(4) Gate occupancy tells you whether a phase activated at all. A gate that crossed 0.5 in
+    zero episodes is dead structure: either the threshold is wrong or the quantity it
+    compares is not what you think it is.
 
-(4) If the agent overshoots or oscillates, consider adding damping terms or reducing movement weights.
+(5) Parameters listed as not affecting the executed action are wasted capacity. Remove
+    them, or connect them to the action. Note that the scale (`std`) parameters are always
+    in this list: deterministic evaluation executes `tanh(mean)` and ignores `std`.
 
-(5) Verify that the correct observation indices are being used — check that positions extracted from obs match the documented observation structure.
+(6) Action saturation near zero on every axis means the controller is not limited by its
+    output range, so increasing gains is unlikely to be the fix. Saturation near one means
+    it is railed and the structure cannot ask for more.
 
-(6) Consider whether the gripper action (typically the last action dimension) is being controlled appropriately for the task (open vs closed gripper, timing of grasp).
+(7) Observation fields are read by name through `self.obs_field(obs, "<name>")`. A name
+    that does not exist raises immediately, so an unavailable quantity is an error rather
+    than silently wrong numbers.
 
-(7) Review whether the parameter initial values and ranges are appropriate given the observed behavior.
+(8) Prefer fewer parameters. On this task, structures with at most ten parameters have
+    scored roughly four times higher than those with twenty to thirty-six, despite fitting
+    the expert no better. Extra sigmoid sharpness parameters in particular add plateaus to
+    the loss surface without adding capability.
 
 Rewrite the complete GeneratedPolicy class incorporating your improvements.
