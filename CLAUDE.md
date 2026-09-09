@@ -104,6 +104,20 @@ Failures are fed back to the LLM as repair feedback. Two-phase mode (`policy_gen
 first asks for JSON design ideas (`ideas_*.txt`), then implementations (`policy_impl_mode:
 batched | per_idea`).
 
+## Development Workflow
+
+1. Read `spec.md` and `IMPLEMENTATION_PROGRESS.md` before starting.
+2. Continue from the first unfinished requirement.
+3. Implement working code, not only a plan.
+4. Run focused tests after each change.
+5. Fix failures before continuing.
+6. Update `IMPLEMENTATION_PROGRESS.md` with changes, tests, and remaining work.
+7. Record experiment results and design questions in `RESEARCH_HANDOFF.md`.
+8. Continue through safe tasks without asking for confirmation.
+9. Stop only for a genuine blocker, destructive action, missing requirement, or expensive experiment requiring approval.
+10. Do not run full training or large VLM experiments without approval.
+11. Preserve existing user changes and avoid unrelated refactoring.
+
 ## Things that will bite you
 
 - **MetaWorld 3.0 is installed, but all task names in this codebase are `-v2`.**
