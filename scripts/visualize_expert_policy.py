@@ -27,8 +27,10 @@ sys.path.insert(0, _PROJECT_ROOT)
 from scripts.run_full_evolution import (  # noqa: E402
     DEFAULT_CONFIG_PATH,
     load_config,
+    load_split,
     make_env,
 )
+from lares.eval.manifest import SPLIT_DEVELOPMENT  # noqa: E402
 from lares.core.training_pipeline import (  # noqa: E402
     TASK_DESCRIPTIONS,
     ensure_mujoco_headless_gl,
@@ -127,7 +129,15 @@ def main() -> None:
     torch.manual_seed(cfg.seed)
 
     ensure_mujoco_headless_gl()
-    env = make_env(cfg)
+    manifest, pool = load_split(cfg, SPLIT_DEVELOPMENT)
+    if args.episodes > len(manifest):
+        raise ValueError(
+            f"--episodes {args.episodes} exceeds the {SPLIT_DEVELOPMENT} manifest "
+            f"({len(manifest)} cases). Visualisation replays named cases so a GIF can "
+            f"be matched to the episode a report cites."
+        )
+    cases = manifest.episodes[: args.episodes]
+    env = make_env(cfg, pool)
     expert_model = ExpertPolicyAdapter(cfg.env_name)
 
     out_dir = args.output_dir.strip() or os.path.join(cfg.log_dir, "expert_viz")
@@ -159,12 +169,13 @@ def main() -> None:
     ep_success_buf: list[float] = []
 
     try:
-        for ep in range(args.episodes):
+        for ep, case in enumerate(cases):
             tmp_path = os.path.join(out_dir, f"_expert_rollout_{ep:04d}.gif")
             result = record_episode_gif(
                 policy=expert_model,
                 env=env,
                 path=tmp_path,
+                case=case,
                 max_steps=args.max_steps,
                 fps=args.fps,
                 verbose=args.verbose_steps,

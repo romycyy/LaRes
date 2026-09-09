@@ -27,8 +27,9 @@ from lares.core.training_logger import (  # noqa: E402
     DATASET_SUCCESS,
     TrainingLogger,
 )
-from lares.core.training_pipeline import DemoBuffer, behavioral_cloning, evaluate_policy, rl_finetune  # noqa: E402
+from lares.core.training_pipeline import DemoBuffer, behavioral_cloning, rl_finetune  # noqa: E402
 from lares.envs.isaac_lab_adapter import IsaacLabSingleEnvAdapter, close_isaac_app  # noqa: E402
+from lares.eval.manifest import synthetic_cases  # noqa: E402
 
 
 class ShadowHandSpinSymbolicPolicy(SymbolicPolicy):
@@ -267,19 +268,44 @@ def record_stage_gif(
     return result
 
 
+def evaluate_stage_policy(policy, env, cases, max_steps: int) -> dict:
+    """Deterministic evaluation for the Isaac stack.
+
+    Local rather than shared with ``training_pipeline.evaluate_policy``: that
+    one replays a MetaWorld ``EvaluationManifest``, and Isaac Lab exposes no
+    per-episode placements to build one from.
+    """
+    total_reward, total_success = 0.0, 0.0
+    policy.eval()
+    for case in cases:
+        obs, _ = env.reset(case)
+        episode_success = 0.0
+        for _ in range(int(max_steps)):
+            action = _policy_action(policy, obs, deterministic=True)
+            obs, reward, done, info = env.step(action)
+            total_reward += float(reward)
+            episode_success = max(episode_success, float(info.get("success", 0.0)))
+            if done:
+                break
+        total_success += episode_success
+    n = max(1, len(cases))
+    return {"mean_reward": total_reward / n, "success_rate": total_success / n}
+
+
 def collect_scripted_dataset(env, cfg: SimpleNamespace, logger: TrainingLogger) -> tuple[DemoBuffer, dict]:
     buffer = DemoBuffer()
     episode_returns, successes, spin_rates = [], [], []
+    cases = synthetic_cases(int(cfg.dataset_episodes), prefix="shadowhand-train")
 
-    for ep in range(int(cfg.dataset_episodes)):
-        obs, _ = env.reset()
+    for ep, case in enumerate(cases):
+        obs, _ = env.reset(case)
         episode_return = 0.0
         episode_success = 0.0
         episode_spin = []
         for step in range(int(cfg.max_steps)):
             action = scripted_spin_action(step, env.action_space.shape[0], float(cfg.scripted_noise))
             next_obs, reward, done, info = env.step(action)
-            buffer.add(obs, action, reward, next_obs, done)
+            buffer.add(obs, action, reward, next_obs, done, episode_id=case.case_id)
             episode_return += reward
             episode_success = max(episode_success, float(info.get("success", 0.0)))
             if "spin_rate" in info:
@@ -372,9 +398,14 @@ def main() -> None:
         maybe_record_gif("stage2", "stage2_bc", policy=policy)
 
         print("\nStage 3: RL fine-tuning")
+        rl_cases = synthetic_cases(
+            int(cfg.rl_episodes_per_iter) * max(1, int(cfg.rl_iterations)),
+            prefix="shadowhand-rl",
+        )
         rl_stats = rl_finetune(
             policy,
             env,
+            rl_cases,
             num_iterations=int(cfg.rl_iterations),
             episodes_per_iter=int(cfg.rl_episodes_per_iter),
             lr=float(cfg.rl_lr),
@@ -383,7 +414,8 @@ def main() -> None:
             logger=logger,
             task_name=cfg.task_name,
         )
-        eval_stats = evaluate_policy(policy, env, num_episodes=int(cfg.eval_episodes), max_steps=int(cfg.max_steps))
+        eval_cases = synthetic_cases(int(cfg.eval_episodes), prefix="shadowhand-eval")
+        eval_stats = evaluate_stage_policy(policy, env, eval_cases, int(cfg.max_steps))
         summary["stage3"] = rl_stats | {"eval": eval_stats}
         maybe_record_gif("stage3", "stage3_rl", policy=policy)
 

@@ -1,4 +1,10 @@
-"""MetaWorld environment factory and episode wrapper for the evolution pipeline."""
+"""MetaWorld environment factory and episode wrapper for the evolution pipeline.
+
+Every reset names the placement it wants.  There is no hidden task stream: the
+caller passes an :class:`~lares.eval.manifest.EpisodeCase`, the wrapper installs
+that placement and reseeds the simulator, and the episode that follows is
+bit-identical no matter what ran before it (``spec.md`` FR-1 / AC-0).
+"""
 
 import numpy as np
 import metaworld.env_dict as _env_dict
@@ -75,7 +81,21 @@ def _unwrap_through_wrappers(env):
     return cur
 
 
-def make_metaworld_env(cfg, seed):
+def make_metaworld_env(cfg, seed, tasks=None):
+    """Build the wrapped MetaWorld env.
+
+    Args:
+        cfg: namespace with ``env_name`` and optional ``use_mt1``.
+        seed: initial simulator seed.  Every episode reseeds from its own case,
+            so this only fixes the state before the first reset.
+        tasks: mapping ``{task_id: metaworld.Task}`` (or an iterable of tasks)
+            when ``cfg.use_mt1`` is set.  Required on that path: the pool seed
+            is part of the evaluation contract, so the env never draws its own.
+
+    Returns:
+        ``TimeLimit(NormalizedBoxEnv(env))``.  Wrap in :class:`env_wrapper` to
+        get the per-case reset API.
+    """
     env_name = cfg.env_name
     env_name_v3 = env_name.replace("-v2", "-v3").replace("-v1", "-v3")
     if env_name_v3 not in _env_dict.ALL_V3_ENVIRONMENTS:
@@ -84,66 +104,87 @@ def make_metaworld_env(cfg, seed):
         )
 
     use_mt1 = getattr(cfg, "use_mt1", False)
-    if use_mt1:
-        import metaworld as mw
-
-        try:
-            mt1 = mw.MT1(env_name_v3)
-        except Exception as e:
-            raise ValueError(
-                f"use_mt1=True but MT1({env_name_v3!r}) failed. "
-                f"Use a benchmark name MT1 supports (e.g. push-v3). Original error: {e}"
-            ) from e
-        if env_name_v3 not in mt1.train_classes:
-            raise ValueError(
-                f"use_mt1=True but {env_name_v3!r} not in MT1.train_classes "
-                f"(keys sample: {list(mt1.train_classes.keys())[:5]} ...)"
-            )
-        env_cls = mt1.train_classes[env_name_v3]
-        try:
-            env = env_cls(render_mode="rgb_array", camera_id=2)
-        except TypeError:
-            env = env_cls()
-        _patch_get_dict(env)
-        train_tasks = tuple(mt1.train_tasks)
-        if not train_tasks:
-            raise ValueError(f"MT1({env_name_v3!r}) returned no train_tasks")
-        env.mt1_train_tasks = train_tasks
-        env.seed(seed)
-        env.set_task(train_tasks[int(seed) % len(train_tasks)])
-        return TimeLimit(NormalizedBoxEnv(env), env.max_path_length)
-
     env_cls = _env_dict.ALL_V3_ENVIRONMENTS[env_name_v3]
-
     try:
         env = env_cls(render_mode="rgb_array", camera_id=2)
     except TypeError:
         env = env_cls()
     _patch_get_dict(env)
-
-    env._freeze_rand_vec = False
-    env._set_task_called = True
     env.seed(seed)
+
+    if use_mt1:
+        if tasks is None:
+            raise ValueError(
+                "use_mt1=True requires an explicit task pool. Build one with "
+                "lares.eval.manifest.build_task_pool(...) and pass "
+                "tasks=pool.task_index(); MT1 constructed without a seed draws "
+                "different placements on every run."
+            )
+        task_list = list(tasks.values()) if isinstance(tasks, dict) else list(tasks)
+        if not task_list:
+            raise ValueError("task pool is empty")
+        # Install one placement so the env is usable before the first cased reset.
+        env.set_task(task_list[0])
+    else:
+        # Non-MT1 tasks resample the placement at reset. Route that draw through
+        # the env's own generator so a per-case seed makes it reproducible;
+        # the default path uses the process-global numpy RNG.
+        env._freeze_rand_vec = False
+        env._set_task_called = True
+        env.seeded_rand_vec = True
 
     return TimeLimit(NormalizedBoxEnv(env), env.max_path_length)
 
 
 class env_wrapper:
-    def __init__(self, env, args):
+    """Per-case episode wrapper.
+
+    ``reset`` takes the :class:`~lares.eval.manifest.EpisodeCase` it should run.
+    Nothing about the episode depends on how many episodes preceded it, so
+    dataset collection, GIF recording and debug rollouts cannot shift a later
+    evaluation case.
+    """
+
+    def __init__(self, env, args, tasks=None):
         self._env = env
         self.args = args
         self.observation_space = self._env.observation_space
         self.action_space = self._env.action_space
+        self.use_mt1 = bool(getattr(args, "use_mt1", False))
+        if isinstance(tasks, dict):
+            self._task_index = dict(tasks)
+        elif tasks is not None:
+            self._task_index = {str(i): t for i, t in enumerate(tasks)}
+        else:
+            self._task_index = None
+        if self.use_mt1 and not self._task_index:
+            raise ValueError("use_mt1=True requires a {task_id: Task} mapping")
+        self.current_case = None
 
-    def reset(self):
+    def reset(self, case=None):
+        """Reset onto ``case``.
+
+        Args:
+            case: an ``EpisodeCase``.  Required.  Installs ``case.task_id`` and
+                reseeds the simulator with ``case.reset_seed``.
+        """
+        if case is None:
+            raise ValueError(
+                "env_wrapper.reset() requires an EpisodeCase. Evaluation must name "
+                "its placement and reset seed; see lares.eval.manifest."
+            )
         self.timesteps = 0
+        self.current_case = case
         inner = _unwrap_through_wrappers(self._env)
-        tasks = getattr(inner, "mt1_train_tasks", None)
-        if tasks is not None:
-            if not hasattr(self, "_mt1_rng"):
-                self._mt1_rng = np.random.default_rng(int(getattr(self.args, "seed", 0)))
-            idx = int(self._mt1_rng.integers(0, len(tasks)))
-            inner.set_task(tasks[idx])
+        if self._task_index is not None:
+            task_id = getattr(case, "task_id", None)
+            if task_id not in self._task_index:
+                raise KeyError(
+                    f"case {getattr(case, 'case_id', case)!r} names task_id "
+                    f"{task_id!r}, which is not in this env's pool"
+                )
+            inner.set_task(self._task_index[task_id])
+        inner.seed(int(case.reset_seed))
         obs, info = self._env.reset()
         return obs, info
 

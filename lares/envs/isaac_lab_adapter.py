@@ -137,8 +137,23 @@ class IsaacLabSingleEnvAdapter:
             np.inf * np.ones_like(obs_np, dtype=np.float32),
         )
 
-    def reset(self):
+    def reset(self, case=None):
+        """Reset, optionally seeded by ``case.reset_seed``.
+
+        Matches the MetaWorld ``env_wrapper`` contract that every reset names
+        its case. Isaac Lab exposes no per-episode placement, so the case only
+        supplies a seed; it is accepted and ignored when the backend has no
+        ``seed`` hook.
+        """
         self._elapsed_steps = 0
+        self.current_case = case
+        if case is not None:
+            seed_fn = getattr(self.env, "seed", None)
+            if callable(seed_fn):
+                try:
+                    seed_fn(int(case.reset_seed))
+                except Exception:
+                    pass
         obs, info = self.env.reset()
         return self._first_obs(obs), self._info_for_first(info)
 
