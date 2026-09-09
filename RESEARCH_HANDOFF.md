@@ -2,13 +2,56 @@
 
 Evidence log for the symbolic-policy evolution pipeline. Updated as phases land.
 
+## Where this stands
+
+Phases 0 through 6 are implemented and measured. FR-4 and FR-11 are implemented.
+Phase 7's machinery is built but its experiment has not run.
+
+| Phase | State |
+|---|---|
+| 0 measurement lock | complete, 7/7 AC-0 checks |
+| 1 trusted interface | complete, 6/6 AC-1 items |
+| 2 evaluation and reporting | 8/9 AC-2 items; the ninth is E10, which is blocked |
+| 3 fitting comparison | complete, 6/6 AC-3 items |
+| 4 search evidence and archive | complete, 8/8 AC-4 items |
+| 5 objectives and data coverage | complete, 7/7 AC-5 items |
+| 6 intervention-guided repair | 4/5 AC-6 items; the fifth is answered in the negative |
+| 7 freeze and final validation | machinery built, experiment awaiting approval |
+
+Three results decide what is worth doing next, and all three run against the
+plan's assumptions:
+
+1. **Fitting the expert better does not build a better controller.** Validation
+   loss correlates with development success at +0.19, the wrong sign, and
+   development success collapses to zero well before the loss minimum.
+2. **The repair loop does not beat spending the same budget on the optimizer.**
+   Paired difference +0.133 in optimizer-only's favour, interval excluding zero.
+   The controlled substitution changed the chosen component in two of six
+   replicates and the outcome in one.
+3. **The biggest lever on this task is the fitting schedule**, not the structure
+   search or the repair. Recovering the pre-collapse checkpoint takes one
+   structure from 0.000 to 1.000 held-out success.
+
+Two things are blocked on a decision rather than on implementation:
+
+- **Phase 7's experiment.** Five independent searches plus at least 100
+  final-test episodes per finalist. The largest single spend in the plan.
+- **E10.** It needs a Qwen checkpoint chosen *and* a correction-LLM repair path,
+  because the current repair operators read no prompt and so cannot be affected
+  by an evidence block. That same path is what the AC-6 result argues for:
+  explanations generated rather than drawn from a fixed table.
+
+The full list of open decisions is at the end of this file.
+
 ## Repository commit and working-tree status
 
 | Field | Value |
 |---|---|
 | Commit at Phase 0 start | `619f0cf` "doc setup for remote R&D" |
-| Branch | `staging` |
-| Working tree at Phase 0 start | clean |
+| Branch | `staging`, pushed to `origin/staging` |
+| Head after Phases 0-6, FR-4, FR-11 | `bb1d94f` "Docs: record what each phase measured, and what it did not" |
+| Working tree | clean; all work committed as ten commits, one per phase |
+| Not independently runnable | the intermediate commits. Three files span phases and could not be split: `lares/eval/runner.py` (Phase 0, carrying the FR-4 lock and the FR-11 observer), `lares/core/symbolic_policy.py` (Phase 1, carrying the Phase 6 gate overrides), `lares/core/training_pipeline.py` (Phase 2, carrying the Phase 5 rollout probe). Only the tip passes its tests. |
 
 ## Environment and package versions
 
@@ -135,8 +178,26 @@ python scripts/benchmark_fitting.py --budget 2000     # the fitting comparison
 python scripts/summarise_experiments.py               # search summary from records alone
 python scripts/audit_expert_actions.py                # expert generation and clipping semantics
 python scripts/compare_objectives.py --budget 2000 --family simple   # E7, sampling, E8
-python -m unittest tests.test_search tests.test_objectives
+
+python scripts/diagnose_repair.py --structures simple_standoff       # Phase 6: study + one repair
+python scripts/ablate_repair.py --budget 200 --seeds 0 1             # AC-6 / E9, five arms, ~40 min
+python scripts/ablate_repair.py --summarise logs/repair_ablation/<run>.json   # re-print, no rollouts
+python scripts/analyse_failures.py --structures simple_standoff      # FR-11: media, no model needed
+python scripts/freeze_method.py --freeze-id v1                       # Phase 7: freeze before final test
+python scripts/freeze_method.py --verify                             # non-zero exit if anything moved
+python scripts/final_report.py                                       # AC-7: report from saved files
+
+# The full contract suite, eleven modules.
+python -m unittest tests.test_evaluation_manifest tests.test_manifest_runner \
+  tests.test_policy_interface tests.test_evaluation_report tests.test_fitting \
+  tests.test_search tests.test_objectives tests.test_repair tests.test_freeze \
+  tests.test_final_report tests.test_vision
+python tests/test_phase1_phase2.py && python tests/test_training_pipeline.py
 ```
+
+Current totals: 478 tests across the eleven contract suites, 139 in the
+training-pipeline tiers, 41 in the phase-1/2 script, 12 in the two generation
+suites. All passing at `bb1d94f`.
 
 ## Manifest and reproducibility checks
 
@@ -777,3 +838,11 @@ and a population of five, that is roughly 200 episodes per generation.
 | Expert demo buffer | `logs/evolution/demo_push-v2.pkl` |
 | Historical generation results | `logs/evolution/gen_{0,1,2}/results.pkl` |
 | Historical training dynamics | `logs/evolution/*.jsonl` |
+| Repair studies, with rejected explanations | `logs/repair_studies/<structure>_<timestamp>.json` |
+| Experiment records from a repair study | `logs/repair_studies/experiments/*.json` |
+| The AC-6 ablation | `logs/repair_ablation/ablation_20260909_195923.json` (the 200-episode run; the two 60-episode files are smoke runs and are not pooled with it) |
+| Selected frames and merged visual evidence | `logs/vision/<structure>/{media,analyses,evidence.md,run.json}` |
+| Freeze record and the final-test look-ledger | `logs/final/freeze.json`, `logs/final/final_test_ledger.jsonl` (neither exists yet, which is correct) |
+
+Everything under `logs/` is gitignored and lives only on this box. `config/manifests/`
+is the exception and is committed, because it defines the evaluation contract.
