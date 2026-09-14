@@ -1,0 +1,16 @@
+{
+  "manifest_id": "push-v2:development_confirmation:s2200:n50",
+  "manifest_path": "config/stage_e/push-v2_development_confirmation_s2200.yaml",
+  "manifest_sha256": "37645f74e6dc73780c63273a2f744cd04e398b7642ffaaf5ae59318189371f4d",
+  "pool_seed": 2200,
+  "episodes": 50,
+  "built_at": "2026-09-14T03:24:31",
+  "disjoint_from": [
+    "push-v2:development:s2000:n50",
+    "push-v2:final_test:s3000-3001:n100",
+    "push-v2:train:s1000-1001-1002:n150",
+    "push-v2:development_confirmation:s2100:n50"
+  ],
+  "selection_sha256": "53b1581845b4e8d1594ce419e39d04cd8d0407b20ebaa14bb7a7b635f9f6ffb6",
+  "ledger_sha256_after_reservation": "6db93a15e7ae19a60be5c6c51c66bdd6367bbb311b2271876ce2b3521fd7ac3f"
+}

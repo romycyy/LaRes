@@ -1,0 +1,83 @@
+# ============================================================
+#  Stage E (debug_spec.md) — frozen protocol, decided 2026-09-14
+#
+#  Question: does imitation fitting beat the zero-shot structure on held-out success?
+#  Fitting is an experimental treatment. Every value below is fixed before any Stage E
+#  case exists; the selection and the confirmation manifest are committed separately
+#  before the run, and the run refuses a dirty worktree and records the Git SHA.
+#  Driver: scripts/stage_e.py (select -> build-manifest -> commit -> run -> report).
+# ============================================================
+
+stage: E
+env_name: push-v2            # canonical id; MetaWorld 3 registers push-v3
+horizon: 150
+
+conditions:
+  - name: zero_shot
+    description: the structure's declared initial values; no fitting (step 0)
+  - name: mse_fixed_2000
+    description: deterministic MSE, uniform sampling, the parameters after exactly 2000 gradient steps
+  - name: mse_rollout_selected
+    description: deterministic MSE, uniform sampling, best of the checkpoint steps on the selection manifest
+  - name: phase_balanced_rollout_selected
+    description: deterministic MSE, phase-balanced sampling, best of the same checkpoint steps
+
+fitting:
+  objective: deterministic_mse
+  budget: 2000
+  checkpoint_steps: [0, 500, 1000, 1500, 2000]
+  checkpoint_tie_rule: higher success, then higher progress, then earlier checkpoint
+  batch_size: 256
+  lr: 0.001
+  clip_grad_norm: 1.0
+  val_fraction: 0.2
+  split_seed: 0              # one data split shared by every arm and seed
+  fixed_action_scale: 0.1
+  # mse_fixed_2000 and mse_rollout_selected come from the same fit per seed: the final state
+  # and the selected state of one trajectory, so they are paired by construction.
+  demo_buffer: logs/baseline_lock/demo_push-v2.pkl
+  demo_buffer_sha256: 00fd80a4686b7bb2ced65b2faa26d1b2bd886954ffce80d5afff6029802dc32e
+
+seeds:
+  confirmation_pool_seed: 2200          # MT1 pool seed of the confirmation manifest
+  fitting_seeds: [2200, 2201, 2202, 2203, 2204]   # torch / numpy / minibatch seeds, one fit per seed and arm
+  ledger: config/experiment_seed_ledger.jsonl       # all must be unused before the manifest is built
+
+# Checkpoint selection and the final comparison use different manifests.
+checkpoint_selection_manifest:
+  path: config/manifests/push-v2_development.yaml
+  slice: [40, 50]            # the development probe tail, as in the evolution pipeline
+confirmation_manifest:
+  path: config/stage_e/push-v2_development_confirmation_s2200.yaml
+  manifest_id: push-v2:development_confirmation:s2200:n50
+  episodes: 50               # one immutable manifest shared by every arm, structure and seed
+
+structures:
+  bank: [simple_reach_push, simple_damped_push, simple_standoff]
+  evolved:
+    source_run: logs/evolution_debug_full
+    top_k: 5
+    min_k: 3                 # if fewer than five reconstruct, use all available, at least three
+    selection_file: config/stage_e/selection.json
+    rule: >-
+      Among evaluated records of the source run whose reconstruction verifies and whose source
+      rebuilds the recorded initial state, rank by development promotion-set success (records
+      without one rank below all that have one), then screen success, then mean screen goal
+      progress. Drop identical source, and drop identical behaviour: identical tanh(mean) (atol 1e-6)
+      on 2048 training-buffer observations AND identical success and return on every shared saved
+      development case. Keep the top five in rank order. Selected before the confirmation manifest
+      is generated.
+
+decision_rule:
+  unit: >-
+    structure. For each structure and fitted condition, the per-seed difference is that seed's
+    confirmation success minus the structure's zero-shot confirmation success; the structure's
+    difference is the mean over seeds.
+  interval: two-sided t interval at 95% over structures (df = structures - 1)
+  keep_fitting_if: at least one fitted condition has a strictly positive mean difference and a 95% interval lower bound above zero
+  otherwise: disable fitting by default (bc_steps 0 in config/run_full_evolution.yaml)
+  also_reported: >-
+    Holm-adjusted intervals across the three fitted conditions (robustness, not the decision),
+    per-family results (bank, evolved), medians, every structure and seed, selected checkpoint steps,
+    and episode, simulator-step and gradient-step counts.
+  final_test: never accessed

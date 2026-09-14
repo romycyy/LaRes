@@ -8,3 +8,9 @@
 {"seed": 0, "namespace": "fitting", "use": "fitting benchmark, objective comparison, repair ablation, and the evolution runs' fit_seed and split_seed", "artifact": "logs/fitting_benchmark, logs/objective_comparison, logs/repair_ablation, logs/evolution_debug_full", "recorded_at": "2026-09-14", "backfilled": true}
 {"seed": 1, "namespace": "fitting", "use": "fitting benchmark, objective comparison and repair ablation replicates", "artifact": "logs/fitting_benchmark, logs/objective_comparison, logs/repair_ablation", "recorded_at": "2026-09-14", "backfilled": true}
 {"seed": 2, "namespace": "fitting", "use": "fitting benchmark and objective comparison replicates", "artifact": "logs/fitting_benchmark, logs/objective_comparison", "recorded_at": "2026-09-14", "backfilled": true}
+{"seed": 2200, "namespace": "mt1_pool", "use": "Stage E development-confirmation manifest", "artifact": "config/stage_e/push-v2_development_confirmation_s2200.yaml", "recorded_at": "2026-09-14T03:24:31", "backfilled": false}
+{"seed": 2200, "namespace": "fitting", "use": "Stage E fitting seeds", "artifact": "config/stage_e/stage_e.yaml", "recorded_at": "2026-09-14T03:24:31", "backfilled": false}
+{"seed": 2201, "namespace": "fitting", "use": "Stage E fitting seeds", "artifact": "config/stage_e/stage_e.yaml", "recorded_at": "2026-09-14T03:24:31", "backfilled": false}
+{"seed": 2202, "namespace": "fitting", "use": "Stage E fitting seeds", "artifact": "config/stage_e/stage_e.yaml", "recorded_at": "2026-09-14T03:24:31", "backfilled": false}
+{"seed": 2203, "namespace": "fitting", "use": "Stage E fitting seeds", "artifact": "config/stage_e/stage_e.yaml", "recorded_at": "2026-09-14T03:24:31", "backfilled": false}
+{"seed": 2204, "namespace": "fitting", "use": "Stage E fitting seeds", "artifact": "config/stage_e/stage_e.yaml", "recorded_at": "2026-09-14T03:24:31", "backfilled": false}

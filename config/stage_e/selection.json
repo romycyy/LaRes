@@ -1,0 +1,372 @@
+{
+  "selected_at": "2026-09-14T03:23:22",
+  "selected_before_confirmation_manifest": true,
+  "rule": "Among evaluated records of the source run whose reconstruction verifies and whose source rebuilds the recorded initial state, rank by development promotion-set success (records without one rank below all that have one), then screen success, then mean screen goal progress. Drop identical source, and drop identical behaviour: identical tanh(mean) (atol 1e-6) on 2048 training-buffer observations AND identical success and return on every shared saved development case. Keep the top five in rank order. Selected before the confirmation manifest is generated.",
+  "source_run": "logs/evolution_debug_full",
+  "selected": [
+    {
+      "structure_id": "evolved_gen2_cand0_a1",
+      "rank": 1,
+      "record": "gen2_cand0_a1",
+      "source_run": "logs/evolution_debug_full",
+      "source_path": "config/stage_e/structures/evolved_gen2_cand0_a1.py",
+      "source_sha256": "f1965f1f6c8c831c0f3fe587c5bf26573a79ab5483912624e6dd6972b4fae8d2",
+      "initial_parameters_sha256": "bbdca24d920e8b31dd552b89b52977678e82ec97cab28d617593bbffba06ce2f",
+      "num_parameters": 9,
+      "expanded_success_rate": 0.5666666666666667,
+      "screen_success_rate": 0.5,
+      "selected_step_in_source_run": 0,
+      "rank_key": [
+        1,
+        0.5666666666666667,
+        0.5,
+        0.13055356173637195
+      ]
+    },
+    {
+      "structure_id": "evolved_gen1_cand2_a0",
+      "rank": 2,
+      "record": "gen1_cand2_a0",
+      "source_run": "logs/evolution_debug_full",
+      "source_path": "config/stage_e/structures/evolved_gen1_cand2_a0.py",
+      "source_sha256": "6d9f434ae650bfdb060365963ba994b18591e19927f29d1147e6b21d3715444d",
+      "initial_parameters_sha256": "87ad40199331b6a0f3c37ce15f75e630bc43064f00b83b1c3d46bc7c500e2af8",
+      "num_parameters": 10,
+      "expanded_success_rate": 0.5666666666666667,
+      "screen_success_rate": 0.5,
+      "selected_step_in_source_run": 0,
+      "rank_key": [
+        1,
+        0.5666666666666667,
+        0.5,
+        0.11965888143028995
+      ]
+    },
+    {
+      "structure_id": "evolved_gen1_cand1_a0",
+      "rank": 3,
+      "record": "gen1_cand1_a0",
+      "source_run": "logs/evolution_debug_full",
+      "source_path": "config/stage_e/structures/evolved_gen1_cand1_a0.py",
+      "source_sha256": "8fbf1b6917027f86f7eeb312ed3ba09869e18c45da602e31c803a6b60d2c2de5",
+      "initial_parameters_sha256": "87ad40199331b6a0f3c37ce15f75e630bc43064f00b83b1c3d46bc7c500e2af8",
+      "num_parameters": 10,
+      "expanded_success_rate": 0.5,
+      "screen_success_rate": 0.4,
+      "selected_step_in_source_run": 0,
+      "rank_key": [
+        1,
+        0.5,
+        0.4,
+        0.1295292795309903
+      ]
+    },
+    {
+      "structure_id": "evolved_gen1_cand0_a0",
+      "rank": 4,
+      "record": "gen1_cand0_a0",
+      "source_run": "logs/evolution_debug_full",
+      "source_path": "config/stage_e/structures/evolved_gen1_cand0_a0.py",
+      "source_sha256": "25ee2547c5d06785ee9a6c2d3cf80b9355e2e05afcd7fdedfe4614840d38d17c",
+      "initial_parameters_sha256": "87ad40199331b6a0f3c37ce15f75e630bc43064f00b83b1c3d46bc7c500e2af8",
+      "num_parameters": 10,
+      "expanded_success_rate": 0.5,
+      "screen_success_rate": 0.4,
+      "selected_step_in_source_run": 0,
+      "rank_key": [
+        1,
+        0.5,
+        0.4,
+        0.12381178287293719
+      ]
+    },
+    {
+      "structure_id": "evolved_gen0_cand0_a0",
+      "rank": 5,
+      "record": "gen0_cand0_a0",
+      "source_run": "logs/evolution_debug_full",
+      "source_path": "config/stage_e/structures/evolved_gen0_cand0_a0.py",
+      "source_sha256": "2b538295a01d847ce86f60393d9da47abb7eee742156eac50fb6d39d8c6b3c63",
+      "initial_parameters_sha256": "87ad40199331b6a0f3c37ce15f75e630bc43064f00b83b1c3d46bc7c500e2af8",
+      "num_parameters": 10,
+      "expanded_success_rate": 0.5,
+      "screen_success_rate": 0.4,
+      "selected_step_in_source_run": 0,
+      "rank_key": [
+        1,
+        0.5,
+        0.4,
+        0.12284631822723635
+      ]
+    }
+  ],
+  "deduplicated": [
+    {
+      "id": "gen2_cand1_a0",
+      "duplicate_of": "gen0_cand0_a0",
+      "reason": "identical actions on the behaviour batch and identical development outcomes"
+    }
+  ],
+  "considered": [
+    {
+      "id": "gen0_cand0_a0",
+      "candidate_id": "gen0_cand0",
+      "expanded_success_rate": 0.5,
+      "screen_success_rate": 0.4,
+      "reconstructs": true,
+      "source_sha256": "2b538295a01d847ce86f60393d9da47abb7eee742156eac50fb6d39d8c6b3c63",
+      "initial_parameters_sha256": "87ad40199331b6a0f3c37ce15f75e630bc43064f00b83b1c3d46bc7c500e2af8",
+      "selected_step": 0,
+      "num_parameters": 10,
+      "rank_key": [
+        1,
+        0.5,
+        0.4,
+        0.12284631822723635
+      ]
+    },
+    {
+      "id": "gen0_cand1_a0",
+      "candidate_id": "gen0_cand1",
+      "expanded_success_rate": 0.16666666666666666,
+      "screen_success_rate": 0.2,
+      "reconstructs": true,
+      "source_sha256": "cc2b8d351be7490a997529f03e65cb9108d159dc956a4d2f178d678fdc578bb3",
+      "initial_parameters_sha256": "af18ee77d5e276c3eab072abfd177511cb7c53af56add66bed0fb3e531c8cff1",
+      "selected_step": 1000,
+      "num_parameters": 10,
+      "rank_key": [
+        1,
+        0.16666666666666666,
+        0.2,
+        0.08717534773527391
+      ]
+    },
+    {
+      "id": "gen0_cand2_a0",
+      "candidate_id": "gen0_cand2",
+      "expanded_success_rate": 0.1,
+      "screen_success_rate": 0.1,
+      "reconstructs": true,
+      "source_sha256": "cfa7ba44121de7584be1fec0562e939416b2f32e6a0f75a0c65e4a605bfd171e",
+      "initial_parameters_sha256": "e57fad113739d7774a3835bc8b5e5e9fafbf611c57cf3c5da4cbec2b2621dc9e",
+      "selected_step": 0,
+      "num_parameters": 10,
+      "rank_key": [
+        1,
+        0.1,
+        0.1,
+        0.04152072684535825
+      ]
+    },
+    {
+      "id": "gen0_cand3_a0",
+      "candidate_id": "gen0_cand3",
+      "expanded_success_rate": null,
+      "screen_success_rate": 0.0,
+      "reconstructs": true,
+      "source_sha256": "e9d6d640cc22d643f8bad6ce690f65b772af6ed212444c451a03e5a311bddc05",
+      "initial_parameters_sha256": "ee6e6bbbd6332a7f7a4c5f9514b3477b312bcb82f463ab37f2ce3124138bfac2",
+      "selected_step": 0,
+      "num_parameters": 9,
+      "rank_key": [
+        0,
+        -1.0,
+        0.0,
+        -0.10410629586785632
+      ]
+    },
+    {
+      "id": "gen0_cand4_a0",
+      "candidate_id": "gen0_cand4",
+      "expanded_success_rate": 0.4,
+      "screen_success_rate": 0.4,
+      "reconstructs": true,
+      "source_sha256": "36d5e762b23d381a89931aaa2f2f2e99444cd4c9f12e78d1b23193637432029e",
+      "initial_parameters_sha256": "80ce9423a60a8bd0ae1636e3c93bc337070c17fd15ced50f9e7f227d420ce98c",
+      "selected_step": 1000,
+      "num_parameters": 9,
+      "rank_key": [
+        1,
+        0.4,
+        0.4,
+        0.03849649608253346
+      ]
+    },
+    {
+      "id": "gen1_cand0_a0",
+      "candidate_id": "gen1_cand0",
+      "expanded_success_rate": 0.5,
+      "screen_success_rate": 0.4,
+      "reconstructs": true,
+      "source_sha256": "25ee2547c5d06785ee9a6c2d3cf80b9355e2e05afcd7fdedfe4614840d38d17c",
+      "initial_parameters_sha256": "87ad40199331b6a0f3c37ce15f75e630bc43064f00b83b1c3d46bc7c500e2af8",
+      "selected_step": 0,
+      "num_parameters": 10,
+      "rank_key": [
+        1,
+        0.5,
+        0.4,
+        0.12381178287293719
+      ]
+    },
+    {
+      "id": "gen1_cand1_a0",
+      "candidate_id": "gen1_cand1",
+      "expanded_success_rate": 0.5,
+      "screen_success_rate": 0.4,
+      "reconstructs": true,
+      "source_sha256": "8fbf1b6917027f86f7eeb312ed3ba09869e18c45da602e31c803a6b60d2c2de5",
+      "initial_parameters_sha256": "87ad40199331b6a0f3c37ce15f75e630bc43064f00b83b1c3d46bc7c500e2af8",
+      "selected_step": 0,
+      "num_parameters": 10,
+      "rank_key": [
+        1,
+        0.5,
+        0.4,
+        0.1295292795309903
+      ]
+    },
+    {
+      "id": "gen1_cand2_a0",
+      "candidate_id": "gen1_cand2",
+      "expanded_success_rate": 0.5666666666666667,
+      "screen_success_rate": 0.5,
+      "reconstructs": true,
+      "source_sha256": "6d9f434ae650bfdb060365963ba994b18591e19927f29d1147e6b21d3715444d",
+      "initial_parameters_sha256": "87ad40199331b6a0f3c37ce15f75e630bc43064f00b83b1c3d46bc7c500e2af8",
+      "selected_step": 0,
+      "num_parameters": 10,
+      "rank_key": [
+        1,
+        0.5666666666666667,
+        0.5,
+        0.11965888143028995
+      ]
+    },
+    {
+      "id": "gen1_cand3_a0",
+      "candidate_id": "gen1_cand3",
+      "expanded_success_rate": null,
+      "screen_success_rate": 0.0,
+      "reconstructs": true,
+      "source_sha256": "f03c0c12d1fa87bbf440296f6a3007c45d79fc534ec7a7ee34c5322e46f736ff",
+      "initial_parameters_sha256": "ee6e6bbbd6332a7f7a4c5f9514b3477b312bcb82f463ab37f2ce3124138bfac2",
+      "selected_step": 1500,
+      "num_parameters": 9,
+      "rank_key": [
+        0,
+        -1.0,
+        0.0,
+        0.007250857558129981
+      ]
+    },
+    {
+      "id": "gen1_cand4_a0",
+      "candidate_id": "gen1_cand4",
+      "expanded_success_rate": null,
+      "screen_success_rate": 0.0,
+      "reconstructs": true,
+      "source_sha256": "8815e9c4660985ddda4d1786413d1ecc85b374404d3156c4baa2f220d66b604b",
+      "initial_parameters_sha256": "0962490165d42a17bcab34c61700eeba89ce9868ee8dd2fcb07981a33fefb839",
+      "selected_step": 0,
+      "num_parameters": 9,
+      "rank_key": [
+        0,
+        -1.0,
+        0.0,
+        -0.07052094354721689
+      ]
+    },
+    {
+      "id": "gen2_cand0_a1",
+      "candidate_id": "gen2_cand0",
+      "expanded_success_rate": 0.5666666666666667,
+      "screen_success_rate": 0.5,
+      "reconstructs": true,
+      "source_sha256": "f1965f1f6c8c831c0f3fe587c5bf26573a79ab5483912624e6dd6972b4fae8d2",
+      "initial_parameters_sha256": "bbdca24d920e8b31dd552b89b52977678e82ec97cab28d617593bbffba06ce2f",
+      "selected_step": 0,
+      "num_parameters": 9,
+      "rank_key": [
+        1,
+        0.5666666666666667,
+        0.5,
+        0.13055356173637195
+      ]
+    },
+    {
+      "id": "gen2_cand1_a0",
+      "candidate_id": "gen2_cand1",
+      "expanded_success_rate": 0.5,
+      "screen_success_rate": 0.4,
+      "reconstructs": true,
+      "source_sha256": "a1e490ed56dcd89c22cfef31a24268cda74abf8601264013dfb850f649b6d798",
+      "initial_parameters_sha256": "87ad40199331b6a0f3c37ce15f75e630bc43064f00b83b1c3d46bc7c500e2af8",
+      "selected_step": 0,
+      "num_parameters": 10,
+      "rank_key": [
+        1,
+        0.5,
+        0.4,
+        0.12284631822723635
+      ]
+    },
+    {
+      "id": "gen2_cand2_a0",
+      "candidate_id": "gen2_cand2",
+      "expanded_success_rate": 0.13333333333333333,
+      "screen_success_rate": 0.2,
+      "reconstructs": true,
+      "source_sha256": "8dabfb9d3732817176ca05e122a7615a35ae1220261ea8219a015a79602ec5f6",
+      "initial_parameters_sha256": "7169ad70af2790a12b4bbd37afef0d4cff714202aac0dc433486f53f8f95cc25",
+      "selected_step": 0,
+      "num_parameters": 10,
+      "rank_key": [
+        1,
+        0.13333333333333333,
+        0.2,
+        0.05885858539586405
+      ]
+    },
+    {
+      "id": "gen2_cand3_a1",
+      "candidate_id": "gen2_cand3",
+      "expanded_success_rate": null,
+      "screen_success_rate": 0.0,
+      "reconstructs": true,
+      "source_sha256": "93a89ca46c9e3b4b61bd7649a58d5531cc006b56e0129d89b5c5b2b4b85f905a",
+      "initial_parameters_sha256": "35992ba470a327917da0ff38f1fb5fcd94e5687b7aa2a3a1f02370989e24c25d",
+      "selected_step": 0,
+      "num_parameters": 10,
+      "rank_key": [
+        0,
+        -1.0,
+        0.0,
+        0.03090898137878184
+      ]
+    },
+    {
+      "id": "gen2_cand4_a0",
+      "candidate_id": "gen2_cand4",
+      "expanded_success_rate": 0.43333333333333335,
+      "screen_success_rate": 0.3,
+      "reconstructs": true,
+      "source_sha256": "655579d40acae0cefbd7cf5a138f47fc3fd24da2dab188a57a293f57d5003312",
+      "initial_parameters_sha256": "87ad40199331b6a0f3c37ce15f75e630bc43064f00b83b1c3d46bc7c500e2af8",
+      "selected_step": 0,
+      "num_parameters": 10,
+      "rank_key": [
+        1,
+        0.43333333333333335,
+        0.3,
+        0.056250502842657556
+      ]
+    }
+  ],
+  "behaviour_batch": {
+    "source": "logs/baseline_lock/demo_push-v2.pkl",
+    "size": 2048,
+    "seed": 0
+  }
+}
