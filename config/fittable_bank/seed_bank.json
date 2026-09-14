@@ -1,0 +1,258 @@
+{
+  "seed_bank": "fittable",
+  "decided_by": "config/fittable_bank/qualification.yaml qualification_rule",
+  "run": "logs/fittable_bank/20260914_040245",
+  "git_sha": "707322a9fd5556bb9118f5eaddeeefd1604021f7",
+  "evaluation_manifest_id": "push-v2:development_confirmation:s2300:n50",
+  "checkpoint_selection_manifest_id": "push-v2:development:s2000:n50#slice40-50",
+  "rule": {
+    "improves_in_at_least": 3,
+    "worst_seed_difference_at_least": -0.05,
+    "mean_difference_greater_than": 0.0
+  },
+  "note": "seed-bank qualification, not a publication claim",
+  "caveat": "The five fitting seeds change only minibatch order; the data split and evaluation placements are shared, and selected success barely varied across seeds (identical for three members). The near-zero intervals reflect insensitivity to minibatch order, not robustness across placements or data splits.",
+  "members": {
+    "simple_damped_push": {
+      "source_path": "lares/fitting/structures/simple_damped_push.py",
+      "role": "reference",
+      "parent": null,
+      "axis": null,
+      "zero_shot_success": 0.12,
+      "selected_success_by_seed": [
+        0.86,
+        0.88,
+        0.86,
+        0.86,
+        0.88
+      ],
+      "selected_step_by_seed": [
+        1000,
+        1000,
+        1000,
+        1000,
+        1000
+      ],
+      "difference_by_seed": [
+        0.74,
+        0.76,
+        0.74,
+        0.74,
+        0.76
+      ],
+      "improvements": 5,
+      "worst": 0.74,
+      "mean": 0.748,
+      "t95_over_seeds": [
+        0.7343982523868349,
+        0.7616017476131651
+      ]
+    },
+    "simple_reach_push": {
+      "source_path": "lares/fitting/structures/simple_reach_push.py",
+      "role": "reference",
+      "parent": null,
+      "axis": null,
+      "zero_shot_success": 0.6,
+      "selected_success_by_seed": [
+        0.92,
+        0.92,
+        0.92,
+        0.92,
+        0.92
+      ],
+      "selected_step_by_seed": [
+        1000,
+        1000,
+        1000,
+        1000,
+        1000
+      ],
+      "difference_by_seed": [
+        0.32000000000000006,
+        0.32000000000000006,
+        0.32000000000000006,
+        0.32000000000000006,
+        0.32000000000000006
+      ],
+      "improvements": 5,
+      "worst": 0.32000000000000006,
+      "mean": 0.32000000000000006,
+      "t95_over_seeds": [
+        0.32000000000000006,
+        0.32000000000000006
+      ]
+    },
+    "simple_reach_push_damped": {
+      "source_path": "lares/fitting/fittable_variants/simple_reach_push_damped.py",
+      "role": "variant",
+      "parent": "simple_reach_push",
+      "axis": "control (direct -> damped)",
+      "zero_shot_success": 0.62,
+      "selected_success_by_seed": [
+        0.92,
+        0.94,
+        0.92,
+        0.92,
+        0.94
+      ],
+      "selected_step_by_seed": [
+        1000,
+        1000,
+        1000,
+        1000,
+        1000
+      ],
+      "difference_by_seed": [
+        0.30000000000000004,
+        0.31999999999999995,
+        0.30000000000000004,
+        0.30000000000000004,
+        0.31999999999999995
+      ],
+      "improvements": 5,
+      "worst": 0.30000000000000004,
+      "mean": 0.308,
+      "t95_over_seeds": [
+        0.2943982523868349,
+        0.32160174761316507
+      ]
+    },
+    "simple_reach_push_shared_gain": {
+      "source_path": "lares/fitting/fittable_variants/simple_reach_push_shared_gain.py",
+      "role": "variant",
+      "parent": "simple_reach_push",
+      "axis": "gains (phase-specific -> shared)",
+      "zero_shot_success": 0.62,
+      "selected_success_by_seed": [
+        0.82,
+        0.82,
+        0.82,
+        0.82,
+        0.82
+      ],
+      "selected_step_by_seed": [
+        1000,
+        1000,
+        1000,
+        1000,
+        1000
+      ],
+      "difference_by_seed": [
+        0.19999999999999996,
+        0.19999999999999996,
+        0.19999999999999996,
+        0.19999999999999996,
+        0.19999999999999996
+      ],
+      "improvements": 5,
+      "worst": 0.19999999999999996,
+      "mean": 0.19999999999999996,
+      "t95_over_seeds": [
+        0.19999999999999996,
+        0.19999999999999996
+      ]
+    },
+    "simple_reach_push_sharp_gate": {
+      "source_path": "lares/fitting/fittable_variants/simple_reach_push_sharp_gate.py",
+      "role": "variant",
+      "parent": "simple_reach_push",
+      "axis": "gate sharpness (smooth -> sharper)",
+      "zero_shot_success": 0.56,
+      "selected_success_by_seed": [
+        0.98,
+        0.98,
+        0.98,
+        0.98,
+        0.98
+      ],
+      "selected_step_by_seed": [
+        1000,
+        1000,
+        1000,
+        1000,
+        1000
+      ],
+      "difference_by_seed": [
+        0.41999999999999993,
+        0.41999999999999993,
+        0.41999999999999993,
+        0.41999999999999993,
+        0.41999999999999993
+      ],
+      "improvements": 5,
+      "worst": 0.41999999999999993,
+      "mean": 0.41999999999999993,
+      "t95_over_seeds": [
+        0.41999999999999993,
+        0.41999999999999993
+      ]
+    }
+  },
+  "excluded": {
+    "simple_damped_push_smooth_gate": {
+      "zero_shot_success": 0.0,
+      "selected_step_by_seed": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "fitting_rejected_seeds": 5,
+      "mean": 0.0,
+      "failed_checks": [
+        "improves_in_enough_seeds",
+        "mean_difference_positive"
+      ]
+    },
+    "simple_standoff": {
+      "zero_shot_success": 0.0,
+      "selected_step_by_seed": [
+        500,
+        500,
+        500,
+        500,
+        500
+      ],
+      "fitting_rejected_seeds": 0,
+      "mean": 0.0,
+      "failed_checks": [
+        "improves_in_enough_seeds",
+        "mean_difference_positive"
+      ]
+    },
+    "simple_standoff_moderate_geometry": {
+      "zero_shot_success": 0.0,
+      "selected_step_by_seed": [
+        500,
+        500,
+        500,
+        500,
+        500
+      ],
+      "fitting_rejected_seeds": 0,
+      "mean": 0.0,
+      "failed_checks": [
+        "improves_in_enough_seeds",
+        "mean_difference_positive"
+      ]
+    },
+    "simple_standoff_phase_gains": {
+      "zero_shot_success": 0.0,
+      "selected_step_by_seed": [
+        500,
+        500,
+        500,
+        500,
+        500
+      ],
+      "fitting_rejected_seeds": 0,
+      "mean": 0.0,
+      "failed_checks": [
+        "improves_in_enough_seeds",
+        "mean_difference_positive"
+      ]
+    }
+  }
+}

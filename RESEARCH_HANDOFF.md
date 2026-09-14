@@ -834,7 +834,24 @@ search. The qualification study (`scripts/qualify_fittable_bank.py`, `config/fit
 admits a structure to the fittable seed bank if fitting improves held-out success in at least three of five
 seeds, never regresses by more than 0.05, and has a positive mean paired difference.
 
+### Result: five structures qualify for the fittable seed bank
+
+Run `logs/fittable_bank/20260914_040245` at `707322a`, evaluation on MT1 seed 2300: `simple_reach_push_sharp_gate`
+(0.56 zero-shot to 0.98 fitted), `simple_damped_push` (0.12 to 0.87), `simple_reach_push` (0.60 to 0.92),
+`simple_reach_push_damped` (0.62 to 0.93) and `simple_reach_push_shared_gain` (0.62 to 0.82) improved in 5/5
+seeds. All three standoff structures score zero untrained and fitted, and smoothing the damped-push gates broke
+that structure outright. The five fitting seeds vary only minibatch order and produced near-identical results, so
+the qualification speaks to insensitivity to minibatch order, not to robustness across placements or data splits.
+
 ## Questions requiring a research decision
+
+-2. **Raised by the bank study.** (a) Four of the five qualifying references are reach-push variants, so the
+   seeded lane starts from essentially one design family plus `simple_damped_push`. Should the six seeded
+   mutations be spread across references by a fixed allocation (for example, damped push guaranteed at least
+   one slot) rather than ranked? (b) Should future qualification vary the data split as well as the minibatch
+   seed, since the current seeds do not produce independent replicates? (c) The standoff family never succeeds;
+   is there a reason to keep it in any bank?
+
 
 -1. **Raised by Stage E.** (a) The frozen rule pooled both families, and the default it produced removes the
    route to the strongest policies yet found. Should fitting stay disabled for generated structures while

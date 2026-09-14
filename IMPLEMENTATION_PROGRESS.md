@@ -27,6 +27,9 @@ AC-3 items closed, with the comparison run over the full bank.
 > structures to 0.91-0.96 held-out success and leaves every evolved structure at step 0.
 > **Next, before any search:** a nine-structure fittable-bank qualification study (three references plus six
 > predeclared variants, `scripts/qualify_fittable_bank.py`); see `DEBUG_PROGRESS.md`.
+> **Bank study complete** (run `logs/fittable_bank/20260914_040245`, commit `707322a`): five structures qualify
+> for the fittable seed bank (`config/fittable_bank/seed_bank.json`); the standoff family does not. The two-lane
+> search is next and not yet implemented.
 
 **Phase 4 — LLM proposal, feedback and archive** (FR-5, FR-10, AC-4): **reopened** by `debug_spec.md`.
 Candidate lineage, structured proposals, feedback bundles and the LLM-call ledger are now integrated

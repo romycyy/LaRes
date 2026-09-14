@@ -218,7 +218,10 @@ fittable lane: checkpoints {0, 500, 1000}, selected on a probe manifest (step 0 
 "fitting rejected"), evaluated on a separate manifest. Probe scores select parameters and are never promotion
 evidence. Step-0 strength and fittability are classified separately (`performance_incumbent` versus
 `fittable_incumbent`). `lares/fitting/fittable_variants/` holds six predeclared single-change variants of the
-three references, qualified by `scripts/qualify_fittable_bank.py`; the frozen Phase 3 bank is unchanged.
+three references, qualified by `scripts/qualify_fittable_bank.py`; the frozen Phase 3 bank is unchanged. The
+fittable seed bank (`config/fittable_bank/seed_bank.json`, run `logs/fittable_bank/20260914_040245`) is
+`simple_reach_push_sharp_gate`, `simple_damped_push`, `simple_reach_push`, `simple_reach_push_damped` and
+`simple_reach_push_shared_gain`. Seeds 2300-2304 are spent. The two-lane search is not implemented yet.
 
 **Behavioural cloning is non-monotonic in gradient steps.** Development success peaks around 1000
 steps and collapses to zero by 3000, while validation loss falls the whole way. Measured on two

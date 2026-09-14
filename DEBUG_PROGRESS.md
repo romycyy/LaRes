@@ -445,6 +445,49 @@ in `config/fittable_bank/variants_frozen.json` before the evaluation manifest ex
 {0, 500, 1000} selected on development cases 40-49, evaluation on 50 fresh placements from MT1 pool seed
 2300, fitting seeds 2300-2304 (checked unused and reserved in the ledger before the manifest is built).
 
+## Fittable-bank qualification result (2026-09-14)
+
+**Run.** `scripts/qualify_fittable_bank.py run`, run `logs/fittable_bank/20260914_040245`, about 4.5 minutes on
+8 workers, at commit `707322a` with a clean worktree. Variants frozen at `70e37e8` before the evaluation manifest
+existed (no rollout ran before freezing). Checkpoints {0, 500, 1000} selected on development cases 40-49;
+selected checkpoints scored on 50 fresh placements from MT1 pool seed 2300; fitting seeds 2300-2304. Cost:
+45,000 gradient steps, 1,350 probe episodes (202,500 simulator steps), 2,450 evaluation episodes (367,500
+steps). The final-test split was not opened.
+
+| structure | role | zero-shot | selected success by seed | selected steps | improved | worst | mean diff | qualifies |
+|---|---|---:|---|---|---:|---:|---:|---|
+| `simple_reach_push_sharp_gate` | variant | 0.56 | 0.98 x5 | 1000 x5 | 5/5 | +0.42 | +0.420 | **yes** |
+| `simple_damped_push` | reference | 0.12 | 0.86-0.88 | 1000 x5 | 5/5 | +0.74 | +0.748 | **yes** |
+| `simple_reach_push` | reference | 0.60 | 0.92 x5 | 1000 x5 | 5/5 | +0.32 | +0.320 | **yes** |
+| `simple_reach_push_damped` | variant | 0.62 | 0.92-0.94 | 1000 x5 | 5/5 | +0.30 | +0.308 | **yes** |
+| `simple_reach_push_shared_gain` | variant | 0.62 | 0.82 x5 | 1000 x5 | 5/5 | +0.20 | +0.200 | **yes** |
+| `simple_damped_push_smooth_gate` | variant | 0.00 | 0.00 x5 | 0 x5 (fitting rejected) | 0/5 | 0.00 | 0.000 | no |
+| `simple_standoff` | reference | 0.00 | 0.00 x5 | 500 x5 | 0/5 | 0.00 | 0.000 | no |
+| `simple_standoff_phase_gains` | variant | 0.00 | 0.00 x5 | 500 x5 | 0/5 | 0.00 | 0.000 | no |
+| `simple_standoff_moderate_geometry` | variant | 0.00 | 0.00 x5 | 500 x5 | 0/5 | 0.00 | 0.000 | no |
+
+**Fittable seed bank** (recorded in `config/fittable_bank/seed_bank.json`): `simple_reach_push_sharp_gate`,
+`simple_damped_push`, `simple_reach_push`, `simple_reach_push_damped`, `simple_reach_push_shared_gain`.
+
+**Reading it.**
+
+1. **All four reach-push structures qualify**, whichever single property changed. A sharper gate gave the best
+   fitted policy of the project (0.98); a shared gain the weakest qualifying one (0.82).
+2. **The standoff family is not fittable** in any of its three forms: zero success untrained and fitted. Its
+   probes selected step 500 on goal progress alone, which is parameter selection, not evidence of help.
+3. **Smoothing the damped-push gates broke the structure** (0.00 untrained, fitting rejected on every seed),
+   although its parent fits from 0.12 to 0.86. Gate sharpness matters in both directions of the design axis.
+4. **Replication caveat.** The five fitting seeds change only minibatch order: the data split and placements
+   are shared, and selected success was identical across seeds for three members. The rule is satisfied, but
+   the near-zero intervals reflect insensitivity to minibatch order, not robustness across placements, data
+   splits or structures. As declared, this qualifies seeds; it is not a publication claim.
+5. The results agree with Stage E on its separate manifest: `simple_reach_push` 0.58 to 0.96 there at a
+   2000-step budget, 0.60 to 0.92 here at 1000; `simple_damped_push` 0.12 to 0.91 there, 0.12 to 0.87 here;
+   `simple_standoff` zero in both.
+
+**Next** (not started): implement the two-lane search from the decisions above, with the six seeded mutations
+drawn from these five references.
+
 ## Decisions and deviations
 
 1. **Paths.** The spec names `lares/fit/objectives.py` and `lares/fit/fitter.py`; the package is
