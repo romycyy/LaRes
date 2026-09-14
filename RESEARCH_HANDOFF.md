@@ -843,6 +843,15 @@ seeds. All three standoff structures score zero untrained and fitted, and smooth
 that structure outright. The five fitting seeds vary only minibatch order and produced near-identical results, so
 the qualification speaks to insensitivity to minibatch order, not to robustness across placements or data splits.
 
+## LLM model: gpt-5.6-sol, reasoning effort high (decided 2026-09-14)
+
+Every LLM call now uses gpt-5.6-sol with `reasoning_effort: high` (configs, the generation-mode comparison
+and Tier 3). All generation results recorded above were produced with gpt-5 or gpt-4o-mini, so they are
+evidence about those models. In particular the next search's token cap was matched to the gpt-5
+debug-cycle run, and reasoning tokens count against it: a comparison with that run would confound the
+model change with the search change. Whether to re-match the budget by calls only, or to rerun a baseline
+under the new model, is open.
+
 ## Questions requiring a research decision
 
 -2. **Raised by the bank study.** (a) Four of the five qualifying references are reach-push variants, so the

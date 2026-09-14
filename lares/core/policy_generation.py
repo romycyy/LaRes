@@ -182,6 +182,24 @@ input_dict_for_policy = {
 #  LLM helper
 # ---------------------------------------------------------------------------
 
+# The pipeline's LLM, for every generation call (decided 2026-09-14). gpt-5.6-sol accepts only the
+# default temperature (1) and takes `reasoning_effort`; configs name both, and every ledger entry
+# records them in `decoding`.
+DEFAULT_LLM_MODEL = "gpt-5.6-sol"
+DEFAULT_REASONING_EFFORT = "high"
+REASONING_EFFORTS = ("none", "minimal", "low", "medium", "high", "xhigh")
+
+
+def check_reasoning_effort(value):
+    """Return ``value`` if it is a known effort (or ``None``), else raise."""
+    if value is None:
+        return None
+    value = str(value).strip().lower()
+    if value not in REASONING_EFFORTS:
+        raise ValueError(f"reasoning_effort must be one of {REASONING_EFFORTS}, got {value!r}")
+    return value
+
+
 # OpenAI chat.completions `n` is capped per model (often 8 for recent models).
 _OPENAI_CHAT_N_MAX = 8
 
@@ -230,8 +248,13 @@ def _call_llm(
     transcript_path=None,
     transcript_counter=None,
     transcript_label="completion",
+    reasoning_effort=None,
 ):
-    """Call the OpenAI chat completion API with retry logic."""
+    """Call the OpenAI chat completion API with retry logic.
+
+    ``reasoning_effort`` is sent only when set, so models without the parameter still work.
+    """
+    extra = {"reasoning_effort": reasoning_effort} if reasoning_effort else {}
     total_samples = 0
     total_token = 0
     total_completion_token = 0
@@ -250,6 +273,7 @@ def _call_llm(
                     messages=messages,
                     temperature=temperature,
                     n=this_n,
+                    **extra,
                 )
                 total_samples += this_n
                 break
@@ -606,9 +630,10 @@ class _LLMSession:
     """Makes calls against a budget, writing each one to the ledger and transcript."""
 
     def __init__(self, client, model, ledger, transcript_path, generation, max_calls, temperature=1.0,
-                 max_tokens=None):
+                 max_tokens=None, reasoning_effort=None):
         self.client = client
         self.model = model
+        self.reasoning_effort = check_reasoning_effort(reasoning_effort)
         self.ledger = ledger
         self.transcript_path = transcript_path
         self.generation = generation
@@ -638,6 +663,7 @@ class _LLMSession:
             transcript_path=self.transcript_path,
             transcript_counter=self.transcript_counter,
             transcript_label=transcript_label,
+            reasoning_effort=self.reasoning_effort,
         )
         self.calls_made += 1
         self.tokens_used += int(total_tokens or 0)
@@ -657,7 +683,7 @@ class _LLMSession:
                 "total_tokens": total_tokens,
             },
             wall_time_seconds=time.time() - started,
-            decoding={"n": int(n), "temperature": self.temperature},
+            decoding={"n": int(n), "temperature": self.temperature, "reasoning_effort": self.reasoning_effort},
             purpose=purpose,
             generation=self.generation,
             attempt_ids=attempt_ids,
@@ -873,7 +899,8 @@ def generate_candidates(
     first_attempts = [attempt_id_for(cid, 0) for cid, _ in slots]
 
     session = _LLMSession(client, args.model, ledger, llm_transcript_path, generation, max_total_calls,
-                          max_tokens=max_total_tokens)
+                          max_tokens=max_total_tokens,
+                          reasoning_effort=getattr(args, "reasoning_effort", None))
     validate = _SlotValidator(dir_path, data_pkl_path, obs_dim, action_dim, env_name, forbid_scale_parameters)
     fmt = dict(
         task=prompts["task_description"],
@@ -1051,7 +1078,8 @@ def _generate_single_phase(client, args, dir_path, generation, obs_dim, action_d
     slots = allocator.allocate_slots(n)
     for cid, _ in slots:
         allocator.next_attempt(cid)
-    session = _LLMSession(client, args.model, ledger, llm_transcript_path, generation, max_total_calls)
+    session = _LLMSession(client, args.model, ledger, llm_transcript_path, generation, max_total_calls,
+                          reasoning_effort=getattr(args, "reasoning_effort", None))
     validate = _SlotValidator(dir_path, data_pkl_path, obs_dim, action_dim, env_name, forbid_scale_parameters=False)
     fmt = dict(
         task=prompts["task_description"], obs_dim=obs_dim, action_dim=action_dim,

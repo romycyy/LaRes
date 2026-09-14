@@ -488,6 +488,33 @@ steps). The final-test split was not opened.
 **Next** (not started): implement the two-lane search from the decisions above, with the six seeded mutations
 drawn from these five references.
 
+## LLM model change (2026-09-14)
+
+Decided: every LLM call in the pipeline uses **gpt-5.6-sol with `reasoning_effort: high`**.
+
+- `lares/core/policy_generation.py`: `DEFAULT_LLM_MODEL`, `DEFAULT_REASONING_EFFORT`, `REASONING_EFFORTS`,
+  `check_reasoning_effort`. `_call_llm` sends `reasoning_effort` only when set; `_LLMSession` validates it
+  before any call and records it in each ledger entry's `decoding`.
+- `scripts/run_full_evolution.py` reads `reasoning_effort` (default `high`), passes it to generation and
+  prints it; `run_manifest.json` and each record's LLM block carry it; `scripts/freeze_method.py` freezes it.
+- `config/run_full_evolution.yaml` and `config/debug_smoke_two_generation.yaml` name the model and effort.
+- `scripts/compare_generation_modes.py` defaults to the same model and effort; Tier 3 of
+  `tests/test_training_pipeline.py` uses them (its connectivity call no longer sets `max_tokens`, which
+  reasoning models reject).
+- Tests after the change: 631 unittest cases OK (6 new in `TestModelAndReasoningEffort`), 41/41 phase checks,
+  and `tests/test_training_pipeline.py` 145/145 with **0 skipped**: Tier 3's live generation, which skipped
+  under gpt-4o-mini for want of a valid policy within one correction, now returns a valid policy on
+  gpt-5.6-sol high and runs its minimal Stage 4 evolution.
+- Checked against the API before the change: the model accepts `reasoning_effort="high"` and `n>1`, and
+  refuses any temperature other than 1 (the pipeline already sends 1).
+
+What does not transfer. The live smoke test, the full run and the Tier 3 notes above used gpt-5 (no
+reasoning effort) or gpt-4o-mini. The `max_llm_tokens_per_generation: 242642` cap was matched against the
+gpt-5 run's ledger; reasoning tokens count toward `total_tokens`, so under gpt-5.6-sol high the same cap buys a
+different number of slots and the next search is not budget-matched to `logs/evolution_debug_full`. The
+caps are unchanged pending a decision. No LLM is used for evaluation: screening, promotion, Stage E and the
+fittable-bank study are rollouts only, and the vision analyst is a local Qwen model, blocked with E10.
+
 ## Decisions and deviations
 
 1. **Paths.** The spec names `lares/fit/objectives.py` and `lares/fit/fitter.py`; the package is

@@ -17,6 +17,15 @@ export MUJOCO_GL=egl                    # required on a headless machine with no
 export OPENAI_API_KEY=...               # required for any LLM/Stage-4 path
 ```
 
+**LLM model (decided 2026-09-14): `gpt-5.6-sol` with `reasoning_effort: high` for every LLM call** —
+ideation, implementation and correction in `run_full_evolution.py`, the two-generation smoke config,
+`scripts/compare_generation_modes.py` and Tier 3 of `tests/test_training_pipeline.py`. The defaults live in
+`lares/core/policy_generation.py` (`DEFAULT_LLM_MODEL`, `DEFAULT_REASONING_EFFORT`); configs name both
+explicitly, and every ledger entry records the effort in `decoding`. The model accepts only temperature 1.
+Runs completed before this date (`logs/evolution_debug_full`, `logs/debug_smoke_two_generation`, Tier 3
+notes) used gpt-5 or gpt-4o-mini, so their token caps and results do not transfer. The vision analyst
+(`lares/vision/`) is a local Qwen by design and is not an OpenAI call; it stays blocked with E10.
+
 There is no `setup.py`/`pyproject.toml`. The `lares` package is importable only because every
 script/test does `sys.path.insert(0, _PROJECT_ROOT)`. **All commands must be run from the project root.**
 
@@ -355,7 +364,7 @@ any call. Generation 0 parses `PolicyIdea`s strictly (no padding: a wrong count 
 its slot); generation 1+ parses `MutationProposal` + idea, with repair/simplification = one parent,
 crossover ≥ 2, exploration may have none only with `no_parent_rationale`, and every parent drawn from
 the `FeedbackBundle`'s `context_parent_ids`. One linked correction per slot, never an outer retry. Every
-LLM call is one `LLMCallLedger` entry in `<log_dir>/llm_calls.jsonl` with hashed prompt and response
+LLM call (model and `reasoning_effort` from the config) is one `LLMCallLedger` entry in `<log_dir>/llm_calls.jsonl` with hashed prompt and response
 files; shared calls list several `attempt_ids` and are counted once. Code must declare exactly the
 idea's parameters, return `self.fixed_std(mean)` (scale parameters are rejected), and use the gate
 `record_gate` returns (`GATE_NOT_A_LEVER` otherwise). Records (`origin="generated"`) must carry lineage,

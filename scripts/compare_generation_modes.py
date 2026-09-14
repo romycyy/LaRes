@@ -31,8 +31,11 @@ sys.path.insert(0, _PROJECT_ROOT)
 import numpy as np  # noqa: E402
 
 from lares.core.policy_generation import (  # noqa: E402
+    DEFAULT_LLM_MODEL,
+    DEFAULT_REASONING_EFFORT,
     POLICY_IMPL_BATCHED,
     POLICY_IMPL_PER_IDEA,
+    REASONING_EFFORTS,
     final_attempts,
     get_symbolic_policies,
     valid_policies,
@@ -105,7 +108,8 @@ def run_one(mode, replicate, args, prompts, out_dir):
         pickle.dump([{"obs": np.zeros(args.obs_dim)}], f)
 
     llm_args = SimpleNamespace(
-        model=args.model, policy_gen_two_phase=True, policy_impl_mode=mode
+        model=args.model, reasoning_effort=args.reasoning_effort, policy_gen_two_phase=True,
+        policy_impl_mode=mode,
     )
     t0 = time.time()
     candidates = get_symbolic_policies(
@@ -158,7 +162,8 @@ def run_one(mode, replicate, args, prompts, out_dir):
 def parse_args():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--env-name", default="push-v2")
-    p.add_argument("--model", default="gpt-4o-mini")
+    p.add_argument("--model", default=DEFAULT_LLM_MODEL)
+    p.add_argument("--reasoning-effort", default=DEFAULT_REASONING_EFFORT, choices=REASONING_EFFORTS)
     p.add_argument("--pop-size", type=int, default=4)
     p.add_argument("--replicates", type=int, default=2)
     p.add_argument("--obs-dim", type=int, default=39)
@@ -185,7 +190,7 @@ def main():
     prompts = load_policy_prompt_assets(args.env_name)
 
     separator("Per-idea versus batched implementation")
-    print(f"  model {args.model}, {args.pop_size} policies per generation, "
+    print(f"  model {args.model} (reasoning effort {args.reasoning_effort}), {args.pop_size} policies per generation, "
           f"{args.replicates} replicates per mode")
 
     rows = []

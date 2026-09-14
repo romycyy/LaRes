@@ -49,7 +49,8 @@ and exposes every key as a `SimpleNamespace` attribute.
 | `rl_iterations` | `0` | GRPO outer iterations per candidate |
 | `rl_episodes` | `30` | Rollout episodes per RL iteration |
 | `eval_episodes` | `10` | Episodes used to score each candidate |
-| `model` | `gpt-5` | OpenAI model for policy generation |
+| `model` | `gpt-5.6-sol` | OpenAI model for every LLM call (ideation, implementation, correction) |
+| `reasoning_effort` | `high` | Sent with every call and recorded in the LLM ledger; `none`/`minimal`/`low`/`medium`/`high`/`xhigh` |
 | `policy_gen_two_phase` | `true` | Use ideation + implementation flow |
 | `policy_impl_mode` | `batched` | `batched` or `per_idea` implementation |
 | `num_generations` | `3` | Evolution generations |

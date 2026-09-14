@@ -113,6 +113,7 @@ def main():
         models={
             "generation_model": cfg.get("model", "unset"),
             "generation_temperature": cfg.get("temperature", "unset"),
+            "generation_reasoning_effort": cfg.get("reasoning_effort", "unset"),
             "two_phase": cfg.get("policy_gen_two_phase", False),
             "impl_mode": cfg.get("policy_impl_mode", "unset"),
         },

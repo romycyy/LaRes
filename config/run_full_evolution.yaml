@@ -65,7 +65,13 @@ promotion_challengers: 1      # more than one is judged with Holm's correction
 eval_episodes: 30           # legacy alias; used as `expanded_episodes` if that is unset
 
 # ---------- Stage 4: LLM structure search ----------
-model: "gpt-5"             # OpenAI model for policy generation
+# Every LLM call in the pipeline (ideation, implementation, correction) uses this model and effort
+# (decided 2026-09-14). gpt-5.6-sol accepts only temperature 1. The completed runs in
+# logs/evolution_debug_full and logs/debug_smoke_two_generation used gpt-5 without reasoning_effort,
+# so the token and call caps above were matched against a different model: reasoning tokens count
+# toward total_tokens, and a run under these caps is no longer budget-matched to that run.
+model: "gpt-5.6-sol"
+reasoning_effort: high      # none | minimal | low | medium | high | xhigh
 # If true: one LLM call for JSON design hypotheses, then implementation (batched or per-idea).
 policy_gen_two_phase: true
 # When policy_gen_two_phase is true: "batched" or "per_idea".

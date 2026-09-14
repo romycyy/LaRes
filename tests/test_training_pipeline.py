@@ -70,6 +70,8 @@ from lares.core.training_pipeline import (
 )
 
 from lares.core.policy_generation import (  # noqa: E402
+    DEFAULT_LLM_MODEL,
+    DEFAULT_REASONING_EFFORT,
     get_symbolic_policies,
     obs_description_dict,
     input_dict_for_policy,
@@ -119,7 +121,8 @@ def make_test_args(**overrides):
         env_name="window-close-v2",
         seed=SEED,
         episode_length=150,
-        model="gpt-4o-mini",
+        model=DEFAULT_LLM_MODEL,
+        reasoning_effort=DEFAULT_REASONING_EFFORT,
     )
     defaults.update(overrides)
     return SimpleNamespace(**defaults)
@@ -728,7 +731,7 @@ if HAS_OPENAI_KEY:
     from openai import OpenAI  # noqa: E402
 
     llm_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-    llm_args = make_test_args(model="gpt-4o-mini")
+    llm_args = make_test_args()
 
     # --- 3.1 LLM API connectivity ---
     print()
@@ -738,9 +741,9 @@ if HAS_OPENAI_KEY:
 
     try:
         test_resp = llm_client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=DEFAULT_LLM_MODEL,
             messages=[{"role": "user", "content": "Say 'hello' and nothing else."}],
-            max_tokens=10,
+            reasoning_effort=DEFAULT_REASONING_EFFORT,
         )
         reply = test_resp.choices[0].message.content.strip().lower()
         check("LLM API: connectivity", "hello" in reply, reply)
@@ -918,7 +921,7 @@ if HAS_OPENAI_KEY:
             client=llm_client,
             envs=PipelineEnvs(env_mock, env_mock, env_mock, allow_shared=True, probe=env_mock),
             demo_buffer=demo_buf,
-            args=make_test_args(model="gpt-4o-mini", policy_gen_two_phase=True, policy_impl_mode="per_idea"),
+            args=make_test_args(policy_gen_two_phase=True, policy_impl_mode="per_idea"),
         )
 
         from lares.search.provenance import reconcile_resources  # noqa: E402

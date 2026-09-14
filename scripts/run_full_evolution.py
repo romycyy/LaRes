@@ -100,6 +100,10 @@ def load_config(path: str) -> SimpleNamespace:
         raw["use_mt1"] = False
     else:
         raw["use_mt1"] = bool(raw["use_mt1"])
+    # Every LLM call uses the model and reasoning effort named here (gpt-5.6-sol, high; 2026-09-14).
+    from lares.core.policy_generation import DEFAULT_REASONING_EFFORT, check_reasoning_effort
+
+    raw["reasoning_effort"] = check_reasoning_effort(raw.get("reasoning_effort", DEFAULT_REASONING_EFFORT))
     if "policy_gen_two_phase" not in raw:
         raw["policy_gen_two_phase"] = False
     else:
@@ -369,10 +373,11 @@ def main() -> None:
     client = OpenAI(api_key=api_key)
     llm_args = SimpleNamespace(
         model=cfg.model,
+        reasoning_effort=cfg.reasoning_effort,
         policy_gen_two_phase=getattr(cfg, "policy_gen_two_phase", False),
         policy_impl_mode=getattr(cfg, "policy_impl_mode", "batched"),
     )
-    print(f"\n  LLM model      : {cfg.model}")
+    print(f"\n  LLM model      : {cfg.model} (reasoning effort {cfg.reasoning_effort})")
     print(f"  Generations    : {cfg.num_generations}")
     print(f"  Pop size       : {cfg.pop_size}")
     print(f"  Elite num      : {cfg.elite_num}")

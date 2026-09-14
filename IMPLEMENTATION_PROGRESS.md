@@ -653,6 +653,14 @@ returning an empty population.
     otherwise visible only in a study file, so a summary regenerated from records alone would not
     know the rollouts had happened. The repair itself is recorded as an ordinary rankable candidate.
 
+## LLM model change (2026-09-14)
+
+Every LLM call uses gpt-5.6-sol with `reasoning_effort: high`: defaults and validation in
+`lares/core/policy_generation.py`, threaded through `_call_llm`/`_LLMSession`, recorded in the ledger's
+`decoding`, the run manifest, each record's LLM block and the freeze record; both pipeline configs,
+`scripts/compare_generation_modes.py` and Tier 3 updated. Tests: `TestModelAndReasoningEffort` in
+`tests/test_two_phase_policy_generation.py`. Details and what does not transfer: `DEBUG_PROGRESS.md`.
+
 ## Blockers
 
 One AC-2 item is blocked: whether the VLM earns its place in the final method, which E10 decides.

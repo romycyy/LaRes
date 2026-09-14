@@ -1599,6 +1599,7 @@ class EvolutionOrchestrator:
         payload = {
             "environment": env_identity(self.env_name),
             "model": getattr(args, "model", ""),
+            "reasoning_effort": getattr(args, "reasoning_effort", None),
             "policy_impl_mode": _impl_mode(args),
             "objective_config": objective_config(
                 self.objective, self.sampling, self.bc_steps, self.bc_batch_size, self.bc_lr, 1.0,
@@ -1655,6 +1656,7 @@ class EvolutionOrchestrator:
         exclusive = [c.call_id for c in calls if c.attempt_ids == [candidate.attempt_id]]
         block = {
             "model_id": getattr(args, "model", ""),
+            "reasoning_effort": getattr(args, "reasoning_effort", None),
             "two_phase": True,
             "impl_mode": _impl_mode(args),
             "calls": [c.reference() for c in calls],
@@ -2185,7 +2187,7 @@ class EvolutionOrchestrator:
             _tf.write(
                 f"LLM evolution transcript\n"
                 f"task={self.env_name}\n"
-                f"model={getattr(args, 'model', '')}\n"
+                f"model={getattr(args, 'model', '')} reasoning_effort={getattr(args, 'reasoning_effort', None)}\n"
                 f"policy_gen_two_phase={getattr(args, 'policy_gen_two_phase', False)}\n"
                 f"policy_impl_mode={_impl_mode(args)}\n"
                 f"---\n"
