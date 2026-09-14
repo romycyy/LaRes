@@ -1,0 +1,105 @@
+# ============================================================
+#  Fittable-bank qualification study — frozen protocol, decided 2026-09-14
+#
+#  Question: which hand-written structures should seed the fittable search lane?
+#  Nine structures (three references, six predeclared single-change variants), five fitting seeds
+#  each, rollout-selected fitting. Checkpoints are selected on a fixed probe manifest and the
+#  selected checkpoint is scored on a separate, fresh evaluation manifest. This is a seed-bank
+#  qualification rule, not a publication claim; intervals are reported but do not decide.
+#  Driver: scripts/qualify_fittable_bank.py (validate -> commit -> build-manifest -> commit -> run).
+# ============================================================
+
+study: fittable_bank_qualification
+env_name: push-v2            # canonical id; MetaWorld 3 registers push-v3
+horizon: 150
+
+fitting:
+  objective: deterministic_mse
+  sampling: uniform          # Stage E: phase-balanced sampling added nothing over uniform
+  budget: 1000
+  checkpoint_steps: [0, 500, 1000]   # step 0 is included so fitting can be rejected
+  checkpoint_tie_rule: higher success, then higher progress, then earlier checkpoint
+  batch_size: 256
+  lr: 0.001
+  clip_grad_norm: 1.0
+  val_fraction: 0.2
+  split_seed: 0
+  fixed_action_scale: 0.1
+  demo_buffer: logs/baseline_lock/demo_push-v2.pkl
+  demo_buffer_sha256: 00fd80a4686b7bb2ced65b2faa26d1b2bd886954ffce80d5afff6029802dc32e
+
+seeds:
+  evaluation_pool_seed: 2300                     # MT1 pool seed of the evaluation manifest
+  fitting_seeds: [2300, 2301, 2302, 2303, 2304]
+  ledger: config/experiment_seed_ledger.jsonl    # all must be unused before the manifest is built
+
+checkpoint_selection_manifest:     # the fixed probe manifest; selects parameters only
+  path: config/manifests/push-v2_development.yaml
+  slice: [40, 50]
+evaluation_manifest:               # the separate manifest the selected checkpoint is scored on
+  path: config/fittable_bank/push-v2_development_confirmation_s2300.yaml
+  manifest_id: push-v2:development_confirmation:s2300:n50
+  episodes: 50
+
+structures:
+  references:                      # loaded from the frozen Phase 3 bank, lares/fitting/structures/
+    - simple_reach_push
+    - simple_damped_push
+    - simple_standoff
+  variants_dir: lares/fitting/fittable_variants
+  frozen_file: config/fittable_bank/variants_frozen.json
+  # Each variant changes exactly one property of one parent. `adds`/`removes` name the parameters
+  # that differ; `changes` names kept parameters whose initial value or bounds differ. Everything
+  # else must be identical to the parent, which scripts/qualify_fittable_bank.py validate checks.
+  variants:
+    - id: simple_reach_push_sharp_gate
+      parent: simple_reach_push
+      axis: gate sharpness (smooth -> sharper)
+      adds: []
+      removes: []
+      changes: [sharpness]
+    - id: simple_reach_push_shared_gain
+      parent: simple_reach_push
+      axis: gains (phase-specific -> shared)
+      adds: [gain]
+      removes: [w_reach, w_push]
+      changes: []
+    - id: simple_reach_push_damped
+      parent: simple_reach_push
+      axis: control (direct -> damped)
+      adds: [damping]
+      removes: []
+      changes: []
+    - id: simple_damped_push_smooth_gate
+      parent: simple_damped_push
+      axis: gate sharpness (sharper -> smooth)
+      adds: []
+      removes: []
+      changes: [sharpness]
+    - id: simple_standoff_phase_gains
+      parent: simple_standoff
+      axis: gains (shared -> phase-specific)
+      adds: [gain_far, gain_near, near_radius]
+      removes: [gain]
+      changes: []
+    - id: simple_standoff_moderate_geometry
+      parent: simple_standoff
+      axis: geometry (minimal -> moderately parameterized)
+      adds: [lateral_offset, approach_height]
+      removes: []
+      changes: []
+
+qualification_rule:
+  per_seed_difference: >-
+    evaluation success of the selected checkpoint minus the structure's zero-shot (step 0)
+    evaluation success, for each fitting seed
+  enters_fittable_seed_bank_if:
+    improves_in_at_least: 3          # seeds with a strictly positive difference, of 5
+    worst_seed_difference_at_least: -0.05
+    mean_difference_greater_than: 0.0
+  selected_step_zero: recorded as "fitting rejected" for that seed; its difference is exactly 0 and
+    never counts as an improvement or as evidence that fitting helped
+  probe_scores: select parameters only and are never promotion or qualification evidence
+  also_reported: t 95% interval over seeds, median, every seed, selected steps, fitting-rejected count,
+    and episode, simulator-step and gradient-step counts
+  final_test: never accessed

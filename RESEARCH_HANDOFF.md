@@ -823,6 +823,17 @@ On the hand-written bank structures rollout-selected fitting takes `simple_dampe
 (0.952 phase-balanced) and `simple_reach_push` from 0.580 to 0.956: the best held-out policies in the project,
 more than double the best evolved policy's 0.400. `simple_standoff` stays at zero whatever is done.
 
+## Next: a fittable structure bank before any further search (decided 2026-09-14)
+
+Stage E's family split led to three decisions, recorded in full in `DEBUG_PROGRESS.md`: rollout-selected
+fitting is allowed only in a fittable search lane (checkpoints {0, 500, 1000}, step 0 always eligible, selection
+on a probe set, evaluation on a separate screen, promotion on independent paired evidence); step-0 strength and
+fittability are classified separately, with separate `performance_incumbent` and `fittable_incumbent`; and the
+hand-written bank is expanded from three to nine with six predeclared single-change variants before the next
+search. The qualification study (`scripts/qualify_fittable_bank.py`, `config/fittable_bank/qualification.yaml`)
+admits a structure to the fittable seed bank if fitting improves held-out success in at least three of five
+seeds, never regresses by more than 0.05, and has a positive mean paired difference.
+
 ## Questions requiring a research decision
 
 -1. **Raised by Stage E.** (a) The frozen rule pooled both families, and the default it produced removes the

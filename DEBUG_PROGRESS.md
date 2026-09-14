@@ -396,6 +396,55 @@ identical, records valid, reconstruction exact, traceability complete.
    structures. A decision about fitting for hand-written or fitting-dependent structures would need more of
    them.
 
+## Decisions after Stage E (2026-09-14): a fittable lane, and a bank to seed it
+
+The next full search waits until the fittable structure bank is expanded and validated.
+
+1. **Rollout-selected fitting is allowed only in a fittable search lane**, with checkpoints {0, 500, 1000}.
+   The checkpoint is selected on a fixed probe manifest; step 0 is always a candidate, so fitting can be
+   rejected; the selected checkpoint is evaluated on a separate screening manifest. A selected step of 0
+   is recorded as "fitting rejected", never as evidence that fitting helped. "Probe beats step 0" only
+   selects parameters and is never promotion evidence; promotion still needs independent paired evidence.
+2. **Reference-seeded, bounded, fittable mutations.** The generator is shown reference code and must make
+   one bounded structural change, declare explicit tunable parameters and bounds, add no trainable action
+   scale, predict which fitting diagnostic should improve, and preserve the parent's successful behaviour.
+   A wholesale rewrite is allowed only when marked as exploration.
+3. **Two classifications, two incumbents.** A strong step-0 candidate may enter the performance archive,
+   but is not a successful fittable candidate unless a fitted checkpoint survives independent evaluation.
+   `performance_incumbent` and `fittable_incumbent` are tracked separately.
+4. **Expand the hand-written bank from three to nine** with six predeclared variants, not structures tuned
+   after viewing outcomes, varying gate sharpness, direct versus damped control, shared versus
+   phase-specific gains, and minimal versus moderate geometry. All nine are tested with five seeds, with
+   separate checkpoint-selection and evaluation manifests. A structure enters the **fittable seed bank** if
+   fitting improves held-out success in at least three of five seeds, never regresses by more than 0.05 in
+   any seed, and its mean paired difference is positive. Intervals are reported; this is a seed-bank
+   qualification rule, not a publication claim.
+5. **Next search, after the bank study:** 1 generation, 9 candidates: 6 reference-seeded bounded
+   mutations drawn from qualifying fittable references (fittable lane, checkpoints [0, 500, 1000],
+   checkpoint selection on probe data, ranking on screen data, promotion on a separate confirmation set)
+   and 3 open explorations evaluated zero-shot with fitting disabled and tracked separately. Not yet
+   implemented; it depends on the bank study's result.
+
+**Implementation of item 4.** Six variants in `lares/fitting/fittable_variants/`, kept out of the frozen
+Phase 3 bank (still 18 structures). Each changes exactly one property of one reference and keeps
+everything else identical, including the parent's `log_std`, which deterministic fitting freezes:
+
+| variant | parent | axis | declared change |
+|---|---|---|---|
+| `simple_reach_push_sharp_gate` | `simple_reach_push` | smooth -> sharper gate | sharpness init 40 -> 120, bounds [1, 200] -> [40, 400] |
+| `simple_reach_push_shared_gain` | `simple_reach_push` | phase-specific -> shared gain | `w_reach`, `w_push` -> one `gain` (init 2.5) |
+| `simple_reach_push_damped` | `simple_reach_push` | direct -> damped control | adds `damping` * end-effector velocity |
+| `simple_damped_push_smooth_gate` | `simple_damped_push` | sharper -> smooth gates | sharpness init 50 -> 15, bounds [1, 200] -> [1, 40] |
+| `simple_standoff_phase_gains` | `simple_standoff` | shared -> phase-specific gains | `gain` -> `gain_far` (6), `gain_near` (3), `near_radius`, blended by a used `near` gate |
+| `simple_standoff_moderate_geometry` | `simple_standoff` | minimal -> moderate geometry | adds `lateral_offset` and a distance-scaled `approach_height` |
+
+`scripts/qualify_fittable_bank.py validate` checks each variant against the full validator (gate levers on)
+and against its declared parameter difference from the parent, with no rollouts, and freezes their hashes
+in `config/fittable_bank/variants_frozen.json` before the evaluation manifest exists. The protocol is
+`config/fittable_bank/qualification.yaml`: deterministic MSE, uniform sampling, budget 1000, checkpoints
+{0, 500, 1000} selected on development cases 40-49, evaluation on 50 fresh placements from MT1 pool seed
+2300, fitting seeds 2300-2304 (checked unused and reserved in the ledger before the manifest is built).
+
 ## Decisions and deviations
 
 1. **Paths.** The spec names `lares/fit/objectives.py` and `lares/fit/fitter.py`; the package is

@@ -25,6 +25,8 @@ AC-3 items closed, with the comparison run over the full bank.
 > zero-shot with its 95% interval above zero, so imitation fitting is disabled by default
 > (`bc_steps: 0`). The effect is family-specific: rollout-selected fitting lifts two hand-written bank
 > structures to 0.91-0.96 held-out success and leaves every evolved structure at step 0.
+> **Next, before any search:** a nine-structure fittable-bank qualification study (three references plus six
+> predeclared variants, `scripts/qualify_fittable_bank.py`); see `DEBUG_PROGRESS.md`.
 
 **Phase 4 — LLM proposal, feedback and archive** (FR-5, FR-10, AC-4): **reopened** by `debug_spec.md`.
 Candidate lineage, structured proposals, feedback bundles and the LLM-call ledger are now integrated

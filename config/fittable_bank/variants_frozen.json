@@ -1,0 +1,170 @@
+{
+  "frozen_at": "2026-09-14T04:01:08",
+  "rollouts_run_before_freezing": 0,
+  "references": {
+    "simple_reach_push": {
+      "path": "lares/fitting/structures/simple_reach_push.py",
+      "sha256": "edbf24d27bde4386ece17e24ddd8f031372cc3f776d37ad52d5b675a45f617ec"
+    },
+    "simple_damped_push": {
+      "path": "lares/fitting/structures/simple_damped_push.py",
+      "sha256": "589f9ba76f159447bfa9f1a4183a13148385ede75d340fc7426f0dbc3a907c75"
+    },
+    "simple_standoff": {
+      "path": "lares/fitting/structures/simple_standoff.py",
+      "sha256": "38152bf55e58c4f9e43a6d5273528d8a04c76c6b582c06700254ef41f8e25d31"
+    }
+  },
+  "variants": [
+    {
+      "id": "simple_reach_push_sharp_gate",
+      "parent": "simple_reach_push",
+      "axis": "gate sharpness (smooth -> sharper)",
+      "path": "lares/fitting/fittable_variants/simple_reach_push_sharp_gate.py",
+      "sha256": "f167b7daa6e2c5b38ffd4a946d8162904472f66b41a34b3c498549111f0bb412",
+      "num_parameters": 6,
+      "validator_checks": [
+        "source",
+        "forbidden_modules",
+        "parameters",
+        "outputs",
+        "batch_independence",
+        "field_sensitivity",
+        "gradients",
+        "gate_telemetry",
+        "gate_levers",
+        "scale_parameters",
+        "serialization"
+      ],
+      "validator_warnings": [
+        "[scale_parameter] parameters ['log_std'] move only the action scale. The scale is fixed and non-trainable: return (mean, self.fixed_std(mean)) and remove them"
+      ],
+      "problems": []
+    },
+    {
+      "id": "simple_reach_push_shared_gain",
+      "parent": "simple_reach_push",
+      "axis": "gains (phase-specific -> shared)",
+      "path": "lares/fitting/fittable_variants/simple_reach_push_shared_gain.py",
+      "sha256": "356219ba067fe70e45a5c57ee83a0ad7534fda9ee68a7fffe708aa9b172e435a",
+      "num_parameters": 5,
+      "validator_checks": [
+        "source",
+        "forbidden_modules",
+        "parameters",
+        "outputs",
+        "batch_independence",
+        "field_sensitivity",
+        "gradients",
+        "gate_telemetry",
+        "gate_levers",
+        "scale_parameters",
+        "serialization"
+      ],
+      "validator_warnings": [
+        "[scale_parameter] parameters ['log_std'] move only the action scale. The scale is fixed and non-trainable: return (mean, self.fixed_std(mean)) and remove them"
+      ],
+      "problems": []
+    },
+    {
+      "id": "simple_reach_push_damped",
+      "parent": "simple_reach_push",
+      "axis": "control (direct -> damped)",
+      "path": "lares/fitting/fittable_variants/simple_reach_push_damped.py",
+      "sha256": "2d1781500815cb1310dc55d3dffc9bdcb2a72b0ab9f0a13d35139a18a9761d30",
+      "num_parameters": 7,
+      "validator_checks": [
+        "source",
+        "forbidden_modules",
+        "parameters",
+        "outputs",
+        "batch_independence",
+        "field_sensitivity",
+        "gradients",
+        "gate_telemetry",
+        "gate_levers",
+        "scale_parameters",
+        "serialization"
+      ],
+      "validator_warnings": [
+        "[scale_parameter] parameters ['log_std'] move only the action scale. The scale is fixed and non-trainable: return (mean, self.fixed_std(mean)) and remove them"
+      ],
+      "problems": []
+    },
+    {
+      "id": "simple_damped_push_smooth_gate",
+      "parent": "simple_damped_push",
+      "axis": "gate sharpness (sharper -> smooth)",
+      "path": "lares/fitting/fittable_variants/simple_damped_push_smooth_gate.py",
+      "sha256": "35fb5946fa33129b4af229b412d6c4e02177ef83973267f20f673f633791f803",
+      "num_parameters": 8,
+      "validator_checks": [
+        "source",
+        "forbidden_modules",
+        "parameters",
+        "outputs",
+        "batch_independence",
+        "field_sensitivity",
+        "gradients",
+        "gate_telemetry",
+        "gate_levers",
+        "scale_parameters",
+        "serialization"
+      ],
+      "validator_warnings": [
+        "[scale_parameter] parameters ['log_std'] move only the action scale. The scale is fixed and non-trainable: return (mean, self.fixed_std(mean)) and remove them"
+      ],
+      "problems": []
+    },
+    {
+      "id": "simple_standoff_phase_gains",
+      "parent": "simple_standoff",
+      "axis": "gains (shared -> phase-specific)",
+      "path": "lares/fitting/fittable_variants/simple_standoff_phase_gains.py",
+      "sha256": "651aee46b70d4eab07d81a612db36c6a47c3d298328cf4906dd22a8f5986fde1",
+      "num_parameters": 7,
+      "validator_checks": [
+        "source",
+        "forbidden_modules",
+        "parameters",
+        "outputs",
+        "batch_independence",
+        "field_sensitivity",
+        "gradients",
+        "gate_telemetry",
+        "gate_levers",
+        "scale_parameters",
+        "serialization"
+      ],
+      "validator_warnings": [
+        "[scale_parameter] parameters ['log_std'] move only the action scale. The scale is fixed and non-trainable: return (mean, self.fixed_std(mean)) and remove them"
+      ],
+      "problems": []
+    },
+    {
+      "id": "simple_standoff_moderate_geometry",
+      "parent": "simple_standoff",
+      "axis": "geometry (minimal -> moderately parameterized)",
+      "path": "lares/fitting/fittable_variants/simple_standoff_moderate_geometry.py",
+      "sha256": "6b13c7f8ffae9e31755e612cc6e8c1c4f04ce90f4842564910449f0e5661ecac",
+      "num_parameters": 7,
+      "validator_checks": [
+        "source",
+        "forbidden_modules",
+        "parameters",
+        "outputs",
+        "batch_independence",
+        "field_sensitivity",
+        "gradients",
+        "gate_telemetry",
+        "gate_levers",
+        "scale_parameters",
+        "serialization"
+      ],
+      "validator_warnings": [
+        "[scale_parameter] parameters ['log_std'] move only the action scale. The scale is fixed and non-trainable: return (mean, self.fixed_std(mean)) and remove them"
+      ],
+      "problems": []
+    }
+  ]
+}

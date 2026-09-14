@@ -71,6 +71,13 @@ python scripts/stage_e.py build-manifest    # check the seed ledger, reserve see
 python scripts/stage_e.py run               # records the Git SHA in every result
 python scripts/stage_e.py report --run <logs/stage_e/run_dir>
 
+# Fittable-bank qualification (decided 2026-09-14): 3 references + 6 predeclared variants, 5 seeds each.
+# Variants are frozen (structural checks only) and committed before the evaluation manifest exists.
+python scripts/qualify_fittable_bank.py validate
+python scripts/qualify_fittable_bank.py build-manifest
+python scripts/qualify_fittable_bank.py run          # clean worktree; records the Git SHA
+python scripts/qualify_fittable_bank.py report --run <logs/fittable_bank/run_dir>
+
 # Symbolic-policy evolution (primary entry point; config-driven, no CLI flags besides --config)
 python scripts/run_full_evolution.py
 python scripts/run_full_evolution.py --config path/to/custom.yaml   # see config/run_full_evolution.yaml
@@ -205,6 +212,13 @@ structures (`config/stage_e/stage_e.yaml`, `logs/stage_e/20260914_032500`). Fixe
 rollout-selected fitting helps the hand-written bank structures a great deal and the evolved structures not at
 all. If you turn fitting on, always rollout-select. Seed 2200 and fitting seeds 2200-2204 are spent
 (`config/experiment_seed_ledger.jsonl`).
+
+**Fittable lane and seed bank (decided 2026-09-14).** Rollout-selected fitting is allowed only in a
+fittable lane: checkpoints {0, 500, 1000}, selected on a probe manifest (step 0 always eligible and recorded as
+"fitting rejected"), evaluated on a separate manifest. Probe scores select parameters and are never promotion
+evidence. Step-0 strength and fittability are classified separately (`performance_incumbent` versus
+`fittable_incumbent`). `lares/fitting/fittable_variants/` holds six predeclared single-change variants of the
+three references, qualified by `scripts/qualify_fittable_bank.py`; the frozen Phase 3 bank is unchanged.
 
 **Behavioural cloning is non-monotonic in gradient steps.** Development success peaks around 1000
 steps and collapses to zero by 3000, while validation loss falls the whole way. Measured on two
