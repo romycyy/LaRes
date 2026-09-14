@@ -39,8 +39,14 @@ INSENSITIVE_INPUT = "insensitive_input"
 NO_GRADIENT = "no_gradient"
 GATE_TELEMETRY = "gate_telemetry"
 SERIALIZATION = "serialization"
+#: A recorded gate whose forced value never reaches the action (debug_spec D8).
+GATE_NOT_A_LEVER = "gate_not_a_lever"
+#: A parameter that moves only the scale. An error only where generation forbids it.
+SCALE_PARAMETER = "scale_parameter"
 
 ALL_CATEGORIES = (
+    GATE_NOT_A_LEVER,
+    SCALE_PARAMETER,
     RAW_OBS_INDEXING,
     MISSING_SCHEMA,
     FORBIDDEN_MODULE,
@@ -435,6 +441,132 @@ def _check_serialization(policy, report: ValidationReport) -> None:
         )
 
 
+def _lever_batches(obs_dim, schema: ObsSchema | None, batch_size: int = 8) -> list:
+    """Diagnostic states for gate forcing, including near-contact ones.
+
+    Random states put the end-effector, object and goal far apart, where a
+    contact gate is shut and forcing it open may still move the action. The
+    near-contact batch puts every 3-D position field within a centimetre of the
+    first, which is where such a gate is normally open and forcing it shut bites.
+    """
+    batches = []
+    positions = []
+    if schema is not None and schema.obs_dim == obs_dim:
+        positions = sorted(
+            (schema.field(n) for n in schema.names if schema.field(n).size == 3),
+            key=lambda f: f.start,
+        )
+    for scale in PROBE_SCALES:
+        generator = torch.Generator().manual_seed(5)
+        base = scale * torch.randn(batch_size, obs_dim, generator=generator)
+        batches.append(base)
+        if positions:
+            close = base.clone()
+            anchor = close[:, positions[0].start : positions[0].stop].clone()
+            for f in positions[1:]:
+                close[:, f.start : f.stop] = anchor + 0.01 * torch.randn(
+                    batch_size, 3, generator=generator
+                )
+            batches.append(close)
+    return batches
+
+
+def _check_gate_levers(policy, obs_dim, schema, report: ValidationReport) -> None:
+    """Every recorded gate must change the action when it is forced.
+
+    ``record_gate`` returns the forced value under an override, but only code
+    that *uses* that return value is affected. A policy that writes
+    ``self.record_gate("g", g)`` and then keeps using its own ``g`` advertises a
+    gate that a controlled substitution cannot move, and forcing it would produce
+    a null result that reads as evidence the gate is not at fault.
+    """
+    report.checked.append("gate_levers")
+    if not hasattr(policy, "set_gate_override") or not hasattr(policy, "reset_diagnostics"):
+        return
+    previous = dict(getattr(policy, "gate_overrides", {}) or {})
+    batches = _lever_batches(obs_dim, schema)
+    names = set()
+    try:
+        with torch.no_grad():
+            for obs in batches:
+                policy.reset_diagnostics()
+                if _forward(policy, obs, report, "gate discovery") is None:
+                    return
+                names |= set(getattr(policy, "last_gates", {}) or {})
+            for name in sorted(names):
+                lever = False
+                for obs in batches:
+                    policy.gate_overrides = dict(previous)
+                    base = _forward(policy, obs, report, f"gate {name} baseline")
+                    if base is None:
+                        return
+                    for value in (0.0, 1.0):
+                        policy.gate_overrides = {**previous, name: value}
+                        forced = _forward(policy, obs, report, f"gate {name} forced to {value}")
+                        if forced is None:
+                            return
+                        if not torch.allclose(base[0], forced[0], atol=1e-7, rtol=0.0):
+                            lever = True
+                            break
+                    if lever:
+                        break
+                if not lever:
+                    report.add(
+                        GATE_NOT_A_LEVER,
+                        f"gate {name!r} is recorded, but forcing it to 0 or 1 never changes the "
+                        f"action on any diagnostic state. Assign the returned value and use it: "
+                        f"{name} = self.record_gate({name!r}, {name})",
+                    )
+    finally:
+        policy.gate_overrides = previous
+        policy.reset_diagnostics()
+
+
+def _check_scale_parameters(policy, obs_dim, report: ValidationReport, forbid: bool) -> None:
+    """Parameters that move the scale but never the mean action.
+
+    Found by perturbation, not by name. Under deterministic execution such a
+    parameter does nothing, and an objective can only push it to a bound.
+    """
+    report.checked.append("scale_parameters")
+    try:
+        ranges = policy.get_param_ranges()
+    except Exception:
+        return
+    if not isinstance(ranges, dict):
+        return
+    batches = [scale * torch.randn(8, obs_dim, generator=torch.Generator().manual_seed(6))
+               for scale in PROBE_SCALES]
+    scale_only = []
+    with torch.no_grad():
+        for name, param in policy.named_parameters():
+            bounds = ranges.get(name)
+            if not (isinstance(bounds, (tuple, list)) and len(bounds) == 2):
+                continue
+            step = 0.05 * (float(bounds[1]) - float(bounds[0]))
+            moved_mean = moved_std = False
+            original = param.detach().clone()
+            try:
+                for obs in batches:
+                    base = policy(obs)
+                    param.add_(step)
+                    shifted = policy(obs)
+                    param.copy_(original)
+                    moved_mean |= not torch.allclose(base[0], shifted[0], atol=1e-7, rtol=0.0)
+                    moved_std |= not torch.allclose(base[1], shifted[1], atol=1e-7, rtol=0.0)
+            except Exception:
+                param.copy_(original)
+                continue
+            if moved_std and not moved_mean:
+                scale_only.append(name)
+    if scale_only:
+        message = (
+            f"parameters {scale_only} move only the action scale. The scale is fixed and "
+            f"non-trainable: return (mean, self.fixed_std(mean)) and remove them"
+        )
+        (report.add if forbid else report.warn)(SCALE_PARAMETER, message)
+
+
 def _check_forbidden_modules(policy, report: ValidationReport) -> None:
     report.checked.append("forbidden_modules")
     try:
@@ -456,6 +588,8 @@ def validate_policy(
     schema: ObsSchema | None = None,
     batch_sizes: Sequence[int] = (1, 4, 16),
     require_schema: bool = True,
+    require_gate_levers: bool = True,
+    forbid_scale_parameters: bool = False,
 ) -> ValidationReport:
     """Run every pre-rollout gate and return one report.
 
@@ -466,6 +600,10 @@ def validate_policy(
         schema: observation schema; defaults to the one the policy captured.
         batch_sizes: forward-pass batch sizes to exercise.
         require_schema: treat a missing schema as an error rather than a warning.
+        require_gate_levers: every recorded gate must change the action when forced.
+        forbid_scale_parameters: a parameter that moves only the scale is an error
+            rather than a warning. Generation sets this; the frozen bank predates
+            the fixed scale and does not.
 
     Returns:
         :class:`ValidationReport`. Collects every failure rather than stopping at
@@ -499,6 +637,9 @@ def validate_policy(
             _check_field_sensitivity(policy, schema, obs_dim, report)
         _check_gradients(policy, obs_dim, report)
         _check_gate_telemetry(policy, obs_dim, action_dim, report)
+        if require_gate_levers and GATE_TELEMETRY not in report.categories:
+            _check_gate_levers(policy, obs_dim, schema, report)
+        _check_scale_parameters(policy, obs_dim, report, forbid=forbid_scale_parameters)
         _check_serialization(policy, report)
     return report
 

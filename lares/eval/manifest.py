@@ -323,6 +323,23 @@ class EvaluationManifest:
             episodes=list(self.episodes[len(self.episodes) - n:]),
         )
 
+    def slice(self, start: int, stop: int) -> "EvaluationManifest":
+        """Episodes ``[start, stop)``, with an id naming exactly that range.
+
+        ``head(40).tail(30)`` would be labelled ``#tail30`` and collide with the
+        real last thirty; a slice's id cannot be mistaken for another subset.
+        """
+        if not 0 <= start < stop <= len(self.episodes):
+            raise ValueError(f"slice [{start}, {stop}) is outside a {len(self.episodes)}-episode manifest")
+        base = self.manifest_id.split("#")[0]
+        return EvaluationManifest(
+            manifest_id=f"{base}#slice{start}-{stop}",
+            environment=self.environment,
+            pool=self.pool,
+            split=self.split,
+            episodes=list(self.episodes[start:stop]),
+        )
+
     def task_hashes(self) -> set[str]:
         return {c.task_hash for c in self.episodes}
 

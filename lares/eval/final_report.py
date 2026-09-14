@@ -37,7 +37,7 @@ REQUIRED_QUANTITIES = {
     "complexity": "experiment records: code.num_parameters",
     "deterministic_performance": "experiment records: evaluation.action_mode",
     "sampled_performance": "experiment records: evaluation.action_mode",
-    "simulator_steps": "experiment records: resources.environment_steps",
+    "simulator_steps": "experiment records: resources.<stream>_environment_steps",
     "expert_labels": "aggregation stats: expert_queries",
     "numerical_evaluations": "experiment records: fitting.steps",
     "llm_calls": "experiment records: llm.calls",
@@ -215,9 +215,19 @@ def final_test_section(directory: str) -> dict:
 
 
 def resource_section(records, studies, ablations) -> dict:
+    from lares.search.resources import EPISODE_STREAMS
+
+    # Only the named per-stream counters are simulator steps. The old
+    # ``environment_steps`` field held behavioural-cloning gradient steps, so it is
+    # counted separately and never added to the simulator total (debug_spec D6).
     return {
         "simulator_steps_recorded": sum(
-            int(r.resources.get("environment_steps") or 0) for r in records
+            int(r.resources.get(f"{stream}_environment_steps") or 0)
+            for r in records
+            for stream in EPISODE_STREAMS
+        ),
+        "records_with_legacy_environment_steps_field": sum(
+            1 for r in records if "environment_steps" in r.resources
         ),
         "numerical_evaluations": sum(int(r.fitting.get("steps") or 0) for r in records),
         "intervention_episodes": sum(s.get("intervention_episodes", 0) for s in studies),

@@ -307,6 +307,7 @@ def records_from_study(payload, structure, generation: int = 0, manifest_ids=Non
     expert assistance, so it may be ranked. Every intervention record may not.
     """
     from lares.search.schemas import (
+        ORIGIN_REPAIR_STUDY,
         STATUS_EVALUATED,
         ExperimentRecord,
         source_hash,
@@ -323,6 +324,7 @@ def records_from_study(payload, structure, generation: int = 0, manifest_ids=Non
                     experiment_id=f"{payload['structure_id']}:c{index}:{outcome['explanation']}",
                     candidate_id=payload["structure_id"],
                     generation=int(generation),
+                    origin=ORIGIN_REPAIR_STUDY,
                     status=STATUS_EVALUATED,
                     code={"source_hash": code_hash, "structure_id": payload["structure_id"]},
                     evaluation={
@@ -350,6 +352,7 @@ def records_from_study(payload, structure, generation: int = 0, manifest_ids=Non
                 experiment_id=f"{payload['structure_id']}:repair",
                 candidate_id=f"{payload['structure_id']}:repaired",
                 generation=int(generation),
+                origin=ORIGIN_REPAIR_STUDY,
                 status=STATUS_EVALUATED,
                 parent_ids=[payload["structure_id"]],
                 code={

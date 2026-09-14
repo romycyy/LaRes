@@ -11,6 +11,7 @@ Each stage is usable independently or orchestrated via
 """
 
 import inspect
+import json
 import os
 import copy
 import pickle
@@ -590,14 +591,15 @@ def behavioral_cloning(
             checkpoint_callback(step + 1, policy)
 
         if rollout_probe is not None and rollout_interval and (step + 1) % rollout_interval == 0:
+            from lares.fitting.checkpoints import is_better_checkpoint
+
             policy.eval()
             score = rollout_probe(policy)
             policy.train()
             stats["rollout_history"].append((step + 1, score))
-            # ``>=`` rather than ``>``: on an exact tie the later checkpoint wins.
-            # When every probe scores zero the earlier ones carry no information,
-            # and reverting to the first would throw away fitting for nothing.
-            if stats["best_rollout_score"] is None or score >= stats["best_rollout_score"]:
+            # The declared tie rule (lares.fitting.checkpoints): higher success,
+            # then higher progress, then the *earlier* checkpoint.
+            if is_better_checkpoint(score, stats["best_rollout_score"]):
                 stats["best_rollout_score"] = score
                 stats["best_rollout_step"] = step + 1
                 stats["best_rollout_state"] = copy.deepcopy(policy.state_dict())
@@ -1201,7 +1203,7 @@ def record_episode_gif(
 
 @lru_cache(maxsize=1)
 def _read_policy_prompt_templates():
-    """Read the six prompt templates from disk. Cached: called once per generation."""
+    """Read the prompt templates from disk. Cached: called once per generation."""
     root_dir = os.path.dirname(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     )
@@ -1218,6 +1220,7 @@ def _read_policy_prompt_templates():
         "code_feedback_tmpl": _read("code_feedback.txt"),
         "ideas_system": _read("ideas_system.txt"),
         "ideas_user": _read("ideas_user.txt"),
+        "proposals_user": _read("proposals_user.txt"),
     }
 
 
@@ -1252,82 +1255,56 @@ def load_policy_prompt_assets(env_name):
     }
 
 
+def _impl_mode(args):
+    from lares.core.policy_generation import POLICY_IMPL_BATCHED, POLICY_IMPL_PER_IDEA
+
+    raw = getattr(args, "policy_impl_mode", POLICY_IMPL_PER_IDEA)
+    raw = str(raw).strip().lower().replace("-", "_")
+    return POLICY_IMPL_BATCHED if raw == POLICY_IMPL_BATCHED else POLICY_IMPL_PER_IDEA
+
+
 def llm_evolution(
     client,
     env_name,
     obs_dim,
     action_dim,
     args,
-    previous_results=None,
     pop_size=5,
     generation=0,
     log_dir="./logs/evolution",
     logger=None,
     llm_transcript_path=None,
-    evidence_block=None,
-    failure_log=None,
+    ledger=None,
+    feedback_bundle=None,
+    parent_sources=None,
+    max_total_calls=50,
+    max_repair_per_candidate=1,
+    param_budget=None,
+    max_total_tokens=None,
 ):
-    """Propose a new population of symbolic policy structures via the LLM.
+    """Propose one population of candidate structures, with lineage, via the LLM.
 
-    Takes performance data from previously trained models as feedback and
-    generates ``pop_size`` new candidate policy structures.  This function is
-    responsible only for LLM-based structure search; BC and RL training are
-    the caller's responsibility (see :class:`EvolutionOrchestrator`).
-
-    Args:
-        client: OpenAI client.
-        env_name: MetaWorld task identifier.
-        obs_dim: Observation dimensionality.
-        action_dim: Action dimensionality.
-        args: Namespace with at least a ``model`` attribute.  Optional:
-            ``policy_gen_two_phase`` (bool), ``policy_impl_mode`` (``"batched"``
-            or ``"per_idea"``) forwarded to :func:`~lares.core.policy_generation.get_symbolic_policies`.
-        evidence_block: Optional structured feedback from
-            :func:`lares.search.feedback.build_feedback`. When present it replaces
-            the two-scalar summary entirely.
-        failure_log: Optional list; candidates that never reached evaluation are
-            appended to it rather than dropped.
-        previous_results: List of dicts, each with keys ``code`` (str),
-            ``eval`` (dict with ``mean_reward`` and ``success_rate``),
-            ``score`` (float), ``response`` (str), and optionally
-            ``train_steps`` (int).  Pass ``None`` or an empty list for the
-            first generation to skip performance feedback.
-        pop_size: Number of candidate policies to generate.
-        generation: Current generation index (used for artefact naming).
-        log_dir: Directory for generation artefacts.
-        logger: Optional TrainingLogger.
-        llm_transcript_path: Optional path to append LLM call transcript.
+    Structured two-phase generation only: generation 0 proposes ``PolicyIdea``
+    objects and generation 1 and later proposes ``MutationProposal`` edits of
+    parents drawn from ``feedback_bundle``. The feedback text is read back from
+    the bundle's hashed file, so the generator sees exactly what the records say
+    it saw. Training and evaluation are the caller's job.
 
     Returns:
-        Tuple ``(policy_pop, code_pop, response_pop)`` of untrained candidate
-        policies, their code strings, and raw LLM response texts.
+        ``list[GeneratedCandidate]``, one per attempt, failures included.
     """
-    from lares.core.policy_generation import get_symbolic_policies
+    from lares.core.policy_generation import generate_candidates
+    from lares.search.generation import LLMCallLedger
 
+    if not bool(getattr(args, "policy_gen_two_phase", False)):
+        raise ValueError(
+            "llm_evolution needs policy_gen_two_phase: true. Single-phase generation has no "
+            "idea or proposal, so its candidates can never carry complete lineage."
+        )
     os.makedirs(log_dir, exist_ok=True)
     prompts = load_policy_prompt_assets(env_name)
-
-    # Build LLM feedback from the best previous result (if any)
-    # The generator sees structured evidence when the caller assembled it, and
-    # falls back to the guidance template only when it did not. The old path sent
-    # two floats, which cannot separate a structural mistake from a tuning one.
-    elite_response = None
-    code_feedback = None
-    if evidence_block:
-        code_feedback = evidence_block + "\n\n" + prompts["code_feedback_tmpl"]
-        if previous_results:
-            elite_response = max(previous_results, key=lambda r: r["score"])["response"]
-    elif previous_results:
-        best_prev = max(previous_results, key=lambda r: r["score"])
-        elite_response = best_prev["response"]
-        code_feedback = (
-            f"## Previous generation\n"
-            f"Best candidate: success {best_prev['eval']['success_rate']:.3f}, "
-            f"mean return {best_prev['eval']['mean_reward']:.2f} after "
-            f"{best_prev.get('train_steps', 0)} behavioural-cloning gradient steps.\n"
-            f"No structured diagnostics were supplied for this generation.\n\n"
-            + prompts["code_feedback_tmpl"]
-        )
+    ledger = ledger if ledger is not None else LLMCallLedger(log_dir)
+    feedback_text = feedback_bundle.read_text(log_dir) if feedback_bundle is not None else None
 
     data_pkl_path = os.path.join(log_dir, "data.pkl")
     with open(data_pkl_path, "wb") as f:
@@ -1336,74 +1313,70 @@ def llm_evolution(
     gen_dir = os.path.join(log_dir, f"gen_{generation}")
     os.makedirs(gen_dir, exist_ok=True)
 
-    policy_pop, code_pop, response_pop = get_symbolic_policies(
-        client=client,
-        dir_path=gen_dir,
-        llm_iter=generation,
-        args=args,
-        obs_dim=obs_dim,
-        action_dim=action_dim,
-        env_name=env_name,
-        initial_system=prompts["initial_system"],
-        initial_user=prompts["initial_user"],
-        task_description=prompts["task_description"],
-        obs_description=prompts["obs_description"],
-        input_dict_string=prompts["input_dict_string"],
-        code_output_tip=prompts["code_output_tip"],
-        data_pkl_path=data_pkl_path,
-        provided_response=elite_response,
-        code_feedback=code_feedback,
-        real_num=pop_size,
+    candidates = generate_candidates(
+        client,
+        args,
+        gen_dir,
+        generation,
+        obs_dim,
+        action_dim,
+        env_name,
+        prompts,
+        pop_size,
+        data_pkl_path,
+        ledger,
+        feedback_bundle=feedback_bundle,
+        feedback_text=feedback_text,
+        parent_sources=parent_sources,
         llm_transcript_path=llm_transcript_path,
-        ideas_system=prompts.get("ideas_system"),
-        ideas_user=prompts.get("ideas_user"),
-        failure_log=failure_log,
+        impl_mode=_impl_mode(args),
+        max_total_calls=max_total_calls,
+        max_repair_per_candidate=max_repair_per_candidate,
+        param_budget=param_budget,
+        max_total_tokens=max_total_tokens,
     )
 
     if logger is not None:
+        from lares.core.policy_generation import final_attempts
+
         logger.log_metrics(
             stage="evolutionary",
             update=generation,
-            metrics={"evo/candidates_generated": float(len(policy_pop))},
+            metrics={
+                "evo/candidates_generated": float(sum(1 for c in final_attempts(candidates) if c.valid))
+            },
             task_name=env_name,
         )
-
-    return policy_pop, code_pop, response_pop
+    return candidates
 
 
 # ===========================================================================
-#  EvolutionOrchestrator — full generation → train → evaluate loop
+#  EvolutionOrchestrator — full generation → fit → evaluate loop
 # ===========================================================================
 
 
 class EvolutionOrchestrator:
-    """Full LLM evolution loop: generation → train (BC + RL) → evaluate → repeat.
-
-    Separates LLM structure search (:func:`llm_evolution`) from the inner
-    training loop so each concern is independently configurable and testable.
+    """Full LLM evolution loop: generation → fit → evaluate → feedback → repeat.
 
     Each generation:
-      1. Call :func:`llm_evolution` with performance history → new candidates.
-      2. Train each candidate through BC → RL.
-      3. Evaluate and rank candidates.
-      4. Feed top-``elite_num`` results back to next generation.
+      1. :func:`llm_evolution` proposes typed candidates with lineage.
+      2. Every attempt that failed is recorded; each valid candidate is fitted
+         with the named objective and a fixed action scale, its checkpoint is
+         chosen on an isolated probe stream, and it is screened.
+      3. Screened contenders get the expanded evaluation, which updates the
+         archive and the records.
+      4. The evidence for the next generation is written as a hashed
+         :class:`~lares.search.generation.FeedbackBundle`.
 
     Usage::
 
         orchestrator = EvolutionOrchestrator(
-            env_name='reach-v2',
-            obs_dim=39,
-            action_dim=4,
-            num_generations=5,
-            pop_size=5,
-            elite_num=2,
-            bc_steps=3000,
-            rl_iterations=30,
-            rl_episodes_per_iter=10,
-            log_dir='./logs/evolution',
-            record_demo_gif=True,
+            env_name='push-v2', obs_dim=39, action_dim=4,
+            num_generations=2, pop_size=3, bc_steps=2000,
+            log_dir='./logs/evolution', dev_manifest=dev.head(30),
+            probe_manifest=dev.tail(10),
         )
-        best = orchestrator.run(client, env, demo_buffer, args)
+        best = orchestrator.run(client, envs, demo_buffer, args)
     """
 
     def __init__(
@@ -1415,7 +1388,7 @@ class EvolutionOrchestrator:
         pop_size=5,
         elite_num=2,
         bc_steps=3000,
-        rl_iterations=30,
+        rl_iterations=0,
         rl_episodes_per_iter=10,
         log_dir="./logs/evolution",
         record_demo_gif=True,
@@ -1425,9 +1398,34 @@ class EvolutionOrchestrator:
         eval_max_steps=150,
         promotion_policy=None,
         rollout_checkpoint_probes=4,
+        objective=None,
+        checkpoint_steps=None,
+        fixed_action_scale=None,
+        probe_manifest=None,
+        bc_batch_size=256,
+        bc_lr=1e-3,
+        fit_seed=0,
+        val_fraction=0.2,
+        split_seed=0,
+        sampling="uniform",
+        max_repair_per_candidate=1,
+        max_llm_calls_per_generation=50,
+        param_budget=None,
+        max_llm_tokens_per_generation=None,
+        promotion_challengers=1,
     ):
+        from lares.core.symbolic_policy import SymbolicPolicy
         from lares.eval.promotion import PromotionPolicy
+        from lares.fitting.checkpoints import default_checkpoint_steps
+        from lares.fitting.objectives import DETERMINISTIC_MSE, spec
+        from lares.search.generation import PARAMETER_BUDGET
 
+        if int(rl_iterations) > 0:
+            raise ValueError(
+                "rl_iterations > 0 is not supported by the provenance-tracked fitter: RL would "
+                "change the parameters after the checkpoint was selected, so the selected state, "
+                "its diagnostics and its record would no longer describe the evaluated policy."
+            )
         self.dev_manifest = dev_manifest
         self.train_cases = list(train_cases)
         self.gif_case = gif_case
@@ -1435,11 +1433,37 @@ class EvolutionOrchestrator:
         # Declared before any generation runs, and stored with the results, so a
         # promotion can be read back against the threshold that justified it.
         self.promotion_policy = promotion_policy or PromotionPolicy()
-        # How many times to score development rollouts during fitting. Success is
-        # not monotonic in gradient steps on this task while validation loss is,
-        # so a fixed budget or a loss-based checkpoint lands past the useful
-        # parameters. Set to 0 to fit to the end as the pipeline used to.
+        # Success is not monotonic in gradient steps on this task while validation
+        # loss is, so the checkpoint is chosen on rollouts. Set to 0 to fit to the end.
         self.rollout_checkpoint_probes = int(rollout_checkpoint_probes)
+        self.objective = objective or DETERMINISTIC_MSE
+        spec(self.objective)
+        self.checkpoint_steps = (
+            tuple(sorted({int(s) for s in checkpoint_steps}))
+            if checkpoint_steps is not None
+            else default_checkpoint_steps(bc_steps, self.rollout_checkpoint_probes)
+        )
+        self.fixed_action_scale = float(
+            fixed_action_scale if fixed_action_scale is not None else SymbolicPolicy.DEFAULT_ACTION_SCALE
+        )
+        self._probe_manifest = probe_manifest
+        self.bc_batch_size = int(bc_batch_size)
+        self.bc_lr = float(bc_lr)
+        self.fit_seed = int(fit_seed)
+        self.val_fraction = float(val_fraction)
+        self.split_seed = int(split_seed)
+        self.sampling = sampling
+        self.max_repair_per_candidate = int(max_repair_per_candidate)
+        self.max_llm_calls_per_generation = int(max_llm_calls_per_generation)
+        self.max_llm_tokens_per_generation = (
+            int(max_llm_tokens_per_generation) if max_llm_tokens_per_generation else None
+        )
+        if int(promotion_challengers) < 1:
+            raise ValueError("promotion_challengers must be at least 1")
+        #: Screened challengers tested on the promotion manifest per generation.
+        #: One by default; more are judged with Holm's correction.
+        self.promotion_challengers = int(promotion_challengers)
+        self.param_budget = tuple(param_budget or PARAMETER_BUDGET)
         self.env_name = env_name
         self.obs_dim = obs_dim
         self.action_dim = action_dim
@@ -1447,7 +1471,7 @@ class EvolutionOrchestrator:
         self.pop_size = pop_size
         self.elite_num = elite_num
         self.bc_steps = bc_steps
-        self.rl_iterations = rl_iterations
+        self.rl_iterations = 0
         self.rl_episodes_per_iter = rl_episodes_per_iter
         self.log_dir = log_dir
         self.record_demo_gif = record_demo_gif
@@ -1459,16 +1483,19 @@ class EvolutionOrchestrator:
         self.promotion_log: list = []
         self._incumbent_expanded = None
         self._incumbent_id = None
-        # Phase 4: one record per attempted candidate, an archive that keeps a
-        # simple and a behaviourally distinct policy alongside the best one, and
-        # the evidence block the next generation is shown.
         from lares.search import Archive
+        from lares.search.resources import ResourceLedger
 
         self.archive = Archive()
         self.records: list = []
         self.records_dir = os.path.join(self.log_dir, "experiments")
-        self.evidence_block: str | None = None
+        self.feedback_bundles: list = []
         self.generation_history: list = []
+        self.run_resources = ResourceLedger()
+        self.ledger = None
+        self.data = None
+        self.probe_batch = None
+        self.probe_batch_ref = None
 
     # ------------------------------------------------------------------
     #  Manifests
@@ -1476,163 +1503,215 @@ class EvolutionOrchestrator:
 
     @property
     def screen_manifest(self):
-        """The fixed screening subset: a prefix, so it nests inside the expanded set."""
+        """The fixed screening subset: the first ``screen_episodes`` development cases."""
         n = min(self.promotion_policy.screen_episodes, len(self.dev_manifest))
         return self.dev_manifest.head(n)
 
     @property
-    def expanded_manifest(self):
-        """The larger development subset a screened contender is re-scored on."""
-        n = min(self.promotion_policy.expanded_episodes, len(self.dev_manifest))
-        return self.dev_manifest.head(n)
+    def promotion_manifest(self):
+        """The promotion set: the ``expanded_episodes`` cases after the screen, disjoint from it.
+
+        Promotion evidence must come from cases that took no part in screening or
+        checkpoint selection, so this is a slice after the screen, never a prefix
+        containing it.
+        """
+        start = min(self.promotion_policy.screen_episodes, len(self.dev_manifest))
+        stop = start + int(self.promotion_policy.expanded_episodes)
+        if stop > len(self.dev_manifest):
+            raise ValueError(
+                f"dev_manifest has {len(self.dev_manifest)} cases; a {start}-case screen plus a "
+                f"{self.promotion_policy.expanded_episodes}-case promotion set needs {stop}"
+            )
+        return self.dev_manifest.slice(start, stop)
+
+    #: Kept for callers that still say "expanded": the expanded evaluation *is* the promotion set.
+    expanded_manifest = promotion_manifest
+
+    @property
+    def probe_manifest(self):
+        """Cases the mid-fitting probe scores; the screen when none was supplied."""
+        return self._probe_manifest if self._probe_manifest is not None else self.screen_manifest
+
+    @property
+    def probe_is_isolated(self) -> bool:
+        """True when no probe case is also a screen or promotion case."""
+        if self._probe_manifest is None:
+            return False
+        probe = {c.case_id for c in self._probe_manifest.episodes}
+        used = {c.case_id for c in self.promotion_manifest.episodes} | {c.case_id for c in self.screen_manifest.episodes}
+        return not (probe & used)
+
+    def check_manifest_isolation(self):
+        """Refuse a run whose promotion evidence overlaps screening or checkpoint selection."""
+        promotion = {c.case_id for c in self.promotion_manifest.episodes}
+        for name, manifest in (("screen", self.screen_manifest), ("probe", self.probe_manifest)):
+            overlap = promotion & {c.case_id for c in manifest.episodes}
+            if overlap:
+                raise ValueError(
+                    f"the promotion manifest shares {len(overlap)} case(s) with the {name} manifest "
+                    f"({sorted(overlap)[:3]}...); promotion evidence must be independent"
+                )
 
     # ------------------------------------------------------------------
-    #  Internal helpers
+    #  Run-level artifacts
     # ------------------------------------------------------------------
+
+    def _artifact(self, rel_path, data):
+        from lares.search.generation import write_artifact
+
+        return write_artifact(self.log_dir, rel_path, data)
+
+    def _tensor_artifact(self, rel_path, value):
+        import io
+
+        buffer = io.BytesIO()
+        torch.save(value, buffer)
+        return self._artifact(rel_path, buffer.getvalue())
+
+    def _probe_env(self, envs):
+        probe = getattr(envs, "probe", None)
+        if probe is not None:
+            return probe, "probe"
+        if getattr(envs, "allow_shared", False):
+            return envs.gif, "gif (shared; allow_shared=True)"
+        raise ValueError(
+            "EvolutionOrchestrator needs PipelineEnvs(probe=...): the checkpoint probe gets its "
+            "own environment rather than borrowing the GIF stream."
+        )
+
+    def _write_probe_batch(self, demo_buffer):
+        """A fixed observation batch every reconstruction check replays."""
+        n = min(32, len(demo_buffer))
+        obs, _ = demo_buffer.take(list(range(n)))
+        self.probe_batch = torch.tensor(obs, dtype=torch.float32)
+        self.probe_batch_ref = self._tensor_artifact("reconstruction_probe_batch.pt", self.probe_batch)
+
+    def _write_run_manifest(self, args, probe_stream):
+        from lares.fitting.checkpoints import CHECKPOINT_TIE_RULE
+        from lares.fitting.optimizers import objective_config
+        from lares.search.generation import env_identity
+
+        manifests = {
+            "probe": self.probe_manifest,
+            "screen": self.screen_manifest,
+            "promotion": self.promotion_manifest,
+        }
+        payload = {
+            "environment": env_identity(self.env_name),
+            "model": getattr(args, "model", ""),
+            "policy_impl_mode": _impl_mode(args),
+            "objective_config": objective_config(
+                self.objective, self.sampling, self.bc_steps, self.bc_batch_size, self.bc_lr, 1.0,
+                self.fit_seed, self.checkpoint_steps, self.fixed_action_scale,
+                val_fraction=self.val_fraction, split_seed=self.split_seed,
+            ),
+            "fixed_action_scale": self.fixed_action_scale,
+            "action_mode": "deterministic",
+            "checkpoint_steps": list(self.checkpoint_steps),
+            "checkpoint_tie_rule": CHECKPOINT_TIE_RULE,
+            "probe_stream": probe_stream,
+            "probe_is_isolated": self.probe_is_isolated,
+            "manifests": {
+                name: {"manifest_id": m.manifest_id, "split": m.split, "case_ids": [c.case_id for c in m.episodes]}
+                for name, m in manifests.items()
+            },
+            "promotion_policy": self.promotion_policy.to_dict(),
+            "promotion_rule": __import__("lares.eval.promotion", fromlist=["PROMOTION_RULE"]).PROMOTION_RULE,
+            "promotion_challengers": self.promotion_challengers,
+            "max_llm_tokens_per_generation": self.max_llm_tokens_per_generation,
+            "param_budget": list(self.param_budget),
+            "max_repair_per_candidate": self.max_repair_per_candidate,
+            "max_llm_calls_per_generation": self.max_llm_calls_per_generation,
+            "split": self.data.split_info if self.data is not None else None,
+            "probe_batch": self.probe_batch_ref,
+        }
+        self.run_manifest_ref = self._artifact("run_manifest.json", json.dumps(payload, indent=2, default=str))
+        return payload
+
+    def _write_run_totals(self):
+        from lares.search.provenance import reconcile_resources
+
+        totals = {
+            "run_wall_time_seconds": self.run_resources.wall_time_seconds,
+            "reconciliation": reconcile_resources(self.records, self.ledger, self.log_dir),
+        }
+        self._artifact("resource_totals.json", json.dumps(totals, indent=2, default=str))
+        return totals
 
     # ------------------------------------------------------------------
     #  Experiment records
     # ------------------------------------------------------------------
 
     def _save_record(self, record):
-        """Validate and persist one experiment record, then keep it in memory."""
+        """Validate and persist one record; a changed record keeps its old version."""
         record.validate()
         record.save(self.records_dir)
-        self.records.append(record)
+        self.records = [r for r in self.records if r.experiment_id != record.experiment_id] + [record]
         return record
 
-    def _record_generation_failures(self, generation, failure_log, args):
-        """One record per candidate that never reached evaluation.
+    def _llm_evidence(self, candidate, args):
+        """Embedded call references and this attempt's exclusive LLM usage."""
+        calls = [self.ledger.get(c) for c in candidate.llm_call_ids]
+        exclusive = [c.call_id for c in calls if c.attempt_ids == [candidate.attempt_id]]
+        block = {
+            "model_id": getattr(args, "model", ""),
+            "two_phase": True,
+            "impl_mode": _impl_mode(args),
+            "calls": [c.reference() for c in calls],
+            "exclusive_call_ids": exclusive,
+            "shared_call_ids": [c.call_id for c in calls if c.call_id not in exclusive],
+            "response_sha256": (
+                __import__("lares.search.generation", fromlist=["sha256_text"]).sha256_text(candidate.response)
+                if candidate.response is not None
+                else None
+            ),
+        }
+        return block, self.ledger.totals(exclusive), sum(c.wall_time_seconds for c in calls if c.call_id in exclusive)
 
-        Dropping these is how a search loses the evidence that would explain why
-        it is not improving (``spec.md`` FR-10, AC-4).
-        """
+    def _record_failed_attempt(self, candidate, args, final_by_slot, feedback_bundle):
+        """One record for an attempt that never reached fitting, corrected or not."""
         from lares.search import STATUS_INVALID, ExperimentRecord, source_hash
+        from lares.search.resources import ResourceLedger
 
-        for i, failure in enumerate(failure_log or []):
-            code = failure.get("code", "")
-            self._save_record(
-                ExperimentRecord(
-                    experiment_id=f"gen{generation}_invalid{i}",
-                    candidate_id=failure.get("candidate_id", f"gen{generation}_invalid{i}"),
-                    generation=generation,
-                    status=STATUS_INVALID,
-                    code={
-                        "source_hash": source_hash(code) if code else "empty",
-                        "source": code,
-                    },
-                    llm={
-                        "model_id": getattr(args, "model", ""),
-                        "two_phase": bool(getattr(args, "policy_gen_two_phase", False)),
-                        "impl_mode": getattr(args, "policy_impl_mode", "batched"),
-                    },
-                    validation={
-                        "passed": False,
-                        "stage": failure.get("stage", "unknown"),
-                        "repair_attempts": failure.get("repair_attempts", 0),
-                        "errors": [failure.get("error", "")],
-                    },
-                    timestamps={"recorded_at": time.strftime("%Y-%m-%dT%H:%M:%S")},
-                    final_disposition="never reached rollout validation",
-                )
-            )
-
-    def _record_candidate(self, result, args, manifest, envs):
-        """Record one evaluated candidate and place it in the archive."""
-        from lares.search import STATUS_EVALUATED, ExperimentRecord, source_hash
-
-        report = result["screen_report"]
-        bc_stats = result.get("bc_stats") or {}
+        llm, exclusive_totals, exclusive_wall = self._llm_evidence(candidate, args)
+        resources = ResourceLedger()
+        resources.add_llm_totals(exclusive_totals)
+        resources.add_wall_time("generation", exclusive_wall)
+        final = final_by_slot[candidate.candidate_id]
+        stage = candidate.validation.get("stage", "unknown")
+        if final is candidate:
+            disposition = f"slot failed at {stage} after {candidate.attempt} correction(s)"
+        else:
+            disposition = f"failed at {stage}; superseded by a later attempt of {candidate.candidate_id}"
         record = ExperimentRecord(
-            experiment_id=f"gen{result['generation']}_cand{result['candidate_idx']}",
-            candidate_id=result["candidate_id"],
-            generation=result["generation"],
-            status=STATUS_EVALUATED,
+            experiment_id=candidate.attempt_id,
+            candidate_id=candidate.candidate_id,
+            generation=candidate.generation,
+            status=STATUS_INVALID,
+            parent_ids=candidate.parent_ids,
+            idea_id=candidate.idea_id,
+            proposal_id=candidate.proposal_id,
             code={
-                "source_hash": source_hash(result["code"]),
-                "source": result["code"],
-                "num_parameters": result["policy"].count_parameters(),
+                "source_hash": source_hash(candidate.code or ""),
+                "source": candidate.code,
+                "empty": candidate.code is None,
             },
-            llm={
-                "model_id": getattr(args, "model", ""),
-                "two_phase": bool(getattr(args, "policy_gen_two_phase", False)),
-                "impl_mode": getattr(args, "policy_impl_mode", "batched"),
-                "response": result.get("response", ""),
-            },
-            validation={"passed": True, "errors": []},
-            fitting={
-                "optimizer": "adam_baseline",
-                "steps": self.bc_steps,
-                "split": bc_stats.get("split"),
-                "train_loss_end": bc_stats.get("final_loss"),
-                "validation_loss_end": bc_stats.get("validation_loss_end"),
-                "bound_activity": bc_stats.get("bound_activity"),
-                "gradient_norms": bc_stats.get("gradient_norms"),
-            },
-            evaluation={
-                "manifest_ids": [manifest.manifest_id],
-                "action_mode": report.action_mode,
-                "checkpoints": {
-                    "zero_shot": result["zero_shot_report"].rollout.success_rate,
-                    "fitted": report.rollout.success_rate,
-                },
-                "success_rate": report.rollout.success_rate,
-                "mean_return": report.rollout.mean_return,
-                "failure_labels": report.rollout.failure_labels,
-            },
-            resources={
-                "environment_steps": result.get("train_steps", 0),
-                "bc_gradient_steps": self.bc_steps,
-            },
+            llm=llm,
+            llm_call_ids=list(candidate.llm_call_ids),
+            validation=dict(candidate.validation),
+            lineage=candidate.lineage_dict(feedback_bundle),
+            resources=resources.to_dict(),
             timestamps={"recorded_at": time.strftime("%Y-%m-%dT%H:%M:%S")},
-            final_disposition="screened",
+            final_disposition=disposition,
         )
-        self._save_record(record)
-        self.archive.add(
-            candidate_id=result["candidate_id"],
-            generation=result["generation"],
-            report=report,
-            num_parameters=result["policy"].count_parameters(),
-            source_hash=record.code["source_hash"],
-        )
-        return record
+        return self._save_record(record)
 
-    def _update_records_after_promotion(self, decisions, by_id, expanded):
-        """Fold the screening outcome back into each candidate's record."""
-        from lares.search import STATUS_PROMOTED, STATUS_REJECTED
+    # ------------------------------------------------------------------
+    #  Evidence
+    # ------------------------------------------------------------------
 
-        by_candidate = {r.candidate_id: r for r in self.records}
-        for decision in decisions:
-            record = by_candidate.get(decision["candidate_id"])
-            if record is None:
-                continue
-            result = by_id.get(decision["candidate_id"], {})
-            comparison = decision.get("incumbent_comparison") or {}
-            promoted = bool(comparison.get("promoted"))
-            record.status = STATUS_PROMOTED if promoted else STATUS_REJECTED
-            record.final_disposition = (
-                f"screening: {decision['reason']}; incumbent: {comparison['reason']}"
-                if comparison
-                else f"screening: {decision['reason']}"
-            )
-            record.evaluation["screening"] = {
-                k: v for k, v in decision.items() if k != "incumbent_comparison"
-            }
-            if comparison:
-                record.evaluation["incumbent_comparison"] = comparison
-            expanded_report = result.get("expanded_report")
-            if expanded_report is not None:
-                record.evaluation["manifest_ids"] = sorted(
-                    set(record.evaluation["manifest_ids"]) | {expanded.manifest_id}
-                )
-                record.evaluation["expanded_success_rate"] = (
-                    expanded_report.rollout.success_rate
-                )
-            record.validate()
-            record.save(self.records_dir)
-
-    def _build_evidence(self, generation, gen_results, failure_log, manifest, demo_buffer=None):
-        """Assemble the structured feedback block for the next generation.
+    def _build_evidence(self, generation, gen_results, failures, manifest, demo_buffer=None):
+        """Assemble the feedback text and the ids of every policy it shows.
 
         Sensitivity is probed on real observations from the demonstration buffer.
         An all-zero or standard-normal batch puts the end-effector, object and
@@ -1643,7 +1722,7 @@ class EvolutionOrchestrator:
 
         probe = None
         if demo_buffer is not None and len(demo_buffer) > 0:
-            obs_np, _, _, _, _ = demo_buffer.sample(min(64, len(demo_buffer)))
+            obs_np, _ = demo_buffer.take(list(range(min(64, len(demo_buffer)))))
             probe = torch.tensor(obs_np, dtype=torch.float32)
 
         evidence = []
@@ -1653,9 +1732,7 @@ class EvolutionOrchestrator:
                 try:
                     from lares.fitting.sensitivity import action_sensitivity, dead_parameters
 
-                    sensitivity = dead_parameters(
-                        action_sensitivity(result["policy"], probe)
-                    )
+                    sensitivity = dead_parameters(action_sensitivity(result["policy"], probe))
                 except Exception:
                     sensitivity = []
             evidence.append(
@@ -1668,27 +1745,38 @@ class EvolutionOrchestrator:
                     dead_parameters=sensitivity,
                 )
             )
-        for failure in failure_log or []:
+        for failure in failures:
+            errors = failure.validation.get("errors") or [""]
             evidence.append(
                 CandidateEvidence(
-                    candidate_id=failure.get("candidate_id", "unknown"),
-                    code=failure.get("code", ""),
+                    candidate_id=failure.candidate_id,
+                    code=failure.code or "",
                     report=None,
-                    error=failure.get("error", ""),
+                    error=f"[{failure.validation.get('stage', 'unknown')}] {str(errors[0])[:300]}",
                 )
             )
         best = max((e.success for e in evidence if e.report is not None), default=0.0)
         self.generation_history.append(
             f"generation {generation}: {len(gen_results)} valid, "
-            f"{len(failure_log or [])} invalid, best success {best:.3f}"
+            f"{len(failures)} invalid, best success {best:.3f}"
         )
-        return build_feedback(
+        text = build_feedback(
             evidence,
             generation=generation,
             manifest_id=manifest.manifest_id,
             history=self.generation_history,
             archive=self.archive,
         )
+        context = [r["candidate_id"] for r in gen_results]
+        if len(self.archive):
+            for entry in self.archive.occupied_slots().values():
+                if entry is not None and entry.candidate_id not in context:
+                    context.append(entry.candidate_id)
+        return text, context
+
+    # ------------------------------------------------------------------
+    #  Evaluation
+    # ------------------------------------------------------------------
 
     def _evaluate_checkpoint(
         self, policy, env, manifest, candidate_id, checkpoint, bc_stats=None
@@ -1712,9 +1800,10 @@ class EvolutionOrchestrator:
         self.reports.append(report)
         return result, report
 
-    def _rollout_probe(self, env, manifest):
-        """Score a policy mid-fitting on the screening cases."""
+    def _rollout_probe(self, env, manifest, resources):
+        """Score a policy mid-fitting on the probe cases, counting every episode."""
         from lares.eval.runner import PolicyActor, evaluate_manifest
+        from lares.fitting.checkpoints import RolloutScore
 
         def probe(policy):
             result = evaluate_manifest(
@@ -1723,61 +1812,318 @@ class EvolutionOrchestrator:
                 env,
                 max_steps=self.eval_max_steps,
             )
-            # Success first, then goal progress, matching how the promotion policy
-            # ranks candidates. Without the secondary key every checkpoint of a
-            # failing candidate ties and the choice is arbitrary.
+            resources.add_episodes("probe", result)
             progress = [
                 e.signed_goal_progress
                 for e in result.episodes
                 if e.signed_goal_progress is not None
             ]
-            return (
-                result.success_rate,
-                float(np.mean(progress)) if progress else 0.0,
-            )
+            return RolloutScore(result.success_rate, float(np.mean(progress)) if progress else 0.0)
 
         return probe
 
-    def _train_candidate(
-        self, policy, demo_buffer, env, logger=None, checkpoint_callback=None,
-        rollout_probe=None,
-    ):
-        """Run the BC → RL inner loop on a single policy candidate."""
-        interval = (
-            max(1, self.bc_steps // self.rollout_checkpoint_probes)
-            if rollout_probe is not None and self.rollout_checkpoint_probes > 0
-            else 0
+    def _save_report(self, report, rel_name, gen):
+        from lares.search.generation import sha256_file, run_relative
+
+        path = os.path.join(self.log_dir, f"gen_{gen}", "reports", rel_name)
+        report.save(path)
+        return {"path": run_relative(path, self.log_dir), "sha256": sha256_file(path)}
+
+    def _report_fitting_stats(self, fit):
+        """The fitting section of the fitted report, taken from the selected state only."""
+        diag = fit.selected_diagnostics
+        losses = [h[1] for h in fit.history[: min(100, len(fit.history))]]
+        return {
+            "train_loss_by_axis": diag["train_loss_by_axis"],
+            "validation_loss_by_axis": diag["validation_loss_by_axis"],
+            "loss_by_phase": diag["loss_by_phase"],
+            "gradient_norms": fit.gradient_norms,
+            "bound_activity": diag["bound_activity"],
+            "train_loss_start": float(np.mean(losses)) if losses else None,
+            "final_loss": diag["train_loss"],
+            "validation_loss_end": diag["validation_loss"],
+            "num_steps": fit.selected_step,
+            "split": self.data.split_info,
+            "checkpoint_step": fit.selected_step,
+            "objective": self.objective,
+            "parameters_sha256": diag["parameters_sha256"],
+        }
+
+    def _verify_reconstruction(self, candidate, policy, source_ref, selected_ref, cand_dir):
+        """Rebuild the policy from its record's artifacts and compare actions exactly."""
+        from lares.core.policy_generation import GENERATED_IMPORTS
+        from lares.search.generation import sha256_text
+        from lares.search.provenance import reconstruct_actions
+        from lares.search.schemas import RECONSTRUCTION_FAILED, RECONSTRUCTION_VERIFIED
+
+        policy.eval()
+        with torch.no_grad():
+            live = torch.tanh(policy(self.probe_batch)[0]).detach().clone()
+        expected_ref = self._tensor_artifact(os.path.join(cand_dir, "expected_actions.pt"), live)
+        recon = {
+            "source": source_ref,
+            "selected_state": selected_ref,
+            "probe_batch": self.probe_batch_ref,
+            "expected_actions": expected_ref,
+            "imports_sha256": sha256_text(GENERATED_IMPORTS),
+            "env_id": self.env_name,
+            "obs_dim": int(self.obs_dim),
+            "action_dim": int(self.action_dim),
+            "fixed_action_scale": self.fixed_action_scale,
+            "comparison": "torch.equal on tanh(mean) over the fixed probe batch",
+        }
+        try:
+            rebuilt = reconstruct_actions(self.log_dir, recon)
+            recon["max_abs_diff"] = float((rebuilt - live).abs().max()) if rebuilt.numel() else 0.0
+            recon["status"] = RECONSTRUCTION_VERIFIED if torch.equal(rebuilt, live) else RECONSTRUCTION_FAILED
+        except Exception as exc:
+            recon["error"] = f"{type(exc).__name__}: {exc}"
+            recon["status"] = RECONSTRUCTION_FAILED
+        return recon
+
+    def _fit_and_screen(self, candidate, envs, probe_env, args, feedback_bundle):
+        """Fit one valid candidate, choose its checkpoint, screen it and record it."""
+        from lares.eval.report import CHECKPOINT_FITTED, CHECKPOINT_INTERMEDIATE, CHECKPOINT_ZERO_SHOT
+        from lares.fitting.checkpoints import CHECKPOINT_TIE_RULE
+        from lares.fitting.optimizers import fit_policy_with_objective, state_parameters_sha256
+        from lares.search import STATUS_EVALUATED, ExperimentRecord, source_hash
+        from lares.search.generation import env_identity
+        from lares.search.resources import ResourceLedger
+
+        gen = candidate.generation
+        cid = candidate.candidate_id
+        policy = candidate.policy
+        policy.fixed_action_scale = self.fixed_action_scale
+        cand_dir = os.path.join(f"gen_{gen}", "candidates", candidate.attempt_id)
+        screen = self.screen_manifest
+        resources = ResourceLedger()
+        llm, exclusive_totals, exclusive_wall = self._llm_evidence(candidate, args)
+        resources.add_llm_totals(exclusive_totals)
+        resources.add_wall_time("generation", exclusive_wall)
+        source_ref = self._artifact(os.path.join(cand_dir, "policy_source.py"), candidate.code)
+
+        # Zero-shot: what the LLM's own initial values do untrained. If a
+        # structure is decent here and worse after fitting, the fault is in the
+        # fitting, not the structure.
+        started = time.time()
+        zero_result, zero_report = self._evaluate_checkpoint(
+            policy, envs.development, screen, cid, CHECKPOINT_ZERO_SHOT
         )
-        bc_stats = behavioral_cloning(
+        resources.add_episodes("screen", zero_result)
+        resources.add_wall_time("evaluation", time.time() - started)
+
+        halfway = {}
+
+        def capture(step, pol, _store=halfway):
+            _store["step"] = step
+            _store["state"] = copy.deepcopy(pol.state_dict())
+
+        probe = (
+            self._rollout_probe(probe_env, self.probe_manifest, resources)
+            if self.checkpoint_steps
+            else None
+        )
+        started = time.time()
+        fit = fit_policy_with_objective(
             policy,
-            demo_buffer,
-            num_steps=self.bc_steps,
-            batch_size=min(256, len(demo_buffer)),
-            log_interval=self.bc_steps,
-            logger=logger,
-            task_name=self.env_name,
-            checkpoint_callback=checkpoint_callback,
-            rollout_probe=rollout_probe,
-            rollout_interval=interval,
+            self.data,
+            self.objective,
+            budget=self.bc_steps,
+            batch_size=min(self.bc_batch_size, int(self.data.train_obs.shape[0])),
+            lr=self.bc_lr,
+            seed=self.fit_seed,
+            sampling=self.sampling,
+            rollout_probe=probe,
+            checkpoint_steps=self.checkpoint_steps if probe is not None else None,
+            checkpoint_callback=capture,
+            structure_id=cid,
         )
-        if self.rl_iterations <= 0:
-            return bc_stats, {"returns": [], "successes": [], "skipped": True}
-        if not self.train_cases:
-            raise ValueError(
-                "rl_iterations > 0 requires train_cases; RL rollouts must name the "
-                "training placements they run on."
+        resources.add_wall_time("fitting", time.time() - started)
+        resources.add("bc_gradient_steps", fit.bc_gradient_steps)
+        resources.add("bc_objective_evaluations", fit.objective_evaluations)
+        if state_parameters_sha256(policy.state_dict()) != fit.selected_diagnostics["parameters_sha256"]:
+            raise RuntimeError(f"{cid}: the policy does not hold the selected checkpoint after fitting")
+        print(
+            f"    selected checkpoint: step {fit.selected_step}/{self.bc_steps} "
+            f"({CHECKPOINT_TIE_RULE}); probes {[(h['step'], round(h['success'], 3)) for h in fit.checkpoint_history]}"
+        )
+        state_refs = {
+            name: self._tensor_artifact(os.path.join(cand_dir, f"{name}.pt"), state)
+            for name, state in (
+                ("initial_state", fit.initial_state),
+                ("final_state", fit.final_state),
+                ("selected_state", fit.selected_state),
             )
-        rl_stats = rl_finetune(
-            policy,
-            env,
-            self.train_cases,
-            num_iterations=self.rl_iterations,
-            episodes_per_iter=self.rl_episodes_per_iter,
-            log_interval=self.rl_iterations,
-            logger=logger,
-            task_name=self.env_name,
+        }
+
+        started = time.time()
+        intermediate_report, intermediate_result = None, None
+        if halfway:
+            mid = copy.deepcopy(policy)
+            mid.load_state_dict(halfway["state"])
+            intermediate_result, intermediate_report = self._evaluate_checkpoint(
+                mid, envs.development, screen, cid, CHECKPOINT_INTERMEDIATE
+            )
+            resources.add_episodes("screen", intermediate_result)
+        bc_stats = self._report_fitting_stats(fit)
+        screen_result, screen_report = self._evaluate_checkpoint(
+            policy, envs.development, screen, cid, CHECKPOINT_FITTED, bc_stats=bc_stats
         )
-        return bc_stats, rl_stats
+        resources.add_episodes("screen", screen_result)
+        resources.add_wall_time("evaluation", time.time() - started)
+
+        report_refs = {"zero_shot": self._save_report(zero_report, f"{cid}_{CHECKPOINT_ZERO_SHOT}.json", gen)}
+        if intermediate_report is not None:
+            report_refs["intermediate"] = self._save_report(
+                intermediate_report, f"{cid}_{CHECKPOINT_INTERMEDIATE}.json", gen
+            )
+        report_refs["fitted_screen"] = self._save_report(screen_report, f"{cid}_{CHECKPOINT_FITTED}.json", gen)
+
+        reconstruction = self._verify_reconstruction(
+            candidate, policy, source_ref, state_refs["selected_state"], cand_dir
+        )
+
+        result = {
+            "candidate_id": cid,
+            "attempt_id": candidate.attempt_id,
+            "candidate": candidate,
+            "policy": policy,
+            "code": candidate.code,
+            "response": candidate.response,
+            "eval": screen_result.fitness_dict(),
+            "eval_record": screen_result,
+            "screen_report": screen_report,
+            "zero_shot_report": zero_report,
+            "intermediate_report": intermediate_report,
+            "expanded_record": None,
+            "expanded_report": None,
+            "score": self._score(screen_result.fitness_dict()),
+            "fit": fit,
+            "bc_stats": bc_stats,
+            "resources": resources,
+            "report_refs": report_refs,
+            "generation": gen,
+            "candidate_idx": candidate.slot,
+        }
+
+        record = ExperimentRecord(
+            experiment_id=candidate.attempt_id,
+            candidate_id=cid,
+            generation=gen,
+            status=STATUS_EVALUATED,
+            parent_ids=candidate.parent_ids,
+            idea_id=candidate.idea_id,
+            proposal_id=candidate.proposal_id,
+            code={
+                "source_hash": source_hash(candidate.code),
+                "source_path": source_ref["path"],
+                "source_sha256": source_ref["sha256"],
+                "source": candidate.code,
+                "num_parameters": policy.count_parameters(),
+                "num_parameter_tensors": len(list(policy.parameters())),
+            },
+            llm=llm,
+            llm_call_ids=list(candidate.llm_call_ids),
+            validation=dict(candidate.validation),
+            lineage=candidate.lineage_dict(feedback_bundle),
+            fitting={
+                "optimizer": "adam",
+                "objective": self.objective,
+                "objective_config": fit.objective_config,
+                "action_mode": fit.objective_config["execution"],
+                "fixed_action_scale": self.fixed_action_scale,
+                "steps": self.bc_steps,
+                "split": self.data.split_info,
+                "frozen_parameters": fit.frozen_parameters,
+                "checkpoint_steps": list(self.checkpoint_steps) if probe is not None else [],
+                "checkpoint_tie_rule": CHECKPOINT_TIE_RULE,
+                "probe_manifest_id": self.probe_manifest.manifest_id if probe is not None else None,
+                "probe_is_isolated": self.probe_is_isolated,
+                "checkpoint_history": fit.checkpoint_history,
+                "selected_step": int(fit.selected_step),
+                "initial_state": state_refs["initial_state"],
+                "final_state": state_refs["final_state"],
+                "selected_state": state_refs["selected_state"],
+                "final_diagnostics": fit.final_diagnostics,
+                "selected_diagnostics": fit.selected_diagnostics,
+                "gradient_norms": fit.gradient_norms,
+                "train_loss_end": fit.selected_diagnostics["train_loss"],
+                "validation_loss_end": fit.selected_diagnostics["validation_loss"],
+            },
+            evaluation={
+                "manifest_ids": [screen.manifest_id],
+                "probe_manifest_id": self.probe_manifest.manifest_id if probe is not None else None,
+                "action_mode": screen_report.action_mode,
+                "environment": env_identity(self.env_name),
+                "reports": report_refs,
+                "checkpoints": {
+                    "zero_shot": zero_report.rollout.success_rate,
+                    "intermediate": (
+                        intermediate_report.rollout.success_rate if intermediate_report is not None else None
+                    ),
+                    "fitted": screen_report.rollout.success_rate,
+                },
+                "success_rate": screen_report.rollout.success_rate,
+                "mean_return": screen_report.rollout.mean_return,
+                "failure_labels": screen_report.rollout.failure_labels,
+            },
+            resources=resources.to_dict(),
+            reconstruction=reconstruction,
+            timestamps={"recorded_at": time.strftime("%Y-%m-%dT%H:%M:%S")},
+            final_disposition="screened",
+        )
+        self._save_record(record)
+        self.archive.add(
+            candidate_id=cid,
+            generation=gen,
+            report=screen_report,
+            num_parameters=policy.count_parameters(),
+            source_hash=record.code["source_hash"],
+        )
+        result["record"] = record
+        return result
+
+    def _update_records_after_promotion(self, decisions, by_id, expanded):
+        """Fold screening, expansion and the archive's confirmed metrics into each record."""
+        from lares.search import STATUS_PROMOTED, STATUS_REJECTED
+
+        for decision in decisions:
+            result = by_id.get(decision["candidate_id"])
+            if result is None or result.get("record") is None:
+                continue
+            record = result["record"]
+            comparison = decision.get("incumbent_comparison") or {}
+            promoted = bool(comparison.get("promoted"))
+            record.status = STATUS_PROMOTED if promoted else STATUS_REJECTED
+            record.final_disposition = (
+                f"screening: {decision['reason']}; promotion: {comparison['reason']}"
+                if comparison
+                else f"screening: {decision['reason']}"
+                + (f"; promotion: {decision['promotion_evaluation']}" if decision.get("promotion_evaluation") else "")
+            )
+            record.evaluation["screening"] = {
+                k: v for k, v in decision.items() if k != "incumbent_comparison"
+            }
+            if comparison:
+                record.evaluation["incumbent_comparison"] = comparison
+            expanded_report = result.get("expanded_report")
+            if expanded_report is not None:
+                record.evaluation["manifest_ids"] = sorted(
+                    set(record.evaluation["manifest_ids"]) | {expanded.manifest_id}
+                )
+                record.evaluation["promotion_manifest_id"] = expanded.manifest_id
+                record.evaluation["expanded_success_rate"] = expanded_report.rollout.success_rate
+                record.evaluation["expanded_mean_return"] = expanded_report.rollout.mean_return
+                record.evaluation["reports"] = dict(result["report_refs"])
+            entry = self.archive.get(result["candidate_id"])
+            if entry is not None:
+                record.evaluation["archive"] = {
+                    "metrics_source": entry.metrics_source,
+                    "screen_metrics": entry.screen_metrics,
+                    "confirmed_metrics": entry.confirmed_metrics,
+                }
+            record.resources = result["resources"].to_dict()
+            self._save_record(record)
 
     @staticmethod
     def _score(eval_result):
@@ -1794,22 +2140,40 @@ class EvolutionOrchestrator:
         Args:
             client: OpenAI client.
             envs: :class:`~lares.eval.runner.PipelineEnvs` holding one env per
-                stream. Development evaluation, RL collection and GIF recording
-                each get their own, so none can shift another's cases.
-            demo_buffer: :class:`DemoBuffer` with expert demonstrations.
-            args: Namespace with ``model`` attribute for the LLM.
+                stream: development evaluation, checkpoint probe, and GIF
+                recording, so none can shift another's cases.
+            demo_buffer: :class:`DemoBuffer` with expert demonstrations and
+                episode ids.
+            args: Namespace with ``model``, ``policy_gen_two_phase`` (must be
+                true) and ``policy_impl_mode``.
             logger: Optional :class:`~lares.core.training_logger.TrainingLogger`.
 
         Returns:
             Dict with ``policy``, ``code``, ``score``, ``eval``, ``response``
-            for the best candidate found across all generations.  Returns
-            ``None`` if no valid candidate was ever generated.
+            for the incumbent found across all generations, or ``None`` if no
+            candidate was ever promoted.
         """
+        from lares.core.policy_generation import final_attempts
+        from lares.eval.promotion import (
+            NOT_BEST_SCREENED_CHALLENGER,
+            holm_promotion,
+            summarise_decisions,
+        )
+        from lares.eval.report import CHECKPOINT_FITTED
+        from lares.fitting.optimizers import prepare_data
+        from lares.search.generation import LLMCallLedger, write_feedback_bundle
+
         if self.dev_manifest is None:
             raise ValueError(
                 "EvolutionOrchestrator needs a dev_manifest: every candidate must be "
                 "scored on the same ordered cases (spec.md FR-1/FR-4)."
             )
+        if not bool(getattr(args, "policy_gen_two_phase", False)):
+            raise ValueError(
+                "EvolutionOrchestrator needs policy_gen_two_phase: true, so every candidate "
+                "carries an idea (and from generation 1 a proposal) by construction."
+            )
+        probe_env, probe_stream = self._probe_env(envs)
         if logger is None:
             from lares.core.training_logger import TrainingLogger
 
@@ -1823,313 +2187,242 @@ class EvolutionOrchestrator:
                 f"task={self.env_name}\n"
                 f"model={getattr(args, 'model', '')}\n"
                 f"policy_gen_two_phase={getattr(args, 'policy_gen_two_phase', False)}\n"
-                f"policy_impl_mode={getattr(args, 'policy_impl_mode', 'batched')}\n"
+                f"policy_impl_mode={_impl_mode(args)}\n"
                 f"---\n"
             )
         print(f"  LLM message log: {llm_transcript_path}")
 
         ensure_mujoco_headless_gl()
+        self.ledger = LLMCallLedger(self.log_dir)
+        self.data = prepare_data(demo_buffer, val_fraction=self.val_fraction, split_seed=self.split_seed)
+        self._write_probe_batch(demo_buffer)
+        self._write_run_manifest(args, probe_stream)
+        self.check_manifest_isolation()
+        if not self.probe_is_isolated:
+            print("  WARNING: the checkpoint probe shares cases with screening; pass probe_manifest.")
 
-        previous_results: list = []
+        feedback_bundle = None
+        parent_sources: dict = {}
 
         for gen in range(self.num_generations):
             print(f"\n{'=' * 60}")
             print(f"[Evolution] Generation {gen + 1}/{self.num_generations}")
             print(f"{'=' * 60}")
-
             gen_dir = os.path.join(self.log_dir, f"gen_{gen}")
+            os.makedirs(gen_dir, exist_ok=True)
 
-            # --- Structure search: LLM proposes new untrained candidates ---
-            failure_log: list = []
-            policy_pop, code_pop, response_pop = llm_evolution(
+            # --- Structure search: typed candidates with lineage -------------
+            started = time.time()
+            candidates = llm_evolution(
                 client=client,
                 env_name=self.env_name,
                 obs_dim=self.obs_dim,
                 action_dim=self.action_dim,
                 args=args,
-                previous_results=previous_results,
                 pop_size=self.pop_size,
                 generation=gen,
                 log_dir=self.log_dir,
                 logger=logger,
                 llm_transcript_path=llm_transcript_path,
-                evidence_block=self.evidence_block,
-                failure_log=failure_log,
+                ledger=self.ledger,
+                feedback_bundle=feedback_bundle,
+                parent_sources=parent_sources,
+                max_total_calls=self.max_llm_calls_per_generation,
+                max_repair_per_candidate=self.max_repair_per_candidate,
+                param_budget=self.param_budget,
+                max_total_tokens=self.max_llm_tokens_per_generation,
             )
-            self._record_generation_failures(gen, failure_log, args)
+            self.run_resources.add_wall_time("generation", time.time() - started)
 
-            # --- Inner loop: train and evaluate every candidate ---
-            from lares.eval.report import (
-                CHECKPOINT_FITTED,
-                CHECKPOINT_INTERMEDIATE,
-                CHECKPOINT_ZERO_SHOT,
-            )
-            from lares.eval.promotion import compare_to_incumbent, summarise_decisions
+            final_by_slot = {c.candidate_id: c for c in final_attempts(candidates)}
+            failures = [c for c in final_by_slot.values() if not c.valid]
+            for c in candidates:
+                if not (c.valid and final_by_slot[c.candidate_id] is c):
+                    self._record_failed_attempt(c, args, final_by_slot, feedback_bundle)
 
+            # --- Inner loop: fit, select, screen ------------------------------
             screen = self.screen_manifest
-            expanded = self.expanded_manifest
-            reports_dir = os.path.join(gen_dir, "reports")
+            expanded = self.promotion_manifest
             gen_results = []
-            for i, (policy, code, response) in enumerate(
-                zip(policy_pop, code_pop, response_pop)
-            ):
-                candidate_id = f"gen{gen}_cand{i}"
-                print(f"\n  --- Candidate {i + 1}/{len(policy_pop)}  ({candidate_id}) ---")
-
-                # Zero-shot: what the LLM's own initial values do untrained. If a
-                # structure is decent here and worse after fitting, the fault is
-                # in the fitting, not the structure.
-                _, zero_report = self._evaluate_checkpoint(
-                    policy, envs.development, screen, candidate_id, CHECKPOINT_ZERO_SHOT
-                )
-
-                halfway_state = {}
-
-                def _capture(step, pol, _store=halfway_state):
-                    _store["step"] = step
-                    _store["state"] = copy.deepcopy(pol.state_dict())
-
-                # The probe runs on its own environment, so scoring mid-fitting
-                # cannot disturb the case stream the final evaluation replays.
-                probe = (
-                    self._rollout_probe(envs.gif, screen)
-                    if self.rollout_checkpoint_probes > 0
-                    else None
-                )
-                bc_stats, rl_stats = self._train_candidate(
-                    policy, demo_buffer, envs.rl, logger=logger,
-                    checkpoint_callback=_capture, rollout_probe=probe,
-                )
-                if bc_stats.get("best_rollout_state") is not None:
-                    success, progress = bc_stats["best_rollout_score"]
-                    print(
-                        f"    best mid-fitting checkpoint at step "
-                        f"{bc_stats['best_rollout_step']}/{self.bc_steps} "
-                        f"(screen success {success:.3f}, progress {progress:+.4f}); "
-                        f"fitting to the end would have used step {self.bc_steps}"
+            for c in final_by_slot.values():
+                if not c.valid:
+                    continue
+                print(f"\n  --- {c.attempt_id} ({c.mode or 'idea'}; parents {c.parent_ids}) ---")
+                result = self._fit_and_screen(c, envs, probe_env, args, feedback_bundle)
+                self.run_resources.merge(
+                    __import__("lares.search.resources", fromlist=["ResourceLedger"]).ResourceLedger(
+                        wall_time_seconds=dict(result["resources"].wall_time_seconds)
                     )
-                    policy.load_state_dict(bc_stats["best_rollout_state"])
-
-                intermediate_report = None
-                if halfway_state:
-                    mid = copy.deepcopy(policy)
-                    mid.load_state_dict(halfway_state["state"])
-                    _, intermediate_report = self._evaluate_checkpoint(
-                        mid, envs.development, screen, candidate_id, CHECKPOINT_INTERMEDIATE
-                    )
-
-                screen_result, screen_report = self._evaluate_checkpoint(
-                    policy,
-                    envs.development,
-                    screen,
-                    candidate_id,
-                    CHECKPOINT_FITTED,
-                    bc_stats=bc_stats,
                 )
-                for report in (zero_report, intermediate_report, screen_report):
-                    if report is not None:
-                        report.save(
-                            os.path.join(
-                                reports_dir, f"{candidate_id}_{report.checkpoint}.json"
-                            )
-                        )
+                gen_results.append(result)
+                self.history.append(result)
+                parent_sources[c.candidate_id] = c.code
+                print(f"    zero-shot   {result['zero_shot_report'].headline()}")
+                if result["intermediate_report"] is not None:
+                    print(f"    intermediate {result['intermediate_report'].headline()}")
+                print(f"    fitted      {result['screen_report'].headline()}")
 
-                train_steps = (
-                    self.bc_steps + self.rl_iterations * self.rl_episodes_per_iter * 150
-                )
-                gen_results.append(
-                    {
-                        "candidate_id": candidate_id,
-                        "policy": policy,
-                        "code": code,
-                        "response": response,
-                        "eval": screen_result.fitness_dict(),
-                        "eval_record": screen_result,
-                        "screen_report": screen_report,
-                        "zero_shot_report": zero_report,
-                        "intermediate_report": intermediate_report,
-                        "expanded_record": None,
-                        "expanded_report": None,
-                        "score": self._score(screen_result.fitness_dict()),
-                        "bc_stats": bc_stats,
-                        "rl_stats": rl_stats,
-                        "train_steps": train_steps,
-                        "generation": gen,
-                        "candidate_idx": i,
-                    }
-                )
-                self.history.append(gen_results[-1])
-                self._record_candidate(gen_results[-1], args, screen, envs)
-                print(f"    zero-shot   {zero_report.headline()}")
-                if intermediate_report is not None:
-                    print(f"    intermediate {intermediate_report.headline()}")
-                print(f"    fitted      {screen_report.headline()}")
-
+            decisions = []
             if not gen_results:
                 print(f"  WARNING: Generation {gen + 1} produced no valid candidates.")
-                continue
+            else:
+                # --- Screening: picks the challenger; it never replaces the incumbent ---
+                decisions = self.promotion_policy.screen(
+                    [
+                        {"candidate_id": r["candidate_id"], "report": r["screen_report"], "valid": True}
+                        for r in gen_results
+                    ]
+                )
+                print(f"\n  Screening on {len(screen)} cases (rule declared before the generation ran):")
+                print("    " + summarise_decisions(decisions).replace("\n", "\n    "))
+                by_id = {r["candidate_id"]: r for r in gen_results}
+                cleared = sorted(
+                    (d for d in decisions if d["promoted"]),
+                    key=lambda d: (d["success_rate"], d["progress"], d["mean_return"]),
+                    reverse=True,
+                )
+                challengers = cleared[: self.promotion_challengers]
+                for d in decisions:
+                    d["generation"] = gen
+                    d["screen_cleared"] = bool(d["promoted"])
+                    d["promotion_tested"] = any(d is c for c in challengers)
+                    if d["promoted"] and not d["promotion_tested"]:
+                        d["promotion_evaluation"] = NOT_BEST_SCREENED_CHALLENGER
 
-            # --- Screening: only contenders earn the expanded evaluation ---
-            decisions = self.promotion_policy.screen(
-                [
-                    {"candidate_id": r["candidate_id"], "report": r["screen_report"], "valid": True}
-                    for r in gen_results
-                ]
-            )
-            print(f"\n  Screening on {len(screen)} cases "
-                  f"(rule declared before the generation ran):")
-            print("    " + summarise_decisions(decisions).replace("\n", "\n    "))
-            by_id = {r["candidate_id"]: r for r in gen_results}
-            for d in decisions:
-                d["generation"] = gen
-                if not d["promoted"]:
-                    continue
-                r = by_id[d["candidate_id"]]
-                exp_result, exp_report = self._evaluate_checkpoint(
-                    r["policy"],
-                    envs.development,
-                    expanded,
-                    r["candidate_id"],
-                    CHECKPOINT_FITTED,
-                    bc_stats=r["bc_stats"],
+                # --- Promotion: best screened challenger(s) on the promotion set -----
+                tested = []
+                for d in challengers:
+                    r = by_id[d["candidate_id"]]
+                    started = time.time()
+                    exp_result, exp_report = self._evaluate_checkpoint(
+                        r["policy"], envs.development, expanded, r["candidate_id"],
+                        CHECKPOINT_FITTED, bc_stats=r["bc_stats"],
+                    )
+                    r["resources"].add_episodes("expanded", exp_result)
+                    elapsed = time.time() - started
+                    r["resources"].add_wall_time("evaluation", elapsed)
+                    self.run_resources.add_wall_time("evaluation", elapsed)
+                    r["report_refs"]["fitted_expanded"] = self._save_report(
+                        exp_report, f"{r['candidate_id']}_expanded.json", gen
+                    )
+                    self.archive.confirm(r["candidate_id"], exp_report)
+                    r["expanded_record"] = exp_result
+                    r["expanded_report"] = exp_report
+                    r["eval"] = exp_result.fitness_dict()
+                    r["score"] = self._score(r["eval"])
+                    print(f"    promotion set {exp_report.headline()}")
+                    tested.append((d, r, exp_result, exp_report))
+
+                comparisons = holm_promotion(
+                    [(r["candidate_id"], exp_result) for _, r, exp_result, _ in tested],
+                    self._incumbent_expanded,
+                    self._incumbent_id,
+                    excluded_manifest_ids=(screen.manifest_id, self.probe_manifest.manifest_id),
                 )
-                exp_report.save(
-                    os.path.join(reports_dir, f"{r['candidate_id']}_expanded.json")
-                )
-                r["expanded_record"] = exp_result
-                r["expanded_report"] = exp_report
-                r["eval"] = exp_result.fitness_dict()
-                r["score"] = self._score(r["eval"])
-                comparison = compare_to_incumbent(
-                    exp_result, self._incumbent_expanded, r["candidate_id"], self._incumbent_id
-                )
-                d["incumbent_comparison"] = comparison.to_dict()
-                print(f"    expanded {exp_report.headline()}")
-                if comparison.paired_success is not None:
+                for (d, r, exp_result, exp_report), comparison in zip(tested, comparisons):
+                    d["incumbent_comparison"] = comparison.to_dict()
                     ps = comparison.paired_success
+                    low = "n/a" if ps["ci_low"] is None else f"{ps['ci_low']:+.3f}"
+                    high = "n/a" if ps["ci_high"] is None else f"{ps['ci_high']:+.3f}"
                     print(
-                        f"      paired vs {self._incumbent_id}: success "
-                        f"{ps['mean_difference']:+.3f} "
-                        f"95% CI [{ps['ci95_low']:+.3f}, {ps['ci95_high']:+.3f}] "
+                        f"      paired vs {comparison.incumbent_id}: success {ps['mean_difference']:+.3f} "
+                        f"{comparison.interval_level:.1%} t interval [{low}, {high}] "
                         f"n={ps['n_paired']}  -> {comparison.reason}"
                     )
-                if comparison.promoted:
-                    self._incumbent_expanded = exp_result
-                    self._incumbent_id = r["candidate_id"]
-                    self.best_overall = {
-                        "policy": copy.deepcopy(r["policy"]),
-                        "code": r["code"],
-                        "score": r["score"],
-                        "eval": r["eval"],
-                        "response": r["response"],
-                        "candidate_id": r["candidate_id"],
-                        "report": exp_report,
-                    }
-            self.promotion_log.extend(decisions)
-            self._update_records_after_promotion(decisions, by_id, expanded)
+                    if comparison.promoted:
+                        self._incumbent_expanded = exp_result
+                        self._incumbent_id = r["candidate_id"]
+                        self.best_overall = {
+                            "policy": copy.deepcopy(r["policy"]),
+                            "code": r["code"],
+                            "score": r["score"],
+                            "eval": r["eval"],
+                            "response": r["response"],
+                            "candidate_id": r["candidate_id"],
+                            "attempt_id": r["attempt_id"],
+                            "report": exp_report,
+                        }
+                self.promotion_log.extend(decisions)
+                self._update_records_after_promotion(decisions, by_id, expanded)
 
-            # Evidence for the next generation, assembled before the population is
-            # discarded. This replaces the two scalars the loop used to send.
-            self.evidence_block = self._build_evidence(
-                gen, gen_results, failure_log, screen, demo_buffer=demo_buffer
-            )
-            evidence_path = os.path.join(gen_dir, "feedback.md")
-            with open(evidence_path, "w", encoding="utf-8") as f:
-                f.write(self.evidence_block)
-            print(f"\n  Evidence for the next generation: {evidence_path}")
+            # --- Evidence for the next generation, hashed as a bundle ---------
+            text, context = self._build_evidence(gen, gen_results, failures, screen, demo_buffer=demo_buffer)
+            feedback_bundle = write_feedback_bundle(self.log_dir, gen, screen.manifest_id, context, text)
+            self.feedback_bundles.append(feedback_bundle)
+            print(f"\n  Evidence for the next generation: {feedback_bundle.text_path} "
+                  f"({feedback_bundle.feedback_id}; context {context})")
             print("\n  Archive:")
             print("    " + self.archive.summary().replace("\n", "\n    "))
 
-            gen_results.sort(key=lambda r: r["score"], reverse=True)
-
-            # Log generation-level fitness metrics
-            scores = [r["score"] for r in gen_results]
-            elite_scores = (
-                [r["score"] for r in gen_results[: self.elite_num]]
-                if self.elite_num > 0
-                else scores
-            )
-            logger.log_metrics(
-                stage="evolutionary",
-                update=gen,
-                metrics={
-                    EVO_FITNESS_MEAN: float(np.mean(scores)),
-                    EVO_FITNESS_BEST: float(max(scores)),
-                    EVO_FITNESS_MEDIAN: float(np.median(scores)),
-                    EVO_FITNESS_WORST: float(min(scores)),
-                    EVO_FITNESS_ELITE_MEAN: float(np.mean(elite_scores)),
-                },
-                task_name=self.env_name,
-            )
-
-            print(f"\n  Generation {gen + 1} ranking:")
-            for rank, r in enumerate(gen_results):
-                tag = " (elite)" if rank < self.elite_num else ""
-                scope = "expanded" if r["expanded_record"] is not None else "screen"
-                print(
-                    f"    [{rank + 1}] {r['candidate_id']} reward={r['eval']['mean_reward']:.2f}, "
-                    f"success={r['eval']['success_rate']:.2f} on {scope}{tag}"
+            if gen_results:
+                gen_results.sort(key=lambda r: r["score"], reverse=True)
+                scores = [r["score"] for r in gen_results]
+                elite_scores = (
+                    [r["score"] for r in gen_results[: self.elite_num]] if self.elite_num > 0 else scores
                 )
-
-            # Record a demo GIF of the best candidate from this generation
-            if self.record_demo_gif:
-                gif_case = self.gif_case or self.dev_manifest.episodes[0]
-                gif_path = os.path.join(gen_dir, f"gen_{gen}_best.gif")
-                print(f"\n  Recording demo GIF ({gif_case.case_id}) → {gif_path}")
-                try:
-                    gif_info = record_episode_gif(
-                        gen_results[0]["policy"],
-                        envs.gif,
-                        path=gif_path,
-                        case=gif_case,
-                        max_steps=self.eval_max_steps,
-                        deterministic=True,
-                    )
-                except Exception as exc:
+                logger.log_metrics(
+                    stage="evolutionary",
+                    update=gen,
+                    metrics={
+                        EVO_FITNESS_MEAN: float(np.mean(scores)),
+                        EVO_FITNESS_BEST: float(max(scores)),
+                        EVO_FITNESS_MEDIAN: float(np.median(scores)),
+                        EVO_FITNESS_WORST: float(min(scores)),
+                        EVO_FITNESS_ELITE_MEAN: float(np.mean(elite_scores)),
+                    },
+                    task_name=self.env_name,
+                )
+                print(f"\n  Generation {gen + 1} ranking:")
+                for rank, r in enumerate(gen_results):
+                    scope = "expanded" if r["expanded_record"] is not None else "screen"
                     print(
-                        f"  [record_gif] Skipped ({type(exc).__name__}: {exc}). "
-                        "Set MUJOCO_GL=egl (or osmesa) before creating the env on headless nodes."
-                    )
-                    gif_info = {
-                        "saved": False,
-                        "num_frames": 0,
-                        "episode_reward": 0.0,
-                        "success": False,
-                    }
-                if gif_info["saved"]:
-                    print(
-                        f"  GIF saved ({gif_info['num_frames']} frames, "
-                        f"reward={gif_info['episode_reward']:.2f}, "
-                        f"success={gif_info['success']})"
+                        f"    [{rank + 1}] {r['candidate_id']} reward={r['eval']['mean_reward']:.2f}, "
+                        f"success={r['eval']['success_rate']:.2f} on {scope}"
                     )
 
-            # Feed elite results back to the next generation
-            previous_results = [
-                {
-                    "code": r["code"],
-                    "eval": r["eval"],
-                    "score": r["score"],
-                    "response": r["response"],
-                    "train_steps": r["train_steps"],
-                }
-                for r in gen_results[: self.elite_num]
-            ]
+                if self.record_demo_gif:
+                    gif_case = self.gif_case or self.dev_manifest.episodes[0]
+                    gif_path = os.path.join(gen_dir, f"gen_{gen}_best.gif")
+                    print(f"\n  Recording demo GIF ({gif_case.case_id}) → {gif_path}")
+                    try:
+                        gif_info = record_episode_gif(
+                            gen_results[0]["policy"], envs.gif, path=gif_path, case=gif_case,
+                            max_steps=self.eval_max_steps, deterministic=True,
+                        )
+                    except Exception as exc:
+                        print(
+                            f"  [record_gif] Skipped ({type(exc).__name__}: {exc}). "
+                            "Set MUJOCO_GL=egl (or osmesa) before creating the env on headless nodes."
+                        )
+                        gif_info = {"saved": False, "num_frames": 0, "episode_reward": 0.0, "success": False}
+                    if gif_info["saved"]:
+                        print(
+                            f"  GIF saved ({gif_info['num_frames']} frames, "
+                            f"reward={gif_info['episode_reward']:.2f}, success={gif_info['success']})"
+                        )
 
-            # Persist generation artefacts
             with open(os.path.join(gen_dir, "results.pkl"), "wb") as f:
                 pickle.dump(
                     {
                         "generation": gen,
                         "screen_manifest_id": screen.manifest_id,
                         "expanded_manifest_id": expanded.manifest_id,
+                        "probe_manifest_id": self.probe_manifest.manifest_id,
                         "promotion_policy": self.promotion_policy.to_dict(),
                         "screening_decisions": decisions,
+                        "feedback_id": feedback_bundle.feedback_id,
+                        "attempts": [
+                            {"attempt_id": c.attempt_id, "valid": c.valid, "stage": c.validation.get("stage")}
+                            for c in candidates
+                        ],
                         "candidates": [
                             {
                                 "candidate_id": r["candidate_id"],
+                                "attempt_id": r["attempt_id"],
                                 "code": r["code"],
                                 "eval": r["eval"],
                                 "score": r["score"],
+                                "selected_step": r["fit"].selected_step,
                                 "screen_report": r["screen_report"].to_dict(),
                                 "zero_shot_report": r["zero_shot_report"].to_dict(),
                                 "intermediate_report": (
@@ -2138,9 +2431,7 @@ class EvolutionOrchestrator:
                                     else None
                                 ),
                                 "expanded_report": (
-                                    r["expanded_report"].to_dict()
-                                    if r["expanded_report"] is not None
-                                    else None
+                                    r["expanded_report"].to_dict() if r["expanded_report"] is not None else None
                                 ),
                             }
                             for r in gen_results
@@ -2149,9 +2440,7 @@ class EvolutionOrchestrator:
                     f,
                 )
             with open(os.path.join(gen_dir, "screening.json"), "w", encoding="utf-8") as f:
-                import json as _json
-
-                _json.dump(
+                json.dump(
                     {
                         "generation": gen,
                         "promotion_policy": self.promotion_policy.to_dict(),
@@ -2163,6 +2452,8 @@ class EvolutionOrchestrator:
                     indent=2,
                     default=str,
                 )
+            with open(os.path.join(self.log_dir, "archive.json"), "w", encoding="utf-8") as f:
+                json.dump(self.archive.to_dict(), f, indent=2, default=str)
+            self._write_run_totals()
 
         return self.best_overall
-        

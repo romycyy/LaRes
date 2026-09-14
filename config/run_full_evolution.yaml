@@ -21,20 +21,42 @@ eval_max_steps: 150         # Rollout horizon; must match the manifests' `horizo
 # ---------- Stage 1: Expert dataset ----------
 dataset_episodes: 150       # Expert episodes, taken from the head of the train manifest
 
-# Optionally point to a pre-collected demo buffer to skip Stage 1:
-# demo_buffer_path: "./logs/demo_reach-v2.pkl"
+# Pre-collected expert buffer, skipping Stage 1. It must carry episode ids so the
+# validation split is by complete episode (spec.md FR-6); logs/evolution/demo_push-v2.pkl
+# predates episode ids and cannot. Collected with:
+#   python scripts/lock_baseline.py --collect-demos 150
+demo_buffer_path: "./logs/baseline_lock/demo_push-v2.pkl"
 
 # ---------- Stage 2+3: BC + RL inner loop ----------
 bc_steps: 2000              # Behavioural-cloning gradient steps per candidate
-rl_iterations: 0           # GRPO RL outer iterations per candidate
-rl_episodes: 30             # Rollout episodes per RL iteration (parallelize)
+rl_iterations: 0           # Must be 0: RL after checkpoint selection breaks record provenance
+rl_episodes: 30             # Rollout episodes per RL iteration (unused while rl_iterations is 0)
 
-# ---------- Evaluation: staged development budget (spec.md section 12) ----------
-# Every candidate is screened on `screen_episodes`, and only those clearing the
-# declared screening rule are re-scored on `expanded_episodes`. The screening set
-# is a prefix of the expanded one, so the two stay paired.
+# ---------- Fitting and checkpoint selection (debug_spec.md Stage B) ----------
+objective: deterministic_mse  # Named objective from lares/fitting/objectives.py
+fixed_action_scale: 0.1       # Non-trainable std returned by SymbolicPolicy.fixed_std
+# Checkpoints probed during fitting, as gradient-step counts. Step 0 is the untrained
+# policy and can be selected. Tie rule: higher success, higher progress, earlier step.
+# Leave null to use step 0 plus `rollout_checkpoint_probes` evenly spaced steps.
+checkpoint_steps: [0, 500, 1000, 1500, 2000]
+rollout_checkpoint_probes: 4
+probe_episodes: 10            # Probe cases, taken from the development tail, disjoint from screening
+max_repair_per_candidate: 1   # One linked correction attempt per slot, never an outer retry
+# LLM budget, matched to the three-generation debug-cycle run (logs/evolution_debug_full: 20 calls,
+# 242,642 tokens). Enforced before each call, so the total overshoots by at most one call.
+max_llm_calls_per_generation: 20
+max_llm_tokens_per_generation: 242642
+param_budget: [6, 10]         # Recommended tunable-parameter budget; more needs a justification
+
+# ---------- Evaluation: screening and promotion (spec.md section 12; decided 2026-09-14) ----------
+# Every candidate is screened on the first `screen_episodes` development cases. Only the best
+# screened challenger is then scored on the promotion set: the next `expanded_episodes` cases,
+# disjoint from the screen and from the probe tail (10 + 30 + 10 = 50). It replaces the incumbent
+# only if its paired success difference is strictly positive and the paired t interval's lower
+# bound is above zero. Ties never promote; return and progress never replace the incumbent.
 screen_episodes: 10
-expanded_episodes: 30
+expanded_episodes: 30         # size of the promotion set
+promotion_challengers: 1      # more than one is judged with Holm's correction
 eval_episodes: 30           # legacy alias; used as `expanded_episodes` if that is unset
 
 # ---------- Stage 4: LLM structure search ----------
@@ -47,12 +69,24 @@ policy_gen_two_phase: true
 # usable candidate because a batched request repeats every hypothesis in one long prompt.
 # See logs/generation_modes/ and scripts/compare_generation_modes.py.
 policy_impl_mode: per_idea
-num_generations: 3         # Evolution generations
-pop_size: 5                 # Candidates generated per generation
-elite_num: 2                # Top-k results fed back to the next generation
+# No ordinary edit generations in the next search (decided 2026-09-14): in the debug-cycle run,
+# generations 1-2 used two thirds of the LLM spend and did not improve held-out success. One initial
+# generation receives the whole matched budget instead. Measured per-slot cost from that run's
+# ledger: ~11.4k tokens per implementation call, ~1.5k tokens per idea in the ideation call, and
+# 13% of slots needing a ~17k-token correction, so ~15k tokens a slot plus ~4.5k fixed. The
+# matched 242,642 tokens and 20 calls therefore buy about 15 slots, not 9. The token and call caps
+# above are what enforce the match; slots the budget cannot reach are recorded as budget_exhausted.
+# Edit generations are evaluated in Stage F, and the two-generation smoke config still exercises
+# their plumbing.
+num_generations: 1
+pop_size: 15
+elite_num: 2
 
 # ---------- Logging ----------
-log_dir: "./logs/evolution"
+# A fresh directory per controlled run. Never reuse one: ./logs/evolution holds the historical
+# incumbent that lock_baseline.py reproduces, and ./logs/evolution_debug_full holds the completed
+# three-generation debug-cycle run this search's budget is matched against.
+log_dir: "./logs/evolution_single_generation"
 
 # After each generation, record a demo of the best candidate as a GIF under
 # ``log_dir/gen_<N>/``.  Set to false on headless machines if rendering fails.

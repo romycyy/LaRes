@@ -514,11 +514,11 @@ class TestRolloutCheckpoint(unittest.TestCase):
         self.assertEqual(stats["best_rollout_score"], (0.9, 0.0))
         self.assertIsNotNone(stats["best_rollout_state"])
 
-    def test_a_tie_prefers_the_later_checkpoint(self):
-        # When nothing succeeds every probe ties, and reverting to the first would
-        # discard fitting for no reason.
+    def test_an_exact_tie_prefers_the_earlier_checkpoint(self):
+        # The predeclared rule (debug_spec D4): higher success, then higher
+        # progress, then the earlier checkpoint.
         stats = self._fit(lambda p: (0.0, 0.0))
-        self.assertEqual(stats["best_rollout_step"], 40)
+        self.assertEqual(stats["best_rollout_step"], 10)
 
     def test_goal_progress_breaks_a_tie_on_success(self):
         scores = iter([(0.0, -0.1), (0.0, 0.3), (0.0, -0.2), (0.0, 0.1)])

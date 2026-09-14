@@ -9,18 +9,33 @@ two VLM-discipline items are now enforced and tested (`lares/vision/`). The nint
 checkpoint and an LLM repair path before E10 can decide anything.
 **Phase 3 — Structure search separated from parameter fitting** (FR-6, AC-3): **complete**, all six
 AC-3 items closed, with the comparison run over the full bank.
-**Phase 4 — LLM proposal, feedback and archive** (FR-5, FR-10, AC-4): **complete**, all eight AC-4
-items closed including the generation-mode comparison.
-**Phase 5 — Objectives and data coverage** (FR-7, FR-8, AC-5): **complete**, all seven AC-5 items
-closed, with E7 and E8 run on the simple family.
-**Phase 6 — Intervention-guided repair** (FR-9, AC-6): **implemented and measured; four of five AC-6
-items closed, and the fifth is answered in the negative.** The full repair loop does not beat the
-optimizer-only ablation at matched cost. The machinery works, an accepted repair is on record, and
-the experiment says the hypothesis does not hold at this budget. See the ablation table below.
+> **Status correction, 2026-09-13 (`debug_spec.md` section 2.2).** The phase statuses below were
+> overstated. Phase 4 is **reopened**: feedback text existed, but candidate-level lineage and
+> controlled edit semantics were not integrated. Phase 5's machinery is experimental and was **not**
+> in the live evolutionary path. Phase 6's ablation is a **pilot**: it does not cleanly test the
+> intended LLM repair arms or satisfy the final AC-6. **Phase 7 is blocked** until every check in
+> `debug_spec.md` passes. The debug cycle's progress, changes and remaining work are tracked in
+> `DEBUG_PROGRESS.md`. Stages A–C are implemented and the live Stage D smoke test passed every check.
+> A full run then scored 0.340 held-out success on 50 fresh placements against the pre-debug best's 0.120
+> (paired +0.220, t95 [+0.045, +0.395]); the gain comes from untrained structures kept at step 0, not from
+> fitting. Stages E–F are not yet run. Decisions of 2026-09-14 (promotion requires a paired interval above
+> zero on an independent promotion set; fitting is an experimental treatment decided by Stage E; no edit
+> generations in the next search; Phase 7 blocked through Stage F) are recorded in `DEBUG_PROGRESS.md`.
+
+**Phase 4 — LLM proposal, feedback and archive** (FR-5, FR-10, AC-4): **reopened** by `debug_spec.md`.
+Candidate lineage, structured proposals, feedback bundles and the LLM-call ledger are now integrated
+(`DEBUG_PROGRESS.md`, Stage A); the live two-generation smoke test passed. Edit generations are evaluated in Stage F.
+**Phase 5 — Objectives and data coverage** (FR-7, FR-8, AC-5): machinery complete; live integration
+now done (deterministic MSE, fixed scale, consistent selected checkpoint; `DEBUG_PROGRESS.md` Stage B).
+The fresh development-confirmation comparison (Stage E) has not run.
+**Phase 6 — Intervention-guided repair** (FR-9, AC-6): **pilot.** The existing ablation mixed unequal
+fitting and search budgets and did not exercise correction-LLM repair. Its `optimizer_only - full`
+difference is +0.133 over six pairs with a small-sample t interval of about [-0.031, +0.298]: a
+directional optimizer advantage, not a significant result. The clean correction-LLM ablation is
+Stage F of `debug_spec.md`.
 **FR-4** is now fully enforced: the final-test split is locked and every look at it is ledgered.
 **Phase 7 — Freeze and validate** (AC-7): machinery built (freeze record, drift check, aggregate
-report). The five independent searches and the 100-episode final test are an expensive run awaiting
-approval.
+report). **Blocked through Stage F** of `debug_spec.md`; do not access the final test set.
 
 **FR-11 — VLM-assisted failure analysis**: **built and tested without a model.** The contract, the
 fixed media rule, capture against the real simulator, the merge and conflict marking are all in

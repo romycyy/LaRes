@@ -24,20 +24,19 @@ class GeneratedPolicy(SymbolicPolicy):
         super().__init__(obs_dim, action_dim)
         # Declare nn.Parameter's here with initial values
         # Example: self.w1 = nn.Parameter(torch.tensor(2.0))
-        # Example: self.log_std = nn.Parameter(torch.tensor(-1.0))
 
     def forward(self, obs):
         # obs: (batch_size, obs_dim) tensor
         # Read named fields:  tcp = self.obs_field(obs, "tcp")   -> (batch_size, 3)
-        # Optional telemetry: self.record_gate("contact", gate)  -> detached, cannot change the action
+        # Phase gates:        gate = self.record_gate("contact", gate)  -> use the returned value
         # Must return (mean, std) where:
-        #   mean: (batch_size, action_dim) — centre of the pre-tanh Gaussian
-        #   std:  (batch_size, action_dim) — scale, must be strictly > 0
+        #   mean: (batch_size, action_dim) — centre of the pre-tanh action
+        #   std:  self.fixed_std(mean)     — the fixed, non-trainable action scale
         raise NotImplementedError
 
     def get_param_ranges(self):
         # Return dict mapping each parameter name to (min_value, max_value)
-        # Example: return {{'w1': (0.1, 10.0), 'log_std': (-5.0, 0.0)}}
+        # Example: return {{'w1': (0.1, 10.0)}}
         raise NotImplementedError
 ```
 
@@ -46,7 +45,7 @@ Requirements:
 2. Do NOT use nn.Linear, nn.Conv, nn.LSTM, nn.Embedding, or any neural network layers.
 3. Every nn.Parameter must have a corresponding entry in get_param_ranges() with a reasonable (min, max) range.
 4. forward() must return (mean, std) tensors each of shape (batch_size, {action_dim}).
-5. std must always be positive — use torch.exp() on a log-scale parameter.
+5. Return `std = self.fixed_std(mean)`. The action scale is fixed and not learned: do not declare log_std or any other scale parameter.
 6. Design the policy to decompose the task into logical phases (e.g., approach the object, then manipulate it toward the target). Use smooth switching between phases via torch.sigmoid.
 7. Normalize direction vectors before scaling them to avoid magnitude issues.
 8. The class must be named exactly `GeneratedPolicy`.
@@ -55,3 +54,4 @@ Requirements:
 10. Row i of the output must depend only on row i of the input. Give every reduction an explicit
    `dim`; a reduction over the batch is detected and rejected.
 11. The action must change when each [required] field changes.
+12. Every recorded gate must be assigned from `self.record_gate(...)` and used in the action.

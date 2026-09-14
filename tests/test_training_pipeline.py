@@ -74,7 +74,7 @@ from lares.core.policy_generation import (  # noqa: E402
     obs_description_dict,
     input_dict_for_policy,
 )
-from lares.eval import PipelineEnvs  # noqa: E402
+from lares.eval import PipelineEnvs, PromotionPolicy  # noqa: E402
 from lares.eval.manifest import synthetic_cases, synthetic_manifest  # noqa: E402
 
 if HAS_METAWORLD:
@@ -546,7 +546,7 @@ try:
         tmpl = f.read()
     check(
         "Prompt: feedback template is placeholder-free guidance",
-        "{" not in tmpl and "failure labels" in tmpl and "GeneratedPolicy" in tmpl,
+        "{" not in tmpl and "failure labels" in tmpl and "mutation proposals" in tmpl,
     )
 except Exception as e:
     check("Prompt: feedback template is placeholder-free guidance", False, str(e))
@@ -763,8 +763,12 @@ if HAS_OPENAI_KEY:
         with open(os.path.join(prompt_dir, name), "r") as f:
             return f.read()
 
+    class _NoValidPolicy(Exception):
+        """Raised to skip the policy checks when bounded generation produced none."""
+
+    policy_pop = []
     try:
-        policy_pop, code_pop, resp_list = get_symbolic_policies(
+        generated = get_symbolic_policies(
             client=llm_client,
             dir_path=gen_dir,
             llm_iter=0,
@@ -781,6 +785,26 @@ if HAS_OPENAI_KEY:
             data_pkl_path=data_pkl,
             real_num=1,
         )
+        from lares.core.policy_generation import valid_policies  # noqa: E402
+
+        policy_pop, code_pop, resp_list = valid_policies(generated)
+        check("LLM gen: every attempt is a typed candidate", all(hasattr(c, "attempt_id") for c in generated))
+        check(
+            "LLM gen: one slot, at most one linked correction",
+            {c.candidate_id for c in generated} == {"gen0_cand0"} and len(generated) <= 2,
+        )
+        check(
+            "LLM gen: every failed attempt says why",
+            all(c.valid or (c.validation.get("stage") and c.validation.get("errors")) for c in generated),
+        )
+        # Generation is bounded to one linked correction per slot (debug_spec.md
+        # Stage A), so a weak model can legitimately return no valid policy. The
+        # checks below need one, and are skipped with the recorded reason if not.
+        if not policy_pop:
+            last = generated[-1].validation
+            skip("LLM gen: policy checks", f"no valid policy after one correction ({last.get('stage')}: "
+                 f"{str((last.get('errors') or [''])[0])[:120]})")
+            raise _NoValidPolicy()
         check("LLM gen: returned 1 policy", len(policy_pop) == 1)
         check("LLM gen: returned code string", len(code_pop) == 1 and len(code_pop[0]) > 50)
         check("LLM gen: returned response", len(resp_list) == 1 and len(resp_list[0]) > 50)
@@ -804,6 +828,8 @@ if HAS_OPENAI_KEY:
         has_g = any(p.grad is not None and p.grad.abs().sum() > 0 for p in gen_policy.parameters())
         check("LLM gen: gradients flow", has_g)
 
+    except _NoValidPolicy:
+        pass
     except Exception:
         check("LLM gen", False, traceback.format_exc())
 
@@ -876,40 +902,57 @@ if HAS_OPENAI_KEY:
             pop_size=1,
             elite_num=1,
             bc_steps=100,
-            rl_iterations=3,
-            rl_episodes_per_iter=2,
+            rl_iterations=0,
             log_dir=evo_dir,
             record_demo_gif=False,
-            dev_manifest=MOCK_MANIFEST.head(3),
+            # Five mock cases: a 2-case screen and a disjoint 3-case promotion set.
+            dev_manifest=MOCK_MANIFEST,
+            promotion_policy=PromotionPolicy(screen_episodes=2, expanded_episodes=3),
             train_cases=MOCK_CASES,
+            checkpoint_steps=(0, 50, 100),
         )
 
         # allow_shared: the mock holds no simulator state, so one instance cannot
         # leak between streams the way a real MuJoCo env would.
         evo_result = orchestrator.run(
             client=llm_client,
-            envs=PipelineEnvs(env_mock, env_mock, env_mock, allow_shared=True),
+            envs=PipelineEnvs(env_mock, env_mock, env_mock, allow_shared=True, probe=env_mock),
             demo_buffer=demo_buf,
-            args=llm_args,
+            args=make_test_args(model="gpt-4o-mini", policy_gen_two_phase=True, policy_impl_mode="per_idea"),
         )
 
-        check("Stage4: returns dict", isinstance(evo_result, dict))
-        check("Stage4: has policy", evo_result["policy"] is not None)
-        check(
-            "Stage4: has code",
-            evo_result["code"] is not None and len(evo_result["code"]) > 20,
-        )
-        check("Stage4: has score", isinstance(evo_result["score"], (int, float)))
-        check(
-            "Stage4: policy is SymbolicPolicy",
-            isinstance(evo_result["policy"], SymbolicPolicy),
-        )
+        from lares.search.provenance import reconcile_resources  # noqa: E402
 
-        evo_m, evo_s = evo_result["policy"](torch.randn(4, OBS_DIM))
+        check("Stage4: every attempt recorded", len(orchestrator.records) >= 1)
+        check("Stage4: every record validates", all(r.validate() for r in orchestrator.records))
         check(
-            "Stage4: policy forward works",
-            evo_m.shape == (4, ACT_DIM) and (evo_s > 0).all(),
+            "Stage4: token totals reconcile on unique call ids",
+            reconcile_resources(orchestrator.records, orchestrator.ledger)["llm"]["reconciles"],
         )
+        if evo_result is None:
+            skip(
+                "Stage4: incumbent checks",
+                "no candidate was promoted; "
+                + "; ".join(f"{r.experiment_id}: {r.status}/{r.validation.get('stage')}" for r in orchestrator.records),
+            )
+        else:
+            check("Stage4: returns dict", isinstance(evo_result, dict))
+            check("Stage4: has policy", evo_result["policy"] is not None)
+            check(
+                "Stage4: has code",
+                evo_result["code"] is not None and len(evo_result["code"]) > 20,
+            )
+            check("Stage4: has score", isinstance(evo_result["score"], (int, float)))
+            check(
+                "Stage4: policy is SymbolicPolicy",
+                isinstance(evo_result["policy"], SymbolicPolicy),
+            )
+
+            evo_m, evo_s = evo_result["policy"](torch.randn(4, OBS_DIM))
+            check(
+                "Stage4: policy forward works",
+                evo_m.shape == (4, ACT_DIM) and (evo_s > 0).all(),
+            )
     except Exception:
         check("Stage4 LLM evolution", False, traceback.format_exc())
     # try:

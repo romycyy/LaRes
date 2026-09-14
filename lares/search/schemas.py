@@ -169,6 +169,8 @@ class PolicyIdea:
     zero_shot_behavior: str = ""
     expected_failure: str = ""
     protected_behaviors: list = field(default_factory=list)
+    #: Required when the idea exceeds the declared parameter or phase budget.
+    complexity_justification: str = ""
 
     def validate(self, schema=None):
         _require(self.idea_id, "idea needs an id")
@@ -253,6 +255,7 @@ class PolicyIdea:
             zero_shot_behavior=str(d.get("zero_shot_behavior", "")),
             expected_failure=str(d.get("expected_failure", "")),
             protected_behaviors=[str(x) for x in d.get("protected_behaviors", [])],
+            complexity_justification=str(d.get("complexity_justification", "") or ""),
         )
 
     def implementation_brief(self) -> str:
@@ -300,6 +303,8 @@ class MutationProposal:
     predicted_direction: str = ""
     protected_behaviors: list = field(default_factory=list)
     focused_cases: list = field(default_factory=list)
+    #: Why an exploration names no parent. Required when ``parent_ids`` is empty.
+    no_parent_rationale: str = ""
 
     DIRECTIONS = ("increase", "decrease")
 
@@ -336,7 +341,7 @@ class MutationProposal:
             f"{self.mode} proposals must name at least one behaviour the edit must "
             f"not lose, so a regression is detectable",
         )
-        if self.mode in (MODE_REPAIR, MODE_PARAMETER_ONLY):
+        if self.mode in (MODE_REPAIR, MODE_SIMPLIFICATION, MODE_PARAMETER_ONLY):
             _require(
                 len(self.parent_ids) == 1,
                 f"a {self.mode} edits one parent; got {len(self.parent_ids)}",
@@ -386,6 +391,7 @@ class MutationProposal:
             predicted_direction=str(d.get("predicted_direction", "")),
             protected_behaviors=[str(x) for x in d.get("protected_behaviors", [])],
             focused_cases=[str(x) for x in d.get("focused_cases", [])],
+            no_parent_rationale=str(d.get("no_parent_rationale", "") or ""),
         )
 
 
@@ -394,12 +400,49 @@ class MutationProposal:
 # ---------------------------------------------------------------------------
 
 
+#: Where a record came from. Generated candidates carry the full lineage and
+#: provenance contract (``debug_spec.md`` Stage C); a repair study and a legacy
+#: record predate or sit outside that loop and keep the older, weaker rules.
+ORIGIN_GENERATED = "generated"
+ORIGIN_REPAIR_STUDY = "repair_study"
+ORIGIN_LEGACY = "legacy"
+ORIGINS = (ORIGIN_GENERATED, ORIGIN_REPAIR_STUDY, ORIGIN_LEGACY)
+
+#: Lineage completeness, distinguished in every summary (``debug_spec.md`` 6).
+LINEAGE_COMPLETE = "complete"
+LINEAGE_PARTIAL_RECOVERY = "partial_recovery"
+LINEAGE_LEGACY_MISSING = "legacy_missing"
+LINEAGE_FAILED_VALIDATION = "failed_validation"
+LINEAGE_STATUSES = (
+    LINEAGE_COMPLETE,
+    LINEAGE_PARTIAL_RECOVERY,
+    LINEAGE_LEGACY_MISSING,
+    LINEAGE_FAILED_VALIDATION,
+)
+
+#: Failure stages reached before an idea exists, so an empty idea id is expected.
+PRE_IDEA_STAGES = ("ideation", "proposal", "budget_exhausted")
+
+#: Statuses that mean the candidate was fitted and rolled out.
+EVALUATED_STATUSES = (STATUS_EVALUATED, STATUS_PROMOTED, STATUS_REJECTED)
+
+RECONSTRUCTION_VERIFIED = "verified"
+RECONSTRUCTION_FAILED = "failed"
+
+
+def _ref_ok(ref) -> bool:
+    return isinstance(ref, dict) and bool(ref.get("path")) and bool(ref.get("sha256"))
+
+
 @dataclass
 class ExperimentRecord:
     """Everything needed to reconstruct and re-evaluate one attempted candidate.
 
     Written for invalid and rejected candidates too. A record that only exists
     for winners cannot explain a search that is not improving.
+
+    A generated record is one *attempt*: a slot that failed validation and was
+    corrected leaves two records, linked through ``lineage.previous_attempt_id``.
     """
 
     experiment_id: str
@@ -422,6 +465,15 @@ class ExperimentRecord:
     intervention: bool = False
     intervention_detail: str = ""
     final_disposition: str = ""
+    origin: str = ORIGIN_GENERATED
+    #: Slot, attempt, feedback, context and semantic parents, idea and proposal.
+    lineage: dict = field(default_factory=dict)
+    #: Ids into the run-level LLM-call ledger, shared calls included.
+    llm_call_ids: list = field(default_factory=list)
+    #: Paths and hashes that rebuild the policy and the check that they did.
+    reconstruction: dict = field(default_factory=dict)
+    #: Incremented each time material evidence changes; old versions are kept.
+    record_version: int = 1
 
     def validate(self):
         _require(self.experiment_id, "record needs an experiment id")
@@ -431,6 +483,7 @@ class ExperimentRecord:
             f"status must be one of {STATUSES}, got {self.status!r}",
         )
         _require(isinstance(self.generation, int), "generation must be an integer")
+        _require(self.origin in ORIGINS, f"origin must be one of {ORIGINS}, got {self.origin!r}")
         if self.status != STATUS_GENERATED:
             _require(
                 self.code.get("source_hash"),
@@ -451,7 +504,139 @@ class ExperimentRecord:
                 self.intervention_detail,
                 "an intervention record must say what was substituted",
             )
+        if self.origin == ORIGIN_GENERATED:
+            self._validate_generated()
         return True
+
+    # -- the generated-candidate contract -----------------------------------
+
+    def _validate_generated(self):
+        from lares.search.resources import FORBIDDEN_KEYS, resource_problems
+
+        who = self.experiment_id
+        lineage = self.lineage or {}
+        _require(lineage, f"{who}: a generated record must carry lineage, even when it failed")
+        for key in ("slot", "attempt"):
+            value = lineage.get(key)
+            _require(
+                isinstance(value, int) and value >= 0,
+                f"{who}: lineage.{key} must be a non-negative integer allocated before generation",
+            )
+        _require(lineage.get("attempt_id"), f"{who}: lineage needs an attempt id")
+        _require(lineage.get("generation") == self.generation, f"{who}: lineage generation disagrees")
+        _require(
+            lineage.get("status") in LINEAGE_STATUSES,
+            f"{who}: lineage.status must be one of {LINEAGE_STATUSES}",
+        )
+        _require(
+            isinstance(self.validation.get("passed"), bool),
+            f"{who}: a generated record must carry a validation result",
+        )
+        _require(self.code.get("source_hash"), f"{who}: a generated record needs a code hash")
+        _require(
+            self.llm_call_ids,
+            f"{who}: a generated record must reference the LLM calls that produced it",
+        )
+        calls = self.llm.get("calls")
+        _require(isinstance(calls, list) and calls, f"{who}: llm.calls must embed the call references")
+        _require(
+            {c.get("call_id") for c in calls} == set(self.llm_call_ids),
+            f"{who}: llm.calls and llm_call_ids disagree",
+        )
+        for call in calls:
+            _require(
+                call.get("prompt_sha256") and call.get("response_sha256"),
+                f"{who}: call {call.get('call_id')} is missing its prompt or response hash",
+            )
+        for key in FORBIDDEN_KEYS:
+            _require(key not in self.resources, f"{who}: resources.{key} is forbidden; name the stream")
+
+        stage = self.validation.get("stage", "")
+        if stage not in PRE_IDEA_STAGES:
+            _require(
+                self.idea_id and lineage.get("idea"),
+                f"{who}: a record past ideation must name the idea it implemented",
+            )
+        if self.generation == 0:
+            _require(
+                not self.parent_ids and not self.proposal_id,
+                f"{who}: generation 0 has no semantic parent and no proposal",
+            )
+        elif stage not in PRE_IDEA_STAGES:
+            self._validate_proposal_lineage(lineage)
+
+        if self.status == STATUS_INVALID:
+            _require(not self.validation["passed"], f"{who}: an invalid record cannot have passed validation")
+            _require(
+                lineage["status"] == LINEAGE_FAILED_VALIDATION,
+                f"{who}: an invalid record's lineage status is {LINEAGE_FAILED_VALIDATION}",
+            )
+        if self.status in EVALUATED_STATUSES:
+            self._validate_evaluated(resource_problems)
+
+    def _validate_proposal_lineage(self, lineage):
+        who = self.experiment_id
+        proposal = lineage.get("proposal") or {}
+        _require(self.proposal_id and proposal, f"{who}: generation {self.generation} needs a proposal")
+        _require(lineage.get("feedback_id"), f"{who}: generation {self.generation} needs a feedback id")
+        context = lineage.get("context_parent_ids")
+        _require(isinstance(context, list), f"{who}: lineage.context_parent_ids must be a list")
+        parents = list(self.parent_ids)
+        _require(
+            parents == list(proposal.get("parent_ids", [])),
+            f"{who}: record parent_ids disagree with the proposal's",
+        )
+        outside = [p for p in parents if p not in context]
+        _require(not outside, f"{who}: parents {outside} were not in the feedback context")
+        mode = proposal.get("mode")
+        if mode in (MODE_REPAIR, MODE_SIMPLIFICATION):
+            _require(len(parents) == 1, f"{who}: a {mode} has exactly one parent")
+        if mode == MODE_CROSSOVER:
+            _require(len(parents) >= 2, f"{who}: a crossover has at least two parents")
+        if mode == MODE_EXPLORATION and not parents:
+            _require(
+                str(proposal.get("no_parent_rationale", "")).strip(),
+                f"{who}: a parentless exploration must say why",
+            )
+
+    def _validate_evaluated(self, resource_problems):
+        who = self.experiment_id
+        _require(self.validation.get("passed") is True, f"{who}: only a validated candidate is evaluated")
+        _require(
+            self.lineage.get("status") == LINEAGE_COMPLETE,
+            f"{who}: an evaluated generated candidate must have complete lineage",
+        )
+        _require(self.evaluation.get("manifest_ids"), f"{who}: evaluated record must name its manifests")
+        _require(self.evaluation.get("action_mode"), f"{who}: evaluated record must name its action mode")
+        environment = self.evaluation.get("environment") or {}
+        _require(
+            environment.get("canonical_env_id") and environment.get("resolved_registry_env_id"),
+            f"{who}: evaluated record must store canonical and resolved environment ids",
+        )
+        reports = self.evaluation.get("reports")
+        _require(
+            isinstance(reports, dict) and reports and all(_ref_ok(r) for r in reports.values()),
+            f"{who}: evaluated record must reference its hashed evaluation reports",
+        )
+        for key in ("objective", "action_mode"):
+            _require(self.fitting.get(key), f"{who}: fitting.{key} is required")
+        _require(isinstance(self.fitting.get("objective_config"), dict), f"{who}: fitting.objective_config is required")
+        _require(self.fitting.get("fixed_action_scale") is not None, f"{who}: fitting.fixed_action_scale is required")
+        _require(isinstance(self.fitting.get("selected_step"), int), f"{who}: fitting.selected_step is required")
+        for key in ("initial_state", "final_state", "selected_state"):
+            _require(_ref_ok(self.fitting.get(key)), f"{who}: fitting.{key} must be a hashed reference")
+        _require(isinstance(self.fitting.get("checkpoint_history"), list), f"{who}: fitting.checkpoint_history is required")
+        for key in ("final_diagnostics", "selected_diagnostics"):
+            _require(isinstance(self.fitting.get(key), dict), f"{who}: fitting.{key} is required")
+        problems = resource_problems(self.resources)
+        _require(not problems, f"{who}: {'; '.join(problems)}")
+        recon = self.reconstruction or {}
+        for key in ("source", "selected_state", "probe_batch", "expected_actions"):
+            _require(_ref_ok(recon.get(key)), f"{who}: reconstruction.{key} must be a hashed reference")
+        _require(
+            recon.get("status") in (RECONSTRUCTION_VERIFIED, RECONSTRUCTION_FAILED),
+            f"{who}: reconstruction.status must say whether the rebuild matched",
+        )
 
     @property
     def eligible_for_ranking(self) -> bool:
@@ -464,11 +649,39 @@ class ExperimentRecord:
     @classmethod
     def from_dict(cls, d: dict) -> "ExperimentRecord":
         known = {f for f in cls.__dataclass_fields__}
-        return cls(**{k: v for k, v in d.items() if k in known})
+        data = {k: v for k, v in d.items() if k in known}
+        # Records written before ``origin`` existed are legacy, not generated:
+        # defaulting them to the generated contract would misdescribe them.
+        data.setdefault("origin", ORIGIN_LEGACY)
+        return cls(**data)
 
     def save(self, directory: str) -> str:
+        """Write the record, keeping any materially different earlier version.
+
+        Rewriting identical content is a no-op. Different content moves the
+        previous file to ``history/<id>.v<N>.json`` before the new version is
+        written, so evidence is superseded visibly rather than overwritten.
+        """
         os.makedirs(directory, exist_ok=True)
         path = os.path.join(directory, f"{self.experiment_id}.json")
+        if os.path.isfile(path):
+            with open(path, "r", encoding="utf-8") as f:
+                previous = json.load(f)
+            prev_version = int(previous.get("record_version", 1) or 1)
+            current = json.loads(json.dumps({**self.to_dict(), "record_version": prev_version}, default=str))
+            if json.dumps(previous, sort_keys=True) == json.dumps(current, sort_keys=True):
+                self.record_version = prev_version
+                return path
+            history = os.path.join(directory, "history")
+            os.makedirs(history, exist_ok=True)
+            hist_path = os.path.join(history, f"{self.experiment_id}.v{prev_version}.json")
+            if os.path.exists(hist_path):
+                raise FileExistsError(
+                    f"{hist_path} already exists; refusing to overwrite a superseded record version"
+                )
+            with open(hist_path, "w", encoding="utf-8") as f:
+                json.dump(previous, f, indent=2)
+            self.record_version = prev_version + 1
         with open(path, "w", encoding="utf-8") as f:
             json.dump(self.to_dict(), f, indent=2, default=str)
         return path

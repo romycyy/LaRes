@@ -2,7 +2,7 @@ Task: {task}
 
 Environment:
 - Observation dimension: {obs_dim} (continuous)
-- Action dimension: {action_dim} (continuous; policy outputs Gaussian mean/std before environment-specific squashing)
+- Action dimension: {action_dim} (continuous; the executed action is tanh(mean), and the action scale is fixed, not learned)
 
 Observation layout (the implementation reads these by name, never by index):
 {obs_description}
@@ -13,7 +13,32 @@ Semantic keys (for reasoning about task structure):
 You will propose exactly {n} distinct design hypotheses for a future symbolic policy class (subclassing SymbolicPolicy). Each policy will use only torch math on observations and nn.Parameter scalars/vectors — no nn.Linear, no convolutions, no recurrent nets.
 
 Output format (required):
-Return a single JSON object and nothing else before or after it (no markdown fences around the JSON). Schema:
-{{"ideas": ["<hypothesis 1 text>", "<hypothesis 2 text>", ...]}}
+Return a single JSON object and nothing else (no markdown fences, no commentary before or after). "ideas" must contain exactly {n} objects, and every object must carry every key shown:
 
-There must be exactly {n} non-empty strings in "ideas". Each string should be 3–8 sentences: concrete enough that an engineer could implement it as GeneratedPolicy without guessing the high-level structure. Name the observation fields the hypothesis uses, say what the policy should do at its initial parameter values before any training, and name the failure mode you expect.
+{{
+  "ideas": [
+    {{
+      "name": "a short name distinct from the other ideas",
+      "summary": "3-6 sentences: the control law and why it should complete the task",
+      "named_observations": ["tcp", "obj", "goal"],
+      "phases": [
+        {{"name": "approach", "activation": "when this phase is active, in terms of named fields", "action_intent": "what the action does in this phase"}}
+      ],
+      "parameters": [
+        {{"name": "w_approach", "role": "what it controls", "type": "gain", "units": "action per metre", "initial_value": 3.0, "range": [0.1, 10.0]}}
+      ],
+      "zero_shot_behavior": "what the policy does at its initial values, before any fitting",
+      "expected_failure": "the failure mode you expect",
+      "protected_behaviors": ["a behaviour a later edit must not lose"],
+      "complexity_justification": ""
+    }}
+  ]
+}}
+
+Rules (an idea that breaks one is rejected, and nothing is filled in for you):
+- "type" is "gain" or "structural". "range" is [lo, hi] with lo < hi and lo <= initial_value <= hi.
+- "named_observations" may only use field names from the observation layout above.
+- Parameter names are valid Python identifiers; they become nn.Parameter attribute names.
+- Aim for {param_min}-{param_max} tunable parameters. More than {param_max} parameters, or more than 4 phases, needs a non-empty "complexity_justification".
+- Never declare log_std, std, or any other action-scale parameter.
+- Say what the untrained policy should do: it is evaluated before fitting.

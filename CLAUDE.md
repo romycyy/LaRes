@@ -34,8 +34,18 @@ python scripts/build_structure_bank.py               # regenerate lares/fitting/
 python scripts/benchmark_fitting.py                  # full bank, 2000-evaluation budget
 python scripts/benchmark_fitting.py --family simple --budget 500 --no-rollouts
 
-# Regenerate the search summary from saved experiment records alone.
+# Regenerate the search summary from saved experiment records alone. Traceability is "complete"
+# only if every record's lineage, feedback, prompts, usage, states, manifests, resources and an
+# exact reconstruction verify; --no-reconstruct skips the rebuild (and reports it incomplete).
 python scripts/summarise_experiments.py --log-dir ./logs/evolution
+# Versioned provenance sidecar for a run recorded before lineage existed (raw records untouched).
+python scripts/recover_provenance.py --log-dir logs/evolution_review_20260913
+# Pair runs' best candidates on shared expanded development cases (selection-biased; see docstring).
+python scripts/compare_evolution_runs.py --baseline logs/evolution_review_20260913 --run logs/evolution_debug_full
+# Score saved policies, paired, on a fresh MT1 pool seed disjoint from every committed manifest.
+# A seed used here has been looked at; record it and pick a new one next time (2100 is spent).
+python scripts/evaluate_on_fresh_manifest.py --pool-seed <unused seed> --out-dir <dir> \
+  --policy label=<policy_source.py>:<state.pt> --expert --reference label
 
 # Phase 5: expert semantics, objectives, sampling and learner-state imitation.
 python scripts/audit_expert_actions.py                              # clipping semantics, phases
@@ -53,6 +63,13 @@ python scripts/final_report.py                       # aggregate report, from sa
 
 # FR-11: capture the selected frames for a candidate's worst failures, and merge with the numbers.
 python scripts/analyse_failures.py --structures simple_standoff      # no model: media + numbers only
+
+# Stage E (debug_spec.md): four fitting conditions on a frozen confirmation manifest.
+# Selection and manifest are frozen and committed before the run; `run` needs a clean worktree.
+python scripts/stage_e.py select            # choose and freeze the evolved structures
+python scripts/stage_e.py build-manifest    # check the seed ledger, reserve seeds, build the manifest
+python scripts/stage_e.py run               # records the Git SHA in every result
+python scripts/stage_e.py report --run <logs/stage_e/run_dir>
 
 # Symbolic-policy evolution (primary entry point; config-driven, no CLI flags besides --config)
 python scripts/run_full_evolution.py
@@ -81,7 +98,8 @@ python -m unittest tests.test_record_episode_gif tests.test_two_phase_policy_gen
 python -m unittest tests.test_evaluation_manifest tests.test_manifest_runner \
   tests.test_policy_interface tests.test_evaluation_report tests.test_fitting \
   tests.test_search tests.test_objectives tests.test_repair tests.test_freeze \
-  tests.test_final_report tests.test_vision
+  tests.test_final_report tests.test_vision tests.test_fitting_provenance tests.test_provenance \
+  tests.test_two_generation_mock
 python -m unittest tests.test_record_episode_gif.TestRecordEpisodeGif.test_saves_gif_and_returns_metadata
 ```
 
@@ -107,9 +125,9 @@ in the codespace cleanup. Only symbolic-policy search remains. Look for it in gi
 | Stage | Function | What it does |
 |---|---|---|
 | 1 | `generate_dataset()` | MetaWorld expert policy (`EXPERT_POLICY_MAP`) over the *train* manifest → `DemoBuffer` |
-| 2 | `behavioral_cloning()` | `MSE(tanh(mean), expert action) + 0.01 * std.mean()`; `clip_params()` after each step. Splits validation off **by episode** (`split_buffer_by_episode`), reports per-axis train and validation loss, gradient norms, bound activity and loss by phase. Takes a `rollout_probe` and keeps the best-scoring parameters, because success is not monotonic in gradient steps |
-| 3 | `rl_finetune()` | GRPO: advantages relative to the *group* mean return, + entropy bonus, + L2 KL toward the BC init |
-| 4 | `EvolutionOrchestrator.run()` / `llm_evolution()` | LLM proposes structures; each runs BC→RL→eval; the next generation gets a structured evidence block, not two scalars |
+| 2 | `fit_policy_with_objective()` (`lares/fitting/optimizers.py`) | The orchestrator's fitter: the named objective (`deterministic_mse` by default), scale-only parameters frozen, `clip_params()` after each step, validation split **by episode**. Probes step 0 and each scheduled checkpoint, selects by the tie rule in `lares/fitting/checkpoints.py`, keeps `initial_state`/`final_state`/`selected_state` distinct and recomputes diagnostics after loading the selected one. `behavioral_cloning()` is the legacy `MSE + 0.01 * std.mean()` path, kept for the Isaac stack and old tests |
+| 3 | `rl_finetune()` | GRPO: advantages relative to the *group* mean return, + entropy bonus, + L2 KL toward the BC init. **Refused by `EvolutionOrchestrator`** (`rl_iterations` must be 0): RL after selection would break the record's selected-state link |
+| 4 | `EvolutionOrchestrator.run()` / `llm_evolution()` | Two-phase generation returns `GeneratedCandidate`s with lineage; each valid one is fitted, probed, screened and recorded; the next generation gets a hashed `FeedbackBundle` and proposes bounded edits of named parents |
 
 **The evaluation contract (`lares/eval/`).** Nothing scores a policy without a manifest.
 `EvaluationManifest` is an ordered, immutable list of `EpisodeCase`s, each naming a task
@@ -130,16 +148,22 @@ validator, `fitting` from BC, `rollout` aggregates and the full per-episode tabl
 measured is listed in `unavailable_fields` and left `None`; nothing is zero-filled. Reports land in
 `<log_dir>/gen_<N>/reports/`.
 
-**Staged development budget (`lares/eval/promotion.py`).** Every candidate is screened on
-`screen_episodes` (10), and only those clearing a rule declared before the generation ran get the
-`expanded_episodes` (30) evaluation. The screen is a *prefix* of the expanded set, so the two stay
-paired. The rule promotes on any success, and when no candidate succeeds it promotes the top
-`fallback_top_k` by mean signed goal progress, so a generation of all-zero candidates still teaches
-the search something. `compare_to_incumbent()` decides promotion on the *paired* success difference,
-never on two separately computed intervals. Decisions are written to `gen_<N>/screening.json`.
+**Screening and promotion (`lares/eval/promotion.py`; rule decided 2026-09-14).** Every candidate is
+screened on the first `screen_episodes` (10) development cases; the screening rule (any success, else
+the top `fallback_top_k` by signed goal progress) only decides which candidates *may* challenge. The
+best screened challenger alone is scored on the **promotion set**, the next `expanded_episodes` (30)
+cases, a `manifest.slice` disjoint from both the screen and the probe tail
+(`check_manifest_isolation` refuses overlap). It replaces the incumbent only if the paired success
+difference is strictly positive **and** the lower bound of its paired t interval is above zero
+(`compare_to_incumbent`, refusing evidence from a screening or probe manifest). Tied success never
+promotes; return and progress may rank or admit to the archive but never replace the incumbent. With
+`promotion_challengers > 1`, `holm_promotion` applies Holm's step-down correction and promotes at most
+one. Before any promotion the incumbent is the 0.00-success baseline (`NULL_INCUMBENT_ID`).
+Decisions are written to `gen_<N>/screening.json`. Resource keys and report names still say
+`expanded`; they mean the promotion set.
 
-**Checkpoints.** The orchestrator evaluates `zero_shot` (before BC), `intermediate` (BC halfway, via
-`behavioral_cloning(checkpoint_callback=...)`) and `fitted`. They are separate reports and are never
+**Checkpoints.** The orchestrator evaluates `zero_shot` (before fitting), `intermediate` (halfway, via
+`fit_policy_with_objective(checkpoint_callback=...)`) and `fitted` (the *selected* checkpoint). They are separate reports and are never
 merged: a structure that is decent untrained and worse after fitting is a fitting failure, which an
 aggregate hides.
 
@@ -177,10 +201,13 @@ and a tanh-Gaussian likelihood is wrong twice over.
 steps and collapses to zero by 3000, while validation loss falls the whole way. Measured on two
 structures over three seeds; at the loss minimum both score zero. `behavioral_cloning` therefore
 takes a `rollout_probe` and keeps the best-scoring parameters, and `EvolutionOrchestrator` supplies
-one that scores the screening cases `rollout_checkpoint_probes` times (default 4) during fitting.
-Selecting on loss cannot work here. The probe ranks on success then mean signed goal progress, and
-prefers the later checkpoint on an exact tie. Set `rollout_checkpoint_probes=0` to fit to the end as
-the pipeline used to.
+one to `fit_policy_with_objective` that scores the probe cases at every step in `checkpoint_steps`
+(default step 0 plus `rollout_checkpoint_probes`=4 evenly spaced steps).
+Selecting on loss cannot work here. The probe returns a `RolloutScore(success, progress)` and the
+declared tie rule is higher success, then higher progress, then the **earlier** checkpoint; step 0 is
+probed and can win. The probe runs on its own env (`PipelineEnvs(probe=...)`) and on
+`probe_manifest`, the development tail, disjoint from screening. Set `rollout_checkpoint_probes=0` (or
+`checkpoint_steps=()`) to fit to the end.
 
 **Ground-truth phases (`lares/fitting/phases.py`).** The expert's `_desired_pos` has three explicit
 branches, so `expert_phase_labels` is ground truth rather than inferred from a learned gate;
@@ -292,8 +319,24 @@ writes one `ExperimentRecord` per substitution, each marked `intervention=True`,
 visible to `summarise_experiments.py` and can never be ranked as fitness; the repair itself is
 recorded as an ordinary rankable candidate, because no expert helped it.
 
-Prompts in `lares/utils/policy_prompts/` (six templates). Generation lives in
-`lares/core/policy_generation.py`.
+Prompts in `lares/utils/policy_prompts/` (seven templates; `ideas_user.txt` and `proposals_user.txt`
+demand strict JSON). Generation lives in `lares/core/policy_generation.py`.
+
+**Generation provenance (`lares/search/generation.py`, `resources.py`, `provenance.py`;
+`debug_spec.md`, progress in `DEBUG_PROGRESS.md`).** `generate_candidates` returns one
+`GeneratedCandidate` per *attempt*; slot and attempt ids (`gen<g>_cand<s>_a<k>`) are allocated before
+any call. Generation 0 parses `PolicyIdea`s strictly (no padding: a wrong count raises, a bad entry fails
+its slot); generation 1+ parses `MutationProposal` + idea, with repair/simplification = one parent,
+crossover ≥ 2, exploration may have none only with `no_parent_rationale`, and every parent drawn from
+the `FeedbackBundle`'s `context_parent_ids`. One linked correction per slot, never an outer retry. Every
+LLM call is one `LLMCallLedger` entry in `<log_dir>/llm_calls.jsonl` with hashed prompt and response
+files; shared calls list several `attempt_ids` and are counted once. Code must declare exactly the
+idea's parameters, return `self.fixed_std(mean)` (scale parameters are rejected), and use the gate
+`record_gate` returns (`GATE_NOT_A_LEVER` otherwise). Records (`origin="generated"`) must carry lineage,
+call references, and for evaluated candidates the objective config, hashed state and report artifacts,
+a `ResourceLedger` (`environment_steps` is forbidden) and a verified reconstruction; a changed record
+keeps its old version under `experiments/history/`. The archive keeps `screen_metrics` and
+`confirmed_metrics` and ranks on confirmed ones.
 
 **Isaac Lab ShadowHandSpin.** A second, parallel stack merged in from the Isaac branch:
 `scripts/run_shadowhand_spin_stages.py` → `lares/envs/isaac_lab_adapter.py`
@@ -318,8 +361,11 @@ Everything depends on `lares/core/symbolic_policy.py`. A generated policy must:
   inside their own ranges; training calls `clip_params()` after every gradient step
 - keep row `i` of the output dependent only on row `i` of the input, and actually respond to every
   field the schema marks `required` (for MetaWorld: `tcp`, `obj`, `goal`)
-- optionally call `self.record_gate("name", tensor)` to expose a phase gate. The value is detached,
-  so recording cannot change the action or the gradient.
+- return `std = self.fixed_std(mean)`; the action scale is fixed (`fixed_action_scale`, default 0.1)
+  and a parameter that only moves the scale is rejected in generation
+- optionally expose a phase gate as `g = self.record_gate("name", g)` and *use* `g`. The recorded
+  value is detached; the returned value is what an override forces, and a gate whose forced value
+  never changes the action fails validation (`gate_not_a_lever`).
 
 **Observation schema (`lares/core/obs_schema.py`).** `get_obs_schema(env_id)` returns the layout and
 raises for an unknown task rather than handing back a blank one. `ObsSchema.check_against_env`
@@ -392,6 +438,9 @@ batched | per_idea`).
 - **`best_policy_code.py`, `best_policy.pt`, `data.pkl`** are *runtime outputs* written into
   `log_dir`, not repo files. `logs/` and `*.pkl` are gitignored. `config/manifests/*.yaml` is the
   exception: manifests are committed because they define the evaluation contract.
+- **Phase 7 is blocked until Stages A–F of `debug_spec.md` are complete**, not merely the Stage D smoke
+  test. Stage F tests the main repair hypothesis, so a final evaluation before it would freeze an
+  incomplete method. Do not open the final-test split or run Qwen/E10 before then.
 - **The saved incumbent scores 0.00, not 0.30.** `logs/evolution/best_policy_code.py` is generation
   2 candidate 0, which its run reported at 402.76 reward and 0.30 success on 10 unmatched episodes.
   Re-scored on the development manifest it gets ~105 reward and 0.000 success. Treat 0.00 as the

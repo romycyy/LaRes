@@ -36,6 +36,8 @@ from lares.eval.promotion import (
     PromotionDecision,
     PromotionPolicy,
     compare_to_incumbent,
+    holm_promotion,
+    paired_success_test,
     summarise_decisions,
 )
 from lares.eval.report import (
@@ -95,6 +97,8 @@ __all__ = [
     "build_report",
     "build_task_pool",
     "compare_to_incumbent",
+    "holm_promotion",
+    "paired_success_test",
     "environment_spec_for",
     "episode_table",
     "evaluate_manifest",

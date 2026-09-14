@@ -309,6 +309,9 @@ class TestExperimentRecord(unittest.TestCase):
             status=STATUS_EVALUATED,
             code={"source_hash": source_hash("class GeneratedPolicy: pass")},
             evaluation={"manifest_ids": ["m"], "action_mode": "deterministic"},
+            # The weaker legacy contract these tests describe. The generated
+            # contract has its own tests in test_provenance.py.
+            origin="legacy",
         )
         base.update(overrides)
         return ExperimentRecord(**base)

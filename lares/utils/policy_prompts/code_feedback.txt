@@ -23,8 +23,8 @@ How to use it:
     compares is not what you think it is.
 
 (5) Parameters listed as not affecting the executed action are wasted capacity. Remove
-    them, or connect them to the action. Note that the scale (`std`) parameters are always
-    in this list: deterministic evaluation executes `tanh(mean)` and ignores `std`.
+    them, or connect them to the action. The action scale is fixed by the framework and is
+    not learned, so no policy should declare a `log_std` or other scale parameter.
 
 (6) Action saturation near zero on every axis means the controller is not limited by its
     output range, so increasing gains is unlikely to be the fix. Saturation near one means
@@ -39,4 +39,7 @@ How to use it:
     the expert no better. Extra sigmoid sharpness parameters in particular add plateaus to
     the loss surface without adding capability.
 
-Rewrite the complete GeneratedPolicy class incorporating your improvements.
+(9) Prefer a bounded edit of one parent. Name the one component you believe is at fault,
+    change only that, and predict which measured quantity will move and in which direction.
+
+Return mutation proposals in the JSON format described below, not code.

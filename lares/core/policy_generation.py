@@ -334,30 +334,54 @@ def _extract_code_string(response_text):
     return code_string
 
 
-def _record_failure(failure_log, candidate_id, stage, code_string, error_output, attempts):
-    """Preserve a candidate that never reached evaluation.
+# ---------------------------------------------------------------------------
+#  Candidate generation with lineage (``debug_spec.md`` Stage A)
+# ---------------------------------------------------------------------------
+#
+# The generator used to return three parallel lists: policies, code strings and
+# responses. Everything else a later reader needs, which idea a policy
+# implemented, which parents it edited, what feedback it saw, which calls made
+# it and whether it was corrected, was discarded on the way out. It now returns
+# ``GeneratedCandidate`` objects, one per *attempt*, with the slot and attempt ids
+# allocated before any LLM or validation call so a failure keeps its identity.
 
-    A dropped failure is a slot the population lost for a reason nobody can see
-    later. The next generation is told about these, so the same mistake is not
-    repeated (``spec.md`` FR-5, FR-10).
-    """
-    if failure_log is None:
-        return
-    lines = [ln for ln in (error_output or "").strip().splitlines() if ln.strip()]
-    failure_log.append(
-        {
-            "candidate_id": candidate_id,
-            "stage": stage,
-            "repair_attempts": attempts,
-            "error": "\n".join(lines[-6:]),
-            "code": code_string,
-        }
-    )
+POLICY_IMPL_BATCHED = "batched"
+POLICY_IMPL_PER_IDEA = "per_idea"
+
+#: Imports every generated policy is executed with. Reconstruction uses the same
+#: prefix, so a rebuilt policy is the same program that was validated.
+GENERATED_IMPORTS = (
+    "import torch\n"
+    "import torch.nn as nn\n"
+    "import numpy as np\n"
+    "from lares.core.symbolic_policy import SymbolicPolicy\n"
+)
+
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_PROMPT_DIR = os.path.join(_PROJECT_ROOT, "lares", "utils", "policy_prompts")
+
+STAGE_PASSED = "passed"
+STAGE_EXTRACTION = "extraction"
+STAGE_HARNESS = "harness"
+STAGE_INSTANTIATION = "instantiation"
+STAGE_IDEA_MISMATCH = "idea_mismatch"
+STAGE_IDEATION = "ideation"
+STAGE_PROPOSAL = "proposal"
+STAGE_BUDGET = "budget_exhausted"
+
+#: How a single-phase sample was mapped to its slot. Such candidates have no
+#: idea, so their lineage is ``legacy_missing`` by construction.
+MAPPING_SINGLE_PHASE = "single_phase_sample"
+
+
+def _read_template(name):
+    with open(os.path.join(_PROMPT_DIR, name), "r", encoding="utf-8") as f:
+        return f.read()
 
 
 def _build_error_feedback(code_string, error_output):
     """Build a concise error message to feed back to the LLM for self-repair."""
-    error_lines = error_output.strip().split("\n")
+    error_lines = (error_output or "").strip().split("\n")
     short_error = "\n".join(error_lines[:20])
     return (
         f"Your previous GeneratedPolicy failed validation with this error:\n"
@@ -366,10 +390,6 @@ def _build_error_feedback(code_string, error_output):
         f"```python\n{code_string}\n```\n\n"
         f"Please fix the code and return the corrected GeneratedPolicy class."
     )
-
-
-POLICY_IMPL_BATCHED = "batched"
-POLICY_IMPL_PER_IDEA = "per_idea"
 
 
 def _run_policy_validation_subprocess(
@@ -425,21 +445,23 @@ def _run_policy_validation_subprocess(
     return "Success!" in stdout_str, stdout_str, full_code
 
 
-def _try_instantiate_policy(imports, code_str, obs_dim, action_dim, env_name=""):
-    """exec generated code in-process and instantiate ``GeneratedPolicy``.
+def instantiate_generated_policy(
+    code_str, obs_dim, action_dim, env_name="", forbid_scale_parameters=True, imports=GENERATED_IMPORTS
+):
+    """exec generated code, construct ``GeneratedPolicy`` and validate it in-process.
 
-    Only reached after the subprocess harness passed, so the source has already
-    survived a full validation pass in an isolated process. The in-process run
-    re-validates because the object that goes into training is this one, not the
-    subprocess copy.
+    Returns ``(policy, ValidationReport)``. Raises only if the source cannot be
+    executed or constructed; a policy that constructs but fails a check comes back
+    with the report saying why.
     """
     from lares.core.obs_schema import active_schema, get_obs_schema
     from lares.core.policy_validator import validate_policy
 
     schema = get_obs_schema(env_name) if env_name else None
     namespace = {}
-    exec_code = imports + code_str
-    exec(exec_code, namespace)
+    exec(imports + code_str, namespace)
+    if "GeneratedPolicy" not in namespace:
+        raise ValueError("source defines no class named GeneratedPolicy")
     with active_schema(schema):
         policy = namespace["GeneratedPolicy"](obs_dim, action_dim)
     report = validate_policy(
@@ -449,44 +471,19 @@ def _try_instantiate_policy(imports, code_str, obs_dim, action_dim, env_name="")
         source=code_str,
         schema=schema,
         require_schema=bool(env_name),
+        forbid_scale_parameters=forbid_scale_parameters,
+    )
+    return policy, report
+
+
+def _try_instantiate_policy(imports, code_str, obs_dim, action_dim, env_name=""):
+    """exec generated code in-process, instantiate and validate; raise on any failure."""
+    policy, report = instantiate_generated_policy(
+        code_str, obs_dim, action_dim, env_name=env_name, imports=imports
     )
     if not report.ok:
         raise ValueError(f"policy failed in-process validation:\n{report.summary()}")
     return policy
-
-
-def _parse_ideas_response(text, expected_n):
-    """Parse LLM output into ``expected_n`` idea strings (JSON preferred)."""
-    t = text.strip()
-    if t.startswith("```"):
-        t = re.sub(r"^```(?:json)?\s*", "", t, flags=re.IGNORECASE)
-        t = re.sub(r"\s*```\s*$", "", t)
-    ideas = None
-    try:
-        data = json.loads(t)
-        if isinstance(data, dict) and isinstance(data.get("ideas"), list):
-            ideas = [str(x).strip() for x in data["ideas"] if str(x).strip()]
-    except (json.JSONDecodeError, TypeError, ValueError):
-        pass
-    if ideas is None or len(ideas) < expected_n:
-        alt = []
-        for m in re.finditer(r"(?m)^\s*\d+[\.)]\s+(.+)$", text):
-            line = m.group(1).strip()
-            if line:
-                alt.append(line)
-        if len(alt) >= expected_n:
-            ideas = alt[:expected_n]
-    if ideas is None:
-        ideas = []
-    if len(ideas) >= expected_n:
-        return ideas[:expected_n]
-    pad = (
-        "Use smooth phase gating toward the task-relevant geometry in the observation, "
-        "normalize direction vectors before scaling, and learn magnitudes with nn.Parameter."
-    )
-    while len(ideas) < expected_n:
-        ideas.append(pad)
-    return ideas[:expected_n]
 
 
 def _extract_n_policy_codes(response_text, n):
@@ -509,466 +506,602 @@ def _extract_n_policy_codes(response_text, n):
     return out[:n]
 
 
-def _format_batched_implementation_request(ideas):
-    """User-facing instructions: one response, ``n`` fenced Python policies in hypothesis order."""
-    lines = [
-        "## Design hypotheses to implement (in order; one policy each)",
-        "",
-    ]
-    for i, idea in enumerate(ideas):
-        lines.append(f"### Hypothesis {i + 1}")
-        lines.append(idea)
+_DESIGN_LABEL = re.compile(r"^\s*#\s*idea:\s*(\S+)", re.MULTILINE)
+
+
+def _extract_labelled_policy_codes(response_text, idea_ids):
+    """Map fenced policies onto ideas by the ``# idea: <id>`` label each must carry.
+
+    Positional extraction silently shifts every later policy onto the wrong idea
+    when one fence is malformed. A label cannot shift. Only when no fence is
+    labelled *and* the fence count is exactly right is position trusted, and the
+    mapping says so.
+
+    Returns ``({idea_id: code}, mapping_mode, fences_found)``.
+    """
+    blocks = re.findall(r"```(?:python)?[ \t]*\n?(.*?)```", response_text, re.DOTALL | re.IGNORECASE)
+    wanted = set(idea_ids)
+    by_id, unlabelled = {}, []
+    for raw in blocks:
+        label = _DESIGN_LABEL.search(raw)
+        code = _extract_code_string(raw.strip())
+        if not code or "GeneratedPolicy" not in code:
+            continue
+        if label is not None:
+            if label.group(1) in wanted and label.group(1) not in by_id:
+                by_id[label.group(1)] = code
+        else:
+            unlabelled.append(code)
+    mode = "labelled"
+    if not by_id and len(unlabelled) == len(idea_ids):
+        by_id = dict(zip(idea_ids, unlabelled))
+        mode = "positional_exact"
+    return by_id, mode, len(blocks)
+
+
+def _format_batched_implementation_request(items):
+    """One request for several designs. ``items`` is ``[(idea_id, brief), ...]``."""
+    lines = ["## Designs to implement (one policy each)", ""]
+    for idea_id, brief in items:
+        lines.append(f"### Design {idea_id}")
+        lines.append(brief)
         lines.append("")
     lines.extend(
         [
             "## Required output",
-            f"Output exactly {len(ideas)} separate Markdown code fences of the form ```python ... ```.",
+            f"Output exactly {len(items)} separate Markdown code fences of the form ```python ... ```.",
+            "The first line inside each fence must be the comment `# idea: <design id>`, naming the "
+            "design that fence implements, for example `# idea: " + (items[0][0] if items else "gen0_idea0") + "`.",
             "Each fence must contain exactly one complete class named `GeneratedPolicy` subclassing `SymbolicPolicy`.",
-            "The k-th code fence (k starting at 1) must implement hypothesis k only — do not merge designs.",
-            "Do not add extra text inside a fence except valid Python for that class.",
+            "Implement each design separately; do not merge designs.",
         ]
     )
     return "\n".join(lines)
 
 
-def get_policy_ideas(
-    client,
-    args,
-    n,
-    ideas_system,
-    ideas_user_template,
-    task_description,
-    obs_dim,
-    action_dim,
-    obs_description,
-    input_dict_string,
-    code_feedback=None,
-    llm_transcript_path=None,
-    transcript_counter=None,
-):
-    """One LLM call returning ``n`` parsed design hypotheses (no policy code).
+def implementation_brief(idea, proposal=None, parent_sources=None):
+    """What the implementer is shown for one slot: the proposal, its parents, the idea."""
+    from lares.search.schemas import MODE_CROSSOVER, MODE_EXPLORATION
 
-    Returns
-    -------
-    ideas : list[str]
-        Length ``n``.
-    raw_response : str
-        Assistant message content.
-    llm_calls : int
-        Number of chat completion calls (1 or 2 if a parse retry was needed).
-    """
-    ideas_user = ideas_user_template.format(
-        task=task_description,
-        obs_dim=obs_dim,
-        action_dim=action_dim,
-        obs_description=obs_description,
-        input_dict_string=input_dict_string,
-        n=n,
-    )
-    user_parts = [ideas_user]
-    if code_feedback:
-        user_parts.append(
-            "\n\nPerformance context from the previous generation "
-            "(for brainstorming only; do not write code):\n"
-            + code_feedback
+    lines = []
+    if proposal is not None:
+        lines += [
+            f"## Mutation proposal {proposal.proposal_id} ({proposal.mode})",
+            f"Observation: {proposal.observation}",
+            f"Hypothesis: {proposal.hypothesis}",
+            f"Suspected component: {proposal.suspected_component}",
+            f"Intervention: {proposal.intervention}",
+            f"Prediction: {proposal.predicted_metric} will {proposal.predicted_direction}",
+            f"Protected behaviours: {'; '.join(proposal.protected_behaviors)}",
+            "",
+        ]
+        for pid in proposal.parent_ids:
+            source = (parent_sources or {}).get(pid)
+            lines += [
+                f"### Parent {pid} source",
+                "```python",
+                source.strip() if source else "# source unavailable",
+                "```",
+                "",
+            ]
+        if proposal.mode == MODE_CROSSOVER:
+            lines.append("Combine the named components of the parents above into one policy.")
+        elif proposal.mode == MODE_EXPLORATION:
+            lines.append("This is a new design, not an edit of a parent.")
+            if proposal.no_parent_rationale:
+                lines.append(f"Why no parent: {proposal.no_parent_rationale}")
+        else:
+            lines.append(
+                "Start from the parent source above. Change only the suspected component; keep "
+                "every other expression, and every parameter's name, initial value and range, as "
+                "in the parent unless the idea below changes it."
+            )
+        lines.append("")
+    lines.append("## Idea to implement")
+    lines.append(idea.implementation_brief())
+    return "\n".join(lines)
+
+
+class _LLMSession:
+    """Makes calls against a budget, writing each one to the ledger and transcript."""
+
+    def __init__(self, client, model, ledger, transcript_path, generation, max_calls, temperature=1.0,
+                 max_tokens=None):
+        self.client = client
+        self.model = model
+        self.ledger = ledger
+        self.transcript_path = transcript_path
+        self.generation = generation
+        self.max_calls = int(max_calls)
+        self.temperature = float(temperature)
+        self.calls_made = 0
+        #: Total-token budget. Checked before each call, so the last call can
+        #: overshoot it by at most one call's usage.
+        self.max_tokens = int(max_tokens) if max_tokens else None
+        self.tokens_used = 0
+        self.transcript_counter = [0]
+
+    @property
+    def exhausted(self):
+        if self.max_tokens is not None and self.tokens_used >= self.max_tokens:
+            return True
+        return self.calls_made >= self.max_calls
+
+    def call(self, label, messages, purpose, attempt_ids, transcript_label, n=1):
+        started = time.time()
+        responses, prompt_tokens, completion_tokens, total_tokens = _call_llm(
+            self.client,
+            n,
+            self.model,
+            messages,
+            self.temperature,
+            transcript_path=self.transcript_path,
+            transcript_counter=self.transcript_counter,
+            transcript_label=transcript_label,
         )
-    messages = [
-        {"role": "system", "content": ideas_system},
-        {"role": "user", "content": "\n".join(user_parts)},
-    ]
-    responses, _, _, _ = _call_llm(
-        client,
-        1,
-        args.model,
-        messages,
-        1.0,
-        transcript_path=llm_transcript_path,
-        transcript_counter=transcript_counter,
-        transcript_label="policy_ideas",
+        self.calls_made += 1
+        self.tokens_used += int(total_tokens or 0)
+        texts = []
+        for choice in responses:
+            message = getattr(choice, "message", None)
+            texts.append(getattr(message, "content", None) or "")
+        record = self.ledger.record(
+            label=label,
+            model=self.model,
+            temperature=self.temperature,
+            messages=messages,
+            responses=texts,
+            usage={
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "total_tokens": total_tokens,
+            },
+            wall_time_seconds=time.time() - started,
+            decoding={"n": int(n), "temperature": self.temperature},
+            purpose=purpose,
+            generation=self.generation,
+            attempt_ids=attempt_ids,
+        )
+        return texts, record
+
+
+class _SlotValidator:
+    """Subprocess harness, in-process validation and the idea contract, in that order."""
+
+    def __init__(self, dir_path, data_pkl_path, obs_dim, action_dim, env_name, forbid_scale_parameters):
+        self.dir_path = dir_path
+        self.data_pkl_path = data_pkl_path
+        self.obs_dim = obs_dim
+        self.action_dim = action_dim
+        self.env_name = env_name
+        self.forbid_scale_parameters = forbid_scale_parameters
+        self.head = "import os\nimport sys\n" f"sys.path.insert(0, {repr(_PROJECT_ROOT)})\n"
+        with open(os.path.join(_PROJECT_ROOT, "tests", "test_generate_policy.py"), "r") as f:
+            self.test_code = f.read()
+
+    def __call__(self, code, idea, attempt_id):
+        if not code or "GeneratedPolicy" not in code:
+            return None, {"passed": False, "stage": STAGE_EXTRACTION,
+                          "errors": ["the response contains no class GeneratedPolicy"]}
+        ok, stdout_str, _ = _run_policy_validation_subprocess(
+            code, self.dir_path, attempt_id, self.head, GENERATED_IMPORTS, self.test_code,
+            self.data_pkl_path, self.obs_dim, self.action_dim, env_name=self.env_name,
+        )
+        if not ok:
+            tail = [ln for ln in (stdout_str or "").strip().splitlines() if ln.strip()][-12:]
+            return None, {"passed": False, "stage": STAGE_HARNESS, "errors": ["\n".join(tail)]}
+        try:
+            policy, report = instantiate_generated_policy(
+                code, self.obs_dim, self.action_dim, env_name=self.env_name,
+                forbid_scale_parameters=self.forbid_scale_parameters,
+            )
+        except Exception as exc:
+            return None, {"passed": False, "stage": STAGE_INSTANTIATION,
+                          "errors": [f"{type(exc).__name__}: {exc}"]}
+        if not report.ok:
+            return None, {"passed": False, "stage": STAGE_INSTANTIATION,
+                          "errors": [str(e) for e in report.errors], "validator": report.to_dict()}
+        if idea is not None:
+            problems = idea.check_against_policy(policy)
+            if problems:
+                return None, {"passed": False, "stage": STAGE_IDEA_MISMATCH, "errors": problems,
+                              "validator": report.to_dict()}
+        return policy, {"passed": True, "stage": STAGE_PASSED, "errors": [], "validator": report.to_dict()}
+
+
+def _save_attempt(dir_path, candidate):
+    attempts_dir = os.path.join(dir_path, "attempts")
+    os.makedirs(attempts_dir, exist_ok=True)
+    if candidate.code is not None:
+        with open(os.path.join(attempts_dir, f"{candidate.attempt_id}.py"), "w", encoding="utf-8") as f:
+            f.write(candidate.code)
+    if candidate.response is not None:
+        with open(os.path.join(attempts_dir, f"{candidate.attempt_id}.response.txt"), "w", encoding="utf-8") as f:
+            f.write(candidate.response)
+
+
+def _design_messages(generation, n, prompts, fmt, feedback_text, context, param_budget):
+    from lares.search.schemas import measurable_metrics
+
+    if generation == 0:
+        user = prompts["ideas_user"].format(n=n, param_min=param_budget[0], param_max=param_budget[1], **fmt)
+    else:
+        feedback = (feedback_text or "").rstrip() + "\n\n" + prompts["code_feedback_tmpl"]
+        user = prompts["proposals_user"].format(
+            n=n,
+            param_min=param_budget[0],
+            param_max=param_budget[1],
+            feedback=feedback,
+            eligible_parents=json.dumps(list(context)),
+            metrics=", ".join(sorted(measurable_metrics())),
+            **fmt,
+        )
+    return [{"role": "system", "content": prompts["ideas_system"]}, {"role": "user", "content": user}]
+
+
+def _request_designs(session, generation, n, prompts, fmt, schema, feedback_text, context,
+                     attempt_ids, param_budget):
+    """Ideas (generation 0) or proposals (later), with at most one retry on bad output.
+
+    Returns ``(slot_parses | None, call_ids, payload_problems, raw_texts)``. A
+    payload that cannot be mapped onto slots after the retry fails every slot;
+    one malformed entry fails only its own slot.
+    """
+    from lares.search.generation import (
+        LABEL_IDEATION,
+        StructuredOutputError,
+        parse_ideas_payload,
+        parse_proposals_payload,
     )
-    raw = responses[0].message.content
-    ideas = _parse_ideas_response(raw, n)
-    llm_calls = 1
-    non_trivial = sum(1 for s in ideas if len(s) > 30)
-    if non_trivial < max(1, n // 2):
-        responses2, _, _, _ = _call_llm(
-            client,
-            1,
-            args.model,
-            messages
-            + [
-                {"role": "assistant", "content": raw},
+
+    kind = "ideas" if generation == 0 else "proposals"
+    messages = _design_messages(generation, n, prompts, fmt, feedback_text, context, param_budget)
+    call_ids, texts = [], []
+    parses, problems = None, [f"call budget exhausted before any {kind} request"]
+    for round_index in range(2):
+        if session.exhausted:
+            break
+        request = messages
+        if round_index == 1:
+            request = messages + [
+                {"role": "assistant", "content": texts[-1]},
                 {
                     "role": "user",
                     "content": (
-                        f"Your previous reply did not yield {n} clear distinct hypotheses. "
-                        "Reply again with ONLY valid JSON: "
-                        '{"ideas": ["...", ...]} with exactly '
-                        f"{n} non-empty strings."
+                        f"Your previous reply was rejected for these reasons:\n- "
+                        + "\n- ".join(problems)
+                        + f"\n\nReply again with ONLY the JSON object, with exactly {n} complete "
+                        f"entries that satisfy every rule. Nothing will be filled in for you."
                     ),
                 },
-            ],
-            1.0,
-            transcript_path=llm_transcript_path,
-            transcript_counter=transcript_counter,
-            transcript_label="policy_ideas_retry",
+            ]
+        replies, record = session.call(
+            LABEL_IDEATION, request, purpose=kind if round_index == 0 else f"{kind}_retry",
+            attempt_ids=attempt_ids, transcript_label=f"policy_{kind}" + ("_retry" if round_index else ""),
         )
-        raw = responses2[0].message.content
-        ideas = _parse_ideas_response(raw, n)
-        llm_calls = 2
-    return ideas, raw, llm_calls
+        call_ids.append(record.call_id)
+        texts.append(replies[0] if replies else "")
+        try:
+            if generation == 0:
+                parses = parse_ideas_payload(texts[-1], n, generation, schema=schema, budget=param_budget)
+            else:
+                parses = parse_proposals_payload(
+                    texts[-1], n, generation, context, schema=schema, budget=param_budget
+                )
+            problems = [p for sp in parses for p in sp.problems]
+        except StructuredOutputError as exc:
+            parses, problems = None, list(exc.problems)
+        if parses is not None and not problems:
+            break
+    if parses is not None:
+        return parses, call_ids, [], texts
+    return None, call_ids, problems, texts
 
 
-def _build_impl_messages(
-    initial_system,
-    user_content,
-    code_output_tip,
-    provided_response,
-    code_feedback,
-    extra_user_suffix="",
-):
-    """Same conversation shape as single-shot policy generation (optional elite chain)."""
-    tip_block = (extra_user_suffix + "\n\n" if extra_user_suffix else "") + code_output_tip
-    if provided_response is not None and code_feedback is not None:
-        return [
-            {"role": "system", "content": initial_system},
-            {"role": "user", "content": user_content + "\n" + code_output_tip},
-            {"role": "assistant", "content": provided_response},
-            {"role": "user", "content": code_feedback + "\n" + tip_block},
-        ]
-    if code_feedback is not None:
-        return [
-            {"role": "system", "content": initial_system},
-            {
-                "role": "user",
-                "content": user_content + "\n" + code_feedback + "\n" + tip_block,
-            },
-        ]
-    return [
-        {"role": "system", "content": initial_system},
-        {"role": "user", "content": user_content + "\n" + tip_block},
-    ]
-
-
-def _get_symbolic_policies_two_phase(
+def generate_candidates(
     client,
-    dir_path,
-    llm_iter,
     args,
+    dir_path,
+    generation,
     obs_dim,
     action_dim,
     env_name,
-    initial_system,
-    initial_user,
-    task_description,
-    obs_description,
-    input_dict_string,
-    code_output_tip,
+    prompts,
+    n,
     data_pkl_path,
-    ideas_system,
-    ideas_user,
-    policy_impl_mode,
-    provided_response=None,
-    code_feedback=None,
-    real_num=5,
-    max_total_attempts=50,
-    max_repair_per_candidate=1,
+    ledger,
+    feedback_bundle=None,
+    feedback_text=None,
+    parent_sources=None,
     llm_transcript_path=None,
-    failure_log=None,
+    impl_mode=POLICY_IMPL_PER_IDEA,
+    max_total_calls=50,
+    max_repair_per_candidate=1,
+    param_budget=None,
+    forbid_scale_parameters=True,
+    max_total_tokens=None,
 ):
-    """Ideation LLM call then batched or per-idea implementation calls."""
-    policy_pop = []
-    code_string_pop = []
-    response_list = []
-    get_res_try_num = 0
-    success_num = 0
-    try_num = 1
-    total_llm_calls = 0
-    transcript_counter = [0]
+    """Structured two-phase generation: designs, then one implementation per slot.
 
-    user_content = initial_user.format(
-        task=task_description,
+    Generation 0 asks for ``PolicyIdea`` objects. Generation 1 and later asks for
+    a ``MutationProposal`` plus the resulting idea per slot, with semantic parents
+    drawn from the feedback bundle's context. Each slot gets one implementation
+    attempt and at most ``max_repair_per_candidate`` linked correction attempts;
+    there is no unbounded outer retry.
+
+    Returns every attempt as a :class:`~lares.search.generation.GeneratedCandidate`,
+    failures included, in slot order then attempt order.
+    """
+    from lares.core.obs_schema import get_obs_schema
+    from lares.search.generation import (
+        LABEL_CORRECTION,
+        LABEL_GENERATION,
+        PARAMETER_BUDGET,
+        CandidateAllocator,
+        GeneratedCandidate,
+        attempt_id_for,
+        sha256_text,
+    )
+
+    if not env_name:
+        raise ValueError("generate_candidates requires env_name to bind the observation schema")
+    if impl_mode not in (POLICY_IMPL_BATCHED, POLICY_IMPL_PER_IDEA):
+        raise ValueError(
+            f"Unknown policy_impl_mode {impl_mode!r}; use {POLICY_IMPL_BATCHED!r} or {POLICY_IMPL_PER_IDEA!r}"
+        )
+    param_budget = tuple(param_budget or PARAMETER_BUDGET)
+    if generation > 0:
+        if feedback_bundle is None:
+            raise ValueError(
+                f"generation {generation} needs a feedback bundle: its proposals must name parents "
+                f"from evidence that was actually shown"
+            )
+        if feedback_text is None or sha256_text(feedback_text) != feedback_bundle.text_sha256:
+            raise ValueError(
+                "feedback_text does not match the bundle's hashed text; the generator must be shown "
+                "exactly the evidence the record says it was shown"
+            )
+    context = list(feedback_bundle.context_parent_ids) if feedback_bundle is not None else []
+    feedback_id = feedback_bundle.feedback_id if feedback_bundle is not None else None
+    schema = get_obs_schema(env_name)
+    os.makedirs(dir_path, exist_ok=True)
+
+    allocator = CandidateAllocator(generation)
+    slots = allocator.allocate_slots(n)
+    for cid, _ in slots:
+        allocator.next_attempt(cid)
+    first_attempts = [attempt_id_for(cid, 0) for cid, _ in slots]
+
+    session = _LLMSession(client, args.model, ledger, llm_transcript_path, generation, max_total_calls,
+                          max_tokens=max_total_tokens)
+    validate = _SlotValidator(dir_path, data_pkl_path, obs_dim, action_dim, env_name, forbid_scale_parameters)
+    fmt = dict(
+        task=prompts["task_description"],
         obs_dim=obs_dim,
         action_dim=action_dim,
-        obs_description=obs_description,
-        input_dict_string=input_dict_string,
+        obs_description=prompts["obs_description"],
+        input_dict_string=prompts["input_dict_string"],
     )
+    user_content = prompts["initial_user"].format(**fmt)
 
-    _project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    imports = (
-        "import torch\n"
-        "import torch.nn as nn\n"
-        "import numpy as np\n"
-        "from lares.core.symbolic_policy import SymbolicPolicy\n"
+    def make(cid, slot, attempt, **kw):
+        return GeneratedCandidate(
+            candidate_id=cid, generation=generation, slot=slot, attempt=attempt,
+            feedback_id=feedback_id, context_parent_ids=list(context), **kw,
+        )
+
+    # -- designs --------------------------------------------------------------
+    design_stage = STAGE_IDEATION if generation == 0 else STAGE_PROPOSAL
+    parses, design_calls, payload_problems, design_texts = _request_designs(
+        session, generation, n, prompts, fmt, schema, feedback_text, context, first_attempts, param_budget
     )
-    head = "import os\nimport sys\n" f"sys.path.insert(0, {repr(_project_root)})\n"
-    test_code_path = os.path.join(_project_root, "tests", "test_generate_policy.py")
-    with open(test_code_path, "r") as f:
-        test_code = f.read()
-
-    ideas, ideas_raw, idea_calls = get_policy_ideas(
-        client=client,
-        args=args,
-        n=real_num,
-        ideas_system=ideas_system,
-        ideas_user_template=ideas_user,
-        task_description=task_description,
-        obs_dim=obs_dim,
-        action_dim=action_dim,
-        obs_description=obs_description,
-        input_dict_string=input_dict_string,
-        code_feedback=code_feedback,
-        llm_transcript_path=llm_transcript_path,
-        transcript_counter=transcript_counter,
-    )
-    total_llm_calls += idea_calls
-
-    ideas_path = os.path.join(dir_path, f"Iter_{llm_iter}_ideas.json")
-    with open(ideas_path, "w", encoding="utf-8") as f:
+    with open(os.path.join(dir_path, f"Iter_{generation}_designs.json"), "w", encoding="utf-8") as f:
         json.dump(
-            {"ideas": ideas, "raw_response": ideas_raw},
+            {
+                "generation": generation,
+                "kind": "ideas" if generation == 0 else "proposals",
+                "call_ids": design_calls,
+                "payload_problems": payload_problems,
+                "slots": [
+                    {
+                        "slot": sp.slot,
+                        "idea": sp.idea.to_dict() if sp.idea else None,
+                        "proposal": sp.proposal.to_dict() if sp.proposal else None,
+                        "problems": sp.problems,
+                    }
+                    for sp in (parses or [])
+                ],
+                "raw_responses": design_texts,
+            },
             f,
             ensure_ascii=False,
             indent=2,
         )
-    ideas_txt_path = os.path.join(dir_path, f"Iter_{llm_iter}_ideas_response.txt")
-    with open(ideas_txt_path, "w", encoding="utf-8") as f:
-        f.write(ideas_raw)
+    if parses is None:
+        failed = [
+            make(cid, slot, 0, llm_call_ids=list(design_calls),
+                 validation={"passed": False, "stage": design_stage, "errors": list(payload_problems)})
+            for cid, slot in slots
+        ]
+        for c in failed:
+            _save_attempt(dir_path, c)
+        return failed
 
-    def _validate(code_str):
-        return _run_policy_validation_subprocess(
-            code_str,
-            dir_path,
-            get_res_try_num,
-            head,
-            imports,
-            test_code,
-            data_pkl_path,
-            obs_dim,
-            action_dim,
-            env_name=env_name,
-        )
-
-    # --- process one slot: validate + repair; returns (policy, code, response) or None ---
-    def _finalize_slot(code_string, response_cur, stdout_str, full_code):
-        nonlocal get_res_try_num, success_num
-        print(stdout_str)
-        response_txt_path = os.path.join(
-            dir_path,
-            f"Iter_{llm_iter}_Policy_Response_{success_num}.txt",
-        )
-        with open(response_txt_path, "w", encoding="utf-8") as f:
-            f.write(response_cur)
-        saved_code_path = os.path.join(
-            dir_path,
-            f"Iter_{llm_iter}_Policy_Code_{get_res_try_num}.py",
-        )
-        with open(saved_code_path, "w", encoding="utf-8") as f:
-            f.write(full_code)
-        try:
-            policy = _try_instantiate_policy(
-                imports, code_string, obs_dim, action_dim, env_name=env_name
+    candidates, ready = [], []
+    for (cid, slot), sp in zip(slots, parses):
+        if sp.ok:
+            ready.append((cid, slot, sp))
+        else:
+            candidates.append(
+                make(cid, slot, 0, idea=sp.idea, proposal=sp.proposal, llm_call_ids=list(design_calls),
+                     validation={"passed": False, "stage": design_stage, "errors": list(sp.problems)})
             )
-        except Exception as e:
-            print(f"Error instantiating policy after validation: {e}")
-            return None
-        get_res_try_num += 1
-        success_num += 1
-        return policy
 
-    def _slot_validate_and_repair(idea_text, initial_response, initial_code):
-        nonlocal total_llm_calls, try_num
-        response_cur = initial_response
-        code_string = initial_code
-        ok, stdout_str, full_code = _validate(code_string)
-        repair_attempt = 0
-        while not ok and repair_attempt < max_repair_per_candidate:
-            if total_llm_calls >= max_total_attempts:
-                break
-            repair_attempt += 1
-            print(
-                f"Policy validation failed (two_phase repair {repair_attempt}/"
-                f"{max_repair_per_candidate}): {stdout_str[:200]}"
-            )
-            fb = _build_error_feedback(code_string, stdout_str)
-            repair_messages = [
-                {"role": "system", "content": initial_system},
+    # -- implementation -------------------------------------------------------
+    def implement(cid, slot, sp, response, code, call_ids, mapping):
+        brief = implementation_brief(sp.idea, sp.proposal, parent_sources)
+        current = make(cid, slot, 0, code=code, response=response, idea=sp.idea, proposal=sp.proposal,
+                       llm_call_ids=list(design_calls) + list(call_ids), mapping=mapping)
+        current.policy, current.validation = validate(code, sp.idea, current.attempt_id)
+        attempts = [current]
+        corrections = 0
+        while not current.valid and corrections < max_repair_per_candidate and not session.exhausted:
+            corrections += 1
+            attempt = allocator.next_attempt(cid)
+            aid = attempt_id_for(cid, attempt)
+            messages = [
+                {"role": "system", "content": prompts["initial_system"]},
+                {"role": "user", "content": user_content + "\n\n" + brief + "\n\n" + prompts["code_output_tip"]},
+                {"role": "assistant", "content": f"```python\n{current.code or ''}\n```"},
                 {
                     "role": "user",
-                    "content": user_content
-                    + "\n\nImplement this design hypothesis only as `GeneratedPolicy`:\n"
-                    + idea_text
-                    + "\n\n"
-                    + code_output_tip,
+                    "content": _build_error_feedback(current.code or "", "\n".join(current.validation.get("errors", [])))
+                    + "\n" + prompts["code_output_tip"],
                 },
-                {"role": "assistant", "content": response_cur},
-                {"role": "user", "content": fb + "\n" + code_output_tip},
             ]
-            repair_responses, _, _, _ = _call_llm(
-                client,
-                1,
-                args.model,
-                repair_messages,
-                1.0,
-                transcript_path=llm_transcript_path,
-                transcript_counter=transcript_counter,
-                transcript_label="policy_repair_two_phase",
+            replies, record = session.call(
+                LABEL_CORRECTION, messages, purpose="validation_repair", attempt_ids=[aid],
+                transcript_label=f"policy_correction_{slot}",
             )
-            total_llm_calls += 1
-            response_cur = repair_responses[0].message.content
-            code_string = _extract_code_string(response_cur)
-            print(f"Policy gen try {try_num} (two_phase repair)")
-            try_num += 1
-            ok, stdout_str, full_code = _validate(code_string)
-        if not ok:
-            print(f"Policy validation failed after repairs: {stdout_str[:200]}")
-            _record_failure(
-                failure_log, f"iter{llm_iter}_slot{get_res_try_num}", "validation",
-                code_string, stdout_str, repair_attempt,
+            text = replies[0] if replies else ""
+            corrected = make(
+                cid, slot, attempt, code=_extract_code_string(text), response=text, idea=sp.idea,
+                proposal=sp.proposal, llm_call_ids=list(design_calls) + [record.call_id],
+                previous_attempt_id=current.attempt_id,
+                mapping={"mode": "correction", "call_id": record.call_id, "corrects": current.attempt_id},
             )
-            return None
-        policy = _finalize_slot(code_string, response_cur, stdout_str, full_code)
-        if policy is None:
-            _record_failure(
-                failure_log, f"iter{llm_iter}_slot{get_res_try_num}", "instantiation",
-                code_string, "in-process instantiation or validation failed", repair_attempt,
-            )
-        return policy
+            corrected.policy, corrected.validation = validate(corrected.code, sp.idea, aid)
+            attempts.append(corrected)
+            current = corrected
+        return attempts
 
-    # --- Batched implementation: one LLM response, n fences ---
-    if policy_impl_mode == POLICY_IMPL_BATCHED:
-        batch_extra = _format_batched_implementation_request(ideas)
-        impl_messages = _build_impl_messages(
-            initial_system,
-            user_content,
-            code_output_tip,
-            provided_response,
-            code_feedback,
-            extra_user_suffix=batch_extra,
+    def fill(cid, slot, sp, reason):
+        if session.exhausted:
+            return [make(cid, slot, 0, idea=sp.idea, proposal=sp.proposal, llm_call_ids=list(design_calls),
+                         validation={"passed": False, "stage": STAGE_BUDGET,
+                                     "errors": [f"LLM budget exhausted: {session.calls_made}/{max_total_calls} calls, "
+                                                f"{session.tokens_used}/{max_total_tokens or 'unlimited'} tokens ({reason})"]})]
+        brief = implementation_brief(sp.idea, sp.proposal, parent_sources)
+        messages = [
+            {"role": "system", "content": prompts["initial_system"]},
+            {"role": "user", "content": user_content + "\n\n" + brief + "\n\n" + prompts["code_output_tip"]},
+        ]
+        purpose = "per_idea" if reason == "per_idea" else "fill"
+        replies, record = session.call(
+            LABEL_GENERATION, messages, purpose=purpose, attempt_ids=[attempt_id_for(cid, 0)],
+            transcript_label=f"policy_implement_{slot}",
         )
-        batch_response_text = ""
-        codes = []
-        max_batch_retries = 3
-        for batch_try in range(max_batch_retries):
-            if total_llm_calls >= max_total_attempts:
-                break
-            responses, pt, tc, tt = _call_llm(
-                client,
-                1,
-                args.model,
-                impl_messages,
-                1.0,
-                transcript_path=llm_transcript_path,
-                transcript_counter=transcript_counter,
+        text = replies[0] if replies else ""
+        mapping = {"mode": purpose, "call_id": record.call_id, "idea_id": sp.idea.idea_id}
+        if reason != "per_idea":
+            mapping["reason"] = reason
+        return implement(cid, slot, sp, text, _extract_code_string(text), [record.call_id], mapping)
+
+    if impl_mode == POLICY_IMPL_BATCHED and ready:
+        items = [(sp.idea.idea_id, implementation_brief(sp.idea, sp.proposal, parent_sources)) for _, _, sp in ready]
+        codes, batch_mode, fences, batch_text, batch_call = {}, "none", 0, "", None
+        if not session.exhausted:
+            messages = [
+                {"role": "system", "content": prompts["initial_system"]},
+                {"role": "user", "content": user_content + "\n\n" + _format_batched_implementation_request(items)
+                 + "\n\n" + prompts["code_output_tip"]},
+            ]
+            replies, batch_call = session.call(
+                LABEL_GENERATION, messages, purpose="batched",
+                attempt_ids=[attempt_id_for(cid, 0) for cid, _, _ in ready],
                 transcript_label="policy_implement_batched",
             )
-            total_llm_calls += 1
-            batch_response_text = responses[0].message.content
-            print(f"Policy batched impl try {try_num} (round {batch_try + 1})", pt, tc, tt)
-            try_num += 1
-            codes = _extract_n_policy_codes(batch_response_text, real_num)
-            if len(codes) > 0:
-                break
-            print("Batched response contained no parseable policies; retrying.")
-
-        if len(codes) < real_num:
-            print(
-                f"Warning: batched parse got {len(codes)}/{real_num} code blocks; "
-                "missing slots will use per-idea fill calls if budget allows."
-            )
-
-        for slot in range(real_num):
-            if success_num >= real_num or total_llm_calls >= max_total_attempts:
-                break
-            response_for_slot = batch_response_text
-            if slot < len(codes):
-                code_string = codes[slot]
+            batch_text = replies[0] if replies else ""
+            codes, batch_mode, fences = _extract_labelled_policy_codes(batch_text, [i for i, _ in items])
+        for cid, slot, sp in ready:
+            code = codes.get(sp.idea.idea_id)
+            if code is not None:
+                mapping = {"mode": "batched", "call_id": batch_call.call_id, "idea_id": sp.idea.idea_id,
+                           "match": batch_mode, "fences_found": fences}
+                candidates.extend(implement(cid, slot, sp, batch_text, code, [batch_call.call_id], mapping))
             else:
-                if total_llm_calls >= max_total_attempts:
-                    break
-                idea_one = ideas[slot]
-                fill_messages = [
-                    {"role": "system", "content": initial_system},
-                    {
-                        "role": "user",
-                        "content": user_content
-                        + "\n\nImplement this design hypothesis only as `GeneratedPolicy`:\n"
-                        + idea_one
-                        + "\n\n"
-                        + code_output_tip,
-                    },
-                ]
-                fill_r, _, _, _ = _call_llm(
-                    client,
-                    1,
-                    args.model,
-                    fill_messages,
-                    1.0,
-                    transcript_path=llm_transcript_path,
-                    transcript_counter=transcript_counter,
-                    transcript_label=f"policy_implement_fill_{slot}",
-                )
-                total_llm_calls += 1
-                response_for_slot = fill_r[0].message.content
-                code_string = _extract_code_string(response_for_slot)
-            pol = _slot_validate_and_repair(ideas[slot], response_for_slot, code_string)
-            if pol is not None:
-                policy_pop.append(pol)
-                code_string_pop.append(code_string)
-                response_list.append(response_for_slot)
-
-    # --- Per-idea implementation ---
-    elif policy_impl_mode == POLICY_IMPL_PER_IDEA:
-        for slot in range(real_num):
-            if success_num >= real_num or total_llm_calls >= max_total_attempts:
-                break
-            idea_one = ideas[slot]
-            slot_messages = _build_impl_messages(
-                initial_system,
-                user_content,
-                code_output_tip,
-                provided_response,
-                code_feedback,
-                extra_user_suffix=(
-                    "\n\nImplement this design hypothesis only as `GeneratedPolicy`:\n" + idea_one
-                ),
-            )
-            slot_done = False
-            while not slot_done and total_llm_calls < max_total_attempts:
-                responses, pt, tc, tt = _call_llm(
-                    client,
-                    1,
-                    args.model,
-                    slot_messages,
-                    1.0,
-                    transcript_path=llm_transcript_path,
-                    transcript_counter=transcript_counter,
-                    transcript_label=f"policy_implement_{slot}",
-                )
-                total_llm_calls += 1
-                response_cur = responses[0].message.content
-                print(f"Policy per_idea gen try {try_num}", pt, tc, tt)
-                try_num += 1
-                code_string = _extract_code_string(response_cur)
-                pol = _slot_validate_and_repair(idea_one, response_cur, code_string)
-                if pol is not None:
-                    policy_pop.append(pol)
-                    code_string_pop.append(code_string)
-                    response_list.append(response_cur)
-                    slot_done = True
+                candidates.extend(fill(cid, slot, sp, reason="no fence labelled for this idea in the batched reply"))
     else:
-        raise ValueError(
-            f"Unknown policy_impl_mode {policy_impl_mode!r}; "
-            f"use {POLICY_IMPL_BATCHED!r} or {POLICY_IMPL_PER_IDEA!r}"
-        )
+        for cid, slot, sp in ready:
+            candidates.extend(fill(cid, slot, sp, reason="per_idea"))
 
-    if success_num < real_num:
-        print(
-            f"Warning: only generated {success_num}/{real_num} valid policies "
-            f"after {total_llm_calls} LLM calls (limit: {max_total_attempts})"
-        )
+    candidates.sort(key=lambda c: (c.slot, c.attempt))
+    for c in candidates:
+        _save_attempt(dir_path, c)
+    return candidates
 
-    return policy_pop, code_string_pop, response_list
+
+def _generate_single_phase(client, args, dir_path, generation, obs_dim, action_dim, env_name, prompts, n,
+                           data_pkl_path, ledger, code_feedback, llm_transcript_path, max_total_calls,
+                           max_repair_per_candidate):
+    """Legacy one-shot generation: ``n`` samples of one request, sample ``k`` to slot ``k``.
+
+    No idea and no proposal exist, so these candidates can never carry complete
+    lineage. The orchestrator refuses this path; it remains for scripts and tests.
+    """
+    from lares.search.generation import (
+        LABEL_CORRECTION,
+        LABEL_GENERATION,
+        CandidateAllocator,
+        GeneratedCandidate,
+        attempt_id_for,
+    )
+
+    allocator = CandidateAllocator(generation)
+    slots = allocator.allocate_slots(n)
+    for cid, _ in slots:
+        allocator.next_attempt(cid)
+    session = _LLMSession(client, args.model, ledger, llm_transcript_path, generation, max_total_calls)
+    validate = _SlotValidator(dir_path, data_pkl_path, obs_dim, action_dim, env_name, forbid_scale_parameters=False)
+    fmt = dict(
+        task=prompts["task_description"], obs_dim=obs_dim, action_dim=action_dim,
+        obs_description=prompts["obs_description"], input_dict_string=prompts["input_dict_string"],
+    )
+    user_content = prompts["initial_user"].format(**fmt)
+    base_user = user_content + ("\n" + code_feedback if code_feedback else "") + "\n" + prompts["code_output_tip"]
+    messages = [{"role": "system", "content": prompts["initial_system"]}, {"role": "user", "content": base_user}]
+    replies, record = session.call(
+        LABEL_GENERATION, messages, purpose="single_phase", attempt_ids=[attempt_id_for(c, 0) for c, _ in slots],
+        transcript_label="policy_generation", n=n,
+    )
+    candidates = []
+    for cid, slot in slots:
+        text = replies[slot] if slot < len(replies) else None
+        current = GeneratedCandidate(
+            candidate_id=cid, generation=generation, slot=slot, attempt=0,
+            code=_extract_code_string(text) if text is not None else None, response=text,
+            llm_call_ids=[record.call_id],
+            mapping={"mode": MAPPING_SINGLE_PHASE, "call_id": record.call_id, "choice_index": slot},
+        )
+        current.policy, current.validation = validate(current.code, None, current.attempt_id)
+        candidates.append(current)
+        corrections = 0
+        while not current.valid and current.code and corrections < max_repair_per_candidate and not session.exhausted:
+            corrections += 1
+            attempt = allocator.next_attempt(cid)
+            aid = attempt_id_for(cid, attempt)
+            repair_messages = messages + [
+                {"role": "assistant", "content": f"```python\n{current.code}\n```"},
+                {"role": "user", "content": _build_error_feedback(current.code, "\n".join(current.validation.get("errors", [])))
+                 + "\n" + prompts["code_output_tip"]},
+            ]
+            fixes, fix_record = session.call(
+                LABEL_CORRECTION, repair_messages, purpose="validation_repair", attempt_ids=[aid],
+                transcript_label="policy_repair",
+            )
+            text = fixes[0] if fixes else ""
+            corrected = GeneratedCandidate(
+                candidate_id=cid, generation=generation, slot=slot, attempt=attempt,
+                code=_extract_code_string(text), response=text, llm_call_ids=[fix_record.call_id],
+                previous_attempt_id=current.attempt_id,
+                mapping={"mode": MAPPING_SINGLE_PHASE, "call_id": fix_record.call_id, "corrects": current.attempt_id},
+            )
+            corrected.policy, corrected.validation = validate(corrected.code, None, aid)
+            candidates.append(corrected)
+            current = corrected
+    for c in candidates:
+        _save_attempt(dir_path, c)
+    return candidates
 
 
 def get_symbolic_policies(
@@ -994,269 +1127,87 @@ def get_symbolic_policies(
     llm_transcript_path=None,
     ideas_system=None,
     ideas_user=None,
-    failure_log=None,
+    proposals_user=None,
+    code_feedback_tmpl=None,
+    ledger=None,
+    feedback_bundle=None,
+    parent_sources=None,
 ):
     """Generate and validate symbolic policies via the LLM.
 
-    When a candidate fails validation, the error message and failed code are
-    fed back to the LLM so it can self-repair (up to ``max_repair_per_candidate``
-    times per candidate).  Falls back to fresh generation if repair fails.
+    Returns a list of :class:`~lares.search.generation.GeneratedCandidate`, one
+    per attempt and failures included. Use :func:`valid_policies` for the policies
+    that passed.
 
-    If ``args.policy_gen_two_phase`` is true, runs ideation (``ideas_system`` /
-    ``ideas_user`` prompts) then implementation.  Implementation style is
-    ``args.policy_impl_mode`` (default ``"batched"``): one LLM response with
-    ``n`` fenced policies, or ``"per_idea"`` for ``n`` separate calls.
+    If ``args.policy_gen_two_phase`` is true, runs structured design generation
+    then implementation (``args.policy_impl_mode``: ``"per_idea"`` or
+    ``"batched"``). ``llm_iter`` is the generation index; generation 1 and later
+    need ``feedback_bundle`` and take ``code_feedback`` as its exact text.
 
-    Parameters
-    ----------
-    max_total_attempts : int
-        Hard limit on total LLM calls to prevent infinite loops.
-    max_repair_per_candidate : int
-        Max error-feedback repair attempts per failed candidate before
-        moving on to the next candidate.
+    Otherwise runs the legacy single-phase path, whose candidates carry no idea
+    and so can never have complete lineage.
 
-    Returns
-    -------
-    policy_pop : list[SymbolicPolicy]
-        Instantiated symbolic policy objects.
-    code_string_pop : list[str]
-        Raw policy class code strings.
-    response_list : list[str]
-        Full LLM response texts (for feedback in later iterations).
+    ``max_total_attempts`` caps the number of LLM calls. ``provided_response`` is
+    accepted for compatibility and ignored: a bounded edit is now shown its
+    parent's source, not the previous transcript.
     """
+    from lares.search.generation import LLMCallLedger
+
     if not env_name:
         raise ValueError(
             "get_symbolic_policies requires env_name: it selects the observation schema "
             "the generated policy reads through. Without it every candidate raises on its "
             "first self.obs_field(...) call and the population comes back empty."
         )
+    ledger = ledger if ledger is not None else LLMCallLedger(dir_path)
+    prompts = {
+        "initial_system": initial_system,
+        "initial_user": initial_user,
+        "code_output_tip": code_output_tip,
+        "task_description": task_description,
+        "obs_description": obs_description,
+        "input_dict_string": input_dict_string,
+    }
 
     if bool(getattr(args, "policy_gen_two_phase", False)):
-        raw_impl = getattr(args, "policy_impl_mode", POLICY_IMPL_BATCHED)
-        if isinstance(raw_impl, str):
-            raw_impl = raw_impl.strip().lower().replace("-", "_")
-        impl_mode = (
-            POLICY_IMPL_PER_IDEA
-            if raw_impl == POLICY_IMPL_PER_IDEA
-            else POLICY_IMPL_BATCHED
-        )
         if ideas_system is None or ideas_user is None:
             raise ValueError(
                 "args.policy_gen_two_phase requires ideas_system and ideas_user "
                 "(from load_policy_prompt_assets)."
             )
-        return _get_symbolic_policies_two_phase(
-            client=client,
-            dir_path=dir_path,
-            llm_iter=llm_iter,
-            args=args,
-            obs_dim=obs_dim,
-            action_dim=action_dim,
-            env_name=env_name,
-            initial_system=initial_system,
-            initial_user=initial_user,
-            task_description=task_description,
-            obs_description=obs_description,
-            input_dict_string=input_dict_string,
-            code_output_tip=code_output_tip,
-            data_pkl_path=data_pkl_path,
+        raw_impl = getattr(args, "policy_impl_mode", POLICY_IMPL_BATCHED)
+        if isinstance(raw_impl, str):
+            raw_impl = raw_impl.strip().lower().replace("-", "_")
+        impl_mode = POLICY_IMPL_PER_IDEA if raw_impl == POLICY_IMPL_PER_IDEA else POLICY_IMPL_BATCHED
+        prompts.update(
             ideas_system=ideas_system,
             ideas_user=ideas_user,
-            policy_impl_mode=impl_mode,
-            provided_response=provided_response,
-            code_feedback=code_feedback,
-            real_num=real_num,
-            max_total_attempts=max_total_attempts,
-            max_repair_per_candidate=max_repair_per_candidate,
-            llm_transcript_path=llm_transcript_path,
-            failure_log=failure_log,
+            proposals_user=proposals_user if proposals_user is not None else _read_template("proposals_user.txt"),
+            code_feedback_tmpl=code_feedback_tmpl if code_feedback_tmpl is not None else _read_template("code_feedback.txt"),
+        )
+        return generate_candidates(
+            client, args, dir_path, int(llm_iter), obs_dim, action_dim, env_name, prompts, real_num,
+            data_pkl_path, ledger, feedback_bundle=feedback_bundle, feedback_text=code_feedback,
+            parent_sources=parent_sources, llm_transcript_path=llm_transcript_path, impl_mode=impl_mode,
+            max_total_calls=max_total_attempts, max_repair_per_candidate=max_repair_per_candidate,
         )
 
-    policy_pop = []
-    code_string_pop = []
-    response_list = []
-    get_res_try_num = 0
-    success_num = 0
-
-    # ---- build the base LLM message list ----
-    user_content = initial_user.format(
-        task=task_description,
-        obs_dim=obs_dim,
-        action_dim=action_dim,
-        obs_description=obs_description,
-        input_dict_string=input_dict_string,
+    return _generate_single_phase(
+        client, args, dir_path, int(llm_iter), obs_dim, action_dim, env_name, prompts, real_num,
+        data_pkl_path, ledger, code_feedback, llm_transcript_path, max_total_attempts, max_repair_per_candidate,
     )
 
-    if provided_response is not None and code_feedback is not None:
-        base_messages = [
-            {"role": "system", "content": initial_system},
-            {"role": "user", "content": user_content + "\n" + code_output_tip},
-            {"role": "assistant", "content": provided_response},
-            {"role": "user", "content": code_feedback + "\n" + code_output_tip},
-        ]
-    elif code_feedback is not None:
-        base_messages = [
-            {"role": "system", "content": initial_system},
-            {
-                "role": "user",
-                "content": user_content + "\n" + code_feedback + "\n" + code_output_tip,
-            },
-        ]
-    else:
-        base_messages = [
-            {"role": "system", "content": initial_system},
-            {"role": "user", "content": user_content + "\n" + code_output_tip},
-        ]
 
-    # ---- helpers ----
-    try_num = 1
-    total_llm_calls = 0
-    transcript_counter = [0]
-    _this_dir = os.path.dirname(os.path.abspath(__file__))
-    _project_root = os.path.dirname(os.path.dirname(_this_dir))
+def final_attempts(candidates):
+    """The last attempt of every slot, in slot order."""
+    last = {}
+    for c in candidates:
+        if c.candidate_id not in last or c.attempt > last[c.candidate_id].attempt:
+            last[c.candidate_id] = c
+    return [last[k] for k in sorted(last, key=lambda cid: last[cid].slot)]
 
-    imports = (
-        "import torch\n"
-        "import torch.nn as nn\n"
-        "import numpy as np\n"
-        "from lares.core.symbolic_policy import SymbolicPolicy\n"
-    )
-    head = "import os\nimport sys\n" f"sys.path.insert(0, {repr(_project_root)})\n"
-    test_code_path = os.path.join(_project_root, "tests", "test_generate_policy.py")
-    with open(test_code_path, "r") as f:
-        test_code = f.read()
 
-    def _validate_subprocess(code_str):
-        return _run_policy_validation_subprocess(
-            code_str,
-            dir_path,
-            get_res_try_num,
-            head,
-            imports,
-            test_code,
-            data_pkl_path,
-            obs_dim,
-            action_dim,
-            env_name=env_name,
-        )
-
-    # ---- generation loop ----
-    while success_num < real_num and total_llm_calls < max_total_attempts:
-        responses, prompt_tokens, total_completion_token, total_token = _call_llm(
-            client,
-            real_num * 2,
-            args.model,
-            base_messages,
-            1.0,
-            transcript_path=llm_transcript_path,
-            transcript_counter=transcript_counter,
-            transcript_label="policy_generation",
-        )
-        total_llm_calls += 1
-
-        for resp_idx in range(len(responses)):
-            if success_num >= real_num:
-                break
-            if total_llm_calls >= max_total_attempts:
-                break
-
-            response_cur = responses[resp_idx].message.content
-            print(
-                f"Policy gen try {try_num}",
-                prompt_tokens,
-                total_completion_token,
-                total_token,
-            )
-            try_num += 1
-
-            code_string = _extract_code_string(response_cur)
-
-            # ---- validate, with error-feedback repair loop ----
-            ok, stdout_str, full_code = _validate_subprocess(code_string)
-            repair_attempt = 0
-
-            while not ok and repair_attempt < max_repair_per_candidate:
-                repair_attempt += 1
-                print(
-                    f"Policy validation failed (attempt {resp_idx}, "
-                    f"repair {repair_attempt}/{max_repair_per_candidate}): "
-                    f"{stdout_str[:200]}"
-                )
-
-                error_fb = _build_error_feedback(code_string, stdout_str)
-                repair_messages = base_messages + [
-                    {"role": "assistant", "content": response_cur},
-                    {"role": "user", "content": error_fb + "\n" + code_output_tip},
-                ]
-
-                repair_responses, _, _, _ = _call_llm(
-                    client,
-                    1,
-                    args.model,
-                    repair_messages,
-                    1.0,
-                    transcript_path=llm_transcript_path,
-                    transcript_counter=transcript_counter,
-                    transcript_label="policy_repair",
-                )
-                total_llm_calls += 1
-                response_cur = repair_responses[0].message.content
-                code_string = _extract_code_string(response_cur)
-                print(f"Policy gen try {try_num} (repair)")
-                try_num += 1
-
-                ok, stdout_str, full_code = _validate_subprocess(code_string)
-
-            if not ok:
-                print(
-                    f"Policy validation failed after {repair_attempt} repairs "
-                    f"(attempt {resp_idx}): {stdout_str[:200]}"
-                )
-                _record_failure(
-                    failure_log, f"iter{llm_iter}_try{try_num}", "validation",
-                    code_string, stdout_str, repair_attempt,
-                )
-                continue
-
-            print(stdout_str)
-
-            # ---- validation passed — save artefacts ----
-            response_txt_path = os.path.join(
-                dir_path,
-                f"Iter_{llm_iter}_Policy_Response_{success_num}.txt",
-            )
-            with open(response_txt_path, "w", encoding="utf-8") as f:
-                f.write(response_cur)
-
-            saved_code_path = os.path.join(
-                dir_path,
-                f"Iter_{llm_iter}_Policy_Code_{get_res_try_num}.py",
-            )
-            with open(saved_code_path, "w", encoding="utf-8") as f:
-                f.write(full_code)
-
-            try:
-                policy = _try_instantiate_policy(
-                    imports, code_string, obs_dim, action_dim, env_name=env_name
-                )
-            except Exception as e:
-                print(f"Error instantiating policy after validation: {e}")
-                _record_failure(
-                    failure_log, f"iter{llm_iter}_try{try_num}", "instantiation",
-                    code_string, str(e), repair_attempt,
-                )
-                continue
-
-            policy_pop.append(policy)
-            code_string_pop.append(code_string)
-            response_list.append(response_cur)
-            get_res_try_num += 1
-            success_num += 1
-
-    if success_num < real_num:
-        print(
-            f"Warning: only generated {success_num}/{real_num} valid policies "
-            f"after {total_llm_calls} LLM calls (limit: {max_total_attempts})"
-        )
-
-    return policy_pop, code_string_pop, response_list
+def valid_policies(candidates):
+    """``(policies, codes, responses)`` for slots whose final attempt passed."""
+    ok = [c for c in final_attempts(candidates) if c.valid]
+    return [c.policy for c in ok], [c.code for c in ok], [c.response for c in ok]

@@ -7,16 +7,23 @@ Evidence log for the symbolic-policy evolution pipeline. Updated as phases land.
 Phases 0 through 6 are implemented and measured. FR-4 and FR-11 are implemented.
 Phase 7's machinery is built but its experiment has not run.
 
+**Status corrected by `debug_spec.md` (2026-09-13).** A review found that the live evolutionary path
+did not carry what the phase statuses claimed: generation-1 records had empty lineage, the live
+fitter still trained the scale under the legacy objective, a selected checkpoint could be reported
+with another checkpoint's diagnostics, and gradient steps were stored as `environment_steps`. The
+corrected statuses are below. Stages A–C of the debug spec are implemented and pass a mocked
+two-generation run; see `DEBUG_PROGRESS.md`.
+
 | Phase | State |
 |---|---|
 | 0 measurement lock | complete, 7/7 AC-0 checks |
 | 1 trusted interface | complete, 6/6 AC-1 items |
 | 2 evaluation and reporting | 8/9 AC-2 items; the ninth is E10, which is blocked |
 | 3 fitting comparison | complete, 6/6 AC-3 items |
-| 4 search evidence and archive | complete, 8/8 AC-4 items |
-| 5 objectives and data coverage | complete, 7/7 AC-5 items |
-| 6 intervention-guided repair | 4/5 AC-6 items; the fifth is answered in the negative |
-| 7 freeze and final validation | machinery built, experiment awaiting approval |
+| 4 search evidence and archive | **reopened**; lineage and bounded-edit semantics integrated, live smoke test passed; edit generations evaluated in Stage F |
+| 5 objectives and data coverage | machinery complete; live integration done in the debug cycle; Stage E confirmation not run |
+| 6 intervention-guided repair | **pilot**; the ablation does not test correction-LLM repair and its budgets were unequal |
+| 7 freeze and final validation | **blocked** through Stage F of `debug_spec.md` |
 
 Three results decide what is worth doing next, and all three run against the
 plan's assumptions:
@@ -24,8 +31,13 @@ plan's assumptions:
 1. **Fitting the expert better does not build a better controller.** Validation
    loss correlates with development success at +0.19, the wrong sign, and
    development success collapses to zero well before the loss minimum.
-2. **The repair loop does not beat spending the same budget on the optimizer.**
-   Paired difference +0.133 in optimizer-only's favour, interval excluding zero.
+2. **In a pilot, the repair loop did not beat spending the same budget on the
+   optimizer.** Across the six structure/seed pairs `optimizer_only - full` was
+   +0.35, +0.20, +0.05, +0.25, -0.05 and 0.00, mean +0.133. The interval first
+   reported, [+0.008, +0.259], used 1.96 x SE; the small-sample t interval (5
+   degrees of freedom) is about [-0.031, +0.298] and includes zero. This supports
+   a directional optimizer advantage, not a significance claim, and the arms did
+   not share preprocessing or a correction-LLM path (`debug_spec.md` D10).
    The controlled substitution changed the chosen component in two of six
    replicates and the outcome in one.
 3. **The biggest lever on this task is the fitting schedule**, not the structure
@@ -600,6 +612,12 @@ signed-goal-progress check instead. This will keep mattering while the incumbent
 
 ## The repair ablation (AC-6, E6, E9)
 
+> **Pilot, not the AC-6 test.** Relabelled by `debug_spec.md` (D10). The arms mixed unequal fitting
+> and search budgets and none exercised a correction-LLM repair. The `optimizer_only` row's interval
+> below is a normal 1.96 x SE interval; over six paired runs the t interval is about
+> [-0.031, +0.298], which includes zero. Read this table as direction, not significance. The clean
+> ablation, with common preprocessing and matched budgets, is Stage F of `debug_spec.md`.
+
 Five arms from the identical fitted policy, 200 development-screen episodes each, three structures
 (`simple_reach_push`, `simple_damped_push`, `simple_standoff`) at two seeds. Scored on twenty
 held-out development cases that took no part in any arm's decisions. The arms differ only in what
@@ -766,11 +784,59 @@ and a population of five, that is roughly 200 episodes per generation.
    demonstration buffer. This is the same class of mistake as the unit-scale probe in Phase 1: an
    artificial observation is outside the state distribution these controllers were designed for.
 
+## Debug-cycle runs: the improvement is real, and it is not fitting (2026-09-13)
+
+After `debug_spec.md` Stages A–C, a live two-generation smoke test passed every Stage D check
+(`logs/debug_smoke_two_generation`), and a full run with `config/run_full_evolution.yaml` (gpt-5, 3 x 5,
+deterministic MSE, fixed scale, checkpoints including step 0) completed with complete provenance
+(`logs/evolution_debug_full`). Details and every number are in `DEBUG_PROGRESS.md`.
+
+**Held-out, on 50 fresh placements (MT1 seed 2100, disjoint from all committed splits):** the new incumbent
+scores 0.340 against the pre-debug best's 0.120, paired +0.220, t95 [+0.045, +0.395]. The development figures
+(0.567 against 0.267) were optimistic in both runs, as expected from selecting on those cases.
+
+**Why it improved.** Every promoted candidate kept its untrained initial values (selected step 0). The new
+incumbent scores 0.340 untrained and 0.000 after 2000 behavioural-cloning steps; the pre-debug best scores
+0.000 untrained and 0.120 fitted. The structured idea prompt, which asks for a stated zero-shot behaviour
+within a 6–10 parameter budget, produced controllers that work before fitting, and a checkpoint rule that
+probes step 0 let the run keep them. This extends the Phase 5 headline: fitting to the scripted expert does
+not merely fail to help these controllers, it destroys them.
+
+**What did not help.** Generations 1–2 added nothing held-out: the first-generation best scores 0.400 against
+the final incumbent's 0.340 (paired -0.060, t95 [-0.194, +0.074]). The development "improvement" from 0.500
+to 0.567 came from one promotion on a tie in success with higher return and one on a +0.067 difference whose
+interval included zero. Bounded repairs frequently produced different code with identical per-case outcomes.
+
 ## Questions requiring a research decision
 
-1. Section 2.3's reliability target asks that 95% of candidates compile and pass validation after at
-   most one repair. The current pipeline allows three repairs per candidate
-   (`max_repair_per_candidate=3`). Tighten the code to one, or restate the target?
+0. **Answered on 2026-09-14** (details in `DEBUG_PROGRESS.md`, "Decisions of 2026-09-14"): fitting is an
+   experimental treatment decided by Stage E's four conditions; promotion requires a paired interval
+   above zero on an independent promotion manifest and never promotes on a tie; the next search runs one
+   budget-matched initial generation with no edit generations; seed 2200 and fitting seeds 2200-2204 are
+   reserved for Stage E. The original questions follow for the record.
+   **New, from the debug-cycle runs.**
+   (a) *Should behavioural cloning stay in the loop?* For the structures the current prompts produce, every
+   promoted candidate selected step 0 and 2000 steps drive the incumbent to 0.000. Options: keep fitting
+   behind the step-0 probe (current: correct, but it spends 30,000 gradient steps and 112,500 probe simulator
+   steps per 15-candidate run for nothing), cut the budget and schedule, or replace imitation with direct
+   search on rollouts. Stage E's predeclared arms (fixed 2000, rollout-selected, phase-balanced) will
+   quantify this; its prediction for the fixed-2000 arm is now close to zero.
+   (b) *Should promotion require the paired interval to exclude zero, or at least forbid promotion on tied
+   success?* The current rule promoted twice on differences held-out data does not support.
+   (c) *Is the edit loop worth its cost?* Generations 1–2 cost roughly two thirds of the run's LLM spend and
+   did not improve held-out success. The feedback may need to show per-case differences between parent and
+   child, since several repairs changed code without changing any outcome.
+   (d) MT1 pool seed 2100 is spent on this comparison. Stage E needs another unused seed.
+
+1. **Answered by the debug cycle.** Section 2.3's reliability target asks that 95% of candidates
+   compile and pass validation after at most one repair. Generation now allows exactly one linked
+   correction per slot (`max_repair_per_candidate=1`) and no outer retry loop, and the summary
+   reports "slots valid within one correction" against the 95% target. What remains open is whether
+   the target is reachable: in two Tier 3 runs gpt-4o-mini produced schema-valid structured ideas,
+   but its one-slot implementation failed validation after its correction both times (an unknown
+   observation field, then a policy that ignored `goal`). The previous loop hid this by retrying up
+   to 50 calls. Measure the rate on the live smoke test before deciding whether prompts, the model,
+   or the target should change.
 2. FR-11 needs a small Qwen vision model. `transformers` is not installed, and the T4 is Turing, so
    fp16 rather than bf16. Which model and quantisation should be frozen? Everything around the model
    is now built and tested, so this decision plus an install is all that stands between here and a

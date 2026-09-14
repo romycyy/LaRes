@@ -49,10 +49,17 @@ class SymbolicPolicy(nn.Module):
         nn.MultiheadAttention,
     )
 
+    #: Default for :meth:`fixed_std`. Recorded in every run manifest.
+    DEFAULT_ACTION_SCALE = 0.1
+
     def __init__(self, obs_dim, action_dim):
         super().__init__()
         self.obs_dim = obs_dim
         self.action_dim = action_dim
+        #: A plain float, not a parameter or buffer: under deterministic
+        #: execution the scale is never executed, and a trainable scale is only
+        #: something an objective can push to a bound (``debug_spec.md`` D3).
+        self.fixed_action_scale = float(self.DEFAULT_ACTION_SCALE)
         # Captured at construction rather than looked up per call, so a policy
         # keeps the layout it was built and validated against.
         self.obs_schema = get_active_schema()
@@ -77,6 +84,15 @@ class SymbolicPolicy(nn.Module):
     def get_param_ranges(self):
         """Return {parameter_name: (min_value, max_value)} for every Parameter."""
         raise NotImplementedError
+
+    def fixed_std(self, mean):
+        """The fixed, non-trainable action scale, shaped like ``mean``.
+
+        Generated policies return ``(mean, self.fixed_std(mean))`` instead of
+        declaring a ``log_std`` parameter. The value is ``fixed_action_scale``,
+        which the run sets and records; nothing fits it.
+        """
+        return torch.full_like(mean, float(self.fixed_action_scale)).detach()
 
     # ------------------------------------------------------------------
     #  Named observation access

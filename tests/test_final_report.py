@@ -49,7 +49,7 @@ def a_record(candidate="c0", status=STATUS_EVALUATED, success=0.3, intervention=
             "manifest_ids": ["dev"], "action_mode": "deterministic",
             "success_rate": success, "mean_return": 100.0,
         } if status == STATUS_EVALUATED else {},
-        resources={"environment_steps": 1500},
+        resources={"screen_environment_steps": 1500},
         fitting={"steps": 2000},
         intervention=intervention,
         intervention_detail="expert drives dz" if intervention else "",

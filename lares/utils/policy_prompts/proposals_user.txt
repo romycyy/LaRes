@@ -1,0 +1,68 @@
+Task: {task}
+
+Environment:
+- Observation dimension: {obs_dim} (continuous)
+- Action dimension: {action_dim} (continuous; the executed action is tanh(mean), and the action scale is fixed, not learned)
+
+Observation layout (the implementation reads these by name, never by index):
+{obs_description}
+
+Semantic keys (for reasoning about task structure):
+{input_dict_string}
+
+{feedback}
+
+## What to return
+
+Propose exactly {n} next-generation candidates. Each is a mutation proposal together with the complete idea it produces. The default is a bounded edit of one parent. Do not write code here; each idea is implemented separately, with its parent's source in front of the implementer.
+
+Eligible parent ids, meaning every policy whose evidence appears above: {eligible_parents}
+A proposal may only name parents from this list.
+
+Modes and their parent rules:
+- "repair": fix one diagnosed fault in exactly one parent. Only the suspected component changes.
+- "simplification": remove structure from exactly one parent without losing its protected behaviours.
+- "crossover": combine named components of at least two parents.
+- "exploration": a new design. Use it only when no parent is a sound starting point. With no parent, set "parent_ids" to [] and explain why in "no_parent_rationale".
+
+"predicted_metric" must be exactly one of: {metrics}
+"predicted_direction" is "increase" or "decrease". The prediction must be something the next evaluation could show to be wrong.
+
+Output format (required):
+Return a single JSON object and nothing else (no markdown fences, no commentary). "proposals" must contain exactly {n} objects:
+
+{{
+  "proposals": [
+    {{
+      "proposal": {{
+        "parent_ids": ["<an eligible parent id>"],
+        "mode": "repair",
+        "observation": "the specific evidence above that prompted this edit",
+        "hypothesis": "the one primary cause you believe explains it",
+        "suspected_component": "the expression or phase you believe is at fault",
+        "intervention": "exactly what changes",
+        "predicted_metric": "signed_goal_progress",
+        "predicted_direction": "increase",
+        "protected_behaviors": ["a behaviour of the parent this edit must not lose"],
+        "no_parent_rationale": ""
+      }},
+      "idea": {{
+        "name": "a short name distinct from the other ideas",
+        "summary": "3-6 sentences describing the resulting policy",
+        "named_observations": ["tcp", "obj", "goal"],
+        "phases": [{{"name": "...", "activation": "...", "action_intent": "..."}}],
+        "parameters": [{{"name": "...", "role": "...", "type": "gain", "units": "...", "initial_value": 1.0, "range": [0.1, 10.0]}}],
+        "zero_shot_behavior": "what the resulting policy does before fitting",
+        "expected_failure": "...",
+        "protected_behaviors": ["..."],
+        "complexity_justification": ""
+      }}
+    }}
+  ]
+}}
+
+Rules (a proposal or idea that breaks one is rejected, and nothing is filled in for you):
+- The idea declares every parameter of the resulting policy, including those kept unchanged from a parent. "type" is "gain" or "structural"; lo < hi and lo <= initial_value <= hi.
+- Aim for {param_min}-{param_max} tunable parameters. More than {param_max} parameters, or more than 4 phases, needs a non-empty "complexity_justification".
+- Never declare log_std, std, or any other action-scale parameter.
+- Parameter-only changes are the numerical optimizer's job; do not propose them.

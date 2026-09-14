@@ -33,7 +33,9 @@ import numpy as np  # noqa: E402
 from lares.core.policy_generation import (  # noqa: E402
     POLICY_IMPL_BATCHED,
     POLICY_IMPL_PER_IDEA,
+    final_attempts,
     get_symbolic_policies,
+    valid_policies,
 )
 from lares.core.training_pipeline import load_policy_prompt_assets  # noqa: E402
 
@@ -105,9 +107,8 @@ def run_one(mode, replicate, args, prompts, out_dir):
     llm_args = SimpleNamespace(
         model=args.model, policy_gen_two_phase=True, policy_impl_mode=mode
     )
-    failures: list = []
     t0 = time.time()
-    policies, codes, _ = get_symbolic_policies(
+    candidates = get_symbolic_policies(
         client=OpenAI(api_key=os.environ["OPENAI_API_KEY"]),
         dir_path=run_dir,
         llm_iter=replicate,
@@ -128,8 +129,9 @@ def run_one(mode, replicate, args, prompts, out_dir):
         llm_transcript_path=transcript,
         ideas_system=prompts["ideas_system"],
         ideas_user=prompts["ideas_user"],
-        failure_log=failures,
     )
+    policies, codes, _ = valid_policies(candidates)
+    failures = [c for c in final_attempts(candidates) if not c.valid]
     usage = parse_transcript(transcript)
     valid = len(policies)
     return {
@@ -139,7 +141,8 @@ def run_one(mode, replicate, args, prompts, out_dir):
         "valid": valid,
         "valid_rate": valid / args.pop_size,
         "failures": len(failures),
-        "failure_stages": [f.get("stage") for f in failures],
+        "failure_stages": [f.validation.get("stage") for f in failures],
+        "corrections": sum(1 for c in candidates if c.previous_attempt_id),
         "mean_parameters": (
             float(np.mean([p.count_parameters() for p in policies])) if policies else None
         ),

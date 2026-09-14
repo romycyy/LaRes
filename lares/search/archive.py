@@ -16,6 +16,12 @@ differently. The archive holds three slots.
     measured on the rollout failure profile and geometry, not on source text:
     two programs that read differently but fail identically are not diverse, and
     two that read alike but fail differently are.
+
+Every entry keeps its screening metrics and, once a candidate has been through
+the expanded evaluation, its confirmed metrics separately. Slots are assigned on
+confirmed metrics whenever they exist (``debug_spec.md`` D7): a ten-case screen is
+the noisier estimate, and a parent chosen on it would be chosen on the number the
+expanded evaluation was run to replace.
 """
 
 from __future__ import annotations
@@ -31,6 +37,9 @@ SLOT_ROBUST = "robust"
 SLOT_SIMPLEST = "simplest"
 SLOT_DISTINCT = "distinct"
 SLOTS = (SLOT_ROBUST, SLOT_SIMPLEST, SLOT_DISTINCT)
+
+SCOPE_SCREEN = "screen"
+SCOPE_CONFIRMED = "confirmed"
 
 #: A candidate counts as competitive with the leader if its success is within
 #: this much. Declared here rather than inline so the simplicity slot cannot be
@@ -71,10 +80,24 @@ def behavioral_distance(a: np.ndarray, b: np.ndarray) -> float:
     return float(np.linalg.norm(np.asarray(a) - np.asarray(b)))
 
 
+def metrics_from_report(report) -> dict:
+    """The per-scope numbers an archive entry keeps."""
+    progress = report.rollout.signed_goal_progress
+    return {
+        "manifest_id": report.manifest_id,
+        "num_episodes": report.rollout.num_episodes,
+        "success_rate": float(report.rollout.success_rate),
+        "signed_goal_progress": float(progress["mean"]) if progress else None,
+        "descriptor": [float(x) for x in behavior_descriptor(report)],
+        "failure_labels": report.rollout.failure_labels,
+    }
+
+
 @dataclass
 class ArchiveEntry:
     candidate_id: str
     generation: int
+    #: The effective values slots are assigned on: confirmed when available.
     success_rate: float
     signed_goal_progress: float | None
     num_parameters: int
@@ -84,6 +107,24 @@ class ArchiveEntry:
     slots: list = field(default_factory=list)
     #: Intervention results are recorded but never occupy a slot.
     intervention: bool = False
+    screen_metrics: dict | None = None
+    confirmed_metrics: dict | None = None
+    metrics_source: str = SCOPE_SCREEN
+
+    def apply_effective_metrics(self) -> None:
+        """Point the effective fields at confirmed metrics when they exist."""
+        chosen, source = (
+            (self.confirmed_metrics, SCOPE_CONFIRMED)
+            if self.confirmed_metrics is not None
+            else (self.screen_metrics, SCOPE_SCREEN)
+        )
+        if chosen is None:
+            return
+        self.success_rate = chosen["success_rate"]
+        self.signed_goal_progress = chosen["signed_goal_progress"]
+        self.descriptor = list(chosen["descriptor"])
+        self.failure_labels = chosen["failure_labels"]
+        self.metrics_source = source
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -99,24 +140,57 @@ class Archive:
     def __len__(self) -> int:
         return len(self.entries)
 
+    def get(self, candidate_id: str) -> ArchiveEntry | None:
+        for entry in self.entries:
+            if entry.candidate_id == candidate_id:
+                return entry
+        return None
+
     def add(self, candidate_id, generation, report, num_parameters, source_hash,
-            intervention: bool = False) -> ArchiveEntry:
-        """Record one evaluated candidate. Every candidate is kept, not just winners."""
-        progress = report.rollout.signed_goal_progress
-        entry = ArchiveEntry(
-            candidate_id=candidate_id,
-            generation=int(generation),
-            success_rate=float(report.rollout.success_rate),
-            signed_goal_progress=float(progress["mean"]) if progress else None,
-            num_parameters=int(num_parameters),
-            source_hash=str(source_hash),
-            descriptor=[float(x) for x in behavior_descriptor(report)],
-            failure_labels=report.rollout.failure_labels,
-            intervention=bool(intervention),
-        )
-        self.entries.append(entry)
+            intervention: bool = False, scope: str = SCOPE_SCREEN) -> ArchiveEntry:
+        """Record or update one evaluated candidate. Every candidate is kept.
+
+        Adding a candidate that is already present updates that entry rather than
+        creating a second one, so a later scope replaces nothing but its own
+        metrics.
+        """
+        if scope not in (SCOPE_SCREEN, SCOPE_CONFIRMED):
+            raise ValueError(f"scope must be {SCOPE_SCREEN!r} or {SCOPE_CONFIRMED!r}, got {scope!r}")
+        metrics = metrics_from_report(report)
+        entry = self.get(candidate_id)
+        if entry is None:
+            entry = ArchiveEntry(
+                candidate_id=candidate_id,
+                generation=int(generation),
+                success_rate=metrics["success_rate"],
+                signed_goal_progress=metrics["signed_goal_progress"],
+                num_parameters=int(num_parameters),
+                source_hash=str(source_hash),
+                intervention=bool(intervention),
+            )
+            self.entries.append(entry)
+        elif entry.source_hash != str(source_hash):
+            raise ValueError(
+                f"{candidate_id} is archived with source {entry.source_hash}, not {source_hash}; "
+                f"an upsert may change metrics, never the code they describe"
+            )
+        if scope == SCOPE_SCREEN:
+            entry.screen_metrics = metrics
+        else:
+            entry.confirmed_metrics = metrics
+        entry.apply_effective_metrics()
         self._recompute_slots()
         return entry
+
+    def confirm(self, candidate_id: str, report) -> ArchiveEntry:
+        """Upsert the expanded-evaluation metrics for an existing entry."""
+        entry = self.get(candidate_id)
+        if entry is None:
+            raise KeyError(f"{candidate_id} has no screening entry to confirm")
+        return self.add(
+            candidate_id, entry.generation, report, entry.num_parameters, entry.source_hash,
+            intervention=entry.intervention, scope=SCOPE_CONFIRMED,
+        )
 
     # -- slot assignment ---------------------------------------------------
 
@@ -176,8 +250,8 @@ class Archive:
 
     def summary(self) -> str:
         lines = [
-            f"{'slot':<10}{'candidate':<18}{'success':>9}{'progress':>10}{'params':>8}  failures",
-            "-" * 78,
+            f"{'slot':<10}{'candidate':<18}{'success':>9}{'progress':>10}{'params':>8}  {'metrics':<10} failures",
+            "-" * 88,
         ]
         for name in SLOTS:
             entry = self.slot(name)
@@ -193,7 +267,7 @@ class Archive:
             top = max(labels.items(), key=lambda kv: kv[1])[0] if labels else "n/a"
             lines.append(
                 f"{name:<10}{entry.candidate_id:<18}{entry.success_rate:>9.3f}{progress}"
-                f"{entry.num_parameters:>8}  {top}"
+                f"{entry.num_parameters:>8}  {entry.metrics_source:<10} {top}"
             )
         excluded = [e for e in self.entries if e.intervention]
         if excluded:

@@ -102,12 +102,20 @@ class FittingSection:
     validation_loss_end: float | None = None
     num_steps: int | None = None
     split: dict | None = None
+    #: The checkpoint these numbers describe, so a report can be checked against
+    #: the parameters its record says were kept.
+    checkpoint_step: int | None = None
+    objective: str | None = None
+    parameters_sha256: str | None = None
 
     @classmethod
     def from_bc_stats(cls, stats: dict | None) -> "FittingSection":
         if not stats:
             return cls()
         return cls(
+            checkpoint_step=stats.get("checkpoint_step"),
+            objective=stats.get("objective"),
+            parameters_sha256=stats.get("parameters_sha256"),
             train_loss_by_axis=stats.get("train_loss_by_axis"),
             validation_loss_by_axis=stats.get("validation_loss_by_axis"),
             loss_by_phase=stats.get("loss_by_phase"),

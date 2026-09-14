@@ -151,6 +151,17 @@ class FitResult:
     train_loss_by_axis: dict | None = None
     validation_loss_by_axis: dict | None = None
     notes: dict = field(default_factory=dict)
+    # -- objective-aware fitting (debug_spec Stage B) --------------------------
+    initial_state: dict = field(default_factory=dict, repr=False)
+    selected_state: dict = field(default_factory=dict, repr=False)
+    selected_step: int | None = None
+    checkpoint_history: list = field(default_factory=list)
+    checkpoint_states: dict = field(default_factory=dict, repr=False)
+    final_diagnostics: dict | None = None
+    selected_diagnostics: dict | None = None
+    objective_config: dict | None = None
+    frozen_parameters: list = field(default_factory=list)
+    bc_gradient_steps: int | None = None
 
     def state_for(self, rule: str) -> dict:
         """Parameters selected by a checkpoint rule."""
@@ -164,9 +175,9 @@ class FitResult:
 
     def to_dict(self) -> dict:
         d = asdict(self)
-        d.pop("final_state", None)
-        d.pop("best_state", None)
-        d.pop("best_rollout_state", None)
+        for key in ("final_state", "best_state", "best_rollout_state", "initial_state",
+                    "selected_state", "checkpoint_states"):
+            d.pop(key, None)
         d["history"] = self.history[-1:] if self.history else []
         return d
 
@@ -539,8 +550,115 @@ SAMPLING_PHASE_BALANCED = "phase_balanced"
 SAMPLING_STRATEGIES = (SAMPLING_UNIFORM, SAMPLING_PHASE_BALANCED)
 
 
-def fit_with_objective(
-    structure,
+def state_parameters_sha256(state: dict) -> str:
+    """Content hash of a state dict's tensors, independent of pickling details."""
+    import hashlib
+
+    h = hashlib.sha256()
+    for name in sorted(state):
+        value = state[name]
+        tensor = value.detach().cpu().to(torch.float64) if torch.is_tensor(value) else torch.as_tensor(value, dtype=torch.float64)
+        h.update(name.encode("utf-8"))
+        h.update(str(tuple(tensor.shape)).encode("utf-8"))
+        h.update(tensor.contiguous().numpy().tobytes())
+    return h.hexdigest()
+
+
+def objective_config(
+    objective: str,
+    sampling: str,
+    budget: int,
+    batch_size: int,
+    lr: float,
+    clip_grad_norm: float,
+    seed: int,
+    checkpoint_steps,
+    fixed_action_scale: float | None,
+    val_fraction: float | None = None,
+    split_seed: int | None = None,
+) -> dict:
+    """Everything that defines a fit, stored whole so a record can be rerun."""
+    from lares.fitting.checkpoints import CHECKPOINT_TIE_RULE
+    from lares.fitting.objectives import spec
+
+    s = spec(objective)
+    return {
+        "objective": objective,
+        "execution": s.execution,
+        "is_likelihood": s.is_likelihood,
+        "optimises_scale": s.optimises_scale,
+        "excludes_censored": s.excludes_censored,
+        "sampling": sampling,
+        "optimizer": "adam",
+        "budget_gradient_steps": int(budget),
+        "batch_size": int(batch_size),
+        "lr": float(lr),
+        "clip_grad_norm": float(clip_grad_norm),
+        "seed": int(seed),
+        "checkpoint_steps": [int(x) for x in checkpoint_steps] if checkpoint_steps is not None else None,
+        "checkpoint_tie_rule": CHECKPOINT_TIE_RULE,
+        "fixed_action_scale": fixed_action_scale,
+        "val_fraction": val_fraction,
+        "split_seed": split_seed,
+    }
+
+
+def fitting_diagnostics(policy, data, objective: str) -> dict:
+    """Loss and parameter diagnostics for the policy *as it currently stands*.
+
+    Computed separately for the final and the selected state, so a report can
+    never pair one checkpoint's parameters with another's losses.
+    """
+    from lares.core.training_pipeline import _loss_by_phase
+    from lares.fitting.objectives import objective_loss
+
+    was_training = policy.training
+    policy.eval()
+    axes = [f"axis_{i}" for i in range(policy.action_dim)]
+
+    def loss_on(obs, actions):
+        if obs is None:
+            return None
+        with torch.no_grad():
+            mean, std = policy(obs)
+            return float(objective_loss(objective, mean, std, actions))
+
+    state = policy.state_dict()
+    out = {
+        "objective": objective,
+        "train_loss": loss_on(data.train_obs, data.train_actions),
+        "validation_loss": loss_on(data.val_obs, data.val_actions),
+        "train_loss_by_axis": dict(
+            zip(axes, _per_axis_mse(policy, data.train_obs.numpy(), data.train_actions.numpy()))
+        ),
+        "validation_loss_by_axis": (
+            dict(zip(axes, _per_axis_mse(policy, data.val_obs.numpy(), data.val_actions.numpy())))
+            if data.has_validation
+            else None
+        ),
+        "bound_activity": _bound_activity(policy),
+        "parameters": {name: [float(x) for x in p.detach().reshape(-1)] for name, p in policy.named_parameters()},
+        "parameters_sha256": state_parameters_sha256(state),
+        "loss_by_phase": _loss_by_phase(policy, data.train_obs.numpy(), data.train_actions.numpy()),
+    }
+    policy.train(was_training)
+    return out
+
+
+def _converged_at(history):
+    losses = [h[1] for h in history]
+    if not losses:
+        return None
+    target = losses[-1]
+    tolerance = abs(target) * 0.01 + 1e-9
+    for i, value in enumerate(losses):
+        if abs(value - target) <= tolerance:
+            return history[i][0]
+    return None
+
+
+def fit_policy_with_objective(
+    policy,
     data,
     objective: str,
     budget: int = 2000,
@@ -548,14 +666,17 @@ def fit_with_objective(
     lr: float = 1e-3,
     clip_grad_norm: float = 1.0,
     seed: int = 0,
-    schema=None,
     sampling: str = SAMPLING_UNIFORM,
     phase_labels=None,
     val_every: int = 0,
     rollout_probe=None,
+    checkpoint_steps=None,
     rollout_every: int = 0,
+    checkpoint_callback=None,
+    structure_id: str = "policy",
+    split_info: dict | None = None,
 ):
-    """Fit one structure under a named objective and sampling strategy.
+    """Fit an already-built policy under a named objective (``debug_spec.md`` Stage B).
 
     Adam throughout, so the objective and the sampling are the only things that
     vary. Scale parameters are frozen for objectives that declare they do not
@@ -565,13 +686,26 @@ def fit_with_objective(
     ``residual_scale`` splits the budget in half: the mean is fitted first, then
     frozen while the scale is fitted to the residual.
 
-    ``rollout_probe`` is a callable taking the policy and returning a development
-    score. When supplied it is called every ``rollout_every`` steps and the best
-    parameters are kept, which is the only checkpoint rule that can find the
-    useful point on this task: development success peaks partway through fitting
-    while validation loss keeps falling, so both "final" and "best validation
-    loss" walk straight past it.
+    Checkpoint selection. ``rollout_probe(policy)`` returns ``(success,
+    progress)`` (or a bare success number). It is called at each step in
+    ``checkpoint_steps``, where step ``s`` means after ``s`` gradient steps, so
+    step 0 is the untrained policy and can be selected. When ``checkpoint_steps``
+    is ``None`` the older schedule applies: every ``rollout_every`` steps, no
+    step 0. The winner is chosen by
+    :data:`lares.fitting.checkpoints.CHECKPOINT_TIE_RULE`.
+
+    Three states stay distinct: ``initial_state`` before any step,
+    ``final_state`` after the last, and ``selected_state``, the checkpoint
+    chosen. Diagnostics are computed on the final state, then recomputed after
+    the selected state is loaded, so every selected-state number describes the
+    parameters that are actually kept. The policy is returned holding
+    ``selected_state``.
     """
+    from lares.fitting.checkpoints import (
+        CHECKPOINT_TIE_RULE,
+        is_better_checkpoint,
+        rollout_score,
+    )
     from lares.fitting.objectives import (
         RESIDUAL_SCALE,
         objective_loss,
@@ -586,18 +720,30 @@ def fit_with_objective(
     if sampling == SAMPLING_PHASE_BALANCED and phase_labels is None:
         raise ValueError("phase-balanced sampling needs phase labels for the training split")
 
+    if checkpoint_steps is not None:
+        schedule = sorted({int(s) for s in checkpoint_steps})
+        if schedule and (schedule[0] < 0 or schedule[-1] > budget):
+            raise ValueError(f"checkpoint steps {schedule} must lie in [0, {budget}]")
+    elif rollout_probe is not None and rollout_every:
+        schedule = list(range(rollout_every, budget + 1, rollout_every))
+    else:
+        schedule = []
+    schedule_set = set(schedule)
+
     start = time.time()
     objective_spec = spec(objective)
-    policy = structure.build(schema)
     probe = data.train_obs[: min(64, data.train_obs.shape[0])]
     frozen = []
     if not objective_spec.optimises_scale:
         frozen = freeze_scale_parameters(policy, probe)
+    initial_state = copy.deepcopy(policy.state_dict())
 
     rng = np.random.default_rng(seed)
-    history, grad_norms, rollout_history = [], [], []
+    history, grad_norms, rollout_history, checkpoint_history = [], [], [], []
+    checkpoint_states = {}
     best_state, best_val = None, None
     best_rollout_state, best_rollout_score, best_rollout_step = None, None, None
+    halfway = max(1, budget // 2)
 
     def draw(size):
         if sampling == SAMPLING_PHASE_BALANCED:
@@ -612,6 +758,27 @@ def fit_with_objective(
             stage = "mean" if step_index < budget // 2 else "scale"
             return objective_loss(objective, mean, std, act_t, stage=stage)
         return objective_loss(objective, mean, std, act_t)
+
+    def probe_at(step_count):
+        nonlocal best_rollout_state, best_rollout_score, best_rollout_step
+        was_training = policy.training
+        policy.eval()
+        raw = rollout_probe(policy)
+        policy.train(was_training)
+        score = rollout_score(raw)
+        state = copy.deepcopy(policy.state_dict())
+        checkpoint_states[step_count] = state
+        rollout_history.append((step_count, raw))
+        checkpoint_history.append(
+            {"step": step_count, **score.to_dict(), "parameters_sha256": state_parameters_sha256(state)}
+        )
+        if best_rollout_score is None or is_better_checkpoint(score, best_rollout_score):
+            best_rollout_score = raw
+            best_rollout_step = step_count
+            best_rollout_state = state
+
+    if rollout_probe is not None and 0 in schedule_set:
+        probe_at(0)
 
     optimizer = torch.optim.Adam(trainable_parameters(policy), lr=lr)
     switched = False
@@ -645,24 +812,57 @@ def fit_with_objective(
             if best_val is None or value < best_val:
                 best_val, best_state = value, copy.deepcopy(policy.state_dict())
 
-        if rollout_probe is not None and rollout_every and (step + 1) % rollout_every == 0:
-            was_training = policy.training
-            policy.eval()
-            score = float(rollout_probe(policy))
-            policy.train(was_training)
-            rollout_history.append((step + 1, score))
-            if best_rollout_score is None or score > best_rollout_score:
-                best_rollout_score = score
-                best_rollout_step = step + 1
-                best_rollout_state = copy.deepcopy(policy.state_dict())
+        if checkpoint_callback is not None and step + 1 == halfway:
+            checkpoint_callback(step + 1, policy)
+        if rollout_probe is not None and (step + 1) in schedule_set:
+            probe_at(step + 1)
 
     for _, param in policy.named_parameters():
         param.requires_grad_(True)
 
-    result = _finish(
-        f"{objective}:{sampling}", structure, policy, data, history, start,
-        budget, budget * batch_size, best_state, best_val,
+    final_state = copy.deepcopy(policy.state_dict())
+    final_diagnostics = fitting_diagnostics(policy, data, objective)
+    if best_rollout_state is not None:
+        selected_state, selected_step = best_rollout_state, int(best_rollout_step)
+    else:
+        selected_state, selected_step = final_state, int(budget)
+    policy.load_state_dict(selected_state)
+    selected_diagnostics = fitting_diagnostics(policy, data, objective)
+
+    losses = [h[1] for h in history]
+    config = objective_config(
+        objective, sampling, budget, batch_size, lr, clip_grad_norm, seed,
+        schedule if rollout_probe is not None else [],
+        getattr(policy, "fixed_action_scale", None),
+        val_fraction=(split_info or data.split_info or {}).get("val_fraction"),
+        split_seed=(split_info or data.split_info or {}).get("seed"),
+    )
+    result = FitResult(
+        method=f"{objective}:{sampling}",
+        structure_id=structure_id,
+        objective_evaluations=int(budget),
+        transition_evaluations=int(budget) * int(batch_size),
+        wall_time_seconds=time.time() - start,
+        train_loss_final=final_diagnostics["train_loss"],
+        train_loss_best=min(losses) if losses else final_diagnostics["train_loss"],
+        validation_loss_final=(
+            final_diagnostics["validation_loss"]
+            if final_diagnostics["validation_loss"] is not None
+            else float("nan")
+        ),
+        validation_loss_best=(
+            best_val
+            if best_val is not None
+            else (final_diagnostics["validation_loss"] if final_diagnostics["validation_loss"] is not None else float("nan"))
+        ),
+        converged_at=_converged_at(history),
+        final_state=final_state,
+        best_state=best_state or copy.deepcopy(final_state),
+        history=history,
         gradient_norms=_gradient_norm_summary(grad_norms, clip_grad_norm),
+        bound_activity=final_diagnostics["bound_activity"],
+        train_loss_by_axis=final_diagnostics["train_loss_by_axis"],
+        validation_loss_by_axis=final_diagnostics["validation_loss_by_axis"],
         notes={
             "objective": objective,
             "execution": objective_spec.execution,
@@ -674,10 +874,63 @@ def fit_with_objective(
             "batch_size": batch_size,
             "lr": lr,
             "rollout_probe_every": rollout_every if rollout_probe is not None else 0,
+            "checkpoint_steps": schedule if rollout_probe is not None else [],
+            "checkpoint_tie_rule": CHECKPOINT_TIE_RULE,
         },
     )
     result.best_rollout_state = best_rollout_state or {}
     result.best_rollout_score = best_rollout_score
     result.best_rollout_step = best_rollout_step
     result.rollout_history = rollout_history
+    result.initial_state = initial_state
+    result.selected_state = selected_state
+    result.selected_step = selected_step
+    result.checkpoint_history = checkpoint_history
+    result.checkpoint_states = checkpoint_states
+    result.final_diagnostics = final_diagnostics
+    result.selected_diagnostics = selected_diagnostics
+    result.objective_config = config
+    result.frozen_parameters = list(frozen)
+    result.bc_gradient_steps = int(budget)
     return result
+
+
+def fit_with_objective(
+    structure,
+    data,
+    objective: str,
+    budget: int = 2000,
+    batch_size: int = 256,
+    lr: float = 1e-3,
+    clip_grad_norm: float = 1.0,
+    seed: int = 0,
+    schema=None,
+    sampling: str = SAMPLING_UNIFORM,
+    phase_labels=None,
+    val_every: int = 0,
+    rollout_probe=None,
+    rollout_every: int = 0,
+    checkpoint_steps=None,
+):
+    """Build a frozen structure and fit it; see :func:`fit_policy_with_objective`.
+
+    A thin compatibility wrapper for the Phase 5 and Phase 6 scripts, which fit
+    structures from the bank rather than already-generated policies.
+    """
+    return fit_policy_with_objective(
+        structure.build(schema),
+        data,
+        objective,
+        budget=budget,
+        batch_size=batch_size,
+        lr=lr,
+        clip_grad_norm=clip_grad_norm,
+        seed=seed,
+        sampling=sampling,
+        phase_labels=phase_labels,
+        val_every=val_every,
+        rollout_probe=rollout_probe,
+        rollout_every=rollout_every,
+        checkpoint_steps=checkpoint_steps,
+        structure_id=structure.structure_id,
+    )

@@ -41,7 +41,15 @@ from lares.eval.promotion import (  # noqa: E402
     REJECTED_BELOW_RULE,
     REJECTED_INVALID,
     PromotionPolicy,
+    NULL_INCUMBENT_ID,
+    PROMOTED_INTERVAL_ABOVE_ZERO,
+    REJECTED_HOLM_STOPPED,
+    REJECTED_INTERVAL_INCLUDES_ZERO,
+    REJECTED_LOWER_SUCCESS,
+    REJECTED_NOT_BEST_PASSING,
+    REJECTED_TIED_SUCCESS,
     compare_to_incumbent,
+    holm_promotion,
 )
 from lares.eval.report import (  # noqa: E402
     CHECKPOINT_FITTED,
@@ -332,7 +340,7 @@ class SmallPolicy(SymbolicPolicy):
         goal = self.obs_field(obs, "goal")
         d = torch.norm(obj - tcp, dim=-1, keepdim=True) + 1e-8
         gate = torch.sigmoid(self.sharp * (self.th - d))
-        self.record_gate("contact", gate)
+        gate = self.record_gate("contact", gate)
         move = (1 - gate) * self.w * ((obj - tcp) / d) + gate * self.wg * (goal - obj)
         grip = self.grip.unsqueeze(0).expand(obs.shape[0], 1)
         mean = torch.cat([move, grip], dim=1)
@@ -475,75 +483,131 @@ class TestPromotionPolicy(unittest.TestCase):
 
 
 class TestIncumbentComparison(unittest.TestCase):
-    def _result(self, successes, returns, name):
-        return make_result(
+    """The promotion rule decided on 2026-09-14: real evidence, never a tie."""
+
+    def _result(self, successes, returns=None, name="x", manifest="promotion"):
+        returns = returns or [0.0] * len(successes)
+        result = make_result(
             [
                 make_record(case_id=f"c{i}", success=s, episode_return=r)
                 for i, (s, r) in enumerate(zip(successes, returns))
             ],
             actor=name,
         )
+        result.manifest_id = manifest
+        return result
 
-    def test_first_contender_is_promoted_with_no_incumbent(self):
-        d = compare_to_incumbent(self._result([0, 0], [1, 1], "a"), None, "a", None)
+    def test_with_no_incumbent_a_challenger_is_paired_against_zero_success(self):
+        d = compare_to_incumbent(self._result([1, 0, 1, 1, 0, 1, 1, 1, 0, 1]), None, "a", None)
         self.assertTrue(d.promoted)
-        self.assertEqual(d.reason, "no_incumbent")
-        self.assertIsNone(d.paired_success)
+        self.assertEqual(d.reason, PROMOTED_INTERVAL_ABOVE_ZERO)
+        self.assertEqual(d.incumbent_id, NULL_INCUMBENT_ID)
+        self.assertGreater(d.paired_success["ci_low"], 0.0)
 
-    def test_higher_paired_success_promotes(self):
+    def test_zero_success_with_no_incumbent_is_a_tie_and_does_not_promote(self):
+        d = compare_to_incumbent(self._result([0, 0, 0, 0]), None, "a", None)
+        self.assertFalse(d.promoted)
+        self.assertEqual(d.reason, REJECTED_TIED_SUCCESS)
+
+    def test_a_positive_difference_whose_interval_includes_zero_does_not_promote(self):
         d = compare_to_incumbent(
-            self._result([1, 1], [10, 10], "a"),
-            self._result([0, 0], [50, 50], "b"),
-            "a",
-            "b",
+            self._result([1] + [0] * 9), self._result([0] * 10), "a", "b"
         )
+        self.assertGreater(d.paired_success["mean_difference"], 0.0)
+        self.assertLessEqual(d.paired_success["ci_low"], 0.0)
+        self.assertFalse(d.promoted)
+        self.assertEqual(d.reason, REJECTED_INTERVAL_INCLUDES_ZERO)
+
+    def test_a_clear_paired_improvement_promotes(self):
+        d = compare_to_incumbent(self._result([1] * 8 + [0] * 2), self._result([0] * 10), "a", "b")
         self.assertTrue(d.promoted)
-        self.assertEqual(d.reason, "higher_paired_success")
-        self.assertAlmostEqual(d.paired_success["mean_difference"], 1.0)
+        self.assertEqual(d.paired_success["wins"], 8)
+
+    def test_tied_success_never_promotes_whatever_the_return(self):
+        d = compare_to_incumbent(
+            self._result([1, 0, 1, 0], [900, 900, 900, 900]),
+            self._result([1, 0, 1, 0], [10, 10, 10, 10]),
+            "a", "b",
+        )
+        self.assertFalse(d.promoted)
+        self.assertEqual(d.reason, REJECTED_TIED_SUCCESS)
+        self.assertGreater(d.paired_return["mean_difference"], 0.0)
 
     def test_lower_paired_success_does_not_promote_even_with_better_return(self):
         d = compare_to_incumbent(
-            self._result([0, 0], [900, 900], "a"),
-            self._result([1, 1], [10, 10], "b"),
-            "a",
-            "b",
+            self._result([0, 0, 0], [900, 900, 900]), self._result([1, 1, 1], [10, 10, 10]), "a", "b"
         )
         self.assertFalse(d.promoted)
-        self.assertEqual(d.reason, "lower_paired_success")
+        self.assertEqual(d.reason, REJECTED_LOWER_SUCCESS)
 
-    def test_return_breaks_a_tie_only_when_success_is_equal(self):
-        better = compare_to_incumbent(
-            self._result([0, 0], [20, 20], "a"),
-            self._result([0, 0], [10, 10], "b"),
-            "a",
-            "b",
-        )
-        self.assertTrue(better.promoted)
-        self.assertEqual(better.reason, "tied_success_higher_paired_return")
-        worse = compare_to_incumbent(
-            self._result([0, 0], [5, 5], "a"),
-            self._result([0, 0], [10, 10], "b"),
-            "a",
-            "b",
-        )
-        self.assertFalse(worse.promoted)
+    def test_the_interval_is_a_small_sample_t_interval(self):
+        d = compare_to_incumbent(self._result([1, 0, 1, 0, 1]), self._result([0] * 5), "a", "b")
+        ps = d.paired_success
+        self.assertEqual(ps["method"], "paired t")
+        self.assertGreater(ps["mean_difference"] - ps["ci95_low"], 1.96 * ps["se"])
 
-    def test_comparison_reports_an_interval_for_the_difference(self):
-        d = compare_to_incumbent(
-            self._result([1, 0, 1, 0], [1, 2, 3, 4], "a"),
-            self._result([0, 0, 0, 0], [1, 1, 1, 1], "b"),
-            "a",
-            "b",
-        )
-        self.assertEqual(d.paired_success["n_paired"], 4)
-        self.assertLess(d.paired_success["ci95_low"], d.paired_success["mean_difference"])
-        self.assertGreater(d.paired_success["ci95_high"], d.paired_success["mean_difference"])
+    def test_evidence_from_a_screening_or_probe_manifest_is_refused(self):
+        with self.assertRaises(ValueError):
+            compare_to_incumbent(
+                self._result([1] * 5, manifest="screen"), None, "a", None,
+                excluded_manifest_ids=("screen", "probe"),
+            )
 
-    def test_comparison_serialises_for_the_experiment_record(self):
-        d = compare_to_incumbent(
-            self._result([1], [1], "a"), self._result([0], [1], "b"), "a", "b"
+    def test_evidence_on_a_different_manifest_from_the_incumbent_is_refused(self):
+        with self.assertRaises(ValueError):
+            compare_to_incumbent(self._result([1] * 5), self._result([0] * 5, manifest="other"), "a", "b")
+
+    def test_the_decision_records_the_rule_and_the_evidence_manifest(self):
+        d = compare_to_incumbent(self._result([1, 1]), self._result([0, 0]), "a", "b").to_dict()
+        self.assertEqual(d["evidence_manifest_id"], "promotion")
+        self.assertIn("tied success never promotes", d["rule"])
+        self.assertIn("paired_success", json.dumps(d, default=str))
+
+
+class TestHolmPromotion(unittest.TestCase):
+    def _result(self, wins, n=30, name="x"):
+        result = make_result(
+            [make_record(case_id=f"c{i}", success=1.0 if i < wins else 0.0) for i in range(n)], actor=name
         )
-        self.assertIn("paired_success", json.dumps(d.to_dict(), default=str))
+        result.manifest_id = "promotion"
+        return result
+
+    def test_one_challenger_is_judged_at_ninety_five_percent(self):
+        (d,) = holm_promotion([("a", self._result(4))], self._result(0), "inc")
+        self.assertTrue(d.promoted)
+        self.assertAlmostEqual(d.interval_level, 0.95)
+        self.assertEqual(d.holm["m"], 1)
+
+    def test_the_correction_can_reject_what_a_single_test_would_accept(self):
+        decisions = holm_promotion(
+            [("a", self._result(4)), ("b", self._result(1))], self._result(0), "inc"
+        )
+        a = decisions[0]
+        self.assertAlmostEqual(a.interval_level, 0.975)
+        self.assertFalse(a.promoted)
+        self.assertFalse(decisions[1].promoted)
+        self.assertEqual(decisions[1].reason, REJECTED_HOLM_STOPPED if decisions[1].paired_success["ci_low"] > 0 else decisions[1].reason)
+
+    def test_at_most_one_challenger_replaces_the_incumbent(self):
+        decisions = holm_promotion(
+            [("a", self._result(20)), ("b", self._result(25))], self._result(0), "inc"
+        )
+        promoted = [d.candidate_id for d in decisions if d.promoted]
+        self.assertEqual(promoted, ["b"])
+        self.assertEqual(decisions[0].reason, REJECTED_NOT_BEST_PASSING)
+
+
+class TestManifestSlice(unittest.TestCase):
+    def test_a_slice_names_its_exact_range(self):
+        from lares.eval.manifest import synthetic_manifest
+
+        m = synthetic_manifest(10, label="mock")
+        s = m.slice(3, 7)
+        self.assertEqual([c.case_id for c in s.episodes], [c.case_id for c in m.episodes[3:7]])
+        self.assertTrue(s.manifest_id.endswith("#slice3-7"))
+        self.assertNotEqual(s.manifest_id, m.head(7).tail(4).manifest_id)
+        with self.assertRaises(ValueError):
+            m.slice(5, 11)
 
 
 if __name__ == "__main__":

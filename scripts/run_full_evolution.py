@@ -117,6 +117,27 @@ def load_config(path: str) -> SimpleNamespace:
     raw.setdefault("expanded_episodes", int(raw["eval_episodes"]))
     raw["expanded_episodes"] = int(raw["expanded_episodes"])
     raw.setdefault("manifest_dir", MANIFEST_DIR)
+    # Fitting and provenance (debug_spec.md Stage B). The probe cases are the tail
+    # of the development manifest, disjoint from the screen/expanded head.
+    raw.setdefault("objective", "deterministic_mse")
+    raw.setdefault("fixed_action_scale", 0.1)
+    raw["fixed_action_scale"] = float(raw["fixed_action_scale"])
+    raw.setdefault("probe_episodes", 10)
+    raw["probe_episodes"] = int(raw["probe_episodes"])
+    raw.setdefault("rollout_checkpoint_probes", 4)
+    raw.setdefault("checkpoint_steps", None)
+    raw.setdefault("max_repair_per_candidate", 1)
+    raw.setdefault("max_llm_calls_per_generation", 50)
+    raw.setdefault("max_llm_tokens_per_generation", None)
+    raw.setdefault("promotion_challengers", 1)
+    raw.setdefault("param_budget", [6, 10])
+    if int(raw["rl_iterations"]) != 0:
+        raise ValueError(
+            f"{path}: rl_iterations must be 0; RL after checkpoint selection would break the "
+            f"link between a record's selected state and the evaluated policy"
+        )
+    if not raw["policy_gen_two_phase"]:
+        raise ValueError(f"{path}: policy_gen_two_phase must be true so candidates carry lineage")
     return SimpleNamespace(**raw)
 
 
@@ -256,26 +277,34 @@ def main() -> None:
         screen_episodes=cfg.screen_episodes,
         expanded_episodes=cfg.expanded_episodes,
     )
-    # The orchestrator carves the screening and expanded subsets out of this, so
-    # hand it enough cases for the larger of the two.
-    dev_manifest = dev_manifest_full.head(
-        min(max(cfg.screen_episodes, cfg.expanded_episodes), len(dev_manifest_full))
-    )
+    # The orchestrator carves the screen (first cases) and the disjoint promotion set
+    # (the next `expanded_episodes`) out of this. The checkpoint probe scores the tail,
+    # so screening, checkpoint selection and promotion evidence share no case.
+    evaluated_cases = cfg.screen_episodes + cfg.expanded_episodes
+    if evaluated_cases + cfg.probe_episodes > len(dev_manifest_full):
+        raise ValueError(
+            f"development manifest has {len(dev_manifest_full)} cases; a {cfg.screen_episodes}-case screen, "
+            f"a {cfg.expanded_episodes}-case promotion set and {cfg.probe_episodes} probe cases would overlap"
+        )
+    dev_manifest = dev_manifest_full.head(evaluated_cases)
+    probe_manifest = dev_manifest_full.tail(cfg.probe_episodes)
 
-    # One env per stream. Collection, evaluation and recording must not be able
-    # to disturb each other's placements.
+    # One env per stream. Collection, evaluation, probing and recording must not
+    # be able to disturb each other's placements.
     collect_env = make_env(cfg, train_pool)
     rl_env = make_env(cfg, train_pool)
     dev_env = make_env(cfg, dev_pool)
     gif_env = make_env(cfg, dev_pool)
-    envs = PipelineEnvs(development=dev_env, rl=rl_env, gif=gif_env)
+    probe_env = make_env(cfg, dev_pool)
+    envs = PipelineEnvs(development=dev_env, rl=rl_env, gif=gif_env, probe=probe_env)
 
     obs_dim, action_dim = policy_space_dims(dev_env)
     print(f"  obs_dim={obs_dim}, action_dim={action_dim}")
     print(f"  train manifest      : {train_manifest.manifest_id} ({len(train_manifest)} cases)")
     print(f"  development manifest: {dev_manifest.manifest_id} ({len(dev_manifest)} cases)")
+    print(f"  probe manifest      : {probe_manifest.manifest_id} ({len(probe_manifest)} cases, disjoint)")
     print(f"  development budget  : screen {promotion.screen_episodes}, "
-          f"expanded {promotion.expanded_episodes} (nested prefixes)")
+          f"promotion set {promotion.expanded_episodes} (disjoint from the screen and the probe)")
     print(f"  metaworld           : {dev_manifest.environment.version_or_commit}")
     print(f"  success rule        : {dev_manifest.environment.success_rule}")
 
@@ -374,6 +403,16 @@ def main() -> None:
         train_cases=train_manifest.episodes,
         eval_max_steps=cfg.eval_max_steps,
         promotion_policy=promotion,
+        rollout_checkpoint_probes=cfg.rollout_checkpoint_probes,
+        objective=cfg.objective,
+        checkpoint_steps=cfg.checkpoint_steps,
+        fixed_action_scale=cfg.fixed_action_scale,
+        probe_manifest=probe_manifest,
+        max_repair_per_candidate=cfg.max_repair_per_candidate,
+        max_llm_calls_per_generation=cfg.max_llm_calls_per_generation,
+        param_budget=tuple(cfg.param_budget),
+        max_llm_tokens_per_generation=cfg.max_llm_tokens_per_generation,
+        promotion_challengers=cfg.promotion_challengers,
     )
 
     t0 = time.time()

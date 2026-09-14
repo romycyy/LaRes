@@ -133,8 +133,9 @@ def main():
             "screen_episodes": policy.screen_episodes,
             "expanded_episodes": policy.expanded_episodes,
             "fallback_top_k": policy.fallback_top_k,
-            "promotion": "paired success difference against the incumbent",
-            "tie_break": "mean signed goal progress",
+            "promotion": __import__("lares.eval.promotion", fromlist=["PROMOTION_RULE"]).PROMOTION_RULE,
+            "promotion_challengers": cfg.get("promotion_challengers", 1),
+            "tie_break": "none for promotion; return and progress only rank and admit to the archive",
         },
         budgets={
             "generations": cfg.get("num_generations", "unset"),

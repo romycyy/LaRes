@@ -50,19 +50,25 @@ class PipelineEnvs:
     rl: Any
     gif: Any
     allow_shared: bool = False
+    #: The mid-fitting checkpoint probe's own stream. Optional so older callers
+    #: keep working; the evolution orchestrator requires it.
+    probe: Any = None
+
+    def _streams(self) -> tuple:
+        return tuple(e for e in (self.development, self.rl, self.gif, self.probe) if e is not None)
 
     def __post_init__(self):
         if self.allow_shared:
             return
-        ids = [id(self.development), id(self.rl), id(self.gif)]
+        ids = [id(e) for e in self._streams()]
         if len(set(ids)) != len(ids):
             raise ValueError(
-                "development, rl and gif must be separate env instances. Pass "
+                "development, rl, gif and probe must be separate env instances. Pass "
                 "allow_shared=True only for mocks that hold no simulator state."
             )
 
     def close(self) -> None:
-        for env in {id(e): e for e in (self.development, self.rl, self.gif)}.values():
+        for env in {id(e): e for e in self._streams()}.values():
             close = getattr(env, "close", None)
             if callable(close):
                 close()

@@ -4,9 +4,16 @@ Phase 4 of ``spec.md`` turns evolution into testable edits: every proposal state
 a hypothesis and a prediction that can be wrong, every attempted candidate leaves
 a record, and the archive keeps a simple and a behaviourally distinct candidate
 alongside the best one.
+
+``debug_spec.md`` adds the provenance those records need: typed generated
+candidates with lineage (:mod:`lares.search.generation`), separate resource
+counters (:mod:`lares.search.resources`), and the checks a summary runs before it
+calls anything complete (:mod:`lares.search.provenance`).
 """
 
 from lares.search.archive import (
+    SCOPE_CONFIRMED,
+    SCOPE_SCREEN,
     SLOT_DISTINCT,
     SLOT_ROBUST,
     SLOT_SIMPLEST,
@@ -24,14 +31,36 @@ from lares.search.feedback import (
     diagnostics_block,
     population_table,
 )
+from lares.search.generation import (
+    CandidateAllocator,
+    FeedbackBundle,
+    GeneratedCandidate,
+    LLMCallLedger,
+    LLMCallRecord,
+    StructuredOutputError,
+    env_identity,
+    parse_ideas_payload,
+    parse_proposals_payload,
+    write_feedback_bundle,
+)
+from lares.search.resources import ResourceLedger
 from lares.search.schemas import (
     BOUNDED_MODES,
+    LINEAGE_COMPLETE,
+    LINEAGE_FAILED_VALIDATION,
+    LINEAGE_LEGACY_MISSING,
+    LINEAGE_PARTIAL_RECOVERY,
+    LINEAGE_STATUSES,
     MODE_CROSSOVER,
     MODE_EXPLORATION,
     MODE_PARAMETER_ONLY,
     MODE_REPAIR,
     MODE_SIMPLIFICATION,
     MUTATION_MODES,
+    ORIGIN_GENERATED,
+    ORIGIN_LEGACY,
+    ORIGIN_REPAIR_STUDY,
+    ORIGINS,
     PARAM_GAIN,
     PARAM_STRUCTURAL,
     PARAMETER_TYPES,
@@ -57,10 +86,20 @@ __all__ = [
     "Archive",
     "ArchiveEntry",
     "BOUNDED_MODES",
+    "CandidateAllocator",
     "CandidateEvidence",
     "ExperimentRecord",
+    "FeedbackBundle",
+    "GeneratedCandidate",
     "IdeaParameter",
     "IdeaPhase",
+    "LINEAGE_COMPLETE",
+    "LINEAGE_FAILED_VALIDATION",
+    "LINEAGE_LEGACY_MISSING",
+    "LINEAGE_PARTIAL_RECOVERY",
+    "LINEAGE_STATUSES",
+    "LLMCallLedger",
+    "LLMCallRecord",
     "LOSS_CAVEAT",
     "MODE_CROSSOVER",
     "MODE_EXPLORATION",
@@ -69,10 +108,17 @@ __all__ = [
     "MODE_SIMPLIFICATION",
     "MUTATION_MODES",
     "MutationProposal",
+    "ORIGINS",
+    "ORIGIN_GENERATED",
+    "ORIGIN_LEGACY",
+    "ORIGIN_REPAIR_STUDY",
     "PARAMETER_TYPES",
     "PARAM_GAIN",
     "PARAM_STRUCTURAL",
     "PolicyIdea",
+    "ResourceLedger",
+    "SCOPE_CONFIRMED",
+    "SCOPE_SCREEN",
     "SLOTS",
     "SLOT_DISTINCT",
     "SLOT_ROBUST",
@@ -85,13 +131,18 @@ __all__ = [
     "STATUS_PROMOTED",
     "STATUS_REJECTED",
     "SchemaError",
+    "StructuredOutputError",
     "behavior_descriptor",
     "behavioral_distance",
     "build_feedback",
     "choose_informative_parents",
     "diagnostics_block",
+    "env_identity",
     "load_records",
     "measurable_metrics",
+    "parse_ideas_payload",
+    "parse_proposals_payload",
     "population_table",
     "source_hash",
+    "write_feedback_bundle",
 ]

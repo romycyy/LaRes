@@ -91,7 +91,7 @@ class GoodPolicy(SymbolicPolicy):
 
     def forward(self, obs):
         dir_obj, dir_goal, contact = self._terms(obs)
-        self.record_gate("contact", contact)
+        contact = self.record_gate("contact", contact)
         move = (1 - contact) * self.w_reach * dir_obj + contact * self.w_push * dir_goal
         grip = self.grip.unsqueeze(0).expand(obs.shape[0], 1)
         mean = torch.cat([move, grip], dim=1)

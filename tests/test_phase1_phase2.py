@@ -460,7 +460,7 @@ try:
         "{" not in code_feedback_tmpl
         and "failure labels" in code_feedback_tmpl
         and "signed goal progress" in code_feedback_tmpl.lower()
-        and "GeneratedPolicy" in code_feedback_tmpl
+        and "mutation proposals" in code_feedback_tmpl
     )
     check("2.5  code_feedback is placeholder-free guidance", ok)
 except Exception as e:
@@ -475,7 +475,8 @@ try:
         obs_description="test",
         input_dict_string="test",
     )
-    ok = "{'w1': (0.1, 10.0), 'log_std': (-5.0, 0.0)}" in formatted
+    # The action scale is fixed and not learned, so the example declares no log_std.
+    ok = "{'w1': (0.1, 10.0)}" in formatted and "log_std" not in formatted.split("Requirements:")[0]
     check("2.6  Escaped braces render as dict literal", ok)
 except Exception as e:
     check("2.6  Escaped braces render as dict literal", False, str(e))

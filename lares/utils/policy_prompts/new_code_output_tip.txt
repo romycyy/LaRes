@@ -10,7 +10,6 @@ class GeneratedPolicy(SymbolicPolicy):
         super().__init__(obs_dim, action_dim)
         self.w_move = nn.Parameter(torch.tensor(3.0))
         self.grip_bias = nn.Parameter(torch.tensor(0.0))
-        self.log_std = nn.Parameter(torch.tensor(-1.0))
 
     def forward(self, obs):
         # Read the observation by NAME. Raw indices such as obs[:, 0:3] are rejected.
@@ -24,12 +23,18 @@ class GeneratedPolicy(SymbolicPolicy):
         grip = self.grip_bias.unsqueeze(0).expand(obs.shape[0], 1)  # (batch_size, 1)
         # Concatenate along dim=1 to get (batch_size, 4)
         mean = torch.cat([move, grip], dim=1)  # (batch_size, 4) — use cat NOT stack
-        std = torch.exp(self.log_std) * torch.ones_like(mean)  # (batch_size, 4)
-        return (mean, std)
+        # The action scale is fixed by the framework. Never declare a scale parameter.
+        return (mean, self.fixed_std(mean))
 
     def get_param_ranges(self):
-        return {"w_move": (0.1, 10.0), "grip_bias": (-1.0, 1.0), "log_std": (-5.0, 0.0)}
+        return {"w_move": (0.1, 10.0), "grip_bias": (-1.0, 1.0)}
 ```
+
+PARAMETERS (violations will cause rejection):
+- Declare exactly the parameters listed in the idea you are implementing: the same names, the same
+  initial values, the same ranges. An extra or a missing parameter is rejected.
+- The action scale is fixed and not learned. Return `(mean, self.fixed_std(mean))`. A parameter that
+  only moves the scale, such as `log_std`, is rejected.
 
 OBSERVATION ACCESS (violations will cause rejection):
 - Read every observation quantity with `self.obs_field(obs, "<name>")`, which returns a
@@ -60,10 +65,13 @@ KNOWN CODE-GENERATION TRAPS (each of these has broken real candidates):
   the policy is rejected.
 - The initial value of every parameter must lie inside its own declared range.
 
-OPTIONAL DIAGNOSTICS:
-- If your policy has phase gates, expose them with `self.record_gate("name", gate_tensor)` inside
-  forward(). The value is detached, so it cannot change the action. Reports then show whether each
-  gate ever activated, which is what tells you a phase never fired versus fired at the wrong time.
+PHASE GATES (violations will cause rejection):
+- If your policy has phase gates, expose each one AND use the value that comes back:
+      contact = torch.sigmoid(self.sharpness * (self.threshold - dist_to_obj))
+      contact = self.record_gate("contact", contact)
+      move = (1 - contact) * approach + contact * push
+- `record_gate` returns the gate unchanged in ordinary use, and a forced value during a controlled
+  diagnostic. A gate whose returned value is thrown away cannot be forced, and is rejected.
 
 Design guidelines for the symbolic policy:
 
@@ -71,10 +79,9 @@ Design guidelines for the symbolic policy:
 
 (2) Learnable Weights: Use nn.Parameter to control the influence of each phase. For example, self.w_approach = nn.Parameter(torch.tensor(3.0)) to scale approach velocity.
 
-(3) Smooth Phase Transitions: Use torch.sigmoid applied to distance-based thresholds to softly switch between phases. For example:
-    phase = torch.sigmoid(self.sharpness * (self.threshold - dist_to_obj))
+(3) Smooth Phase Transitions: Use torch.sigmoid applied to distance-based thresholds to softly switch between phases, and route every gate through record_gate as shown above.
 
-(4) Exploration Noise: Use a log-scale parameter for std: self.log_std = nn.Parameter(torch.tensor(-1.0)), converted via torch.exp(self.log_std).
+(4) Action Scale: Fixed by the framework. Always return `self.fixed_std(mean)` as the std.
 
 (5) Direction Normalization: Always normalize direction vectors before scaling:
     direction = diff / (torch.norm(diff, dim=-1, keepdim=True) + 1e-8)
@@ -88,7 +95,7 @@ Design guidelines for the symbolic policy:
 (8) Initial Values: Choose initial parameter values that produce reasonable default behaviour before
     any training at all. State what the untrained policy should do; it is evaluated before fitting.
 
-(9) Parameter Ranges: Estimate based on physical intuition — distance thresholds in [0.01, 0.5], direction weights in [0.1, 10.0], log-std in [-5.0, 0.0], sharpness in [1.0, 200.0].
+(9) Parameter Ranges: Estimate based on physical intuition — distance thresholds in [0.01, 0.5], direction weights in [0.1, 10.0], sharpness in [1.0, 200.0].
 
 (10) Differentiability: All expressions must be differentiable with respect to nn.Parameters so that gradient-based optimization works. Avoid hard if/else on tensor values; use torch.sigmoid or torch.where instead.
 
