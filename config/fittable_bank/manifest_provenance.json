@@ -1,0 +1,17 @@
+{
+  "manifest_id": "push-v2:development_confirmation:s2300:n50",
+  "manifest_path": "config/fittable_bank/push-v2_development_confirmation_s2300.yaml",
+  "manifest_sha256": "bf397c994f4fdd3c62795428bf32e516554cd999c950cd15fbfb5031c165f4a2",
+  "pool_seed": 2300,
+  "episodes": 50,
+  "built_at": "2026-09-14T04:02:22",
+  "disjoint_from": [
+    "push-v2:development:s2000:n50",
+    "push-v2:final_test:s3000-3001:n100",
+    "push-v2:train:s1000-1001-1002:n150",
+    "push-v2:development_confirmation:s2200:n50",
+    "push-v2:development_confirmation:s2100:n50"
+  ],
+  "variants_frozen_sha256": "e58fdf4f684ed41dacd882b875a767642d3d3a88c768bcccb63e2cbdfe68c182",
+  "ledger_sha256_after_reservation": "0b573e4305281463fdd90505650af89bc8d4ecc84d1678e21bbec88dfc7f3c6b"
+}

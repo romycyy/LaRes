@@ -14,3 +14,9 @@
 {"seed": 2202, "namespace": "fitting", "use": "Stage E fitting seeds", "artifact": "config/stage_e/stage_e.yaml", "recorded_at": "2026-09-14T03:24:31", "backfilled": false}
 {"seed": 2203, "namespace": "fitting", "use": "Stage E fitting seeds", "artifact": "config/stage_e/stage_e.yaml", "recorded_at": "2026-09-14T03:24:31", "backfilled": false}
 {"seed": 2204, "namespace": "fitting", "use": "Stage E fitting seeds", "artifact": "config/stage_e/stage_e.yaml", "recorded_at": "2026-09-14T03:24:31", "backfilled": false}
+{"seed": 2300, "namespace": "mt1_pool", "use": "fittable-bank qualification evaluation manifest", "artifact": "config/fittable_bank/push-v2_development_confirmation_s2300.yaml", "recorded_at": "2026-09-14T04:02:22", "backfilled": false}
+{"seed": 2300, "namespace": "fitting", "use": "fittable-bank qualification fitting seeds", "artifact": "config/fittable_bank/qualification.yaml", "recorded_at": "2026-09-14T04:02:22", "backfilled": false}
+{"seed": 2301, "namespace": "fitting", "use": "fittable-bank qualification fitting seeds", "artifact": "config/fittable_bank/qualification.yaml", "recorded_at": "2026-09-14T04:02:22", "backfilled": false}
+{"seed": 2302, "namespace": "fitting", "use": "fittable-bank qualification fitting seeds", "artifact": "config/fittable_bank/qualification.yaml", "recorded_at": "2026-09-14T04:02:22", "backfilled": false}
+{"seed": 2303, "namespace": "fitting", "use": "fittable-bank qualification fitting seeds", "artifact": "config/fittable_bank/qualification.yaml", "recorded_at": "2026-09-14T04:02:22", "backfilled": false}
+{"seed": 2304, "namespace": "fitting", "use": "fittable-bank qualification fitting seeds", "artifact": "config/fittable_bank/qualification.yaml", "recorded_at": "2026-09-14T04:02:22", "backfilled": false}
