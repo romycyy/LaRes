@@ -197,6 +197,15 @@ expert is an unbounded proportional controller with gain 10 that does no clippin
 in the targets is ours. So the censored Gaussian is the matching model and needs clipped execution,
 and a tanh-Gaussian likelihood is wrong twice over.
 
+**Imitation fitting is disabled by default (Stage E, 2026-09-14).** `config/run_full_evolution.yaml` sets
+`bc_steps: 0` and no checkpoint probes, so candidates are evaluated at their declared initial values; the
+records still carry a (zero-step) fit, selected step 0 and identical initial and selected states. Fitting is
+an experimental treatment: no fitted condition beat zero-shot with a 95% interval above zero across 8
+structures (`config/stage_e/stage_e.yaml`, `logs/stage_e/20260914_032500`). Fixed-budget fitting is harmful;
+rollout-selected fitting helps the hand-written bank structures a great deal and the evolved structures not at
+all. If you turn fitting on, always rollout-select. Seed 2200 and fitting seeds 2200-2204 are spent
+(`config/experiment_seed_ledger.jsonl`).
+
 **Behavioural cloning is non-monotonic in gradient steps.** Development success peaks around 1000
 steps and collapses to zero by 3000, while validation loss falls the whole way. Measured on two
 structures over three seeds; at the loss minimum both score zero. `behavioral_cloning` therefore

@@ -11,8 +11,8 @@ Tracks the implementation of `debug_spec.md`. Started 2026-09-13 on branch `stag
 | 3. Records, resources, archive, reconstruction, gate levers, summaries (Stage C) | **done**, tested |
 | 4. Two-generation smoke test (Stage D) | **done**: mocked run and live gpt-5 run pass every check, including a live correction |
 | — Full run on the updated `config/run_full_evolution.yaml` | **done**: held-out success 0.340 against the pre-debug best's 0.120, paired +0.220, t95 [+0.045, +0.395] |
-| 5. Fresh development-confirmation experiment (Stage E) | not started; now unblocked. Must use a pool seed other than 2100 |
-| 6. Correction-LLM repair and clean ablation (Stage F) | not started; blocked on step 5. The old ablation is relabelled a pilot |
+| 5. Fresh development-confirmation experiment (Stage E) | **done** at `f96f060`: no fitted condition beat zero-shot with its 95% interval above zero, so fitting is disabled by default |
+| 6. Correction-LLM repair and clean ablation (Stage F) | not started; now unblocked. The old ablation is relabelled a pilot |
 
 Phase 7 stays blocked. Nothing in this cycle opened the final-test split or ran Qwen.
 
@@ -336,6 +336,66 @@ Recorded as given; each is implemented or scheduled as noted.
    refuses a dirty worktree and records the Git SHA in every result.
 7. **Phase 7 stays blocked through Stage F** (`CLAUDE.md` corrected).
 
+## Stage E result (2026-09-14)
+
+**Run.** `scripts/stage_e.py run`, run `logs/stage_e/20260914_032500`, 697 s on 8 workers, at commit `f96f060`
+with a clean worktree (every structure result records the SHA). Frozen inputs verified by hash: protocol
+`config/stage_e/stage_e.yaml`, selection `config/stage_e/selection.json`, confirmation manifest
+`push-v2:development_confirmation:s2200:n50` (sha256 `37645f74…`), demo buffer, seed ledger. Checkpoints were
+selected on development cases 40-49 (`#slice40-50`); every condition was scored on the 50 confirmation
+placements. 8 structures x 5 fitting seeds (2200-2204). Cost: 160,000 gradient steps, 4,000 probe episodes
+(600,000 simulator steps), 3,900 confirmation episodes (585,000 steps). The final-test split was not opened.
+
+**Structures.** Bank: `simple_reach_push`, `simple_damped_push`, `simple_standoff`. Evolved (selected before the
+manifest existed, all 15 candidates reconstructed, `gen2_cand1_a0` dropped as behaviourally identical to
+`gen0_cand0_a0`): `gen2_cand0_a1`, `gen1_cand2_a0`, `gen1_cand1_a0`, `gen1_cand0_a0`, `gen0_cand0_a0`. All five
+descend from `gen0_cand0`, so the evolved family is narrow.
+
+**Confirmation success, mean over seeds** (selected checkpoint steps in brackets):
+
+| structure | family | zero-shot | MSE fixed 2000 | MSE rollout-selected | phase-balanced rollout-selected |
+|---|---|---:|---:|---:|---:|
+| evolved_gen0_cand0_a0 | evolved | 0.400 | 0.000 | 0.400 [0] | 0.400 [0] |
+| evolved_gen1_cand0_a0 | evolved | 0.400 | 0.000 | 0.400 [0] | 0.400 [0] |
+| evolved_gen1_cand1_a0 | evolved | 0.400 | 0.000 | 0.400 [0] | 0.400 [0] |
+| evolved_gen1_cand2_a0 | evolved | 0.380 | 0.000 | 0.380 [0] | 0.380 [0] |
+| evolved_gen2_cand0_a1 | evolved | 0.380 | 0.000 | 0.380 [0] | 0.380 [0] |
+| simple_damped_push | bank | 0.120 | 0.504 | 0.908 [1000] | 0.952 [1500, 2000] |
+| simple_reach_push | bank | 0.580 | 0.020 | 0.956 [1000] | 0.924 [1000] |
+| simple_standoff | bank | 0.000 | 0.000 | 0.000 [500] | 0.000 [500] |
+
+**Predeclared analysis** (structure is the unit; difference from zero-shot averaged over seeds; t interval
+over the 8 structures):
+
+| condition | mean | 95% t interval | median | bank mean [t95, n=3] | evolved mean [t95, n=5] | Holm |
+|---|---:|---|---:|---|---|---|
+| MSE fixed 2000 | -0.267 | [-0.524, -0.010] | -0.390 | -0.059 [-1.238, +1.121] | -0.392 [-0.406, -0.378] | fail |
+| MSE rollout-selected | +0.146 | [-0.098, +0.389] | +0.000 | +0.388 [-0.591, +1.367] | +0.000 [0, 0] | fail |
+| phase-balanced rollout-selected | +0.147 | [-0.105, +0.399] | +0.000 | +0.392 [-0.647, +1.431] | +0.000 [0, 0] | fail |
+
+**Decision, as frozen: fitting is disabled by default.** No fitted condition beat zero-shot with its 95%
+interval above zero. `config/run_full_evolution.yaml` now sets `bc_steps: 0` and no checkpoint probes; fitting
+remains an experimental treatment. A mocked run with fitting disabled was added
+(`test_two_generation_mock.TestFittingDisabled`): selected step 0, no probes, initial and selected states
+identical, records valid, reconstruction exact, traceability complete.
+
+**What the pooled rule hides.**
+
+1. **The effect is family-specific, not small.** Rollout-selected fitting lifts two of three bank structures
+   from 0.12 and 0.58 to 0.91–0.96, the highest held-out success of any policy in this project, and does
+   nothing for the evolved structures, whose probes always pick step 0. The pooled interval crosses zero
+   because five evolved structures contribute exactly +0.000, not because fitting is weakly positive.
+2. **Fixed-budget fitting is harmful**, significantly so overall, and destroys every evolved structure
+   (0.38–0.40 to 0.000). If fitting is used at all, it must be rollout-selected.
+3. **The evolved structures are fitting-resistant, and the bank structures are fitting-dependent.** The
+   debug-cycle prompts produced controllers that work untrained and that imitation moves away from success;
+   the hand-written references are poor untrained and excellent at the pre-collapse checkpoint.
+4. **Phase-balanced sampling adds nothing measurable over uniform** once the checkpoint is rollout-selected
+   (+0.147 against +0.146).
+5. With the family split this stark, the family-level intervals are too wide to decide anything on three bank
+   structures. A decision about fitting for hand-written or fitting-dependent structures would need more of
+   them.
+
 ## Decisions and deviations
 
 1. **Paths.** The spec names `lares/fit/objectives.py` and `lares/fit/fitter.py`; the package is
@@ -372,10 +432,8 @@ Recorded as given; each is implemented or scheduled as noted.
    .venv-metaworld/bin/python scripts/summarise_experiments.py --log-dir logs/evolution_debug_full
    .venv-metaworld/bin/python scripts/compare_evolution_runs.py --baseline logs/evolution_review_20260913 --run logs/evolution_debug_full
    ```
-2. **Stage E**: build a fresh development-confirmation manifest from an unused pool seed (not 2100), then
-   run the three predeclared arms (fixed 2000, rollout-selected, phase-balanced) over at least five seeds per
-   structure with paired differences and a small-sample interval. The full run predicts the fixed-2000 arm
-   near zero for current structures; the bank structures may behave differently, so include both.
+2. **Stage E: done** (see "Stage E result"). Fitting disabled by default. Seed 2200 and fitting seeds
+   2200-2204 are spent.
 3. **Research decisions raised by the full run** (`RESEARCH_HANDOFF.md`, question 0): whether imitation
    fitting stays in the loop, whether promotion should require a paired interval above zero, and whether the
    edit generations earn their cost, since they did not improve held-out success.

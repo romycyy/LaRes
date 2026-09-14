@@ -807,7 +807,35 @@ the final incumbent's 0.340 (paired -0.060, t95 [-0.194, +0.074]). The developme
 to 0.567 came from one promotion on a tie in success with higher return and one on a +0.067 difference whose
 interval included zero. Bounded repairs frequently produced different code with identical per-case outcomes.
 
+## Stage E: fitting is disabled by default, and the family split is the real finding (2026-09-14)
+
+Run `logs/stage_e/20260914_032500` at commit `f96f060`, frozen protocol `config/stage_e/stage_e.yaml`, 50
+confirmation placements from MT1 seed 2200, checkpoints selected on development cases 40-49, 8 structures x 5
+seeds. Full tables in `DEBUG_PROGRESS.md`.
+
+Against zero-shot, structure-level: fixed 2000 steps -0.267 [-0.524, -0.010]; rollout-selected MSE +0.146
+[-0.098, +0.389]; phase-balanced +0.147 [-0.105, +0.399]. No interval lies above zero, so by the frozen rule
+fitting is disabled by default.
+
+The pooled number conceals two opposite families. On the five evolved structures (all descendants of
+`gen0_cand0`) rollout selection always returns step 0 and fixed fitting drives success from about 0.40 to 0.000.
+On the hand-written bank structures rollout-selected fitting takes `simple_damped_push` from 0.120 to 0.908
+(0.952 phase-balanced) and `simple_reach_push` from 0.580 to 0.956: the best held-out policies in the project,
+more than double the best evolved policy's 0.400. `simple_standoff` stays at zero whatever is done.
+
 ## Questions requiring a research decision
+
+-1. **Raised by Stage E.** (a) The frozen rule pooled both families, and the default it produced removes the
+   route to the strongest policies yet found. Should fitting stay disabled for generated structures while
+   remaining available, rollout-selected only, for structures that are fitting-dependent, and if so, how is
+   that decided before seeing a structure's fitted score? A predeclared per-structure probe (fit only when a
+   step-500 or step-1000 checkpoint beats step 0 on the probe cases) is one option; it is what
+   rollout selection already does, at the cost of the probe episodes. (b) The generation prompts now reward
+   untrained behaviour. That produced fitting-resistant structures capped near 0.40, while two hand-written
+   six-parameter structures reach 0.9 after fitting. Should the next search ask for fittable structures, or
+   seed the search with the bank references? (c) Evidence about fitting for fitting-dependent structures
+   rests on three bank structures; more are needed before any decision specific to them.
+
 
 0. **Answered on 2026-09-14** (details in `DEBUG_PROGRESS.md`, "Decisions of 2026-09-14"): fitting is an
    experimental treatment decided by Stage E's four conditions; promotion requires a paired interval

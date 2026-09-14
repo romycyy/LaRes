@@ -416,6 +416,45 @@ class TestTwoGenerationRun(unittest.TestCase):
                              SimpleNamespace(model="m", policy_gen_two_phase=True))
 
 
+class TestFittingDisabled(unittest.TestCase):
+    """The default after Stage E: zero-step fitting, no probes, still fully traceable."""
+
+    def test_a_run_with_fitting_disabled_keeps_initial_values_and_complete_records(self):
+        from lares.fitting.optimizers import state_parameters_sha256
+
+        with tempfile.TemporaryDirectory() as root:
+            manifest = synthetic_manifest(13, label="push-v2")
+            orchestrator = EvolutionOrchestrator(
+                env_name="push-v2", obs_dim=39, action_dim=4, num_generations=1, pop_size=2, elite_num=1,
+                bc_steps=0, checkpoint_steps=(), log_dir=root, record_demo_gif=False,
+                dev_manifest=manifest.head(10), probe_manifest=manifest.tail(3), eval_max_steps=30,
+                promotion_policy=PromotionPolicy(screen_episodes=4, expanded_episodes=6),
+            )
+            ideas = json.dumps({"ideas": [idea_dict("A", PARAMS_A), idea_dict("B", PARAMS_B)]})
+            llm = ScriptedLLM({"policy_ideas": [ideas], "policy_implement": [fence(POLICY_A), fence(POLICY_B)]})
+            envs = PipelineEnvs(development=PushWorld(), rl=PushWorld(), gif=PushWorld(), probe=PushWorld())
+            args = SimpleNamespace(model="stub-model", policy_gen_two_phase=True, policy_impl_mode="per_idea")
+            train = synthetic_manifest(10, label="push-v2-train").episodes
+            with patch.object(pg, "_call_llm", side_effect=llm), patch.object(
+                pg, "_run_policy_validation_subprocess", return_value=(True, "Success!", "full")
+            ):
+                orchestrator.run(MagicMock(), envs, expert_buffer(train), args)
+            records = [r for r in load_records(os.path.join(root, "experiments")) if r.status != STATUS_INVALID]
+            self.assertEqual(len(records), 2)
+            for record in records:
+                self.assertTrue(record.validate())
+                self.assertEqual(record.fitting["selected_step"], 0)
+                self.assertEqual(record.fitting["checkpoint_history"], [])
+                self.assertEqual(record.resources["bc_gradient_steps"], 0)
+                self.assertEqual(record.resources["probe_episodes"], 0)
+                initial = load_tensor_artifact(root, record.fitting["initial_state"])
+                selected = load_tensor_artifact(root, record.fitting["selected_state"])
+                self.assertEqual(state_parameters_sha256(initial), state_parameters_sha256(selected))
+                self.assertTrue(reconstruct_record(record, root)["identical"])
+            summary = traceability_summary(records, root)
+            self.assertTrue(all(field["complete"] for field in summary.values()), summary)
+
+
 sys.path.insert(0, os.path.join(_PROJECT_ROOT, "scripts"))
 
 if __name__ == "__main__":

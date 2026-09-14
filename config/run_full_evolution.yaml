@@ -28,7 +28,12 @@ dataset_episodes: 150       # Expert episodes, taken from the head of the train 
 demo_buffer_path: "./logs/baseline_lock/demo_push-v2.pkl"
 
 # ---------- Stage 2+3: BC + RL inner loop ----------
-bc_steps: 2000              # Behavioural-cloning gradient steps per candidate
+# Imitation fitting is DISABLED by default (Stage E, run logs/stage_e/20260914_032500 at commit
+# f96f060, decided by the rule frozen in config/stage_e/stage_e.yaml). No fitted condition beat
+# zero-shot on held-out paired success with a 95% interval above zero: rollout-selected MSE +0.146
+# [-0.098, +0.389], phase-balanced +0.147 [-0.105, +0.399], fixed 2000 steps -0.267 [-0.524, -0.010].
+# Fitting remains available as an experimental treatment: set bc_steps and checkpoint_steps.
+bc_steps: 0                 # Behavioural-cloning gradient steps per candidate (0 = zero-shot structures)
 rl_iterations: 0           # Must be 0: RL after checkpoint selection breaks record provenance
 rl_episodes: 30             # Rollout episodes per RL iteration (unused while rl_iterations is 0)
 
@@ -38,8 +43,8 @@ fixed_action_scale: 0.1       # Non-trainable std returned by SymbolicPolicy.fix
 # Checkpoints probed during fitting, as gradient-step counts. Step 0 is the untrained
 # policy and can be selected. Tie rule: higher success, higher progress, earlier step.
 # Leave null to use step 0 plus `rollout_checkpoint_probes` evenly spaced steps.
-checkpoint_steps: [0, 500, 1000, 1500, 2000]
-rollout_checkpoint_probes: 4
+checkpoint_steps: []          # no probes while fitting is disabled; experimental value: [0, 500, 1000, 1500, 2000]
+rollout_checkpoint_probes: 0
 probe_episodes: 10            # Probe cases, taken from the development tail, disjoint from screening
 max_repair_per_candidate: 1   # One linked correction attempt per slot, never an outer retry
 # LLM budget, matched to the three-generation debug-cycle run (logs/evolution_debug_full: 20 calls,

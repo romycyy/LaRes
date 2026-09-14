@@ -21,6 +21,10 @@ AC-3 items closed, with the comparison run over the full bank.
 > fitting. Stages E–F are not yet run. Decisions of 2026-09-14 (promotion requires a paired interval above
 > zero on an independent promotion set; fitting is an experimental treatment decided by Stage E; no edit
 > generations in the next search; Phase 7 blocked through Stage F) are recorded in `DEBUG_PROGRESS.md`.
+> **Stage E is complete** (run `logs/stage_e/20260914_032500`, commit `f96f060`): no fitted condition beat
+> zero-shot with its 95% interval above zero, so imitation fitting is disabled by default
+> (`bc_steps: 0`). The effect is family-specific: rollout-selected fitting lifts two hand-written bank
+> structures to 0.91-0.96 held-out success and leaves every evolved structure at step 0.
 
 **Phase 4 — LLM proposal, feedback and archive** (FR-5, FR-10, AC-4): **reopened** by `debug_spec.md`.
 Candidate lineage, structured proposals, feedback bundles and the LLM-call ledger are now integrated
