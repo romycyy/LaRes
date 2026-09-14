@@ -364,6 +364,25 @@ def cmd_select(args) -> int:
 # ---------------------------------------------------------------------------
 
 
+def unique_manifests(manifests) -> list:
+    """One copy per manifest id, refusing two different manifests under one id.
+
+    An evaluation saves its manifest beside each output, so the same spent
+    manifest can sit in several directories; comparing those copies with each
+    other would report a false overlap.
+    """
+    seen, out = {}, []
+    for m in manifests:
+        hashes = [c.task_hash for c in m.episodes]
+        if m.manifest_id in seen:
+            if seen[m.manifest_id] != hashes:
+                raise SystemExit(f"two different manifests share the id {m.manifest_id!r}")
+            continue
+        seen[m.manifest_id] = hashes
+        out.append(m)
+    return out
+
+
 def cmd_build_manifest(args) -> int:
     from lares.eval.manifest import SPLIT_DEVELOPMENT, EvaluationManifest, assert_disjoint, build_manifest
 
@@ -388,8 +407,10 @@ def cmd_build_manifest(args) -> int:
         manifest_id=cfg["confirmation_manifest"]["manifest_id"],
     )
     committed = [EvaluationManifest.load(p) for p in sorted(glob.glob(os.path.join(_PROJECT_ROOT, "config", "manifests", "*.yaml")))]
-    spent = [EvaluationManifest.load(p) for p in glob.glob(os.path.join(_PROJECT_ROOT, "logs", "**", "*confirmation*.yaml"), recursive=True)]
-    assert_disjoint(committed + spent + [manifest])
+    spent = [EvaluationManifest.load(p) for p in sorted(glob.glob(os.path.join(_PROJECT_ROOT, "logs", "**", "*confirmation*.yaml"), recursive=True))]
+    known = unique_manifests(committed + spent)
+    assert_disjoint(known + [manifest])
+    committed, spent = known[: len(committed)], known[len(committed):]
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     manifest.save(out_path)
     stamp = now()

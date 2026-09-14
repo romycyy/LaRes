@@ -58,6 +58,19 @@ class TestSeedLedger(unittest.TestCase):
             self.assertTrue(any("pool seed" in c for c in conflicts))
             self.assertEqual(stage_e.seed_conflicts([2300], [2301], ledger, [os.path.join(tmp, "*.yaml")]), [])
 
+    def test_saved_copies_of_one_manifest_count_once_but_a_conflicting_id_is_refused(self):
+        a = synthetic_manifest(4, label="push-v2")
+        copy_of_a = synthetic_manifest(4, label="push-v2")
+        other = synthetic_manifest(5, label="push-v2")
+        unique = stage_e.unique_manifests([a, copy_of_a, other])
+        self.assertEqual([m.manifest_id for m in unique], [a.manifest_id, other.manifest_id])
+        clash = synthetic_manifest(4, label="push-v2")
+        from dataclasses import replace
+
+        clash.episodes = [replace(clash.episodes[0], task_hash="different")] + clash.episodes[1:]
+        with self.assertRaises(SystemExit):
+            stage_e.unique_manifests([a, clash])
+
     def test_reservations_are_appended_not_rewritten(self):
         with tempfile.TemporaryDirectory() as tmp:
             ledger = os.path.join(tmp, "ledger.jsonl")
