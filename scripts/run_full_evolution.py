@@ -142,6 +142,21 @@ def load_config(path: str) -> SimpleNamespace:
         )
     if not raw["policy_gen_two_phase"]:
         raise ValueError(f"{path}: policy_gen_two_phase must be true so candidates carry lineage")
+    # Two-lane search (decided 2026-09-14): the plan itself is built and checked in main().
+    raw.setdefault("two_lane_search", None)
+    block = raw["two_lane_search"]
+    if block is not None:
+        problems = []
+        if int(raw["num_generations"]) != int(block.get("generations", 0)) or int(raw["num_generations"]) != 1:
+            problems.append(f"num_generations {raw['num_generations']} must equal two_lane_search.generations (1)")
+        if int(raw["pop_size"]) != int(block.get("candidates", -1)):
+            problems.append(f"pop_size {raw['pop_size']} must equal two_lane_search.candidates {block.get('candidates')}")
+        if int(raw["bc_steps"]) != 0:
+            problems.append("bc_steps must be 0: explorations are zero-shot; the fittable lane's budget is in the plan")
+        if raw["policy_impl_mode"] != "per_idea":
+            problems.append("policy_impl_mode must be per_idea for the two-lane search")
+        if problems:
+            raise ValueError(f"{path}: " + "; ".join(problems))
     return SimpleNamespace(**raw)
 
 
@@ -392,6 +407,23 @@ def main() -> None:
     # -----------------------------------------------------------------------
     separator("LLM-Based Structure Evolution (Stages 2–4)")
 
+    lane_plan = None
+    if cfg.two_lane_search is not None:
+        from lares.search.lanes import expected_budget, load_two_lane_plan
+
+        lane_plan = load_two_lane_plan(cfg.two_lane_search)
+        print(f"  Two-lane search: {len(lane_plan.fittable_slots)} fittable mutations + "
+              f"{len(lane_plan.exploration_slots)} unseeded explorations; fittable checkpoints "
+              f"{list(lane_plan.checkpoint_steps)} on the probe manifest")
+        for spec in lane_plan.fittable_slots:
+            print(f"    slot {spec.slot}: {spec.reference.structure_id} (scope {spec.scope.scope_id})")
+        budget = expected_budget(lane_plan, cfg.screen_episodes, cfg.expanded_episodes, cfg.probe_episodes,
+                                 cfg.eval_max_steps, cfg.max_repair_per_candidate)
+        print(f"  Expected budget: <= {budget['total']['episodes_max']} episodes, "
+              f"<= {budget['total']['simulator_steps_max']} simulator steps, "
+              f"{budget['total']['bc_gradient_steps']} gradient steps, ~{budget['llm']['expected_calls']} LLM calls "
+              f"(max {budget['llm']['max_calls']})")
+
     orchestrator = EvolutionOrchestrator(
         env_name=cfg.env_name,
         obs_dim=obs_dim,
@@ -418,6 +450,7 @@ def main() -> None:
         param_budget=tuple(cfg.param_budget),
         max_llm_tokens_per_generation=cfg.max_llm_tokens_per_generation,
         promotion_challengers=cfg.promotion_challengers,
+        lane_plan=lane_plan,
     )
 
     t0 = time.time()

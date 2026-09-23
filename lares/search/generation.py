@@ -40,6 +40,10 @@ from dataclasses import asdict, dataclass, field
 from typing import Iterable, Sequence
 
 from lares.search.schemas import (  # noqa: F401  (lineage constants re-exported)
+    EXPLORATION_LABEL,
+    FITTABLE_LABEL,
+    LANE_EXPLORATION,
+    LANE_FITTABLE,
     LINEAGE_COMPLETE,
     LINEAGE_FAILED_VALIDATION,
     LINEAGE_LEGACY_MISSING,
@@ -48,6 +52,7 @@ from lares.search.schemas import (  # noqa: F401  (lineage constants re-exported
     PRE_IDEA_STAGES,
     MODE_CROSSOVER,
     MODE_EXPLORATION,
+    MODE_FITTABLE_MUTATION,
     MODE_PARAMETER_ONLY,
     MODE_REPAIR,
     MODE_SIMPLIFICATION,
@@ -497,6 +502,11 @@ class GeneratedCandidate:
     previous_attempt_id: str | None = None
     #: How the code was attached to the idea (batched fence index, per-idea call).
     mapping: dict = field(default_factory=dict)
+    #: ``fittable`` or ``exploration`` in a two-lane search; empty otherwise.
+    lane: str = ""
+    #: Allocated with the slot, before any call: the label, and for the fittable lane the
+    #: seed-bank reference, the predeclared mutation scope and (once parsed) the mutation.
+    lane_metadata: dict = field(default_factory=dict)
 
     @property
     def attempt_id(self) -> str:
@@ -547,6 +557,8 @@ class GeneratedCandidate:
             "idea": self.idea.to_dict() if self.idea is not None else None,
             "proposal": self.proposal.to_dict() if self.proposal is not None else None,
             "mapping": dict(self.mapping),
+            "lane": self.lane,
+            "lane_metadata": dict(self.lane_metadata),
         }
 
 
@@ -569,6 +581,10 @@ def check_semantic_parents(proposal: MutationProposal, context_parent_ids: Seque
     if proposal.mode in (MODE_REPAIR, MODE_SIMPLIFICATION) and len(parents) != 1:
         problems.append(
             f"{proposal.proposal_id}: a {proposal.mode} proposal edits exactly one parent, got {len(parents)}"
+        )
+    if proposal.mode == MODE_FITTABLE_MUTATION and len(parents) != 1:
+        problems.append(
+            f"{proposal.proposal_id}: a fittable mutation edits exactly one seed-bank reference, got {len(parents)}"
         )
     if proposal.mode == MODE_CROSSOVER and len(parents) < 2:
         problems.append(f"{proposal.proposal_id}: a crossover needs at least two parents, got {len(parents)}")
@@ -621,6 +637,16 @@ def check_lineage(candidate: GeneratedCandidate, feedback: FeedbackBundle | None
         except SchemaError as exc:
             problems.append(f"{candidate.attempt_id}: idea invalid: {exc}")
 
+    if candidate.lane == LANE_FITTABLE:
+        return problems + _fittable_lineage_problems(candidate)
+    if candidate.lane == LANE_EXPLORATION:
+        meta = candidate.lane_metadata or {}
+        if meta.get("label") != EXPLORATION_LABEL or meta.get("seeded") is not False:
+            problems.append(f"{candidate.attempt_id}: an exploration must be labelled {EXPLORATION_LABEL!r}, unseeded")
+        if candidate.proposal is not None:
+            problems.append(f"{candidate.attempt_id}: an unseeded exploration has no proposal and no parent")
+        return problems
+
     if candidate.generation == 0:
         if candidate.proposal is not None:
             problems.append(f"{candidate.attempt_id}: generation 0 has no semantic parent, so no proposal")
@@ -643,6 +669,36 @@ def check_lineage(candidate: GeneratedCandidate, feedback: FeedbackBundle | None
             )
         if list(candidate.context_parent_ids) != list(feedback.context_parent_ids):
             problems.append(f"{candidate.attempt_id}: context parents differ from the feedback bundle")
+    problems.extend(check_semantic_parents(candidate.proposal, candidate.context_parent_ids))
+    return problems
+
+
+def _fittable_lineage_problems(candidate: GeneratedCandidate) -> list:
+    """A fittable-lane candidate: one proposal editing its slot's reference, inside its scope."""
+    who = candidate.attempt_id
+    meta = candidate.lane_metadata or {}
+    reference = (meta.get("reference") or {}).get("structure_id")
+    problems = []
+    if meta.get("label") != FITTABLE_LABEL or meta.get("seeded") is not True:
+        problems.append(f"{who}: a fittable-lane candidate must be labelled {FITTABLE_LABEL!r}, seeded")
+    if not reference or not (meta.get("reference") or {}).get("source_sha256"):
+        problems.append(f"{who}: no seed-bank reference with a source hash")
+    if not (meta.get("mutation_scope") or {}).get("id"):
+        problems.append(f"{who}: no predeclared mutation scope")
+    if candidate.proposal is None:
+        problems.append(f"{who}: a fittable-lane candidate requires its mutation proposal")
+        return problems
+    try:
+        candidate.proposal.validate()
+    except SchemaError as exc:
+        problems.append(f"{who}: proposal invalid: {exc}")
+    if candidate.proposal.mode != MODE_FITTABLE_MUTATION:
+        problems.append(f"{who}: mode must be {MODE_FITTABLE_MUTATION!r}, got {candidate.proposal.mode!r}")
+    if list(candidate.proposal.parent_ids) != [reference]:
+        problems.append(f"{who}: parents {candidate.proposal.parent_ids} are not the slot reference [{reference!r}]")
+    mutation = meta.get("mutation") or {}
+    if not str(mutation.get("structural_change", "")).strip():
+        problems.append(f"{who}: the mutation does not state its one structural change")
     problems.extend(check_semantic_parents(candidate.proposal, candidate.context_parent_ids))
     return problems
 
@@ -739,6 +795,8 @@ class SlotParse:
     idea: PolicyIdea | None = None
     proposal: MutationProposal | None = None
     problems: list = field(default_factory=list)
+    #: A fittable mutation's declaration: structural change and parameter changes.
+    mutation: dict | None = None
 
     @property
     def ok(self) -> bool:
@@ -768,6 +826,7 @@ def parse_ideas_payload(
     generation: int,
     schema=None,
     budget: tuple = PARAMETER_BUDGET,
+    slot_offset: int = 0,
 ) -> list:
     """Strictly parse ``{"ideas": [<PolicyIdea>, ...]}`` into per-slot results.
 
@@ -786,8 +845,9 @@ def parse_ideas_payload(
         )
     out = []
     for i, raw in enumerate(ideas):
-        idea, problems = _parse_idea(raw, f"gen{generation}_idea{i}", f"ideas[{i}]", schema, budget)
-        out.append(SlotParse(slot=i, idea=idea, problems=problems))
+        slot = int(slot_offset) + i
+        idea, problems = _parse_idea(raw, f"gen{generation}_idea{slot}", f"ideas[{i}]", schema, budget)
+        out.append(SlotParse(slot=slot, idea=idea, problems=problems))
     _mark_duplicates(out)
     return out
 
@@ -828,7 +888,12 @@ def parse_proposals_payload(
             sp.problems.extend(missing)
         else:
             mode = str(raw.get("mode", ""))
-            if mode not in MUTATION_MODES:
+            if mode == MODE_FITTABLE_MUTATION:
+                sp.problems.append(
+                    f"{where}.proposal: {MODE_FITTABLE_MUTATION!r} is produced only by the fittable lane's "
+                    f"seeded request, never by an ordinary proposal"
+                )
+            elif mode not in MUTATION_MODES:
                 sp.problems.append(f"{where}.proposal: mode must be one of {MUTATION_MODES}, got {mode!r}")
             else:
                 proposal = MutationProposal.from_dict({**raw, "proposal_id": f"gen{generation}_prop{i}"})
@@ -841,6 +906,88 @@ def parse_proposals_payload(
         idea, problems = _parse_idea(item["idea"], f"gen{generation}_idea{i}", f"{where}.idea", schema, budget)
         sp.idea = idea
         sp.problems.extend(problems)
+        out.append(sp)
+    _mark_duplicates(out)
+    return out
+
+
+_MUTATION_ENTRY_KEYS = ("slot", "parent_id", "mutation_scope", "structural_change", "parameter_changes", "proposal", "idea")
+_MUTATION_PROPOSAL_KEYS = tuple(k for k in _PROPOSAL_KEYS if k not in ("parent_ids", "mode"))
+
+
+def parse_fittable_mutations_payload(
+    text: str,
+    slots: Sequence[dict],
+    generation: int,
+    schema=None,
+    metrics: set | None = None,
+    budget: tuple = PARAMETER_BUDGET,
+    declaration_check=None,
+) -> list:
+    """Strictly parse ``{"mutations": [...]}`` for the fittable lane's predeclared slots.
+
+    ``slots`` is ``[{"slot", "reference", "scope"}, ...]`` in slot order; the allocation is
+    fixed by configuration, so the model must echo each slot's reference and scope and may not
+    choose another. A wrong count raises; a bad entry fails only its slot. Proposal and idea ids,
+    the mode and the parent are set here, never taken from the model. ``declaration_check(slot,
+    declaration, idea)`` returns further problems (the scope and bounded-change rules).
+    """
+    data = extract_json_object(text)
+    items = data.get("mutations")
+    if not isinstance(items, list):
+        raise StructuredOutputError('expected {"mutations": [...]} with a list of mutation objects')
+    if len(items) != len(slots):
+        raise StructuredOutputError(
+            f"expected exactly {len(slots)} mutations, one per fittable slot, got {len(items)}; "
+            f"nothing is padded or dropped"
+        )
+    out = []
+    for i, (item, slot) in enumerate(zip(items, slots)):
+        where = f"mutations[{i}]"
+        sp = SlotParse(slot=int(slot["slot"]))
+        missing = _missing_keys(item, _MUTATION_ENTRY_KEYS, where)
+        if missing:
+            sp.problems.extend(missing)
+            out.append(sp)
+            continue
+        if item.get("slot") != slot["slot"]:
+            sp.problems.append(f"{where}: slot {item.get('slot')!r} is not the predeclared slot {slot['slot']}")
+        if item.get("parent_id") != slot["reference"]:
+            sp.problems.append(
+                f"{where}: parent {item.get('parent_id')!r} is not this slot's reference {slot['reference']!r}; "
+                f"the allocation is fixed"
+            )
+        if item.get("mutation_scope") != slot["scope"]:
+            sp.problems.append(f"{where}: scope {item.get('mutation_scope')!r} is not this slot's scope {slot['scope']!r}")
+        raw = item["proposal"]
+        missing = _missing_keys(raw, _MUTATION_PROPOSAL_KEYS, f"{where}.proposal")
+        if missing:
+            sp.problems.extend(missing)
+        else:
+            proposal = MutationProposal.from_dict({
+                **raw, "proposal_id": f"gen{generation}_prop{slot['slot']}",
+                "parent_ids": [slot["reference"]], "mode": MODE_FITTABLE_MUTATION, "no_parent_rationale": "",
+            })
+            try:
+                proposal.validate(metrics)
+            except SchemaError as exc:
+                sp.problems.append(f"{where}.proposal: {exc}")
+            sp.proposal = proposal
+        changes = item["parameter_changes"]
+        declaration = {"structural_change": str(item.get("structural_change") or "").strip()}
+        if not declaration["structural_change"]:
+            sp.problems.append(f"{where}: structural_change must state the one structural change")
+        if not isinstance(changes, dict) or any(not isinstance(changes.get(k, []), list) for k in ("adds", "removes", "changes")):
+            sp.problems.append(f'{where}: parameter_changes must be {{"adds": [...], "removes": [...], "changes": [...]}}')
+            changes = {}
+        for key in ("adds", "removes", "changes"):
+            declaration[key] = [str(x) for x in (changes.get(key) or [])]
+        sp.mutation = declaration
+        idea, problems = _parse_idea(item["idea"], f"gen{generation}_idea{slot['slot']}", f"{where}.idea", schema, budget)
+        sp.idea = idea
+        sp.problems.extend(problems)
+        if declaration_check is not None:
+            sp.problems.extend(f"{where}: {p}" for p in declaration_check(slot, declaration, idea))
         out.append(sp)
     _mark_duplicates(out)
     return out

@@ -1,0 +1,151 @@
+# ============================================================
+#  Two-lane search (decided 2026-09-14) — configuration
+#
+#  Used by:  scripts/run_full_evolution.py --config config/two_lane_search.yaml
+#  Plan and rules: lares/search/lanes.py. NOT YET RUN: run the new-model baseline
+#  (config/run_full_evolution.yaml) first, and only with approval for live calls.
+#  Identical to the baseline except for the two_lane_search block, the call cap and the log dir.
+# ============================================================
+
+# ---------- Environment ----------
+env_name: "push-v2"        # MetaWorld task name (see EXPERT_POLICY_MAP); maps to push-v3
+seed: 42
+# Use Farama MT1 benchmark tasks for push-v3 (full observability + valid rand_vec per task).
+# The task placements themselves come from the committed manifests below, never from an
+# unseeded MT1 construction: MT1 without a seed draws different goals on every run.
+use_mt1: true
+
+# ---------- Evaluation contract ----------
+# Committed manifests define which placements each split runs on. Rebuild with:
+#   python scripts/lock_baseline.py --build-manifests
+manifest_dir: "./config/manifests"
+eval_max_steps: 150         # Rollout horizon; must match the manifests' `horizon`
+
+# ---------- Stage 1: Expert dataset ----------
+dataset_episodes: 150       # Expert episodes, taken from the head of the train manifest
+
+# Pre-collected expert buffer, skipping Stage 1. It must carry episode ids so the
+# validation split is by complete episode (spec.md FR-6); logs/evolution/demo_push-v2.pkl
+# predates episode ids and cannot. Collected with:
+#   python scripts/lock_baseline.py --collect-demos 150
+demo_buffer_path: "./logs/baseline_lock/demo_push-v2.pkl"
+
+# ---------- Stage 2+3: BC + RL inner loop ----------
+# Imitation fitting is DISABLED by default (Stage E, run logs/stage_e/20260914_032500 at commit
+# f96f060, decided by the rule frozen in config/stage_e/stage_e.yaml). No fitted condition beat
+# zero-shot on held-out paired success with a 95% interval above zero: rollout-selected MSE +0.146
+# [-0.098, +0.389], phase-balanced +0.147 [-0.105, +0.399], fixed 2000 steps -0.267 [-0.524, -0.010].
+# Fitting remains available as an experimental treatment: set bc_steps and checkpoint_steps.
+bc_steps: 0                 # Behavioural-cloning gradient steps per candidate (0 = zero-shot structures)
+rl_iterations: 0           # Must be 0: RL after checkpoint selection breaks record provenance
+rl_episodes: 30             # Rollout episodes per RL iteration (unused while rl_iterations is 0)
+
+# ---------- Fitting and checkpoint selection (debug_spec.md Stage B) ----------
+objective: deterministic_mse  # Named objective from lares/fitting/objectives.py
+fixed_action_scale: 0.1       # Non-trainable std returned by SymbolicPolicy.fixed_std
+# Checkpoints probed during fitting, as gradient-step counts. Step 0 is the untrained
+# policy and can be selected. Tie rule: higher success, higher progress, earlier step.
+# Leave null to use step 0 plus `rollout_checkpoint_probes` evenly spaced steps.
+checkpoint_steps: []          # no probes while fitting is disabled; experimental value: [0, 500, 1000, 1500, 2000]
+rollout_checkpoint_probes: 0
+probe_episodes: 10            # Probe cases, taken from the development tail, disjoint from screening
+max_repair_per_candidate: 1   # One linked correction attempt per slot, never an outer retry
+# LLM budget. Two design calls (one per lane) + 2 retries + 9 implementations + 9 corrections = 22
+# calls at most. The token cap stays off until the new-model baseline has measured real usage; set it
+# to the baseline's ledger total to match budgets (a decision that needs approval).
+max_llm_calls_per_generation: 22
+max_llm_tokens_per_generation: null
+param_budget: [6, 10]         # Recommended tunable-parameter budget; more needs a justification
+
+# ---------- Evaluation: screening and promotion (spec.md section 12; decided 2026-09-14) ----------
+# Every candidate is screened on the first `screen_episodes` development cases. Only the best
+# screened challenger is then scored on the promotion set: the next `expanded_episodes` cases,
+# disjoint from the screen and from the probe tail (10 + 30 + 10 = 50). It replaces the incumbent
+# only if its paired success difference is strictly positive and the paired t interval's lower
+# bound is above zero. Ties never promote; return and progress never replace the incumbent.
+screen_episodes: 10
+expanded_episodes: 30         # size of the promotion set
+promotion_challengers: 1      # more than one is judged with Holm's correction
+eval_episodes: 30           # legacy alias; used as `expanded_episodes` if that is unset
+
+# ---------- Stage 4: LLM structure search ----------
+# Every LLM call in the pipeline (ideation, implementation, correction) uses this model and effort
+# (decided 2026-09-14). gpt-5.6-sol accepts only temperature 1. The completed runs in
+# logs/evolution_debug_full and logs/debug_smoke_two_generation used gpt-5 without reasoning_effort,
+# so their token budgets do not transfer: reasoning tokens count toward total_tokens.
+model: "gpt-5.6-sol"
+reasoning_effort: high      # none | minimal | low | medium | high | xhigh
+# If true: one LLM call for JSON design hypotheses, then implementation (batched or per-idea).
+policy_gen_two_phase: true
+# When policy_gen_two_phase is true: "batched" or "per_idea".
+# Measured on 2026-09-09 with gpt-4o-mini, 4 policies per generation, 3 replicates each:
+# both modes returned 12/12 valid candidates, and per_idea cost 0.73x the tokens per
+# usable candidate because a batched request repeats every hypothesis in one long prompt.
+# See logs/generation_modes/ and scripts/compare_generation_modes.py.
+policy_impl_mode: per_idea
+# One generation of exactly nine candidates; no edit generations (Stage F evaluates those).
+num_generations: 1
+pop_size: 9
+elite_num: 2
+
+# ---------- Two lanes (decided 2026-09-14; lares/search/lanes.py) ----------
+# bc_steps stays 0 above: explorations are zero-shot. Only the fittable lane fits, with the budget and
+# checkpoints below, selected on the probe manifest (the development tail). Both lanes are screened on
+# the same screen and challenge on the same promotion set. performance_incumbent may come from either
+# lane; fittable_incumbent needs a fittable-lane candidate with selected_step > 0 whose fitted state
+# beats its own step-0 state (and the current fittable incumbent) on the promotion set, strict rule.
+two_lane_search:
+  generations: 1
+  candidates: 9
+  reference_seeded_bounded_mutations: 6
+  open_explorations: 3
+  checkpoint_selection_data: probe
+  candidate_ranking_data: screen
+  promotion_data: separate_confirmation
+  open_exploration_fitting: disabled
+  seed_bank: config/fittable_bank/seed_bank.json
+  structure_roles: config/fittable_bank/structure_roles.yaml   # standoff and smooth-gate: controls only
+  fittable_lane:
+    checkpoints: [0, 500, 1000]     # step 0 stays selectable; selecting it is recorded as fitting_rejected
+    fitting_budget: 1000
+    max_parameter_changes: 3        # adds + removes + changes named by one bounded mutation
+    min_parent_parameters_kept: 0.5 # below this a mutation is a wholesale rewrite, refused
+    # Fixed 4:2 allocation, declared here and never derived from ranking references: one slot for each
+    # reach-push reference in the seed bank, two for simple_damped_push with different scopes.
+    slots:
+      - {reference: simple_reach_push, scope: single_bounded_change}
+      - {reference: simple_reach_push_damped, scope: single_bounded_change}
+      - {reference: simple_reach_push_shared_gain, scope: single_bounded_change}
+      - {reference: simple_reach_push_sharp_gate, scope: single_bounded_change}
+      - {reference: simple_damped_push, scope: gate_control}
+      - {reference: simple_damped_push, scope: geometry}
+    scopes:
+      single_bounded_change:
+        description: any one structural change to the parent
+        may_change: "*"
+        may_remove: "*"
+        allow_adds: true
+      gate_control:
+        description: >-
+          the contact and brake gates or the control law (gate shape, radii, sharpness, gains, damping);
+          the reach target and push direction stay as in the parent
+        may_change: [sharpness, contact_radius, brake_radius, w_reach, w_push, damping]
+        may_remove: [brake_radius, damping]
+        allow_adds: true
+      geometry:
+        description: >-
+          where the end effector aims (approach offset, standoff, lateral or height offset, push
+          direction); the gates and control law stay as in the parent
+        may_change: []
+        may_remove: []
+        allow_adds: true
+
+# ---------- Logging ----------
+# A fresh directory per controlled run. Never reuse one: ./logs/evolution holds the historical
+# incumbent that lock_baseline.py reproduces, and ./logs/evolution_debug_full holds the completed
+# three-generation gpt-5 debug-cycle run.
+log_dir: "./logs/two_lane_search"
+
+# After each generation, record a demo of the best candidate as a GIF under
+# ``log_dir/gen_<N>/``.  Set to false on headless machines if rendering fails.
+record_demo_gif: true

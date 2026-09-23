@@ -52,6 +52,8 @@ REPORT_STREAMS = {
     "intermediate": "screen",
     "fitted_screen": "screen",
     "fitted_expanded": "expanded",
+    # Two-lane search: the fittable challenger's step-0 state, scored on the promotion set.
+    "zero_shot_expanded": "expanded",
 }
 
 

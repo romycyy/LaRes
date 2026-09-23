@@ -357,18 +357,14 @@ def cmd_run(args) -> int:
 
 
 def qualify(differences, rule) -> dict:
-    """Apply the seed-bank rule to one structure's per-seed paired differences."""
-    arr = np.asarray(differences, dtype=float)
-    improvements = int((arr > 0).sum())
-    worst = float(arr.min()) if arr.size else None
-    mean = float(arr.mean()) if arr.size else None
-    checks = {
-        "improves_in_enough_seeds": improvements >= int(rule["improves_in_at_least"]),
-        "no_seed_regresses_beyond_tolerance": worst is not None and worst >= float(rule["worst_seed_difference_at_least"]) - 1e-12,
-        "mean_difference_positive": mean is not None and mean > float(rule["mean_difference_greater_than"]),
-    }
-    return {"improvements": improvements, "worst": worst, "mean": mean, "checks": checks,
-            "qualifies": all(checks.values()), "interval": t_interval(arr.tolist())}
+    """Apply the seed-bank rule to one structure's per-seed (or per-replicate) paired differences.
+
+    The rule itself lives in :func:`lares.fitting.replicates.qualification_checks`, shared with the
+    data-varying replicate study (``config/fittable_bank/qualification_v2.yaml``).
+    """
+    from lares.fitting.replicates import qualification_checks
+
+    return {**qualification_checks(differences, rule), "interval": t_interval([float(d) for d in differences])}
 
 
 def report(run_dir, cfg=None) -> int:

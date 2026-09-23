@@ -1,0 +1,70 @@
+# ============================================================
+#  Active structure roles (decided 2026-09-14, after the fittable-bank qualification study)
+#
+#  Parent selection for the two-lane search and every future fittable-bank study read this file.
+#  Only `fittable_seed` structures may be a fittable-lane parent. A `non_fittable_control` is
+#  kept to be scored beside the seed bank, never mutated and never admitted to it. A `retired`
+#  structure is not run at all.
+#
+#  Nothing here deletes a file or a result. Every source listed stays on disk, the frozen Phase 3
+#  bank (lares/fitting/structures/) is unchanged, and the committed qualification record
+#  (config/fittable_bank/seed_bank.json, logs/fittable_bank/20260914_040245) is unchanged.
+# ============================================================
+
+seed_bank: config/fittable_bank/seed_bank.json
+
+roles:
+  fittable_seed: may be a fittable-lane parent; qualified by config/fittable_bank/qualification.yaml
+  non_fittable_control: evaluated as a control only; never a parent, never in the seed bank
+  retired: kept on disk for history; never a parent, never run
+
+structures:
+  # -- fittable seed bank: the five qualifiers, in seed_bank.json order ----------------------
+  simple_damped_push:
+    role: fittable_seed
+    family: damped_push
+    source_path: lares/fitting/structures/simple_damped_push.py
+  simple_reach_push:
+    role: fittable_seed
+    family: reach_push
+    source_path: lares/fitting/structures/simple_reach_push.py
+  simple_reach_push_damped:
+    role: fittable_seed
+    family: reach_push
+    source_path: lares/fitting/fittable_variants/simple_reach_push_damped.py
+  simple_reach_push_shared_gain:
+    role: fittable_seed
+    family: reach_push
+    source_path: lares/fitting/fittable_variants/simple_reach_push_shared_gain.py
+  simple_reach_push_sharp_gate:
+    role: fittable_seed
+    family: reach_push
+    source_path: lares/fitting/fittable_variants/simple_reach_push_sharp_gate.py
+
+  # -- non-fittable controls ------------------------------------------------------------------
+  simple_standoff:
+    role: non_fittable_control
+    family: standoff
+    source_path: lares/fitting/structures/simple_standoff.py
+    reason: >-
+      representative of the standoff family, which is removed from parent selection and the
+      fittable bank; 0.00 evaluation success at step 0 and at the selected step on all five seeds
+  simple_damped_push_smooth_gate:
+    role: non_fittable_control
+    family: damped_push
+    source_path: lares/fitting/fittable_variants/simple_damped_push_smooth_gate.py
+    reason: >-
+      0.00 evaluation success and fitting rejected (selected step 0) on all five seeds; kept as
+      the damped-push family's non-fittable control
+
+  # -- retired: the other standoff structures, represented by simple_standoff -----------------
+  simple_standoff_phase_gains:
+    role: retired
+    family: standoff
+    source_path: lares/fitting/fittable_variants/simple_standoff_phase_gains.py
+    reason: standoff family removed; simple_standoff is its one representative control
+  simple_standoff_moderate_geometry:
+    role: retired
+    family: standoff
+    source_path: lares/fitting/fittable_variants/simple_standoff_moderate_geometry.py
+    reason: standoff family removed; simple_standoff is its one representative control

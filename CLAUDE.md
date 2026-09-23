@@ -87,6 +87,11 @@ python scripts/qualify_fittable_bank.py build-manifest
 python scripts/qualify_fittable_bank.py run          # clean worktree; records the Git SHA
 python scripts/qualify_fittable_bank.py report --run <logs/fittable_bank/run_dir>
 
+# Two-lane search (decided 2026-09-14; lares/search/lanes.py). Implemented and tested against mocks only.
+# Run the new-model baseline first. Both are live gpt-5.6-sol runs and need approval.
+python scripts/run_full_evolution.py                                      # baseline: 9 unseeded zero-shot candidates
+python scripts/run_full_evolution.py --config config/two_lane_search.yaml # 6 fittable mutations + 3 explorations
+
 # Symbolic-policy evolution (primary entry point; config-driven, no CLI flags besides --config)
 python scripts/run_full_evolution.py
 python scripts/run_full_evolution.py --config path/to/custom.yaml   # see config/run_full_evolution.yaml
@@ -115,7 +120,8 @@ python -m unittest tests.test_evaluation_manifest tests.test_manifest_runner \
   tests.test_policy_interface tests.test_evaluation_report tests.test_fitting \
   tests.test_search tests.test_objectives tests.test_repair tests.test_freeze \
   tests.test_final_report tests.test_vision tests.test_fitting_provenance tests.test_provenance \
-  tests.test_two_generation_mock
+  tests.test_two_generation_mock tests.test_stage_e tests.test_fittable_bank tests.test_two_lane_search \
+  tests.test_replicate_bundles
 python -m unittest tests.test_record_episode_gif.TestRecordEpisodeGif.test_saves_gif_and_returns_metadata
 ```
 
@@ -230,7 +236,45 @@ evidence. Step-0 strength and fittability are classified separately (`performanc
 three references, qualified by `scripts/qualify_fittable_bank.py`; the frozen Phase 3 bank is unchanged. The
 fittable seed bank (`config/fittable_bank/seed_bank.json`, run `logs/fittable_bank/20260914_040245`) is
 `simple_reach_push_sharp_gate`, `simple_damped_push`, `simple_reach_push`, `simple_reach_push_damped` and
-`simple_reach_push_shared_gain`. Seeds 2300-2304 are spent. The two-lane search is not implemented yet.
+`simple_reach_push_shared_gain`. Seeds 2300-2304 are spent.
+
+**Structure roles (`config/fittable_bank/structure_roles.yaml`).** Parent selection reads this file, not the
+seed bank's scores. Only `fittable_seed` structures (the five above) may be a fittable-lane parent. The standoff
+family and `simple_damped_push_smooth_gate` are out: `simple_standoff` and the smooth-gate variant are
+`non_fittable_control`s (scored beside the bank, never mutated, never admitted), and the other two standoff
+variants are `retired`. No file or result was deleted; `seed_bank.json` and the Phase 3 bank are unchanged.
+
+**Two-lane search (`lares/search/lanes.py`, `generate_two_lane_candidates`; decided 2026-09-14).** Implemented
+and tested against mocks only (`tests/test_two_lane_search.py`); never run live. One generation of exactly nine
+candidates, configured by the `two_lane_search` block of `config/two_lane_search.yaml` and refused on any other
+shape:
+- *Fittable lane, 6 slots, fixed 4:2 allocation* (declared in config, never ranked): one slot for each
+  reach-push seed, two for `simple_damped_push` with the predeclared scopes `gate_control` and `geometry`. One
+  design call returns a `fittable_mutation` per slot (`parse_fittable_mutations_payload`): the slot's parent and
+  scope echoed, one structural change, declared adds/removes/changes inside the scope (at most 3, at least 50%
+  of parent parameters kept), a predicted `fitting.*` diagnostic, protected behaviours, no action scale. The
+  implemented child must differ from its parent exactly as declared (`check_bounded_mutation`), or it fails at
+  `mutation_contract` and gets its one correction. Only this lane fits: budget 1000, checkpoints {0, 500, 1000}
+  on the probe manifest; selecting step 0 is recorded as `fitting_rejected`.
+- *Exploration lane, 3 slots*: the ordinary idea request, labelled `unseeded_exploration`, no parent, no
+  proposal. Never fitted or probed; its zero-shot screen is its screen (no duplicate "fitted" screen).
+- *Incumbents*: `performance_incumbent` is the existing cross-lane challenge. `fittable_incumbent` needs a
+  fittable-lane candidate with `selected_step > 0` whose fitted state beats both its own step-0 state and the
+  current fittable incumbent on the promotion manifest, each by the strict paired rule
+  (`decide_fittable_incumbent`). Written to `incumbents.json`; per-lane resources to `lane_resources.json`.
+- The orchestrator (`lane_plan=`) requires one generation, `pop_size` 9, global `bc_steps: 0`, one challenger,
+  and a probe manifest disjoint from the screen. Records carry `lineage.lane` and `lineage.lane_metadata`, and
+  `ExperimentRecord.validate` enforces the lane rules.
+
+**Replicate bundles (`lares/fitting/replicates.py`).** Future qualification varies data, not minibatch order:
+each replicate draws its own demonstration sample, trajectory-level split, probe manifest and qualification
+manifest, and every structure in a replicate shares that bundle (`run_replicate_qualification` refuses
+otherwise). Protocol predeclared, not run: `config/fittable_bank/qualification_v2.yaml` (seeds 2400-2424, unused
+and unreserved on 2026-09-14).
+
+**Baseline under the new model (`config/run_full_evolution.yaml`).** One generation of nine unseeded zero-shot
+candidates on the same manifests, fitting disabled, no token cap, log dir `logs/baseline_gpt56_sol_high`. It
+must run (with approval) before the two-lane search, whose token budget should be matched to its ledger.
 
 **Behavioural cloning is non-monotonic in gradient steps.** Development success peaks around 1000
 steps and collapses to zero by 3000, while validation loss falls the whole way. Measured on two

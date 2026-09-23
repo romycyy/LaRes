@@ -202,6 +202,21 @@ def main():
         error = str((r.validation.get("errors") or [""])[0]).splitlines()
         print(f"  {r.experiment_id:<24} {r.validation.get('stage', '')}: {error[0][:80] if error else ''}")
 
+    lanes_summary = None
+    if any((r.lineage or {}).get("lane") for r in generated):
+        from lares.search.lanes import lane_resource_totals
+
+        lanes_summary = lane_resource_totals(generated, ledger)
+        separator("Resources by lane (two-lane search)")
+        for lane in ("fittable", "exploration"):
+            t = lanes_summary[lane]
+            print(f"  {lane:<12} slots {t['slots']}  gradient steps {t['bc_gradient_steps']}  probe episodes "
+                  f"{t['probe_episodes']}  screen episodes {t['screen_episodes']}  promotion episodes "
+                  f"{t['expanded_episodes']}  simulator steps {t['simulator_steps']}  LLM calls {t['llm_calls']} "
+                  f"({t['llm_total_tokens']} tokens)")
+        if lanes_summary["calls_crossing_lanes"]:
+            print(f"  WARNING: calls referenced by both lanes: {lanes_summary['calls_crossing_lanes']}")
+
     summary = {
         "records_dir": records_dir,
         "records": len(records),
@@ -219,6 +234,7 @@ def main():
         "resources": reconciliation,
         "interventions": [r.candidate_id for r in interventions],
         "sidecar_version": sidecar.get("sidecar_version") if sidecar else None,
+        "lanes": lanes_summary,
     }
     out = args.out or os.path.join(args.log_dir, "experiment_summary.json")
     with open(out, "w", encoding="utf-8") as f:

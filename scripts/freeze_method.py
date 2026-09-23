@@ -56,6 +56,7 @@ FROZEN_MODULES = (
     "lares/repair/hypotheses.py",
     "lares/search/archive.py",
     "lares/search/feedback.py",
+    "lares/search/lanes.py",
 )
 
 

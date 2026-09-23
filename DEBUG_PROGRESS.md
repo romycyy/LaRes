@@ -515,6 +515,63 @@ different number of slots and the next search is not budget-matched to `logs/evo
 caps are unchanged pending a decision. No LLM is used for evaluation: screening, promotion, Stage E and the
 fittable-bank study are rollouts only, and the vision analyst is a local Qwen model, blocked with E10.
 
+## Two-lane search, implemented against mocks (2026-09-14)
+
+Decided 2026-09-14: rerun a baseline under the new model before searching; implement the two-lane search with
+mocks and tests only. No live model call, no live search, no Stage F, Phase 7 still blocked.
+
+**Baseline under the new model: prepared, not run.** The request also said to stop before any live model call,
+and a baseline rerun is a live gpt-5.6-sol run, so it waits for approval. `config/run_full_evolution.yaml` is now
+that baseline: one generation, nine unseeded zero-shot candidates, fitting disabled, the same screen
+(10), promotion set (30) and probe tail (10) the two-lane search uses, at most 20 calls, no token cap (the old
+242,642 was a gpt-5 number), log dir `logs/baseline_gpt56_sol_high`.
+
+**Implementation.**
+
+| Requirement | Where |
+|---|---|
+| Exactly 9 = 6 fittable + 3 exploration | `lanes.load_two_lane_plan` refuses any other count or more than one generation; orchestrator refuses `pop_size != 9` |
+| Fixed 4:2 allocation, two damped-push scopes, no ranking | `two_lane_search.fittable_lane.slots` in `config/two_lane_search.yaml`; `check_fixed_allocation` checks it against `structure_roles.yaml`; seed-bank scores are never read |
+| Only the fittable lane fits, {0, 500, 1000}, step 0 selectable, `fitting_rejected` | `EvolutionOrchestrator._fitting_settings`; explorations use `_zero_shot_fit` (no data, no gradient, no probe, no fitting wall time); records carry `fitting.fitting_rejected` |
+| Separate incumbents, strict rule, independent evidence | `_fittable_promotion` + `lanes.decide_fittable_incumbent`: fitted vs own step 0 and vs current fittable incumbent on the promotion manifest, screen and probe ids excluded; `incumbents.json` |
+| Same screen and promotion manifests; probe separate | both lanes use `screen_manifest` / `promotion_manifest`; with a lane plan, `check_manifest_isolation` also refuses a probe overlapping the screen |
+| Provenance | `GeneratedCandidate.lane`/`lane_metadata`; `fittable_mutation` mode (one seed-bank parent, `fitting.*` prediction); `ExperimentRecord._validate_fittable_lineage`, `_validate_exploration_lineage`, `_validate_lane_fitting`; `lane_resources.json`; lane section in `summarise_experiments.py` |
+| Standoff and smooth-gate out of the bank | `config/fittable_bank/structure_roles.yaml`: `simple_standoff` and `simple_damped_push_smooth_gate` are non-fittable controls, the other two standoff variants retired; nothing deleted |
+| Data-varying replicates | `lares/fitting/replicates.py` (`ReplicateBundle`, `build_replicate_bundles`, `run_replicate_qualification`); `config/fittable_bank/qualification_v2.yaml` predeclared, seeds 2400-2424 unused and unreserved |
+
+Generation: `generate_two_lane_candidates` makes two design calls (the fittable request with each slot's fixed
+parent source and scope, `fittable_mutations_user.txt`; the ordinary idea request for the explorations), then one
+implementation per slot with at most one linked correction. The per-slot implement/correct code was factored
+into `_SlotImplementer`, shared with `generate_candidates` (existing generation tests unchanged and passing).
+A child that validates but differs from its parent beyond its declaration fails at `mutation_contract`.
+Lane rules are added to the freeze digest (`scripts/freeze_method.py`).
+
+**Choices made here that need approval** (none changes a decided rule):
+- Scopes: `single_bounded_change` (any parameter) for the four reach-push slots; `gate_control` may change
+  sharpness, contact/brake radius, reach/push gains, damping and remove brake radius or damping; `geometry` may
+  add parameters only. At most 3 named parameter changes; at least 50% of parent parameters unchanged.
+- The fittable incumbent must beat its own step 0 *and* the current fittable incumbent (the 0.00 null before any
+  promotion). Lane mode tests one challenger per incumbent (`promotion_challengers: 1`).
+- Both configs have no token cap; the call caps (20 baseline, 22 two-lane) bound the spend until the baseline
+  measures real usage.
+
+**Tests.** `tests/test_two_lane_search.py` (52) runs one mocked two-lane generation through the real
+orchestrator in the kinematic push world with the real seed-bank references: nine candidates in the planned
+lanes and slots; one child (weakened reach gain) fitted to step 1000 and promoted as fittable incumbent with both
+paired intervals above zero; four children keep step 0 and are recorded `fitting_rejected`; an undeclared change
+fails `mutation_contract` and is corrected; explorations consume no fitting or probe resources; lane resources
+reconcile with the ledger with no call crossing lanes; every record validates, reconstructs and reconciles.
+Plus plan refusals, roles, the mutation contract and parser, incumbent rules on synthetic results (ties,
+intervals including zero, excluded evidence), orchestrator and config refusals, and the expected budget.
+`tests/test_replicate_bundles.py` (12). Full unittest set: 695 OK. `tests/test_phase1_phase2.py` 41/41.
+`tests/test_training_pipeline.py` 116/116 with `OPENAI_API_KEY` unset (Tier 3 skipped on purpose: no live calls).
+
+**Expected cost of one live two-lane run** (`lanes.expected_budget`, config values): fittable lane 180 screen
+episodes (zero-shot, halfway, selected x 10 x 6), 180 probe episodes (3 checkpoints x 10 x 6), 6,000 gradient
+steps; exploration lane 30 screen episodes, nothing else; promotion 60-90 episodes; at most 480 episodes and
+72,000 simulator steps. LLM: 2 design + 9 implementation calls + ~1.2 expected corrections (13% rate) = ~12,
+at most 22. Tokens under gpt-5.6-sol high are unmeasured; the baseline measures them.
+
 ## Decisions and deviations
 
 1. **Paths.** The spec names `lares/fit/objectives.py` and `lares/fit/fitter.py`; the package is

@@ -40,17 +40,33 @@ MODE_SIMPLIFICATION = "simplification"
 MODE_CROSSOVER = "crossover"
 MODE_EXPLORATION = "exploration"
 MODE_PARAMETER_ONLY = "parameter_only"
+#: A bounded, reference-seeded edit in the fittable lane (decided 2026-09-14). Only the lane's own
+#: seeded request produces it: one seed-bank parent, one declared structural change, and a
+#: prediction about a fitting diagnostic.
+MODE_FITTABLE_MUTATION = "fittable_mutation"
 MUTATION_MODES = (
     MODE_REPAIR,
     MODE_SIMPLIFICATION,
     MODE_CROSSOVER,
     MODE_EXPLORATION,
     MODE_PARAMETER_ONLY,
+    MODE_FITTABLE_MUTATION,
 )
 
 #: Modes that must name one bounded component and one predicted change. An
 #: exploration is allowed to be broad; everything else is a stated hypothesis.
 BOUNDED_MODES = (MODE_REPAIR, MODE_SIMPLIFICATION, MODE_PARAMETER_ONLY)
+
+#: Search lanes (decided 2026-09-14). The fittable lane holds reference-seeded bounded mutations and
+#: is the only lane that may run rollout-selected fitting; the exploration lane holds unseeded,
+#: zero-shot designs that never consume fitting or probe resources.
+LANE_FITTABLE = "fittable"
+LANE_EXPLORATION = "exploration"
+LANES = (LANE_FITTABLE, LANE_EXPLORATION)
+FITTABLE_LABEL = "reference_seeded_bounded_mutation"
+EXPLORATION_LABEL = "unseeded_exploration"
+#: How a selected step of 0 is recorded: the probe preferred the untrained parameters.
+FITTING_REJECTED = "fitting_rejected"
 
 STATUS_GENERATED = "generated"
 STATUS_INVALID = "invalid"
@@ -92,6 +108,11 @@ def measurable_metrics() -> set[str]:
         "gate_statistics",
     }
     return names
+
+
+def fitting_metrics() -> set[str]:
+    """The fitting diagnostics a fittable-lane mutation may predict an improvement in."""
+    return {m for m in measurable_metrics() if m.startswith("fitting.")}
 
 
 class SchemaError(ValueError):
@@ -341,7 +362,13 @@ class MutationProposal:
             f"{self.mode} proposals must name at least one behaviour the edit must "
             f"not lose, so a regression is detectable",
         )
-        if self.mode in (MODE_REPAIR, MODE_SIMPLIFICATION, MODE_PARAMETER_ONLY):
+        if self.mode == MODE_FITTABLE_MUTATION:
+            _require(
+                self.predicted_metric.startswith("fitting."),
+                f"a fittable mutation predicts which fitting diagnostic improves; "
+                f"{self.predicted_metric!r} is not one of {sorted(fitting_metrics())}",
+            )
+        if self.mode in (MODE_REPAIR, MODE_SIMPLIFICATION, MODE_PARAMETER_ONLY, MODE_FITTABLE_MUTATION):
             _require(
                 len(self.parent_ids) == 1,
                 f"a {self.mode} edits one parent; got {len(self.parent_ids)}",
@@ -557,7 +584,13 @@ class ExperimentRecord:
                 self.idea_id and lineage.get("idea"),
                 f"{who}: a record past ideation must name the idea it implemented",
             )
-        if self.generation == 0:
+        lane = lineage.get("lane") or ""
+        _require(not lane or lane in LANES, f"{who}: lineage.lane must be one of {LANES}, got {lane!r}")
+        if lane == LANE_FITTABLE:
+            self._validate_fittable_lineage(lineage, stage)
+        elif lane == LANE_EXPLORATION:
+            self._validate_exploration_lineage(lineage)
+        elif self.generation == 0:
             _require(
                 not self.parent_ids and not self.proposal_id,
                 f"{who}: generation 0 has no semantic parent and no proposal",
@@ -573,6 +606,64 @@ class ExperimentRecord:
             )
         if self.status in EVALUATED_STATUSES:
             self._validate_evaluated(resource_problems)
+            if lane:
+                self._validate_lane_fitting(lane)
+
+    def _validate_fittable_lineage(self, lineage, stage):
+        """A reference-seeded mutation: its slot's reference and scope, then a bounded proposal."""
+        who = self.experiment_id
+        meta = lineage.get("lane_metadata") or {}
+        reference = meta.get("reference") or {}
+        scope = meta.get("mutation_scope") or {}
+        _require(meta.get("label") == FITTABLE_LABEL and meta.get("seeded") is True,
+                 f"{who}: a fittable-lane record must be labelled {FITTABLE_LABEL!r} and seeded")
+        _require(reference.get("structure_id") and reference.get("source_sha256"),
+                 f"{who}: a fittable-lane record must name its seed-bank reference and its source hash")
+        _require(scope.get("id"), f"{who}: a fittable-lane record must carry its predeclared mutation scope")
+        if stage in PRE_IDEA_STAGES:
+            return
+        proposal = lineage.get("proposal") or {}
+        _require(self.proposal_id and proposal, f"{who}: a fittable mutation needs its proposal")
+        _require(proposal.get("mode") == MODE_FITTABLE_MUTATION,
+                 f"{who}: a fittable-lane proposal has mode {MODE_FITTABLE_MUTATION!r}")
+        _require(list(self.parent_ids) == [reference["structure_id"]] == list(proposal.get("parent_ids", [])),
+                 f"{who}: a fittable mutation has exactly one parent, its slot's reference "
+                 f"{reference['structure_id']!r}; got {self.parent_ids}")
+        _require(reference["structure_id"] in (lineage.get("context_parent_ids") or []),
+                 f"{who}: the reference is not in the seed-bank context")
+        _require(str(proposal.get("predicted_metric", "")).startswith("fitting."),
+                 f"{who}: a fittable mutation must predict a fitting diagnostic")
+        mutation = meta.get("mutation") or {}
+        _require(str(mutation.get("structural_change", "")).strip(),
+                 f"{who}: a fittable mutation must state its one structural change")
+        for key in ("adds", "removes", "changes"):
+            _require(isinstance(mutation.get(key), list), f"{who}: mutation.{key} must be a list")
+
+    def _validate_exploration_lineage(self, lineage):
+        who = self.experiment_id
+        meta = lineage.get("lane_metadata") or {}
+        _require(meta.get("label") == EXPLORATION_LABEL and meta.get("seeded") is False,
+                 f"{who}: an exploration-lane record must be labelled {EXPLORATION_LABEL!r} and unseeded")
+        _require(not self.parent_ids and not self.proposal_id and not lineage.get("proposal"),
+                 f"{who}: an unseeded exploration has no parent and no proposal")
+
+    def _validate_lane_fitting(self, lane):
+        who = self.experiment_id
+        step = self.fitting.get("selected_step")
+        if lane == LANE_EXPLORATION:
+            for key in ("bc_gradient_steps", "bc_objective_evaluations", "probe_episodes", "probe_environment_steps"):
+                _require(int(self.resources.get(key, 0) or 0) == 0,
+                         f"{who}: an exploration consumed {key}; that lane never fits or probes")
+            _require(float((self.resources.get("wall_time_seconds") or {}).get("fitting", 0.0)) == 0.0,
+                     f"{who}: an exploration spent fitting wall time")
+            _require(step == 0 and self.fitting.get("checkpoint_history") == [],
+                     f"{who}: an exploration is evaluated at its initial values only")
+        else:
+            _require(isinstance(self.fitting.get("fitting_rejected"), bool)
+                     and self.fitting["fitting_rejected"] == (step == 0),
+                     f"{who}: fitting.fitting_rejected must record whether step 0 was selected")
+            steps = [h.get("step") for h in self.fitting.get("checkpoint_history") or []]
+            _require(0 in steps, f"{who}: the fittable lane must probe step 0 so fitting can be rejected")
 
     def _validate_proposal_lineage(self, lineage):
         who = self.experiment_id

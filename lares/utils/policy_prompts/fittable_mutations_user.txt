@@ -1,0 +1,66 @@
+Task: {task}
+
+Environment:
+- Observation dimension: {obs_dim} (continuous)
+- Action dimension: {action_dim} (continuous; the executed action is tanh(mean), and the action scale is fixed, not learned)
+
+Observation layout (the implementation reads these by name, never by index):
+{obs_description}
+
+Semantic keys (for reasoning about task structure):
+{input_dict_string}
+
+## What this lane is for
+
+These candidates are fitted after they are written. Each one is scored untrained (step 0) and after 500 and 1000 steps of imitation fitting on expert demonstrations; the checkpoint is chosen on separate probe episodes, and step 0 stays selectable, so a mutation that fitting cannot improve is recorded as "fitting rejected". A mutation is useful here only if it makes the structure easier to fit while keeping what already works.
+
+Each slot below is fixed in advance: its parent is a hand-written reference that fitting is known to improve, and its mutation scope is predeclared. You may not choose a different parent or scope.
+
+{slots}
+
+## What to return
+
+Propose exactly {n} bounded mutations, one per slot above, in the same order. Do not write code here; each mutation is implemented separately with its parent's source in front of the implementer.
+
+Rules for every mutation (one that breaks a rule fails its slot, and nothing is filled in for you):
+- Exactly one structural change to the parent, stated in one sentence in "structural_change". Not a rewrite: keep at least {min_kept_percent}% of the parent's parameters with the same name, initial value and range.
+- "parameter_changes" names every parameter that differs from the parent: "adds" (new names), "removes" (parent names deleted) and "changes" (parent names kept with a different initial value or range). At most {max_changes} names in total. Stay inside the slot's scope.
+- The parent declares an action-scale parameter (log_std). Drop it and do not list it: the implementation returns self.fixed_std(mean). Never declare log_std, std, or any other trainable action scale.
+- Every tunable parameter is explicit, with bounds: the idea declares every parameter of the resulting policy, including those kept from the parent. "type" is "gain" or "structural"; lo < hi and lo <= initial_value <= hi. Aim for {param_min}-{param_max} parameters.
+- Preserve the parent's behaviour: name in "protected_behaviors" what the parent already does that the mutation must not lose.
+- Predict which fitting diagnostic improves: "predicted_metric" must be exactly one of: {fitting_metrics}. "predicted_direction" is "increase" or "decrease".
+
+Output format (required):
+Return a single JSON object and nothing else (no markdown fences, no commentary). "mutations" must contain exactly {n} objects, in slot order:
+
+{{
+  "mutations": [
+    {{
+      "slot": 0,
+      "parent_id": "<this slot's reference id>",
+      "mutation_scope": "<this slot's scope id>",
+      "structural_change": "the one structural change, in one sentence",
+      "parameter_changes": {{"adds": [], "removes": [], "changes": ["<parent parameter>"]}},
+      "proposal": {{
+        "observation": "what about the parent motivates this change",
+        "hypothesis": "why the change should make fitting work better",
+        "suspected_component": "the expression or phase that changes",
+        "intervention": "exactly what changes",
+        "predicted_metric": "fitting.validation_loss_end",
+        "predicted_direction": "decrease",
+        "protected_behaviors": ["a behaviour of the parent this mutation must not lose"]
+      }},
+      "idea": {{
+        "name": "a short name distinct from the other ideas",
+        "summary": "3-6 sentences describing the resulting policy",
+        "named_observations": ["tcp", "obj", "goal"],
+        "phases": [{{"name": "...", "activation": "...", "action_intent": "..."}}],
+        "parameters": [{{"name": "...", "role": "...", "type": "gain", "units": "...", "initial_value": 1.0, "range": [0.1, 10.0]}}],
+        "zero_shot_behavior": "what the resulting policy does before fitting",
+        "expected_failure": "...",
+        "protected_behaviors": ["..."],
+        "complexity_justification": ""
+      }}
+    }}
+  ]
+}}

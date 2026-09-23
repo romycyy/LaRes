@@ -1,0 +1,73 @@
+# ============================================================
+#  Fittable-bank qualification, v2 — PREDECLARED, NOT RUN (decided 2026-09-14)
+#
+#  Replaces v1's minibatch-only replicates. In config/fittable_bank/qualification.yaml the five
+#  "seeds" shared one demonstration buffer, one split, one probe manifest and one evaluation
+#  manifest, so they measured insensitivity to minibatch order. Here each replicate draws its own
+#  bundle (lares/fitting/replicates.py): an independent demonstration sample, a trajectory-level
+#  train/validation split, a probe manifest and a qualification manifest. Every structure in a
+#  replicate is fitted and scored on that same bundle, so structures stay paired within a replicate.
+#
+#  The seeds below were unused in config/experiment_seed_ledger.jsonl on 2026-09-14. They are not
+#  reserved: reserve them and build the manifests only when this study is approved.
+# ============================================================
+
+study: fittable_bank_qualification_v2
+status: predeclared_not_run
+env_name: push-v2
+horizon: 150
+
+replicates: 5
+replicate_bundle:
+  shared_by_all_structures_in_a_replicate: true
+  demonstrations:
+    source: logs/baseline_lock/demo_push-v2.pkl       # 150 expert episodes on the train split
+    source_sha256: 00fd80a4686b7bb2ced65b2faa26d1b2bd886954ffce80d5afff6029802dc32e
+    episodes_per_replicate: 120                       # without replacement, seeded by the data seed
+  split:
+    level: trajectory                                 # whole episodes go to train or validation
+    val_fraction: 0.2
+    seed: data_seed
+  probe_manifest:                                     # selects the checkpoint only
+    episodes: 10
+    pool_seed: probe_pool_seeds[replicate]
+  qualification_manifest:                             # scores the selected checkpoint; disjoint from the probe
+    episodes: 50
+    pool_seed: qualification_pool_seeds[replicate]
+
+seeds:
+  data_seeds: [2400, 2401, 2402, 2403, 2404]          # demonstration sample, split, and fitting seed
+  probe_pool_seeds: [2410, 2411, 2412, 2413, 2414]
+  qualification_pool_seeds: [2420, 2421, 2422, 2423, 2424]
+  ledger: config/experiment_seed_ledger.jsonl
+
+fitting:                                              # unchanged from v1
+  objective: deterministic_mse
+  sampling: uniform
+  budget: 1000
+  checkpoint_steps: [0, 500, 1000]
+  checkpoint_tie_rule: higher success, then higher progress, then earlier checkpoint
+  batch_size: 256
+  lr: 0.001
+  clip_grad_norm: 1.0
+  fixed_action_scale: 0.1
+
+structures:
+  roles: config/fittable_bank/structure_roles.yaml
+  fittable_seeds: [simple_damped_push, simple_reach_push, simple_reach_push_damped,
+                   simple_reach_push_shared_gain, simple_reach_push_sharp_gate]
+  # Scored on the same bundles and reported, but never admitted to the seed bank whatever they score.
+  non_fittable_controls: [simple_standoff, simple_damped_push_smooth_gate]
+  # Not run.
+  retired: [simple_standoff_phase_gains, simple_standoff_moderate_geometry]
+
+qualification_rule:                                   # unchanged from v1, applied over replicates
+  per_replicate_difference: >-
+    qualification-manifest success of the selected checkpoint minus the same structure's step-0
+    success on that replicate's qualification manifest; exactly 0 when step 0 is selected
+  enters_fittable_seed_bank_if:
+    improves_in_at_least: 3
+    worst_seed_difference_at_least: -0.05
+    mean_difference_greater_than: 0.0
+  also_reported: t 95% interval over replicates, per-replicate bundle ids, selected steps
+  final_test: never accessed

@@ -852,6 +852,20 @@ debug-cycle run, and reasoning tokens count against it: a comparison with that r
 model change with the search change. Whether to re-match the budget by calls only, or to rerun a baseline
 under the new model, is open.
 
+## Two-lane search: built and mock-tested, not run (2026-09-14)
+
+The two-lane search exists (`lares/search/lanes.py`, `config/two_lane_search.yaml`) and has been exercised only
+against a scripted LLM in a kinematic push world. Nothing about its value is known yet. Order of work: run the
+nine-candidate zero-shot baseline under gpt-5.6-sol high (`config/run_full_evolution.yaml`), match the two-lane
+token budget to its ledger, then run the two-lane search on the same manifests. Held-out comparison should use a
+fresh MT1 pool seed, as for the debug-cycle run.
+
+Open design questions this build had to answer provisionally: the scope boundaries (`gate_control`, `geometry`,
+`single_bounded_change`), the bound of three parameter changes and 50% kept, and whether a fittable incumbent
+must also beat the previous fittable incumbent (implemented: yes). The standoff family and the smooth-gate
+damped-push variant are now controls or retired (`structure_roles.yaml`), and future qualification replicates
+vary the data (`qualification_v2.yaml`, not run).
+
 ## Questions requiring a research decision
 
 -2. **Raised by the bank study.** (a) Four of the five qualifying references are reach-push variants, so the

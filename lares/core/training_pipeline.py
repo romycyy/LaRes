@@ -1221,6 +1221,7 @@ def _read_policy_prompt_templates():
         "ideas_system": _read("ideas_system.txt"),
         "ideas_user": _read("ideas_user.txt"),
         "proposals_user": _read("proposals_user.txt"),
+        "fittable_mutations_user": _read("fittable_mutations_user.txt"),
     }
 
 
@@ -1350,6 +1351,52 @@ def llm_evolution(
     return candidates
 
 
+def two_lane_generation(
+    client,
+    env_name,
+    obs_dim,
+    action_dim,
+    args,
+    plan,
+    log_dir="./logs/evolution",
+    logger=None,
+    llm_transcript_path=None,
+    ledger=None,
+    max_total_calls=50,
+    max_repair_per_candidate=1,
+    param_budget=None,
+    max_total_tokens=None,
+):
+    """Generation 0 of the two-lane search (:mod:`lares.search.lanes`), with lineage.
+
+    Returns ``list[GeneratedCandidate]``, one per attempt, failures included; each carries its lane.
+    """
+    from lares.core.policy_generation import final_attempts, generate_two_lane_candidates
+    from lares.search.generation import LLMCallLedger
+
+    if not bool(getattr(args, "policy_gen_two_phase", False)):
+        raise ValueError("two_lane_generation needs policy_gen_two_phase: true so candidates carry lineage")
+    os.makedirs(log_dir, exist_ok=True)
+    prompts = load_policy_prompt_assets(env_name)
+    ledger = ledger if ledger is not None else LLMCallLedger(log_dir)
+    data_pkl_path = os.path.join(log_dir, "data.pkl")
+    with open(data_pkl_path, "wb") as f:
+        pickle.dump([{"obs": np.zeros(obs_dim)}], f)
+    candidates = generate_two_lane_candidates(
+        client, args, os.path.join(log_dir, "gen_0"), obs_dim, action_dim, env_name, prompts, plan,
+        data_pkl_path, ledger, llm_transcript_path=llm_transcript_path, impl_mode=_impl_mode(args),
+        max_total_calls=max_total_calls, max_repair_per_candidate=max_repair_per_candidate,
+        param_budget=param_budget, max_total_tokens=max_total_tokens,
+    )
+    if logger is not None:
+        logger.log_metrics(
+            stage="evolutionary", update=0,
+            metrics={"evo/candidates_generated": float(sum(1 for c in final_attempts(candidates) if c.valid))},
+            task_name=env_name,
+        )
+    return candidates
+
+
 # ===========================================================================
 #  EvolutionOrchestrator — full generation → fit → evaluate loop
 # ===========================================================================
@@ -1413,6 +1460,7 @@ class EvolutionOrchestrator:
         param_budget=None,
         max_llm_tokens_per_generation=None,
         promotion_challengers=1,
+        lane_plan=None,
     ):
         from lares.core.symbolic_policy import SymbolicPolicy
         from lares.eval.promotion import PromotionPolicy
@@ -1475,6 +1523,24 @@ class EvolutionOrchestrator:
         self.rl_episodes_per_iter = rl_episodes_per_iter
         self.log_dir = log_dir
         self.record_demo_gif = record_demo_gif
+        #: A :class:`~lares.search.lanes.TwoLanePlan`, or ``None`` for the single-lane search.
+        self.lane_plan = lane_plan
+        if lane_plan is not None:
+            if int(num_generations) != 1:
+                raise ValueError("a two-lane search runs exactly one generation; edit generations belong to Stage F")
+            if int(pop_size) != lane_plan.n:
+                raise ValueError(f"pop_size {pop_size} does not match the two-lane plan's {lane_plan.n} candidates")
+            if int(bc_steps) != 0:
+                raise ValueError(
+                    "with a two-lane plan the global bc_steps must be 0: explorations are zero-shot, and the "
+                    "fittable lane's budget and checkpoints come from the plan"
+                )
+            if int(promotion_challengers) != 1:
+                raise ValueError("the two-lane search tests one challenger per incumbent")
+        #: The fittable incumbent, kept apart from the performance incumbent (``best_overall``).
+        self.fittable_incumbent = None
+        self._fittable_incumbent_result = None
+        self.fittable_decisions: list = []
 
         # Populated by run()
         self.history: list = []
@@ -1551,6 +1617,13 @@ class EvolutionOrchestrator:
                     f"the promotion manifest shares {len(overlap)} case(s) with the {name} manifest "
                     f"({sorted(overlap)[:3]}...); promotion evidence must be independent"
                 )
+        if self.lane_plan is not None:
+            overlap = {c.case_id for c in self.probe_manifest.episodes} & {c.case_id for c in self.screen_manifest.episodes}
+            if self._probe_manifest is None or overlap:
+                raise ValueError(
+                    "a two-lane search needs its own probe manifest, disjoint from the screen: checkpoint "
+                    "selection, screening and promotion must use separate cases"
+                )
 
     # ------------------------------------------------------------------
     #  Run-level artifacts
@@ -1625,6 +1698,7 @@ class EvolutionOrchestrator:
             "max_llm_calls_per_generation": self.max_llm_calls_per_generation,
             "split": self.data.split_info if self.data is not None else None,
             "probe_batch": self.probe_batch_ref,
+            "two_lane_plan": self.lane_plan.to_dict() if self.lane_plan is not None else None,
         }
         self.run_manifest_ref = self._artifact("run_manifest.json", json.dumps(payload, indent=2, default=str))
         return payload
@@ -1636,6 +1710,11 @@ class EvolutionOrchestrator:
             "run_wall_time_seconds": self.run_resources.wall_time_seconds,
             "reconciliation": reconcile_resources(self.records, self.ledger, self.log_dir),
         }
+        if self.lane_plan is not None:
+            from lares.search.lanes import lane_resource_totals
+
+            totals["lanes"] = lane_resource_totals(self.records, self.ledger)
+            self._artifact("lane_resources.json", json.dumps(totals["lanes"], indent=2, default=str))
         self._artifact("resource_totals.json", json.dumps(totals, indent=2, default=str))
         return totals
 
@@ -1883,6 +1962,45 @@ class EvolutionOrchestrator:
             recon["status"] = RECONSTRUCTION_FAILED
         return recon
 
+    def _fitting_settings(self, candidate):
+        """``(budget, checkpoint_steps, lane)`` for one candidate.
+
+        Without a lane plan every candidate uses the orchestrator's settings. With one, only the
+        fittable lane fits, with the plan's budget and checkpoints; explorations are never fitted.
+        """
+        from lares.search.schemas import LANE_FITTABLE
+
+        if self.lane_plan is None:
+            return self.bc_steps, self.checkpoint_steps, ""
+        if candidate.lane == LANE_FITTABLE:
+            return int(self.lane_plan.fittable_budget), tuple(self.lane_plan.checkpoint_steps), candidate.lane
+        return 0, (), candidate.lane
+
+    def _zero_shot_fit(self, policy):
+        """The fitting block of a candidate that is never fitted: no data, no gradient, no probe."""
+        from types import SimpleNamespace
+
+        from lares.fitting.optimizers import objective_config, state_parameters_sha256
+
+        state = copy.deepcopy(policy.state_dict())
+        diagnostics = {
+            "computed": False,
+            "reason": "exploration lane: evaluated at its initial values; no fitting data was read",
+            "parameters_sha256": state_parameters_sha256(state),
+            "train_loss": None,
+            "validation_loss": None,
+        }
+        return SimpleNamespace(
+            initial_state=state, final_state=state, selected_state=state, selected_step=0,
+            checkpoint_history=[], bc_gradient_steps=0, objective_evaluations=0, history=[],
+            gradient_norms=None, frozen_parameters=[], final_diagnostics=diagnostics,
+            selected_diagnostics=dict(diagnostics),
+            objective_config=objective_config(
+                self.objective, self.sampling, 0, self.bc_batch_size, self.bc_lr, 1.0, self.fit_seed, [],
+                self.fixed_action_scale, val_fraction=self.val_fraction, split_seed=self.split_seed,
+            ),
+        )
+
     def _fit_and_screen(self, candidate, envs, probe_env, args, feedback_bundle):
         """Fit one valid candidate, choose its checkpoint, screen it and record it."""
         from lares.eval.report import CHECKPOINT_FITTED, CHECKPOINT_INTERMEDIATE, CHECKPOINT_ZERO_SHOT
@@ -1891,6 +2009,7 @@ class EvolutionOrchestrator:
         from lares.search import STATUS_EVALUATED, ExperimentRecord, source_hash
         from lares.search.generation import env_identity
         from lares.search.resources import ResourceLedger
+        from lares.search.schemas import FITTING_REJECTED, LANE_EXPLORATION, LANE_FITTABLE
 
         gen = candidate.generation
         cid = candidate.candidate_id
@@ -1898,6 +2017,8 @@ class EvolutionOrchestrator:
         policy.fixed_action_scale = self.fixed_action_scale
         cand_dir = os.path.join(f"gen_{gen}", "candidates", candidate.attempt_id)
         screen = self.screen_manifest
+        budget, steps, lane = self._fitting_settings(candidate)
+        zero_shot_only = lane == LANE_EXPLORATION
         resources = ResourceLedger()
         llm, exclusive_totals, exclusive_wall = self._llm_evidence(candidate, args)
         resources.add_llm_totals(exclusive_totals)
@@ -1920,35 +2041,37 @@ class EvolutionOrchestrator:
             _store["step"] = step
             _store["state"] = copy.deepcopy(pol.state_dict())
 
-        probe = (
-            self._rollout_probe(probe_env, self.probe_manifest, resources)
-            if self.checkpoint_steps
-            else None
-        )
-        started = time.time()
-        fit = fit_policy_with_objective(
-            policy,
-            self.data,
-            self.objective,
-            budget=self.bc_steps,
-            batch_size=min(self.bc_batch_size, int(self.data.train_obs.shape[0])),
-            lr=self.bc_lr,
-            seed=self.fit_seed,
-            sampling=self.sampling,
-            rollout_probe=probe,
-            checkpoint_steps=self.checkpoint_steps if probe is not None else None,
-            checkpoint_callback=capture,
-            structure_id=cid,
-        )
-        resources.add_wall_time("fitting", time.time() - started)
-        resources.add("bc_gradient_steps", fit.bc_gradient_steps)
-        resources.add("bc_objective_evaluations", fit.objective_evaluations)
-        if state_parameters_sha256(policy.state_dict()) != fit.selected_diagnostics["parameters_sha256"]:
-            raise RuntimeError(f"{cid}: the policy does not hold the selected checkpoint after fitting")
-        print(
-            f"    selected checkpoint: step {fit.selected_step}/{self.bc_steps} "
-            f"({CHECKPOINT_TIE_RULE}); probes {[(h['step'], round(h['success'], 3)) for h in fit.checkpoint_history]}"
-        )
+        probe = None
+        if zero_shot_only:
+            # An unseeded exploration never reads the demonstrations, fits or probes.
+            fit = self._zero_shot_fit(policy)
+        else:
+            probe = self._rollout_probe(probe_env, self.probe_manifest, resources) if steps else None
+            started = time.time()
+            fit = fit_policy_with_objective(
+                policy,
+                self.data,
+                self.objective,
+                budget=budget,
+                batch_size=min(self.bc_batch_size, int(self.data.train_obs.shape[0])),
+                lr=self.bc_lr,
+                seed=self.fit_seed,
+                sampling=self.sampling,
+                rollout_probe=probe,
+                checkpoint_steps=steps if probe is not None else None,
+                checkpoint_callback=capture,
+                structure_id=cid,
+            )
+            resources.add_wall_time("fitting", time.time() - started)
+            resources.add("bc_gradient_steps", fit.bc_gradient_steps)
+            resources.add("bc_objective_evaluations", fit.objective_evaluations)
+            if state_parameters_sha256(policy.state_dict()) != fit.selected_diagnostics["parameters_sha256"]:
+                raise RuntimeError(f"{cid}: the policy does not hold the selected checkpoint after fitting")
+            rejected = " (fitting rejected: step 0 kept)" if lane == LANE_FITTABLE and fit.selected_step == 0 else ""
+            print(
+                f"    selected checkpoint: step {fit.selected_step}/{budget}{rejected} "
+                f"({CHECKPOINT_TIE_RULE}); probes {[(h['step'], round(h['success'], 3)) for h in fit.checkpoint_history]}"
+            )
         state_refs = {
             name: self._tensor_artifact(os.path.join(cand_dir, f"{name}.pt"), state)
             for name, state in (
@@ -1960,18 +2083,23 @@ class EvolutionOrchestrator:
 
         started = time.time()
         intermediate_report, intermediate_result = None, None
-        if halfway:
-            mid = copy.deepcopy(policy)
-            mid.load_state_dict(halfway["state"])
-            intermediate_result, intermediate_report = self._evaluate_checkpoint(
-                mid, envs.development, screen, cid, CHECKPOINT_INTERMEDIATE
+        if zero_shot_only:
+            # The selected state is the initial state, so the zero-shot screen is the screen.
+            bc_stats = None
+            screen_result, screen_report = zero_result, zero_report
+        else:
+            if halfway:
+                mid = copy.deepcopy(policy)
+                mid.load_state_dict(halfway["state"])
+                intermediate_result, intermediate_report = self._evaluate_checkpoint(
+                    mid, envs.development, screen, cid, CHECKPOINT_INTERMEDIATE
+                )
+                resources.add_episodes("screen", intermediate_result)
+            bc_stats = self._report_fitting_stats(fit)
+            screen_result, screen_report = self._evaluate_checkpoint(
+                policy, envs.development, screen, cid, CHECKPOINT_FITTED, bc_stats=bc_stats
             )
-            resources.add_episodes("screen", intermediate_result)
-        bc_stats = self._report_fitting_stats(fit)
-        screen_result, screen_report = self._evaluate_checkpoint(
-            policy, envs.development, screen, cid, CHECKPOINT_FITTED, bc_stats=bc_stats
-        )
-        resources.add_episodes("screen", screen_result)
+            resources.add_episodes("screen", screen_result)
         resources.add_wall_time("evaluation", time.time() - started)
 
         report_refs = {"zero_shot": self._save_report(zero_report, f"{cid}_{CHECKPOINT_ZERO_SHOT}.json", gen)}
@@ -1979,12 +2107,14 @@ class EvolutionOrchestrator:
             report_refs["intermediate"] = self._save_report(
                 intermediate_report, f"{cid}_{CHECKPOINT_INTERMEDIATE}.json", gen
             )
-        report_refs["fitted_screen"] = self._save_report(screen_report, f"{cid}_{CHECKPOINT_FITTED}.json", gen)
+        if not zero_shot_only:
+            report_refs["fitted_screen"] = self._save_report(screen_report, f"{cid}_{CHECKPOINT_FITTED}.json", gen)
 
         reconstruction = self._verify_reconstruction(
             candidate, policy, source_ref, state_refs["selected_state"], cand_dir
         )
 
+        fitting_rejected = (int(fit.selected_step) == 0) if lane == LANE_FITTABLE else None
         result = {
             "candidate_id": cid,
             "attempt_id": candidate.attempt_id,
@@ -2006,7 +2136,41 @@ class EvolutionOrchestrator:
             "report_refs": report_refs,
             "generation": gen,
             "candidate_idx": candidate.slot,
+            "lane": lane,
+            "fitting_rejected": fitting_rejected,
         }
+
+        fitting = {
+            "optimizer": None if zero_shot_only else "adam",
+            "objective": self.objective,
+            "objective_config": fit.objective_config,
+            "action_mode": fit.objective_config["execution"],
+            "fixed_action_scale": self.fixed_action_scale,
+            "steps": int(budget),
+            "split": self.data.split_info,
+            "frozen_parameters": fit.frozen_parameters,
+            "checkpoint_steps": list(steps) if probe is not None else [],
+            "checkpoint_tie_rule": CHECKPOINT_TIE_RULE,
+            "probe_manifest_id": self.probe_manifest.manifest_id if probe is not None else None,
+            "probe_is_isolated": self.probe_is_isolated,
+            "checkpoint_history": fit.checkpoint_history,
+            "selected_step": int(fit.selected_step),
+            "initial_state": state_refs["initial_state"],
+            "final_state": state_refs["final_state"],
+            "selected_state": state_refs["selected_state"],
+            "final_diagnostics": fit.final_diagnostics,
+            "selected_diagnostics": fit.selected_diagnostics,
+            "gradient_norms": fit.gradient_norms,
+            "train_loss_end": fit.selected_diagnostics["train_loss"],
+            "validation_loss_end": fit.selected_diagnostics["validation_loss"],
+        }
+        if lane:
+            fitting["lane"] = lane
+            fitting["fitting_rejected"] = fitting_rejected
+            if fitting_rejected:
+                fitting["selection_outcome"] = FITTING_REJECTED
+            if zero_shot_only:
+                fitting["lane_fitting"] = "disabled: unseeded exploration, evaluated at its initial values"
 
         record = ExperimentRecord(
             experiment_id=candidate.attempt_id,
@@ -2028,30 +2192,7 @@ class EvolutionOrchestrator:
             llm_call_ids=list(candidate.llm_call_ids),
             validation=dict(candidate.validation),
             lineage=candidate.lineage_dict(feedback_bundle),
-            fitting={
-                "optimizer": "adam",
-                "objective": self.objective,
-                "objective_config": fit.objective_config,
-                "action_mode": fit.objective_config["execution"],
-                "fixed_action_scale": self.fixed_action_scale,
-                "steps": self.bc_steps,
-                "split": self.data.split_info,
-                "frozen_parameters": fit.frozen_parameters,
-                "checkpoint_steps": list(self.checkpoint_steps) if probe is not None else [],
-                "checkpoint_tie_rule": CHECKPOINT_TIE_RULE,
-                "probe_manifest_id": self.probe_manifest.manifest_id if probe is not None else None,
-                "probe_is_isolated": self.probe_is_isolated,
-                "checkpoint_history": fit.checkpoint_history,
-                "selected_step": int(fit.selected_step),
-                "initial_state": state_refs["initial_state"],
-                "final_state": state_refs["final_state"],
-                "selected_state": state_refs["selected_state"],
-                "final_diagnostics": fit.final_diagnostics,
-                "selected_diagnostics": fit.selected_diagnostics,
-                "gradient_norms": fit.gradient_norms,
-                "train_loss_end": fit.selected_diagnostics["train_loss"],
-                "validation_loss_end": fit.selected_diagnostics["validation_loss"],
-            },
+            fitting=fitting,
             evaluation={
                 "manifest_ids": [screen.manifest_id],
                 "probe_manifest_id": self.probe_manifest.manifest_id if probe is not None else None,
@@ -2085,10 +2226,137 @@ class EvolutionOrchestrator:
         result["record"] = record
         return result
 
-    def _update_records_after_promotion(self, decisions, by_id, expanded):
+    def _fittable_promotion(self, gen_results, envs, expanded, screen, gen):
+        """Challenge for the fittable incumbent. Returns ``{candidate_id: decision}`` for every candidate.
+
+        Only fittable-lane candidates whose selected step is above 0 are eligible. They are
+        screened with the same rule and on the same screen as the performance challenge; the best
+        cleared one alone is scored on the promotion set at its fitted state (reused when it was
+        also the performance challenger) and at its own step-0 state, and
+        :func:`~lares.search.lanes.decide_fittable_incumbent` applies both strict paired tests.
+        """
+        from lares.eval.report import CHECKPOINT_FITTED, CHECKPOINT_ZERO_SHOT
+        from lares.search.lanes import NOT_BEST_FITTABLE_CHALLENGER, decide_fittable_incumbent, fittable_eligibility
+
+        decisions, eligible = {}, []
+        for r in gen_results:
+            ok, reason = fittable_eligibility(r["lane"], r["fit"].selected_step)
+            if ok:
+                eligible.append(r)
+            else:
+                decisions[r["candidate_id"]] = {
+                    "candidate_id": r["candidate_id"], "lane": r["lane"], "selected_step": int(r["fit"].selected_step),
+                    "eligible": False, "promoted": False, "reason": reason,
+                    "fitting_gain": None, "incumbent_comparison": None,
+                }
+        if not eligible:
+            print("\n  Fittable incumbent: no fittable-lane candidate kept a fitted checkpoint (all rejected fitting).")
+            return decisions
+        screened = self.promotion_policy.screen(
+            [{"candidate_id": r["candidate_id"], "report": r["screen_report"], "valid": True} for r in eligible]
+        )
+        cleared = sorted((d for d in screened if d["promoted"]),
+                         key=lambda d: (d["success_rate"], d["progress"], d["mean_return"]), reverse=True)
+        challenger = cleared[0] if cleared else None
+        by_id = {r["candidate_id"]: r for r in eligible}
+        for d in screened:
+            if challenger is None or d["candidate_id"] != challenger["candidate_id"]:
+                r = by_id[d["candidate_id"]]
+                decisions[d["candidate_id"]] = {
+                    "candidate_id": d["candidate_id"], "lane": r["lane"], "selected_step": int(r["fit"].selected_step),
+                    "eligible": True, "promoted": False,
+                    "reason": NOT_BEST_FITTABLE_CHALLENGER if d["promoted"] else f"screening: {d['reason']}",
+                    "fitting_gain": None, "incumbent_comparison": None, "fittable_screening": d,
+                }
+        if challenger is None:
+            return decisions
+
+        cid = challenger["candidate_id"]
+        r = by_id[cid]
+        started = time.time()
+        if r["expanded_record"] is None:
+            exp_result, exp_report = self._evaluate_checkpoint(
+                r["policy"], envs.development, expanded, cid, CHECKPOINT_FITTED, bc_stats=r["bc_stats"]
+            )
+            r["resources"].add_episodes("expanded", exp_result)
+            r["report_refs"]["fitted_expanded"] = self._save_report(exp_report, f"{cid}_expanded.json", gen)
+            self.archive.confirm(cid, exp_report)
+            r["expanded_record"], r["expanded_report"] = exp_result, exp_report
+            r["eval"] = exp_result.fitness_dict()
+            r["score"] = self._score(r["eval"])
+        step0 = copy.deepcopy(r["policy"])
+        step0.load_state_dict(r["fit"].initial_state)
+        step0_result, step0_report = self._evaluate_checkpoint(step0, envs.development, expanded, cid, CHECKPOINT_ZERO_SHOT)
+        r["resources"].add_episodes("expanded", step0_result)
+        r["report_refs"]["zero_shot_expanded"] = self._save_report(step0_report, f"{cid}_zero_shot_expanded.json", gen)
+        r["step0_expanded_record"] = step0_result
+        elapsed = time.time() - started
+        r["resources"].add_wall_time("evaluation", elapsed)
+        self.run_resources.add_wall_time("evaluation", elapsed)
+
+        incumbent_id = self.fittable_incumbent["candidate_id"] if self.fittable_incumbent else None
+        decision = decide_fittable_incumbent(
+            cid, r["lane"], r["fit"].selected_step, r["expanded_record"], step0_result,
+            self._fittable_incumbent_result, incumbent_id,
+            excluded_manifest_ids=(screen.manifest_id, self.probe_manifest.manifest_id),
+        )
+        decision.update(fittable_screening=challenger, generation=gen)
+        gain = decision["fitting_gain"]["paired_success"]
+        print(
+            f"\n  Fittable challenger {cid} (step {r['fit'].selected_step}): fitted {r['expanded_record'].success_rate:.3f} "
+            f"vs its step 0 {step0_result.success_rate:.3f} on {expanded.manifest_id}, paired {gain['mean_difference']:+.3f} "
+            f"-> {decision['reason']}"
+        )
+        if decision["promoted"]:
+            self._fittable_incumbent_result = r["expanded_record"]
+            self.fittable_incumbent = {
+                "candidate_id": cid, "attempt_id": r["attempt_id"], "lane": r["lane"],
+                "selected_step": int(r["fit"].selected_step), "code": r["code"],
+                "policy": copy.deepcopy(r["policy"]), "promotion_manifest_id": expanded.manifest_id,
+            }
+        decisions[cid] = decision
+        self.fittable_decisions.append(decision)
+        return decisions
+
+    def _write_incumbents(self, gen, expanded):
+        """Both incumbents and the evidence behind each, as one hashed artifact."""
+        from lares.eval.promotion import NULL_INCUMBENT_ID, PROMOTION_RULE
+
+        lanes = {r["candidate_id"]: r.get("lane") for r in self.history}
+        performance = None
+        if self.best_overall is not None:
+            cid = self.best_overall["candidate_id"]
+            performance = {"candidate_id": cid, "lane": lanes.get(cid), "attempt_id": self.best_overall["attempt_id"],
+                           "promotion_success_rate": self._incumbent_expanded.success_rate}
+        fittable = None
+        if self.fittable_incumbent is not None:
+            fittable = {k: v for k, v in self.fittable_incumbent.items() if k not in ("policy", "code")}
+            fittable["promotion_success_rate"] = self._fittable_incumbent_result.success_rate
+        payload = {
+            "generation": gen,
+            "promotion_manifest_id": expanded.manifest_id,
+            "excluded_manifest_ids": [self.screen_manifest.manifest_id, self.probe_manifest.manifest_id],
+            "null_incumbent_id": NULL_INCUMBENT_ID,
+            "performance_incumbent": performance,
+            "fittable_incumbent": fittable,
+            "rules": {
+                "performance_incumbent": "either lane; " + PROMOTION_RULE,
+                "fittable_incumbent": (
+                    "fittable-lane candidate with selected_step > 0 whose fitted state beats its own step-0 state "
+                    "and the current fittable incumbent, both on the promotion manifest under the same strict rule"
+                ),
+            },
+            "performance_comparisons": [d.get("incumbent_comparison") for d in self.promotion_log if d.get("incumbent_comparison")],
+            "fittable_decisions": self.fittable_decisions,
+        }
+        return self._artifact("incumbents.json", json.dumps(payload, indent=2, default=str))
+
+    def _update_records_after_promotion(self, decisions, by_id, expanded, fittable_decisions=None):
         """Fold screening, expansion and the archive's confirmed metrics into each record."""
         from lares.search import STATUS_PROMOTED, STATUS_REJECTED
+        from lares.search.lanes import FITTABLE_INCUMBENT, PERFORMANCE_INCUMBENT
 
+        fittable_decisions = fittable_decisions or {}
         for decision in decisions:
             result = by_id.get(decision["candidate_id"])
             if result is None or result.get("record") is None:
@@ -2096,13 +2364,22 @@ class EvolutionOrchestrator:
             record = result["record"]
             comparison = decision.get("incumbent_comparison") or {}
             promoted = bool(comparison.get("promoted"))
-            record.status = STATUS_PROMOTED if promoted else STATUS_REJECTED
+            fittable = fittable_decisions.get(decision["candidate_id"])
+            fittable_promoted = bool(fittable and fittable.get("promoted"))
+            record.status = STATUS_PROMOTED if promoted or fittable_promoted else STATUS_REJECTED
             record.final_disposition = (
                 f"screening: {decision['reason']}; promotion: {comparison['reason']}"
                 if comparison
                 else f"screening: {decision['reason']}"
                 + (f"; promotion: {decision['promotion_evaluation']}" if decision.get("promotion_evaluation") else "")
             )
+            if self.lane_plan is not None:
+                record.evaluation["incumbents"] = {PERFORMANCE_INCUMBENT: promoted, FITTABLE_INCUMBENT: fittable_promoted}
+                if fittable is not None:
+                    record.evaluation[FITTABLE_INCUMBENT] = fittable
+                    record.final_disposition += f"; fittable incumbent: {fittable['reason']}"
+                if result.get("step0_expanded_record") is not None:
+                    record.evaluation["promotion_step0_success_rate"] = result["step0_expanded_record"].success_rate
             record.evaluation["screening"] = {
                 k: v for k, v in decision.items() if k != "incumbent_comparison"
             }
@@ -2215,7 +2492,17 @@ class EvolutionOrchestrator:
 
             # --- Structure search: typed candidates with lineage -------------
             started = time.time()
-            candidates = llm_evolution(
+            if self.lane_plan is not None:
+                candidates = two_lane_generation(
+                    client=client, env_name=self.env_name, obs_dim=self.obs_dim, action_dim=self.action_dim,
+                    args=args, plan=self.lane_plan, log_dir=self.log_dir, logger=logger,
+                    llm_transcript_path=llm_transcript_path, ledger=self.ledger,
+                    max_total_calls=self.max_llm_calls_per_generation,
+                    max_repair_per_candidate=self.max_repair_per_candidate, param_budget=self.param_budget,
+                    max_total_tokens=self.max_llm_tokens_per_generation,
+                )
+            else:
+              candidates = llm_evolution(
                 client=client,
                 env_name=self.env_name,
                 obs_dim=self.obs_dim,
@@ -2233,7 +2520,7 @@ class EvolutionOrchestrator:
                 max_repair_per_candidate=self.max_repair_per_candidate,
                 param_budget=self.param_budget,
                 max_total_tokens=self.max_llm_tokens_per_generation,
-            )
+              )
             self.run_resources.add_wall_time("generation", time.time() - started)
 
             final_by_slot = {c.candidate_id: c for c in final_attempts(candidates)}
@@ -2249,7 +2536,8 @@ class EvolutionOrchestrator:
             for c in final_by_slot.values():
                 if not c.valid:
                     continue
-                print(f"\n  --- {c.attempt_id} ({c.mode or 'idea'}; parents {c.parent_ids}) ---")
+                lane_note = f"{c.lane} lane; " if c.lane else ""
+                print(f"\n  --- {c.attempt_id} ({lane_note}{c.mode or 'idea'}; parents {c.parent_ids}) ---")
                 result = self._fit_and_screen(c, envs, probe_env, args, feedback_bundle)
                 self.run_resources.merge(
                     __import__("lares.search.resources", fromlist=["ResourceLedger"]).ResourceLedger(
@@ -2344,8 +2632,13 @@ class EvolutionOrchestrator:
                             "attempt_id": r["attempt_id"],
                             "report": exp_report,
                         }
+                fittable_decisions = {}
+                if self.lane_plan is not None:
+                    fittable_decisions = self._fittable_promotion(gen_results, envs, expanded, screen, gen)
                 self.promotion_log.extend(decisions)
-                self._update_records_after_promotion(decisions, by_id, expanded)
+                self._update_records_after_promotion(decisions, by_id, expanded, fittable_decisions)
+                if self.lane_plan is not None:
+                    self._write_incumbents(gen, expanded)
 
             # --- Evidence for the next generation, hashed as a bundle ---------
             text, context = self._build_evidence(gen, gen_results, failures, screen, demo_buffer=demo_buffer)
@@ -2425,6 +2718,8 @@ class EvolutionOrchestrator:
                                 "eval": r["eval"],
                                 "score": r["score"],
                                 "selected_step": r["fit"].selected_step,
+                                "lane": r.get("lane", ""),
+                                "fitting_rejected": r.get("fitting_rejected"),
                                 "screen_report": r["screen_report"].to_dict(),
                                 "zero_shot_report": r["zero_shot_report"].to_dict(),
                                 "intermediate_report": (

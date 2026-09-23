@@ -392,6 +392,8 @@ STAGE_IDEA_MISMATCH = "idea_mismatch"
 STAGE_IDEATION = "ideation"
 STAGE_PROPOSAL = "proposal"
 STAGE_BUDGET = "budget_exhausted"
+#: A fittable-lane child that validated but does not differ from its parent exactly as declared.
+STAGE_MUTATION_CONTRACT = "mutation_contract"
 
 #: How a single-phase sample was mapped to its slot. Such candidates have no
 #: idea, so their lineage is ``legacy_missing`` by construction.
@@ -583,9 +585,9 @@ def _format_batched_implementation_request(items):
     return "\n".join(lines)
 
 
-def implementation_brief(idea, proposal=None, parent_sources=None):
+def implementation_brief(idea, proposal=None, parent_sources=None, lane_metadata=None):
     """What the implementer is shown for one slot: the proposal, its parents, the idea."""
-    from lares.search.schemas import MODE_CROSSOVER, MODE_EXPLORATION
+    from lares.search.schemas import MODE_CROSSOVER, MODE_EXPLORATION, MODE_FITTABLE_MUTATION
 
     lines = []
     if proposal is not None:
@@ -608,7 +610,23 @@ def implementation_brief(idea, proposal=None, parent_sources=None):
                 "```",
                 "",
             ]
-        if proposal.mode == MODE_CROSSOVER:
+        if proposal.mode == MODE_FITTABLE_MUTATION:
+            meta = lane_metadata or {}
+            mutation = meta.get("mutation") or {}
+            scope = meta.get("mutation_scope") or {}
+            listed = lambda key: ", ".join(mutation.get(key) or []) or "none"  # noqa: E731
+            lines += [
+                f"This is a bounded fittable mutation of the parent above, in scope {scope.get('id')!r}: "
+                f"{scope.get('description', '')}",
+                f"The one structural change: {mutation.get('structural_change', '')}",
+                f"Parameters added: {listed('adds')}; removed: {listed('removes')}; "
+                f"changed (initial value or range): {listed('changes')}.",
+                "Start from the parent source above and make only this change. Every other expression, and "
+                "every other parameter's name, initial value and range, stays exactly as in the parent.",
+                "Remove the parent's action-scale parameter (log_std) and its range entry, and return "
+                "`self.fixed_std(mean)` as std. Declare no other scale parameter.",
+            ]
+        elif proposal.mode == MODE_CROSSOVER:
             lines.append("Combine the named components of the parents above into one policy.")
         elif proposal.mode == MODE_EXPLORATION:
             lines.append("This is a new design, not an edit of a parent.")
@@ -705,7 +723,7 @@ class _SlotValidator:
         with open(os.path.join(_PROJECT_ROOT, "tests", "test_generate_policy.py"), "r") as f:
             self.test_code = f.read()
 
-    def __call__(self, code, idea, attempt_id):
+    def __call__(self, code, idea, attempt_id, extra_check=None):
         if not code or "GeneratedPolicy" not in code:
             return None, {"passed": False, "stage": STAGE_EXTRACTION,
                           "errors": ["the response contains no class GeneratedPolicy"]}
@@ -731,6 +749,11 @@ class _SlotValidator:
             problems = idea.check_against_policy(policy)
             if problems:
                 return None, {"passed": False, "stage": STAGE_IDEA_MISMATCH, "errors": problems,
+                              "validator": report.to_dict()}
+        if extra_check is not None:
+            problems = extra_check(policy)
+            if problems:
+                return None, {"passed": False, "stage": STAGE_MUTATION_CONTRACT, "errors": list(problems),
                               "validator": report.to_dict()}
         return policy, {"passed": True, "stage": STAGE_PASSED, "errors": [], "validator": report.to_dict()}
 
@@ -773,15 +796,23 @@ def _request_designs(session, generation, n, prompts, fmt, schema, feedback_text
     payload that cannot be mapped onto slots after the retry fails every slot;
     one malformed entry fails only its own slot.
     """
-    from lares.search.generation import (
-        LABEL_IDEATION,
-        StructuredOutputError,
-        parse_ideas_payload,
-        parse_proposals_payload,
-    )
+    from lares.search.generation import parse_ideas_payload, parse_proposals_payload
 
     kind = "ideas" if generation == 0 else "proposals"
     messages = _design_messages(generation, n, prompts, fmt, feedback_text, context, param_budget)
+
+    def parse(text):
+        if generation == 0:
+            return parse_ideas_payload(text, n, generation, schema=schema, budget=param_budget)
+        return parse_proposals_payload(text, n, generation, context, schema=schema, budget=param_budget)
+
+    return _request_structured(session, messages, parse, n, kind, attempt_ids, f"policy_{kind}")
+
+
+def _request_structured(session, messages, parse, n, kind, attempt_ids, transcript_label):
+    """One structured design request with at most one retry on output that cannot be parsed."""
+    from lares.search.generation import LABEL_IDEATION, StructuredOutputError
+
     call_ids, texts = [], []
     parses, problems = None, [f"call budget exhausted before any {kind} request"]
     for round_index in range(2):
@@ -803,17 +834,12 @@ def _request_designs(session, generation, n, prompts, fmt, schema, feedback_text
             ]
         replies, record = session.call(
             LABEL_IDEATION, request, purpose=kind if round_index == 0 else f"{kind}_retry",
-            attempt_ids=attempt_ids, transcript_label=f"policy_{kind}" + ("_retry" if round_index else ""),
+            attempt_ids=attempt_ids, transcript_label=transcript_label + ("_retry" if round_index else ""),
         )
         call_ids.append(record.call_id)
         texts.append(replies[0] if replies else "")
         try:
-            if generation == 0:
-                parses = parse_ideas_payload(texts[-1], n, generation, schema=schema, budget=param_budget)
-            else:
-                parses = parse_proposals_payload(
-                    texts[-1], n, generation, context, schema=schema, budget=param_budget
-                )
+            parses = parse(texts[-1])
             problems = [p for sp in parses for p in sp.problems]
         except StructuredOutputError as exc:
             parses, problems = None, list(exc.problems)
@@ -822,6 +848,92 @@ def _request_designs(session, generation, n, prompts, fmt, schema, feedback_text
     if parses is not None:
         return parses, call_ids, [], texts
     return None, call_ids, problems, texts
+
+
+class _SlotImplementer:
+    """One implementation call per parsed slot and at most ``max_repair`` linked corrections."""
+
+    def __init__(self, session, validate, prompts, user_content, allocator, make, parent_sources,
+                 max_repair_per_candidate, max_total_calls, max_total_tokens):
+        self.session = session
+        self.validate = validate
+        self.prompts = prompts
+        self.user_content = user_content
+        self.allocator = allocator
+        self.make = make
+        self.parent_sources = parent_sources
+        self.max_repair = int(max_repair_per_candidate)
+        self.max_total_calls = max_total_calls
+        self.max_total_tokens = max_total_tokens
+
+    def _brief(self, sp, make_kw):
+        return implementation_brief(sp.idea, sp.proposal, self.parent_sources, make_kw.get("lane_metadata"))
+
+    def implement(self, cid, slot, sp, response, code, design_calls, call_ids, mapping, extra_check=None, **make_kw):
+        from lares.search.generation import LABEL_CORRECTION, attempt_id_for
+
+        brief = self._brief(sp, make_kw)
+        current = self.make(cid, slot, 0, code=code, response=response, idea=sp.idea, proposal=sp.proposal,
+                            llm_call_ids=list(design_calls) + list(call_ids), mapping=mapping, **make_kw)
+        current.policy, current.validation = self.validate(code, sp.idea, current.attempt_id, extra_check)
+        attempts = [current]
+        corrections = 0
+        while not current.valid and corrections < self.max_repair and not self.session.exhausted:
+            corrections += 1
+            attempt = self.allocator.next_attempt(cid)
+            aid = attempt_id_for(cid, attempt)
+            messages = [
+                {"role": "system", "content": self.prompts["initial_system"]},
+                {"role": "user", "content": self.user_content + "\n\n" + brief + "\n\n" + self.prompts["code_output_tip"]},
+                {"role": "assistant", "content": f"```python\n{current.code or ''}\n```"},
+                {
+                    "role": "user",
+                    "content": _build_error_feedback(current.code or "", "\n".join(current.validation.get("errors", [])))
+                    + "\n" + self.prompts["code_output_tip"],
+                },
+            ]
+            replies, record = self.session.call(
+                LABEL_CORRECTION, messages, purpose="validation_repair", attempt_ids=[aid],
+                transcript_label=f"policy_correction_{slot}",
+            )
+            text = replies[0] if replies else ""
+            corrected = self.make(
+                cid, slot, attempt, code=_extract_code_string(text), response=text, idea=sp.idea,
+                proposal=sp.proposal, llm_call_ids=list(design_calls) + [record.call_id],
+                previous_attempt_id=current.attempt_id,
+                mapping={"mode": "correction", "call_id": record.call_id, "corrects": current.attempt_id},
+                **make_kw,
+            )
+            corrected.policy, corrected.validation = self.validate(corrected.code, sp.idea, aid, extra_check)
+            attempts.append(corrected)
+            current = corrected
+        return attempts
+
+    def fill(self, cid, slot, sp, reason, design_calls, extra_check=None, **make_kw):
+        from lares.search.generation import LABEL_GENERATION, attempt_id_for
+
+        if self.session.exhausted:
+            return [self.make(cid, slot, 0, idea=sp.idea, proposal=sp.proposal, llm_call_ids=list(design_calls),
+                              validation={"passed": False, "stage": STAGE_BUDGET,
+                                          "errors": [f"LLM budget exhausted: {self.session.calls_made}/{self.max_total_calls} calls, "
+                                                     f"{self.session.tokens_used}/{self.max_total_tokens or 'unlimited'} tokens ({reason})"]},
+                              **make_kw)]
+        brief = self._brief(sp, make_kw)
+        messages = [
+            {"role": "system", "content": self.prompts["initial_system"]},
+            {"role": "user", "content": self.user_content + "\n\n" + brief + "\n\n" + self.prompts["code_output_tip"]},
+        ]
+        purpose = "per_idea" if reason == "per_idea" else "fill"
+        replies, record = self.session.call(
+            LABEL_GENERATION, messages, purpose=purpose, attempt_ids=[attempt_id_for(cid, 0)],
+            transcript_label=f"policy_implement_{slot}",
+        )
+        text = replies[0] if replies else ""
+        mapping = {"mode": purpose, "call_id": record.call_id, "idea_id": sp.idea.idea_id}
+        if reason != "per_idea":
+            mapping["reason"] = reason
+        return self.implement(cid, slot, sp, text, _extract_code_string(text), design_calls, [record.call_id],
+                              mapping, extra_check, **make_kw)
 
 
 def generate_candidates(
@@ -965,65 +1077,8 @@ def generate_candidates(
             )
 
     # -- implementation -------------------------------------------------------
-    def implement(cid, slot, sp, response, code, call_ids, mapping):
-        brief = implementation_brief(sp.idea, sp.proposal, parent_sources)
-        current = make(cid, slot, 0, code=code, response=response, idea=sp.idea, proposal=sp.proposal,
-                       llm_call_ids=list(design_calls) + list(call_ids), mapping=mapping)
-        current.policy, current.validation = validate(code, sp.idea, current.attempt_id)
-        attempts = [current]
-        corrections = 0
-        while not current.valid and corrections < max_repair_per_candidate and not session.exhausted:
-            corrections += 1
-            attempt = allocator.next_attempt(cid)
-            aid = attempt_id_for(cid, attempt)
-            messages = [
-                {"role": "system", "content": prompts["initial_system"]},
-                {"role": "user", "content": user_content + "\n\n" + brief + "\n\n" + prompts["code_output_tip"]},
-                {"role": "assistant", "content": f"```python\n{current.code or ''}\n```"},
-                {
-                    "role": "user",
-                    "content": _build_error_feedback(current.code or "", "\n".join(current.validation.get("errors", [])))
-                    + "\n" + prompts["code_output_tip"],
-                },
-            ]
-            replies, record = session.call(
-                LABEL_CORRECTION, messages, purpose="validation_repair", attempt_ids=[aid],
-                transcript_label=f"policy_correction_{slot}",
-            )
-            text = replies[0] if replies else ""
-            corrected = make(
-                cid, slot, attempt, code=_extract_code_string(text), response=text, idea=sp.idea,
-                proposal=sp.proposal, llm_call_ids=list(design_calls) + [record.call_id],
-                previous_attempt_id=current.attempt_id,
-                mapping={"mode": "correction", "call_id": record.call_id, "corrects": current.attempt_id},
-            )
-            corrected.policy, corrected.validation = validate(corrected.code, sp.idea, aid)
-            attempts.append(corrected)
-            current = corrected
-        return attempts
-
-    def fill(cid, slot, sp, reason):
-        if session.exhausted:
-            return [make(cid, slot, 0, idea=sp.idea, proposal=sp.proposal, llm_call_ids=list(design_calls),
-                         validation={"passed": False, "stage": STAGE_BUDGET,
-                                     "errors": [f"LLM budget exhausted: {session.calls_made}/{max_total_calls} calls, "
-                                                f"{session.tokens_used}/{max_total_tokens or 'unlimited'} tokens ({reason})"]})]
-        brief = implementation_brief(sp.idea, sp.proposal, parent_sources)
-        messages = [
-            {"role": "system", "content": prompts["initial_system"]},
-            {"role": "user", "content": user_content + "\n\n" + brief + "\n\n" + prompts["code_output_tip"]},
-        ]
-        purpose = "per_idea" if reason == "per_idea" else "fill"
-        replies, record = session.call(
-            LABEL_GENERATION, messages, purpose=purpose, attempt_ids=[attempt_id_for(cid, 0)],
-            transcript_label=f"policy_implement_{slot}",
-        )
-        text = replies[0] if replies else ""
-        mapping = {"mode": purpose, "call_id": record.call_id, "idea_id": sp.idea.idea_id}
-        if reason != "per_idea":
-            mapping["reason"] = reason
-        return implement(cid, slot, sp, text, _extract_code_string(text), [record.call_id], mapping)
-
+    implementer = _SlotImplementer(session, validate, prompts, user_content, allocator, make, parent_sources,
+                                   max_repair_per_candidate, max_total_calls, max_total_tokens)
     if impl_mode == POLICY_IMPL_BATCHED and ready:
         items = [(sp.idea.idea_id, implementation_brief(sp.idea, sp.proposal, parent_sources)) for _, _, sp in ready]
         codes, batch_mode, fences, batch_text, batch_call = {}, "none", 0, "", None
@@ -1045,12 +1100,186 @@ def generate_candidates(
             if code is not None:
                 mapping = {"mode": "batched", "call_id": batch_call.call_id, "idea_id": sp.idea.idea_id,
                            "match": batch_mode, "fences_found": fences}
-                candidates.extend(implement(cid, slot, sp, batch_text, code, [batch_call.call_id], mapping))
+                candidates.extend(implementer.implement(cid, slot, sp, batch_text, code, design_calls,
+                                                        [batch_call.call_id], mapping))
             else:
-                candidates.extend(fill(cid, slot, sp, reason="no fence labelled for this idea in the batched reply"))
+                candidates.extend(implementer.fill(cid, slot, sp, "no fence labelled for this idea in the batched reply",
+                                                   design_calls))
     else:
         for cid, slot, sp in ready:
-            candidates.extend(fill(cid, slot, sp, reason="per_idea"))
+            candidates.extend(implementer.fill(cid, slot, sp, "per_idea", design_calls))
+
+    candidates.sort(key=lambda c: (c.slot, c.attempt))
+    for c in candidates:
+        _save_attempt(dir_path, c)
+    return candidates
+
+
+def generate_two_lane_candidates(
+    client,
+    args,
+    dir_path,
+    obs_dim,
+    action_dim,
+    env_name,
+    prompts,
+    plan,
+    data_pkl_path,
+    ledger,
+    llm_transcript_path=None,
+    impl_mode=POLICY_IMPL_PER_IDEA,
+    max_total_calls=50,
+    max_repair_per_candidate=1,
+    param_budget=None,
+    max_total_tokens=None,
+):
+    """Generation 0 of the two-lane search: seeded fittable mutations and unseeded explorations.
+
+    Slots, attempts, lanes, references and scopes are all allocated from ``plan`` before any call.
+    Two design calls follow, one per lane: the fittable lane's request names each slot's fixed
+    parent and scope and returns bounded mutations (``parse_fittable_mutations_payload``); the
+    exploration lane's request is the ordinary idea request for the remaining slots, with no parent
+    and no feedback. Each parsed slot then gets one implementation and at most
+    ``max_repair_per_candidate`` linked corrections. A fittable child must also differ from its
+    parent exactly as declared (:meth:`TwoLanePlan.child_problems`), or it fails at
+    ``mutation_contract``. Returns every attempt, failures included, in slot then attempt order.
+    """
+    from lares.core.obs_schema import get_obs_schema
+    from lares.search.generation import (
+        PARAMETER_BUDGET,
+        CandidateAllocator,
+        GeneratedCandidate,
+        attempt_id_for,
+        parse_fittable_mutations_payload,
+        parse_ideas_payload,
+    )
+    from lares.search.lanes import slots_prompt_block
+    from lares.search.schemas import LANE_FITTABLE, fitting_metrics
+
+    if impl_mode != POLICY_IMPL_PER_IDEA:
+        raise ValueError("the two-lane search implements each slot separately; use policy_impl_mode: per_idea")
+    if not env_name:
+        raise ValueError("generate_two_lane_candidates requires env_name to bind the observation schema")
+    param_budget = tuple(param_budget or PARAMETER_BUDGET)
+    schema = get_obs_schema(env_name)
+    os.makedirs(dir_path, exist_ok=True)
+
+    allocator = CandidateAllocator(0)
+    slots = allocator.allocate_slots(plan.n)
+    for cid, _ in slots:
+        allocator.next_attempt(cid)
+    if [slot for _, slot in slots] != [spec.slot for spec in plan.slots]:
+        raise ValueError("the plan's slot numbers do not match the allocator's")
+    ids = {slot: cid for cid, slot in slots}
+    context = plan.reference_ids()
+    metadata = {spec.slot: spec.lane_metadata(plan.seed_bank_sha256) for spec in plan.slots}
+    lane_of = {spec.slot: spec.lane for spec in plan.slots}
+
+    session = _LLMSession(client, args.model, ledger, llm_transcript_path, 0, max_total_calls,
+                          max_tokens=max_total_tokens, reasoning_effort=getattr(args, "reasoning_effort", None))
+    validate = _SlotValidator(dir_path, data_pkl_path, obs_dim, action_dim, env_name, forbid_scale_parameters=True)
+    fmt = dict(
+        task=prompts["task_description"], obs_dim=obs_dim, action_dim=action_dim,
+        obs_description=prompts["obs_description"], input_dict_string=prompts["input_dict_string"],
+    )
+    user_content = prompts["initial_user"].format(**fmt)
+
+    def make(cid, slot, attempt, lane_metadata=None, **kw):
+        lane = lane_of[slot]
+        return GeneratedCandidate(
+            candidate_id=cid, generation=0, slot=slot, attempt=attempt, feedback_id=None,
+            context_parent_ids=list(context) if lane == LANE_FITTABLE else [], lane=lane,
+            lane_metadata=dict(lane_metadata if lane_metadata is not None else metadata[slot]), **kw,
+        )
+
+    fittable, exploration = plan.fittable_slots, plan.exploration_slots
+    system = {"role": "system", "content": prompts["ideas_system"]}
+
+    # -- designs, one request per lane -----------------------------------------
+    fittable_user = prompts["fittable_mutations_user"].format(
+        n=len(fittable), slots=slots_prompt_block(plan, schema),
+        fitting_metrics=", ".join(sorted(fitting_metrics())), max_changes=plan.max_parameter_changes,
+        min_kept_percent=int(round(100 * plan.min_parent_parameters_kept)),
+        param_min=param_budget[0], param_max=param_budget[1], **fmt,
+    )
+    parse_slots = [spec.as_parse_slot() for spec in fittable]
+    f_parses, f_calls, f_problems, f_texts = _request_structured(
+        session, [system, {"role": "user", "content": fittable_user}],
+        lambda text: parse_fittable_mutations_payload(
+            text, parse_slots, 0, schema=schema, budget=param_budget,
+            declaration_check=lambda slot, declaration, idea: plan.declaration_problems(slot, declaration, idea, schema),
+        ),
+        len(fittable), "mutations", [attempt_id_for(ids[spec.slot], 0) for spec in fittable],
+        "policy_fittable_mutations",
+    )
+    exploration_user = prompts["ideas_user"].format(
+        n=len(exploration), param_min=param_budget[0], param_max=param_budget[1], **fmt
+    )
+    e_parses, e_calls, e_problems, e_texts = _request_structured(
+        session, [system, {"role": "user", "content": exploration_user}],
+        lambda text: parse_ideas_payload(text, len(exploration), 0, schema=schema, budget=param_budget,
+                                         slot_offset=exploration[0].slot),
+        len(exploration), "ideas", [attempt_id_for(ids[spec.slot], 0) for spec in exploration], "policy_ideas",
+    )
+
+    lanes = (
+        (fittable, f_parses, f_calls, f_problems, f_texts, STAGE_PROPOSAL),
+        (exploration, e_parses, e_calls, e_problems, e_texts, STAGE_IDEATION),
+    )
+    with open(os.path.join(dir_path, "Iter_0_designs.json"), "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "generation": 0,
+                "kind": "two_lane",
+                "plan": plan.to_dict(),
+                "lanes": {
+                    specs[0].lane: {
+                        "call_ids": calls,
+                        "payload_problems": problems,
+                        "slots": [
+                            {"slot": sp.slot, "idea": sp.idea.to_dict() if sp.idea else None,
+                             "proposal": sp.proposal.to_dict() if sp.proposal else None,
+                             "mutation": sp.mutation, "problems": sp.problems}
+                            for sp in (parses or [])
+                        ],
+                        "raw_responses": texts,
+                    }
+                    for specs, parses, calls, problems, texts, _ in lanes
+                },
+            },
+            f,
+            ensure_ascii=False,
+            indent=2,
+        )
+
+    candidates, ready = [], []
+    for specs, parses, calls, problems, _, stage in lanes:
+        if parses is None:
+            candidates.extend(
+                make(ids[spec.slot], spec.slot, 0, llm_call_ids=list(calls),
+                     validation={"passed": False, "stage": stage, "errors": list(problems)})
+                for spec in specs
+            )
+            continue
+        for spec, sp in zip(specs, parses):
+            meta = spec.lane_metadata(plan.seed_bank_sha256, mutation=sp.mutation) if spec.lane == LANE_FITTABLE else None
+            if sp.ok:
+                ready.append((spec, sp, calls, meta))
+            else:
+                candidates.append(make(ids[spec.slot], spec.slot, 0, lane_metadata=meta, idea=sp.idea,
+                                       proposal=sp.proposal, llm_call_ids=list(calls),
+                                       validation={"passed": False, "stage": stage, "errors": list(sp.problems)}))
+
+    # -- implementation -------------------------------------------------------
+    implementer = _SlotImplementer(session, validate, prompts, user_content, allocator, make, plan.parent_sources(),
+                                   max_repair_per_candidate, max_total_calls, max_total_tokens)
+    for spec, sp, calls, meta in ready:
+        extra = None
+        if spec.lane == LANE_FITTABLE:
+            def extra(policy, _slot=spec.slot, _declaration=sp.mutation):
+                return plan.child_problems(_slot, policy, _declaration, schema)
+        candidates.extend(implementer.fill(ids[spec.slot], spec.slot, sp, "per_idea", calls, extra_check=extra,
+                                           lane_metadata=meta))
 
     candidates.sort(key=lambda c: (c.slot, c.attempt))
     for c in candidates:

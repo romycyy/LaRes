@@ -661,6 +661,21 @@ Every LLM call uses gpt-5.6-sol with `reasoning_effort: high`: defaults and vali
 `scripts/compare_generation_modes.py` and Tier 3 updated. Tests: `TestModelAndReasoningEffort` in
 `tests/test_two_phase_policy_generation.py`. Details and what does not transfer: `DEBUG_PROGRESS.md`.
 
+## Two-lane search and replicate bundles (2026-09-14, mocks only)
+
+Implemented: `lares/search/lanes.py` (plan, fixed 4:2 allocation, bounded-mutation contract, fittable-incumbent
+rule, per-lane resources, expected budget); `generate_two_lane_candidates` and `_SlotImplementer` in
+`lares/core/policy_generation.py`; lane-aware fitting, promotion and artifacts in `EvolutionOrchestrator`
+(`lane_plan=`); lane lineage and record rules in `lares/search/schemas.py` and `generation.py`;
+`lares/utils/policy_prompts/fittable_mutations_user.txt`; `config/two_lane_search.yaml`;
+`config/fittable_bank/structure_roles.yaml`; `lares/fitting/replicates.py` and
+`config/fittable_bank/qualification_v2.yaml`. `config/run_full_evolution.yaml` is now the nine-candidate
+baseline under gpt-5.6-sol high. Tests: `tests/test_two_lane_search.py` (52), `tests/test_replicate_bundles.py`
+(12); full unittest set 695 OK, phase checks 41/41, pipeline 116/116 without an API key.
+
+Not done, by instruction: the baseline run and any live two-lane run (both need approval), Stage F, Phase 7.
+Details and the choices needing approval: `DEBUG_PROGRESS.md`.
+
 ## Blockers
 
 One AC-2 item is blocked: whether the VLM earns its place in the final method, which E10 decides.
