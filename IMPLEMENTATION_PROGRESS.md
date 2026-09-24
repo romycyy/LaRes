@@ -676,6 +676,14 @@ baseline under gpt-5.6-sol high. Tests: `tests/test_two_lane_search.py` (52), `t
 Not done, by instruction: the baseline run and any live two-lane run (both need approval), Stage F, Phase 7.
 Details and the choices needing approval: `DEBUG_PROGRESS.md`.
 
+## Baseline run and Stage F (2026-09-23)
+
+Baseline under gpt-5.6-sol high run with approval (`logs/baseline_gpt56_sol_high` on the GPU box): 9/9 slots
+valid first time, 10 calls, 100,786 tokens, best `gen0_cand7` at 0.333 on the promotion set (paired against the
+0.00 null, t95 [+0.154, +0.512]). Stage F implemented against mocks: `lares/repair/correction.py`,
+`scripts/stage_f.py`, `tests/test_stage_f.py` (19); `run_study` gained `control_result` and
+`max_substitutions`. Not run live. Details, the matching rule and the open decisions: `DEBUG_PROGRESS.md`.
+
 ## Blockers
 
 One AC-2 item is blocked: whether the VLM earns its place in the final method, which E10 decides.

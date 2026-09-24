@@ -63,15 +63,35 @@ def run_study(
     max_steps: int = 150,
     max_clusters: int = 2,
     progress=None,
+    control_result=None,
+    max_substitutions: int | None = None,
 ) -> dict:
-    """Diagnose a policy's recurrent failures by controlled substitution."""
+    """Diagnose a policy's recurrent failures by controlled substitution.
+
+    ``control_result`` reuses a control run already made on ``manifest`` rather
+    than paying for it again; it is then not counted in ``rollout_episodes``.
+    ``max_substitutions`` tests only the first that many explanations, which is
+    how a matched-budget ablation caps the diagnostic spend (never below two:
+    one account is a guess, not a diagnosis).
+    """
+    from lares.search.resources import episode_steps
+
     started = time.time()
-    control_result = evaluate_manifest(
-        PolicyActor(policy, deterministic=True, name="control"),
-        manifest,
-        env,
-        max_steps=max_steps,
-    )
+    reused_control = control_result is not None
+    if reused_control:
+        if control_result.manifest_id != manifest.manifest_id:
+            raise ValueError(
+                f"the supplied control ran on {control_result.manifest_id}, not {manifest.manifest_id}"
+            )
+    else:
+        control_result = evaluate_manifest(
+            PolicyActor(policy, deterministic=True, name="control"),
+            manifest,
+            env,
+            max_steps=max_steps,
+        )
+    if max_substitutions is not None and max_substitutions < 2:
+        raise ValueError("max_substitutions must be at least 2 to compare competing explanations")
     control_report = build_report(
         control_result, f"{structure.structure_id}:control", CHECKPOINT_FITTED,
         action_dim=structure.action_dim,
@@ -87,9 +107,13 @@ def run_study(
     gates = available_gates(policy, probe)
 
     studies = []
-    rollouts = 1
+    rollouts = 0 if reused_control else 1
+    substitutions = 0
+    intervention_steps = 0
     for cluster in clusters[:max_clusters]:
         explanations = competing_explanations(cluster, gates=gates)
+        if max_substitutions is not None:
+            explanations = explanations[: max(0, max_substitutions - substitutions)]
         study = ClusterStudy(cluster=cluster.to_dict(),
                              explanations=[e.to_dict() for e in explanations])
         if len(explanations) < 2:
@@ -107,6 +131,8 @@ def run_study(
             )
             result = evaluate_manifest(actor, manifest, env, max_steps=max_steps)
             rollouts += 1
+            substitutions += 1
+            intervention_steps += episode_steps(result)[1]
             if progress is not None:
                 progress(cluster.label, explanation.name, result.success_rate)
 
@@ -162,7 +188,9 @@ def run_study(
         "rollout_episodes": rollouts * len(manifest),
         #: Of those, the ones that were expert-assisted or gate-forced. The
         #: control run is not one, and neither is anything a repair spends.
-        "intervention_episodes": (rollouts - 1) * len(manifest),
+        "intervention_episodes": substitutions * len(manifest),
+        "intervention_environment_steps": int(intervention_steps),
+        "control_reused": reused_control,
         "wall_time_seconds": time.time() - started,
     }
 

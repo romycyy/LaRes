@@ -87,6 +87,12 @@ python scripts/qualify_fittable_bank.py build-manifest
 python scripts/qualify_fittable_bank.py run          # clean worktree; records the Git SHA
 python scripts/qualify_fittable_bank.py report --run <logs/fittable_bank/run_dir>
 
+# Stage F (debug_spec.md, D10): correction-LLM repair vs matched-budget arms (lares/repair/correction.py).
+# Mock-tested only. The three LLM arms are live gpt-5.6-sol calls and need approval; --held-out has no default.
+python scripts/stage_f.py run --structures <ids> --seeds 0 1 2 --held-out <fresh manifest.yaml>
+python scripts/stage_f.py run ... --arms no_repair local_search global_search    # no LLM calls
+python scripts/stage_f.py report --run logs/stage_f/<run_dir>
+
 # Two-lane search (decided 2026-09-14; lares/search/lanes.py). Implemented and tested against mocks only.
 # Run the new-model baseline first. Both are live gpt-5.6-sol runs and need approval.
 python scripts/run_full_evolution.py                                      # baseline: 9 unseeded zero-shot candidates
@@ -121,7 +127,7 @@ python -m unittest tests.test_evaluation_manifest tests.test_manifest_runner \
   tests.test_search tests.test_objectives tests.test_repair tests.test_freeze \
   tests.test_final_report tests.test_vision tests.test_fitting_provenance tests.test_provenance \
   tests.test_two_generation_mock tests.test_stage_e tests.test_fittable_bank tests.test_two_lane_search \
-  tests.test_replicate_bundles
+  tests.test_replicate_bundles tests.test_stage_f
 python -m unittest tests.test_record_episode_gif.TestRecordEpisodeGif.test_saves_gif_and_returns_metadata
 ```
 
@@ -273,8 +279,19 @@ otherwise). Protocol predeclared, not run: `config/fittable_bank/qualification_v
 and unreserved on 2026-09-14).
 
 **Baseline under the new model (`config/run_full_evolution.yaml`).** One generation of nine unseeded zero-shot
-candidates on the same manifests, fitting disabled, no token cap, log dir `logs/baseline_gpt56_sol_high`. It
-must run (with approval) before the two-lane search, whose token budget should be matched to its ledger.
+candidates on the same manifests, fitting disabled, no token cap, log dir `logs/baseline_gpt56_sol_high`. Ran
+2026-09-23: 10 calls, 100,786 tokens, best 0.333 on the promotion set. The two-lane token cap should match that
+ledger (still `null` pending approval).
+
+**Stage F repair ablation (`lares/repair/correction.py`, `scripts/stage_f.py`).** Six arms per replicate from
+one common preprocessing (rollout-selected fit, then one screen run): `no_repair`, three correction-LLM arms
+differing only in the evidence packet (none / numeric / numeric + substitution study), `local_search`,
+`global_search`. An LLM repair is one `repair`-mode proposal tied to the parent and the packet's feedback id,
+one implementation plus at most one correction, then the parent's preprocessing again. Every arm is capped at
+the same repair-evaluation episodes (`StageFBudget.repair_episode_cap`) and replaces the parent only if strictly
+better on the screen by the checkpoint tie rule. Chains land in `<run>/<structure>_s<seed>/<arm>/chain.json`;
+`verify_chain` rechecks them. Manifests are compared by placement hash (`task_hash`), not case id: case ids are
+per-manifest indices and collide across manifests.
 
 **Behavioural cloning is non-monotonic in gradient steps.** Development success peaks around 1000
 steps and collapses to zero by 3000, while validation loss falls the whole way. Measured on two

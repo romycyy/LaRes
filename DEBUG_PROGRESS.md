@@ -11,8 +11,9 @@ Tracks the implementation of `debug_spec.md`. Started 2026-09-13 on branch `stag
 | 3. Records, resources, archive, reconstruction, gate levers, summaries (Stage C) | **done**, tested |
 | 4. Two-generation smoke test (Stage D) | **done**: mocked run and live gpt-5 run pass every check, including a live correction |
 | — Full run on the updated `config/run_full_evolution.yaml` | **done**: held-out success 0.340 against the pre-debug best's 0.120, paired +0.220, t95 [+0.045, +0.395] |
+| — Baseline under gpt-5.6-sol high (nine zero-shot candidates) | **done** (2026-09-23): 9/9 valid first time, 10 calls, 100,786 tokens; best 0.333 on the promotion set |
 | 5. Fresh development-confirmation experiment (Stage E) | **done** at `f96f060`: no fitted condition beat zero-shot with its 95% interval above zero, so fitting is disabled by default |
-| 6. Correction-LLM repair and clean ablation (Stage F) | not started; now unblocked. The old ablation is relabelled a pilot |
+| 6. Correction-LLM repair and clean ablation (Stage F) | **implemented and mock-tested** (2026-09-23), not run live; the old ablation is relabelled a pilot |
 
 Phase 7 stays blocked. Nothing in this cycle opened the final-test split or ran Qwen.
 
@@ -572,6 +573,73 @@ steps; exploration lane 30 screen episodes, nothing else; promotion 60-90 episod
 72,000 simulator steps. LLM: 2 design + 9 implementation calls + ~1.2 expected corrections (13% rate) = ~12,
 at most 22. Tokens under gpt-5.6-sol high are unmeasured; the baseline measures them.
 
+## Baseline under gpt-5.6-sol high (2026-09-23)
+
+**Run.** `scripts/run_full_evolution.py` on `config/run_full_evolution.yaml`, log dir
+`logs/baseline_gpt56_sol_high` (on the GPU box), after the full test set passed on the synced tree (695 unittest
+OK, 41/41, 116/116). One generation, nine unseeded zero-shot candidates, fitting disabled, screen development
+cases 0-9, promotion set 10-39. Exit 0 in 956 s.
+
+**Health.** 9/9 slots valid on the first attempt; no correction was needed. Lineage complete on all nine records;
+all eight traceability fields complete; tokens reconcile on unique call ids.
+
+**LLM cost (the number the two-lane budget should match).** 10 calls, 100,786 total tokens: ideation 13,870
+(12,863 completion); implementations 6,920-11,098 each (mean 9,657). Mean call wall time 84 s, ideation 128 s.
+
+| candidate | screen success | progress | decision |
+|---|---:|---:|---|
+| gen0_cand7 | 0.200 | +0.085 | promoted: promotion set 0.333, paired vs the 0.00 null +0.333, t95 [+0.154, +0.512] |
+| gen0_cand2 | 0.100 | +0.050 | screened in, not tested (one challenger) |
+| gen0_cand3 | 0.100 | -0.151 | screened in, not tested; `pushed_away_from_goal` |
+| six others | 0.000 | -0.002 to +0.119 | held |
+
+Reading it. The promoted candidate still fails mostly by `never_reached_object` (19 of 30), as the gpt-5
+candidates did. The promotion set is not the gpt-5 run's `#head30`, so no comparison with that run is made
+here; a paired held-out comparison needs a fresh MT1 pool seed. With fitting disabled, each candidate is still
+screened twice (zero-shot and "fitted", identical states), so 90 of the 180 screen episodes were duplicates;
+the two-lane exploration lane already skips that duplicate.
+
+## Stage F: correction-LLM repair, implemented against mocks (2026-09-23)
+
+`lares/repair/correction.py`, driven by `scripts/stage_f.py`, tested by `tests/test_stage_f.py` (19). Not run
+live: the three LLM arms make gpt-5.6-sol calls and need approval.
+
+| Spec requirement (section 5, Stage F) | Where |
+|---|---|
+| 1. Numeric evidence packet from evaluation and diagnostic artifacts | `build_evidence_text`: parent code, then (numeric) the report's diagnostics block, a per-case table and recurrent clusters, then (intervention) the substitution study; written as a hashed `FeedbackBundle` |
+| 2. Schema-valid `MutationProposal` tied to parent and feedback ids | `generate_candidates` at generation 1 with the packet as the bundle and the parent as the only context; a proposal whose mode is not `repair` or whose parents are not `[parent]` ends the chain as `not_a_repair` |
+| 3. Generate or patch once | one implementation, at most one linked validation correction (`max_repair_per_candidate`), inside a 4-call cap |
+| 4. Validate, refit with common preprocessing, evaluate under a matched budget | `preprocess` (deterministic MSE, rollout-selected checkpoint on the probe manifest) is applied to the parent once and identically to every LLM child; `StageFBudget.repair_episode_cap` |
+| 5. Record the chain and its cost | `<replicate>/<arm>/chain.json`: packet, ledger call ids and totals, every attempt's lineage and validation, proposal, prediction check, child preprocessing, screen scores, outcome, held-out per-case success, `ResourceLedger`; `verify_chain` rechecks hashes and ties |
+| Six clean arms | `no_repair`, `llm_evidence_free`, `llm_numeric`, `llm_numeric_intervention`, `local_search` (Gaussian, 0.1 x range), `global_search` (uniform in range) |
+
+**Matching.** Checkpoint selection and initial fitting are common preprocessing, charged once per replicate to
+no arm. Every arm then has the same cap on repair-evaluation episodes (screen, probe and expert-assisted):
+the most an LLM arm can spend, `max_substitutions x screen + checkpoints x probe + screen` (60 at 10/10/3
+checkpoints/2 substitutions). The search arms spend exactly the cap (6 candidates); LLM arms spend up to it
+and additionally LLM calls and refit gradient steps, reported per arm rather than converted. One acceptance
+rule for every arm: replace the parent only if strictly better on the screen by the checkpoint tie rule.
+Held-out cases, disjoint by placement hash, score every arm's result and decide nothing.
+
+**Changes elsewhere.** `lares/repair/study.run_study` takes an existing `control_result` (so the substitution
+study reuses the common screen run instead of paying for it again) and `max_substitutions` (never below two),
+and reports `intervention_environment_steps`. Existing callers are unchanged.
+
+**Mocked test.** Kinematic push world, parent with its push direction reversed (a fault fitting cannot remove,
+the push gain being bounded positive). The evidence-free arm's first implementation reads the observation by
+raw index and is corrected; the numeric arm proposes a simplification and keeps the parent; the intervention
+arm runs 12 expert-assisted episodes (two substitutions on six cases, MetaWorld's push expert) and its repair
+takes held-out success from 0.0 to 1.0. The search arms spend the cap exactly. Tampering with a packet breaks
+`verify_chain`.
+
+**Driver smoke on the real env** (non-LLM arms only, `simple_reach_push`, seed 0, screen 3, probe 3, fit 100,
+held-out the spent Stage E manifest): runs end to end, chains verify. It caught a real bug: case ids are
+per-manifest indices, so disjointness is now checked by placement hash.
+
+**Decisions before a live Stage F run:** the structures (candidates: the five fittable seed-bank structures,
+the baseline's best, or both), the number of seeds, the fresh MT1 pool seed for the held-out manifest, and
+whether 60 repair episodes per arm is the right cap.
+
 ## Decisions and deviations
 
 1. **Paths.** The spec names `lares/fit/objectives.py` and `lares/fit/fitter.py`; the package is
@@ -604,19 +672,21 @@ at most 22. Tokens under gpt-5.6-sol high are unmeasured; the baseline measures 
    ```bash
    export MUJOCO_GL=egl
    .venv-metaworld/bin/python scripts/run_full_evolution.py --config config/debug_smoke_two_generation.yaml
-   .venv-metaworld/bin/python scripts/run_full_evolution.py --config config/run_full_evolution.yaml
    .venv-metaworld/bin/python scripts/summarise_experiments.py --log-dir logs/evolution_debug_full
    .venv-metaworld/bin/python scripts/compare_evolution_runs.py --baseline logs/evolution_review_20260913 --run logs/evolution_debug_full
    ```
-2. **Stage E: done** (see "Stage E result"). Fitting disabled by default. Seed 2200 and fitting seeds
-   2200-2204 are spent.
-3. **Research decisions raised by the full run** (`RESEARCH_HANDOFF.md`, question 0): whether imitation
-   fitting stays in the loop, whether promotion should require a paired interval above zero, and whether the
-   edit generations earn their cost, since they did not improve held-out success.
-3. **Stage F (D10)**: numeric evidence packet, correction-LLM `MutationProposal` tied to parent and
-   feedback ids, one generation or patch, common preprocessing, matched budgets across the six arms,
-   the whole chain recorded with its cost.
-4. Not yet on the new contract: `scripts/run_shadowhand_spin_stages.py` still fits with
+   (`config/run_full_evolution.yaml` is now the gpt-5.6-sol baseline, not the config of that full run.)
+2. **Done: Stage E** (fitting disabled by default; seeds 2200-2204 spent) **and the fittable-bank
+   qualification** (five-structure seed bank; seeds 2300-2304 spent).
+3. **Done: baseline under gpt-5.6-sol high** (`logs/baseline_gpt56_sol_high` on the GPU box): 10 calls,
+   100,786 tokens, best 0.333 on the promotion set.
+4. **Two-lane search, live**: set `config/two_lane_search.yaml`'s `max_llm_tokens_per_generation` to the
+   baseline's 100,786 (needs approval; the config leaves it `null` until then), run it, and compare both on a fresh MT1 pool seed (2100, 2200, 2300 spent; 2400-2424 held for
+   `qualification_v2.yaml`). The provisional scope, mutation-bound and fittable-incumbent choices still
+   need approval.
+5. **Stage F (D10)**: implemented and mock-tested; the live run waits on the decisions listed in
+   "Stage F: correction-LLM repair" and on approval.
+6. Not yet on the new contract: `scripts/run_shadowhand_spin_stages.py` still fits with
    `behavioral_cloning`, and `scripts/compare_objectives.py` and `scripts/ablate_repair.py` still
-   report through their own JSON rather than `ExperimentRecord`s with resource ledgers. Both
-   matter for Stages E and F.
+   report through their own JSON rather than `ExperimentRecord`s with resource ledgers. The ablation
+   script matters for Stage F.

@@ -866,6 +866,15 @@ must also beat the previous fittable incumbent (implemented: yes). The standoff 
 damped-push variant are now controls or retired (`structure_roles.yaml`), and future qualification replicates
 vary the data (`qualification_v2.yaml`, not run).
 
+## Baseline under gpt-5.6-sol high, and Stage F built (2026-09-23)
+
+The nine-candidate zero-shot baseline ran: every slot valid on its first attempt, 10 calls, 100,786 tokens. Its
+best candidate scores 0.333 on the 30-case promotion set (paired against the 0.00 null, t95 [+0.154, +0.512]),
+still failing mostly by never reaching the object. It has not been compared with the gpt-5 run on shared
+held-out cases; that needs a fresh MT1 pool seed. Stage F's correction-LLM repair ablation is implemented and
+mock-tested (`lares/repair/correction.py`, `scripts/stage_f.py`) and waits on the choice of structures, seeds
+and held-out pool seed. Details in `DEBUG_PROGRESS.md`.
+
 ## Questions requiring a research decision
 
 -2. **Raised by the bank study.** (a) Four of the five qualifying references are reach-push variants, so the
