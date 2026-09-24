@@ -4,3 +4,6 @@ __pycache__/
 .venv-metaworld/
 logs/
 *.pkl
+
+# Claude Code local settings
+.claude/settings.local.json

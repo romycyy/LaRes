@@ -536,3 +536,34 @@ timestamp). `run_full_evolution.py` writes flat into `log_dir` (default `./logs/
 `demo_<env>.pkl`, `best_policy_code.py`, `best_policy.pt`, per-generation LLM responses and code, and
 optional demo GIFs under `gen_<N>/`. `run_shadowhand_spin_stages.py` instead creates a timestamped run
 dir holding `config.yaml`, `summary.json`, `training_dynamics.jsonl`, the demo pickle, and `*_policy.pt`.
+
+## Remote GPU server
+
+Code is written and edited **locally**; tests and experiments **run on the server**. Everything goes
+through `scripts/gpu.sh`, symlinked as `gpu` on the PATH (`~/.local/bin/gpu`). The instance is EC2
+`i-00844bdd35e7d6f96` (`LLM-symbolic-backup`, g4dn.2xlarge, Tesla T4, us-east-1), reached with AWS
+profile `ec2-control` and key `~/.ssh/sybolicRL.pem` as `ubuntu`. The public hostname changes on
+every start, so never hard-code it or use the `sybolicRL` entry in `~/.ssh/config`; `gpu` looks it up.
+
+```bash
+gpu status                 # stopped|running + current hostname
+gpu start                  # start, wait until sshd answers
+gpu test                   # sync, then every test file (unittest ones + self-running ones)
+gpu test tests.test_search # sync, then specific unittest targets
+gpu run python scripts/lock_baseline.py   # sync, then any command in ~/LaRes, venv + MUJOCO_GL=egl set
+gpu get logs/evolution ./remote_logs      # copy results back
+gpu connect ['cmd']        # plain ssh (no sync)
+gpu stop                   # ALWAYS stop when done: the instance bills by the hour while running
+```
+
+- `sync` copies the local working tree (tracked + untracked-not-ignored files, uncommitted edits
+  included) into `~/LaRes` and deletes files removed locally. No commit or push is needed to test.
+- The server's git HEAD is left where it is; its `git status` shows the synced local edits. That is
+  expected. Commits are made locally and pushed to GitHub from the Mac.
+- **Guard:** sync refuses if the server's HEAD is not in the local repo, or if any server file changed
+  since the last sync. Do not edit code on the server; if it happened, `gpu pull` fetches server
+  commits into `gpu/<branch>` (then `git merge --ff-only gpu/<branch>`). Uncommitted server edits
+  must be committed on the server first.
+- Long runs: `gpu run 'nohup python ... > run.log 2>&1 &'`, then `gpu connect 'tail run.log'`.
+  Do not start full training or large experiments without the user's approval (see workflow rules).
+- `OPENAI_API_KEY` is not set in the non-interactive ssh shell, so LLM tiers of the tests skip.
