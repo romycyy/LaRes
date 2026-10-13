@@ -1,0 +1,164 @@
+{
+  "selected_at": "2026-10-13T22:54:45",
+  "selected_before_held_out_manifest": true,
+  "rule": "Among evaluated, non-intervention records of the source run whose reconstruction verifies, rank by promotion-set success (records without one rank below all that have one), then screen success, then mean screen goal progress. Drop a record whose source is identical to a higher-ranked one. Keep the top two. Selected before the Stage F held-out manifest exists; sources are copied and hashed.",
+  "source_run": "logs/baseline_gpt61_sol_high",
+  "selected": [
+    {
+      "structure_id": "baseline61_gen0_cand2_a1",
+      "record": "gen0_cand2_a1",
+      "source_path": "config/stage_f/structures/baseline61_gen0_cand2_a1.py",
+      "source_sha256": "c4f4e0b5299cef8b9af7321db168209d43f6dde2ac645803d986ad620f74fdd6",
+      "rank_key": [
+        1,
+        0.0,
+        0.0,
+        0.04823262697924476
+      ],
+      "expanded_success_rate": 0.0,
+      "screen_success_rate": 0.0
+    },
+    {
+      "structure_id": "baseline61_gen0_cand1_a0",
+      "record": "gen0_cand1_a0",
+      "source_path": "config/stage_f/structures/baseline61_gen0_cand1_a0.py",
+      "source_sha256": "7c88c504dc298b7b14175b89b10f2415993316bf5ae93ed4e50ddd0026253b78",
+      "rank_key": [
+        0,
+        -1.0,
+        0.0,
+        0.03063400618823764
+      ],
+      "expanded_success_rate": null,
+      "screen_success_rate": 0.0
+    }
+  ],
+  "considered": [
+    {
+      "id": "gen0_cand0_a0",
+      "candidate_id": "gen0_cand0",
+      "expanded_success_rate": null,
+      "screen_success_rate": 0.0,
+      "reconstructs": true,
+      "screen_progress": 8.296838929197914e-05,
+      "rank_key": [
+        0,
+        -1.0,
+        0.0,
+        8.296838929197914e-05
+      ]
+    },
+    {
+      "id": "gen0_cand1_a0",
+      "candidate_id": "gen0_cand1",
+      "expanded_success_rate": null,
+      "screen_success_rate": 0.0,
+      "reconstructs": true,
+      "screen_progress": 0.03063400618823764,
+      "rank_key": [
+        0,
+        -1.0,
+        0.0,
+        0.03063400618823764
+      ]
+    },
+    {
+      "id": "gen0_cand2_a1",
+      "candidate_id": "gen0_cand2",
+      "expanded_success_rate": 0.0,
+      "screen_success_rate": 0.0,
+      "reconstructs": true,
+      "screen_progress": 0.04823262697924476,
+      "rank_key": [
+        1,
+        0.0,
+        0.0,
+        0.04823262697924476
+      ]
+    },
+    {
+      "id": "gen0_cand3_a0",
+      "candidate_id": "gen0_cand3",
+      "expanded_success_rate": null,
+      "screen_success_rate": 0.0,
+      "reconstructs": true,
+      "screen_progress": -0.0003328998341839501,
+      "rank_key": [
+        0,
+        -1.0,
+        0.0,
+        -0.0003328998341839501
+      ]
+    },
+    {
+      "id": "gen0_cand4_a0",
+      "candidate_id": "gen0_cand4",
+      "expanded_success_rate": null,
+      "screen_success_rate": 0.0,
+      "reconstructs": true,
+      "screen_progress": -0.0009998937394595814,
+      "rank_key": [
+        0,
+        -1.0,
+        0.0,
+        -0.0009998937394595814
+      ]
+    },
+    {
+      "id": "gen0_cand5_a0",
+      "candidate_id": "gen0_cand5",
+      "expanded_success_rate": null,
+      "screen_success_rate": 0.0,
+      "reconstructs": true,
+      "screen_progress": 0.0003727806349661411,
+      "rank_key": [
+        0,
+        -1.0,
+        0.0,
+        0.0003727806349661411
+      ]
+    },
+    {
+      "id": "gen0_cand6_a0",
+      "candidate_id": "gen0_cand6",
+      "expanded_success_rate": null,
+      "screen_success_rate": 0.0,
+      "reconstructs": true,
+      "screen_progress": 0.00013595609063205837,
+      "rank_key": [
+        0,
+        -1.0,
+        0.0,
+        0.00013595609063205837
+      ]
+    },
+    {
+      "id": "gen0_cand7_a0",
+      "candidate_id": "gen0_cand7",
+      "expanded_success_rate": null,
+      "screen_success_rate": 0.0,
+      "reconstructs": true,
+      "screen_progress": -0.0010323662657569731,
+      "rank_key": [
+        0,
+        -1.0,
+        0.0,
+        -0.0010323662657569731
+      ]
+    },
+    {
+      "id": "gen0_cand8_a1",
+      "candidate_id": "gen0_cand8",
+      "expanded_success_rate": null,
+      "screen_success_rate": 0.0,
+      "reconstructs": true,
+      "screen_progress": -0.05760347058742251,
+      "rank_key": [
+        0,
+        -1.0,
+        0.0,
+        -0.05760347058742251
+      ]
+    }
+  ]
+}

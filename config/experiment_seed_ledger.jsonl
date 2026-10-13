@@ -20,3 +20,7 @@
 {"seed": 2302, "namespace": "fitting", "use": "fittable-bank qualification fitting seeds", "artifact": "config/fittable_bank/qualification.yaml", "recorded_at": "2026-09-14T04:02:22", "backfilled": false}
 {"seed": 2303, "namespace": "fitting", "use": "fittable-bank qualification fitting seeds", "artifact": "config/fittable_bank/qualification.yaml", "recorded_at": "2026-09-14T04:02:22", "backfilled": false}
 {"seed": 2304, "namespace": "fitting", "use": "fittable-bank qualification fitting seeds", "artifact": "config/fittable_bank/qualification.yaml", "recorded_at": "2026-09-14T04:02:22", "backfilled": false}
+{"seed": 2500, "namespace": "mt1_pool", "use": "Stage F held-out manifest", "artifact": "config/stage_f/push-v2_development_heldout_s2500.yaml", "recorded_at": "2026-10-13T22:54:49", "backfilled": false}
+{"seed": 2500, "namespace": "fitting", "use": "Stage F replicate seeds", "artifact": "config/stage_f/stage_f.yaml", "recorded_at": "2026-10-13T22:54:49", "backfilled": false}
+{"seed": 2501, "namespace": "fitting", "use": "Stage F replicate seeds", "artifact": "config/stage_f/stage_f.yaml", "recorded_at": "2026-10-13T22:54:49", "backfilled": false}
+{"seed": 2502, "namespace": "fitting", "use": "Stage F replicate seeds", "artifact": "config/stage_f/stage_f.yaml", "recorded_at": "2026-10-13T22:54:49", "backfilled": false}
