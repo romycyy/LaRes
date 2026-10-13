@@ -875,6 +875,14 @@ held-out cases; that needs a fresh MT1 pool seed. Stage F's correction-LLM repai
 mock-tested (`lares/repair/correction.py`, `scripts/stage_f.py`) and waits on the choice of structures, seeds
 and held-out pool seed. Details in `DEBUG_PROGRESS.md`.
 
+## Two-lane search, first live run (2026-10-13, gpt-6.1-sol)
+
+All six reference-seeded bounded mutations fitted to step 1000 and screened at 0.6-1.0; the promoted child of
+`simple_reach_push_damped` (damping on a blended hand/object velocity) scored 30/30 on the promotion set and beat
+its own step 0 with an interval above zero. Unseeded explorations reached at most 0.40. Whether any mutation beats
+its *fitted parent* is untested, and is the question that decides whether the fittable lane's LLM step adds
+anything over fitting the seed bank. Details in `DEBUG_PROGRESS.md`.
+
 ## Questions requiring a research decision
 
 -2. **Raised by the bank study.** (a) Four of the five qualifying references are reach-push variants, so the

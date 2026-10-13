@@ -684,6 +684,12 @@ valid first time, 10 calls, 100,786 tokens, best `gen0_cand7` at 0.333 on the pr
 `scripts/stage_f.py`, `tests/test_stage_f.py` (19); `run_study` gained `control_result` and
 `max_substitutions`. Not run live. Details, the matching rule and the open decisions: `DEBUG_PROGRESS.md`.
 
+## Model switch and first two-lane run (2026-10-13)
+
+gpt-6.1-sol is the default for every LLM call. The two-lane search ran live (`logs/two_lane_search` on the GPU box):
+9/9 valid, 11 calls, 80,353 tokens, promoted fittable child at 30/30 on the promotion set. Child-versus-parent
+comparison not yet run. Details: `DEBUG_PROGRESS.md`.
+
 ## Blockers
 
 One AC-2 item is blocked: whether the VLM earns its place in the final method, which E10 decides.

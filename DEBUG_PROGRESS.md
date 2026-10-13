@@ -640,6 +640,40 @@ per-manifest indices, so disjointness is now checked by placement hash.
 the baseline's best, or both), the number of seeds, the fresh MT1 pool seed for the held-out manifest, and
 whether 60 repair episodes per arm is the right cap.
 
+## Two-lane search, first live run under gpt-6.1-sol (2026-10-13)
+
+**Model switch.** Every LLM call now uses gpt-6.1-sol, effort high (`DEFAULT_LLM_MODEL`, all configs). Checked against
+the API first: accepts `reasoning_effort` high and xhigh and `n>1`, refuses any temperature but 1. No token cap.
+Tests after the switch: 714 unittest OK, 41/41, 116/116.
+
+**Run.** `scripts/run_full_evolution.py --config config/two_lane_search.yaml` at `aec8fc3`, log dir
+`logs/two_lane_search` on the GPU box. Exit 0 in 843 s. 9/9 slots valid on the first attempt, no corrections;
+lineage and all eight traceability fields complete. 11 calls, 80,353 tokens (fittable design call 16,227,
+exploration ideas 9,756, implementations 5,065-7,684). 180 probe, 210 screen and 60 promotion episodes; 6,000
+gradient steps.
+
+| slot | lane | parent | declared change | probes (0/500/1000) | step 0 screen | selected screen |
+|---|---|---|---|---|---:|---:|
+| gen0_cand0 | fittable | `simple_reach_push` | push drive tapered by goal distance (+`goal_taper_radius`) | 0.4/0.3/0.6 | 0.5 | 0.7 @1000 |
+| gen0_cand1 | fittable | `simple_reach_push_damped` | damping on a contact-weighted blend of hand and object velocity (+`velocity_mix`) | 0.4/0.0/1.0 | 0.5 | **1.0** @1000 |
+| gen0_cand2 | fittable | `simple_reach_push_shared_gain` | contact gate times a directional-readiness gate (+2) | 0.0/0.0/0.6 | 0.0 | 0.6 @1000 |
+| gen0_cand3 | fittable | `simple_reach_push_sharp_gate` | contact-weighted cross-track feedback (+`w_lateral`) | 0.6/0.0/0.9 | 0.5 | 0.9 @1000 |
+| gen0_cand4 | fittable | `simple_damped_push` (gate_control) | brake gate on a velocity-predicted goal distance (+`brake_lookahead`) | 0.0/0.5/0.9 | 0.1 | 0.8 @1000 |
+| gen0_cand5 | fittable | `simple_damped_push` (geometry) | reach target at a learnable standoff behind the object (+`approach_standoff`) | 0.0/0.5/1.0 | 0.0 | 1.0 @1000 |
+| gen0_cand6-8 | exploration | — | unseeded ideas, zero-shot | — | 0.0 / 0.4 / 0.0 | — |
+
+Every fittable child selected step 1000; none was `fitting_rejected`. `gen0_cand1` (best screened by progress over
+`gen0_cand5`) scored **30/30 on the promotion set** (cases 10-39), beating the 0.00 null and its own step 0 (0.667,
+paired +0.333, interval above zero), so it is both `performance_incumbent` and `fittable_incumbent`.
+
+**What this does and does not show.** The fittable lane works mechanically and every bounded mutation stayed
+fittable. It does **not** show that a mutation beat its parent: no child was compared with its fitted parent on
+shared cases, and the parents already reach 0.82-0.98 fitted (bank qualification, other manifest). The promotion set
+has been read by every search since 2026-09-14, so 1.00 is a development number. The exploration lane (best 0.40
+screen) is not comparable with the gpt-5.6-sol baseline (0.333): the model changed between the runs. Next checks:
+child versus fitted parent, paired on a fresh MT1 pool seed (rollouts only); a gpt-6.1-sol rerun of the baseline if
+the explorations are to be compared.
+
 ## Decisions and deviations
 
 1. **Paths.** The spec names `lares/fit/objectives.py` and `lares/fit/fitter.py`; the package is
@@ -680,7 +714,7 @@ whether 60 repair episodes per arm is the right cap.
    qualification** (five-structure seed bank; seeds 2300-2304 spent).
 3. **Done: baseline under gpt-5.6-sol high** (`logs/baseline_gpt56_sol_high` on the GPU box): 10 calls,
    100,786 tokens, best 0.333 on the promotion set.
-4. **Two-lane search, live**: no token cap (decided 2026-09-23; tokens are recorded, not capped), run it, and compare both on a fresh MT1 pool seed (2100, 2200, 2300 spent; 2400-2424 held for
+4. **Two-lane search, live: first run done** (2026-10-13, gpt-6.1-sol; see its section). Still to do: and compare both on a fresh MT1 pool seed (2100, 2200, 2300 spent; 2400-2424 held for
    `qualification_v2.yaml`). The provisional scope, mutation-bound and fittable-incumbent choices still
    need approval.
 5. **Stage F (D10)**: implemented and mock-tested; the live run waits on the decisions listed in
