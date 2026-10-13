@@ -883,6 +883,12 @@ its own step 0 with an interval above zero. Unseeded explorations reached at mos
 its *fitted parent* is untested, and is the question that decides whether the fittable lane's LLM step adds
 anything over fitting the seed bank. Details in `DEBUG_PROGRESS.md`.
 
+## Stage F protocol decided (2026-10-13)
+
+Three structures (`simple_damped_push` and the top two gpt-6.1-sol baseline candidates) x three seeds (2500-2502),
+all six arms, 60 repair-evaluation episodes per arm, held-out cases from MT1 pool seed 2500. Frozen in
+`config/stage_f/stage_f.yaml`; details in `DEBUG_PROGRESS.md`.
+
 ## Questions requiring a research decision
 
 -2. **Raised by the bank study.** (a) Four of the five qualifying references are reach-push variants, so the

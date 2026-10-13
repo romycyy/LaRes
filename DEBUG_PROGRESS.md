@@ -674,6 +674,27 @@ screen) is not comparable with the gpt-5.6-sol baseline (0.333): the model chang
 child versus fitted parent, paired on a fresh MT1 pool seed (rollouts only); a gpt-6.1-sol rerun of the baseline if
 the explorations are to be compared.
 
+## Stage F protocol decided (2026-10-13)
+
+Decided as recommended; frozen in `config/stage_f/stage_f.yaml` before any structure is selected or any held-out
+case exists.
+
+1. **Structures:** `simple_damped_push` (fits to ~0.87, so a repair has room) plus the top two evolved candidates of
+   the gpt-6.1-sol baseline rerun (`logs/baseline_gpt61_sol_high`), ranked by promotion-set success, then screen
+   success, then screen progress, identical sources dropped. The seed bank's reach-push members (0.82-0.98 fitted)
+   and the two-lane child (30/30) are left out: little room to repair.
+2. **Replicates:** 3 seeds x 3 structures = 9; seeds 2500, 2501, 2502 drive fitting, search and the LLM slots.
+3. **Held-out cases:** 50 placements from MT1 pool seed 2500 (`push-v2:development_heldout:s2500:n50`), checked
+   against the seed ledger and every saved manifest, then reserved.
+4. **Budget:** 60 repair-evaluation episodes per arm (2 x 10 substitution, 3 x 10 refit probe, 10 child screen);
+   search arms get 6 candidates. Fitting: deterministic MSE, 1000 steps, checkpoints {0, 500, 1000} on development
+   cases 40-49. Screen: development cases 0-9. LLM: gpt-6.1-sol, effort high, no token cap, at most 4 calls per arm.
+5. **Analysis:** held-out success per arm, paired against `no_repair` over the 9 replicates with a t interval;
+   descriptive at this size, and no arm is called better unless its interval excludes zero.
+
+Driver: `scripts/stage_f.py select` -> `build-manifest` -> commit -> `run --config config/stage_f/stage_f.yaml`
+(clean worktree, Git SHA and frozen hashes recorded) -> `report`.
+
 ## Decisions and deviations
 
 1. **Paths.** The spec names `lares/fit/objectives.py` and `lares/fit/fitter.py`; the package is
@@ -717,8 +738,7 @@ the explorations are to be compared.
 4. **Two-lane search, live: first run done** (2026-10-13, gpt-6.1-sol; see its section). Still to do: and compare both on a fresh MT1 pool seed (2100, 2200, 2300 spent; 2400-2424 held for
    `qualification_v2.yaml`). The provisional scope, mutation-bound and fittable-incumbent choices still
    need approval.
-5. **Stage F (D10)**: implemented and mock-tested; the live run waits on the decisions listed in
-   "Stage F: correction-LLM repair" and on approval.
+5. **Stage F (D10)**: protocol decided and frozen 2026-10-13 ("Stage F protocol decided"); live run approved.
 6. Not yet on the new contract: `scripts/run_shadowhand_spin_stages.py` still fits with
    `behavioral_cloning`, and `scripts/compare_objectives.py` and `scripts/ablate_repair.py` still
    report through their own JSON rather than `ExperimentRecord`s with resource ledgers. The ablation

@@ -90,8 +90,12 @@ python scripts/qualify_fittable_bank.py run          # clean worktree; records t
 python scripts/qualify_fittable_bank.py report --run <logs/fittable_bank/run_dir>
 
 # Stage F (debug_spec.md, D10): correction-LLM repair vs matched-budget arms (lares/repair/correction.py).
-# Mock-tested only. The three LLM arms are live gpt-6.1-sol calls and need approval; --held-out has no default.
-python scripts/stage_f.py run --structures <ids> --seeds 0 1 2 --held-out <fresh manifest.yaml>
+# Protocol frozen in config/stage_f/stage_f.yaml (decided 2026-10-13; held-out pool seed 2500, replicate seeds
+# 2500-2502). select and build-manifest run before the commit; run --config needs a clean worktree.
+python scripts/stage_f.py select
+python scripts/stage_f.py build-manifest
+python scripts/stage_f.py run --config config/stage_f/stage_f.yaml
+python scripts/stage_f.py run --structures <ids> --seeds 0 1 2 --held-out <fresh manifest.yaml>   # ad hoc
 python scripts/stage_f.py run ... --arms no_repair local_search global_search    # no LLM calls
 python scripts/stage_f.py report --run logs/stage_f/<run_dir>
 

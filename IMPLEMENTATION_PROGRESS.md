@@ -690,6 +690,11 @@ gpt-6.1-sol is the default for every LLM call. The two-lane search ran live (`lo
 9/9 valid, 11 calls, 80,353 tokens, promoted fittable child at 30/30 on the promotion set. Child-versus-parent
 comparison not yet run. Details: `DEBUG_PROGRESS.md`.
 
+## Stage F protocol (2026-10-13)
+
+`config/stage_f/stage_f.yaml` freezes the decided protocol; `scripts/stage_f.py` gains `select`, `build-manifest`
+and `run --config` (clean worktree, frozen hashes checked). Decision record in `DEBUG_PROGRESS.md`.
+
 ## Blockers
 
 One AC-2 item is blocked: whether the VLM earns its place in the final method, which E10 decides.

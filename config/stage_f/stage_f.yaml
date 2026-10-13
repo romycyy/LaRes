@@ -1,0 +1,66 @@
+# ============================================================
+#  Stage F (debug_spec.md, D10): correction-LLM repair against matched-budget arms
+#  Protocol decided 2026-10-13, before the evolved structures are selected and before the held-out manifest
+#  exists. Driver: scripts/stage_f.py (select -> build-manifest -> commit -> run --config -> report).
+#  `run --config` refuses a dirty worktree and records the Git SHA; frozen inputs are checked by hash.
+# ============================================================
+
+stage: F
+env_name: push-v2            # canonical id; MetaWorld 3 registers push-v3
+horizon: 150
+
+# Every arm of lares.repair.correction.ARMS, from one common preprocessing per replicate.
+arms: [no_repair, llm_evidence_free, llm_numeric, llm_numeric_intervention, local_search, global_search]
+
+structures:
+  # Fits to ~0.87 (fittable-bank qualification), so a repair has room; the seed bank's reach-push members
+  # reach 0.82-0.98 fitted and leave little.
+  bank: [simple_damped_push]
+  evolved:
+    source_run: logs/baseline_gpt61_sol_high      # nine unseeded zero-shot gpt-6.1-sol candidates
+    count: 2
+    rule: >-
+      Among evaluated, non-intervention records of the source run whose reconstruction verifies, rank by
+      promotion-set success (records without one rank below all that have one), then screen success, then
+      mean screen goal progress. Drop a record whose source is identical to a higher-ranked one. Keep the top
+      two. Selected before the Stage F held-out manifest exists; sources are copied and hashed.
+    selection_file: config/stage_f/selection.json
+    structures_dir: config/stage_f/structures
+
+seeds:
+  held_out_pool_seed: 2500                # MT1 pool seed of the held-out manifest
+  replicate_seeds: [2500, 2501, 2502]     # fitting / search / LLM-slot seeds, one replicate per structure and seed
+  ledger: config/experiment_seed_ledger.jsonl   # all must be unused before the manifest is built
+
+manifests:
+  development: config/manifests/push-v2_development.yaml
+  screen_episodes: 10        # development cases 0-9: the arms' decisions
+  probe_episodes: 10         # development cases 40-49: checkpoint selection in the common preprocessing
+  held_out:
+    path: config/stage_f/push-v2_development_heldout_s2500.yaml
+    manifest_id: push-v2:development_heldout:s2500:n50
+    episodes: 50             # scores every arm's result; decides nothing
+
+fitting:
+  objective: deterministic_mse
+  budget: 1000
+  checkpoint_steps: [0, 500, 1000]   # step 0 always eligible
+  demo_buffer: logs/baseline_lock/demo_push-v2.pkl
+
+budget:
+  max_substitutions: 2       # controlled substitutions in the intervention arm
+  max_llm_calls: 4           # per LLM arm: one proposal, one implementation, one correction, one spare retry
+  max_repair_per_candidate: 1
+  # repair-evaluation episode cap per arm = 2 x 10 substitution + 3 x 10 refit probe + 10 child screen = 60;
+  # each search arm spends exactly the cap (6 candidates). LLM calls, tokens and gradient steps are reported
+  # per arm, not converted.
+
+llm:
+  model: gpt-6.1-sol
+  reasoning_effort: high     # no token cap (decided 2026-09-23)
+
+analysis:
+  reference_arm: no_repair
+  unit: replicate (structure x seed); paired difference of held-out success against the reference arm,
+    t interval over the 9 replicates. Descriptive at this size; no arm is declared better unless its interval
+    excludes zero.
