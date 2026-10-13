@@ -182,10 +182,11 @@ input_dict_for_policy = {
 #  LLM helper
 # ---------------------------------------------------------------------------
 
-# The pipeline's LLM, for every generation call (decided 2026-09-14). gpt-5.6-sol accepts only the
+# The pipeline's LLM, for every generation call (gpt-5.6-sol from 2026-09-14, gpt-6.1-sol from
+# 2026-10-13). gpt-6.1-sol accepts only the
 # default temperature (1) and takes `reasoning_effort`; configs name both, and every ledger entry
 # records them in `decoding`.
-DEFAULT_LLM_MODEL = "gpt-5.6-sol"
+DEFAULT_LLM_MODEL = "gpt-6.1-sol"
 DEFAULT_REASONING_EFFORT = "high"
 REASONING_EFFORTS = ("none", "minimal", "low", "medium", "high", "xhigh")
 

@@ -100,7 +100,7 @@ def load_config(path: str) -> SimpleNamespace:
         raw["use_mt1"] = False
     else:
         raw["use_mt1"] = bool(raw["use_mt1"])
-    # Every LLM call uses the model and reasoning effort named here (gpt-5.6-sol, high; 2026-09-14).
+    # Every LLM call uses the model and reasoning effort named here (gpt-6.1-sol, high; 2026-10-13).
     from lares.core.policy_generation import DEFAULT_REASONING_EFFORT, check_reasoning_effort
 
     raw["reasoning_effort"] = check_reasoning_effort(raw.get("reasoning_effort", DEFAULT_REASONING_EFFORT))

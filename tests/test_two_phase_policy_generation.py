@@ -491,18 +491,18 @@ class TestModelAndReasoningEffort(GenerationCase):
         return {"policy_ideas": [ideas], "policy_implement": [fence(POLICY_A), fence(POLICY_B)]}
 
     def test_the_decided_defaults(self):
-        self.assertEqual(pg.DEFAULT_LLM_MODEL, "gpt-5.6-sol")
+        self.assertEqual(pg.DEFAULT_LLM_MODEL, "gpt-6.1-sol")
         self.assertEqual(pg.DEFAULT_REASONING_EFFORT, "high")
 
     def test_effort_reaches_every_call_and_every_ledger_entry(self):
         _, llm = self.generate(self.replies(), args=self.ARGS)
         self.assertEqual(len(llm.calls), 3)
         for call in llm.calls:
-            self.assertEqual(call["model"], "gpt-5.6-sol")
+            self.assertEqual(call["model"], "gpt-6.1-sol")
             self.assertEqual(call["reasoning_effort"], "high")
             self.assertEqual(call["temperature"], 1.0)
         for record in self.ledger.records():
-            self.assertEqual(record.model, "gpt-5.6-sol")
+            self.assertEqual(record.model, "gpt-6.1-sol")
             self.assertEqual(record.decoding["reasoning_effort"], "high")
 
     def test_args_without_an_effort_send_none(self):
@@ -511,7 +511,7 @@ class TestModelAndReasoningEffort(GenerationCase):
 
     def test_an_unknown_effort_is_refused_before_any_call(self):
         with self.assertRaises(ValueError):
-            self.generate(self.replies(), args=SimpleNamespace(model="gpt-5.6-sol", reasoning_effort="extreme"))
+            self.generate(self.replies(), args=SimpleNamespace(model="gpt-6.1-sol", reasoning_effort="extreme"))
         self.assertEqual(len(self.ledger), 0)
 
     def test_the_api_receives_reasoning_effort_only_when_set(self):
@@ -520,7 +520,7 @@ class TestModelAndReasoningEffort(GenerationCase):
         choice = SimpleNamespace(message=SimpleNamespace(content="ok"))
         client.chat.completions.create.return_value = SimpleNamespace(choices=[choice], usage=usage)
         messages = [{"role": "user", "content": "hi"}]
-        pg._call_llm(client, 1, "gpt-5.6-sol", messages, 1.0, reasoning_effort="high")
+        pg._call_llm(client, 1, "gpt-6.1-sol", messages, 1.0, reasoning_effort="high")
         self.assertEqual(client.chat.completions.create.call_args.kwargs["reasoning_effort"], "high")
         pg._call_llm(client, 1, "other-model", messages, 1.0)
         self.assertNotIn("reasoning_effort", client.chat.completions.create.call_args.kwargs)

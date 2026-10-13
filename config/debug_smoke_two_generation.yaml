@@ -37,7 +37,7 @@ screen_episodes: 10
 expanded_episodes: 30
 eval_episodes: 30
 
-model: "gpt-5.6-sol"          # every LLM call; see config/run_full_evolution.yaml
+model: "gpt-6.1-sol"          # every LLM call; see config/run_full_evolution.yaml
 reasoning_effort: high
 policy_gen_two_phase: true
 policy_impl_mode: per_idea

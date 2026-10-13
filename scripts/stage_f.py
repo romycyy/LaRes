@@ -5,7 +5,7 @@ Six arms per replicate (structure x seed), all from one common preprocessing of
 the structure; see :mod:`lares.repair.correction`. Screen and probe cases come
 from the committed development manifest; the held-out manifest must be named
 explicitly, because which fresh pool seed to spend on it is a decision, not a
-default. The three LLM arms make live gpt-5.6-sol calls: run only with approval.
+default. The three LLM arms make live gpt-6.1-sol calls: run only with approval.
 
 Usage (from the project root)::
 

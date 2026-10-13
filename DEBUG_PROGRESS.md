@@ -680,8 +680,7 @@ whether 60 repair episodes per arm is the right cap.
    qualification** (five-structure seed bank; seeds 2300-2304 spent).
 3. **Done: baseline under gpt-5.6-sol high** (`logs/baseline_gpt56_sol_high` on the GPU box): 10 calls,
    100,786 tokens, best 0.333 on the promotion set.
-4. **Two-lane search, live**: set `config/two_lane_search.yaml`'s `max_llm_tokens_per_generation` to the
-   baseline's 100,786 (needs approval; the config leaves it `null` until then), run it, and compare both on a fresh MT1 pool seed (2100, 2200, 2300 spent; 2400-2424 held for
+4. **Two-lane search, live**: no token cap (decided 2026-09-23; tokens are recorded, not capped), run it, and compare both on a fresh MT1 pool seed (2100, 2200, 2300 spent; 2400-2424 held for
    `qualification_v2.yaml`). The provisional scope, mutation-bound and fittable-incumbent choices still
    need approval.
 5. **Stage F (D10)**: implemented and mock-tested; the live run waits on the decisions listed in

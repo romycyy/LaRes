@@ -17,12 +17,14 @@ export MUJOCO_GL=egl                    # required on a headless machine with no
 export OPENAI_API_KEY=...               # required for any LLM/Stage-4 path
 ```
 
-**LLM model (decided 2026-09-14): `gpt-5.6-sol` with `reasoning_effort: high` for every LLM call** —
+**LLM model (decided 2026-10-13): `gpt-6.1-sol` with `reasoning_effort: high` for every LLM call** —
 ideation, implementation and correction in `run_full_evolution.py`, the two-generation smoke config,
 `scripts/compare_generation_modes.py` and Tier 3 of `tests/test_training_pipeline.py`. The defaults live in
 `lares/core/policy_generation.py` (`DEFAULT_LLM_MODEL`, `DEFAULT_REASONING_EFFORT`); configs name both
-explicitly, and every ledger entry records the effort in `decoding`. The model accepts only temperature 1.
-Runs completed before this date (`logs/evolution_debug_full`, `logs/debug_smoke_two_generation`, Tier 3
+explicitly, and every ledger entry records the effort in `decoding`. The model accepts only temperature 1
+(checked against the API on 2026-10-13, as are `reasoning_effort` and `n>1`). From 2026-09-14 to 2026-10-13
+the model was gpt-5.6-sol (`logs/baseline_gpt56_sol_high`). No token cap on LLM runs for now.
+Runs completed before 2026-09-14 (`logs/evolution_debug_full`, `logs/debug_smoke_two_generation`, Tier 3
 notes) used gpt-5 or gpt-4o-mini, so their token caps and results do not transfer. The vision analyst
 (`lares/vision/`) is a local Qwen by design and is not an OpenAI call; it stays blocked with E10.
 
@@ -88,13 +90,13 @@ python scripts/qualify_fittable_bank.py run          # clean worktree; records t
 python scripts/qualify_fittable_bank.py report --run <logs/fittable_bank/run_dir>
 
 # Stage F (debug_spec.md, D10): correction-LLM repair vs matched-budget arms (lares/repair/correction.py).
-# Mock-tested only. The three LLM arms are live gpt-5.6-sol calls and need approval; --held-out has no default.
+# Mock-tested only. The three LLM arms are live gpt-6.1-sol calls and need approval; --held-out has no default.
 python scripts/stage_f.py run --structures <ids> --seeds 0 1 2 --held-out <fresh manifest.yaml>
 python scripts/stage_f.py run ... --arms no_repair local_search global_search    # no LLM calls
 python scripts/stage_f.py report --run logs/stage_f/<run_dir>
 
 # Two-lane search (decided 2026-09-14; lares/search/lanes.py). Implemented and tested against mocks only.
-# Run the new-model baseline first. Both are live gpt-5.6-sol runs and need approval.
+# Run the new-model baseline first. Both are live gpt-6.1-sol runs and need approval.
 python scripts/run_full_evolution.py                                      # baseline: 9 unseeded zero-shot candidates
 python scripts/run_full_evolution.py --config config/two_lane_search.yaml # 6 fittable mutations + 3 explorations
 
@@ -279,9 +281,10 @@ otherwise). Protocol predeclared, not run: `config/fittable_bank/qualification_v
 and unreserved on 2026-09-14).
 
 **Baseline under the new model (`config/run_full_evolution.yaml`).** One generation of nine unseeded zero-shot
-candidates on the same manifests, fitting disabled, no token cap, log dir `logs/baseline_gpt56_sol_high`. Ran
-2026-09-23: 10 calls, 100,786 tokens, best 0.333 on the promotion set. The two-lane token cap should match that
-ledger (still `null` pending approval).
+candidates on the same manifests, fitting disabled, no token cap. Ran under gpt-5.6-sol on 2026-09-23
+(`logs/baseline_gpt56_sol_high`: 10 calls, 100,786 tokens, best 0.333 on the promotion set); the config's log
+dir is now `logs/baseline_gpt61_sol_high` for a gpt-6.1-sol rerun. No token cap on LLM runs for now (decided
+2026-09-23); tokens are recorded in the ledger, not capped.
 
 **Stage F repair ablation (`lares/repair/correction.py`, `scripts/stage_f.py`).** Six arms per replicate from
 one common preprocessing (rollout-selected fit, then one screen run): `no_repair`, three correction-LLM arms

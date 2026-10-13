@@ -50,8 +50,8 @@ max_repair_per_candidate: 1   # One linked correction attempt per slot, never an
 # LLM budget. Enforced before each call, so the total overshoots by at most one call. Nine slots
 # need at most 1 design call + 1 retry + 9 implementations + 9 corrections = 20 calls. The token
 # cap is off: the old 242,642 was measured on gpt-5 without reasoning effort and would truncate
-# slots under gpt-5.6-sol high. This baseline run measures the new model's real usage, which is
-# what the two-lane search's budget should be matched against (config/two_lane_search.yaml).
+# slots under a reasoning model. No token cap for now (decided 2026-09-23): usage is recorded in the
+# ledger, not capped.
 max_llm_calls_per_generation: 20
 max_llm_tokens_per_generation: null
 param_budget: [6, 10]         # Recommended tunable-parameter budget; more needs a justification
@@ -69,10 +69,10 @@ eval_episodes: 30           # legacy alias; used as `expanded_episodes` if that 
 
 # ---------- Stage 4: LLM structure search ----------
 # Every LLM call in the pipeline (ideation, implementation, correction) uses this model and effort
-# (decided 2026-09-14). gpt-5.6-sol accepts only temperature 1. The completed runs in
+# (gpt-6.1-sol since 2026-10-13; gpt-5.6-sol before). gpt-6.1-sol accepts only temperature 1. The completed runs in
 # logs/evolution_debug_full and logs/debug_smoke_two_generation used gpt-5 without reasoning_effort,
 # so their token budgets do not transfer: reasoning tokens count toward total_tokens.
-model: "gpt-5.6-sol"
+model: "gpt-6.1-sol"
 reasoning_effort: high      # none | minimal | low | medium | high | xhigh
 # If true: one LLM call for JSON design hypotheses, then implementation (batched or per-idea).
 policy_gen_two_phase: true
@@ -85,8 +85,8 @@ policy_impl_mode: per_idea
 # BASELINE UNDER THE NEW MODEL (decided 2026-09-14): rerun before any two-lane search. One generation
 # of exactly nine unseeded zero-shot candidates, fitting disabled, on the same screen, promotion set
 # and probe tail the two-lane search uses. It is the comparator for config/two_lane_search.yaml (six
-# fittable mutations + three explorations), and its ledger sets the token budget to match. Not yet
-# run: it needs approval for live gpt-5.6-sol calls.
+# fittable mutations + three explorations). Run once under gpt-5.6-sol (logs/baseline_gpt56_sol_high,
+# 2026-09-23); a gpt-6.1-sol rerun writes to its own log dir.
 # No ordinary edit generations (decided 2026-09-14): in the debug-cycle run, generations 1-2 used two
 # thirds of the LLM spend and did not improve held-out success. Edit generations are evaluated in
 # Stage F; the two-generation smoke config still exercises their plumbing.
@@ -98,7 +98,7 @@ elite_num: 2
 # A fresh directory per controlled run. Never reuse one: ./logs/evolution holds the historical
 # incumbent that lock_baseline.py reproduces, and ./logs/evolution_debug_full holds the completed
 # three-generation gpt-5 debug-cycle run.
-log_dir: "./logs/baseline_gpt56_sol_high"
+log_dir: "./logs/baseline_gpt61_sol_high"
 
 # After each generation, record a demo of the best candidate as a GIF under
 # ``log_dir/gen_<N>/``.  Set to false on headless machines if rendering fails.

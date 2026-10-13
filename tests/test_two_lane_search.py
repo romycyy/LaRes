@@ -535,7 +535,7 @@ class TestRefusalsAndConfigs(unittest.TestCase):
 
         cfg = run_full_evolution.load_config(TWO_LANE_CONFIG)
         self.assertEqual((cfg.num_generations, cfg.pop_size, cfg.bc_steps), (1, 9, 0))
-        self.assertEqual((cfg.model, cfg.reasoning_effort), ("gpt-5.6-sol", "high"))
+        self.assertEqual((cfg.model, cfg.reasoning_effort), ("gpt-6.1-sol", "high"))
         self.assertEqual(cfg.max_llm_calls_per_generation, 22)
         self.assertEqual(cfg.policy_impl_mode, "per_idea")
         self.assertEqual(cfg.two_lane_search["fittable_lane"]["checkpoints"], [0, 500, 1000])
@@ -562,8 +562,8 @@ class TestRefusalsAndConfigs(unittest.TestCase):
         cfg = run_full_evolution.load_config(BASELINE_CONFIG)
         self.assertIsNone(cfg.two_lane_search)
         self.assertEqual((cfg.num_generations, cfg.pop_size, cfg.bc_steps, cfg.checkpoint_steps), (1, 9, 0, []))
-        self.assertEqual((cfg.model, cfg.reasoning_effort), ("gpt-5.6-sol", "high"))
-        self.assertEqual(cfg.log_dir, "./logs/baseline_gpt56_sol_high")
+        self.assertEqual((cfg.model, cfg.reasoning_effort), ("gpt-6.1-sol", "high"))
+        self.assertEqual(cfg.log_dir, "./logs/baseline_gpt61_sol_high")
         two = run_full_evolution.load_config(TWO_LANE_CONFIG)
         for key in ("screen_episodes", "expanded_episodes", "probe_episodes", "eval_max_steps", "demo_buffer_path",
                     "promotion_challengers", "max_llm_tokens_per_generation", "max_repair_per_candidate"):
