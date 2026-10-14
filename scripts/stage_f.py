@@ -25,7 +25,6 @@ import argparse
 import glob
 import json
 import os
-import subprocess
 import sys
 import time
 from types import SimpleNamespace
@@ -35,6 +34,7 @@ _PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
 sys.path.insert(0, _PROJECT_ROOT)
 
 from lares.repair import correction as sf  # noqa: E402
+from lares.utils.gitstate import worktree_state  # noqa: E402
 
 MANIFESTS = os.path.join(_PROJECT_ROOT, "config", "manifests")
 CONFIG_PATH = os.path.join(_PROJECT_ROOT, "config", "stage_f", "stage_f.yaml")
@@ -70,25 +70,18 @@ def parse_args():
     return p.parse_args()
 
 
-def load_structures(ids, schema):
-    from lares.fitting.structure_bank import load_bank, load_structure
+def load_structures(ids, schema=None):
+    from lares.fitting.structure_bank import load_structures as _load
 
-    found = {s.structure_id: s for s in load_bank()}
-    for path in glob.glob(os.path.join(_PROJECT_ROOT, "lares", "fitting", "fittable_variants", "*.py")):
-        name = os.path.splitext(os.path.basename(path))[0]
-        if name in ids and name not in found:
-            found[name] = load_structure(path, schema=schema)
-    missing = [i for i in ids if i not in found]
-    if missing:
-        raise SystemExit(f"unknown structures: {missing}")
-    return [found[i] for i in ids]
+    try:
+        return _load(ids)
+    except KeyError as exc:
+        raise SystemExit(str(exc)) from exc
 
 
 def git_state() -> dict:
-    sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=_PROJECT_ROOT, capture_output=True, text=True).stdout.strip()
-    dirty = bool(subprocess.run(["git", "status", "--porcelain"], cwd=_PROJECT_ROOT, capture_output=True,
-                                text=True).stdout.strip())
-    return {"git_sha": sha, "worktree_dirty": dirty}
+    state = worktree_state(_PROJECT_ROOT)
+    return {"git_sha": state["git_sha"], "worktree_dirty": state["dirty"]}
 
 
 def run(args, structures=None, extra_meta=None) -> int:

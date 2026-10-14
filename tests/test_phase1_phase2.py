@@ -12,7 +12,6 @@ No OpenAI API key is required. Tests cover:
 
 import os
 import sys
-import re
 import pickle
 import subprocess
 
@@ -487,14 +486,6 @@ print("-" * 40)
 print("Phase 2: Code extraction logic")
 print("-" * 40)
 
-patterns = [
-    r"```python(.*?)```",
-    r"```(.*?)```",
-    r'"""(.*?)"""',
-    r'""(.*?)""',
-    r'"(.*?)"',
-]
-
 test_response = '''Here is the policy:
 
 ```python
@@ -520,12 +511,9 @@ class GeneratedPolicy(SymbolicPolicy):
 This policy simply scales the first action_dim observations.
 '''
 
-extracted = None
-for pattern in patterns:
-    match = re.search(pattern, test_response, re.DOTALL)
-    if match is not None:
-        extracted = match.group(1).strip()
-        break
+from lares.core import policy_generation as pg
+
+extracted = pg._extract_code_string(test_response)
 check("2.7a Code block extraction", extracted is not None and "GeneratedPolicy" in extracted)
 
 if extracted:

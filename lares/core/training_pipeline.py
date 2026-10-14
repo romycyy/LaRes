@@ -23,6 +23,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from lares.utils.hashing import sha256_file, sha256_text
+
 from lares.core.training_logger import (
     BC_GRAD_NORM_POST_CLIP,
     BC_GRAD_NORM_PRE_CLIP,
@@ -370,73 +372,21 @@ def split_buffer_by_episode(demo_buffer, val_fraction=0.2, seed=0):
 
 
 def _per_axis_mse(policy, obs_np, actions_np):
-    """MSE between ``tanh(mean)`` and the expert action, per action axis."""
-    with torch.no_grad():
-        mean, _ = policy(torch.tensor(obs_np, dtype=torch.float32))
-        target = torch.tensor(actions_np, dtype=torch.float32)
-        per_axis = ((torch.tanh(mean) - target) ** 2).mean(dim=0)
-    return [float(x) for x in per_axis]
+    from lares.fitting.diagnostics import per_axis_mse
+
+    return per_axis_mse(policy, obs_np, actions_np)
 
 
 def _bound_activity(policy, atol=1e-6):
-    """Fraction of each parameter's elements sitting on a declared bound.
+    from lares.fitting.diagnostics import bound_activity
 
-    A parameter pinned at its bound is the optimiser saying the range is wrong,
-    or that the structure needs a magnitude it is not allowed to have.
-    """
-    try:
-        ranges = policy.get_param_ranges()
-    except Exception:
-        return None
-    out = {}
-    for name, param in policy.named_parameters():
-        if name not in ranges:
-            continue
-        lo, hi = ranges[name]
-        value = param.detach()
-        at_low = (value <= lo + atol).float().mean().item()
-        at_high = (value >= hi - atol).float().mean().item()
-        out[name] = {
-            "at_lower": float(at_low),
-            "at_upper": float(at_high),
-            "value": [float(x) for x in value.reshape(-1)],
-            "range": [float(lo), float(hi)],
-        }
-    return out or None
+    return bound_activity(policy, atol)
 
 
 def _loss_by_phase(policy, obs_np, actions_np, threshold=0.5):
-    """Split the fitting error by which exposed gate was open.
+    from lares.fitting.diagnostics import loss_by_phase
 
-    Tells a structural failure from a fitting one: if error is concentrated in
-    one phase, that phase's expression is the thing to repair.
-    """
-    reset_diagnostics = getattr(policy, "reset_diagnostics", None)
-    if not callable(reset_diagnostics):
-        return None
-    reset_diagnostics()
-    obs_t = torch.tensor(obs_np, dtype=torch.float32)
-    target = torch.tensor(actions_np, dtype=torch.float32)
-    with torch.no_grad():
-        mean, _ = policy(obs_t)
-        gates = dict(getattr(policy, "last_gates", {}) or {})
-        if not gates:
-            return None
-        error = ((torch.tanh(mean) - target) ** 2).mean(dim=-1)
-    out = {}
-    for name, value in gates.items():
-        flat = value.reshape(value.shape[0], -1).mean(dim=-1)
-        if flat.shape[0] != error.shape[0]:
-            continue
-        open_mask = flat > threshold
-        out[name] = {
-            "loss_when_open": float(error[open_mask].mean()) if bool(open_mask.any()) else None,
-            "loss_when_closed": (
-                float(error[~open_mask].mean()) if bool((~open_mask).any()) else None
-            ),
-            "fraction_open": float(open_mask.float().mean()),
-        }
-    return out or None
+    return loss_by_phase(policy, obs_np, actions_np, threshold)
 
 
 def behavioral_cloning(
@@ -1545,7 +1495,6 @@ class EvolutionOrchestrator:
         # Populated by run()
         self.history: list = []
         self.best_overall: dict | None = None
-        self.reports: list = []
         self.promotion_log: list = []
         self._incumbent_expanded = None
         self._incumbent_id = None
@@ -1742,7 +1691,7 @@ class EvolutionOrchestrator:
             "exclusive_call_ids": exclusive,
             "shared_call_ids": [c.call_id for c in calls if c.call_id not in exclusive],
             "response_sha256": (
-                __import__("lares.search.generation", fromlist=["sha256_text"]).sha256_text(candidate.response)
+                sha256_text(candidate.response)
                 if candidate.response is not None
                 else None
             ),
@@ -1878,7 +1827,6 @@ class EvolutionOrchestrator:
             bc_stats=bc_stats,
             action_dim=self.action_dim,
         )
-        self.reports.append(report)
         return result, report
 
     def _rollout_probe(self, env, manifest, resources):
@@ -1904,7 +1852,7 @@ class EvolutionOrchestrator:
         return probe
 
     def _save_report(self, report, rel_name, gen):
-        from lares.search.generation import sha256_file, run_relative
+        from lares.search.generation import run_relative
 
         path = os.path.join(self.log_dir, f"gen_{gen}", "reports", rel_name)
         report.save(path)
@@ -1933,7 +1881,6 @@ class EvolutionOrchestrator:
     def _verify_reconstruction(self, candidate, policy, source_ref, selected_ref, cand_dir):
         """Rebuild the policy from its record's artifacts and compare actions exactly."""
         from lares.core.policy_generation import GENERATED_IMPORTS
-        from lares.search.generation import sha256_text
         from lares.search.provenance import reconstruct_actions
         from lares.search.schemas import RECONSTRUCTION_FAILED, RECONSTRUCTION_VERIFIED
 

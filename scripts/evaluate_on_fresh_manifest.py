@@ -23,7 +23,6 @@ Usage (from the project root)::
 import argparse
 import glob
 import json
-import math
 import os
 import sys
 import time
@@ -41,17 +40,9 @@ from lares.eval import EvaluationManifest, ExpertActor, evaluate_manifest, make_
 from lares.eval.manifest import SPLIT_DEVELOPMENT, assert_disjoint, build_manifest  # noqa: E402
 from lares.eval.runner import PolicyActor  # noqa: E402
 from lares.fitting.structure_bank import instantiate_source  # noqa: E402
-from lares.search.generation import env_identity, sha256_file  # noqa: E402
-
-
-def t_interval(values, level=0.95):
-    from scipy import stats
-
-    arr = np.asarray(values, dtype=float)
-    if arr.size < 2:
-        return None
-    half = stats.t.ppf(0.5 + level / 2, arr.size - 1) * arr.std(ddof=1) / math.sqrt(arr.size)
-    return [float(arr.mean() - half), float(arr.mean() + half)]
+from lares.eval.stats import t_bounds as t_interval  # noqa: E402
+from lares.search.generation import env_identity  # noqa: E402
+from lares.utils.hashing import sha256_file  # noqa: E402
 
 
 def load_policy(code_path, state_path, env_id, obs_dim=39, action_dim=4):

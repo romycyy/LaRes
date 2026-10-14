@@ -23,6 +23,8 @@ from typing import Any, Iterable, Sequence
 import numpy as np
 import yaml
 
+from lares.utils.env_ids import resolve_registry_env_id
+
 SPLIT_TRAIN = "train"
 SPLIT_DEVELOPMENT = "development"
 SPLIT_FINAL_TEST = "final_test"
@@ -47,7 +49,7 @@ SYNTHETIC_BENCHMARK = "none"
 
 def to_v3(env_id: str) -> str:
     """Map the ``-v2`` names used throughout this repo onto installed ``-v3`` ids."""
-    return env_id.replace("-v2", "-v3").replace("-v1", "-v3")
+    return resolve_registry_env_id(env_id)
 
 
 def _hash_rand_vec(rand_vec) -> str:

@@ -23,12 +23,13 @@ what drifted rather than reporting a boolean.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import time
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
+
+from lares.utils.hashing import short_hash_file, short_hash_text
 
 FREEZE_FILENAME = "freeze.json"
 LEDGER_FILENAME = "final_test_ledger.jsonl"
@@ -40,12 +41,11 @@ class FinalTestLocked(RuntimeError):
 
 def hash_text(text: str) -> str:
     """The digest used for every frozen artifact."""
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+    return short_hash_text(text)
 
 
 def hash_file(path: str) -> str:
-    with open(path, "rb") as f:
-        return hashlib.sha256(f.read()).hexdigest()[:16]
+    return short_hash_file(path)
 
 
 def hash_directory(directory: str, suffix: str = "") -> dict:

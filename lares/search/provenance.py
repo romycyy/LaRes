@@ -21,6 +21,7 @@ import json
 import os
 
 from lares.search.generation import LLMCallLedger, verify_artifact
+from lares.utils.hashing import sha256_bytes
 from lares.search.resources import EPISODE_STREAMS, resource_problems
 from lares.search.schemas import (
     EVALUATED_STATUSES,
@@ -95,11 +96,16 @@ def lineage_status(record, sidecar: dict | None = None) -> str:
 
 
 def _read_artifact_bytes(run_root: str, ref: dict) -> bytes:
-    problem = verify_artifact(run_root, ref)
+    """The artifact's bytes, verified against its recorded hash in one read."""
+    problem = verify_artifact(run_root, ref, read=False)
     if problem:
         raise ValueError(problem)
     with open(os.path.join(run_root, ref["path"]), "rb") as f:
-        return f.read()
+        data = f.read()
+    actual = sha256_bytes(data)
+    if actual != ref["sha256"]:
+        raise ValueError(f"{ref['path']!r} hash {actual[:12]} does not match recorded {ref['sha256'][:12]}")
+    return data
 
 
 def load_tensor_artifact(run_root: str, ref: dict):

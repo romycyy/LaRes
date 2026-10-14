@@ -29,6 +29,7 @@ sys.path.insert(0, _PROJECT_ROOT)
 
 import numpy as np  # noqa: E402
 
+from lares.eval.stats import t_bounds as t_interval  # noqa: E402
 from lares.search import STATUS_INVALID, load_records  # noqa: E402
 from lares.search.provenance import lineage_status, load_sidecar  # noqa: E402
 
@@ -79,18 +80,6 @@ def best(candidates):
     if not scored:
         return None
     return max(scored, key=lambda c: (c["expanded_success"], c["expanded_progress"] or -math.inf))
-
-
-def t_interval(diffs, level=0.95):
-    from scipy import stats
-
-    arr = np.asarray(diffs, dtype=float)
-    n = arr.size
-    if n < 2:
-        return None
-    se = arr.std(ddof=1) / math.sqrt(n)
-    half = stats.t.ppf(0.5 + level / 2, n - 1) * se
-    return [float(arr.mean() - half), float(arr.mean() + half)]
 
 
 def paired(a, b):

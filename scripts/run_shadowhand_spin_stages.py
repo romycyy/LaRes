@@ -71,7 +71,8 @@ def load_config(path: str) -> SimpleNamespace:
     cfg = {**_CONFIG_DEFAULTS, **raw}
     # Derived from other keys, so these cannot live in the static defaults above.
     cfg.setdefault("gif_max_steps", cfg["max_steps"])
-    cfg.setdefault("pipeline_task", cfg["stage3_task"])
+    if "pipeline_task" not in cfg:
+        raise ValueError(f"{path}: 'pipeline_task' names the one Isaac env every stage runs against")
     return SimpleNamespace(**cfg)
 
 

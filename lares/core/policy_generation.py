@@ -503,16 +503,6 @@ def instantiate_generated_policy(
     return policy, report
 
 
-def _try_instantiate_policy(imports, code_str, obs_dim, action_dim, env_name=""):
-    """exec generated code in-process, instantiate and validate; raise on any failure."""
-    policy, report = instantiate_generated_policy(
-        code_str, obs_dim, action_dim, env_name=env_name, imports=imports
-    )
-    if not report.ok:
-        raise ValueError(f"policy failed in-process validation:\n{report.summary()}")
-    return policy
-
-
 def _extract_n_policy_codes(response_text, n):
     """Extract up to ``n`` ``GeneratedPolicy`` code strings from ordered fenced blocks."""
     blocks = re.findall(r"```python\s*(.*?)```", response_text, re.DOTALL | re.IGNORECASE)

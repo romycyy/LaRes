@@ -20,11 +20,11 @@ enforces that and applies the qualification rule to the per-replicate paired dif
 
 from __future__ import annotations
 
-import hashlib
-import json
 from dataclasses import dataclass, field
 
 import numpy as np
+
+from lares.utils.hashing import sha256_json
 
 
 class ReplicateBundleError(ValueError):
@@ -32,7 +32,7 @@ class ReplicateBundleError(ValueError):
 
 
 def _digest(payload) -> str:
-    return hashlib.sha256(json.dumps(payload, sort_keys=True, default=str).encode("utf-8")).hexdigest()
+    return sha256_json(payload)
 
 
 def _placements(manifest) -> set:

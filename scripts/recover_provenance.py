@@ -28,7 +28,6 @@ Usage (from the project root)::
 
 import argparse
 import glob
-import hashlib
 import json
 import os
 import re
@@ -45,6 +44,7 @@ from lares.search import (  # noqa: E402
     load_records,
 )
 from lares.search.provenance import SIDECAR_PREFIX  # noqa: E402
+from lares.utils.hashing import sha256_file, sha256_text  # noqa: E402
 
 UNKNOWN_ALWAYS = [
     "parent_ids (semantic parents were never declared)",
@@ -64,9 +64,6 @@ _FULL_PARENT = re.compile(r"^#### Parent \d+: (\S+)\s*$", re.MULTILINE)
 _DIAGNOSTIC = re.compile(r"^#### (gen\d+_cand\d+)\s*$", re.MULTILINE)
 
 
-def sha256_file(path):
-    with open(path, "rb") as f:
-        return hashlib.sha256(f.read()).hexdigest()
 
 
 def transcript_blocks(path):
@@ -145,7 +142,7 @@ def recover(log_dir):
                 k = int(match.group(1))
                 text = str(ideas[k])
                 recovered["idea_index"] = k
-                recovered["idea_text_sha256"] = hashlib.sha256(text.encode("utf-8")).hexdigest()
+                recovered["idea_text_sha256"] = sha256_text(text)
                 recovered["idea_text_excerpt"] = text[:240]
                 recovered["idea_mapping"] = "positional"
                 recovered["idea_mapping_evidence"] = mapping_evidence

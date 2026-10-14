@@ -28,8 +28,20 @@ Runs completed before 2026-09-14 (`logs/evolution_debug_full`, `logs/debug_smoke
 notes) used gpt-5 or gpt-4o-mini, so their token caps and results do not transfer. The vision analyst
 (`lares/vision/`) is a local Qwen by design and is not an OpenAI call; it stays blocked with E10.
 
-There is no `setup.py`/`pyproject.toml`. The `lares` package is importable only because every
-script/test does `sys.path.insert(0, _PROJECT_ROOT)`. **All commands must be run from the project root.**
+`pyproject.toml` exists (setuptools, packages `lares*`) so `pip install -e .` works, but no environment
+has it installed yet: every script/test still does `sys.path.insert(0, _PROJECT_ROOT)`. **All commands
+must be run from the project root.**
+
+**Shared helpers (added 2026-10-14; one copy each, every older name re-exports them).** `lares/utils/hashing.py`
+(`sha256_bytes/text/file/json`, and the 16-character `short_hash_*` used by `freeze.py` and `source_hash`; the
+prefix length is a stored format), `lares/utils/gitstate.py` (`git`, `worktree_state`, `require_clean_worktree`),
+`lares/utils/seeds.py` (ledger reader, `spent_seeds`, `seed_conflicts`, `reserve_seeds`; scans `config/**` *and*
+`logs/**` manifests for every caller, where the research ledger used to scan `config/` only),
+`lares/utils/env_ids.py` (`resolve_registry_env_id`, the v2→v3 rule), `lares/eval/stats.py` (`t_summary`,
+`t_interval`, `t_bounds`, `win_loss_tie`: the one Student-t rule behind promotion, Stage E/F reports and the
+comparison scripts), `lares/fitting/diagnostics.py` (`per_axis_mse`, `bound_activity`, `loss_by_phase`, so
+`fitting` no longer imports them from the pipeline module) and `structure_bank.load_structures(ids)`.
+`lares/utils/__init__.py` resolves the MetaWorld builders lazily so these import without MetaWorld.
 
 ## Common commands
 

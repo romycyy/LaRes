@@ -42,11 +42,13 @@ import torch
 
 from lares.eval.report import CHECKPOINT_FITTED, build_report
 from lares.eval.runner import PolicyActor, evaluate_manifest
+from lares.eval.stats import t_summary, win_loss_tie
 from lares.fitting.checkpoints import CHECKPOINT_TIE_RULE, RolloutScore, is_better_checkpoint
 from lares.fitting.objectives import DETERMINISTIC_MSE
 from lares.fitting.optimizers import fit_policy_with_objective, state_parameters_sha256
 from lares.repair.hypotheses import episode_metric_mean, find_clusters
 from lares.search.resources import ResourceLedger
+from lares.utils.hashing import sha256_text
 
 ARM_NO_REPAIR = "no_repair"
 ARM_LLM_EVIDENCE_FREE = "llm_evidence_free"
@@ -448,8 +450,6 @@ class _NamedStructure:
 def _sha(text) -> str | None:
     if text is None:
         return None
-    from lares.search.generation import sha256_text
-
     return sha256_text(text)
 
 
@@ -579,18 +579,9 @@ def verify_chain(chain: dict, run_dir: str) -> list:
 
 def replicate_interval(diffs, level: float = 0.95) -> dict:
     """Mean and small-sample t interval over replicate-level paired differences."""
-    from scipy import stats
-
-    arr = np.asarray(diffs, dtype=float)
-    n = int(arr.size)
-    out = {"n_replicates": n, "mean_difference": float(arr.mean()) if n else None,
-           "wins": int((arr > 0).sum()), "losses": int((arr < 0).sum()), "ties": int((arr == 0).sum()),
-           "ci95_low": None, "ci95_high": None}
-    if n >= 2:
-        se = float(arr.std(ddof=1) / np.sqrt(n))
-        half = float(stats.t.ppf(0.5 + level / 2.0, n - 1) * se) if se else 0.0
-        out.update(ci95_low=out["mean_difference"] - half, ci95_high=out["mean_difference"] + half)
-    return out
+    s = t_summary(diffs, level)
+    return {"n_replicates": s["n"], "mean_difference": s["mean"], **win_loss_tie(diffs),
+            "ci95_low": s["low"], "ci95_high": s["high"]}
 
 
 COST_KEYS = ("repair_episodes", "probe_episodes", "expert_assisted_episodes", "bc_gradient_steps",

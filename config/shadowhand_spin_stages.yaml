@@ -2,9 +2,6 @@ task_name: "ShadowHandSpin"
 isaaclab_root: "/home/ubuntu/IsaacLab"
 device: "cuda:0"
 
-stage1_task: "Isaac-ShadowHandSpin-Stage1-Direct-v0"
-stage2_task: "Isaac-ShadowHandSpin-Stage2-Direct-v0"
-stage3_task: "Isaac-ShadowHandSpin-Stage3-Direct-v0"
 pipeline_task: "Isaac-ShadowHandSpin-Stage3-Direct-v0"
 
 log_dir: "./logs/shadowhand_spin"

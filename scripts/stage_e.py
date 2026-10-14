@@ -30,13 +30,9 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import glob
-import hashlib
-import io
 import json
 import math
 import os
-import shutil
-import subprocess
 import sys
 import time
 
@@ -48,7 +44,11 @@ import numpy as np  # noqa: E402
 import yaml  # noqa: E402
 
 CONFIG_PATH = os.path.join(_PROJECT_ROOT, "config", "stage_e", "stage_e.yaml")
-LEDGER_PATH = os.path.join(_PROJECT_ROOT, "config", "experiment_seed_ledger.jsonl")
+from lares.eval.stats import t_interval  # noqa: E402,F401  (re-exported for qualify_fittable_bank)
+from lares.utils.gitstate import require_clean_worktree as _require_clean_worktree  # noqa: E402
+from lares.utils.hashing import sha256_file, sha256_text  # noqa: E402,F401
+from lares.utils.seeds import SEED_LEDGER as LEDGER_PATH  # noqa: E402,F401
+from lares.utils.seeds import read_ledger, reserve_seeds, seed_conflicts  # noqa: E402,F401
 
 ZERO_SHOT = "zero_shot"
 MSE_FIXED = "mse_fixed_2000"
@@ -66,18 +66,6 @@ FAMILY_EVOLVED = "evolved"
 # ---------------------------------------------------------------------------
 
 
-def sha256_file(path: str) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(1 << 16), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
-def sha256_text(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
-
-
 def rel(path: str) -> str:
     return os.path.relpath(os.path.abspath(path), _PROJECT_ROOT)
 
@@ -91,91 +79,9 @@ def now() -> str:
     return _dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
 
-def t_interval(values, level: float = 0.95):
-    """Mean, t interval and two-sided p-value for a small sample of differences."""
-    from scipy import stats
-
-    arr = np.asarray(values, dtype=float)
-    n = int(arr.size)
-    out = {"n": n, "mean": float(arr.mean()) if n else None, "median": float(np.median(arr)) if n else None,
-           "level": level, "low": None, "high": None, "p_value": None, "se": None}
-    if n < 2:
-        return out
-    se = float(arr.std(ddof=1) / math.sqrt(n))
-    out["se"] = se
-    if se == 0.0:
-        out.update(low=out["mean"], high=out["mean"], p_value=0.0 if out["mean"] != 0 else 1.0)
-        return out
-    half = float(stats.t.ppf(0.5 + level / 2.0, n - 1) * se)
-    out.update(low=out["mean"] - half, high=out["mean"] + half,
-               p_value=float(2.0 * stats.t.sf(abs(out["mean"] / se), n - 1)))
-    return out
-
-
-# ---------------------------------------------------------------------------
-#  Git discipline
-# ---------------------------------------------------------------------------
-
-
-def git(*args, cwd=_PROJECT_ROOT) -> str:
-    return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True).stdout
-
-
 def require_clean_worktree(cwd=_PROJECT_ROOT) -> str:
     """Return HEAD's SHA, refusing any modified, staged or untracked (non-ignored) file."""
-    dirty = git("status", "--porcelain", "--untracked-files=all", cwd=cwd).strip()
-    if dirty:
-        raise SystemExit(
-            "Stage E needs a clean worktree so every result names exact code; commit or remove:\n" + dirty
-        )
-    return git("rev-parse", "HEAD", cwd=cwd).strip()
-
-
-# ---------------------------------------------------------------------------
-#  Seed ledger
-# ---------------------------------------------------------------------------
-
-
-def read_ledger(path: str = LEDGER_PATH) -> list:
-    if not os.path.isfile(path):
-        return []
-    with open(path, "r", encoding="utf-8") as f:
-        return [json.loads(line) for line in f if line.strip()]
-
-
-def seed_conflicts(pool_seeds, fitting_seeds, ledger_path=LEDGER_PATH, manifest_globs=None) -> list:
-    """Every recorded use of a requested seed: ledger entries and saved manifests' pool seeds.
-
-    A seed is refused in *either* namespace, because the ledger's purpose is that a
-    seed number, once looked at, is not quietly reused under another label.
-    """
-    requested = {int(s) for s in pool_seeds} | {int(s) for s in fitting_seeds}
-    conflicts = []
-    for entry in read_ledger(ledger_path):
-        if int(entry["seed"]) in requested:
-            conflicts.append(f"ledger: seed {entry['seed']} ({entry['namespace']}) used for {entry['use']}")
-    from lares.eval.manifest import EvaluationManifest
-
-    patterns = manifest_globs or [
-        os.path.join(_PROJECT_ROOT, "config", "**", "*.yaml"),
-        os.path.join(_PROJECT_ROOT, "logs", "**", "*.yaml"),
-    ]
-    for pattern in patterns:
-        for path in glob.glob(pattern, recursive=True):
-            try:
-                manifest = EvaluationManifest.load(path)
-            except Exception:
-                continue
-            used = {int(s) for s in manifest.pool.seeds} & requested
-            if used:
-                conflicts.append(f"manifest {rel(path)} uses pool seed(s) {sorted(used)}")
-    return conflicts
-
-
-def reserve_seeds(entries, ledger_path=LEDGER_PATH) -> None:
-    with open(ledger_path, "a", encoding="utf-8") as f:
-        for entry in entries:
-            f.write(json.dumps(entry) + "\n")
+    return _require_clean_worktree("Stage E", cwd=cwd)
 
 
 # ---------------------------------------------------------------------------

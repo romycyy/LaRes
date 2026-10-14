@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 
-import numpy as np
+from lares.eval.stats import t_summary, win_loss_tie
 
 #: Reasons a candidate did or did not advance past screening. Stable strings:
 #: experiment records key on them.
@@ -158,8 +158,6 @@ def paired_success_test(contender_result, incumbent_result=None, level: float = 
 
     With no incumbent, the difference is against zero success on every case.
     """
-    from scipy import stats
-
     if incumbent_result is None:
         diffs = [float(e.success) for e in contender_result.episodes]
     else:
@@ -167,32 +165,21 @@ def paired_success_test(contender_result, incumbent_result=None, level: float = 
         diffs = [float(e.success) - by_case[e.case_id] for e in contender_result.episodes if e.case_id in by_case]
         if not diffs:
             raise ValueError("results share no cases; they are not paired")
-    arr = np.asarray(diffs, dtype=float)
-    n = int(arr.size)
-    mean = float(arr.mean()) if n else 0.0
+    at_level, at_95 = t_summary(diffs, level), t_summary(diffs, 0.95)
+    n = at_level["n"]
     out = {
         "metric": "success",
         "method": "paired t",
         "n_paired": n,
-        "mean_difference": mean,
-        "wins": int((arr > 0).sum()),
-        "losses": int((arr < 0).sum()),
-        "ties": int((arr == 0).sum()),
+        "mean_difference": at_level["mean"] if n else 0.0,
+        **win_loss_tie(diffs),
         "level": float(level),
     }
     if n < 2:
         out.update(se=None, ci_low=None, ci_high=None, ci95_low=None, ci95_high=None, p_value=1.0)
         return out
-    se = float(arr.std(ddof=1) / np.sqrt(n))
-    if se == 0.0:
-        p_value = 0.0 if mean != 0.0 else 1.0
-        low = high = low95 = high95 = mean
-    else:
-        p_value = float(2.0 * stats.t.sf(abs(mean / se), n - 1))
-        half = float(stats.t.ppf(0.5 + level / 2.0, n - 1) * se)
-        half95 = float(stats.t.ppf(0.975, n - 1) * se)
-        low, high, low95, high95 = mean - half, mean + half, mean - half95, mean + half95
-    out.update(se=se, ci_low=low, ci_high=high, ci95_low=low95, ci95_high=high95, p_value=p_value)
+    out.update(se=at_level["se"], ci_low=at_level["low"], ci_high=at_level["high"],
+               ci95_low=at_95["low"], ci95_high=at_95["high"], p_value=at_level["p_value"])
     return out
 
 

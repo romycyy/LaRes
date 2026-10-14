@@ -282,29 +282,6 @@ def apply_repair(
     return repaired
 
 
-def learner_state_data(
-    policy, env, cases, env_name: str, schema, max_steps: int = 150, base_buffer=None
-):
-    """Expert labels on the states the *learner* reaches, for a repair to fit.
-
-    A repair aimed at an approach that never arrives cannot be fitted on the
-    expert's own trajectories: those states are the ones the learner fails to
-    reach. This collects the learner's states on training placements and labels
-    them, so the repair is fitted where the failure happens.
-
-    ``cases`` must be training placements. Development or final-test cases here
-    would fit the repair on the cases it is later judged on.
-
-    Returns ``(FittingData, AggregationStats)``.
-    """
-    from lares.fitting.dagger import aggregate_learner_states
-    from lares.fitting.optimizers import prepare_data
-
-    buffer, stats = aggregate_learner_states(
-        policy, env, cases, env_name, schema, buffer=base_buffer, max_steps=max_steps
-    )
-    return prepare_data(buffer, val_fraction=0.0), stats
-
 
 REPAIR_REFIT = "scoped_refit"
 REPAIR_SEARCH = "scoped_search"

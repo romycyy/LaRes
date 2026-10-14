@@ -44,7 +44,8 @@ from lares.core.training_pipeline import DemoBuffer, ensure_mujoco_headless_gl  
 from lares.eval import EvaluationManifest, make_manifest_env  # noqa: E402
 from lares.eval.report import CHECKPOINT_FITTED, build_report  # noqa: E402
 from lares.eval.runner import PolicyActor, evaluate_manifest, paired_difference  # noqa: E402
-from lares.fitting import DETERMINISTIC_MSE, load_bank, prepare_data  # noqa: E402
+from lares.fitting import DETERMINISTIC_MSE, prepare_data  # noqa: E402
+from lares.fitting.structure_bank import load_structures  # noqa: E402
 from lares.fitting.optimizers import fit_with_objective  # noqa: E402
 from lares.repair import (  # noqa: E402
     COMPONENT_SCOPES,
@@ -280,15 +281,15 @@ def main():
         raise SystemExit(f"screen and held-out slices overlap on {sorted(overlap)}")
     env = make_manifest_env(full, full.resolve_pool(), 200)
 
-    bank = {s.structure_id: s for s in load_bank(env_id=args.env_name)}
-    missing = [s for s in args.structures if s not in bank]
-    if missing:
-        raise SystemExit(f"not in the structure bank: {missing}")
+    try:
+        structures = load_structures(args.structures, env_id=args.env_name, include_variants=False)
+    except KeyError as exc:
+        raise SystemExit(f"not in the structure bank: {exc}") from exc
 
     started = time.time()
     rows = []
-    for structure_id in args.structures:
-        structure = bank[structure_id]
+    for structure in structures:
+        structure_id = structure.structure_id
         for seed in args.seeds:
             separator(f"{structure_id}  seed {seed}")
             fitted = fit_with_objective(

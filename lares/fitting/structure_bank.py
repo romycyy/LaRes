@@ -24,6 +24,7 @@ import torch
 from lares.core.obs_schema import ObsSchema, active_schema, get_obs_schema
 
 STRUCTURES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "structures")
+FITTABLE_VARIANTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fittable_variants")
 
 #: A structure with at most this many scalar parameters counts as the "simple"
 #: family ``spec.md`` section 2.2 proposes as the starting complexity.
@@ -190,6 +191,22 @@ def load_bank(
     if family is not None:
         structures = [s for s in structures if s.family == family]
     return structures
+
+
+def load_structures(ids, env_id: str = "push-v2", include_variants: bool = True,
+                    obs_dim: int = 39, action_dim: int = 4) -> list[Structure]:
+    """The named structures, in order, from the frozen bank and (optionally) the fittable variants."""
+    schema = get_obs_schema(env_id)
+    found = {s.structure_id: s for s in load_bank(env_id=env_id, obs_dim=obs_dim, action_dim=action_dim)}
+    if include_variants and os.path.isdir(FITTABLE_VARIANTS_DIR):
+        for name in sorted(os.listdir(FITTABLE_VARIANTS_DIR)):
+            sid = os.path.splitext(name)[0]
+            if name.endswith(".py") and sid in ids and sid not in found:
+                found[sid] = load_structure(os.path.join(FITTABLE_VARIANTS_DIR, name), obs_dim, action_dim, schema)
+    missing = [i for i in ids if i not in found]
+    if missing:
+        raise KeyError(f"unknown structures: {missing}")
+    return [found[i] for i in ids]
 
 
 def summarise_bank(structures) -> str:

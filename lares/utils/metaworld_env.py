@@ -11,6 +11,7 @@ import metaworld.env_dict as _env_dict
 from gym.wrappers.time_limit import TimeLimit
 
 from lares.envs.rlkit.envs.wrappers import NormalizedBoxEnv
+from lares.utils.env_ids import resolve_registry_env_id
 
 
 class _GetDict:
@@ -97,7 +98,7 @@ def make_metaworld_env(cfg, seed, tasks=None):
         get the per-case reset API.
     """
     env_name = cfg.env_name
-    env_name_v3 = env_name.replace("-v2", "-v3").replace("-v1", "-v3")
+    env_name_v3 = resolve_registry_env_id(env_name)
     if env_name_v3 not in _env_dict.ALL_V3_ENVIRONMENTS:
         raise ValueError(
             f"Environment '{env_name}' (looked up as '{env_name_v3}') not found in ALL_V3_ENVIRONMENTS"

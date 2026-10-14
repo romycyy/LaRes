@@ -18,15 +18,16 @@ import math
 import time
 from dataclasses import asdict, dataclass, field
 
+import hashlib
+
 import numpy as np
 import torch
 import torch.nn as nn
 
-from lares.core.training_pipeline import (
-    _bound_activity,
-    _per_axis_mse,
-    split_buffer_by_episode,
-)
+from lares.core.training_pipeline import split_buffer_by_episode
+from lares.fitting.diagnostics import bound_activity as _bound_activity
+from lares.fitting.diagnostics import loss_by_phase as _loss_by_phase
+from lares.fitting.diagnostics import per_axis_mse as _per_axis_mse
 
 #: Names are stable: reports and the handoff table key on them.
 ADAM_BASELINE = "adam_baseline"
@@ -552,8 +553,6 @@ SAMPLING_STRATEGIES = (SAMPLING_UNIFORM, SAMPLING_PHASE_BALANCED)
 
 def state_parameters_sha256(state: dict) -> str:
     """Content hash of a state dict's tensors, independent of pickling details."""
-    import hashlib
-
     h = hashlib.sha256()
     for name in sorted(state):
         value = state[name]
@@ -609,7 +608,6 @@ def fitting_diagnostics(policy, data, objective: str) -> dict:
     Computed separately for the final and the selected state, so a report can
     never pair one checkpoint's parameters with another's losses.
     """
-    from lares.core.training_pipeline import _loss_by_phase
     from lares.fitting.objectives import objective_loss
 
     was_training = policy.training
@@ -824,10 +822,12 @@ def fit_policy_with_objective(
     final_diagnostics = fitting_diagnostics(policy, data, objective)
     if best_rollout_state is not None:
         selected_state, selected_step = best_rollout_state, int(best_rollout_step)
+        policy.load_state_dict(selected_state)
+        selected_diagnostics = fitting_diagnostics(policy, data, objective)
     else:
+        # The selected state *is* the final state; the diagnostics are deterministic.
         selected_state, selected_step = final_state, int(budget)
-    policy.load_state_dict(selected_state)
-    selected_diagnostics = fitting_diagnostics(policy, data, objective)
+        selected_diagnostics = copy.deepcopy(final_diagnostics)
 
     losses = [h[1] for h in history]
     config = objective_config(

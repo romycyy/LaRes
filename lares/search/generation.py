@@ -31,13 +31,19 @@ Structured parsing
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import re
 import time
 from dataclasses import asdict, dataclass, field
 from typing import Iterable, Sequence
+
+from lares.utils.env_ids import (  # noqa: F401  (re-exported)
+    ENV_ID_MAPPING_RULE,
+    ENV_ID_MAPPING_VERSION,
+    resolve_registry_env_id,
+)
+from lares.utils.hashing import sha256_bytes, sha256_file, sha256_text  # noqa: F401  (re-exported)
 
 from lares.search.schemas import (  # noqa: F401  (lineage constants re-exported)
     EXPLORATION_LABEL,
@@ -66,15 +72,6 @@ from lares.search.schemas import (  # noqa: F401  (lineage constants re-exported
 #  Environment identity
 # ---------------------------------------------------------------------------
 
-#: The rule ``lares.utils.metaworld_env`` and ``lares.eval.manifest.to_v3`` apply.
-ENV_ID_MAPPING_RULE = "metaworld>=3.0: replace '-v2' (or '-v1') with '-v3' before looking up ALL_V3_ENVIRONMENTS"
-ENV_ID_MAPPING_VERSION = "v2-to-v3/1"
-
-
-def resolve_registry_env_id(env_id: str) -> str:
-    """The id MetaWorld 3 registers for a project-facing ``-v2`` task name."""
-    return str(env_id).replace("-v2", "-v3").replace("-v1", "-v3")
-
 
 def env_identity(env_id: str) -> dict:
     """The environment naming block every new manifest and run record stores."""
@@ -87,24 +84,8 @@ def env_identity(env_id: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-#  Hashing and run-relative paths
+#  Run-relative paths
 # ---------------------------------------------------------------------------
-
-
-def sha256_bytes(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
-
-
-def sha256_text(text: str) -> str:
-    return sha256_bytes(text.encode("utf-8"))
-
-
-def sha256_file(path: str) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(1 << 16), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 def run_relative(path: str, run_root: str) -> str:
@@ -129,8 +110,12 @@ def write_artifact(run_root: str, rel_path: str, data: bytes | str) -> dict:
     return {"path": run_relative(abs_path, run_root), "sha256": sha256_bytes(payload)}
 
 
-def verify_artifact(run_root: str, ref: dict | None) -> str | None:
-    """``None`` if the reference resolves and its hash matches, else the reason."""
+def verify_artifact(run_root: str, ref: dict | None, read: bool = True) -> str | None:
+    """``None`` if the reference resolves and its hash matches, else the reason.
+
+    ``read=False`` checks only the shape and existence, for a caller that will
+    read the bytes itself and compare the digest.
+    """
     if not ref or not ref.get("path") or not ref.get("sha256"):
         return "reference is missing a path or a hash"
     if os.path.isabs(ref["path"]):
@@ -138,6 +123,8 @@ def verify_artifact(run_root: str, ref: dict | None) -> str | None:
     abs_path = os.path.join(run_root, ref["path"])
     if not os.path.isfile(abs_path):
         return f"{ref['path']!r} does not exist under the run root"
+    if not read:
+        return None
     actual = sha256_file(abs_path)
     if actual != ref["sha256"]:
         return f"{ref['path']!r} hash {actual[:12]} does not match recorded {ref['sha256'][:12]}"

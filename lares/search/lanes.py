@@ -33,6 +33,7 @@ from dataclasses import dataclass, field
 
 import yaml
 
+from lares.utils.hashing import sha256_file
 from lares.search.schemas import (
     EXPLORATION_LABEL,
     FITTABLE_LABEL,
@@ -91,8 +92,6 @@ def _abs(path: str) -> str:
 
 
 def _sha256_file(path: str) -> str:
-    from lares.search.generation import sha256_file
-
     return sha256_file(path)
 
 

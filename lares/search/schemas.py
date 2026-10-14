@@ -21,11 +21,12 @@ Three schemas, each enforcing a different discipline:
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 from dataclasses import asdict, dataclass, field
 from typing import Any, Sequence
+
+from lares.utils.hashing import short_hash_text
 
 # ---------------------------------------------------------------------------
 #  Vocabulary
@@ -126,7 +127,7 @@ def _require(condition, message):
 
 def source_hash(source: str) -> str:
     """Stable digest used to tie an evaluation back to exact code."""
-    return hashlib.sha256(source.encode("utf-8")).hexdigest()[:16]
+    return short_hash_text(source)
 
 
 # ---------------------------------------------------------------------------

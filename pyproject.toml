@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lares"
+version = "0.1.0"
+description = "Symbolic-policy search with LLM-proposed structures on MetaWorld"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+include = ["lares*"]
+
+[tool.setuptools.package-data]
+"lares.utils" = ["policy_prompts/*.txt", "research_prompts/*.txt"]
+"lares.fitting" = ["structures/*.py", "fittable_variants/*.py"]
