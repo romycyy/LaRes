@@ -13,7 +13,7 @@ Tracks the implementation of `debug_spec.md`. Started 2026-09-13 on branch `stag
 | — Full run on the updated `config/run_full_evolution.yaml` | **done**: held-out success 0.340 against the pre-debug best's 0.120, paired +0.220, t95 [+0.045, +0.395] |
 | — Baseline under gpt-5.6-sol high (nine zero-shot candidates) | **done** (2026-09-23): 9/9 valid first time, 10 calls, 100,786 tokens; best 0.333 on the promotion set |
 | 5. Fresh development-confirmation experiment (Stage E) | **done** at `f96f060`: no fitted condition beat zero-shot with its 95% interval above zero, so fitting is disabled by default |
-| 6. Correction-LLM repair and clean ablation (Stage F) | **implemented and mock-tested** (2026-09-23), not run live; the old ablation is relabelled a pilot |
+| 6. Correction-LLM repair and clean ablation (Stage F) | **done** (2026-10-13, `logs/stage_f/20261013_233120`): no arm beats no repair with an interval above zero; search arms +0.042, best LLM arm +0.011 |
 
 Phase 7 stays blocked. Nothing in this cycle opened the final-test split or ran Qwen.
 
@@ -725,6 +725,43 @@ both score 0 untrained, so all three structures leave room to repair. `build-man
 clean-worktree check is truthful under the sync workflow. A smoke run of the config path (non-LLM arms, tiny
 budgets, the spent s2200 manifest) passed and was moved to `logs/stage_f_smoke`. Run: `logs/stage_f/20261013_233120`.
 
+## Stage F result (2026-10-13)
+
+**Run.** `scripts/stage_f.py run --config config/stage_f/stage_f.yaml`, `logs/stage_f/20261013_233120` on the GPU
+box, at `41a9790` with a clean worktree. 3 structures x 3 seeds x 6 arms; every chain verifies; all 27 LLM repairs
+produced a valid child (2.0 calls per arm on average, no failed generation). The held-out manifest
+(`push-v2:development_heldout:s2500:n50`) decided nothing.
+
+| arm | held-out success | paired vs no_repair | 95% t interval | w/l/t | repair ep | expert ep | grad steps | calls | tokens | wall s |
+|---|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| no_repair | 0.420 | | | | 0 | 0 | 0 | 0 | 0 | 0 |
+| llm_evidence_free | 0.416 | -0.004 | [-0.015, +0.006] | 0/1/8 | 40 | 0 | 1000 | 2.0 | 13,491 | 138 |
+| llm_numeric | 0.420 | +0.000 | [+0.000, +0.000] | 0/0/9 | 40 | 0 | 1000 | 2.0 | 13,425 | 120 |
+| llm_numeric_intervention | 0.431 | +0.011 | [-0.006, +0.028] | 2/0/7 | 40 | 13 | 1000 | 2.1 | 14,900 | 139 |
+| local_search | 0.462 | +0.042 | [-0.020, +0.105] | 3/0/6 | 60 | 0 | 0 | 0 | 0 | 44 |
+| global_search | 0.462 | +0.042 | [-0.028, +0.112] | 2/0/7 | 60 | 0 | 0 | 0 | 0 | 43 |
+
+Per structure (held-out, mean over seeds): `simple_damped_push` 0.91 under every arm except the intervention arm's
+one win (0.96 at seed 2500); `gen0_cand2_a1` 0.00 under every arm but the search arms (global 0.26 and 0.12, local
+0.04); `gen0_cand1_a0` 0.35 baseline, local search 0.52 and 0.56 at two seeds.
+
+**Reading it.**
+
+1. **No arm beats no repair with an interval excluding zero.** As predeclared, nothing is called better. The
+   direction favours the parameter-search arms (+0.042) over every LLM arm (+0.011 at best), at no LLM cost and a
+   third of the wall time.
+2. **The LLM repairs mostly made the policy worse on the screen.** On `simple_damped_push` eight of nine children
+   fell from 0.9 to 0.5-0.6 after the same refit; on `gen0_cand1_a0` five of nine fell, four tied. The acceptance
+   rule caught these, so held-out success was protected, but the repairs did not find improvements.
+3. **Two of the three LLM "replacements" on `gen0_cand2_a1` were 0-to-0 ties broken by progress**; held-out stayed
+   0.00. Real gains came from two intervention-arm repairs (0.92 to 0.96 on `simple_damped_push`; 0.30 to 0.36 on
+   `gen0_cand1_a0`), the only LLM arm with any held-out win.
+4. **Predictions were right 11 of 27 times** (evidence-free 3/9, numeric 3/9, numeric + intervention 5/9), measured
+   child minus parent on the screen. The substitution evidence is the only evidence level whose predictions beat
+   a coin, and the only one with wins, but at 9 replicates neither is distinguishable from chance.
+5. **Consistent with the pilot ablation**: cheap parameter search on the existing structure is at least as good as
+   LLM structural repair on push-v2, here at matched repair-evaluation episodes and without the 1000 refit steps.
+
 ## Decisions and deviations
 
 1. **Paths.** The spec names `lares/fit/objectives.py` and `lares/fit/fitter.py`; the package is
@@ -768,7 +805,8 @@ budgets, the spent s2200 manifest) passed and was moved to `logs/stage_f_smoke`.
 4. **Two-lane search, live: first run done** (2026-10-13, gpt-6.1-sol; see its section). Still to do: and compare both on a fresh MT1 pool seed (2100, 2200, 2300 spent; 2400-2424 held for
    `qualification_v2.yaml`). The provisional scope, mutation-bound and fittable-incumbent choices still
    need approval.
-5. **Stage F (D10)**: protocol decided and frozen 2026-10-13 ("Stage F protocol decided"); live run approved.
+5. **Done: Stage F (D10)** (see "Stage F result"). Every stage of `debug_spec.md` has now run; Phase 7 is unblocked
+   by the spec's own condition but still needs approval.
 6. Not yet on the new contract: `scripts/run_shadowhand_spin_stages.py` still fits with
    `behavioral_cloning`, and `scripts/compare_objectives.py` and `scripts/ablate_repair.py` still
    report through their own JSON rather than `ExperimentRecord`s with resource ledgers. The ablation

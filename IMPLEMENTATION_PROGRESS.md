@@ -695,6 +695,11 @@ comparison not yet run. Details: `DEBUG_PROGRESS.md`.
 `config/stage_f/stage_f.yaml` freezes the decided protocol; `scripts/stage_f.py` gains `select`, `build-manifest`
 and `run --config` (clean worktree, frozen hashes checked). Decision record in `DEBUG_PROGRESS.md`.
 
+## Stage F run (2026-10-13)
+
+Run `logs/stage_f/20261013_233120`: no arm beats `no_repair` with an interval above zero; search arms +0.042, LLM
+arms -0.004 to +0.011. All `debug_spec.md` stages have now run. Details: `DEBUG_PROGRESS.md`.
+
 ## Blockers
 
 One AC-2 item is blocked: whether the VLM earns its place in the final method, which E10 decides.

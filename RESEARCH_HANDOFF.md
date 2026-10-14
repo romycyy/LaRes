@@ -896,6 +896,15 @@ Three structures (`simple_damped_push` and the top two gpt-6.1-sol baseline cand
 all six arms, 60 repair-evaluation episodes per arm, held-out cases from MT1 pool seed 2500. Frozen in
 `config/stage_f/stage_f.yaml`; details in `DEBUG_PROGRESS.md`.
 
+## Stage F: correction-LLM repair does not beat no repair (2026-10-13)
+
+Nine replicates, six arms at matched repair-evaluation episodes, held-out pool seed 2500. No arm beats no repair
+with an interval excluding zero. Parameter search leads (+0.042, local and global) at no LLM cost; the LLM arms
+are flat (-0.004, +0.000, +0.011). Most LLM children were worse than their parent on the screen after the same
+refit, and the acceptance rule kept the parent. The intervention evidence produced the only LLM wins and the best
+prediction rate (5/9), too few to call. This is the clean version of the pilot's finding: on push-v2 the repair
+loop's structural edits do not pay for themselves. Details in `DEBUG_PROGRESS.md`.
+
 ## Questions requiring a research decision
 
 -2. **Raised by the bank study.** (a) Four of the five qualifying references are reach-push variants, so the
