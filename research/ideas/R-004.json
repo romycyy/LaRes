@@ -1,0 +1,80 @@
+{
+  "id": "R-004",
+  "title": "Replicate bundles that vary the data give independent fitting replicates",
+  "hypothesis": "When each replicate draws its own demonstrations, split and probe manifest (qualification_v2), the five seed-bank structures' fitted success varies more across replicates than under minibatch-seed-only replication, so the current five-seed intervals understate uncertainty.",
+  "prediction": {
+    "metric": "promotion_success_rate",
+    "direction": "decrease",
+    "threshold": 0.05,
+    "against": "the fittable-bank qualification run logs/fittable_bank/20260914_040245 (mean fitted success per structure)",
+    "rationale": "a lower mean under data variation means the qualification run was optimistic; the spread is reported in notes"
+  },
+  "protocol": {
+    "script": "scripts/qualify_fittable_bank.py",
+    "config": "config/fittable_bank/qualification_v2.yaml",
+    "command": "python scripts/qualify_fittable_bank.py run --config config/fittable_bank/qualification_v2.yaml",
+    "seeds": [
+      2400,
+      2401,
+      2402,
+      2403,
+      2404,
+      2405,
+      2406,
+      2407,
+      2408,
+      2409,
+      2410,
+      2411,
+      2412,
+      2413,
+      2414,
+      2415,
+      2416,
+      2417,
+      2418,
+      2419,
+      2420,
+      2421,
+      2422,
+      2423,
+      2424
+    ],
+    "manifests": [],
+    "episodes": 750,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/qualify_fittable_bank.py (--config for replicate bundles)"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "proposed",
+  "source": "implementer",
+  "falsified_by": "mean fitted success within 0.05 of the 2026-09-14 run for every structure",
+  "cost_estimate": {
+    "episodes": 750,
+    "llm_calls": 0,
+    "wall_time_minutes": 120
+  },
+  "open_question_refs": [
+    "-2(b)"
+  ],
+  "briefing_sha256": "",
+  "proposal_call_id": "",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-13T23:48:52",
+      "from": "",
+      "to": "proposed",
+      "note": "backfilled 2026-10-13 from the open questions in RESEARCH_HANDOFF.md / DEBUG_PROGRESS.md"
+    }
+  ],
+  "created_at": "2026-10-13T23:48:52"
+}

@@ -1,5 +1,9 @@
 # Debug Progress
 
+> **Frozen on 2026-10-13.** This file is history and is no longer updated. Progress on the method is
+> tracked as research ideas under `research/` (`python scripts/research.py state`, or `/research-status`);
+> narrative findings are appended to `RESEARCH_HANDOFF.md` by `research.py decide --handoff`.
+
 Tracks the implementation of `debug_spec.md`. Started 2026-09-13 on branch `staging` at `350409e`.
 
 ## Where this stands

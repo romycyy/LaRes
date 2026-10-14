@@ -1,0 +1,38 @@
+Propose exactly {n} research ideas to test next. Rank them by expected information per simulator episode (first = best).
+
+Focus requested by the user (may be empty): {focus}
+
+Return a JSON list of exactly {n} objects, each with this shape:
+
+{{
+  "title": "short name, <= 80 characters",
+  "hypothesis": "one sentence naming the mechanism you expect",
+  "prediction": {{
+    "metric": "<a metric from the allowed list>",
+    "direction": "increase" | "decrease",
+    "threshold": <number, the smallest change that would count>,
+    "against": "<the control: an idea id, a run dir, or 'baseline'>",
+    "rationale": "why this metric and this threshold"
+  }},
+  "falsified_by": "the observation that would refute the hypothesis",
+  "protocol": {{
+    "script": "scripts/<existing or new>.py",
+    "config": "config/<path>.yaml or empty",
+    "command": "the exact command from the project root",
+    "seeds": [<unspent integers this protocol will consume, empty if none>],
+    "manifests": ["config/manifests/... (never final_test)"],
+    "episodes": <integer estimate of simulator episodes>,
+    "llm_calls": <integer estimate, 0 if none>,
+    "code_changes": ["files you expect the implementer to change or add"],
+    "needs_gpu": true | false,
+    "needs_llm": true | false
+  }},
+  "cost_estimate": {{"episodes": <int>, "llm_calls": <int>, "wall_time_minutes": <int>}},
+  "open_question_refs": [<question numbers from the handoff this idea addresses>]
+}}
+
+Each idea must differ from the others and from every open or decided idea in the briefing in mechanism, not only in parameter values.
+
+Briefing follows.
+
+{briefing}

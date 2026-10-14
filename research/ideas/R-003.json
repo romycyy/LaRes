@@ -1,0 +1,58 @@
+{
+  "id": "R-003",
+  "title": "Rotating the development screen removes selection on fixed cases",
+  "hypothesis": "Drawing each generation's ten screening cases from a predeclared rotation of the development manifest, instead of always cases 0-9, raises promotion-set success because candidates stop being selected on ten fixed placements.",
+  "prediction": {
+    "metric": "promotion_success_rate",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "the same config with the fixed screen (logs/baseline_gpt61_sol_high)",
+    "rationale": "the promotion set is untouched by rotation, so any gain there is generalisation not fit"
+  },
+  "protocol": {
+    "script": "scripts/run_full_evolution.py",
+    "config": "config/run_full_evolution.yaml",
+    "command": "python scripts/run_full_evolution.py --config config/screen_rotation.yaml",
+    "seeds": [],
+    "manifests": [
+      "config/manifests/push-v2_development.yaml"
+    ],
+    "episodes": 130,
+    "llm_calls": 12,
+    "code_changes": [
+      "lares/eval/promotion.py (screen slice by rotation schedule)",
+      "config/screen_rotation.yaml",
+      "tests/test_search.py"
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "proposed",
+  "source": "implementer",
+  "falsified_by": "promotion success no higher than the fixed-screen run, or a rotation schedule that overlaps the promotion slice (refused by check_manifest_isolation)",
+  "cost_estimate": {
+    "episodes": 130,
+    "llm_calls": 12,
+    "wall_time_minutes": 60
+  },
+  "open_question_refs": [
+    3
+  ],
+  "briefing_sha256": "",
+  "proposal_call_id": "",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-13T23:48:52",
+      "from": "",
+      "to": "proposed",
+      "note": "backfilled 2026-10-13 from the open questions in RESEARCH_HANDOFF.md / DEBUG_PROGRESS.md"
+    }
+  ],
+  "created_at": "2026-10-13T23:48:52"
+}

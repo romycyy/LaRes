@@ -1,0 +1,54 @@
+{
+  "id": "R-001",
+  "title": "Two-lane search beats the unseeded baseline on a fresh pool seed",
+  "hypothesis": "Seeding six slots from the fittable bank with rollout-selected fitting raises held-out success over nine unseeded zero-shot candidates, because the bank structures are the only ones fitting has ever helped.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.15,
+    "against": "logs/baseline_gpt61_sol_high best candidate on the same fresh manifest",
+    "rationale": "0.15 on 50 paired cases is the smallest difference whose paired t interval plausibly excludes zero"
+  },
+  "protocol": {
+    "script": "scripts/evaluate_on_fresh_manifest.py",
+    "config": "",
+    "command": "python scripts/evaluate_on_fresh_manifest.py --pool-seed 2600 --out-dir logs/fresh_2600 --policy twolane=<best two-lane source>:<state> --policy baseline=<best baseline source>:<state> --expert --reference baseline",
+    "seeds": [
+      2600
+    ],
+    "manifests": [],
+    "episodes": 150,
+    "llm_calls": 0,
+    "code_changes": [],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "proposed",
+  "source": "implementer",
+  "falsified_by": "paired difference <= 0 or an interval that includes zero on the 2600 manifest",
+  "cost_estimate": {
+    "episodes": 150,
+    "llm_calls": 0,
+    "wall_time_minutes": 20
+  },
+  "open_question_refs": [
+    "DEBUG_PROGRESS remaining work 4"
+  ],
+  "briefing_sha256": "",
+  "proposal_call_id": "",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-13T23:48:52",
+      "from": "",
+      "to": "proposed",
+      "note": "backfilled 2026-10-13 from the open questions in RESEARCH_HANDOFF.md / DEBUG_PROGRESS.md"
+    }
+  ],
+  "created_at": "2026-10-13T23:48:52"
+}

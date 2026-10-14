@@ -1,5 +1,9 @@
 # Implementation Progress
 
+> **Frozen on 2026-10-13.** This file is history and is no longer updated. Progress on the method is
+> tracked as research ideas under `research/` (`python scripts/research.py state`, or `/research-status`);
+> narrative findings are appended to `RESEARCH_HANDOFF.md` by `research.py decide --handoff`.
+
 ## Current phase and task
 
 **Phase 0 — Lock measurement and reproduce baselines** (FR-1, AC-0): **complete**, 7/7 checks.

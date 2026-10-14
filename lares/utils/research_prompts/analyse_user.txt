@@ -1,0 +1,27 @@
+An approved idea has been run. Judge, from the numbers below and nothing else, whether its prediction held.
+
+Idea (as approved, before any result existed):
+{idea}
+
+Recorded result (metrics, controls, artifact paths, notes written by the implementer):
+{result}
+
+Mechanical check of the prediction against the recorded metrics:
+{prediction_outcome}
+
+Return one JSON object:
+
+{{
+  "verdict": "supported" | "refuted" | "inconclusive",
+  "confidence": <0.0 to 1.0>,
+  "reasoning": "three to six sentences; every numeric claim cites an artifact path from the result's artifacts list in square brackets",
+  "cited_artifacts": ["every path you relied on; each must appear in the result's artifacts list"],
+  "what_would_change_this": "the single measurement that would move your verdict",
+  "next_experiment": "one sentence: the next thing worth testing given this outcome, or 'none'"
+}}
+
+Rules: an interval that includes zero is not a difference; a tie never supports an improvement; if the control the prediction named was not measured, the verdict is inconclusive and you say so. Do not speculate about mechanisms the numbers cannot distinguish.
+
+Briefing (context only, for constraints and earlier decisions):
+
+{briefing}

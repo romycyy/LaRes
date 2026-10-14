@@ -1,0 +1,50 @@
+[
+  {
+    "fact": "LLM model for every pipeline call is gpt-6.1-sol with reasoning_effort high and temperature 1 (the only temperature the model accepts).",
+    "source": "CLAUDE.md, decided 2026-10-13"
+  },
+  {
+    "fact": "Validation (imitation) loss correlates with development success at +0.19, the wrong sign; selecting on loss cannot work. Behavioural cloning is non-monotonic in gradient steps: success peaks near 1000 steps and is zero by 3000.",
+    "source": "RESEARCH_HANDOFF.md, Phase 5"
+  },
+  {
+    "fact": "Imitation fitting is disabled by default (bc_steps 0). If fitting is turned on it must be rollout-selected on a probe manifest disjoint from the screen; fixed-budget fitting is harmful.",
+    "source": "Stage E, logs/stage_e/20260914_032500; config/run_full_evolution.yaml"
+  },
+  {
+    "fact": "Promotion requires a strictly positive paired success difference whose paired t interval lower bound is above zero on the promotion set (development cases 10-39). Tied success never promotes.",
+    "source": "lares/eval/promotion.py, decided 2026-09-14"
+  },
+  {
+    "fact": "The saved incumbent scores 0.000 success on the development manifest, not 0.30.",
+    "source": "RESEARCH_HANDOFF.md, 'The incumbent does not reproduce'"
+  },
+  {
+    "fact": "Only the five fittable_seed structures (simple_reach_push_sharp_gate, simple_damped_push, simple_reach_push, simple_reach_push_damped, simple_reach_push_shared_gain) may be fittable-lane parents; the standoff family is a non-fittable control or retired.",
+    "source": "config/fittable_bank/structure_roles.yaml"
+  },
+  {
+    "fact": "Stage F: no correction-LLM repair arm beat no_repair; search arms led, LLM arms were flat.",
+    "source": "RESEARCH_HANDOFF.md 'Stage F: correction-LLM repair does not beat no repair (2026-10-13)'"
+  },
+  {
+    "fact": "The gpt-6.1-sol baseline rerun (nine unseeded zero-shot candidates) reached zero success; the gpt-5.6-sol run of the same config reached 0.333 on the promotion set.",
+    "source": "logs/baseline_gpt61_sol_high, logs/baseline_gpt56_sol_high; RESEARCH_HANDOFF.md 2026-10-13"
+  },
+  {
+    "fact": "The AC-6 repair ablation did not support the repair loop: optimizer-only 0.650 vs full loop 0.517 held-out success over six replicates.",
+    "source": "RESEARCH_HANDOFF.md, 'The repair ablation (AC-6, E6, E9)'"
+  },
+  {
+    "fact": "The final-test split (config/manifests/push-v2_final_test.yaml) is locked until Phase 7, which needs the user's approval and a FreezeRecord. Qwen/E10 is also blocked.",
+    "source": "lares/eval/freeze.py; CLAUDE.md"
+  },
+  {
+    "fact": "Seeds 2400-2424 are held for config/fittable_bank/qualification_v2.yaml (predeclared, not run). New protocols pick seeds from 2600 upward.",
+    "source": "config/experiment_seed_ledger.jsonl; CLAUDE.md"
+  },
+  {
+    "fact": "Every protocol runs on the remote GPU box via `gpu run`, which bills by the hour; the implementer stops it afterwards. Live LLM or GPU spend needs the user's per-idea approval.",
+    "source": "CLAUDE.md, 'Remote GPU server'"
+  }
+]

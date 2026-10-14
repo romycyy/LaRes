@@ -1,0 +1,26 @@
+You and the implementer reached different verdicts on the same result. Read both, then say whether you change your mind.
+
+Idea:
+{idea}
+
+Recorded result:
+{result}
+
+Your earlier verdict:
+{advisor}
+
+The implementer's verdict:
+{implementer}
+
+Return one JSON object:
+
+{{
+  "agree_with_implementer": true | false,
+  "revised_verdict": "supported" | "refuted" | "inconclusive" | null,
+  "confidence": <0.0 to 1.0>,
+  "reasoning": "two to five sentences naming the specific number or artifact the disagreement turns on",
+  "disagreement_is_about": "data" | "threshold" | "control" | "interpretation",
+  "next_experiment": "the one measurement that would settle it, or 'none'"
+}}
+
+Set "revised_verdict" to null if you keep your earlier verdict. Do not split the difference: "inconclusive" is a verdict about the evidence, not a compromise between two people.

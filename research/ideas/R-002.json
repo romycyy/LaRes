@@ -1,0 +1,57 @@
+{
+  "id": "R-002",
+  "title": "The gpt-6.1-sol zero-success baseline is model, not draw",
+  "hypothesis": "A second gpt-6.1-sol baseline run under the identical config also reaches zero promotion-set success, so the drop from 0.333 (gpt-5.6-sol) is a model effect rather than one unlucky ideation draw.",
+  "prediction": {
+    "metric": "promotion_success_rate",
+    "direction": "increase",
+    "threshold": 0.2,
+    "against": "logs/baseline_gpt61_sol_high (0.000)",
+    "rationale": "if the rerun's best candidate reaches >= 0.2 the first run was a draw; the hypothesis predicts it does not"
+  },
+  "protocol": {
+    "script": "scripts/run_full_evolution.py",
+    "config": "config/run_full_evolution.yaml",
+    "command": "python scripts/run_full_evolution.py --config config/run_full_evolution.yaml  (log_dir -> logs/baseline_gpt61_sol_high_rerun2)",
+    "seeds": [],
+    "manifests": [
+      "config/manifests/push-v2_train.yaml",
+      "config/manifests/push-v2_development.yaml"
+    ],
+    "episodes": 130,
+    "llm_calls": 12,
+    "code_changes": [
+      "config/run_full_evolution.yaml (log_dir only)"
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "proposed",
+  "source": "implementer",
+  "falsified_by": "the rerun's best candidate scores >= 0.2 on the promotion set",
+  "cost_estimate": {
+    "episodes": 130,
+    "llm_calls": 12,
+    "wall_time_minutes": 40
+  },
+  "open_question_refs": [
+    "RESEARCH_HANDOFF 'Baseline rerun under gpt-6.1-sol: zero success'"
+  ],
+  "briefing_sha256": "",
+  "proposal_call_id": "",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-13T23:48:52",
+      "from": "",
+      "to": "proposed",
+      "note": "backfilled 2026-10-13 from the open questions in RESEARCH_HANDOFF.md / DEBUG_PROGRESS.md"
+    }
+  ],
+  "created_at": "2026-10-13T23:48:52"
+}

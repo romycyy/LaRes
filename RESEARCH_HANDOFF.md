@@ -2,6 +2,12 @@
 
 Evidence log for the symbolic-policy evolution pipeline. Updated as phases land.
 
+> **From 2026-10-13** new findings arrive here only as decision blocks appended by
+> `python scripts/research.py decide --handoff`. The structured record of every idea, its predeclared
+> protocol, result and both verdicts is `research/ideas/*.json` plus `research/decisions.jsonl`;
+> `research/STATE.md` is the generated one-page summary. The open-question list at the end of this
+> file was backfilled into ideas R-001 to R-004 and is not extended further.
+
 ## Where this stands
 
 Phases 0 through 6 are implemented and measured. FR-4 and FR-11 are implemented.
