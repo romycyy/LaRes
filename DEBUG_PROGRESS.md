@@ -674,6 +674,28 @@ screen) is not comparable with the gpt-5.6-sol baseline (0.333): the model chang
 child versus fitted parent, paired on a fresh MT1 pool seed (rollouts only); a gpt-6.1-sol rerun of the baseline if
 the explorations are to be compared.
 
+## Baseline rerun under gpt-6.1-sol (2026-10-13)
+
+`scripts/run_full_evolution.py` (`config/run_full_evolution.yaml`), log dir `logs/baseline_gpt61_sol_high` on the
+GPU box, at `e356d2d`. Exit 0 in 1130 s. 9/9 slots valid within one correction (two corrections, both for a recorded
+gate the action ignored, `gate_not_a_lever`); lineage and all eight traceability fields complete. 12 calls, 103,973
+tokens (ideation 15,783; implementations 5,847-8,934; corrections 10,874 and 11,220).
+
+**Every candidate scored 0.000 on the screen**, so no candidate passed the screening rule. `gen0_cand2` went to
+the promotion set as the fallback by goal progress, scored 0.000 there, and nothing was promoted. Failures:
+`never_reached_object` in seven candidates, `stopped_short_of_goal` (gen0_cand1, return 298) and
+`object_not_moved` (gen0_cand5).
+
+| run | model | screen best | promotion set | calls | tokens |
+|---|---|---:|---:|---:|---:|
+| `logs/baseline_gpt56_sol_high` (2026-09-23) | gpt-5.6-sol high | 0.200 | 0.333 (`gen0_cand7`) | 10 | 100,786 |
+| `logs/baseline_gpt61_sol_high` (2026-10-13) | gpt-6.1-sol high | 0.000 | 0.000 (`gen0_cand2`) | 12 | 103,973 |
+
+Reading it. Same prompts, manifests and budget; only the model changed. One run of nine candidates per model
+cannot separate a model effect from sampling noise, but zero-shot structure from unseeded ideas is weak under both
+models (the best is 0.333), while the reference-seeded fittable lane under gpt-6.1-sol reached 0.6-1.0. On this
+evidence the seeded lane, not unseeded zero-shot generation, is where the pipeline's performance comes from.
+
 ## Stage F protocol decided (2026-10-13)
 
 Decided as recommended; frozen in `config/stage_f/stage_f.yaml` before any structure is selected or any held-out
@@ -694,6 +716,14 @@ case exists.
 
 Driver: `scripts/stage_f.py select` -> `build-manifest` -> commit -> `run --config config/stage_f/stage_f.yaml`
 (clean worktree, Git SHA and frozen hashes recorded) -> `report`.
+
+**Frozen and started (2026-10-13).** Protocol committed at `ebe8d27` before selection. `select` on the gpt-6.1-sol
+baseline chose `gen0_cand2_a1` (promotion-tested, 0.000) and `gen0_cand1_a0` (best screen progress of the rest);
+both score 0 untrained, so all three structures leave room to repair. `build-manifest` built
+`push-v2:development_heldout:s2500:n50` (disjoint from every committed manifest) and reserved 2500-2502; frozen at
+`41a9790`. The server's branch was fast-forwarded to `41a9790` (`git reset --mixed`, files untouched) so the
+clean-worktree check is truthful under the sync workflow. A smoke run of the config path (non-LLM arms, tiny
+budgets, the spent s2200 manifest) passed and was moved to `logs/stage_f_smoke`. Run: `logs/stage_f/20261013_233120`.
 
 ## Decisions and deviations
 

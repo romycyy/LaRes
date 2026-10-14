@@ -883,6 +883,13 @@ its own step 0 with an interval above zero. Unseeded explorations reached at mos
 its *fitted parent* is untested, and is the question that decides whether the fittable lane's LLM step adds
 anything over fitting the seed bank. Details in `DEBUG_PROGRESS.md`.
 
+## Baseline rerun under gpt-6.1-sol: zero success (2026-10-13)
+
+Nine unseeded zero-shot candidates under gpt-6.1-sol all scored 0.000 on the screen and on the promotion set
+(gpt-5.6-sol's best was 0.333). One run per model cannot separate model from sampling noise, but together with the
+two-lane run (seeded fittable children 0.6-1.0, unseeded explorations at most 0.40) it says the pipeline's strength
+on push-v2 comes from reference-seeded fitting, not from unseeded zero-shot ideas.
+
 ## Stage F protocol decided (2026-10-13)
 
 Three structures (`simple_damped_push` and the top two gpt-6.1-sol baseline candidates) x three seeds (2500-2502),
