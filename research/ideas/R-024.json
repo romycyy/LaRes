@@ -1,0 +1,110 @@
+{
+  "id": "R-024",
+  "title": "Harder-task scan: where does single-phase generation plus rollout search fail?",
+  "hypothesis": "Tasks needing tool use, insertion or multi-stage contact (assembly, hammer, shelf-place, basketball, sweep, soccer) expose failures of the single-phase + 24-candidate search recipe that the eight scanned tasks (D-019) did not, giving a task on which method variants can be compared.",
+  "prediction": {
+    "metric": "promotion_success_rate",
+    "direction": "decrease",
+    "threshold": 0.2,
+    "against": "the reach-v2 arm of R-022 (1.00 on its fresh confirmation cases)",
+    "rationale": "At least one of the six harder tasks scores at least 0.20 below reach-v2 on 30 fresh cases after search; that task becomes the testbed for structure breadth (R-023's design) and for the two-lane pipeline."
+  },
+  "protocol": {
+    "script": "scripts/compare_generation_modes.py",
+    "config": "",
+    "command": "python scripts/compare_generation_modes.py --research-mode task-scan --scan-set hard --out-dir logs/research/hard_task_scan_s3300",
+    "seeds": [
+      3300,
+      3301,
+      3302,
+      3303,
+      3304,
+      3305,
+      3310,
+      3311,
+      3312,
+      3313,
+      3314,
+      3315,
+      3320,
+      3321,
+      3330,
+      3331,
+      3332,
+      3333,
+      3334,
+      3335
+    ],
+    "manifests": [
+      "config/manifests/push-v2_development.yaml"
+    ],
+    "episodes": 1056,
+    "llm_calls": 14,
+    "code_changes": [
+      "lares/core/obs_schema.py (register assembly-v2, hammer-v2, shelf-place-v2, basketball-v2, sweep-v2, soccer-v2 on the common V3 layout after check_against_env passes on the GPU box; open question: expose the second object block obs[11:18] as obj2 where the task has one)",
+      "lares/core/training_pipeline.py (TASK_DESCRIPTIONS for the six tasks, from MetaWorld's documentation; open question: or leave the env name as the description)",
+      "scripts/compare_generation_modes.py (--scan-set hard)",
+      "tests/test_stage_f.py, tests/test_obs_schema or equivalent"
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "running",
+  "source": "implementer",
+  "falsified_by": "Every harder task scores less than 0.20 below reach-v2 after search; then the recipe saturates these tasks too and method comparisons need a stricter success criterion rather than new tasks.",
+  "cost_estimate": {
+    "episodes": 900,
+    "llm_calls": 12,
+    "wall_time_minutes": 40,
+    "breakdown": "6 tasks x (24 x 5 probe + 30 confirmation) = 900; 6 single-phase calls + <= 6 corrections"
+  },
+  "open_question_refs": [
+    "D-019 (R-022)",
+    "R-023 dropped: no weak task"
+  ],
+  "briefing_sha256": "",
+  "proposal_call_id": "",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T08:14:12",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00040, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T081358_call_00040.json"
+  },
+  "run": {
+    "started_at": "2026-10-22T08:15:47",
+    "git_sha": "090501bf791234470fa764af8d9cbec2cf4f39a6",
+    "dirty_worktree": true,
+    "log_dir": "logs/research/hard_task_scan_s3300"
+  },
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-22T08:12:46",
+      "from": "",
+      "to": "proposed",
+      "note": "proposed by the implementer after D-019; schema and task-description choices left to the advisor consult"
+    },
+    {
+      "at": "2026-10-22T08:14:12",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00040: tasks assembly, peg-insert-side, hammer, shelf-place, basketball, soccer; verified optional obj2; one-sentence documented descriptions; sequential scan with an independent repeat (seeds 3320-3321) at the first winner <= 0.80; schema audits (3330-3335); ceiling 1056 episodes, 14 calls"
+    },
+    {
+      "at": "2026-10-22T08:14:12",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00040, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T08:15:47",
+      "from": "approved",
+      "to": "running",
+      "note": "git 090501bf79 (dirty)"
+    }
+  ],
+  "created_at": "2026-10-22T08:12:46"
+}

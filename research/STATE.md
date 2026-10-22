@@ -1,12 +1,12 @@
 # Research state
 
-_Generated 2026-10-22T08:12:09 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T08:15:47 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 0 |
+| running | 1 |
 | approved | 0 |
 | proposed | 0 |
 | decided | 19 |
@@ -14,7 +14,8 @@ _Generated 2026-10-22T08:12:09 by `python scripts/research.py state` from `resea
 
 ## Needs attention
 
-- Nothing open. Run `python scripts/research.py propose` to ask the advisor for ideas.
+- **R-024** [running] Harder-task scan: where does single-phase generation plus rollout search fail?
+  - run the protocol, then `python scripts/research.py record R-024 --results <json>`
 
 ## Last 5 decisions
 

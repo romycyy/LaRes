@@ -100,6 +100,13 @@ TASK_DESCRIPTIONS = {
     "reach-v2": "Control the robotic arm to reach the target position",
     "push-v2": "Control the robotic arm to push the object to the target",
     "pick-place-v2": "Control the robotic arm to pick and place the object",
+    # R-024: MetaWorld's one-line task descriptions (Yu et al., 2019), objective and entities only.
+    "assembly-v2": "Control the robotic arm to pick up a nut and place it onto a peg",
+    "peg-insert-side-v2": "Control the robotic arm to insert a peg sideways",
+    "hammer-v2": "Control the robotic arm to hammer a nail into the wall",
+    "shelf-place-v2": "Control the robotic arm to pick and place a puck onto a shelf",
+    "basketball-v2": "Control the robotic arm to dunk the basketball into the basket",
+    "soccer-v2": "Control the robotic arm to kick a soccer ball into the goal",
 }
 
 

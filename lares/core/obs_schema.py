@@ -120,10 +120,12 @@ class ObsSchema:
             )
             return problems
 
+        # Multi-object tasks return every object's position (quaternion) back to back; the first object is obj.
         checks = {
             "tcp": lambda: inner.get_endeff_pos(),
-            "obj": lambda: inner._get_pos_objects(),
-            "obj_quat": lambda: inner._get_quat_objects(),
+            "obj": lambda: np.asarray(inner._get_pos_objects()).ravel()[:3],
+            "obj_quat": lambda: np.asarray(inner._get_quat_objects()).ravel()[:4],
+            "obj2": lambda: np.asarray(inner._get_pos_objects()).ravel()[3:6],
             "goal": lambda: inner._target_pos,
         }
         for name, getter in checks.items():
@@ -151,7 +153,7 @@ class ObsSchema:
 
     def unverifiable_names(self) -> tuple[str, ...]:
         """Fields with no direct simulator accessor, so never machine-checked."""
-        checkable = {"tcp", "obj", "obj_quat", "goal"}
+        checkable = {"tcp", "obj", "obj_quat", "obj2", "goal"}
         return tuple(n for n in self.names if n not in checkable)
 
 
@@ -173,6 +175,13 @@ _METAWORLD_V3_COMMON = (
     ObsField("goal", 36, 39, "goal position (x, y, z)", required=True),
 )
 
+#: R-024 (approved 2026-10-22): the second object block, verified against the simulator before use. MetaWorld lays out
+#: each object's position then quaternion, so a second object's position sits at obs[11:14]. Only hammer-v2 among the
+#: registered tasks has one (the nail); its quaternion is not exposed.
+_HAMMER_V3 = _METAWORLD_V3_COMMON + (
+    ObsField("obj2", 11, 14, "second object position (x, y, z): the nail in hammer-v2"),
+)
+
 OBS_SCHEMAS: dict[str, ObsSchema] = {
     env_id: ObsSchema(env_id, 39, _METAWORLD_V3_COMMON)
     for env_id in (
@@ -186,8 +195,15 @@ OBS_SCHEMAS: dict[str, ObsSchema] = {
         "door-open-v2",
         "drawer-open-v2",
         "drawer-close-v2",
+        # R-024: single-object harder tasks on the same layout (obj = the manipulated object, read from source).
+        "assembly-v2",
+        "peg-insert-side-v2",
+        "shelf-place-v2",
+        "basketball-v2",
+        "soccer-v2",
     )
 }
+OBS_SCHEMAS["hammer-v2"] = ObsSchema("hammer-v2", 39, _HAMMER_V3)
 
 
 def get_obs_schema(env_id: str) -> ObsSchema:

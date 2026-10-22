@@ -589,6 +589,39 @@ SCAN_TASKS = {
     "window-close-v2": (2606, 2618), "button-press-v2": (2607, 2619),
 }
 SCAN_PROBE, SCAN_CONFIRMATION = 5, 30
+#: R-024 (advisor call_00040), run in this order: task -> (generation seed, pool seed, schema-audit pool seed).
+HARD_TASKS = {
+    "assembly-v2": (3300, 3310, 3330), "peg-insert-side-v2": (3301, 3311, 3331), "hammer-v2": (3302, 3312, 3332),
+    "shelf-place-v2": (3303, 3313, 3333), "basketball-v2": (3304, 3314, 3334), "soccer-v2": (3305, 3315, 3335),
+}
+HARD_REPEAT = (3320, 3321)      # generation and pool seeds of the one independent repeat
+WEAK_AT_OR_BELOW = 0.80
+
+
+def audit_schema(task: str, pool_seed: int) -> dict:
+    """Reset one placement and take one zero step; compare every checkable schema field with the simulator both times."""
+    from lares.core.obs_schema import get_obs_schema
+    from lares.eval import make_manifest_env
+    from lares.eval.manifest import SPLIT_DEVELOPMENT, build_manifest
+    from lares.utils.metaworld_env import _unwrap_through_wrappers
+
+    schema = get_obs_schema(task)
+    manifest, pool = build_manifest(task, SPLIT_DEVELOPMENT, [pool_seed], horizon=150, num_episodes=1,
+                                    manifest_id=f"{task}:schema_audit:s{pool_seed}")
+    env = make_manifest_env(manifest, pool)
+    problems = [f"reset: {p}" for p in schema.check_against_env(env, manifest.episodes[0])]
+    obs, *_ = env.step(np.zeros(4))
+    inner = _unwrap_through_wrappers(getattr(env, "_env", env))
+    obs = np.asarray(obs, dtype=np.float64)
+    pos = np.asarray(inner._get_pos_objects()).ravel()
+    for name, expected in (("tcp", inner.get_endeff_pos()), ("obj", pos[:3]), ("goal", inner._target_pos),
+                           *((("obj2", pos[3:6]),) if "obj2" in schema.names else ())):
+        f = schema.field(name)
+        if not np.allclose(obs[f.start:f.stop], np.asarray(expected, dtype=np.float64), atol=1e-6):
+            problems.append(f"step: {name} [{f.start}:{f.stop}] = {obs[f.start:f.stop]}, simulator {expected}")
+    env.close()
+    return {"task": task, "pool_seed": pool_seed, "fields": list(schema.names), "objects_in_source": int(pos.size // 3),
+            "problems": problems, "episodes": 1}
 
 
 def scan_summary(rows, reference="reach-v2", margin=0.20) -> dict:
@@ -599,6 +632,94 @@ def scan_summary(rows, reference="reach-v2", margin=0.20) -> dict:
     worst = min((t for t in rows if t != reference), key=lambda t: (rows[t]["confirmation_success"], t))
     return {"reference": reference, "reference_success": ref, "tasks_at_least_margin_below": below,
             "largest_drop": ref - rows[worst]["confirmation_success"], "weakest_task": worst, "by_task": rows}
+
+
+def _scan_one(task, gen_seed, pool_seed, args, cvp, label):
+    """Generate one single-phase structure for ``task``, search it, confirm the winner. Returns a scan row."""
+    from lares.core.training_pipeline import load_policy_prompt_assets as assets
+
+    manifest_dir = os.path.join(args.out_dir, "manifests")
+    full, _ = cvp.fresh_manifest(task, pool_seed, SCAN_PROBE + SCAN_CONFIRMATION, 150, manifest_dir, role="scan")
+    paths = {}
+    for role, part in (("probe", full.head(SCAN_PROBE)), ("confirmation", full.slice(SCAN_PROBE, SCAN_PROBE + SCAN_CONFIRMATION))):
+        paths[role] = os.path.join(manifest_dir, f"{task}_{role}_s{pool_seed}.yaml")
+        if not os.path.exists(paths[role]):
+            part.save(paths[role])
+    task_args = SimpleNamespace(**{**vars(args), "env_name": task})
+    final, n = generate_one(assets(task), "", os.path.join(args.out_dir, "generation", label), task_args)
+    row = {"task": task, "label": label, "generation_seed": gen_seed, "pool_seed": pool_seed, "valid": bool(final.valid),
+           "attempts": n, "stage": (final.validation or {}).get("stage"), "errors": (final.validation or {}).get("errors")}
+    print(f"  {label}: valid={final.valid} after {n} attempt(s)", flush=True)
+    if not final.valid:
+        return {**row, "confirmation_success": 0.0, "episodes": {"probe": 0, "confirmation": 0}}
+    path = os.path.join(args.out_dir, "structures", f"{label}.py")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(final.code)
+    r = suite_job({"slot": label, "source": final.code, "search_seed": gen_seed, "env_name": task, "selectors": ["original"],
+                   "probe_manifest": os.path.abspath(paths["probe"]), "confirmation_manifest": os.path.abspath(paths["confirmation"])})
+    with open(os.path.join(args.out_dir, f"result_{label}.json"), "w", encoding="utf-8") as f:
+        json.dump(r, f, indent=2)
+    return {**row, "source_path": path, "trace": r["trace"],
+            "confirmation_success": float(np.mean(list(r["confirmed"][str(r["picks"]["original"])].values()))),
+            "untrained_probe_success": r["trace"][0]["success"],
+            "candidates_with_probe_success": sum(t["success"] > 0 for t in r["trace"]),
+            "best_probe_success": max(t["success"] for t in r["trace"]), "episodes": r["episodes"]}
+
+
+def run_hard_scan(args) -> int:
+    """R-024: audit every schema, then scan tasks in order; the first weak winner gets one independent repeat."""
+    sys.path.insert(0, _SCRIPT_DIR)
+    import compare_child_vs_parent as cvp
+
+    os.makedirs(args.out_dir, exist_ok=True)
+    entries = []
+    for task, (g, q, a) in HARD_TASKS.items():
+        entries += [(g, "generation_block", f"R-024 {task}: generation and search seed"),
+                    (q, "mt1_pool", f"R-024 {task}: probe and confirmation pool"),
+                    (a, "mt1_pool", f"R-024 {task}: schema audit placement")]
+    entries += [(HARD_REPEAT[0], "generation_block", "R-024 repeat: generation and search seed"),
+                (HARD_REPEAT[1], "mt1_pool", "R-024 repeat: probe and confirmation pool")]
+    print(f"  hard scan over {list(HARD_TASKS)}; seeds: {cvp.ensure_entries_reserved(entries, args.out_dir)}")
+    if args.reserve_only:
+        return 0
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise SystemExit("the hard scan needs OPENAI_API_KEY")
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    audits = [audit_schema(task, a) for task, (_, _, a) in HARD_TASKS.items()]
+    with open(os.path.join(args.out_dir, "schema_audit.json"), "w", encoding="utf-8") as f:
+        json.dump(audits, f, indent=2, default=str)
+    bad = {a["task"]: a["problems"] for a in audits if a["problems"]}
+    print(f"  schema audit: {'all fields verified' if not bad else bad}", flush=True)
+    if bad:
+        raise SystemExit("schema audit failed; nothing generated")
+    rows, repeat, stopped_early = [], None, False
+    for task, (g, q, _) in HARD_TASKS.items():
+        row = _scan_one(task, g, q, args, cvp, task)
+        rows.append(row)
+        print(f"  {task}: confirmation {row['confirmation_success']:.2f}", flush=True)
+        if repeat is None and row["confirmation_success"] <= WEAK_AT_OR_BELOW:
+            repeat = _scan_one(task, HARD_REPEAT[0], HARD_REPEAT[1], args, cvp, f"{task}_repeat")
+            print(f"  {task} repeat: confirmation {repeat['confirmation_success']:.2f}", flush=True)
+            if repeat["confirmation_success"] <= WEAK_AT_OR_BELOW:
+                stopped_early = True
+                break
+    reach = 1.0   # R-022's reach-v2 arm (historical control, D-019)
+    summary = {"reference_reach_success": reach, "rows": [{k: v for k, v in r.items() if k != "trace"} for r in rows],
+               "repeat": {k: v for k, v in repeat.items() if k != "trace"} if repeat else None, "stopped_early": stopped_early,
+               "tasks_at_least_0.20_below_reach": [r["task"] for r in rows if reach - r["confirmation_success"] >= 0.20],
+               "min_confirmation_success": min(r["confirmation_success"] for r in rows),
+               "episodes": {k: int(sum(r["episodes"][k] for r in rows + ([repeat] if repeat else []))) for k in ("probe", "confirmation")},
+               "schema_audit_episodes": len(audits),
+               "llm_attempts": int(sum(r["attempts"] for r in rows + ([repeat] if repeat else [])))}
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2)
+    print(f"  below reach by >= 0.20: {summary['tasks_at_least_0.20_below_reach']}; min {summary['min_confirmation_success']:.2f}; "
+          f"repeat {summary['repeat'] and summary['repeat']['confirmation_success']}; stopped early {stopped_early}; "
+          f"episodes {summary['episodes']}; LLM attempts {summary['llm_attempts']}", flush=True)
+    return 0
 
 
 def run_task_scan(args) -> int:
@@ -698,6 +819,7 @@ def parse_args():
         "--out-dir", default=os.path.join(_PROJECT_ROOT, "logs", "generation_modes")
     )
     p.add_argument("--research-mode", choices=sorted(RESEARCH_ARMS) + ["pick-place-suite", "task-scan"], default="")
+    p.add_argument("--scan-set", choices=["default", "hard"], default="default")
     p.add_argument("--generation-seeds", type=int, nargs="+", default=[])
     p.add_argument("--search-seeds", type=int, nargs="+", default=[])
     p.add_argument("--probe-seed", type=int)
@@ -713,7 +835,7 @@ def separator(title):
 def main():
     args = parse_args()
     if args.research_mode == "task-scan":
-        return run_task_scan(args)
+        return run_hard_scan(args) if args.scan_set == "hard" else run_task_scan(args)
     if args.research_mode == "pick-place-suite":
         return run_pick_place_suite(args)
     if args.research_mode:

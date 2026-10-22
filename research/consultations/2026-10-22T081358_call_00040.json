@@ -1,0 +1,26 @@
+{
+  "ideas": [
+    {
+      "id": "R-024",
+      "recommendation": "revise",
+      "reasoning": "This scan can identify a useful non-ceiling testbed before spending on method comparisons, but missing observations or an underspecified objective would make failures ambiguous. Breadth is informative initially; once a weak task appears, an independent generation is more informative per episode than immediately scanning another task.",
+      "suggested_changes": [
+        "Add optional, task-specific obj2 only where source inspection and simulator checks verify its physical meaning and coordinates at obs[11:14]; expose its quaternion only if separately verified. Preserve existing fields and do not assume every task shares the same populated object blocks or expose simulator-only state.",
+        "Add one-sentence TASK_DESCRIPTIONS sourced from MetaWorld documentation, stating only the objective and relevant entities—not a control strategy, expert trajectory, or expanded interface tutorial. Freeze descriptions and schemas before generation; this tests the recipe with an adequate task specification, not an interface-identical replication of the earlier scan.",
+        "Use these six tasks in order: assembly-v2, peg-insert-side-v2, hammer-v2, shelf-place-v2, basketball-v2, soccer-v2. Replace sweep-v2 with peg-insert-side-v2 to directly cover insertion rather than include another predominantly planar object-motion task.",
+        "Reuse scripts/compare_generation_modes.py task-scan, extending its hard-task list rather than adding a script. Reuse config/environment.yaml and existing task-scan manifest machinery to freeze task-specific, disjoint 5-case probes and 30-case confirmations; do not apply the push-v2 development manifest to other tasks. Keep bc_steps=0 and the mandated LLM settings.",
+        "Run tasks sequentially. At the first searched winner with confirmation success at or below 0.80, pause breadth and repeat generation plus identical search on that task with fresh seeds and cases. Stop early if the repeat also scores at or below 0.80; otherwise finish the six-task scan, without treating the original low draw as established task difficulty.",
+        "Prediction: promotion_success_rate will decrease by at least 0.20 for at least one scanned task relative to the historical R-022 reach-v2 control of 1.00. falsified_by: all six tasks score above 0.80 after search. A low first draw followed by a high repeat is inconclusive about reproducible weakness; the settling measurement is another independent generation/search block's promotion_success_rate on fresh cases. Cross-task screening is not a promotion or a paired method comparison.",
+        "Budget 150 episodes per task, up to 900 episodes and 12 LLM calls for breadth, plus 150 episodes and at most 2 calls for the independent repeat. Allow at most 6 additional schema-audit episodes: maximum 1056 episodes and 14 calls, or 306 episodes and at most 4 calls if the first task replicates as weak after all audits. Retain unspent seeds 3300-3305 and 3310-3315; reserve 3320-3321 for the repeat and 3330-3335 for audits, recording distinct roles in the ledger. Run through gpu run and stop the GPU after the approved session."
+      ],
+      "depends_on": []
+    }
+  ],
+  "order": [
+    "R-024"
+  ],
+  "next_step": "Have Claude Code first audit the six revised tasks' observation fields against simulator source and reset/step observations, recording verified entity semantics before any LLM generation.",
+  "call_id": "call_00040",
+  "briefing_sha256": "06966a1b2ed2a80041fca21331f52bedbee53c4e447bd7a0ce03dfde98ef0df1",
+  "question": "Delegated approve/reject (run_as_is = approve, drop = reject, revise = approve after changes, defer = leave proposed). Two design choices need your ruling: (1) the current schema exposes only the first object block (obj at obs[4:7], obj_quat 7:11); multi-object tasks (e.g. hammer's nail, assembly's peg) put a second object at obs[11:14]. Should the schema add an 'obj2' field for those tasks (verified against the simulator), or keep the interface identical to the scanned tasks? (2) TASK_DESCRIPTIONS has no entries for these tasks, so the prompt would say only the env name; should the implementer write one-sentence descriptions from MetaWorld's documentation, or keep the default? Also choose the six tasks if you would pick differently. GPU stays up for the session."
+}
