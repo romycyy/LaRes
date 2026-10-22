@@ -34,7 +34,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "approved",
+  "status": "running",
   "source": "implementer",
   "falsified_by": "An upper paired bound below +0.30 between repair-on and repair-off final incumbents refutes the integrated effect; no plateau trigger in a block leaves it inconclusive for that block.",
   "cost_estimate": {
@@ -55,7 +55,12 @@
     "note": "approved by advisor gpt-6.1-sol (consult call_00065, 'revise' with changes applied) under the user's 2026-10-22 session delegation; the advisor reserves the live launch for the user after the mocked gate passes",
     "consultation": "research/consultations/2026-10-22T113112_call_00065.json"
   },
-  "run": {},
+  "run": {
+    "started_at": "2026-10-22T14:54:35",
+    "git_sha": "d526eefb54b2b93f265308538fbc11e96e834222",
+    "dirty_worktree": false,
+    "log_dir": "logs/r037"
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -84,6 +89,12 @@
       "from": "approved",
       "to": "approved",
       "note": "idea file reconciled per advisor consult call_00066 (option A): seeds 3900-3904/3910-3914 were reserved (artifact logs/r037) and the six assembly-v2 manifests frozen before launch per call_00065, committed as 90b1648; protocol.seeds is therefore empty and protocol.manifests names the frozen files (the push-v2 entry was stale)"
+    },
+    {
+      "at": "2026-10-22T14:54:35",
+      "from": "approved",
+      "to": "running",
+      "note": "git d526eefb54"
     }
   ],
   "created_at": "2026-10-22T11:29:05"

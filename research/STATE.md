@@ -1,21 +1,21 @@
 # Research state
 
-_Generated 2026-10-22T14:54:24 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T14:54:35 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 0 |
-| approved | 1 |
+| running | 1 |
+| approved | 0 |
 | proposed | 0 |
 | decided | 32 |
 | rejected | 4 |
 
 ## Needs attention
 
-- **R-037** [approved] Trace repair inside the real orchestrator: an end-to-end assembly-v2 run of run_full_evolution.py
-  - `python scripts/research.py start R-037` then run its command
+- **R-037** [running] Trace repair inside the real orchestrator: an end-to-end assembly-v2 run of run_full_evolution.py
+  - run the protocol, then `python scripts/research.py record R-037 --results <json>`
 
 ## Last 5 decisions
 
