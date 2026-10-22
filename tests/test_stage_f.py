@@ -732,3 +732,18 @@ class TestPickPlaceSuite(unittest.TestCase):
         self.assertAlmostEqual(out["R-021_grounded_minus_control"]["paired_success_difference"], 1.0)
         self.assertAlmostEqual(out["R-019_single_minus_two_phase"]["block_level"]["by_block"][0], 0.0)
         self.assertAlmostEqual(out["R-019_single_minus_two_phase"]["block_level"]["by_block"][1], -1.0)
+
+
+class TestTaskScan(unittest.TestCase):
+    def test_scan_flags_tasks_well_below_reach(self):
+        sys.path.insert(0, os.path.join(_PROJECT_ROOT, "scripts"))
+        import compare_generation_modes as cgm
+
+        rows = {"reach-v2": {"confirmation_success": 1.0}, "door-open-v2": {"confirmation_success": 0.7},
+                "drawer-open-v2": {"confirmation_success": 0.9}, "button-press-v2": {"confirmation_success": 0.7}}
+        out = cgm.scan_summary(rows)
+        self.assertEqual(out["tasks_at_least_margin_below"], ["button-press-v2", "door-open-v2"])
+        self.assertEqual(out["weakest_task"], "button-press-v2")
+        self.assertAlmostEqual(out["largest_drop"], 0.3)
+        self.assertEqual(set(cgm.SCAN_TASKS), {"reach-v2", "door-open-v2", "door-close-v2", "drawer-open-v2",
+                                                 "drawer-close-v2", "window-open-v2", "window-close-v2", "button-press-v2"})

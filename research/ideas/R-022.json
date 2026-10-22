@@ -1,0 +1,96 @@
+{
+  "id": "R-022",
+  "title": "1. Scan eight tasks for failures of seedless generation plus search",
+  "hypothesis": "Task-specific contact and articulation requirements will expose failures of the unchanged seedless controller generator that are absent on reach-v2.",
+  "prediction": {
+    "metric": "promotion_success_rate",
+    "direction": "decrease",
+    "threshold": 0.2,
+    "against": "baseline: reach-v2 arm within this scan",
+    "rationale": "Predict that at least one of the seven non-reach tasks scores at least 0.20 below reach-v2 on untouched development cases 10–39; this identifies a substantial deficit rather than another ceiling."
+  },
+  "protocol": {
+    "script": "scripts/compare_generation_modes.py",
+    "config": "",
+    "command": "python scripts/compare_generation_modes.py --research-mode task-scan --out-dir logs/research/task_scan_s2600",
+    "seeds": [
+      2600,
+      2601,
+      2602,
+      2603,
+      2604,
+      2605,
+      2606,
+      2607,
+      2612,
+      2613,
+      2614,
+      2615,
+      2616,
+      2617,
+      2618,
+      2619
+    ],
+    "manifests": [
+      "config/manifests/push-v2_development.yaml"
+    ],
+    "episodes": 1200,
+    "llm_calls": 16,
+    "code_changes": [
+      "scripts/compare_generation_modes.py (--research-mode task-scan: per task one single-phase structure, 24-candidate independent search on 5 probe cases, winner on 30 disjoint confirmation cases from the same fresh pool)",
+      "tests/test_stage_f.py"
+    ],
+    "needs_gpu": false,
+    "needs_llm": true
+  },
+  "status": "running",
+  "source": "advisor",
+  "falsified_by": "No non-reach task scores at least 0.20 below reach-v2. One generated structure per task makes this reconnaissance, not evidence that a task is intrinsically difficult.",
+  "cost_estimate": {
+    "episodes": 1200,
+    "llm_calls": 16,
+    "wall_time_minutes": 40
+  },
+  "open_question_refs": [
+    3
+  ],
+  "briefing_sha256": "47ffbae0be6e889289ebef62195f45016f4775d001c5ef81e9afb982926a3765",
+  "proposal_call_id": "call_00036",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T07:57:33",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00037, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T075654_call_00037.json"
+  },
+  "run": {
+    "started_at": "2026-10-22T07:57:41",
+    "git_sha": "0f40b0592c4a3aca34b938eae4ff8c8e6821dfbb",
+    "dirty_worktree": true,
+    "log_dir": "logs/research/task_scan_s2600"
+  },
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-22T07:57:33",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00037: manifests built and frozen under logs/research/task_scan_s2600/manifests before generation; probe and confirmation are disjoint slices of one 35-placement pool per task (seeds 2612-2619); default (step-0) screening success taken from the search trace. The advisor's stop-the-GPU-after-run requirement is overridden by the user's standing instruction to keep the box up until the session ends."
+    },
+    {
+      "at": "2026-10-22T07:57:33",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00037, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T07:57:41",
+      "from": "approved",
+      "to": "running",
+      "note": "git 0f40b0592c (dirty)"
+    }
+  ],
+  "created_at": "2026-10-22T07:55:56"
+}

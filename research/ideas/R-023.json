@@ -1,0 +1,72 @@
+{
+  "id": "R-023",
+  "title": "2. Test structural breadth instead of deeper parameter search",
+  "hypothesis": "Missing task-specific controller logic limits the weakest scanned task, so spreading a fixed rollout budget across independent structures will outperform deeper parameter search within one structure.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.15,
+    "against": "baseline: fresh paired single-phase structure with 24 independent parameter candidates",
+    "rationale": "Compare four independently generated structures with six candidates each against one structure with 24 candidates, holding each arm's screening budget fixed. Require a mean gain of at least 0.15 and a positive paired block-level t-interval lower bound; tied success is not improvement."
+  },
+  "protocol": {
+    "script": "scripts/compare_generation_modes.py",
+    "config": "config/two_lane_search_v2.yaml",
+    "command": "gpu run -- python scripts/compare_generation_modes.py --research-mode structure-breadth --config config/two_lane_search_v2.yaml --scan-dir logs/research/task_scan_s2600 --task-selection lowest-promotion-success --task-tie-break lexicographic --require-scan-success-below 0.80 --block-seeds 2630,2631,2632,2633,2634,2635 --manifest-seeds 2640,2641,2642,2643,2644,2645 --generation-mode single-phase --schema-source existing --seedless --bc-steps 0 --control-structures 1 --control-candidates-per-structure 24 --treatment-structures 4 --treatment-candidates-per-structure 6 --share-anchor-prefix 6 --search-method independent --include-default --selector success-then-progress --screen-cases 0:5 --promotion-cases 10:40 --model gpt-6.1-sol --reasoning-effort high --temperature 1 --max-repair-per-candidate 1 --manifest-dir config/manifests/research/structure_breadth_s2630 --output logs/research/structure_breadth_s2630 --no-promote",
+    "seeds": [
+      2630,
+      2631,
+      2632,
+      2633,
+      2634,
+      2635,
+      2640,
+      2641,
+      2642,
+      2643,
+      2644,
+      2645
+    ],
+    "manifests": [
+      "config/manifests/research/structure_breadth_s2630/selected_task_development_s2640.yaml",
+      "config/manifests/research/structure_breadth_s2630/selected_task_development_s2641.yaml",
+      "config/manifests/research/structure_breadth_s2630/selected_task_development_s2642.yaml",
+      "config/manifests/research/structure_breadth_s2630/selected_task_development_s2643.yaml",
+      "config/manifests/research/structure_breadth_s2630/selected_task_development_s2644.yaml",
+      "config/manifests/research/structure_breadth_s2630/selected_task_development_s2645.yaml"
+    ],
+    "episodes": 1620,
+    "llm_calls": 48,
+    "code_changes": [
+      "scripts/compare_generation_modes.py: add structure-breadth mode; freeze task selection before follow-up generation and do not reuse scanned structures or outcomes as evaluation data. This changes structural breadth, unlike D-014's generator comparison or D-016's selector comparison.",
+      "scripts/compare_generation_modes.py: generate four structures per block with identical unchanged prompts; use the first as the control and share its first six candidate evaluations. Each arm screens 24 candidates; the union contains 42. Select one winner per arm and evaluate both on the same 30 fresh cases.",
+      "scripts/compare_generation_modes.py: report six block-level paired differences and their t interval; preserve the existing promotion gate and perform no automatic promotion. Budget is 6 × (42 × 5 + 2 × 30) episodes; 48 LLM calls is the ceiling including one correction per slot.",
+      "config/manifests/research/structure_breadth_s2630/: add six frozen development manifests and selected-task provenance.",
+      "config/experiment_seed_ledger.jsonl: reserve seeds only if the scan qualifies a task. This follow-up needs separate user approval; the implementer must stop the remote afterward."
+    ],
+    "needs_gpu": false,
+    "needs_llm": true
+  },
+  "status": "proposed",
+  "source": "advisor",
+  "falsified_by": "A paired interval upper bound below 0.15 refutes the predicted gain; an upper bound at or below zero also refutes the directional mechanism. An interval containing zero is inconclusive; the resolving measurement is the paired success difference over additional independent generation blocks on fresh development manifests. Skip execution if the scan has no task below 0.80.",
+  "cost_estimate": {
+    "episodes": 1620,
+    "llm_calls": 48,
+    "wall_time_minutes": 70
+  },
+  "open_question_refs": [
+    3,
+    4
+  ],
+  "briefing_sha256": "47ffbae0be6e889289ebef62195f45016f4775d001c5ef81e9afb982926a3765",
+  "proposal_call_id": "call_00036",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [],
+  "created_at": "2026-10-22T07:55:56"
+}

@@ -1,20 +1,23 @@
 # Research state
 
-_Generated 2026-10-22T07:51:08 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T07:57:41 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 0 |
+| running | 1 |
 | approved | 0 |
-| proposed | 0 |
+| proposed | 1 |
 | decided | 18 |
 | rejected | 3 |
 
 ## Needs attention
 
-- Nothing open. Run `python scripts/research.py propose` to ask the advisor for ideas.
+- **R-022** [running] 1. Scan eight tasks for failures of seedless generation plus search
+  - run the protocol, then `python scripts/research.py record R-022 --results <json>`
+- **R-023** [proposed] 2. Test structural breadth instead of deeper parameter search
+  - USER decides: `python scripts/research.py approve R-023` or `reject R-023 --reason ...`
 
 ## Last 5 decisions
 

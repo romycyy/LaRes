@@ -578,6 +578,112 @@ def run_pick_place_suite(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  R-022: where does the D-014 recipe (single-phase + 24-candidate search) fail?
+# ---------------------------------------------------------------------------
+
+#: task -> (generation block seed, MT1 pool seed). Probe = first 5 placements, confirmation = next 30 (disjoint).
+SCAN_TASKS = {
+    "reach-v2": (2600, 2612), "door-open-v2": (2601, 2613), "door-close-v2": (2602, 2614),
+    "drawer-open-v2": (2603, 2615), "drawer-close-v2": (2604, 2616), "window-open-v2": (2605, 2617),
+    "window-close-v2": (2606, 2618), "button-press-v2": (2607, 2619),
+}
+SCAN_PROBE, SCAN_CONFIRMATION = 5, 30
+
+
+def scan_summary(rows, reference="reach-v2", margin=0.20) -> dict:
+    """Per task: confirmation success of the searched winner and the untrained probe score; which tasks fall at
+    least ``margin`` below the reference task (an invalid structure scores 0)."""
+    ref = rows[reference]["confirmation_success"]
+    below = sorted(t for t, r in rows.items() if t != reference and ref - r["confirmation_success"] >= margin)
+    worst = min((t for t in rows if t != reference), key=lambda t: (rows[t]["confirmation_success"], t))
+    return {"reference": reference, "reference_success": ref, "tasks_at_least_margin_below": below,
+            "largest_drop": ref - rows[worst]["confirmation_success"], "weakest_task": worst, "by_task": rows}
+
+
+def run_task_scan(args) -> int:
+    import multiprocessing as mp
+
+    sys.path.insert(0, _SCRIPT_DIR)
+    import compare_child_vs_parent as cvp
+    from lares.eval import EvaluationManifest
+
+    os.makedirs(args.out_dir, exist_ok=True)
+    entries = [(g, "generation_block", f"R-022 task scan: {task} generation block") for task, (g, _) in SCAN_TASKS.items()]
+    entries += [(q, "mt1_pool", f"R-022 task scan: {task} probe and confirmation pool") for task, (_, q) in SCAN_TASKS.items()]
+    print(f"  task scan over {list(SCAN_TASKS)}; seeds: {cvp.ensure_entries_reserved(entries, args.out_dir)}")
+    if args.reserve_only:
+        return 0
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise SystemExit("the task scan needs OPENAI_API_KEY")
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    manifest_dir = os.path.join(args.out_dir, "manifests")
+    paths = {}
+    for task, (_, pool) in SCAN_TASKS.items():     # frozen before any generation
+        full, _ = cvp.fresh_manifest(task, pool, SCAN_PROBE + SCAN_CONFIRMATION, 150, manifest_dir, role="scan")
+        for role, part in (("probe", full.head(SCAN_PROBE)), ("confirmation", full.slice(SCAN_PROBE, SCAN_PROBE + SCAN_CONFIRMATION))):
+            path = os.path.join(manifest_dir, f"{task}_{role}_s{pool}.yaml")
+            if not os.path.exists(path):
+                part.save(path)
+            paths[(task, role)] = path
+    slots_path = os.path.join(args.out_dir, "slots.json")
+    if os.path.exists(slots_path):
+        with open(slots_path, encoding="utf-8") as f:
+            slots = json.load(f)
+    else:
+        slots = []
+        for task, (block, _) in SCAN_TASKS.items():
+            task_args = SimpleNamespace(**{**vars(args), "env_name": task})
+            final, n = generate_one(load_policy_prompt_assets(task), "", os.path.join(args.out_dir, "generation", task),
+                                    task_args, generator="single_phase")
+            entry = {"task": task, "seed": block, "valid": bool(final.valid), "attempts": n,
+                     "stage": (final.validation or {}).get("stage"), "errors": (final.validation or {}).get("errors")}
+            if final.valid:
+                path = os.path.join(args.out_dir, "structures", f"{task}.py")
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write(final.code)
+                entry["source_path"] = path
+            slots.append(entry)
+            print(f"  {task}: valid={final.valid} after {n} attempt(s)", flush=True)
+        with open(slots_path, "w", encoding="utf-8") as f:
+            json.dump(slots, f, indent=2)
+    jobs = []
+    for s in slots:
+        if s["valid"]:
+            with open(s["source_path"], encoding="utf-8") as f:
+                jobs.append({"slot": s["task"], "source": f.read(), "search_seed": s["seed"], "env_name": s["task"],
+                             "selectors": ["original"], "probe_manifest": os.path.abspath(paths[(s["task"], "probe")]),
+                             "confirmation_manifest": os.path.abspath(paths[(s["task"], "confirmation")])})
+    with mp.get_context("spawn").Pool(processes=min(8, max(1, len(jobs)))) as pool:
+        out = pool.map(suite_job, jobs)
+    results = {r["slot"]: r for r in out}
+    rows = {}
+    for s in slots:
+        r = results.get(s["task"])
+        rows[s["task"]] = {
+            "valid": s["valid"], "attempts": s["attempts"],
+            "confirmation_success": float(np.mean(list(r["confirmed"][str(r["picks"]["original"])].values()))) if r else 0.0,
+            "untrained_probe_success": r["trace"][0]["success"] if r else 0.0,
+            "candidates_with_probe_success": sum(t["success"] > 0 for t in r["trace"]) if r else 0,
+            "best_probe_success": max(t["success"] for t in r["trace"]) if r else 0.0,
+        }
+    summary = scan_summary(rows)
+    summary["episodes"] = {k: int(sum(r["episodes"][k] for r in out)) for k in ("probe", "confirmation")}
+    summary["llm_attempts"] = int(sum(s["attempts"] for s in slots))
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2)
+    with open(os.path.join(args.out_dir, "results.json"), "w", encoding="utf-8") as f:
+        json.dump(out, f, indent=2)
+    for task, row in rows.items():
+        print(f"  {task:<18} {row}")
+    print(f"  below reach by >= 0.20: {summary['tasks_at_least_margin_below']}; weakest {summary['weakest_task']} "
+          f"(drop {summary['largest_drop']:+.3f}); episodes {summary['episodes']}; LLM attempts {summary['llm_attempts']}")
+    return 0
+
+
 def parse_args():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--env-name", default="push-v2")
@@ -591,7 +697,7 @@ def parse_args():
     p.add_argument(
         "--out-dir", default=os.path.join(_PROJECT_ROOT, "logs", "generation_modes")
     )
-    p.add_argument("--research-mode", choices=sorted(RESEARCH_ARMS) + ["pick-place-suite"], default="")
+    p.add_argument("--research-mode", choices=sorted(RESEARCH_ARMS) + ["pick-place-suite", "task-scan"], default="")
     p.add_argument("--generation-seeds", type=int, nargs="+", default=[])
     p.add_argument("--search-seeds", type=int, nargs="+", default=[])
     p.add_argument("--probe-seed", type=int)
@@ -606,6 +712,8 @@ def separator(title):
 
 def main():
     args = parse_args()
+    if args.research_mode == "task-scan":
+        return run_task_scan(args)
     if args.research_mode == "pick-place-suite":
         return run_pick_place_suite(args)
     if args.research_mode:
