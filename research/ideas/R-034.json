@@ -1,0 +1,89 @@
+{
+  "id": "R-034",
+  "title": "Transport expert-trace edits across assembly parent structures",
+  "hypothesis": "Whole-controller edits conditioned on successful expert placement traces can repair upstream phase alignment as well as seating, removing dependence on a recoverable assembly parent.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.5,
+    "against": "Matched summary-only whole-controller edits of the same three parents",
+    "rationale": "A mean gain of 0.50 across two fresh parents and the unrecoverable D-020 parent would demonstrate substantial transport beyond the previously tested parent."
+  },
+  "protocol": {
+    "script": "scripts/compare_generation_modes.py",
+    "config": "",
+    "command": "python scripts/compare_generation_modes.py --assembly-study parent-transfer --pool-seed 3800 --out-dir logs/research/assembly_parent_transport",
+    "seeds": [
+      3800,
+      3801,
+      3802,
+      3803,
+      3804,
+      3805,
+      3806,
+      3807
+    ],
+    "manifests": [
+      "config/manifests/push-v2_development.yaml"
+    ],
+    "episodes": 205,
+    "llm_calls": 16,
+    "code_changes": [
+      "scripts/compare_generation_modes.py (--assembly-study parent-transfer; built beside R-032's code instead of a research.py subcommand)"
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "running",
+  "source": "advisor",
+  "falsified_by": "An upper confidence bound below +0.50 refutes the predicted effect size; zero trace-arm success on the unrecoverable parent refutes that rescue component. An interval including zero is inconclusive; the resolving measurement is another independent parent/edit pair.",
+  "cost_estimate": {
+    "episodes": 205,
+    "llm_calls": 16,
+    "wall_time_minutes": 45
+  },
+  "open_question_refs": [
+    0,
+    3,
+    9
+  ],
+  "briefing_sha256": "c1f3f9681836b0a739983e0851caf95148f2fc2464e5c6e3c7f20045d6c7c1e1",
+  "proposal_call_id": "call_00059",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T10:20:53",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00060, run_as_is) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T102044_call_00060.json"
+  },
+  "run": {
+    "started_at": "2026-10-22T10:21:37",
+    "git_sha": "4f2d8113e885f270115cce4765e90ad5f4a55ac3",
+    "dirty_worktree": true,
+    "log_dir": "logs/research/assembly_parent_transport"
+  },
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-22T10:20:53",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00060, run_as_is) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T10:21:35",
+      "from": "approved",
+      "to": "approved",
+      "note": "implemented in compare_generation_modes.py (reusing R-032's trace, edit and evaluation code) rather than a new research.py subcommand; seeds 3800 demos, 3801 parent probe, 3802 evaluation, 3803-3804 fresh parents, 3805-3807 edits"
+    },
+    {
+      "at": "2026-10-22T10:21:37",
+      "from": "approved",
+      "to": "running",
+      "note": "git 4f2d8113e8 (dirty)"
+    }
+  ],
+  "created_at": "2026-10-22T10:19:43"
+}

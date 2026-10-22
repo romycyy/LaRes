@@ -1,20 +1,25 @@
 # Research state
 
-_Generated 2026-10-22T10:16:18 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T10:21:37 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 0 |
-| approved | 0 |
-| proposed | 0 |
+| running | 1 |
+| approved | 1 |
+| proposed | 1 |
 | decided | 29 |
 | rejected | 4 |
 
 ## Needs attention
 
-- Nothing open. Run `python scripts/research.py propose` to ask the advisor for ideas.
+- **R-034** [running] Transport expert-trace edits across assembly parent structures
+  - run the protocol, then `python scripts/research.py record R-034 --results <json>`
+- **R-035** [approved] Find another recoverable terminal-phase plateau
+  - `python scripts/research.py start R-035` then run its command
+- **R-036** [proposed] Plateau-triggered trace repair versus exploration restart
+  - USER decides: `python scripts/research.py approve R-036` or `reject R-036 --reason ...`
 
 ## Last 5 decisions
 

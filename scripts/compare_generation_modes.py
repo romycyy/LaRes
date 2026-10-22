@@ -1807,6 +1807,127 @@ def run_hammer_transfer(args) -> int:
     return finish(f"trace - summary-only {a['mean']:+.3f} [{a['low']}, {a['high']}]; success {summary['success']}")
 
 
+# ---------------------------------------------------------------------------
+#  R-034: do expert-trace edits transfer across assembly parents (two fresh, one unrecoverable)?
+# ---------------------------------------------------------------------------
+
+WHOLE_CONTROLLER_REQUEST = """Below is a controller for this task. It does not reliably seat the nut on the peg. A scripted
+expert solves this task; it succeeded on {successes} of {episodes} demonstration episodes.
+
+Rewrite the controller so that it succeeds on its own; no expert is available. You may change any part of it. Keep
+the class name GeneratedPolicy, read observations only through self.obs_field, and declare every parameter with
+get_param_ranges.
+
+```python
+{parent}
+```"""
+UNRECOVERABLE_PARENT = "assembly_first"   # D-021: the expert could not complete its lifted grasps
+
+
+def run_assembly_parent_transfer(args) -> int:
+    sys.path.insert(0, _SCRIPT_DIR)
+    import compare_child_vs_parent as cvp
+    from lares.core.obs_schema import get_obs_schema
+    from lares.core.training_pipeline import load_policy_prompt_assets as assets
+    from lares.eval import make_manifest_env
+    from lares.eval.runner import PolicyActor, evaluate_manifest
+    from lares.eval.stats import t_interval, win_loss_tie
+    from lares.fitting.structure_bank import instantiate_source
+
+    base, task = int(args.pool_seed), "assembly-v2"   # 3800 demos, 3801 parent probe, 3802 eval, 3803-4 fresh, 3805-7 edits
+    os.makedirs(args.out_dir, exist_ok=True)
+    entries = [(base, "mt1_pool", "R-034: expert demonstrations"), (base + 1, "mt1_pool", "R-034: parent diagnostics probe"),
+               (base + 2, "mt1_pool", "R-034: evaluation manifest"),
+               (base + 3, "generation_block", "R-034: fresh parent 1"), (base + 4, "generation_block", "R-034: fresh parent 2")]
+    entries += [(base + 5 + k, "generation_block", f"R-034: edits of parent {k}") for k in range(3)]
+    print(f"  seeds: {cvp.ensure_entries_reserved(entries, args.out_dir)}")
+    if args.reserve_only:
+        return 0
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise SystemExit("R-034 needs OPENAI_API_KEY")
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    schema, mdir = get_obs_schema(task), os.path.join(args.out_dir, "manifests")
+    demo, _ = cvp.fresh_manifest(task, base, 10, 150, mdir, role="demo")
+    probe, _ = cvp.fresh_manifest(task, base + 1, 5, 150, mdir, role="probe", also_disjoint_from=[demo])
+    full, _ = cvp.fresh_manifest(task, base + 2, 50, 150, mdir, role="eval", also_disjoint_from=[demo, probe])
+    cases = full.slice(10, 40)
+    # Parents frozen before any demonstration or edit: the archived unrecoverable one and two fresh generations.
+    parents = {}
+    src, _, _ = D020_POLICIES[UNRECOVERABLE_PARENT]
+    with open(os.path.join(_PROJECT_ROOT, src), encoding="utf-8") as f:
+        parents["archived_unrecoverable"] = {"source": f.read(), "origin": src}
+    for k, g in ((1, base + 3), (2, base + 4)):
+        final, n = generate_one(assets(task), "", os.path.join(args.out_dir, "parents", f"fresh{k}"),
+                                SimpleNamespace(**{**vars(args), "env_name": task}), max_repair=1)
+        parents[f"fresh{k}"] = {"source": final.code if final.valid else None, "origin": f"generation seed {g}",
+                                "valid": bool(final.valid), "attempts": n}
+    episodes, diagnostics = {"demo": 0, "probe": 0, "eval": 0}, {}
+    probe_env = make_manifest_env(probe, probe.resolve_pool(), 200)
+    for name, p in parents.items():
+        if p["source"] is None:
+            diagnostics[name] = None
+            continue
+        pol = instantiate_source(p["source"], 39, 4, schema=schema)
+        pol.fixed_action_scale = 0.1
+        r = evaluate_manifest(PolicyActor(pol, name=name), probe, probe_env, max_steps=150)
+        episodes["probe"] += len(r.episodes)
+        diagnostics[name] = r.success_rate
+    traces = collect_expert_traces(task, demo, make_manifest_env(demo, demo.resolve_pool(), 200), schema)
+    episodes["demo"] += len(demo)
+    print(f"  parents {list(parents)} probe success {diagnostics}; expert demos {traces['successes']}/{len(demo)}", flush=True)
+    summary = {"parents": {k: {x: v for x, v in p.items() if x != "source"} for k, p in parents.items()},
+               "parent_probe_success": diagnostics, "demo_successes": traces["successes"]}
+    if traces["successes"] < 2:
+        summary.update(outcome="inconclusive: fewer than two successful expert demonstrations", episodes=episodes)
+        with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+            json.dump(summary, f, indent=2)
+        return 0
+    block = trace_block(traces).replace("Successful expert continuations after your lift",
+                                        "Successful expert episodes after the expert lifted the nut")
+    env = make_manifest_env(full, full.resolve_pool(), 200)
+    ids, outcomes, edits = sorted(c.case_id for c in cases.episodes), {}, {}
+    for name, p in parents.items():
+        for arm in ("summary", "expert_trace"):
+            label = f"{name}_{arm}"
+            if p["source"] is None:          # an invalid fresh parent is not replaced: both its arms fail
+                outcomes[label], edits[label] = {c: 0.0 for c in ids}, {"valid": False, "reason": "invalid parent"}
+                continue
+            request = WHOLE_CONTROLLER_REQUEST.replace("{successes}", str(traces["successes"])).replace(
+                "{episodes}", str(len(demo))).replace("{parent}", p["source"].strip())
+            if arm == "expert_trace":
+                request += "\n" + block
+            code, rec = make_edit(request, os.path.join(args.out_dir, "edits", label), args, allow_correction=True)
+            edits[label] = {k: v for k, v in rec.items() if k != "code"}
+            if code is None:
+                outcomes[label] = {c: 0.0 for c in ids}
+            else:
+                pol = instantiate_source(code, 39, 4, schema=schema)
+                pol.fixed_action_scale = 0.1
+                r = evaluate_manifest(PolicyActor(pol, name=label), cases, env, max_steps=150)
+                episodes["eval"] += len(r.episodes)
+                outcomes[label] = {e.case_id: float(e.success) for e in r.episodes}
+            print(f"  {label}: valid={rec['valid']} corrected={rec.get('corrected')} success "
+                  f"{np.mean(list(outcomes[label].values())):.2f}", flush=True)
+    per_parent = {}
+    for name in parents:
+        d = [outcomes[f"{name}_expert_trace"][c] - outcomes[f"{name}_summary"][c] for c in ids]
+        per_parent[name] = {"trace": float(np.mean(list(outcomes[f"{name}_expert_trace"].values()))),
+                            "summary": float(np.mean(list(outcomes[f"{name}_summary"].values()))),
+                            **t_interval(d), **win_loss_tie(d)}
+    parent_level = [per_parent[n]["mean"] for n in parents]
+    avg = [float(np.mean([outcomes[f"{n}_expert_trace"][c] - outcomes[f"{n}_summary"][c] for n in parents])) for c in ids]
+    summary.update(paired_success_difference=float(np.mean(parent_level)), parent_level=t_interval(parent_level),
+                   placement_level={**t_interval(avg), **win_loss_tie(avg)}, per_parent=per_parent, edits=edits, episodes=episodes)
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2, default=str)
+    pl = summary["parent_level"]
+    print(f"  trace - summary across parents: {pl['mean']:+.3f} [{pl['low']}, {pl['high']}]; per parent "
+          f"{ {n: (v['trace'], v['summary']) for n, v in per_parent.items()} }; episodes {episodes}", flush=True)
+    return 0
+
+
 def run_task_scan(args) -> int:
     import multiprocessing as mp
 
@@ -1908,7 +2029,7 @@ def parse_args():
     p.add_argument("--scan-set", choices=["default", "hard"], default="default")
     p.add_argument("--assembly-study", choices=["reciprocal-handoff", "expert-fit-vs-numerical", "targeted-placement-edit",
                                                 "breadth-vs-depth", "trace-edit-suite", "expert-only-traces",
-                                                "hammer-transfer"],
+                                                "hammer-transfer", "parent-transfer"],
                    default="")
     p.add_argument("--pool-seed", type=int)
     p.add_argument("--demo-cases", type=int, default=5, help="trace-edit-suite: learner-to-expert handoff demonstrations")
@@ -1942,6 +2063,8 @@ def main():
         return run_assembly_expert_traces(args)
     if args.assembly_study == "hammer-transfer":
         return run_hammer_transfer(args)
+    if args.assembly_study == "parent-transfer":
+        return run_assembly_parent_transfer(args)
     if args.research_mode == "contact-regime-scan":
         return run_contact_regime_scan(args)
     if args.research_mode == "task-scan":

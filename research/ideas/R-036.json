@@ -1,0 +1,71 @@
+{
+  "id": "R-036",
+  "title": "Plateau-triggered trace repair versus exploration restart",
+  "hypothesis": "A trace-conditioned repair triggered by an exploration plateau supplies missing phase geometry more efficiently than restarting generation, improving the two-lane pipeline's promoted incumbent.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.3,
+    "against": "Budget-matched fresh-generation restart from the identical two-lane checkpoint",
+    "rationale": "A 0.30 improvement in final incumbent success would justify integrating a conditional repair step rather than merely demonstrating another successful standalone edit."
+  },
+  "protocol": {
+    "script": "scripts/run_full_evolution.py",
+    "config": "config/two_lane_search_v2.yaml",
+    "command": "gpu run -- python scripts/run_full_evolution.py --config config/two_lane_search_v2.yaml --plateau-repair-ablation --task assembly-v2 --blocks 2 --seeds 3820,3821,3822,3823,3824,3825,3826,3827,3828,3829,3830,3831 --plateau-candidates 24 --probe-cases 5 --arms expert-trace-repair,fresh-generation-restart --expert-demos 10 --trace-count 2 --trace-start-rise 0.03 --trace-stride 4 --candidates-per-arm 24 --include-declared-candidate --promotion-cases 30 --freeze-fittable-lane --bc-steps 0 --max-repair-per-candidate 1 --model gpt-6.1-sol --reasoning-effort high --temperature 1 --out-dir logs/research/two_lane_plateau_repair",
+    "seeds": [
+      3820,
+      3821,
+      3822,
+      3823,
+      3824,
+      3825,
+      3826,
+      3827,
+      3828,
+      3829,
+      3830,
+      3831
+    ],
+    "manifests": [
+      "logs/research/two_lane_plateau_repair/block_0/manifests/probe.yaml",
+      "logs/research/two_lane_plateau_repair/block_0/manifests/expert_demos.yaml",
+      "logs/research/two_lane_plateau_repair/block_0/manifests/promotion.yaml",
+      "logs/research/two_lane_plateau_repair/block_1/manifests/probe.yaml",
+      "logs/research/two_lane_plateau_repair/block_1/manifests/expert_demos.yaml",
+      "logs/research/two_lane_plateau_repair/block_1/manifests/promotion.yaml"
+    ],
+    "episodes": 970,
+    "llm_calls": 12,
+    "code_changes": [
+      "scripts/run_full_evolution.py: add the ablation flags and conditional trace-evidence hook using the existing two-lane driver and R-032 evidence builder. Fork an identical checkpoint only when the exploration structure has zero successes after 24 numerical candidates. Do not substitute a known successful edited parent.",
+      "Keep the fittable lane unchanged across forks, restricted to the five permitted bank parents, with fitting disabled. Evaluate those five at declared values on five probes each. Generated and repaired structures remain exploration-lane structures. Each triggered fork receives one generation/edit slot, one possible validity correction, and 24 candidate evaluations including declared values; only the repair arm receives expert traces.",
+      "After per-idea approval, freeze manifests and checkpoints in the out-dir. Charge shared demonstrations to both arms. Per block budget: 120 exploration probes + 25 bank probes + 30 shared-incumbent evaluations + 10 demonstrations + 240 fork probes + 60 candidate promotion evaluations. Use disjoint probe/demo manifests and development 10-39 for promotion. Enforce the existing strictly positive paired t lower-bound rule; ties retain the incumbent. Report trigger frequency, per-block final-incumbent differences, and declared-value repair performance separately."
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "proposed",
+  "source": "advisor",
+  "falsified_by": "Both triggered blocks tie or lose to restart, or the paired upper bound is below +0.30. Intervals including zero are inconclusive; the resolving measurement is another independently triggered pipeline block. No triggered block means the integration question was not tested.",
+  "cost_estimate": {
+    "episodes": 970,
+    "llm_calls": 12,
+    "wall_time_minutes": 105
+  },
+  "open_question_refs": [
+    0,
+    3,
+    9
+  ],
+  "briefing_sha256": "c1f3f9681836b0a739983e0851caf95148f2fc2464e5c6e3c7f20045d6c7c1e1",
+  "proposal_call_id": "call_00059",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [],
+  "created_at": "2026-10-22T10:19:43"
+}

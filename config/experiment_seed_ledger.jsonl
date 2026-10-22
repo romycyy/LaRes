@@ -239,3 +239,11 @@
 {"seed": 3724, "namespace": "generation_block", "use": "R-033: parent generation and search", "artifact": "logs/trace_generalisation/hammer_s3720", "recorded_at": "2026-10-22T10:09:55", "backfilled": false}
 {"seed": 3725, "namespace": "generation_block", "use": "R-033 block 0 edits", "artifact": "logs/trace_generalisation/hammer_s3720", "recorded_at": "2026-10-22T10:09:55", "backfilled": false}
 {"seed": 3726, "namespace": "generation_block", "use": "R-033 block 1 edits", "artifact": "logs/trace_generalisation/hammer_s3720", "recorded_at": "2026-10-22T10:09:55", "backfilled": false}
+{"seed": 3800, "namespace": "mt1_pool", "use": "R-034: expert demonstrations", "artifact": "logs/research/assembly_parent_transport", "recorded_at": "2026-10-22T10:21:39", "backfilled": false}
+{"seed": 3801, "namespace": "mt1_pool", "use": "R-034: parent diagnostics probe", "artifact": "logs/research/assembly_parent_transport", "recorded_at": "2026-10-22T10:21:39", "backfilled": false}
+{"seed": 3802, "namespace": "mt1_pool", "use": "R-034: evaluation manifest", "artifact": "logs/research/assembly_parent_transport", "recorded_at": "2026-10-22T10:21:39", "backfilled": false}
+{"seed": 3803, "namespace": "generation_block", "use": "R-034: fresh parent 1", "artifact": "logs/research/assembly_parent_transport", "recorded_at": "2026-10-22T10:21:39", "backfilled": false}
+{"seed": 3804, "namespace": "generation_block", "use": "R-034: fresh parent 2", "artifact": "logs/research/assembly_parent_transport", "recorded_at": "2026-10-22T10:21:39", "backfilled": false}
+{"seed": 3805, "namespace": "generation_block", "use": "R-034: edits of parent 0", "artifact": "logs/research/assembly_parent_transport", "recorded_at": "2026-10-22T10:21:39", "backfilled": false}
+{"seed": 3806, "namespace": "generation_block", "use": "R-034: edits of parent 1", "artifact": "logs/research/assembly_parent_transport", "recorded_at": "2026-10-22T10:21:39", "backfilled": false}
+{"seed": 3807, "namespace": "generation_block", "use": "R-034: edits of parent 2", "artifact": "logs/research/assembly_parent_transport", "recorded_at": "2026-10-22T10:21:39", "backfilled": false}

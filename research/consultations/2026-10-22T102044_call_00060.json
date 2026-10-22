@@ -1,0 +1,40 @@
+{
+  "ideas": [
+    {
+      "id": "R-034",
+      "recommendation": "run_as_is",
+      "reasoning": "At 205 simulator episodes and at most 16 LLM calls, this most directly tests parent dependence while isolating trace evidence from numerical search. Its weakest point is three parent/edit pairs sharing one demonstration set, which limits generalization beyond those parents. falsified_by: an upper confidence bound below 0.50 refutes the predicted paired_success_difference increase of 0.50 versus matched summary-only whole-controller edits; zero trace-arm success on the archived parent refutes rescue, while an interval including zero is inconclusive and requires another independent parent/edit pair.",
+      "suggested_changes": [],
+      "depends_on": []
+    },
+    {
+      "id": "R-035",
+      "recommendation": "revise",
+      "reasoning": "This can identify a second repair testbed for at most 555 simulator episodes and 6 LLM calls, but finding one is sufficient before testing trace transfer there. Its weakest point is that successful expert takeover alone does not distinguish terminal geometry from upstream failure. falsified_by: every expert-qualified scanned task fails the predeclared learner-plateau or terminal-recoverability criteria; if no expert qualifies, the question is inconclusive and requires a reliable expert's success_rate on the frozen confirmation cases.",
+      "suggested_changes": [
+        "Reuse scripts/research.py and config/two_lane_search_v2.yaml; process the frozen task order sequentially and stop after the first confirmed recoverable terminal plateau. Retain seeds 3810-3818 without reallocating skipped task seeds; the maximum remains 555 episodes and 6 LLM calls, while first-task qualification costs 185 episodes and at most 2 calls.",
+        "Before generation, freeze task-specific observable terminal-entry criteria and five confirmation case IDs. Save takeover checkpoints from those existing confirmation trajectories; require all five to reach terminal entry before applying the >=3/5 successful-takeover criterion. Missing checkpoints mean terminal recoverability was not established, with no replacement cases or extra diagnostic rollouts.",
+        "Retain the prediction: metric promotion_success_rate, direction decrease, threshold 0.90 versus the task-matched scripted expert on the same 30 confirmation cases, together with zero learner successes. Keep confirmation separate from probe selection and freeze all manifests in the run out-dir with at most 50 placements per pool seed."
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "R-036",
+      "recommendation": "defer",
+      "reasoning": "At 970 simulator episodes and at most 12 LLM calls, this tests operational value against restart, but R-034 addresses its parent-transfer prerequisite much more cheaply. Only two blocks and a conditional trigger make it vulnerable to spending heavily without obtaining a decisive integration comparison. falsified_by: both triggered blocks tie or lose, or the paired upper bound falls below the predicted paired_success_difference increase of 0.30 versus budget-matched fresh-generation restart; an interval including zero is inconclusive and requires another independent triggered block, while no triggers leave integration untested.",
+      "suggested_changes": [],
+      "depends_on": [
+        "R-034"
+      ]
+    }
+  ],
+  "order": [
+    "R-034",
+    "R-035",
+    "R-036"
+  ],
+  "next_step": "Have Claude Code execute R-034 first via gpu run using seeds 3800-3807, frozen disjoint manifests in its out-dir with at most 50 placements per pool seed, and one validity correction per slot, keeping the GPU up for the session.",
+  "call_id": "call_00060",
+  "briefing_sha256": "3fafbfb2faa47e6167e50688b8c5eb617a5325c59565eae57c872a142846918e",
+  "question": "Delegated approve/reject (run_as_is = approve, drop = reject, revise = approve after changes, defer = leave proposed). One validity correction per edit is standard (D-027). Manifests in run out-dirs (<= 50 placements per pool seed); GPU stays up for the session. Approve at most two, in order."
+}
