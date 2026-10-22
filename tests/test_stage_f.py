@@ -747,3 +747,43 @@ class TestTaskScan(unittest.TestCase):
         self.assertAlmostEqual(out["largest_drop"], 0.3)
         self.assertEqual(set(cgm.SCAN_TASKS), {"reach-v2", "door-open-v2", "door-close-v2", "drawer-open-v2",
                                                  "drawer-close-v2", "window-open-v2", "window-close-v2", "button-press-v2"})
+
+
+class TestHandoff(unittest.TestCase):
+    """R-025: the handoff fires only after the predeclared lift-and-near streak; the summary pairs within placements."""
+
+    def test_trigger_needs_three_consecutive_lifted_and_near_steps(self):
+        from lares.repair import interventions as iv
+
+        policy = instantiate_source(PARENT_SOURCE, 39, 4, schema=SCHEMA)
+        try:
+            actor = iv.HandoffActor(policy, "push-v2", SCHEMA, iv.HANDOFF_LEARNER_THEN_EXPERT)
+        except Exception as exc:  # noqa: BLE001 - no MetaWorld expert on this machine
+            self.skipTest(f"expert unavailable: {exc}")
+        import numpy as np
+
+        def obs(z, gap):
+            o = np.zeros(39)
+            o[4:7] = [0.0, 0.6, z]
+            o[0:3] = [0.0, 0.6 + gap, z]
+            return o
+
+        actor.reset(None)
+        for z, gap in ((0.02, 0.0), (0.06, 0.0), (0.06, 0.1), (0.06, 0.0), (0.06, 0.0)):
+            actor.act(obs(z, gap))
+        self.assertFalse(actor.handed_off)
+        actor.act(obs(0.06, 0.0))
+        self.assertTrue(actor.handed_off)
+        self.assertEqual(actor.handoff_step, 5)
+
+    def test_summary_pairs_structures_within_placements(self):
+        sys.path.insert(0, os.path.join(_PROJECT_ROOT, "scripts"))
+        import compare_generation_modes as cgm
+
+        zero, one = {"a": 0.0, "b": 0.0}, {"a": 1.0, "b": 0.0}
+        outcomes = {"uninterrupted": {"s1": zero, "s2": zero}, "learner_then_expert": {"s1": one, "s2": zero},
+                    "expert_then_learner": {"s1": zero, "s2": zero}}
+        handoffs = {"learner_then_expert": {"s1": one, "s2": zero}, "expert_then_learner": {"s1": one, "s2": one}}
+        out = cgm.handoff_summary(outcomes, handoffs)
+        self.assertAlmostEqual(out["paired_success_difference"], 0.25)
+        self.assertAlmostEqual(out["by_structure"]["s1"]["handoff_reach_rate"]["expert_then_learner"], 0.5)

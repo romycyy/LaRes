@@ -1,0 +1,83 @@
+{
+  "id": "R-025",
+  "title": "Localize the bottleneck with reciprocal post-lift handoffs",
+  "hypothesis": "Assembly fails because of post-lift control rather than irreversible grasp errors, so an expert suffix can complete learner-produced grasps.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.3,
+    "against": "baseline: uninterrupted execution of the two frozen D-020 assembly policies",
+    "rationale": "A 30-point gain would identify a recoverable post-lift bottleneck; success must come without releasing and regrasping the nut."
+  },
+  "protocol": {
+    "script": "scripts/compare_generation_modes.py",
+    "config": "",
+    "command": "python scripts/compare_generation_modes.py --assembly-study reciprocal-handoff --pool-seed 3400 --out-dir logs/assembly_handoff_s3400",
+    "seeds": [
+      3400
+    ],
+    "manifests": [
+      "config/manifests/push-v2_development.yaml"
+    ],
+    "episodes": 210,
+    "llm_calls": 0,
+    "code_changes": [
+      "lares/repair/interventions.py (HandoffActor: one state-triggered handoff between a policy and the scripted expert)",
+      "scripts/compare_generation_modes.py (--assembly-study reciprocal-handoff)",
+      "tests/test_stage_f.py"
+    ],
+    "needs_gpu": false,
+    "needs_llm": false
+  },
+  "status": "running",
+  "source": "advisor",
+  "falsified_by": "With a reliable full expert, the upper paired confidence bound for learner-prefix/expert-suffix improvement is below 0.30. An interval including zero is inconclusive; the resolving measurement is the same paired handoff contrast on another fresh 30-case development manifest.",
+  "cost_estimate": {
+    "episodes": 210,
+    "llm_calls": 0,
+    "wall_time_minutes": 25
+  },
+  "open_question_refs": [
+    6,
+    9
+  ],
+  "briefing_sha256": "d18d77bda33c11e605ad127c61365649d4a75c779ecf96c1bde41b091a7c409c",
+  "proposal_call_id": "call_00042",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T08:29:56",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00043, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T082826_call_00043.json"
+  },
+  "run": {
+    "started_at": "2026-10-22T08:29:57",
+    "git_sha": "6b257e9c5903ba059d3848a1a52dafc1fddc479a",
+    "dirty_worktree": true,
+    "log_dir": "logs/assembly_handoff_s3400"
+  },
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-22T08:29:56",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00043: manifest in the out dir from pool seed 3400 (cases 10-39 of 50); full-expert controls audit trigger reachability; no-handoff cases stay in the denominator; fixed-two-structure placement-level interval; GPU kept up per the user"
+    },
+    {
+      "at": "2026-10-22T08:29:56",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00043, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T08:29:57",
+      "from": "approved",
+      "to": "running",
+      "note": "git 6b257e9c59 (dirty)"
+    }
+  ],
+  "created_at": "2026-10-22T08:27:09"
+}

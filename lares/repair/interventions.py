@@ -215,3 +215,64 @@ def available_gates(policy, obs) -> list:
             {"gate": name, "forceable": gate_override_is_effective(policy, name, obs)}
         )
     return out
+
+
+# ---------------------------------------------------------------------------
+#  State-triggered handoff (R-025)
+# ---------------------------------------------------------------------------
+
+HANDOFF_LEARNER_THEN_EXPERT = "learner_then_expert"
+HANDOFF_EXPERT_THEN_LEARNER = "expert_then_learner"
+#: Predeclared trigger (advisor consult call_00043): the object at least 3 cm above its start, the end effector within
+#: 4 cm of it, for three consecutive steps. Positions are read through the task's schema.
+HANDOFF_LIFT_M, HANDOFF_NEAR_M, HANDOFF_CONSECUTIVE = 0.03, 0.04, 3
+
+
+class HandoffActor(Actor):
+    """One episode's control passes once between a policy and the scripted expert, at a state trigger.
+
+    ``learner_then_expert`` lets the policy grasp and lift, then hands the rest to the expert;
+    ``expert_then_learner`` is the reciprocal. Simulator state is untouched at the handoff, so the second controller
+    starts from exactly the state the first left. ``handed_off`` and ``handoff_step`` record whether and when it happened.
+    """
+
+    action_mode = ACTION_MODE_DETERMINISTIC
+
+    def __init__(self, policy, env_name: str, schema, direction: str, name=None):
+        from lares.core.training_pipeline import get_expert_policy
+
+        if direction not in (HANDOFF_LEARNER_THEN_EXPERT, HANDOFF_EXPERT_THEN_LEARNER):
+            raise ValueError(f"unknown handoff direction {direction!r}")
+        self.policy, self.schema, self.direction = policy, schema, direction
+        self.expert = get_expert_policy(env_name)
+        self.name = name or f"handoff:{direction}"
+        self.policy.eval()
+        self.reset(None)
+
+    def reset(self, case) -> None:
+        self._step, self._z0, self._streak = 0, None, 0
+        self.handed_off, self.handoff_step = False, None
+
+    def _triggered(self, obs) -> bool:
+        o = np.asarray(obs, dtype=np.float64)[None, :]
+        tcp = np.asarray(self.schema.slice(o, "tcp")).reshape(-1)
+        obj = np.asarray(self.schema.slice(o, "obj")).reshape(-1)
+        if self._z0 is None:
+            self._z0 = float(obj[2])
+        ok = obj[2] - self._z0 >= HANDOFF_LIFT_M and np.linalg.norm(tcp - obj) <= HANDOFF_NEAR_M
+        self._streak = self._streak + 1 if ok else 0
+        return self._streak >= HANDOFF_CONSECUTIVE
+
+    def act(self, obs) -> np.ndarray:
+        step = self._step
+        self._step += 1
+        if not self.handed_off and self._triggered(obs):
+            self.handed_off, self.handoff_step = True, step
+        first_is_learner = self.direction == HANDOFF_LEARNER_THEN_EXPERT
+        use_learner = first_is_learner != self.handed_off
+        if use_learner:
+            obs_t = torch.as_tensor(np.asarray(obs), dtype=torch.float32).unsqueeze(0)
+            with torch.no_grad():
+                mean, _ = self.policy(obs_t)
+            return torch.tanh(mean).squeeze(0).numpy().astype(np.float64)
+        return np.clip(self.expert.get_action(np.asarray(obs, dtype=np.float64)), -1.0, 1.0)

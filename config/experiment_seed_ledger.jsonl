@@ -189,3 +189,4 @@
 {"seed": 3335, "namespace": "mt1_pool", "use": "R-024 soccer-v2: schema audit placement", "artifact": "logs/research/hard_task_scan_s3300", "recorded_at": "2026-10-22T08:15:49", "backfilled": false}
 {"seed": 3320, "namespace": "generation_block", "use": "R-024 repeat: generation and search seed", "artifact": "logs/research/hard_task_scan_s3300", "recorded_at": "2026-10-22T08:15:49", "backfilled": false}
 {"seed": 3321, "namespace": "mt1_pool", "use": "R-024 repeat: probe and confirmation pool", "artifact": "logs/research/hard_task_scan_s3300", "recorded_at": "2026-10-22T08:15:49", "backfilled": false}
+{"seed": 3400, "namespace": "mt1_pool", "use": "R-025 assembly handoff: development manifest", "artifact": "logs/assembly_handoff_s3400", "recorded_at": "2026-10-22T08:29:59", "backfilled": false}

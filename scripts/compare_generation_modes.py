@@ -722,6 +722,121 @@ def run_hard_scan(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  R-025: where does assembly break? Reciprocal state-triggered handoffs between the D-020 policies and the expert
+# ---------------------------------------------------------------------------
+
+D020_POLICIES = {   # label -> (frozen structure, search seed); the winner is re-derived from the saved result's pick
+    "assembly_first": ("logs/research/hard_task_scan_s3300/structures/assembly-v2.py", 3300,
+                       "logs/research/hard_task_scan_s3300/result_assembly-v2.json"),
+    "assembly_repeat": ("logs/research/hard_task_scan_s3300/structures/assembly-v2_repeat.py", 3320,
+                        "logs/research/hard_task_scan_s3300/result_assembly-v2_repeat.json"),
+}
+
+
+def frozen_d020_policy(label):
+    """Rebuild a D-020 searched winner: same source, same sampler seed, the recorded candidate index."""
+    from lares.core.obs_schema import get_obs_schema
+    from lares.fitting.optimizers import state_parameters_sha256
+    from lares.fitting.structure_bank import instantiate_source
+    from lares.search import rollout_search
+
+    src, seed, result = D020_POLICIES[label]
+    with open(os.path.join(_PROJECT_ROOT, src), encoding="utf-8") as f:
+        original = instantiate_source(f.read(), 39, 4, schema=get_obs_schema("assembly-v2"))
+    original.fixed_action_scale = 0.1
+    with open(os.path.join(_PROJECT_ROOT, result), encoding="utf-8") as f:
+        pick = int(json.load(f)["picks"]["original"])
+    policy = rollout_search.independent_candidates(original, seed)[pick][1]
+    return policy, {"source": src, "search_seed": seed, "candidate_index": pick,
+                    "parameters_sha256": state_parameters_sha256(policy.state_dict())}
+
+
+def handoff_summary(outcomes, handoffs) -> dict:
+    """``outcomes[arm][label] = {case: success}``. Primary: learner-then-expert minus uninterrupted, the two structures
+    averaged within each placement, t over placements (conditional on these two frozen structures)."""
+    from lares.eval.stats import t_interval, win_loss_tie
+
+    labels = sorted(outcomes["uninterrupted"])
+    cases = sorted(outcomes["uninterrupted"][labels[0]])
+
+    def contrast(arm, labs=labels):
+        d = [float(np.mean([outcomes[arm][l][c] - outcomes["uninterrupted"][l][c] for l in labs])) for c in cases]
+        return {**t_interval(d), **win_loss_tie(d)}
+
+    rate = lambda d: float(np.mean(list(d.values())))  # noqa: E731
+    return {
+        "paired_success_difference": contrast("learner_then_expert")["mean"],
+        "learner_then_expert_minus_uninterrupted": contrast("learner_then_expert"),
+        "expert_then_learner_minus_uninterrupted": contrast("expert_then_learner"),
+        "by_structure": {l: {"success": {arm: rate(outcomes[arm][l]) for arm in outcomes if l in outcomes[arm]},
+                             "learner_then_expert_minus_uninterrupted": contrast("learner_then_expert", [l]),
+                             "handoff_reach_rate": {arm: float(np.mean(list(handoffs[arm][l].values())))
+                                                    for arm in handoffs if l in handoffs[arm]}} for l in labels},
+    }
+
+
+def run_assembly_handoff(args) -> int:
+    sys.path.insert(0, _SCRIPT_DIR)
+    import compare_child_vs_parent as cvp
+    from lares.core.obs_schema import get_obs_schema
+    from lares.eval import ExpertActor, make_manifest_env
+    from lares.eval.runner import PolicyActor, run_episode
+    from lares.repair.interventions import (HANDOFF_CONSECUTIVE, HANDOFF_EXPERT_THEN_LEARNER, HANDOFF_LEARNER_THEN_EXPERT,
+                                            HANDOFF_LIFT_M, HANDOFF_NEAR_M, HandoffActor)
+
+    os.makedirs(args.out_dir, exist_ok=True)
+    print(f"  seeds: {cvp.ensure_entries_reserved([(args.pool_seed, 'mt1_pool', 'R-025 assembly handoff: development manifest')], args.out_dir)}")
+    if args.reserve_only:
+        return 0
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    task, schema = "assembly-v2", get_obs_schema("assembly-v2")
+    full, _ = cvp.fresh_manifest(task, args.pool_seed, 50, 150, os.path.join(args.out_dir, "manifests"), role="handoff")
+    cases = full.slice(10, 40)          # development cases 10-39, as the protocol names them
+    env = make_manifest_env(full, full.resolve_pool(), 200)
+    policies = {label: frozen_d020_policy(label) for label in D020_POLICIES}
+    outcomes = {"uninterrupted": {}, "learner_then_expert": {}, "expert_then_learner": {}, "full_expert": {}}
+    handoffs = {"learner_then_expert": {}, "expert_then_learner": {}}
+    traces = []
+    expert = ExpertActor(task)
+    outcomes["full_expert"]["expert"] = {c.case_id: float(run_episode(expert, env, c, max_steps=150, schema=schema).success)
+                                         for c in cases.episodes}
+    for label, (policy, meta) in policies.items():
+        outcomes["uninterrupted"][label] = {c.case_id: float(run_episode(PolicyActor(policy, name=label), env, c,
+                                                                         max_steps=150, schema=schema).success)
+                                            for c in cases.episodes}
+        for arm, direction in (("learner_then_expert", HANDOFF_LEARNER_THEN_EXPERT),
+                               ("expert_then_learner", HANDOFF_EXPERT_THEN_LEARNER)):
+            actor = HandoffActor(policy, task, schema, direction, name=f"{label}:{arm}")
+            outcomes[arm][label], handoffs[arm][label] = {}, {}
+            for c in cases.episodes:
+                ep = run_episode(actor, env, c, max_steps=150, schema=schema)
+                outcomes[arm][label][c.case_id] = float(ep.success)
+                handoffs[arm][label][c.case_id] = float(actor.handed_off)
+                traces.append({"label": label, "arm": arm, "case": c.case_id, "success": float(ep.success),
+                               "handed_off": actor.handed_off, "handoff_step": actor.handoff_step})
+        print(f"  {label}: uninterrupted {np.mean(list(outcomes['uninterrupted'][label].values())):.2f}  "
+              f"learner->expert {np.mean(list(outcomes['learner_then_expert'][label].values())):.2f} "
+              f"(handoff {np.mean(list(handoffs['learner_then_expert'][label].values())):.2f})  "
+              f"expert->learner {np.mean(list(outcomes['expert_then_learner'][label].values())):.2f} "
+              f"(handoff {np.mean(list(handoffs['expert_then_learner'][label].values())):.2f})", flush=True)
+    expert_rate = float(np.mean(list(outcomes["full_expert"]["expert"].values())))
+    summary = handoff_summary({k: v for k, v in outcomes.items() if k != "full_expert"}, handoffs)
+    summary.update(full_expert_success=expert_rate, localization_valid=expert_rate >= 0.90,
+                   trigger={"lift_m": HANDOFF_LIFT_M, "near_m": HANDOFF_NEAR_M, "consecutive_steps": HANDOFF_CONSECUTIVE},
+                   policies={k: v[1] for k, v in policies.items()}, manifest_id=cases.manifest_id,
+                   episodes=len(cases) * (1 + 3 * len(policies)))
+    for name, data in (("summary.json", summary), ("outcomes.json", outcomes), ("traces.json", traces)):
+        with open(os.path.join(args.out_dir, name), "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, default=str)
+    p = summary["learner_then_expert_minus_uninterrupted"]
+    print(f"  full expert {expert_rate:.2f} (localization valid: {summary['localization_valid']}); learner->expert minus "
+          f"uninterrupted {p['mean']:+.3f} [{p['low']}, {p['high']}]; episodes {summary['episodes']}", flush=True)
+    return 0
+
+
 def run_task_scan(args) -> int:
     import multiprocessing as mp
 
@@ -820,6 +935,8 @@ def parse_args():
     )
     p.add_argument("--research-mode", choices=sorted(RESEARCH_ARMS) + ["pick-place-suite", "task-scan"], default="")
     p.add_argument("--scan-set", choices=["default", "hard"], default="default")
+    p.add_argument("--assembly-study", choices=["reciprocal-handoff"], default="")
+    p.add_argument("--pool-seed", type=int)
     p.add_argument("--generation-seeds", type=int, nargs="+", default=[])
     p.add_argument("--search-seeds", type=int, nargs="+", default=[])
     p.add_argument("--probe-seed", type=int)
@@ -834,6 +951,8 @@ def separator(title):
 
 def main():
     args = parse_args()
+    if args.assembly_study == "reciprocal-handoff":
+        return run_assembly_handoff(args)
     if args.research_mode == "task-scan":
         return run_hard_scan(args) if args.scan_set == "hard" else run_task_scan(args)
     if args.research_mode == "pick-place-suite":

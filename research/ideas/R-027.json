@@ -1,0 +1,54 @@
+{
+  "id": "R-027",
+  "title": "Trade half the search depth for a second assembly structure",
+  "hypothesis": "Assembly seating requires control structure absent from the current policies, so a second independently generated structure will outperform additional parameter search at equal rollout cost.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "baseline: 48-candidate independent search within each frozen D-020 assembly structure",
+    "rationale": "A 10-point gain would justify buying structural alternatives rather than doubling numerical depth; both arms receive 48 candidate evaluations per block."
+  },
+  "protocol": {
+    "script": "scripts/compare_generation_modes.py",
+    "config": "",
+    "command": "test \"${APPROVED_ASSEMBLY_BREADTH:-no}\" = yes && gpu run -- python scripts/compare_generation_modes.py --assembly-study breadth-vs-depth --source-decision D-020 --seed 3420 --model gpt-6.1-sol --reasoning-effort high --temperature 1 --out-dir logs/assembly_breadth_s3420",
+    "seeds": [
+      3420
+    ],
+    "manifests": [
+      "logs/assembly_breadth_s3420/manifests/assembly-v2_development_s3420.yaml"
+    ],
+    "episodes": 840,
+    "llm_calls": 4,
+    "code_changes": [
+      "scripts/compare_generation_modes.py: add the stated budget-allocation suite using existing single-phase generation, rollout_search and success-then-progress selection; no fitting, lift-aware selector or correction-feedback experiment.",
+      "Use the two frozen D-020 structures as separate blocks. Generate one new independent structure per block without showing it the anchor. Depth evaluates 48 candidates from the anchor; breadth evaluates 24 from the anchor and 24 from the new structure. Share the identical first 24 anchor evaluations between arms. Allow at most one validity correction per new structure: two generation calls and at most two correction calls total, with invalid slots retained rather than resampled.",
+      "Freeze one 50-case development manifest before generation: probe cases 0-4 and screen/promotion cases 10-39. Each block costs 72 unique candidates times five probe cases plus two winners times 30 screen cases, or 420 episodes. Report both block contrasts and their paired t interval; no difference claim when the interval includes zero and no promotion on ties. Unlike dropped R-023 and ceiling-limited generator comparisons, this changes allocation between structure families and parameter depth on a reproducibly unsolved task. Require per-idea approval and stop the remote allocation afterward."
+    ],
+    "needs_gpu": false,
+    "needs_llm": true
+  },
+  "status": "proposed",
+  "source": "advisor",
+  "falsified_by": "The upper paired confidence bound for breadth-minus-depth success is below 0.10. A paired interval including zero is inconclusive; the resolving measurement is the same allocation contrast in two additional independent generation blocks.",
+  "cost_estimate": {
+    "episodes": 840,
+    "llm_calls": 4,
+    "wall_time_minutes": 90
+  },
+  "open_question_refs": [
+    3,
+    4
+  ],
+  "briefing_sha256": "d18d77bda33c11e605ad127c61365649d4a75c779ecf96c1bde41b091a7c409c",
+  "proposal_call_id": "call_00042",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [],
+  "created_at": "2026-10-22T08:27:09"
+}

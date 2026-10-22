@@ -1,20 +1,25 @@
 # Research state
 
-_Generated 2026-10-22T08:24:12 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T08:29:57 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 0 |
-| approved | 0 |
-| proposed | 0 |
+| running | 1 |
+| approved | 1 |
+| proposed | 1 |
 | decided | 20 |
 | rejected | 4 |
 
 ## Needs attention
 
-- Nothing open. Run `python scripts/research.py propose` to ask the advisor for ideas.
+- **R-025** [running] Localize the bottleneck with reciprocal post-lift handoffs
+  - run the protocol, then `python scripts/research.py record R-025 --results <json>`
+- **R-026** [approved] Test expert gradients against matched numerical proposals
+  - `python scripts/research.py start R-026` then run its command
+- **R-027** [proposed] Trade half the search depth for a second assembly structure
+  - USER decides: `python scripts/research.py approve R-027` or `reject R-027 --reason ...`
 
 ## Last 5 decisions
 
