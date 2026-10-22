@@ -27,7 +27,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The upper paired confidence bound for fitted-minus-numerical success is below 0.10. An interval including zero is inconclusive; the resolving measurement is the same frozen winners' paired success on another fresh development manifest, not their imitation losses.",
   "cost_estimate": {
@@ -51,12 +51,294 @@
     "started_at": "2026-10-22T08:33:07",
     "git_sha": "fb3415626f6743fccde0160411c076467b3a418a",
     "dirty_worktree": true,
-    "log_dir": "logs/assembly_fitting_s3410"
+    "log_dir": "logs/assembly_fitting_s3410",
+    "finished_at": "2026-10-22T08:35:08"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.0,
+      "t95": [
+        0.0,
+        0.0
+      ],
+      "wlt": [
+        0,
+        0,
+        30
+      ],
+      "audit": {
+        "demo_successes": 10,
+        "demos": 10
+      },
+      "per_structure": {
+        "assembly_first": {
+          "meta": {
+            "source": "logs/research/hard_task_scan_s3300/structures/assembly-v2.py",
+            "search_seed": 3300,
+            "candidate_index": 17,
+            "parameters_sha256": "19d8f975dd2db319b981b5922e4e5486159fc9f53d01e2c1ec55fba0ad80f24b"
+          },
+          "feasibility": {
+            "ok": true,
+            "parameters_with_gradient": [
+              "align_radius",
+              "closed_threshold",
+              "contact_radius",
+              "grasp_height",
+              "grip_strength",
+              "hover_height",
+              "lift_clearance",
+              "release_radius",
+              "servo_radius",
+              "sharpness",
+              "w_approach",
+              "w_insert",
+              "w_retreat",
+              "w_transport"
+            ],
+            "scale_parameters_frozen": []
+          },
+          "fitted_selected_step": 0,
+          "fitted_trace": [
+            {
+              "step": 0,
+              "success": 0.0,
+              "progress": 0.2306823638843684
+            },
+            {
+              "step": 100,
+              "success": 0.0,
+              "progress": 0.1450073076361336
+            },
+            {
+              "step": 300,
+              "success": 0.0,
+              "progress": 0.1330340293889555
+            },
+            {
+              "step": 600,
+              "success": 0.0,
+              "progress": 0.13224718694742593
+            },
+            {
+              "step": 1000,
+              "success": 0.0,
+              "progress": 0.12677493535966383
+            }
+          ],
+          "numerical_trace": [
+            {
+              "index": 0,
+              "kind": "original",
+              "success": 0.0,
+              "progress": 0.2306823638843684
+            },
+            {
+              "index": 1,
+              "kind": "local",
+              "success": 0.0,
+              "progress": 0.23399439412979278
+            },
+            {
+              "index": 2,
+              "kind": "global",
+              "success": 0.0,
+              "progress": -0.2552598007938905
+            },
+            {
+              "index": 3,
+              "kind": "local",
+              "success": 0.0,
+              "progress": 0.05122326038026977
+            },
+            {
+              "index": 4,
+              "kind": "global",
+              "success": 0.0,
+              "progress": 0.021336838370337386
+            }
+          ],
+          "numerical_pick": 1,
+          "fitted_parameters_sha256": "19d8f975dd2db319b981b5922e4e5486159fc9f53d01e2c1ec55fba0ad80f24b",
+          "success": {
+            "fitted": 0.0,
+            "numerical": 0.0
+          },
+          "paired": {
+            "n": 30,
+            "mean": 0.0,
+            "se": 0.0,
+            "low": 0.0,
+            "high": 0.0,
+            "p_value": 1.0,
+            "median": 0.0,
+            "level": 0.95,
+            "wins": 0,
+            "losses": 0,
+            "ties": 30
+          }
+        },
+        "assembly_repeat": {
+          "meta": {
+            "source": "logs/research/hard_task_scan_s3300/structures/assembly-v2_repeat.py",
+            "search_seed": 3320,
+            "candidate_index": 1,
+            "parameters_sha256": "c604a51e44d7af0dcf6d1d7b7870c6067a8294e6f55d55a852996c5372b4d254"
+          },
+          "feasibility": {
+            "ok": true,
+            "parameters_with_gradient": [
+              "align_radius",
+              "approach_radius",
+              "carry_clearance",
+              "closed_threshold",
+              "damping",
+              "gate_sharpness",
+              "goal_bias",
+              "grasp_height",
+              "grasp_radius",
+              "grip_strength",
+              "hold_radius",
+              "hover_height",
+              "position_gain",
+              "seat_radius",
+              "w_approach",
+              "w_carry",
+              "w_insert"
+            ],
+            "scale_parameters_frozen": []
+          },
+          "fitted_selected_step": 0,
+          "fitted_trace": [
+            {
+              "step": 0,
+              "success": 0.0,
+              "progress": 0.2311429756959144
+            },
+            {
+              "step": 100,
+              "success": 0.0,
+              "progress": 0.15330594411525614
+            },
+            {
+              "step": 300,
+              "success": 0.0,
+              "progress": 0.1539720545791206
+            },
+            {
+              "step": 600,
+              "success": 0.0,
+              "progress": 0.17036976587707248
+            },
+            {
+              "step": 1000,
+              "success": 0.0,
+              "progress": 0.1762014519281452
+            }
+          ],
+          "numerical_trace": [
+            {
+              "index": 0,
+              "kind": "original",
+              "success": 0.0,
+              "progress": 0.2311429756959144
+            },
+            {
+              "index": 1,
+              "kind": "local",
+              "success": 0.0,
+              "progress": 0.22551679736515823
+            },
+            {
+              "index": 2,
+              "kind": "global",
+              "success": 0.0,
+              "progress": -0.0003296741902038602
+            },
+            {
+              "index": 3,
+              "kind": "local",
+              "success": 0.0,
+              "progress": 0.1883136573371853
+            },
+            {
+              "index": 4,
+              "kind": "global",
+              "success": 0.0,
+              "progress": -0.0003296741902038602
+            }
+          ],
+          "numerical_pick": 0,
+          "fitted_parameters_sha256": "c604a51e44d7af0dcf6d1d7b7870c6067a8294e6f55d55a852996c5372b4d254",
+          "success": {
+            "fitted": 0.0,
+            "numerical": 0.0
+          },
+          "paired": {
+            "n": 30,
+            "mean": 0.0,
+            "se": 0.0,
+            "low": 0.0,
+            "high": 0.0,
+            "p_value": 1.0,
+            "median": 0.0,
+            "level": 0.95,
+            "wins": 0,
+            "losses": 0,
+            "ties": 30
+          }
+        }
+      },
+      "episodes": {
+        "demo": 10,
+        "probe": 100,
+        "screen": 120
+      }
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "control is the five-candidate numerical search from the same frozen starting vector, rollout-selected on the same probe; the metric is already fitted minus numerical"
+    },
+    "artifacts": [
+      "logs/assembly_fitting_s3410/summary.json",
+      "logs/assembly_fitting_s3410/manifests"
+    ],
+    "notes": "Frozen D-020 assembly structures; fresh 50-case development pool (seed 3410): expert demonstrations on cases 40-49 (10/10 succeeded), probe 0-4, screen 10-39. Gradient reached the placement parameters of both structures (feasible without changing their code). Imitation of the assembly expert (deterministic MSE, checkpoints 0/100/300/600/1000, rollout-selected) never produced a probe success and steadily lowered goal progress (0.23 at step 0 to 0.13-0.18), so step 0 was kept for both structures; the five numerical candidates also never succeeded. Fitted minus numerical on the 30 screen cases: +0.000 [0, 0] (both 0.00). Upper bound below the predicted +0.10: refuted. Consistent with push-v2's finding that imitating the expert's actions does not transfer to these structures. 230 episodes, 0 LLM calls."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 0.0,
+    "delta": 0.0,
+    "matched": false
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.85,
+      "reasoning": "Fitted minus numerical is +0.000 [0, 0]; both arms score 0.00 on the 30 screen cases, below the predicted +0.10. With reliable demonstrations (10/10) and gradients reaching the placement parameters, imitation of the expert still never produced a probe success and reduced goal progress at every checkpoint, so rollout selection kept step 0. Expert gradients do not coordinate these structures' placement parameters.",
+      "cited_artifacts": [
+        "logs/assembly_fitting_s3410/summary.json"
+      ],
+      "next_experiment": "Parameter-level methods (search, imitation) cannot seat the nut with these two structures; the D-021 handoff shows the needed behaviour exists in the expert. Next: structural changes aimed at the placement phase (e.g. an LLM structural edit with handoff evidence, or more independent structures per R-027).",
+      "recorded_at": "2026-10-22T08:35:09",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.98,
+      "reasoning": "The named numerical-search control was measured, and fitted-minus-numerical paired success was 0.000 with a reported 95% interval of [0.000, 0.000] [logs/assembly_fitting_s3410/summary.json]. Its upper bound is below the predicted +0.10, meeting the approved falsification criterion; the tie does not establish any difference between methods [logs/assembly_fitting_s3410/summary.json]. Both structures selected the unfitted checkpoint, so this result refutes the specified improvement for this protocol, not expert-gradient fitting in general [logs/assembly_fitting_s3410/summary.json]. The experiment consumed 230 simulator episodes and zero LLM calls [logs/assembly_fitting_s3410/summary.json].",
+      "cited_artifacts": [
+        "logs/assembly_fitting_s3410/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T08:35:26",
+      "call_id": "call_00045"
+    }
+  ],
+  "decision_id": "D-022",
   "history": [
     {
       "at": "2026-10-22T08:29:56",
@@ -81,6 +363,18 @@
       "from": "approved",
       "to": "running",
       "note": "git fb3415626f (dirty)"
+    },
+    {
+      "at": "2026-10-22T08:35:08",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=False"
+    },
+    {
+      "at": "2026-10-22T08:35:27",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-022: refuted"
     }
   ],
   "created_at": "2026-10-22T08:27:09"
