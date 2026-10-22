@@ -1,0 +1,100 @@
+{
+  "id": "R-018",
+  "title": "End-to-end: a single-phase, rollout-searched exploration lane raises the search's best held-out success",
+  "hypothesis": "Single-phase generation plus rollout search supplies stronger exploration candidates that survive selection against the unchanged fittable lane and improve the run's selected incumbent.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "the current config/two_lane_search.yaml run (fresh rerun, same model and manifests) — each run's performance incumbent scored on the same fresh confirmation cases",
+    "rationale": "The fittable lane already reaches ~0.98-1.00 (gen0_cand1/cand5), so the headroom at the incumbent is small; 0.05 on fresh cases would show the new lane can supply or beat the incumbent. Secondary: exploration-lane best confirmation success, new vs old (D-014 predicts a large gain)."
+  },
+  "protocol": {
+    "script": "scripts/run_full_evolution.py",
+    "config": "config/two_lane_search.yaml",
+    "command": "for each block b in 0..5: python scripts/run_full_evolution.py --config config/two_lane_search.yaml (run seed 3100+2b) and --config config/two_lane_search_v2.yaml (run seed 3101+2b); then python scripts/evaluate_on_fresh_manifest.py --pool-seed 313b on both incumbents",
+    "seeds": [
+      3100,
+      3101,
+      3102,
+      3103,
+      3104,
+      3105,
+      3106,
+      3107,
+      3108,
+      3109,
+      3110,
+      3111,
+      3130,
+      3131,
+      3132,
+      3133,
+      3134,
+      3135
+    ],
+    "manifests": [
+      "config/manifests/push-v2_development.yaml",
+      "config/manifests/push-v2_train.yaml"
+    ],
+    "episodes": 18600,
+    "llm_calls": 270,
+    "code_changes": [
+      "lares/core/policy_generation.py (exploration lane: single-phase generation with a code-derived idea record)",
+      "lares/core/training_pipeline.py (exploration lane: 24-candidate independent rollout search on the probe, checkpoint tie rule)",
+      "lares/search/schemas.py, lares/search/lanes.py (code-derived ideas and a searched exploration lane, without weakening lineage validation)",
+      "scripts/run_full_evolution.py (run seed)",
+      "config/two_lane_search_v2.yaml (new)",
+      "tests/test_two_lane_search.py"
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "approved",
+  "source": "implementer",
+  "falsified_by": "Upper paired 95% bound below +0.05 for incumbent-vs-incumbent on the fresh cases refutes; an interval spanning zero is inconclusive. Report the exploration-lane comparison separately.",
+  "cost_estimate": {
+    "episodes": 3000,
+    "llm_calls": 45,
+    "wall_time_minutes": 120
+  },
+  "open_question_refs": [
+    "D-014 (R-017)",
+    "D-013 (R-015)",
+    "D-012 (R-016)"
+  ],
+  "briefing_sha256": "",
+  "proposal_call_id": "",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T06:15:28",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00028, 'revise' with changes applied) under the user's 2026-10-22 session delegation; no live spend until the offline audit is done",
+    "consultation": "research/consultations/2026-10-22T061513_call_00028.json"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-22T06:13:39",
+      "from": "",
+      "to": "proposed",
+      "note": "proposed by the implementer after D-014; protocol details (one run each vs replicates, fresh pool seed, lineage for single-phase candidates) left for the advisor consult"
+    },
+    {
+      "at": "2026-10-22T06:15:28",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00028: six paired runs per configuration (seeds 3100-3111), per-block fresh confirmation pool seeds 3130-3135, code-derived idea records explicitly marked, offline enumeration before launch, ceiling 18600 episodes and 270 calls"
+    },
+    {
+      "at": "2026-10-22T06:15:28",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00028, 'revise' with changes applied) under the user's 2026-10-22 session delegation; no live spend until the offline audit is done"
+    }
+  ],
+  "created_at": "2026-10-22T06:13:39"
+}

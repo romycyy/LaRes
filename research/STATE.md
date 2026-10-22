@@ -1,20 +1,21 @@
 # Research state
 
-_Generated 2026-10-22T06:13:13 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T06:15:28 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 0 |
+| approved | 1 |
 | proposed | 0 |
 | decided | 14 |
 | rejected | 3 |
 
 ## Needs attention
 
-- Nothing open. Run `python scripts/research.py propose` to ask the advisor for ideas.
+- **R-018** [approved] End-to-end: a single-phase, rollout-searched exploration lane raises the search's best held-out success
+  - `python scripts/research.py start R-018` then run its command
 
 ## Last 5 decisions
 

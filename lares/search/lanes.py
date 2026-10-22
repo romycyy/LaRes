@@ -36,6 +36,9 @@ import yaml
 from lares.utils.hashing import sha256_file
 from lares.search.schemas import (
     EXPLORATION_LABEL,
+    EXPLORATION_SEARCHED_LABEL,
+    GENERATOR_SINGLE_PHASE,
+    TREATMENT_ROLLOUT_SEARCH,
     FITTABLE_LABEL,
     FITTING_REJECTED,
     LANE_EXPLORATION,
@@ -51,6 +54,12 @@ TOTAL_CANDIDATES = 9
 FITTABLE_SLOTS = 6
 EXPLORATION_SLOTS = 3
 FITTABLE_CHECKPOINTS = (0, 500, 1000)
+#: The exploration lane's two allowed modes: the decided default, and R-018's single-phase generation treated by
+#: independent rollout search on the probe (D-014). Anything else is refused.
+GENERATOR_TWO_PHASE, TREATMENT_ZERO_SHOT = "two_phase", "zero_shot"
+EXPLORATION_MODES = {(GENERATOR_TWO_PHASE, TREATMENT_ZERO_SHOT), (GENERATOR_SINGLE_PHASE, TREATMENT_ROLLOUT_SEARCH)}
+DEFAULT_EXPLORATION = {"generator": GENERATOR_TWO_PHASE, "treatment": TREATMENT_ZERO_SHOT}
+SEARCH_CANDIDATES = 24
 #: Where each decision's data comes from. Stored with the plan and checked on load.
 DATA_ROLES = {
     "checkpoint_selection_data": "probe",
@@ -172,8 +181,18 @@ class SlotSpec:
     lane: str
     reference: ReferenceStructure | None = None
     scope: MutationScope | None = None
+    #: Exploration slots only: ``{"generator", "treatment"[, "search_candidates"]}``; absent means the default.
+    exploration: dict | None = None
+
+    @property
+    def searched(self) -> bool:
+        return bool(self.exploration) and self.exploration.get("treatment") == TREATMENT_ROLLOUT_SEARCH
 
     def lane_metadata(self, seed_bank_sha256: str = "", mutation: dict | None = None) -> dict:
+        if self.lane == LANE_EXPLORATION and self.searched:
+            return {"label": EXPLORATION_SEARCHED_LABEL, "seeded": False, "fitting": "disabled",
+                    "generator": GENERATOR_SINGLE_PHASE, "treatment": TREATMENT_ROLLOUT_SEARCH,
+                    "search_candidates": int(self.exploration.get("search_candidates", SEARCH_CANDIDATES))}
         if self.lane == LANE_EXPLORATION:
             return {"label": EXPLORATION_LABEL, "seeded": False, "fitting": "disabled"}
         meta = {
@@ -215,6 +234,12 @@ class TwoLanePlan:
     @property
     def exploration_slots(self) -> list:
         return [s for s in self.slots if s.lane == LANE_EXPLORATION]
+
+    @property
+    def exploration_mode(self) -> dict:
+        """The exploration lane's generator and treatment (every exploration slot shares one)."""
+        modes = [dict(s.exploration) for s in self.exploration_slots if s.exploration]
+        return modes[0] if modes else dict(DEFAULT_EXPLORATION)
 
     def slot(self, index: int) -> SlotSpec:
         return self.slots[int(index)]
@@ -271,6 +296,7 @@ class TwoLanePlan:
             "seed_bank": {"path": self.seed_bank_path, "sha256": self.seed_bank_sha256},
             "structure_roles": {"path": self.roles_path, "sha256": self.roles_sha256},
             "non_fittable_controls": list(self.controls),
+            "exploration_lane": self.exploration_mode,
             "allocation": "fixed by configuration (4 reach-push references x 1, simple_damped_push x 2); never ranked",
             **DATA_ROLES,
             "slots": [
@@ -388,8 +414,18 @@ def load_two_lane_plan(block: dict) -> TwoLanePlan:
     if len(slots) != FITTABLE_SLOTS and not problems:
         problems.append(f"fittable_lane.slots must declare {FITTABLE_SLOTS} slots, got {len(slots)}")
     problems.extend(check_fixed_allocation(slots, roles))
+    raw_mode = block.get("exploration_lane") or {}
+    exploration = {"generator": str(raw_mode.get("generator", DEFAULT_EXPLORATION["generator"])),
+                   "treatment": str(raw_mode.get("treatment", DEFAULT_EXPLORATION["treatment"]))}
+    if (exploration["generator"], exploration["treatment"]) not in EXPLORATION_MODES:
+        problems.append(f"exploration_lane {exploration} is not one of {sorted(EXPLORATION_MODES)}")
+    if exploration["treatment"] == TREATMENT_ROLLOUT_SEARCH:
+        exploration["search_candidates"] = int(raw_mode.get("search_candidates", SEARCH_CANDIDATES))
+        if exploration["search_candidates"] != SEARCH_CANDIDATES:
+            problems.append(f"exploration_lane.search_candidates must be {SEARCH_CANDIDATES} (D-014's protocol)")
     for i in range(counts[2] if counts[2] > 0 else 0):
-        slots.append(SlotSpec(slot=len(slots), lane=LANE_EXPLORATION))
+        slots.append(SlotSpec(slot=len(slots), lane=LANE_EXPLORATION,
+                              exploration=None if exploration == DEFAULT_EXPLORATION else exploration))
     if problems:
         raise LanePlanError("two-lane plan refused:\n  " + "\n  ".join(problems))
     return TwoLanePlan(
@@ -630,11 +666,14 @@ def expected_budget(plan: TwoLanePlan, screen_episodes: int, promotion_episodes:
     the upper bound assumes the two challengers differ.
     """
     nf, ne = len(plan.fittable_slots), len(plan.exploration_slots)
+    searched = plan.exploration_mode.get("treatment") == TREATMENT_ROLLOUT_SEARCH
     fittable_screen = nf * 3 * screen_episodes
-    exploration_screen = ne * screen_episodes
+    # A searched exploration screens its original and its selected candidate and probes every search candidate.
+    exploration_screen = ne * (2 if searched else 1) * screen_episodes
+    exploration_probe = ne * int(plan.exploration_mode.get("search_candidates", 0)) * probe_episodes if searched else 0
     probe = nf * len(plan.checkpoint_steps) * probe_episodes
     promotion_max = 3 * promotion_episodes
-    design_calls = 2
+    design_calls = 1 if searched else 2      # a single-phase exploration lane makes no design call
     implementation_calls = nf + ne
     expected_corrections = expected_correction_rate * (nf + ne)
     return {
@@ -648,9 +687,10 @@ def expected_budget(plan: TwoLanePlan, screen_episodes: int, promotion_episodes:
         "exploration_lane": {
             "candidates": ne,
             "screen_episodes": exploration_screen,
-            "probe_episodes": 0,
+            "probe_episodes": exploration_probe,
             "bc_gradient_steps": 0,
-            "simulator_steps_max": exploration_screen * horizon,
+            "simulator_steps_max": (exploration_screen + exploration_probe) * horizon,
+            **({"mode": plan.exploration_mode} if searched else {}),
         },
         "promotion": {
             "episodes_min": 2 * promotion_episodes,
@@ -660,8 +700,9 @@ def expected_budget(plan: TwoLanePlan, screen_episodes: int, promotion_episodes:
                     "rejected fitting",
         },
         "total": {
-            "episodes_max": fittable_screen + exploration_screen + probe + promotion_max,
-            "simulator_steps_max": (fittable_screen + exploration_screen + probe + promotion_max) * horizon,
+            "episodes_max": fittable_screen + exploration_screen + probe + exploration_probe + promotion_max,
+            "simulator_steps_max": (fittable_screen + exploration_screen + probe + exploration_probe + promotion_max)
+            * horizon,
             "bc_gradient_steps": nf * plan.fittable_budget,
         },
         "llm": {

@@ -1204,8 +1204,10 @@ def generate_two_lane_candidates(
         "policy_fittable_mutations",
     )
     # A plan with no exploration slots (a research protocol, never the two-lane search) makes no exploration call.
+    # A single-phase exploration lane (R-018) writes its code below, one call per slot, with no design call.
+    single_phase_exploration = plan.exploration_mode.get("generator") == "single_phase"
     e_parses, e_calls, e_problems, e_texts = [], [], [], []
-    if exploration:
+    if exploration and not single_phase_exploration:
         exploration_user = prompts["ideas_user"].format(
             n=len(exploration), param_min=param_budget[0], param_max=param_budget[1], **fmt
         )
@@ -1218,7 +1220,7 @@ def generate_two_lane_candidates(
 
     lanes = (
         (fittable, f_parses, f_calls, f_problems, f_texts, STAGE_PROPOSAL),
-        (exploration, e_parses, e_calls, e_problems, e_texts, STAGE_IDEATION),
+        (exploration if not single_phase_exploration else [], e_parses, e_calls, e_problems, e_texts, STAGE_IDEATION),
     )
     with open(os.path.join(dir_path, "Iter_0_designs.json"), "w", encoding="utf-8") as f:
         json.dump(
@@ -1275,10 +1277,72 @@ def generate_two_lane_candidates(
         candidates.extend(implementer.fill(ids[spec.slot], spec.slot, sp, "per_idea", calls, extra_check=extra,
                                            lane_metadata=meta))
 
+    if single_phase_exploration:
+        candidates.extend(_single_phase_exploration(
+            session, prompts, user_content, allocator, make, exploration, ids, dir_path, data_pkl_path, obs_dim,
+            action_dim, env_name, max_repair_per_candidate))
+
     candidates.sort(key=lambda c: (c.slot, c.attempt))
     for c in candidates:
         _save_attempt(dir_path, c)
     return candidates
+
+
+def _single_phase_exploration(session, prompts, user_content, allocator, make, specs, ids, dir_path, data_pkl_path,
+                              obs_dim, action_dim, env_name, max_repair_per_candidate) -> list:
+    """R-018's exploration lane: one single-phase code request per slot and at most one linked correction.
+
+    The generator states no design, so a valid policy gets a code-derived idea (:func:`idea_from_code`). Scale
+    parameters are allowed here, as in the protocol D-014 tested: this lane is never fitted, and actions are
+    deterministic, so a scale parameter cannot change what is executed.
+    """
+    from lares.search.generation import LABEL_CORRECTION, LABEL_GENERATION, attempt_id_for
+    from lares.search.schemas import idea_from_code
+
+    validate = _SlotValidator(dir_path, data_pkl_path, obs_dim, action_dim, env_name, forbid_scale_parameters=False)
+    base_user = user_content + "\n" + prompts["code_output_tip"]
+    messages = [{"role": "system", "content": prompts["initial_system"]}, {"role": "user", "content": base_user}]
+    out = []
+
+    def attach(candidate):
+        candidate.policy, candidate.validation = validate(candidate.code, None, candidate.attempt_id)
+        if candidate.valid:
+            candidate.idea = idea_from_code(candidate.policy, candidate.code, f"gen0_idea{candidate.slot}",
+                                            f"single-phase exploration {candidate.slot}")
+        return candidate
+
+    for spec in specs:
+        cid = ids[spec.slot]
+        if session.exhausted:
+            out.append(make(cid, spec.slot, 0, validation={"passed": False, "stage": STAGE_BUDGET,
+                                                           "errors": ["the LLM call budget is spent"]}))
+            continue
+        replies, record = session.call(LABEL_GENERATION, messages, purpose="single_phase_exploration",
+                                       attempt_ids=[attempt_id_for(cid, 0)], transcript_label="policy_generation")
+        text = replies[0] if replies else ""
+        current = attach(make(cid, spec.slot, 0, code=_extract_code_string(text), response=text,
+                              llm_call_ids=[record.call_id],
+                              mapping={"mode": MAPPING_SINGLE_PHASE, "call_id": record.call_id, "choice_index": 0}))
+        out.append(current)
+        corrections = 0
+        while not current.valid and current.code and corrections < max_repair_per_candidate and not session.exhausted:
+            corrections += 1
+            attempt = allocator.next_attempt(cid)
+            aid = attempt_id_for(cid, attempt)
+            repair = messages + [
+                {"role": "assistant", "content": f"```python\n{current.code}\n```"},
+                {"role": "user", "content": _build_error_feedback(current.code, "\n".join(current.validation.get("errors", [])))
+                 + "\n" + prompts["code_output_tip"]},
+            ]
+            fixes, fix_record = session.call(LABEL_CORRECTION, repair, purpose="validation_repair", attempt_ids=[aid],
+                                             transcript_label="policy_repair")
+            text = fixes[0] if fixes else ""
+            current = attach(make(cid, spec.slot, attempt, code=_extract_code_string(text), response=text,
+                                  llm_call_ids=[fix_record.call_id], previous_attempt_id=current.attempt_id,
+                                  mapping={"mode": MAPPING_SINGLE_PHASE, "call_id": fix_record.call_id,
+                                           "corrects": current.attempt_id}))
+            out.append(current)
+    return out
 
 
 def _generate_single_phase(client, args, dir_path, generation, obs_dim, action_dim, env_name, prompts, n,

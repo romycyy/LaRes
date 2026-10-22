@@ -863,3 +863,93 @@ class TestTwoLaneRun(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ---------------------------------------------------------------------------
+#  R-018: the single-phase, rollout-searched exploration lane, through the real orchestrator
+# ---------------------------------------------------------------------------
+
+
+def v2_block():
+    block = config_block()
+    block["exploration_lane"] = {"generator": "single_phase", "treatment": "rollout_search", "search_candidates": 24}
+    return block
+
+
+class TestSearchedExplorationRun(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from lares.search.schemas import EXPLORATION_SEARCHED_LABEL, IDEA_ORIGIN_CODE, ZERO_SHOT_NOT_ASSERTED
+
+        cls.labels = (EXPLORATION_SEARCHED_LABEL, IDEA_ORIGIN_CODE, ZERO_SHOT_NOT_ASSERTED)
+        cls.tmp = tempfile.TemporaryDirectory()
+        cls.root = cls.tmp.name
+        manifest = synthetic_manifest(20, label="push-v2")
+        cls.dev, cls.probe = manifest.head(16), manifest.tail(4)
+        cls.plan = lanes.load_two_lane_plan(v2_block())
+        cls.orchestrator = EvolutionOrchestrator(
+            env_name="push-v2", obs_dim=39, action_dim=4, num_generations=1, pop_size=9, elite_num=2, bc_steps=0,
+            log_dir=cls.root, record_demo_gif=False, dev_manifest=cls.dev, probe_manifest=cls.probe,
+            eval_max_steps=30, bc_batch_size=32, bc_lr=5e-2, max_llm_calls_per_generation=22,
+            promotion_policy=PromotionPolicy(screen_episodes=4, expanded_episodes=12), lane_plan=cls.plan, fit_seed=3101,
+        )
+        envs = PipelineEnvs(development=PushWorld(), rl=PushWorld(), gif=PushWorld(), probe=PushWorld())
+        script = llm_script(cls.plan)
+        script.pop("policy_ideas")
+        script["policy_implement"] = script["policy_implement"][:6]
+        script["policy_generation"] = [fence(POLICY_A), fence(POLICY_B), fence(POLICY_C)]
+        cls.llm = ScriptedLLM(script)
+        train = synthetic_manifest(10, label="push-v2-train").episodes
+        with patch.object(pg, "_call_llm", side_effect=cls.llm), patch.object(
+            pg, "_run_policy_validation_subprocess", return_value=(True, "Success!", "full")
+        ):
+            cls.best = cls.orchestrator.run(MagicMock(), envs, expert_buffer(train), two_lane_args())
+        cls.records = load_records(os.path.join(cls.root, "experiments"))
+        cls.explorations = [r for r in cls.records if r.lineage["lane"] == LANE_EXPLORATION]
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def test_the_lane_makes_no_design_call_and_one_code_call_per_slot(self):
+        self.assertNotIn("policy_ideas", self.llm.labels)
+        self.assertEqual(self.llm.labels.count("policy_generation"), 3)
+
+    def test_explorations_carry_code_derived_ideas_and_the_searched_label(self):
+        label, origin, not_asserted = self.labels
+        self.assertEqual(len(self.explorations), 3)
+        for r in self.explorations:
+            self.assertEqual(r.lineage["lane_metadata"]["label"], label)
+            self.assertEqual(r.lineage["idea"]["origin"], origin)
+            self.assertEqual(r.lineage["idea"]["zero_shot_behavior"], not_asserted)
+            self.assertEqual(r.lineage["status"], "complete")
+
+    def test_explorations_are_searched_on_the_probe_and_never_fitted(self):
+        for r in self.explorations:
+            search = r.fitting["search"]
+            self.assertEqual(len(search["trace"]), 24)
+            self.assertEqual(r.resources["probe_episodes"], 24 * len(self.probe))
+            self.assertEqual(r.resources["bc_gradient_steps"], 0)
+            self.assertEqual(r.resources["wall_time_seconds"]["fitting"], 0.0)
+            self.assertEqual(r.fitting["optimizer"], "rollout_search")
+            self.assertEqual(r.fitting["checkpoint_history"], [])
+            self.assertIn("fitted_screen", r.evaluation["reports"])
+            selected = load_tensor_artifact(self.root, r.fitting["selected_state"])
+            initial = load_tensor_artifact(self.root, r.fitting["initial_state"])
+            self.assertEqual(state_parameters_sha256(selected) == state_parameters_sha256(initial),
+                             search["selected_index"] == 0)
+
+    def test_the_fittable_lane_is_unchanged(self):
+        for r in (r for r in self.records if r.lineage["lane"] == LANE_FITTABLE and r.status != STATUS_INVALID):
+            self.assertEqual([h["step"] for h in r.fitting["checkpoint_history"]], [0, 500, 1000])
+
+    def test_a_searched_record_without_its_trace_is_refused(self):
+        record = copy.deepcopy(self.explorations[0])
+        record.fitting["search"] = {}
+        with self.assertRaises(SchemaError):
+            record.validate()
+
+    def test_the_budget_counts_the_search(self):
+        budget = lanes.expected_budget(self.plan, 4, 12, 4, 30)
+        self.assertEqual(budget["exploration_lane"]["probe_episodes"], 3 * 24 * 4)
+        self.assertEqual(budget["llm"]["design_calls"], 1)

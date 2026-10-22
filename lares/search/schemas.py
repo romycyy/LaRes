@@ -66,6 +66,12 @@ LANE_EXPLORATION = "exploration"
 LANES = (LANE_FITTABLE, LANE_EXPLORATION)
 FITTABLE_LABEL = "reference_seeded_bounded_mutation"
 EXPLORATION_LABEL = "unseeded_exploration"
+#: R-018: an exploration written by single-phase generation and treated by rollout search on the probe (never imitation
+#: fitting). Its idea is derived from the code, not stated by the generator.
+EXPLORATION_SEARCHED_LABEL = "unseeded_searched_exploration"
+EXPLORATION_LABELS = (EXPLORATION_LABEL, EXPLORATION_SEARCHED_LABEL)
+TREATMENT_ROLLOUT_SEARCH = "rollout_search"
+GENERATOR_SINGLE_PHASE = "single_phase"
 #: How a selected step of 0 is recorded: the probe preferred the untrained parameters.
 FITTING_REJECTED = "fitting_rejected"
 
@@ -178,6 +184,14 @@ class IdeaPhase:
         return True
 
 
+IDEA_ORIGIN_LLM = "llm"
+#: The idea was read off generated code (single-phase generation states no design): parameters come from
+#: ``get_param_ranges`` and initial values, and nothing the generator did not say is filled in.
+IDEA_ORIGIN_CODE = "code_derived"
+ZERO_SHOT_NOT_ASSERTED = "not asserted: code-derived idea; the generator stated no expectation"
+NOT_STATED = "not stated (code-derived)"
+
+
 @dataclass
 class PolicyIdea:
     """A design hypothesis concrete enough to instantiate before any training."""
@@ -193,8 +207,14 @@ class PolicyIdea:
     protected_behaviors: list = field(default_factory=list)
     #: Required when the idea exceeds the declared parameter or phase budget.
     complexity_justification: str = ""
+    #: ``llm`` when a generator stated it; ``code_derived`` when it was read off code (see :func:`idea_from_code`).
+    origin: str = IDEA_ORIGIN_LLM
 
     def validate(self, schema=None):
+        _require(self.origin in (IDEA_ORIGIN_LLM, IDEA_ORIGIN_CODE), f"idea origin {self.origin!r} is unknown")
+        _require((self.origin == IDEA_ORIGIN_CODE) == (self.zero_shot_behavior == ZERO_SHOT_NOT_ASSERTED),
+                 f"idea {self.idea_id!r}: only a code-derived idea may leave its zero-shot behaviour unasserted, "
+                 f"and a code-derived idea must say so")
         _require(self.idea_id, "idea needs an id")
         _require(self.name, "idea needs a name")
         _require(len(self.summary) >= 20, "idea summary is too short to implement from")
@@ -278,6 +298,7 @@ class PolicyIdea:
             expected_failure=str(d.get("expected_failure", "")),
             protected_behaviors=[str(x) for x in d.get("protected_behaviors", [])],
             complexity_justification=str(d.get("complexity_justification", "") or ""),
+            origin=str(d.get("origin", IDEA_ORIGIN_LLM) or IDEA_ORIGIN_LLM),
         )
 
     def implementation_brief(self) -> str:
@@ -304,6 +325,29 @@ class PolicyIdea:
             lines.append(f"Must not lose: {'; '.join(self.protected_behaviors)}")
         return "\n".join(lines)
 
+
+
+def idea_from_code(policy, code: str, idea_id: str, name: str) -> PolicyIdea:
+    """A minimal idea read off generated code. Nothing the generator did not state is invented: roles, units, phases
+    and the zero-shot expectation are marked not stated; parameters, ranges and initial values are the code's own."""
+    import re
+
+    ranges = policy.get_param_ranges()
+    parameters = []
+    for pname, param in policy.named_parameters():
+        if pname not in ranges:
+            continue
+        lo, hi = float(ranges[pname][0]), float(ranges[pname][1])
+        parameters.append(IdeaParameter(pname, NOT_STATED, PARAM_GAIN, NOT_STATED,
+                                        float(param.detach().reshape(-1)[0]), (lo, hi)))
+    fields = sorted(set(re.findall(r"obs_field\(\s*obs\s*,\s*[\"']([a-zA-Z_][a-zA-Z0-9_]*)[\"']", code)))
+    return PolicyIdea(
+        idea_id=idea_id, name=name,
+        summary="Code-derived idea: single-phase generation wrote this policy without a stated design.",
+        named_observations=fields,
+        phases=[IdeaPhase("whole policy", NOT_STATED, NOT_STATED)],
+        parameters=parameters, zero_shot_behavior=ZERO_SHOT_NOT_ASSERTED, origin=IDEA_ORIGIN_CODE,
+    )
 
 # ---------------------------------------------------------------------------
 #  MutationProposal
@@ -580,7 +624,10 @@ class ExperimentRecord:
             _require(key not in self.resources, f"{who}: resources.{key} is forbidden; name the stream")
 
         stage = self.validation.get("stage", "")
-        if stage not in PRE_IDEA_STAGES:
+        # A single-phase exploration's idea is read off code that validated; a failed attempt has none to read.
+        idea_exempt = (((lineage.get("lane_metadata") or {}).get("label") == EXPLORATION_SEARCHED_LABEL)
+                       and not self.validation.get("passed"))
+        if stage not in PRE_IDEA_STAGES and not idea_exempt:
             _require(
                 self.idea_id and lineage.get("idea"),
                 f"{who}: a record past ideation must name the idea it implemented",
@@ -643,15 +690,36 @@ class ExperimentRecord:
     def _validate_exploration_lineage(self, lineage):
         who = self.experiment_id
         meta = lineage.get("lane_metadata") or {}
-        _require(meta.get("label") == EXPLORATION_LABEL and meta.get("seeded") is False,
-                 f"{who}: an exploration-lane record must be labelled {EXPLORATION_LABEL!r} and unseeded")
+        _require(meta.get("label") in EXPLORATION_LABELS and meta.get("seeded") is False,
+                 f"{who}: an exploration-lane record must be labelled one of {EXPLORATION_LABELS} and unseeded")
         _require(not self.parent_ids and not self.proposal_id and not lineage.get("proposal"),
                  f"{who}: an unseeded exploration has no parent and no proposal")
+        if meta.get("label") == EXPLORATION_SEARCHED_LABEL:
+            _require(meta.get("generator") == GENERATOR_SINGLE_PHASE and meta.get("treatment") == TREATMENT_ROLLOUT_SEARCH,
+                     f"{who}: a searched exploration names generator {GENERATOR_SINGLE_PHASE!r} and treatment "
+                     f"{TREATMENT_ROLLOUT_SEARCH!r}")
+            idea = lineage.get("idea") or {}
+            _require(not idea or idea.get("origin") == IDEA_ORIGIN_CODE,
+                     f"{who}: a single-phase exploration's idea must be marked code-derived")
 
     def _validate_lane_fitting(self, lane):
         who = self.experiment_id
         step = self.fitting.get("selected_step")
-        if lane == LANE_EXPLORATION:
+        searched = ((self.lineage or {}).get("lane_metadata") or {}).get("label") == EXPLORATION_SEARCHED_LABEL
+        if lane == LANE_EXPLORATION and searched:
+            for key in ("bc_gradient_steps", "bc_objective_evaluations"):
+                _require(int(self.resources.get(key, 0) or 0) == 0, f"{who}: a searched exploration never fits ({key})")
+            _require(float((self.resources.get("wall_time_seconds") or {}).get("fitting", 0.0)) == 0.0,
+                     f"{who}: a searched exploration spent fitting wall time")
+            search = self.fitting.get("search") or {}
+            trace = search.get("trace") or []
+            _require(trace and isinstance(search.get("selected_index"), int) and 0 <= search["selected_index"] < len(trace),
+                     f"{who}: a searched exploration must carry its search trace and the selected candidate's index")
+            _require(int(self.resources.get("probe_episodes", 0) or 0) > 0,
+                     f"{who}: a searched exploration's candidates are scored on the probe")
+            _require(step == 0 and self.fitting.get("checkpoint_history") == [],
+                     f"{who}: a searched exploration has no imitation checkpoints")
+        elif lane == LANE_EXPLORATION:
             for key in ("bc_gradient_steps", "bc_objective_evaluations", "probe_episodes", "probe_environment_steps"):
                 _require(int(self.resources.get(key, 0) or 0) == 0,
                          f"{who}: an exploration consumed {key}; that lane never fits or probes")

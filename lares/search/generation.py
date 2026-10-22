@@ -47,6 +47,7 @@ from lares.utils.hashing import sha256_bytes, sha256_file, sha256_text  # noqa: 
 
 from lares.search.schemas import (  # noqa: F401  (lineage constants re-exported)
     EXPLORATION_LABEL,
+    EXPLORATION_LABELS,
     FITTABLE_LABEL,
     LANE_EXPLORATION,
     LANE_FITTABLE,
@@ -636,8 +637,8 @@ def check_lineage(candidate: GeneratedCandidate, feedback: FeedbackBundle | None
         return problems + _fittable_lineage_problems(candidate)
     if candidate.lane == LANE_EXPLORATION:
         meta = candidate.lane_metadata or {}
-        if meta.get("label") != EXPLORATION_LABEL or meta.get("seeded") is not False:
-            problems.append(f"{candidate.attempt_id}: an exploration must be labelled {EXPLORATION_LABEL!r}, unseeded")
+        if meta.get("label") not in EXPLORATION_LABELS or meta.get("seeded") is not False:
+            problems.append(f"{candidate.attempt_id}: an exploration must be labelled one of {EXPLORATION_LABELS}, unseeded")
         if candidate.proposal is not None:
             problems.append(f"{candidate.attempt_id}: an unseeded exploration has no proposal and no parent")
         return problems

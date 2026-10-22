@@ -1951,6 +1951,40 @@ class EvolutionOrchestrator:
             ),
         )
 
+    def _search_fit(self, policy, probe_env, resources, slot):
+        """R-018: the exploration lane's treatment. Score 24 independent candidates on the probe, keep the best.
+
+        The search seed is derived from the run's fit seed and the slot, so a run is reproducible and slots differ.
+        The returned object has the shape of a fit (states, step 0, no checkpoint history) plus ``search``.
+        """
+        from types import SimpleNamespace
+
+        from lares.fitting.optimizers import objective_config, state_parameters_sha256
+        from lares.search import rollout_search
+
+        initial = copy.deepcopy(policy.state_dict())
+        seed = int(np.random.SeedSequence([int(self.fit_seed), int(slot)]).generate_state(1)[0])
+        started = time.time()
+        found = rollout_search.search(policy, self._rollout_probe(probe_env, self.probe_manifest, resources), seed)
+        resources.add_wall_time("evaluation", time.time() - started)
+        policy.load_state_dict(found["policy"].state_dict())
+        selected = copy.deepcopy(policy.state_dict())
+        diagnostics = {"computed": False, "reason": "rollout search: no imitation objective was evaluated",
+                       "parameters_sha256": state_parameters_sha256(selected), "train_loss": None,
+                       "validation_loss": None}
+        return SimpleNamespace(
+            initial_state=initial, final_state=selected, selected_state=selected, selected_step=0,
+            checkpoint_history=[], bc_gradient_steps=0, objective_evaluations=0, history=[], gradient_norms=None,
+            frozen_parameters=[], final_diagnostics=diagnostics, selected_diagnostics=dict(diagnostics),
+            objective_config=objective_config(
+                self.objective, self.sampling, 0, self.bc_batch_size, self.bc_lr, 1.0, self.fit_seed, [],
+                self.fixed_action_scale, val_fraction=self.val_fraction, split_seed=self.split_seed,
+            ),
+            search={"sampler": rollout_search.SAMPLER, "candidates": rollout_search.CANDIDATES, "seed": seed,
+                    "probe_manifest_id": self.probe_manifest.manifest_id,
+                    "selected_index": int(found["selected_index"]), "trace": found["trace"]},
+        )
+
     def _fit_and_screen(self, candidate, envs, probe_env, args, feedback_bundle):
         """Fit one valid candidate, choose its checkpoint, screen it and record it."""
         from lares.eval.report import CHECKPOINT_FITTED, CHECKPOINT_INTERMEDIATE, CHECKPOINT_ZERO_SHOT
@@ -1959,7 +1993,7 @@ class EvolutionOrchestrator:
         from lares.search import STATUS_EVALUATED, ExperimentRecord, source_hash
         from lares.search.generation import env_identity
         from lares.search.resources import ResourceLedger
-        from lares.search.schemas import FITTING_REJECTED, LANE_EXPLORATION, LANE_FITTABLE
+        from lares.search.schemas import EXPLORATION_SEARCHED_LABEL, FITTING_REJECTED, LANE_EXPLORATION, LANE_FITTABLE
 
         gen = candidate.generation
         cid = candidate.candidate_id
@@ -1968,7 +2002,8 @@ class EvolutionOrchestrator:
         cand_dir = os.path.join(f"gen_{gen}", "candidates", candidate.attempt_id)
         screen = self.screen_manifest
         budget, steps, lane = self._fitting_settings(candidate)
-        zero_shot_only = lane == LANE_EXPLORATION
+        searched = lane == LANE_EXPLORATION and (candidate.lane_metadata or {}).get("label") == EXPLORATION_SEARCHED_LABEL
+        zero_shot_only = lane == LANE_EXPLORATION and not searched
         resources = ResourceLedger()
         llm, exclusive_totals, exclusive_wall = self._llm_evidence(candidate, args)
         resources.add_llm_totals(exclusive_totals)
@@ -1995,6 +2030,11 @@ class EvolutionOrchestrator:
         if zero_shot_only:
             # An unseeded exploration never reads the demonstrations, fits or probes.
             fit = self._zero_shot_fit(policy)
+        elif searched:
+            # R-018: a single-phase exploration is treated by rollout search on the probe, never by imitation.
+            fit = self._search_fit(policy, probe_env, resources, candidate.slot)
+            print(f"    rollout search: candidate {fit.search['selected_index']} of {len(fit.search['trace'])} "
+                  f"selected on the probe ({fit.search['trace'][fit.search['selected_index']]})")
         else:
             probe = self._rollout_probe(probe_env, self.probe_manifest, resources) if steps else None
             started = time.time()
@@ -2045,7 +2085,7 @@ class EvolutionOrchestrator:
                     mid, envs.development, screen, cid, CHECKPOINT_INTERMEDIATE
                 )
                 resources.add_episodes("screen", intermediate_result)
-            bc_stats = self._report_fitting_stats(fit)
+            bc_stats = None if searched else self._report_fitting_stats(fit)
             screen_result, screen_report = self._evaluate_checkpoint(
                 policy, envs.development, screen, cid, CHECKPOINT_FITTED, bc_stats=bc_stats
             )
@@ -2091,7 +2131,7 @@ class EvolutionOrchestrator:
         }
 
         fitting = {
-            "optimizer": None if zero_shot_only else "adam",
+            "optimizer": None if zero_shot_only else ("rollout_search" if searched else "adam"),
             "objective": self.objective,
             "objective_config": fit.objective_config,
             "action_mode": fit.objective_config["execution"],
@@ -2121,6 +2161,9 @@ class EvolutionOrchestrator:
                 fitting["selection_outcome"] = FITTING_REJECTED
             if zero_shot_only:
                 fitting["lane_fitting"] = "disabled: unseeded exploration, evaluated at its initial values"
+            if searched:
+                fitting["lane_fitting"] = "disabled: single-phase exploration, treated by rollout search on the probe"
+                fitting["search"] = fit.search
 
         record = ExperimentRecord(
             experiment_id=candidate.attempt_id,
@@ -2145,7 +2188,7 @@ class EvolutionOrchestrator:
             fitting=fitting,
             evaluation={
                 "manifest_ids": [screen.manifest_id],
-                "probe_manifest_id": self.probe_manifest.manifest_id if probe is not None else None,
+                "probe_manifest_id": (self.probe_manifest.manifest_id if probe is not None or searched else None),
                 "action_mode": screen_report.action_mode,
                 "environment": env_identity(self.env_name),
                 "reports": report_refs,

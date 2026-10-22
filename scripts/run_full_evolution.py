@@ -181,8 +181,8 @@ def load_split(cfg, split: str):
     return manifest, manifest.resolve_pool()
 
 
-def parse_args() -> str:
-    """Parse CLI args and return the resolved config file path."""
+def parse_args() -> tuple:
+    """Parse CLI args: ``(config path, seed override or None, log-dir override or None)``."""
     p = argparse.ArgumentParser(
         description="Full LLM-based symbolic policy evolution pipeline"
     )
@@ -192,11 +192,14 @@ def parse_args() -> str:
         default=DEFAULT_CONFIG_PATH,
         help=f"YAML config file (default: {DEFAULT_CONFIG_PATH})",
     )
+    p.add_argument("--seed", type=int, default=None,
+                   help="run seed for a replicate (R-018): overrides `seed` and becomes the fitting and search seed")
+    p.add_argument("--log-dir", default=None, help="override `log_dir` (a fresh directory per replicate run)")
     ns = p.parse_args()
     cfg_path = os.path.abspath(ns.config)
     if not os.path.isfile(cfg_path):
         p.error(f"Config file not found: {cfg_path}")
-    return cfg_path
+    return cfg_path, ns.seed, ns.log_dir
 
 
 # ---------------------------------------------------------------------------
@@ -263,8 +266,13 @@ def evaluate_expert_policy(env, env_name: str, manifest, max_steps: int = 150):
 
 
 def main() -> None:
-    cfg_path = parse_args()
+    cfg_path, seed_override, log_dir_override = parse_args()
     cfg = load_config(cfg_path)
+    if seed_override is not None:
+        cfg.seed = int(seed_override)
+        cfg.fit_seed = int(seed_override)
+    if log_dir_override:
+        cfg.log_dir = log_dir_override
 
     np.random.seed(cfg.seed)
     torch.manual_seed(cfg.seed)
@@ -451,6 +459,7 @@ def main() -> None:
         max_llm_tokens_per_generation=cfg.max_llm_tokens_per_generation,
         promotion_challengers=cfg.promotion_challengers,
         lane_plan=lane_plan,
+        fit_seed=int(getattr(cfg, "fit_seed", 0)),
     )
 
     t0 = time.time()
