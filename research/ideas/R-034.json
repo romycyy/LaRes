@@ -34,7 +34,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "An upper confidence bound below +0.50 refutes the predicted effect size; zero trace-arm success on the unrecoverable parent refutes that rescue component. An interval including zero is inconclusive; the resolving measurement is another independent parent/edit pair.",
   "cost_estimate": {
@@ -59,12 +59,143 @@
     "started_at": "2026-10-22T10:21:37",
     "git_sha": "4f2d8113e885f270115cce4765e90ad5f4a55ac3",
     "dirty_worktree": true,
-    "log_dir": "logs/research/assembly_parent_transport"
+    "log_dir": "logs/research/assembly_parent_transport",
+    "finished_at": "2026-10-22T10:58:34"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": 1.0,
+      "parent_level_t95": [
+        1.0,
+        1.0
+      ],
+      "placement_level_t95": [
+        1.0,
+        1.0
+      ],
+      "placement_wlt": [
+        30,
+        0,
+        0
+      ],
+      "per_parent": {
+        "archived_unrecoverable": {
+          "trace": 1.0,
+          "summary": 0.0,
+          "mean": 1.0,
+          "wins": 30,
+          "losses": 0,
+          "ties": 0
+        },
+        "fresh1": {
+          "trace": 1.0,
+          "summary": 0.0,
+          "mean": 1.0,
+          "wins": 30,
+          "losses": 0,
+          "ties": 0
+        },
+        "fresh2": {
+          "trace": 1.0,
+          "summary": 0.0,
+          "mean": 1.0,
+          "wins": 30,
+          "losses": 0,
+          "ties": 0
+        }
+      },
+      "parent_probe_success": {
+        "archived_unrecoverable": 0.0,
+        "fresh1": 0.0,
+        "fresh2": 0.0
+      },
+      "edits": {
+        "archived_unrecoverable_summary": {
+          "valid": true,
+          "corrected": true,
+          "llm_calls": 2
+        },
+        "archived_unrecoverable_expert_trace": {
+          "valid": true,
+          "corrected": false,
+          "llm_calls": 1
+        },
+        "fresh1_summary": {
+          "valid": true,
+          "corrected": true,
+          "llm_calls": 2
+        },
+        "fresh1_expert_trace": {
+          "valid": true,
+          "corrected": false,
+          "llm_calls": 1
+        },
+        "fresh2_summary": {
+          "valid": true,
+          "corrected": false,
+          "llm_calls": 1
+        },
+        "fresh2_expert_trace": {
+          "valid": true,
+          "corrected": false,
+          "llm_calls": 1
+        }
+      },
+      "demo_successes": 10,
+      "episodes": {
+        "demo": 10,
+        "probe": 15,
+        "eval": 180
+      },
+      "llm_calls": 10
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "control is the summary-only whole-controller edit of the same parent; the metric is already trace minus summary"
+    },
+    "artifacts": [
+      "logs/research/assembly_parent_transport/summary.json",
+      "logs/research/assembly_parent_transport/edits",
+      "logs/research/assembly_parent_transport/parents",
+      "logs/research/assembly_parent_transport/manifests",
+      "logs/parent_transfer.run.log"
+    ],
+    "notes": "Three assembly-v2 parents, all 0.00 on 5 probe cases: the D-020 structure whose grasps the expert could not recover (D-021) and two fresh gpt-6.1-sol generations (seeds 3803, 3804). Ten expert-only demonstrations (10/10). Each parent got a summary-only and an expert-trace whole-controller edit (one validity correction allowed), frozen and evaluated at declared values on cases 10-39 of pool 3802. All three trace edits score 1.00 and all three summary-only edits 0.00: +1.000 per parent, 30/0/0 each; parent-level and placement-level intervals [1.0, 1.0]. The trace effect does not depend on a recoverable parent: whole-controller edits rewrite the grasp as well as placement when shown the expert's trajectory. One shared demonstration set. 205 episodes."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 1.0,
+    "delta": 1.0,
+    "matched": true
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "supported",
+      "confidence": 0.85,
+      "reasoning": "Across three parents (the unrecoverable D-020 structure and two fresh generations), expert-trace whole-controller edits score 1.00 and summary-only edits 0.00 on 30 fresh cases each: +1.000 per parent, above the predicted +0.50, with the archived unrecoverable parent rescued too. The effect does not depend on a recoverable parent. Caveat: one demonstration set shared across parents.",
+      "cited_artifacts": [
+        "logs/research/assembly_parent_transport/summary.json"
+      ],
+      "next_experiment": "Integrate expert-trace editing into the pipeline as a repair step triggered by an exploration-lane plateau (R-036's design), and look for a second plateau task (R-035).",
+      "recorded_at": "2026-10-22T10:58:36",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "supported",
+      "confidence": 0.98,
+      "reasoning": "The named matched summary-only control was measured, and paired_success_difference was +1.00, exceeding the predicted +0.50 threshold [logs/research/assembly_parent_transport/summary.json]. Both reported parent-level and placement-level intervals were [1.00, 1.00], excluding zero [logs/research/assembly_parent_transport/summary.json]. All three trace edits achieved 1.00 success against 0.00 for their matched controls, including the archived unrecoverable parent, so the rescue component also held [logs/research/assembly_parent_transport/summary.json]. This supports transport across the tested parents; the shared demonstration set limits generalization, and endpoint success alone does not identify which controller phases changed [logs/research/assembly_parent_transport/summary.json].",
+      "cited_artifacts": [
+        "logs/research/assembly_parent_transport/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T10:58:59",
+      "call_id": "call_00061"
+    }
+  ],
+  "decision_id": "D-030",
   "history": [
     {
       "at": "2026-10-22T10:20:53",
@@ -83,6 +214,18 @@
       "from": "approved",
       "to": "running",
       "note": "git 4f2d8113e8 (dirty)"
+    },
+    {
+      "at": "2026-10-22T10:58:34",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=True"
+    },
+    {
+      "at": "2026-10-22T10:59:00",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-030: supported"
     }
   ],
   "created_at": "2026-10-22T10:19:43"
