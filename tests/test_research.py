@@ -205,6 +205,25 @@ class TestAdvisorAndDecisions(unittest.TestCase):
             self.assertEqual(verdict.verdict, "supported")
             self.assertTrue(verdict.call_id)
 
+    def test_consult_records_the_call_and_checks_every_id(self):
+        with tempfile.TemporaryDirectory() as root:
+            idea = make_idea()
+            idea.save(root)
+            entry = {"id": idea.id, "recommendation": "revise", "reasoning": "x", "suggested_changes": ["y"]}
+            reply = {"ideas": [entry], "order": [idea.id], "next_step": "z"}
+            advisor = adv.Advisor(ScriptedCall([json.dumps(reply)]), root)
+            out = advisor.consult([idea], build_briefing(root, "c"), question="what first?")
+            self.assertEqual(out["ideas"][0]["recommendation"], "revise")
+            self.assertTrue(out["call_id"])
+            self.assertEqual(out["question"], "what first?")
+            for bad in ({"ideas": [], "order": []},
+                        {"ideas": [dict(entry, recommendation="approve")], "order": []},
+                        {"ideas": [entry], "order": ["R-999"]}):
+                advisor = adv.Advisor(ScriptedCall([json.dumps(bad)]), root)
+                with self.assertRaises(ResearchSchemaError):
+                    advisor.consult([idea], build_briefing(root, "c"))
+            self.assertEqual(load_ideas(root)[0].status, idea.status)   # advice changes no idea
+
     def test_agreement_decides_and_disagreement_escalates(self):
         with tempfile.TemporaryDirectory() as root:
             idea = self._root_with_results(root)

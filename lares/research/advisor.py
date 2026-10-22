@@ -1,4 +1,4 @@
-"""The advisor model's three calls: propose ideas, analyse a result, review a disagreement.
+"""The advisor model's calls: propose ideas, analyse a result, review a disagreement, consult on open ideas.
 
 The advisor never runs anything and never writes policy code. It receives a
 hashed briefing packet and returns strict JSON, which is parsed against the
@@ -31,6 +31,7 @@ from lares.research.schemas import (
 )
 from lares.search.generation import (
     LABEL_RESEARCH_ANALYSE,
+    LABEL_RESEARCH_CONSULT,
     LABEL_RESEARCH_PROPOSE,
     LABEL_RESEARCH_REVIEW,
     LLMCallLedger,
@@ -38,6 +39,8 @@ from lares.search.generation import (
 
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PROMPTS_DIR = os.path.join(_PROJECT_ROOT, "lares", "utils", "research_prompts")
+CONSULT_RECOMMENDATIONS = ("run_as_is", "revise", "defer", "drop")
+CONSULTATIONS_DIR = "consultations"
 
 
 def read_prompt(name: str) -> str:
@@ -147,6 +150,42 @@ class Advisor:
         )
         idea.validate(metrics)
         return idea
+
+    # -- consult ------------------------------------------------------------------
+    def consult(self, ideas, briefing: dict, question: str = "") -> dict:
+        """Advice on how to continue with open ideas. Changes no idea: approval stays the user's.
+
+        Returns the parsed reply plus ``call_id``. Refuses a reply that skips an
+        idea, names one it was not asked about, or uses an unknown recommendation.
+        """
+        ids = [i.id for i in ideas]
+        if not ids:
+            raise ResearchSchemaError("consult needs at least one idea")
+        system = read_prompt("advisor_system.txt")
+        user = read_prompt("consult_user.txt").format(
+            question=question or "(none)",
+            ideas=json.dumps([_idea_for_prompt(i) for i in ideas], indent=2, ensure_ascii=False),
+            briefing=briefing["text"],
+        )
+        text, call_id = self._ask(LABEL_RESEARCH_CONSULT, system, user, purpose=f"consult on {', '.join(ids)}",
+                                  attempt_ids=ids)
+        raw = extract_json(text)
+        entries = raw.get("ideas") if isinstance(raw, dict) else None
+        if not isinstance(entries, list):
+            raise ResearchSchemaError("consult response must be an object with an 'ideas' list")
+        answered = [str(e.get("id")) for e in entries]
+        if sorted(answered) != sorted(ids):
+            raise ResearchSchemaError(f"consult answered {answered}, asked about {ids}")
+        for e in entries:
+            if e.get("recommendation") not in CONSULT_RECOMMENDATIONS:
+                raise ResearchSchemaError(f"{e.get('id')}: recommendation must be one of {CONSULT_RECOMMENDATIONS}")
+        unknown = [i for i in raw.get("order", []) if i not in ids]
+        if unknown:
+            raise ResearchSchemaError(f"consult order names ideas it was not asked about: {unknown}")
+        raw["call_id"] = call_id
+        raw["briefing_sha256"] = briefing["sha256"]
+        raw["question"] = question
+        return raw
 
     # -- analyse ------------------------------------------------------------------
     def analyse(self, idea: ResearchIdea, briefing: dict) -> Verdict:

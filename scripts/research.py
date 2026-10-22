@@ -13,6 +13,7 @@ Usage (from the project root)::
     python scripts/research.py status                      # one line per open idea
     python scripts/research.py propose [--n 3] [--focus "..."] [--dry-run]   # advisor call (needs OPENAI_API_KEY)
     python scripts/research.py show R-001
+    python scripts/research.py consult R-001 R-002 [--question "..."] [--dry-run]   # advisor advice, changes no idea
     python scripts/research.py approve R-001 [--note "..."]                  # USER only
     python scripts/research.py reject  R-001 --reason "..."                   # USER only
     python scripts/research.py start   R-001 [--log-dir logs/...] [--require-clean]
@@ -35,7 +36,7 @@ _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
 sys.path.insert(0, _PROJECT_ROOT)
 
-from lares.research.advisor import Advisor, openai_call  # noqa: E402
+from lares.research.advisor import CONSULTATIONS_DIR, Advisor, openai_call  # noqa: E402
 from lares.research.briefing import build_briefing  # noqa: E402
 from lares.research.protocol import check_idea, start_run  # noqa: E402
 from lares.research.schemas import (  # noqa: E402
@@ -125,6 +126,30 @@ def cmd_propose(args):
     for r in out["rejected"]:
         print(f"rejected entry {r['index']}: {r['reason']}")
     _finish(args, f"call {out['call_id']}: {len(out['ideas'])} ideas saved, {len(out['rejected'])} rejected")
+
+
+def cmd_consult(args):
+    ideas = [find_idea(i, args.root) for i in args.ids]
+    closed = [i.id for i in ideas if i.status in (STATUS_DECIDED, STATUS_REJECTED)]
+    if closed:
+        raise SystemExit(f"consult is for open ideas; closed: {closed}")
+    briefing = build_briefing(args.root, "consult", extra=f"User question: {args.question}" if args.question else "")
+    print(f"briefing: {briefing['path']} ({len(briefing['text'])} chars, sha256 {briefing['sha256'][:12]})")
+    if args.dry_run:
+        print(briefing["text"])
+        return
+    advice = _advisor(args).consult(ideas, briefing, question=args.question)
+    directory = os.path.join(args.root, CONSULTATIONS_DIR)
+    os.makedirs(directory, exist_ok=True)
+    path = os.path.join(directory, f"{now().replace(':', '')}_{advice['call_id']}.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(advice, f, indent=2, ensure_ascii=False)
+    for e in advice["ideas"]:
+        print(f"{e['id']}: {e['recommendation']} — {e.get('reasoning', '')}")
+        for c in e.get("suggested_changes", []):
+            print(f"    - {c}")
+    print(f"order: {advice.get('order')}\nnext: {advice.get('next_step', '')}")
+    _finish(args, f"call {advice['call_id']}: advice saved to {os.path.relpath(path, _PROJECT_ROOT)}")
 
 
 def cmd_approve(args):
@@ -268,6 +293,8 @@ def main(argv=None):
     s = sub.add_parser("show"); s.add_argument("id"); s.set_defaults(fn=cmd_show)
     s = sub.add_parser("propose"); s.add_argument("--n", type=int, default=3); s.add_argument("--focus", default="")
     s.add_argument("--dry-run", action="store_true", help="build and print the briefing, no call"); s.set_defaults(fn=cmd_propose)
+    s = sub.add_parser("consult"); s.add_argument("ids", nargs="+"); s.add_argument("--question", default="")
+    s.add_argument("--dry-run", action="store_true", help="build and print the briefing, no call"); s.set_defaults(fn=cmd_consult)
     s = sub.add_parser("approve"); s.add_argument("id"); s.add_argument("--note", default="")
     s.add_argument("--force", action="store_true"); s.set_defaults(fn=cmd_approve)
     s = sub.add_parser("reject"); s.add_argument("id"); s.add_argument("--reason", required=True); s.set_defaults(fn=cmd_reject)
