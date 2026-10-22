@@ -34,7 +34,7 @@
     "needs_gpu": false,
     "needs_llm": true
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "After both eligibility gates pass, trace edits remain unsuccessful or have no positive paired advantage over summary-only edits. Failure to establish a generator plateau or obtain two successful handoffs is inconclusive, not a refutation.",
   "cost_estimate": {
@@ -60,12 +60,71 @@
     "started_at": "2026-10-22T10:09:54",
     "git_sha": "585e002286b52931aa0650dbb69a13f5eb0b1dd3",
     "dirty_worktree": true,
-    "log_dir": "logs/trace_generalisation/hammer_s3720"
+    "log_dir": "logs/trace_generalisation/hammer_s3720",
+    "finished_at": "2026-10-22T10:15:57"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "gates": {
+        "probe_candidates_succeeding": 23
+      },
+      "parent": {
+        "valid": true,
+        "attempts": 1
+      },
+      "episodes": {
+        "probe": 120,
+        "gate": 0,
+        "demo": 0,
+        "eval": 0
+      },
+      "llm_calls": 1,
+      "outcome": "inconclusive: no generator plateau (a search candidate succeeded on the probe)"
+    },
+    "controls": {
+      "note": "no edit arm ran: the predeclared plateau gate failed"
+    },
+    "artifacts": [
+      "logs/trace_generalisation/hammer_s3720/summary.json",
+      "logs/trace_generalisation/hammer_s3720/parent_policy.py",
+      "logs/trace_generalisation/hammer_s3720/manifests",
+      "logs/hammer_transfer.run.log"
+    ],
+    "notes": "A fresh gpt-6.1-sol single-phase hammer-v2 parent (valid) was searched with 24 independent candidates on 5 probe cases (pool 3720); 23 candidate(s) succeeded, so hammer is not a generator plateau and, per the protocol, the gate, handoff and edit stages did not run. Inconclusive by design: trace-guided repair cannot be tested where the generator plus search already succeeds. With D-019's eight tasks and pick-place, assembly-v2 remains the only task found where the recipe plateaus. 120 episodes."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": null,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.9,
+      "reasoning": "The predeclared plateau gate failed: a fresh hammer-v2 structure plus 24-candidate search produced at least one probe success, so hammer is not a plateau for this generator and the transfer test could not run. No edits were generated.",
+      "cited_artifacts": [
+        "logs/trace_generalisation/hammer_s3720/summary.json"
+      ],
+      "next_experiment": "Look for another plateau task (shelf-place, basketball, soccer remain unscanned) or test transfer from a fresh assembly parent instead.",
+      "recorded_at": "2026-10-22T10:15:59",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 1.0,
+      "reasoning": "The plateau eligibility gate failed because 23 search candidates succeeded on the probe [logs/trace_generalisation/hammer_s3720/summary.json]. The run consumed 120 probe episodes and 1 LLM call, with no demonstration or edit-evaluation episodes [logs/trace_generalisation/hammer_s3720/summary.json]. The named matched summary-only control was not measured, so the predicted paired_success_difference increase of 0.30 cannot be assessed [logs/trace_generalisation/hammer_s3720/summary.json]. This gate-stopped result neither supports nor refutes the conditional trace-repair prediction [logs/trace_generalisation/hammer_s3720/summary.json].",
+      "cited_artifacts": [
+        "logs/trace_generalisation/hammer_s3720/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T10:16:17",
+      "call_id": "call_00058"
+    }
+  ],
+  "decision_id": "D-029",
   "history": [
     {
       "at": "2026-10-22T09:52:32",
@@ -90,6 +149,18 @@
       "from": "approved",
       "to": "running",
       "note": "git 585e002286 (dirty)"
+    },
+    {
+      "at": "2026-10-22T10:15:57",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-10-22T10:16:18",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-029: inconclusive"
     }
   ],
   "created_at": "2026-10-22T09:51:23"
