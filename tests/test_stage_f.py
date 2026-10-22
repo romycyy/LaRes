@@ -620,3 +620,46 @@ class TestBoundsOnly(unittest.TestCase):
         out = self.stage_f.bounds_summary(cells)
         self.assertAlmostEqual(out["llm_minus_random"]["mean"], 0.5)
         self.assertAlmostEqual(out["random_minus_unedited"]["mean"], 0.0)
+
+
+class TestAdaptiveSearch(unittest.TestCase):
+    """R-016: the adaptive proposal stays in range, concentrates near elites, keeps a global share."""
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, os.path.join(_PROJECT_ROOT, "scripts"))
+        import stage_f
+
+        cls.stage_f = stage_f
+
+    def test_vector_round_trip_and_batch_shape(self):
+        import numpy as np
+
+        from lares.fitting.checkpoints import RolloutScore
+
+        sf_ = self.stage_f
+        original = instantiate_source(PARENT_SOURCE, 39, 4, schema=SCHEMA)
+        names, x, lo, hi = sf_.parameter_vector(original)
+        copy_ = sf_.set_parameter_vector(instantiate_source(PARENT_SOURCE, 39, 4, schema=SCHEMA), names, x)
+        self.assertTrue(np.allclose(sf_.parameter_vector(copy_)[1], x))
+        evaluated = [(sf_.set_parameter_vector(instantiate_source(PARENT_SOURCE, 39, 4, schema=SCHEMA), names,
+                                               lo + f * (hi - lo)), RolloutScore(s, 0.0))
+                     for f, s in ((0.9, 1.0), (0.85, 0.8), (0.8, 0.6), (0.1, 0.0))]
+        batch = sf_.adaptive_batch(evaluated, original, np.random.default_rng(0))
+        self.assertEqual(len(batch), sf_.ADAPTIVE_BATCH_SIZE)
+        zs = [(sf_.parameter_vector(b)[1] - lo) / np.where(hi > lo, hi - lo, 1.0) for b in batch]
+        for z in zs:
+            self.assertTrue(np.all(z >= -1e-6) and np.all(z <= 1 + 1e-6))
+        gaussian = np.array(zs[int(round(sf_.ADAPTIVE_GLOBAL_FRACTION * sf_.ADAPTIVE_BATCH_SIZE)):])
+        self.assertGreater(float(np.median(gaussian)), 0.6)   # pulled toward the elites near 0.85
+
+    def test_summary_pairs_cells_within_placements(self):
+        cells = [{"structure_id": "a", "search_seed": 1, "finalist_index": {}, "episodes": {"probe": 160, "confirmation": 100},
+                  "confirmation": {"adaptive": {"x": 1.0, "y": 0.0}, "independent": {"x": 0.0, "y": 0.0}},
+                  "success": {"adaptive": 0.5, "independent": 0.0}},
+                 {"structure_id": "b", "search_seed": 1, "finalist_index": {}, "episodes": {"probe": 160, "confirmation": 50},
+                  "confirmation": {"adaptive": {"x": 0.0, "y": 0.0}, "independent": {"x": 0.0, "y": 0.0}},
+                  "success": {"adaptive": 0.0, "independent": 0.0}}]
+        out = self.stage_f.adaptive_summary(cells)
+        self.assertAlmostEqual(out["paired_success_difference"], 0.25)
+        self.assertEqual(out["episodes"], {"probe": 320, "confirmation": 150})

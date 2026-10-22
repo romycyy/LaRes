@@ -108,6 +108,15 @@ def parse_args():
     bo.add_argument("--reasoning-effort", default="high")
     bo.add_argument("--out-dir", required=True)
     bo.add_argument("--reserve-only", action="store_true")
+    ad = sub.add_parser("adaptive-search", help="R-016: progress-guided adaptive parameter search vs independent draws")
+    ad.add_argument("--config", default=CONFIG_PATH)
+    ad.add_argument("--search-seeds", type=int, nargs="+", required=True)
+    ad.add_argument("--probe-seed", type=int, required=True)
+    ad.add_argument("--heldout-seed", type=int, required=True)
+    ad.add_argument("--probe-cases", type=int, default=5)
+    ad.add_argument("--out-dir", required=True)
+    ad.add_argument("--workers", type=int, default=4)
+    ad.add_argument("--reserve-only", action="store_true")
     return p.parse_args()
 
 
@@ -1564,8 +1573,204 @@ def cmd_bounds_only(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  R-016: progress-guided adaptive parameter search versus budget-matched independent draws
+# ---------------------------------------------------------------------------
+
+#: Predeclared (advisor consult call_00021) before any rollout.
+ADAPTIVE_SHARED = SEARCH_ORDER                      # original + 7 independent draws, shared by both arms
+ADAPTIVE_CONTROL_REST = ("local", "global") * 8     # the control's 16 further independent draws
+ADAPTIVE_BATCHES, ADAPTIVE_BATCH_SIZE = 2, 8        # the treatment's 16 further draws
+ADAPTIVE_ELITES, ADAPTIVE_SIGMA_FLOOR, ADAPTIVE_SIGMA_CAP, ADAPTIVE_GLOBAL_FRACTION = 3, 0.05, 0.5, 0.2
+
+
+def parameter_vector(policy):
+    """``(names, x, lo, hi)``: every ranged parameter element, and its range, flattened in declared order."""
+    import numpy as np
+
+    ranges = policy.get_param_ranges()
+    names, xs, los, his = [], [], [], []
+    for name, p in policy.named_parameters():
+        if name not in ranges:
+            continue
+        flat = p.detach().reshape(-1).cpu().numpy()
+        names += [(name, i) for i in range(flat.size)]
+        xs += list(flat)
+        los += [float(ranges[name][0])] * flat.size
+        his += [float(ranges[name][1])] * flat.size
+    return names, np.array(xs, float), np.array(los), np.array(his)
+
+
+def set_parameter_vector(policy, names, x):
+    import torch
+
+    params = dict(policy.named_parameters())
+    with torch.no_grad():
+        for (name, i), v in zip(names, x):
+            params[name].view(-1)[i] = float(v)
+    policy.clip_params()
+    return policy
+
+
+def adaptive_batch(evaluated, original, rng):
+    """One adaptive batch from the candidates scored so far.
+
+    ``evaluated`` is ``[(policy, RolloutScore)]``. Elites are the top three by success then signed progress (earlier
+    wins ties); the proposal is a Gaussian over their range-normalised parameters with per-dimension spread clamped to
+    [0.05, 0.5] of the range; 20% of the batch stays uniform over the ranges.
+    """
+    import copy
+
+    import numpy as np
+
+    order = sorted(range(len(evaluated)), key=lambda i: (-evaluated[i][1].success, -evaluated[i][1].progress, i))
+    elites = [evaluated[i][0] for i in order[:ADAPTIVE_ELITES]]
+    names, _, lo, hi = parameter_vector(original)
+    width = np.where(hi > lo, hi - lo, 1.0)
+    z = np.array([(parameter_vector(e)[1] - lo) / width for e in elites])
+    mean = z.mean(axis=0)
+    sigma = np.clip(z.std(axis=0), ADAPTIVE_SIGMA_FLOOR, ADAPTIVE_SIGMA_CAP)
+    n_global = int(round(ADAPTIVE_GLOBAL_FRACTION * ADAPTIVE_BATCH_SIZE))
+    out = []
+    for k in range(ADAPTIVE_BATCH_SIZE):
+        u = rng.uniform(0.0, 1.0, size=mean.shape) if k < n_global else rng.normal(mean, sigma)
+        out.append(set_parameter_vector(copy.deepcopy(original), names, lo + np.clip(u, 0.0, 1.0) * width))
+    return out
+
+
+def adaptive_job(job) -> dict:
+    import copy
+
+    import numpy as np
+    import torch
+
+    torch.set_num_threads(1)
+    from lares.core.obs_schema import get_obs_schema
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+    from lares.eval import EvaluationManifest, make_manifest_env
+    from lares.eval.runner import PolicyActor, evaluate_manifest
+    from lares.fitting.structure_bank import instantiate_source
+
+    ensure_mujoco_headless_gl()
+    started = time.time()
+    original = instantiate_source(job["source"], 39, 4, schema=get_obs_schema("push-v2"))
+    original.fixed_action_scale = 0.1
+    probe = EvaluationManifest.load(job["probe_manifest"])
+    probe_env = make_manifest_env(probe, probe.resolve_pool(), 200)
+    episodes = {"probe": 0, "confirmation": 0}
+
+    def score(policy):
+        result = evaluate_manifest(PolicyActor(policy, deterministic=True, name="probe"), probe, probe_env, max_steps=150)
+        episodes["probe"] += len(result.episodes)
+        return sf.score_of(result)
+
+    shared_rng, control_rng, adapt_rng = (np.random.default_rng(s)
+                                          for s in np.random.SeedSequence(int(job["search_seed"])).spawn(3))
+    shared = [(pol, score(pol)) for _, pol in search_candidates(original, shared_rng)]
+    control = list(shared)
+    for kind in ADAPTIVE_CONTROL_REST:
+        cand = copy.deepcopy(original)
+        sf._propose(cand, sf.ARM_LOCAL_SEARCH if kind == "local" else sf.ARM_GLOBAL_SEARCH, control_rng)
+        control.append((cand, score(cand)))
+    treatment = list(shared)
+    for _ in range(ADAPTIVE_BATCHES):
+        treatment += [(cand, score(cand)) for cand in adaptive_batch(treatment, original, adapt_rng)]
+
+    def finalist(arm):
+        return min(range(len(arm)), key=lambda i: (-arm[i][1].success, -arm[i][1].progress, i))
+
+    picks = {"adaptive": finalist(treatment), "independent": finalist(control)}
+    confirmation = EvaluationManifest.load(job["confirmation_manifest"])
+    conf_env = make_manifest_env(confirmation, confirmation.resolve_pool(), 200)
+    confirmed, cache = {}, {}
+    for arm, rows in (("adaptive", treatment), ("independent", control)):
+        i = picks[arm]
+        key = ("shared", i) if i < len(ADAPTIVE_SHARED) else (arm, i)
+        if key not in cache:
+            result = evaluate_manifest(PolicyActor(rows[i][0], deterministic=True, name=arm), confirmation, conf_env,
+                                       max_steps=150)
+            episodes["confirmation"] += len(result.episodes)
+            cache[key] = {e.case_id: float(e.success) for e in result.episodes}
+        confirmed[arm] = cache[key]
+    out = {"structure_id": job["structure_id"], "search_seed": job["search_seed"], "finalist_index": picks,
+           "probe_trace": {arm: [r[1].to_dict() for r in rows] for arm, rows in (("adaptive", treatment), ("independent", control))},
+           "confirmation": confirmed, "success": {a: float(np.mean(list(v.values()))) for a, v in confirmed.items()},
+           "episodes": episodes, "wall_time_seconds": time.time() - started}
+    path = os.path.join(job["out_dir"], "cells", f"{job['structure_id']}_s{job['search_seed']}.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(out, f, indent=2, default=str)
+    return out
+
+
+def adaptive_summary(cells) -> dict:
+    import numpy as np
+
+    from lares.eval.stats import t_interval, win_loss_tie
+
+    cases = sorted(cells[0]["confirmation"]["adaptive"])
+    per_case = [float(np.mean([c["confirmation"]["adaptive"][x] - c["confirmation"]["independent"][x] for c in cells]))
+                for x in cases]
+    cell_diffs = [c["success"]["adaptive"] - c["success"]["independent"] for c in cells]
+    return {"paired_success_difference": float(np.mean(per_case)),
+            "placement_level": {"n": len(cases), "n_cells": len(cells), **t_interval(per_case), **win_loss_tie(per_case)},
+            "cell_level": {"by_cell": {f"{c['structure_id']}_s{c['search_seed']}": d for c, d in zip(cells, cell_diffs)},
+                           **t_interval(cell_diffs)},
+            "by_cell": {f"{c['structure_id']}_s{c['search_seed']}": {"success": c["success"], "finalist": c["finalist_index"]}
+                        for c in cells},
+            "episodes": {k: int(sum(c["episodes"][k] for c in cells)) for k in ("probe", "confirmation")}}
+
+
+def cmd_adaptive_search(args) -> int:
+    import multiprocessing as mp
+
+    import compare_child_vs_parent as cvp
+    from lares.core.obs_schema import get_obs_schema
+
+    cfg = load_config(args.config)
+    os.makedirs(args.out_dir, exist_ok=True)
+    status = cvp.ensure_entries_reserved(
+        [(k, "fitting", "R-016 adaptive search: search RNG seed") for k in args.search_seeds]
+        + [(args.probe_seed, "mt1_pool", "R-016: 5-case selection probe"),
+           (args.heldout_seed, "mt1_pool", "R-016: 50-case confirmation manifest")], args.out_dir)
+    structures = selected_structures(cfg, get_obs_schema(cfg["env_name"]))[:2]
+    print(f"  structures {[s.structure_id for s in structures]} x seeds {args.search_seeds}; seeds: {status}")
+    if args.reserve_only:
+        return 0
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    probe, probe_path = cvp.fresh_manifest(cfg["env_name"], args.probe_seed, args.probe_cases, 150, args.out_dir,
+                                           role="probe")
+    conf, conf_path = cvp.fresh_manifest(cfg["env_name"], args.heldout_seed, 50, 150, args.out_dir, role="confirmation",
+                                         also_disjoint_from=[probe])
+    jobs = [{"structure_id": s.structure_id, "source": s.source, "search_seed": k, "out_dir": os.path.abspath(args.out_dir),
+             "probe_manifest": os.path.abspath(probe_path), "confirmation_manifest": os.path.abspath(conf_path)}
+            for s in structures for k in args.search_seeds]
+    with open(os.path.join(args.out_dir, "run.json"), "w", encoding="utf-8") as f:
+        json.dump({"argv": sys.argv, **git_state(), "shared": ADAPTIVE_SHARED, "control_rest": ADAPTIVE_CONTROL_REST,
+                   "adaptive": {"batches": ADAPTIVE_BATCHES, "batch_size": ADAPTIVE_BATCH_SIZE, "elites": ADAPTIVE_ELITES,
+                                "sigma_floor": ADAPTIVE_SIGMA_FLOOR, "sigma_cap": ADAPTIVE_SIGMA_CAP,
+                                "global_fraction": ADAPTIVE_GLOBAL_FRACTION},
+                   "manifests": {"probe": probe.manifest_id, "confirmation": conf.manifest_id}}, f, indent=2)
+    with mp.get_context("spawn").Pool(processes=min(int(args.workers), len(jobs))) as pool:
+        cells = pool.map(adaptive_job, jobs)
+    summary = adaptive_summary(cells)
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2)
+    for cid, row in summary["by_cell"].items():
+        print(f"  {cid:<34} adaptive {row['success']['adaptive']:.2f}  independent {row['success']['independent']:.2f}  "
+              f"finalists {row['finalist']}")
+    pl = summary["placement_level"]
+    print(f"  adaptive - independent: {pl['mean']:+.3f} [{pl['low']:+.3f}, {pl['high']:+.3f}] w/l/t "
+          f"{pl['wins']}/{pl['losses']}/{pl['ties']}; episodes {summary['episodes']}")
+    return 0
+
+
 def main() -> int:
     args = parse_args()
+    if args.command == "adaptive-search":
+        return cmd_adaptive_search(args)
     if args.command == "bounds-only":
         return cmd_bounds_only(args)
     if args.command == "mutation-scope-transfer":

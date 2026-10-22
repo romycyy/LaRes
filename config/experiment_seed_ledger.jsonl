@@ -102,3 +102,7 @@
 {"seed": 3011, "namespace": "fitting", "use": "R-014 added-parameter ablation: fit seed", "artifact": "logs/research/added_parameter_ablation_s3010", "recorded_at": "2026-10-22T05:17:20", "backfilled": false}
 {"seed": 3012, "namespace": "mt1_pool", "use": "R-014: 10-case checkpoint probe", "artifact": "logs/research/added_parameter_ablation_s3010", "recorded_at": "2026-10-22T05:17:20", "backfilled": false}
 {"seed": 3013, "namespace": "mt1_pool", "use": "R-014: 50-case confirmation manifest", "artifact": "logs/research/added_parameter_ablation_s3010", "recorded_at": "2026-10-22T05:17:20", "backfilled": false}
+{"seed": 3030, "namespace": "fitting", "use": "R-016 adaptive search: search RNG seed", "artifact": "logs/research/adaptive_search_s3030", "recorded_at": "2026-10-22T05:20:18", "backfilled": false}
+{"seed": 3031, "namespace": "fitting", "use": "R-016 adaptive search: search RNG seed", "artifact": "logs/research/adaptive_search_s3030", "recorded_at": "2026-10-22T05:20:18", "backfilled": false}
+{"seed": 3032, "namespace": "mt1_pool", "use": "R-016: 5-case selection probe", "artifact": "logs/research/adaptive_search_s3030", "recorded_at": "2026-10-22T05:20:18", "backfilled": false}
+{"seed": 3033, "namespace": "mt1_pool", "use": "R-016: 50-case confirmation manifest", "artifact": "logs/research/adaptive_search_s3030", "recorded_at": "2026-10-22T05:20:18", "backfilled": false}

@@ -10,9 +10,9 @@
     "rationale": "This tests adaptive proposal generation, not the search-versus-imitation comparison of D-005 or candidate pooling of D-007; eight points would justify a larger exploration-lane replacement pilot."
   },
   "protocol": {
-    "script": "scripts/benchmark_fitting.py",
-    "config": "config/two_lane_search.yaml",
-    "command": "gpu run -- python scripts/benchmark_fitting.py --config config/two_lane_search.yaml --research-mode adaptive-progress-search --structures baseline61_gen0_cand1_a0 baseline61_gen0_cand2_a1 --search-seeds 3030 3031 --probe-seed 3032 --probe-cases 5 --confirmation-seed 3033 --confirmation-cases 50 --candidates-per-arm 24 --adaptive-batches 8 8 8 --bc-steps 0 --no-promotion --require-approval --stop-gpu-on-exit",
+    "script": "scripts/stage_f.py",
+    "config": "config/stage_f/stage_f.yaml",
+    "command": "python scripts/stage_f.py adaptive-search --config config/stage_f/stage_f.yaml --search-seeds 3030 3031 --probe-seed 3032 --heldout-seed 3033 --probe-cases 5 --out-dir logs/research/adaptive_search_s3030",
     "seeds": [
       3030,
       3031,
@@ -20,21 +20,18 @@
       3033
     ],
     "manifests": [
-      "config/manifests/push-v2_development_probe_s3032.yaml",
-      "config/manifests/push-v2_development_confirmation_s3033.yaml"
+      "config/manifests/push-v2_development.yaml"
     ],
     "episodes": 1200,
     "llm_calls": 0,
     "code_changes": [
-      "scripts/benchmark_fitting.py: add the declared research-mode flags, approval gate, and remote shutdown handling; load frozen structures and parameter ranges rather than regenerate them.",
-      "scripts/benchmark_fitting.py: compare original plus 23 independent draws against 24 sequential candidates including the original; adaptive batches update a diagonal proposal from the top quarter ranked by success, then signed goal progress, retaining 20% global exploration.",
-      "scripts/benchmark_fitting.py: use identical success-then-progress finalist selection in both arms, count invalid candidates against budget, and keep imitation disabled.",
-      "scripts/benchmark_fitting.py: generate disjoint development-only manifests and report paired confirmation intervals by placement and structure-search-seed cell."
+      "scripts/stage_f.py (adaptive-search: shared 8, control 16 independent L/G, treatment 2 adaptive batches of 8 from a Gaussian over top-3 elites in range units, sigma in [0.05, 0.5], 20% uniform; finalist by success then progress then index)",
+      "tests/test_stage_f.py"
     ],
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The upper 95% paired interval is below +0.08; an interval containing zero is inconclusive about improvement. A positive estimate on these two structures alone does not establish general lane replacement.",
   "cost_estimate": {
@@ -54,11 +51,130 @@
     "note": "approved by advisor gpt-6.1-sol (consult call_00021, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
     "consultation": "research/consultations/2026-10-22T051609_call_00021.json"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-10-22T05:20:17",
+    "git_sha": "4a3cb1185608dcff61a9bca1324310dc70afb3b3",
+    "dirty_worktree": true,
+    "log_dir": "logs/research/adaptive_search_s3030",
+    "finished_at": "2026-10-22T05:22:54"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.07,
+      "placement_t95": [
+        0.03777510558450309,
+        0.10222489441549693
+      ],
+      "placement_wlt": [
+        14,
+        0,
+        36
+      ],
+      "cell_level": {
+        "by_cell": {
+          "baseline61_gen0_cand2_a1_s3030": 0.17999999999999994,
+          "baseline61_gen0_cand2_a1_s3031": 0.1,
+          "baseline61_gen0_cand1_a0_s3030": 0.0,
+          "baseline61_gen0_cand1_a0_s3031": 0.0
+        },
+        "mean": 0.06999999999999998,
+        "t95": [
+          -0.06871961837978494,
+          0.2087196183797849
+        ]
+      },
+      "by_cell": {
+        "baseline61_gen0_cand2_a1_s3030": {
+          "success": {
+            "adaptive": 0.94,
+            "independent": 0.76
+          },
+          "finalist": {
+            "adaptive": 20,
+            "independent": 6
+          }
+        },
+        "baseline61_gen0_cand2_a1_s3031": {
+          "success": {
+            "adaptive": 0.1,
+            "independent": 0.0
+          },
+          "finalist": {
+            "adaptive": 9,
+            "independent": 4
+          }
+        },
+        "baseline61_gen0_cand1_a0_s3030": {
+          "success": {
+            "adaptive": 0.68,
+            "independent": 0.68
+          },
+          "finalist": {
+            "adaptive": 7,
+            "independent": 7
+          }
+        },
+        "baseline61_gen0_cand1_a0_s3031": {
+          "success": {
+            "adaptive": 0.42,
+            "independent": 0.42
+          },
+          "finalist": {
+            "adaptive": 2,
+            "independent": 2
+          }
+        }
+      },
+      "episodes": {
+        "probe": 800,
+        "confirmation": 300
+      }
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "control is budget-matched independent search (shared first 8 + 16 independent local/global draws); the metric is already adaptive minus independent"
+    },
+    "artifacts": [
+      "logs/research/adaptive_search_s3030/summary.json",
+      "logs/research/adaptive_search_s3030/run.json",
+      "logs/research/adaptive_search_s3030/cells"
+    ],
+    "notes": "Two frozen weak evolved structures x search seeds 3030/3031; 24 candidates per arm, the first 8 shared and cached; probe s3032 (5 cases), confirmation s3033 (50). Adaptive minus independent, placement level: +0.070 [+0.038, +0.102], 14/0/36. Cell level (n=4, not independent placements): mean +0.070 [-0.069, +0.209]. Gains come from baseline61_gen0_cand2_a1 (0.94 vs 0.76 at seed 3030; 0.10 vs 0.00 at 3031); on gen0_cand1_a0 both arms chose the same shared-batch candidate (0.68 and 0.42), so the arms are identical there. Absolute: 24-candidate rollout search lifts these zero-shot structures to 0.42-0.94 at two of four cells, far above R-008's 8-candidate search. The probe has only 5 cases, so finalist selection is noisy. 1100 episodes (800 probe + 300 confirmation), 0 LLM calls."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 0.07,
+    "delta": 0.07,
+    "matched": false
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.7,
+      "reasoning": "Adaptive minus independent is +0.070 at the placement level [+0.038, +0.102], 14/0/36: positive, but the mean is below the predicted +0.08 and the upper bound is above it, so neither supported nor refuted. At the cell level (n=4) the interval is [-0.069, +0.209]; both gains come from one structure (cand2_a1: +0.18, +0.10) and the other structure ties because both arms kept the same shared-batch candidate. Separately notable: 24-candidate rollout search lifted these zero-shot structures to 0.42-0.94 in three of four cells.",
+      "cited_artifacts": [
+        "logs/research/adaptive_search_s3030/summary.json"
+      ],
+      "next_experiment": "A confirmation with more structures (fresh weak evolved candidates) and a larger probe would settle adaptive vs independent; more practically, 24-candidate rollout search is a cheap, strong rescue for weak zero-shot structures and could become the exploration lane's default treatment.",
+      "recorded_at": "2026-10-22T05:23:01",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 0.98,
+      "reasoning": "The named budget-matched independent-search control was measured; paired_success_difference was +0.070, below the predicted +0.080 [logs/research/adaptive_search_s3030/summary.json]. The placement-level 95% interval [+0.0378, +0.1022] spans the prediction threshold, so the point-estimate miss does not meet the predeclared refutation condition [logs/research/adaptive_search_s3030/summary.json]. The cell-level 95% interval [-0.0687, +0.2087] includes zero, leaving improvement across search replicates inconclusive [logs/research/adaptive_search_s3030/summary.json]. Gains were confined to baseline61_gen0_cand2_a1; baseline61_gen0_cand1_a0 tied under both search seeds and therefore provides no evidence of improvement [logs/research/adaptive_search_s3030/summary.json].",
+      "cited_artifacts": [
+        "logs/research/adaptive_search_s3030/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T05:23:22",
+      "call_id": "call_00023"
+    }
+  ],
+  "decision_id": "D-012",
   "history": [
     {
       "at": "2026-10-22T05:16:30",
@@ -71,6 +187,30 @@
       "from": "proposed",
       "to": "approved",
       "note": "approved by advisor gpt-6.1-sol (consult call_00021, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T05:20:15",
+      "from": "approved",
+      "to": "approved",
+      "note": "implemented in scripts/stage_f.py next to R-008's search-vs-fit (same operators and structures) rather than benchmark_fitting.py; update rule predeclared in code constants before any rollout"
+    },
+    {
+      "at": "2026-10-22T05:20:17",
+      "from": "approved",
+      "to": "running",
+      "note": "git 4a3cb11856 (dirty)"
+    },
+    {
+      "at": "2026-10-22T05:22:54",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=False"
+    },
+    {
+      "at": "2026-10-22T05:23:32",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-012: inconclusive"
     }
   ],
   "created_at": "2026-10-22T05:14:40"
