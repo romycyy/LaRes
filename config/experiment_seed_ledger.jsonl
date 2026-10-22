@@ -202,3 +202,13 @@
 {"seed": 3505, "namespace": "mt1_pool", "use": "R-028: 5-case probe", "artifact": "logs/next_assembly_breadth_s3500", "recorded_at": "2026-10-22T08:50:50", "backfilled": false}
 {"seed": 3506, "namespace": "mt1_pool", "use": "R-028: 30-case promotion", "artifact": "logs/next_assembly_breadth_s3500", "recorded_at": "2026-10-22T08:50:50", "backfilled": false}
 {"seed": 3507, "namespace": "fitting", "use": "R-028: search root", "artifact": "logs/next_assembly_breadth_s3500", "recorded_at": "2026-10-22T08:50:50", "backfilled": false}
+{"seed": 3520, "namespace": "mt1_pool", "use": "R-029: demonstration (handoff) manifest", "artifact": "logs/next_assembly_traces_s3520", "recorded_at": "2026-10-22T09:05:28", "backfilled": false}
+{"seed": 3521, "namespace": "generation_block", "use": "R-029 edit 0", "artifact": "logs/next_assembly_traces_s3520", "recorded_at": "2026-10-22T09:05:28", "backfilled": false}
+{"seed": 3522, "namespace": "generation_block", "use": "R-029 edit 1", "artifact": "logs/next_assembly_traces_s3520", "recorded_at": "2026-10-22T09:05:28", "backfilled": false}
+{"seed": 3523, "namespace": "generation_block", "use": "R-029 edit 2", "artifact": "logs/next_assembly_traces_s3520", "recorded_at": "2026-10-22T09:05:28", "backfilled": false}
+{"seed": 3524, "namespace": "generation_block", "use": "R-029 edit 3", "artifact": "logs/next_assembly_traces_s3520", "recorded_at": "2026-10-22T09:05:28", "backfilled": false}
+{"seed": 3525, "namespace": "mt1_pool", "use": "R-029 block 0 probe", "artifact": "logs/next_assembly_traces_s3520", "recorded_at": "2026-10-22T09:05:28", "backfilled": false}
+{"seed": 3526, "namespace": "mt1_pool", "use": "R-029 block 0 promotion", "artifact": "logs/next_assembly_traces_s3520", "recorded_at": "2026-10-22T09:05:28", "backfilled": false}
+{"seed": 3527, "namespace": "mt1_pool", "use": "R-029 block 1 probe", "artifact": "logs/next_assembly_traces_s3520", "recorded_at": "2026-10-22T09:05:28", "backfilled": false}
+{"seed": 3528, "namespace": "mt1_pool", "use": "R-029 block 1 promotion", "artifact": "logs/next_assembly_traces_s3520", "recorded_at": "2026-10-22T09:05:28", "backfilled": false}
+{"seed": 3529, "namespace": "fitting", "use": "R-029: search root", "artifact": "logs/next_assembly_traces_s3520", "recorded_at": "2026-10-22T09:05:28", "backfilled": false}

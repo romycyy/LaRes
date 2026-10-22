@@ -1,21 +1,21 @@
 # Research state
 
-_Generated 2026-10-22T09:05:13 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T09:05:26 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 0 |
-| approved | 1 |
+| running | 1 |
+| approved | 0 |
 | proposed | 1 |
 | decided | 24 |
 | rejected | 4 |
 
 ## Needs attention
 
-- **R-029** [approved] 2. Give assembly edits successful expert placement traces
-  - `python scripts/research.py start R-029` then run its command
+- **R-029** [running] 2. Give assembly edits successful expert placement traces
+  - run the protocol, then `python scripts/research.py record R-029 --results <json>`
 - **R-030** [proposed] 3. Test insertion specificity with an expert-calibrated hard-task scan
   - USER decides: `python scripts/research.py approve R-030` or `reject R-030 --reason ...`
 

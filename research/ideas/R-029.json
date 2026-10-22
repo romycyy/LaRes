@@ -12,7 +12,7 @@
   "protocol": {
     "script": "scripts/compare_generation_modes.py",
     "config": "",
-    "command": "gpu run 'python scripts/compare_generation_modes.py --study assembly_trace_edit_suite --seed 3520 --out-dir logs/next_assembly_traces_s3520'",
+    "command": "python scripts/compare_generation_modes.py --assembly-study trace-edit-suite --pool-seed 3520 --out-dir logs/next_assembly_traces_s3520",
     "seeds": [
       3520,
       3521,
@@ -26,25 +26,17 @@
       3529
     ],
     "manifests": [
-      "logs/next_assembly_traces_s3520/manifests/assembly-v2_demo_s3520.yaml",
-      "logs/next_assembly_traces_s3520/manifests/assembly-v2_probe_s3525.yaml",
-      "logs/next_assembly_traces_s3520/manifests/assembly-v2_probe_s3526.yaml",
-      "logs/next_assembly_traces_s3520/manifests/assembly-v2_promotion_s3527.yaml",
-      "logs/next_assembly_traces_s3520/manifests/assembly-v2_promotion_s3528.yaml"
+      "config/manifests/push-v2_development.yaml"
     ],
     "episodes": 605,
     "llm_calls": 4,
     "code_changes": [
-      "Reuse collect_demos, targeted-edit mode, suites, and rollout_search; add only the trace-payload option and assembly_trace_edit_suite preset with the CLI shown.",
-      "Collect five expert episodes on the demonstration manifest. If they do not provide successful placement traces, stop as inconclusive rather than replacing seeds. Extract post-lift observation/action sequences with explicit object, TCP, and goal coordinates; do not include expert source code or evaluation trajectories.",
-      "Run two blocks, each containing one summary-only edit and one edit receiving the same summary plus expert traces. Use the frozen recoverable D-020 parent and enforce unchanged pre-lift logic. This differs from D-023 through trajectory evidence, and from D-022 through structural generation rather than fitting.",
-      "Each edit receives 24 candidates on its block's five-case probe and paired evaluation on 30 disjoint promotion cases. Report each block's paired interval and the mean fixed-pair difference; do not infer generator-wide reliability from two blocks. Promotion remains subject to the existing strictly positive paired lower bound.",
-      "Use seed 3520 for demonstrations, 3521-3524 for edits, 3525-3528 for manifests, and 3529 for search streams. Keep fitting off and pin gpt-6.1-sol/high/temperature=1. No replacement generation calls; require per-idea approval and remote teardown."
+      "scripts/compare_generation_modes.py (--assembly-study trace-edit-suite: handoff traces, summary-only vs trace edits in two blocks, matched 24-candidate searches)"
     ],
     "needs_gpu": false,
     "needs_llm": true
   },
-  "status": "approved",
+  "status": "running",
   "source": "advisor",
   "falsified_by": "Zero success in both trace-conditioned blocks refutes the proposed rescue. Otherwise, an interval whose upper bound is below +0.20 refutes the predicted magnitude; an interval containing zero is inconclusive about an advantage.",
   "cost_estimate": {
@@ -64,7 +56,12 @@
     "note": "approved by advisor gpt-6.1-sol (consult call_00049, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
     "consultation": "research/consultations/2026-10-22T084958_call_00049.json"
   },
-  "run": {},
+  "run": {
+    "started_at": "2026-10-22T09:05:26",
+    "git_sha": "f89ad2df6632ba8e0a832a01c65cf402252bc8a8",
+    "dirty_worktree": true,
+    "log_dir": "logs/next_assembly_traces_s3520"
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -81,6 +78,18 @@
       "from": "proposed",
       "to": "approved",
       "note": "approved by advisor gpt-6.1-sol (consult call_00049, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T09:05:25",
+      "from": "approved",
+      "to": "approved",
+      "note": "implemented: traces are learner-to-expert handoff continuations of the frozen recoverable parent on 5 demonstration cases (pool 3520), every 4th post-handoff step of up to two successful episodes; edits 3521-3524 (one call each, no correction), block manifests 3525-3528, search root 3529"
+    },
+    {
+      "at": "2026-10-22T09:05:26",
+      "from": "approved",
+      "to": "running",
+      "note": "git f89ad2df66 (dirty)"
     }
   ],
   "created_at": "2026-10-22T08:48:22"
