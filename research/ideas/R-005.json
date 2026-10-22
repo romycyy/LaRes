@@ -1,0 +1,246 @@
+{
+  "id": "R-005",
+  "title": "A bounded LLM mutation beats its own fitted parent at matched fitting (absorbs R-001)",
+  "hypothesis": "Averaged over the six frozen fittable-lane children of logs/two_lane_search, a child fitted and rollout-selected exactly as its parent wins more fresh held-out episodes than the parent, because its one structural change adds control that fitting the parent's own parameters cannot reach.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "each child's own parent, refitted with identical demonstrations, objective (deterministic_mse), budget 1000, checkpoints {0,500,1000}, probe cases (development 40-49) and fitting seed 2611; checkpoints selected by probe rollouts, never by loss",
+    "rationale": "Parents already reach 0.82-0.98 fitted, so the headroom is small; 0.05 is the smallest average gain that would justify an LLM step. The paired t interval is computed over the 50 placement-level averages of the six child-minus-parent differences, not over 300 observations, because the six pairs share placements. Per-pair differences are reported descriptively, not tested."
+  },
+  "protocol": {
+    "script": "scripts/compare_child_vs_parent.py",
+    "config": "",
+    "command": "python scripts/compare_child_vs_parent.py --run logs/two_lane_search --baseline logs/baseline_gpt61_sol_high --pool-seed 2610 --fit-seed 2611 --out-dir logs/child_vs_parent_2610",
+    "seeds": [
+      2610,
+      2611
+    ],
+    "manifests": [
+      "config/manifests/push-v2_train.yaml",
+      "config/manifests/push-v2_development.yaml"
+    ],
+    "episodes": 930,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/compare_child_vs_parent.py (new, only if scripts/qualify_fittable_bank.py cannot express matched parent/child fitting; scoring reuses lares.eval via scripts/evaluate_on_fresh_manifest.py's manifest builder)",
+      "tests/test_child_vs_parent.py (new)"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "decided",
+  "source": "implementer",
+  "falsified_by": "Interval upper bound <= 0 refutes any positive average added value; an upper bound below 0.05 refutes the predicted magnitude; an interval that includes zero with a positive mean is inconclusive, resolved only by a further predeclared fresh-case batch.",
+  "cost_estimate": {
+    "episodes": 930,
+    "llm_calls": 0,
+    "wall_time_minutes": 45
+  },
+  "open_question_refs": [
+    "DEBUG_PROGRESS 'Two-lane search, first live run': child versus fitted parent",
+    "RESEARCH_HANDOFF 'Two-lane search, first live run (2026-10-13, gpt-6.1-sol)'",
+    "R-001 (merged: two-lane winner vs gpt-6.1-sol baseline winner on the same 2610 cases, reported as a secondary control)"
+  ],
+  "briefing_sha256": "",
+  "proposal_call_id": "",
+  "approval": {
+    "by": "user",
+    "at": "2026-10-22T02:09:18",
+    "note": "revised per consult call_00001, 0.05 threshold"
+  },
+  "run": {
+    "started_at": "2026-10-22T02:20:53",
+    "git_sha": "f7e9f74e9262fdaf49dd2509ae8d67c40d744978",
+    "dirty_worktree": true,
+    "log_dir": "logs/child_vs_parent_2610",
+    "finished_at": "2026-10-22T02:33:26"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": -0.02,
+      "paired_success_difference_t95_low": -0.04645036412582304,
+      "paired_success_difference_t95_high": 0.006450364125823036,
+      "paired_success_difference_p_value": 0.1350617842971326,
+      "mean_child_success": 0.89,
+      "mean_parent_success": 0.9100000000000001,
+      "per_pair_success_difference": {
+        "gen0_cand0_a0-simple_reach_push": -0.16,
+        "gen0_cand1_a0-simple_reach_push_damped": 0.0,
+        "gen0_cand2_a0-simple_reach_push_shared_gain": -0.08,
+        "gen0_cand3_a0-simple_reach_push_sharp_gate": 0.0,
+        "gen0_cand4_a0-simple_damped_push": -0.02,
+        "gen0_cand5_a0-simple_damped_push": 0.14
+      },
+      "per_pair_wins_losses_ties": {
+        "gen0_cand0_a0-simple_reach_push": [
+          0,
+          8,
+          42
+        ],
+        "gen0_cand1_a0-simple_reach_push_damped": [
+          0,
+          0,
+          50
+        ],
+        "gen0_cand2_a0-simple_reach_push_shared_gain": [
+          0,
+          4,
+          46
+        ],
+        "gen0_cand3_a0-simple_reach_push_sharp_gate": [
+          0,
+          0,
+          50
+        ],
+        "gen0_cand4_a0-simple_damped_push": [
+          0,
+          1,
+          49
+        ],
+        "gen0_cand5_a0-simple_damped_push": [
+          7,
+          0,
+          43
+        ]
+      },
+      "r001_paired_success_difference": 0.98,
+      "r001_t95": [
+        0.9398084952574152,
+        1.0201915047425847
+      ],
+      "r001_wins_losses_ties": [
+        49,
+        0,
+        1
+      ],
+      "success_by_policy": {
+        "gen0_cand0_a0": 0.82,
+        "simple_reach_push": 0.98,
+        "simple_reach_push_damped": 0.98,
+        "gen0_cand3_a0": 1.0,
+        "gen0_cand1_a0": 0.98,
+        "gen0_cand2_a0": 0.7,
+        "gen0_cand4_a0": 0.84,
+        "gen0_cand5_a0": 1.0,
+        "baseline:gen0_cand2_a1": 0.0,
+        "simple_reach_push_shared_gain": 0.78,
+        "simple_reach_push_sharp_gate": 1.0,
+        "simple_damped_push": 0.86
+      },
+      "selected_steps": {
+        "gen0_cand0_a0": 1000,
+        "simple_reach_push": 1000,
+        "simple_reach_push_damped": 1000,
+        "gen0_cand3_a0": 1000,
+        "gen0_cand1_a0": 1000,
+        "gen0_cand2_a0": 1000,
+        "gen0_cand4_a0": 1000,
+        "gen0_cand5_a0": 1000,
+        "baseline:gen0_cand2_a1": null,
+        "simple_reach_push_shared_gain": 1000,
+        "simple_reach_push_sharp_gate": 1000,
+        "simple_damped_push": 1000
+      },
+      "resources": {
+        "probe_episodes": 330,
+        "evaluation_episodes": 600,
+        "bc_gradient_steps": 11000
+      }
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "control is each child's own parent refitted identically; the metric is already child minus parent, so the parent-vs-itself control is 0 by construction",
+      "parent_success": {
+        "simple_reach_push": 0.98,
+        "simple_reach_push_damped": 0.98,
+        "simple_reach_push_shared_gain": 0.78,
+        "simple_reach_push_sharp_gate": 1.0,
+        "simple_damped_push": 0.86
+      }
+    },
+    "artifacts": [
+      "logs/child_vs_parent_2610/summary.json",
+      "logs/child_vs_parent_2610/run.json",
+      "logs/child_vs_parent_2610/push-v2_confirmation_s2610.yaml",
+      "logs/child_vs_parent_2610/policies",
+      "logs/child_vs_parent_2610.run.log",
+      "scripts/compare_child_vs_parent.py"
+    ],
+    "notes": "Primary: placement-level paired t over 50 fresh cases (pool seed 2610), each the mean of 6 child-minus-parent success differences: -0.020, t95 [-0.046, +0.006], p=0.135. Upper bound +0.006 is below the 0.05 threshold. All 11 fits (fit seed 2611, identical demos/objective/budget/checkpoints/probe dev 40-49) selected step 1000; none rejected fitting. Every child's source rebuilt its run initial state exactly. Per pair (descriptive): cand5 (geometry scope) +0.14 (7/0/43); cand0 -0.16 (0/8/42); cand2 -0.08; cand4 -0.02; cand1 and cand3 tie their parents on all 50 cases in success, though returns differ (max per-case |diff| ~80), so they are behaviourally distinct but not better. Secondary R-001: two-lane winner gen0_cand1_a0 (refitted with seed 2611, not the run's seed-0 state, as the protocol states) minus baseline gen0_cand2_a1 (its promotion-tested candidate, saved zero-shot state): +0.980 t95 [+0.940, +1.020], but the winner ties its own fitted parent, so the gain belongs to the seed bank plus fitting, not the LLM mutation. Deviations: the run was recorded against HEAD f7e9f74 with the new script uncommitted (committed with this ledger update); seeds 2610/2611 were reserved locally before the run; expert reference not scored (dropped from the revised 930-episode budget). Episodes: 330 probe + 600 evaluation = 930."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": -0.02,
+    "delta": -0.02,
+    "matched": false
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.8,
+      "reasoning": "Placement-level paired success difference (child minus its identically refitted parent, mean over 6 pairs, 50 fresh cases from pool seed 2610) is -0.020, t95 [-0.046, +0.006]. The predeclared falsifier says an upper bound below 0.05 refutes the predicted magnitude; +0.006 is far below it. The interval only just includes zero, so a small positive average effect is not strictly excluded, but the point estimate is negative. Per pair it is mixed and descriptive: one child gains (cand5, geometry scope, +0.14, 7/0/43), one loses (cand0, -0.16, 0/8/42), two tie exactly on success. All 11 fits selected step 1000, so fitting worked equally for both sides. The two-lane winner beats the zero-success baseline by +0.98 (R-001 secondary), but it ties its own parent on all 50 cases, so that gain is the seed bank plus rollout-selected fitting, not the LLM mutation.",
+      "cited_artifacts": [
+        "logs/child_vs_parent_2610/summary.json"
+      ],
+      "next_experiment": "Treat the seed bank plus rollout-selected fitting as the operative method. If the LLM step is kept, test only the one positive signal (geometry-scope mutation of simple_damped_push) as its own predeclared idea on a fresh pool seed, or drop the fittable-lane LLM mutation and spend the budget on fitting/search arms.",
+      "recorded_at": "2026-10-22T02:33:37",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "The named matched-parent control was measured: mean child success was 0.890 versus parent success of 0.910 [logs/child_vs_parent_2610/summary.json]. The placement-level paired_success_difference was -0.020, with a 95% t interval of [-0.04645, 0.00645] [logs/child_vs_parent_2610/summary.json]. Its upper bound is below the predicted +0.05, refuting the predeclared magnitude [logs/child_vs_parent_2610/summary.json]. Because the interval includes zero, the direction of any average difference remains inconclusive; this is not evidence that children are worse [logs/child_vs_parent_2610/summary.json].",
+      "cited_artifacts": [
+        "logs/child_vs_parent_2610/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T02:52:31",
+      "call_id": "call_00002"
+    }
+  ],
+  "decision_id": "D-001",
+  "history": [
+    {
+      "at": "2026-10-22T00:26:19",
+      "from": "",
+      "to": "proposed",
+      "note": "added 2026-10-22 at the user's request (open problem A1): does the LLM step add anything over fitting the seed bank. Rollouts and fitting only, no LLM calls. Episodes: 11 fits (6 children reuse their saved source, 5 unique parents) x 3 probe checkpoints x 10 cases = 330, plus 11 policies x 50 fresh cases = 550, plus expert reference 50."
+    },
+    {
+      "at": "2026-10-22T02:05:59",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised 2026-10-22 at the user's direction after advisor consult call_00001 (research/consultations/2026-10-22T053753_call_00001.json): placement-level paired interval over 50 averages; claim limited to the average of six frozen comparisons; threshold 0.05 (user's choice; the advisor suggested 0.02); reuse existing runners first. R-001 merged: the two-lane winner (gen0_cand1, already one of the six children) and the gpt-6.1-sol baseline's best candidate are scored on the same 2610 cases (+50 episodes for the baseline), reported as a secondary paired_success_difference with R-001's 0.15 threshold; seed 2600 is left unused. Episodes: 330 probe (11 fits x 3 checkpoints x 10) + 550 held-out (11 policies x 50) + 50 baseline = 930, 0 LLM calls."
+    },
+    {
+      "at": "2026-10-22T02:09:18",
+      "from": "proposed",
+      "to": "approved",
+      "note": "revised per consult call_00001, 0.05 threshold"
+    },
+    {
+      "at": "2026-10-22T02:20:53",
+      "from": "approved",
+      "to": "running",
+      "note": "git f7e9f74e92 (dirty)"
+    },
+    {
+      "at": "2026-10-22T02:33:26",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=False"
+    },
+    {
+      "at": "2026-10-22T02:52:39",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-001: refuted"
+    }
+  ],
+  "created_at": "2026-10-22T00:26:19"
+}

@@ -24,3 +24,5 @@
 {"seed": 2500, "namespace": "fitting", "use": "Stage F replicate seeds", "artifact": "config/stage_f/stage_f.yaml", "recorded_at": "2026-10-13T22:54:49", "backfilled": false}
 {"seed": 2501, "namespace": "fitting", "use": "Stage F replicate seeds", "artifact": "config/stage_f/stage_f.yaml", "recorded_at": "2026-10-13T22:54:49", "backfilled": false}
 {"seed": 2502, "namespace": "fitting", "use": "Stage F replicate seeds", "artifact": "config/stage_f/stage_f.yaml", "recorded_at": "2026-10-13T22:54:49", "backfilled": false}
+{"seed": 2610, "namespace": "mt1_pool", "use": "R-005 child vs fitted parent fresh manifest", "artifact": "logs/child_vs_parent_2610", "recorded_at": "2026-10-22T02:20:54", "backfilled": false}
+{"seed": 2611, "namespace": "fitting", "use": "R-005 child and parent refits", "artifact": "logs/child_vs_parent_2610", "recorded_at": "2026-10-22T02:20:54", "backfilled": false}

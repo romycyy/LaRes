@@ -1,0 +1,67 @@
+{
+  "ideas": [
+    {
+      "id": "R-001",
+      "recommendation": "revise",
+      "reasoning": "This measures the performance of the assembled method, not whether its LLM mutations contribute anything beyond fitting. It is inexpensive context for R-005, but a win against an unseeded baseline cannot substitute for the fitted-parent control.",
+      "suggested_changes": [
+        "Merge fresh evaluation with R-005 using scripts/evaluate_on_fresh_manifest.py and pool seed 2610; leave seed 2600 unused. Freeze the two-lane winner and baseline source/state before inspecting fresh outcomes.",
+        "Reuse R-005 outcomes only when source and parameter state match exactly. Add 50 episodes for the baseline if the two-lane policy is already evaluated, otherwise add 100 episodes for both policies; omit the expert arm. Incremental cost: 50-100 simulator episodes, 0 LLM calls.",
+        "Retain the prediction: paired_success_difference increase by at least 0.15 against the frozen logs/baseline_gpt61_sol_high winner on identical fresh cases.",
+        "falsified_by: an interval upper bound below 0.15 refutes the predicted magnitude; an upper bound at or below zero refutes positive advantage. An interval including zero is inconclusive about advantage, not evidence of improvement."
+      ],
+      "depends_on": [
+        "R-005"
+      ]
+    },
+    {
+      "id": "R-002",
+      "recommendation": "defer",
+      "reasoning": "Another batch would measure sampling variability, but one additional batch cannot identify a model effect. Its 12 LLM calls answer a less consequential question than the zero-call comparison against fitted parents, and its stated prediction currently contradicts its hypothesis.",
+      "suggested_changes": [
+        "If retained, reframe it as a recovery test rather than model attribution: independent sampling can recover useful unseeded structures missed by the first batch.",
+        "Use the existing scripts/run_full_evolution.py and config/run_full_evolution.yaml, explicitly configuring fresh seed 2620 rather than changing only log_dir. Keep the mandated model settings and one initial generation.",
+        "Prediction: promotion_success_rate increase by at least 0.20 against logs/baseline_gpt61_sol_high at 0.000. falsified_by: this batch's best candidate scores below 0.20; this would refute the batch-level recovery prediction, not establish a model effect.",
+        "Budget approximately 130 simulator episodes and 12 LLM calls. Reconsider only after the matched-parent result and fresh method comparison show whether more unseeded sampling would affect the research direction."
+      ],
+      "depends_on": [
+        "R-005",
+        "R-001"
+      ]
+    },
+    {
+      "id": "R-003",
+      "recommendation": "drop",
+      "reasoning": "Generation-to-generation rotation has no mechanism to act under the standing one-initial-generation protocol. The proposal also does not identify additional screen-only cases disjoint from promotion and fitting probes, so its nominal 130 episodes and 12 LLM calls would not isolate the claimed mechanism.",
+      "suggested_changes": [
+        "Drop this protocol as written rather than implement rotation code now; recommended immediate cost is 0 simulator episodes and 0 LLM calls.",
+        "A future screen-subset sensitivity study would be a different question and should reuse frozen candidates and existing evaluation scripts before spending calls on another search. It must predeclare screen-only cases disjoint from promotion cases 10-39 and every fitting probe.",
+        "For the original mechanism, the intended prediction remains promotion_success_rate increase by at least 0.10 against an otherwise matched fixed-screen control. falsified_by: no promotion-success advantage in a valid isolated comparison; overlap with protected cases invalidates the experiment rather than falsifying the mechanism."
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "R-005",
+      "recommendation": "revise",
+      "reasoning": "This is the only proposed comparison that directly separates the contribution of LLM mutations from the contribution of fitting the seed bank. Its weakest points are treating repeated placements as independent observations and claiming that every child improves from a pooled mean.",
+      "suggested_changes": [
+        "Make the hypothesis about the average of the six frozen child-parent comparisons, conditional on this candidate batch, rather than every child or LLM search generally. Include all six predeclared comparisons without filtering on fresh outcomes.",
+        "Match demonstrations, preprocessing, objective, fitting budget, checkpoint schedule, probe cases and fitting seed; select checkpoints by probe rollouts, never imitation loss. Refit each distinct parent once when its matching conditions are identical, and cache repeated evaluations.",
+        "First check scripts/benchmark_fitting.py and scripts/qualify_fittable_bank.py for the matched-fitting stage, using config/two_lane_search.yaml and config/fittable_bank/qualification.yaml as existing configuration sources. Reuse scripts/evaluate_on_fresh_manifest.py for scoring; add comparison orchestration only if the existing runners cannot express the matching.",
+        "Revise the prediction to paired_success_difference increase by at least 0.02 against each child's matched, rollout-selected fitted parent, averaged across the six comparisons. Compute the paired t interval over 50 placement-level averages, not 300 supposedly independent observations; report individual comparisons descriptively.",
+        "falsified_by: an interval upper bound below 0.02 refutes the predicted magnitude; an upper bound at or below zero refutes positive average added value. If the interval includes zero, report inconclusive; the resolving measurement is paired_success_difference on an additional predeclared independent fresh-case batch.",
+        "Use pool seed 2610 and fitting seed 2611. Budget at most the proposed 900 simulator episodes and 0 new LLM calls, with deduplication reducing that total; combined with R-001, cap the initial request at 1000 episodes and 0 new LLM calls. GPU execution requires the user's approval, gpu run, and shutdown afterward."
+      ],
+      "depends_on": []
+    }
+  ],
+  "order": [
+    "R-005",
+    "R-001",
+    "R-002"
+  ],
+  "next_step": "Ask the user to authorize the revised joint R-005/R-001 experiment, capped at 1000 simulator episodes and zero new LLM calls, before any GPU spending.",
+  "call_id": "call_00001",
+  "briefing_sha256": "606155e1017db5f2bc9bb1609c11e4181d62d4ed0983f81cbb135a0c707f32ef",
+  "question": "Which of these should run next and in what order? Should any be revised, merged or dropped given that R-005 asks whether the LLM step adds anything over fitting the seed bank?"
+}

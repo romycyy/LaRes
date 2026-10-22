@@ -1,0 +1,27 @@
+Advise on how to continue with the open ideas below. You are not approving or rejecting anything: the user decides. Judge each idea on what it would teach per simulator episode and LLM call, given the standing constraints and the other open ideas, and say what should run first.
+
+Question from the user (may be empty): {question}
+
+Ideas to advise on (full records):
+
+{ideas}
+
+Return one JSON object with exactly this shape:
+
+{{
+  "ideas": [
+    {{
+      "id": "<one of the idea ids above; every id exactly once>",
+      "recommendation": "run_as_is" | "revise" | "defer" | "drop",
+      "reasoning": "two or three sentences: what the idea would settle, and its weakest point",
+      "suggested_changes": ["concrete protocol or prediction changes; empty when run_as_is"],
+      "depends_on": ["idea ids whose result should come first; empty if none"]
+    }}
+  ],
+  "order": ["the idea ids in the order you would run them, leaving out any you recommend dropping"],
+  "next_step": "one sentence: the single next action"
+}}
+
+Briefing follows.
+
+{briefing}

@@ -23,7 +23,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "proposed",
+  "status": "rejected",
   "source": "implementer",
   "falsified_by": "paired difference <= 0 or an interval that includes zero on the 2600 manifest",
   "cost_estimate": {
@@ -48,6 +48,12 @@
       "from": "",
       "to": "proposed",
       "note": "backfilled 2026-10-13 from the open questions in RESEARCH_HANDOFF.md / DEBUG_PROGRESS.md"
+    },
+    {
+      "at": "2026-10-22T02:09:18",
+      "from": "proposed",
+      "to": "rejected",
+      "note": "merged into R-005 (same seed-2610 cases)"
     }
   ],
   "created_at": "2026-10-13T23:48:52"

@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-10-14T12:26:20 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T02:52:39 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
@@ -8,14 +8,12 @@ _Generated 2026-10-14T12:26:20 by `python scripts/research.py state` from `resea
 | analysed | 0 |
 | running | 0 |
 | approved | 0 |
-| proposed | 4 |
-| decided | 0 |
-| rejected | 0 |
+| proposed | 3 |
+| decided | 1 |
+| rejected | 1 |
 
 ## Needs attention
 
-- **R-001** [proposed] Two-lane search beats the unseeded baseline on a fresh pool seed
-  - USER decides: `python scripts/research.py approve R-001` or `reject R-001 --reason ...`
 - **R-002** [proposed] The gpt-6.1-sol zero-success baseline is model, not draw
   - USER decides: `python scripts/research.py approve R-002` or `reject R-002 --reason ...`
 - **R-003** [proposed] Rotating the development screen removes selection on fixed cases
@@ -25,7 +23,9 @@ _Generated 2026-10-14T12:26:20 by `python scripts/research.py state` from `resea
 
 ## Last 5 decisions
 
-- none yet
+- D-001 · R-005 · **refuted** · 2026-10-22
+  R-005 refitted each of the six fittable-lane children of logs/two_lane_search and its seed-bank parent identically (fit seed 2611, same demos, deterministic_mse, budget 1000, checkpoints {0,500,1000} probe-selected on development 40-49) and scored all on 50 fresh cases (pool seed 2610). Child minus parent, averaged over pairs per placement: -0.020, t95 [-0.046, +0.006]; the predicted +0.05 is refuted, and the direction is inconclusive. Per pair: the geometry-scope mutation of simple_damped_push gained +0.14 (7/0/43), cand0 lost -0.16, two children tied their parents on every case. All 11 fits selected step 1000. The two-lane winner beats the zero-success gpt-6.1-sol baseline by +0.98 [+0.94, +1.02] (R-001), but it ties its own fitted parent, so that gain is the seed bank plus rollout-selected fitting, not the LLM mutation.
+  Next: Treat seed bank + rollout-selected fitting as the operative method; test the LLM mutation step only where it showed a signal (geometry scope), or redirect LLM budget to repair with richer evidence.
 
 ## Standing constraints
 
@@ -41,7 +41,7 @@ _Generated 2026-10-14T12:26:20 by `python scripts/research.py state` from `resea
 - The final-test split (config/manifests/push-v2_final_test.yaml) is locked until Phase 7, which needs the user's approval and a FreezeRecord. Qwen/E10 is also blocked. _(lares/eval/freeze.py; CLAUDE.md)_
 - Seeds 2400-2424 are held for config/fittable_bank/qualification_v2.yaml (predeclared, not run). New protocols pick seeds from 2600 upward. _(config/experiment_seed_ledger.jsonl; CLAUDE.md)_
 - Every protocol runs on the remote GPU box via `gpu run`, which bills by the hour; the implementer stops it afterwards. Live LLM or GPU spend needs the user's per-idea approval. _(CLAUDE.md, 'Remote GPU server')_
-- Spent seeds: [0, 1, 2, 1000, 1001, 1002, 2000, 2100, 2200, 2201, 2202, 2203, 2204, 2300, 2301, 2302, 2303, 2304, 2500, 2501, 2502, 3000, 3001]
+- Spent seeds: [0, 1, 2, 1000, 1001, 1002, 2000, 2100, 2200, 2201, 2202, 2203, 2204, 2300, 2301, 2302, 2303, 2304, 2500, 2501, 2502, 2610, 2611, 3000, 3001]
 
 ## Pointers
 
