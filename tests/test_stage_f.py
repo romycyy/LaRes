@@ -408,3 +408,73 @@ class TestSearchVsFit(unittest.TestCase):
         self.assertAlmostEqual(summary["paired_success_difference"], 0.5)   # c0: (1+0)/2, c1: (0+1)/2
         self.assertEqual(summary["primary"]["n_placements"], 2)
         self.assertEqual(summary["episodes"]["confirmation"], 200)
+
+
+class TestPooledOptimizer(unittest.TestCase):
+    """R-011: nested candidate sets, one tie rule, the paired summary and the frozen subject rule."""
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, os.path.join(_PROJECT_ROOT, "scripts"))
+        import stage_f
+
+        cls.stage_f = stage_f
+
+    def test_orders_cover_fifteen_candidates_and_pooled_is_a_subset_of_both_controls(self):
+        sf_ = self.stage_f
+        for order in (sf_.POOLED_ORDER, sf_.SEARCH_CONTROL_ORDER, sf_.IMITATION_CONTROL_ORDER):
+            self.assertEqual(len(order), 15)
+            self.assertEqual(len(set(order)), 15)
+            self.assertEqual(order[0], "original")
+        self.assertTrue(set(sf_.POOLED_ORDER) <= set(sf_.SEARCH_CONTROL_ORDER) | set(sf_.IMITATION_CONTROL_ORDER))
+        self.assertEqual(len(set(sf_.SEARCH_CONTROL_ORDER) | set(sf_.IMITATION_CONTROL_ORDER)), 29)
+
+    def test_search_draws_are_reproducible_per_stream(self):
+        import torch
+
+        original = instantiate_source(PARENT_SOURCE, 39, 4, schema=SCHEMA)
+        a = self.stage_f.pooled_search_draws(original, 2910)
+        b = self.stage_f.pooled_search_draws(original, 2910)
+        self.assertEqual(sorted(a), sorted([f"L{i}" for i in range(1, 7)] + [f"G{i}" for i in range(1, 9)]))
+        for label in a:
+            self.assertTrue(all(torch.equal(x, y) for x, y in zip(a[label].parameters(), b[label].parameters())))
+
+    def test_ties_go_to_the_earlier_label_in_each_selectors_order(self):
+        from lares.fitting.checkpoints import RolloutScore
+
+        scores = {"original": RolloutScore(0.5, 0.1), "L1": RolloutScore(0.5, 0.1), "fit125": RolloutScore(0.4, 0.9)}
+        self.assertEqual(self.stage_f.select_by_order(scores, ("original", "L1", "fit125")), "original")
+        self.assertEqual(self.stage_f.select_by_order(scores, ("fit125", "L1")), "L1")
+
+    def test_summary_pairs_within_placements_and_takes_the_weaker_comparison(self):
+        def row(sid, group, pooled, search, imitation):
+            confirmed = {"P": {"per_case": pooled, "success_rate": 0}, "S": {"per_case": search, "success_rate": 0},
+                         "I": {"per_case": imitation, "success_rate": 0}}
+            return {"structure_id": sid, "group": group, "confirmed": confirmed,
+                    "selected": {"pooled": "P", "search_only": "S", "imitation_only": "I"},
+                    "selector_success": {"pooled": 1.0, "search_only": 0.5, "imitation_only": 0.5},
+                    "episodes": {"probe": 290, "confirmation": 150}}
+
+        one = {"a": 1.0, "b": 1.0}
+        zero = {"a": 0.0, "b": 0.0}
+        results = [row("x", "anchor", one, zero, one), row("y", "additional", one, one, zero)]
+        out = self.stage_f.pooled_summary(results)
+        self.assertAlmostEqual(out["comparisons"]["search_only"]["mean"], 0.5)
+        self.assertAlmostEqual(out["comparisons"]["imitation_only"]["mean"], 0.5)
+        self.assertAlmostEqual(out["paired_success_difference"], 0.5)
+        self.assertEqual(out["episodes"], {"probe": 580, "confirmation": 300})
+        self.assertIn("holm_p_value", out["comparisons"]["search_only"])
+
+    def test_additional_subjects_follow_the_frozen_rule_and_fail_closed(self):
+        with tempfile.TemporaryDirectory() as d:
+            os.makedirs(os.path.join(d, "experiments"))
+            recs = [("gen0_cand0_a0", 0.0, "evaluated"), ("gen0_cand1_a0", 0.0, "evaluated"),
+                    ("gen0_cand2_a0", 0.6, "evaluated"), ("gen0_cand3_a0", 0.2, "invalid"), ("gen0_cand4_a0", 0.3, "evaluated")]
+            for eid, success, status in recs:
+                with open(os.path.join(d, "experiments", f"{eid}.json"), "w") as f:
+                    json.dump({"experiment_id": eid, "status": status, "code": {"source_path": f"{eid}.py"},
+                               "evaluation": {"success_rate": success}, "reconstruction": {"status": "verified"}}, f)
+            picked = self.stage_f.additional_subjects(d, {"gen0_cand1_a0"})
+            self.assertEqual([r["experiment_id"] for r in picked], ["gen0_cand0_a0", "gen0_cand4_a0"])
+            with self.assertRaises(SystemExit):
+                self.stage_f.additional_subjects(d, {"gen0_cand0_a0", "gen0_cand1_a0"})

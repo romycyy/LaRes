@@ -75,6 +75,16 @@ def parse_args():
     svf.add_argument("--split-seed", type=int, required=True)
     svf.add_argument("--out-dir", required=True)
     svf.add_argument("--reserve-only", action="store_true")
+    po = sub.add_parser("pooled-optimizer", help="R-011: pooled search+imitation selector vs equal-budget controls")
+    po.add_argument("--config", default=CONFIG_PATH)
+    po.add_argument("--additional-source", required=True, help="run whose records supply the two extra subjects")
+    po.add_argument("--search-seed", type=int, required=True)
+    po.add_argument("--fit-seed", type=int, required=True)
+    po.add_argument("--probe-seed", type=int, required=True)
+    po.add_argument("--heldout-seed", type=int, required=True)
+    po.add_argument("--out-dir", required=True)
+    po.add_argument("--workers", type=int, default=4)
+    po.add_argument("--reserve-only", action="store_true")
     return p.parse_args()
 
 
@@ -858,8 +868,253 @@ def cmd_search_vs_fit(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  R-011: pooled search + imitation selector against equal-budget single-optimizer controls
+# ---------------------------------------------------------------------------
+
+#: Imitation checkpoints of the imitation-only control; the pooled selector uses the even subset below.
+POOLED_IMITATION_CONTROL = (0, 62, 125, 187, 250, 312, 375, 437, 500, 562, 625, 687, 750, 875, 1000)
+POOLED_IMITATION = (125, 250, 375, 500, 625, 750, 1000)   # step 0 is the original vector, listed once
+#: Search draws: the control uses L1-L6 and G1-G8; the pooled selector uses the first three and four of each.
+POOLED_LOCAL, POOLED_GLOBAL, CONTROL_LOCAL, CONTROL_GLOBAL = 3, 4, 6, 8
+#: One optimizer-neutral tie rule: success, then progress, then the earlier entry of each selector's declared order.
+POOLED_ORDER = ("original", "L1", "fit125", "G1", "fit250", "L2", "fit375", "G2", "fit500", "L3", "fit625", "G3",
+                "fit750", "G4", "fit1000")
+SEARCH_CONTROL_ORDER = ("original", "L1", "G1", "L2", "G2", "L3", "G3", "L4", "G4", "L5", "G5", "L6", "G6", "G7", "G8")
+IMITATION_CONTROL_ORDER = tuple("original" if k == 0 else f"fit{k}" for k in POOLED_IMITATION_CONTROL)
+
+
+def pooled_search_draws(original, seed):
+    """``{label: policy}`` for L1-L6 and G1-G8. Local and global draws come from separate child RNG streams, so the
+    pooled subset (L1-L3, G1-G4) is literally the same parameters the search-only control evaluates."""
+    import copy
+
+    import numpy as np
+
+    local_rng, global_rng = (np.random.default_rng(s) for s in np.random.SeedSequence(int(seed)).spawn(2))
+    out = {}
+    for i in range(CONTROL_LOCAL):
+        cand = copy.deepcopy(original)
+        sf._propose(cand, sf.ARM_LOCAL_SEARCH, local_rng)
+        out[f"L{i + 1}"] = cand
+    for i in range(CONTROL_GLOBAL):
+        cand = copy.deepcopy(original)
+        sf._propose(cand, sf.ARM_GLOBAL_SEARCH, global_rng)
+        out[f"G{i + 1}"] = cand
+    return out
+
+
+def select_by_order(scores: dict, order) -> str:
+    """The label with the best (success, progress); ties go to the earlier label in ``order``."""
+    from lares.fitting.checkpoints import is_better_checkpoint
+
+    best, best_score = None, None
+    for label in order:
+        if is_better_checkpoint(scores[label], best_score):
+            best, best_score = label, scores[label]
+    return best
+
+
+def pooled_job(job) -> dict:
+    import copy
+
+    import numpy as np
+    import torch
+
+    torch.set_num_threads(1)
+    from lares.core.obs_schema import get_obs_schema
+    from lares.core.training_pipeline import DemoBuffer, ensure_mujoco_headless_gl
+    from lares.eval import EvaluationManifest, make_manifest_env
+    from lares.eval.runner import PolicyActor, evaluate_manifest
+    from lares.fitting.objectives import DETERMINISTIC_MSE
+    from lares.fitting.optimizers import fit_policy_with_objective, prepare_data, state_parameters_sha256
+    from lares.fitting.structure_bank import instantiate_source
+
+    ensure_mujoco_headless_gl()
+    started, horizon = time.time(), int(job["horizon"])
+    schema = get_obs_schema(job["env_name"])
+
+    def build():
+        policy = instantiate_source(job["source"], 39, 4, schema=schema)
+        policy.fixed_action_scale = 0.1
+        return policy
+
+    probe = EvaluationManifest.load(job["probe_manifest"])
+    probe_env = make_manifest_env(probe, probe.resolve_pool(), 200)
+    episodes = {"probe": 0, "confirmation": 0}
+
+    def score(policy, name):
+        result = evaluate_manifest(PolicyActor(policy, deterministic=True, name=name), probe, probe_env, max_steps=horizon)
+        episodes["probe"] += len(result.episodes)
+        return sf.score_of(result)
+
+    original = build()
+    candidates = {"original": original, **pooled_search_draws(original, job["search_seed"])}
+    scores = {label: score(pol, label) for label, pol in candidates.items()}
+    # Imitation: one fit through every control checkpoint; step 0 is the original and is not probed twice.
+    steps = iter(POOLED_IMITATION_CONTROL)
+
+    def fit_probe(policy):
+        step = next(steps)
+        label = "original" if step == 0 else f"fit{step}"
+        if label not in scores:
+            snapshot = build()
+            snapshot.load_state_dict(copy.deepcopy(policy.state_dict()))
+            candidates[label] = snapshot
+            scores[label] = score(snapshot, label)
+        return scores[label]
+
+    data = prepare_data(DemoBuffer.load(job["demo_buffer"]), split_seed=int(job["fit_seed"]))
+    fit_policy_with_objective(build(), data, DETERMINISTIC_MSE, budget=POOLED_IMITATION_CONTROL[-1],
+                              seed=int(job["fit_seed"]), rollout_probe=fit_probe,
+                              checkpoint_steps=POOLED_IMITATION_CONTROL, structure_id=job["structure_id"])
+    selected = {"pooled": select_by_order(scores, POOLED_ORDER),
+                "search_only": select_by_order(scores, SEARCH_CONTROL_ORDER),
+                "imitation_only": select_by_order(scores, IMITATION_CONTROL_ORDER)}
+    confirmation = EvaluationManifest.load(job["confirmation_manifest"])
+    conf_env = make_manifest_env(confirmation, confirmation.resolve_pool(), 200)
+    confirmed = {}
+    for label in sorted(set(selected.values())):
+        result = evaluate_manifest(PolicyActor(candidates[label], deterministic=True, name=label), confirmation,
+                                   conf_env, max_steps=horizon)
+        episodes["confirmation"] += len(result.episodes)
+        confirmed[label] = {"success_rate": result.success_rate,
+                            "per_case": {e.case_id: float(e.success) for e in result.episodes},
+                            "parameters_sha256": state_parameters_sha256(candidates[label].state_dict())}
+    out = {"structure_id": job["structure_id"], "group": job["group"], "selected": selected,
+           "probe_scores": {k: v.to_dict() for k, v in scores.items()}, "confirmed": confirmed,
+           "selector_success": {sel: confirmed[label]["success_rate"] for sel, label in selected.items()},
+           "unique_candidates": len(scores), "episodes": episodes, "wall_time_seconds": time.time() - started}
+    path = os.path.join(job["out_dir"], "structures", f"{job['structure_id']}.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(out, f, indent=2, default=str)
+    return out
+
+
+def pooled_summary(results, comparisons=("search_only", "imitation_only")) -> dict:
+    """Pooled minus each control, structures averaged within each placement, t over placements.
+
+    Two comparisons share the pooled arm, so each interval is reported at 97.5% (Bonferroni, which bounds Holm's
+    step-down from the conservative side) beside Holm-adjusted p-values.
+    """
+    import numpy as np
+
+    from lares.eval.stats import t_interval, win_loss_tie
+
+    def side(r, sel):
+        return r["confirmed"][r["selected"][sel]]["per_case"]
+
+    cases = sorted(side(results[0], "pooled"))
+    out = {}
+    for control in comparisons:
+        per_case = [float(np.mean([side(r, "pooled")[c] - side(r, control)[c] for r in results])) for c in cases]
+        out[control] = {"n_placements": len(cases), "n_structures": len(results), **t_interval(per_case, level=0.975),
+                        **win_loss_tie(per_case)}
+    ps = sorted((out[c]["p_value"] if out[c]["p_value"] is not None else 1.0, c) for c in comparisons)
+    running = 0.0
+    for rank, (p, c) in enumerate(ps):
+        running = max(running, min(1.0, p * (len(ps) - rank)))
+        out[c]["holm_p_value"] = running
+    groups = {}
+    for group in sorted({r["group"] for r in results}):
+        mine = [r for r in results if r["group"] == group]
+        groups[group] = {sel: float(np.mean([r["selector_success"][sel] for r in mine]))
+                         for sel in ("pooled", "search_only", "imitation_only")}
+    worst = min(out[c]["mean"] for c in comparisons)
+    return {"paired_success_difference": worst,
+            "paired_success_difference_note": "the smaller of pooled minus each control (the prediction needs both)",
+            "comparisons": out, "by_group": groups,
+            "by_structure": {r["structure_id"]: {"selected": r["selected"], "success": r["selector_success"]}
+                             for r in results},
+            "episodes": {k: int(sum(r["episodes"][k] for r in results)) for k in ("probe", "confirmation")}}
+
+
+def additional_subjects(run_dir, exclude_records, count=2, max_prior_success=0.40) -> list:
+    """Frozen rule: evaluated records with a valid reconstruction and screen success <= 0.40, anchors excluded,
+    in lexicographic order of experiment id; the first ``count``."""
+    picked = []
+    for path in sorted(glob.glob(os.path.join(run_dir, "experiments", "*.json"))):
+        with open(path, encoding="utf-8") as f:
+            r = json.load(f)
+        ev = r.get("evaluation") or {}
+        if r["experiment_id"] in exclude_records or r.get("status") == "invalid" or not r["code"].get("source_path"):
+            continue
+        if (r.get("reconstruction") or {}).get("status") not in (None, "verified"):
+            continue
+        if ev.get("success_rate") is None or float(ev["success_rate"]) > max_prior_success:
+            continue
+        picked.append(r)
+    if len(picked) < count:
+        raise SystemExit(f"only {len(picked)} additional subjects satisfy the rule; R-011 fails closed")
+    return picked[:count]
+
+
+def cmd_pooled_optimizer(args) -> int:
+    import multiprocessing as mp
+
+    import compare_child_vs_parent as cvp
+    from lares.core.obs_schema import get_obs_schema
+
+    cfg = load_config(args.config)
+    os.makedirs(args.out_dir, exist_ok=True)
+    status = cvp.ensure_entries_reserved([
+        (args.search_seed, "fitting", "R-011 pooled optimizer: search RNG seed"),
+        (args.fit_seed, "fitting", "R-011 pooled optimizer: fitting and demonstration split seed"),
+        (args.probe_seed, "mt1_pool", "R-011 pooled optimizer: 10-case selection probe"),
+        (args.heldout_seed, "mt1_pool", "R-011 pooled optimizer: 50-case confirmation manifest"),
+    ], args.out_dir)
+    schema = get_obs_schema(cfg["env_name"])
+    anchors = selected_structures(cfg, schema)[:2]
+    with open(os.path.join(_PROJECT_ROOT, cfg["structures"]["evolved"]["selection_file"]), encoding="utf-8") as f:
+        anchor_records = {s["record"] for s in json.load(f)["selected"]}
+    extra = additional_subjects(os.path.join(_PROJECT_ROOT, args.additional_source), anchor_records)
+    subjects = [{"structure_id": a.structure_id, "source": a.source, "group": "anchor"} for a in anchors]
+    for r in extra:
+        with open(os.path.join(_PROJECT_ROOT, args.additional_source, r["code"]["source_path"]), encoding="utf-8") as f:
+            subjects.append({"structure_id": f"baseline61_{r['experiment_id']}", "source": f.read(), "group": "additional"})
+    frozen = os.path.join(args.out_dir, "subjects.json")
+    if not os.path.exists(frozen):
+        with open(frozen, "w", encoding="utf-8") as f:
+            json.dump({"frozen_at": time.strftime("%Y-%m-%dT%H:%M:%S"), "before_rollouts": True,
+                       "subjects": [{k: v for k, v in s.items() if k != "source"} for s in subjects]}, f, indent=2)
+    print(f"  subjects {[s['structure_id'] for s in subjects]}; seeds: {status}")
+    if args.reserve_only:
+        return 0
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    horizon = int(cfg["horizon"])
+    probe, probe_path = cvp.fresh_manifest(cfg["env_name"], args.probe_seed, 10, horizon, args.out_dir, role="probe")
+    conf, conf_path = cvp.fresh_manifest(cfg["env_name"], args.heldout_seed, 50, horizon, args.out_dir,
+                                         role="confirmation", also_disjoint_from=[probe])
+    common = {"env_name": cfg["env_name"], "horizon": horizon, "search_seed": args.search_seed,
+              "fit_seed": args.fit_seed, "demo_buffer": os.path.join(_PROJECT_ROOT, cfg["fitting"]["demo_buffer"]),
+              "probe_manifest": os.path.abspath(probe_path), "confirmation_manifest": os.path.abspath(conf_path),
+              "out_dir": os.path.abspath(args.out_dir)}
+    with open(os.path.join(args.out_dir, "run.json"), "w", encoding="utf-8") as f:
+        json.dump({"argv": sys.argv, **git_state(), "orders": {"pooled": POOLED_ORDER, "search_only": SEARCH_CONTROL_ORDER,
+                                                               "imitation_only": IMITATION_CONTROL_ORDER},
+                   "subjects": [s["structure_id"] for s in subjects],
+                   "manifests": {"probe": probe.manifest_id, "confirmation": conf.manifest_id}}, f, indent=2)
+    jobs = [{**common, **s} for s in subjects]
+    with mp.get_context("spawn").Pool(processes=min(int(args.workers), len(jobs))) as pool:
+        results = pool.map(pooled_job, jobs)
+    summary = pooled_summary(results)
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2)
+    for sid, row in summary["by_structure"].items():
+        print(f"  {sid:<28} " + "  ".join(f"{k} {v:.2f} ({row['selected'][k]})" for k, v in row["success"].items()))
+    for control, c in summary["comparisons"].items():
+        print(f"  pooled - {control}: {c['mean']:+.3f} 97.5% [{c['low']:+.3f}, {c['high']:+.3f}] Holm p {c['holm_p_value']:.3f}")
+    print(f"  by group {summary['by_group']}; episodes {summary['episodes']}")
+    return 0
+
+
 def main() -> int:
     args = parse_args()
+    if args.command == "pooled-optimizer":
+        return cmd_pooled_optimizer(args)
     if args.command == "search-vs-fit":
         return cmd_search_vs_fit(args)
     if args.command == "reserve":

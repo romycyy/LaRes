@@ -84,3 +84,7 @@
 {"seed": 2904, "namespace": "fitting", "use": "R-010 geometry child seed robustness: fit seed", "artifact": "logs/research/geometry_qualification_s2900", "recorded_at": "2026-10-22T04:34:55", "backfilled": false}
 {"seed": 2905, "namespace": "mt1_pool", "use": "R-010: 10-case checkpoint probe", "artifact": "logs/research/geometry_qualification_s2900", "recorded_at": "2026-10-22T04:34:55", "backfilled": false}
 {"seed": 2906, "namespace": "mt1_pool", "use": "R-010: confirmation manifest", "artifact": "logs/research/geometry_qualification_s2900", "recorded_at": "2026-10-22T04:34:55", "backfilled": false}
+{"seed": 2910, "namespace": "fitting", "use": "R-011 pooled optimizer: search RNG seed", "artifact": "logs/research/pooled_optimizer_s2910", "recorded_at": "2026-10-22T04:39:43", "backfilled": false}
+{"seed": 2911, "namespace": "fitting", "use": "R-011 pooled optimizer: fitting and demonstration split seed", "artifact": "logs/research/pooled_optimizer_s2910", "recorded_at": "2026-10-22T04:39:43", "backfilled": false}
+{"seed": 2912, "namespace": "mt1_pool", "use": "R-011 pooled optimizer: 10-case selection probe", "artifact": "logs/research/pooled_optimizer_s2910", "recorded_at": "2026-10-22T04:39:43", "backfilled": false}
+{"seed": 2913, "namespace": "mt1_pool", "use": "R-011 pooled optimizer: 50-case confirmation manifest", "artifact": "logs/research/pooled_optimizer_s2910", "recorded_at": "2026-10-22T04:39:43", "backfilled": false}

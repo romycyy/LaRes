@@ -1,21 +1,19 @@
 # Research state
 
-_Generated 2026-10-22T04:37:55 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T04:44:38 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 1 |
+| approved | 0 |
 | proposed | 3 |
-| decided | 6 |
+| decided | 7 |
 | rejected | 2 |
 
 ## Needs attention
 
-- **R-011** [approved] Budget-matched pooling of search and imitation candidates
-  - `python scripts/research.py start R-011` then run its command
 - **R-003** [proposed] Rotating the development screen removes selection on fixed cases
   - USER decides: `python scripts/research.py approve R-003` or `reject R-003 --reason ...`
 - **R-009** [proposed] Test LLM bounds-only edits against matched random bounds
@@ -25,6 +23,9 @@ _Generated 2026-10-22T04:37:55 by `python scripts/research.py state` from `resea
 
 ## Last 5 decisions
 
+- D-007 · R-011 · **refuted** · 2026-10-22
+  R-011 pooled 15 candidates per structure (original, 3 local and 4 global search draws, 7 imitation checkpoints) under one rollout probe and compared the pick against equal-budget search-only (15 draws) and imitation-only (15 checkpoints) selectors on four frozen weak evolved structures (probe s2912, confirmation s2913). Pooled minus search-only -0.055, 97.5% [-0.110, +0.000]; pooled minus imitation-only +0.000 [-0.033, +0.033]: the predicted +0.05 against both is refuted. Search's lead rests on one lucky global draw on cand2_a1 (0.56) outside the pooled subset; imitation wins cand1_a0; the two additional structures stay near zero under every selector. Parameter optimisation does not rescue weak zero-shot evolved structures at this budget.
+  Next: Prefer structural changes known to work (geometry-scope mutation, D-006) over optimiser mixing; test their transfer to other parents (R-012).
 - D-006 · R-010 · **supported** · 2026-10-22
   R-010 refitted the LLM geometry-scope child gen0_cand5_a0 and its parent simple_damped_push under five fitting seeds (2900-2904; probe s2905) and scored both on 50 fresh cases (s2906). The child reached 1.00 under every seed, the parent 0.88-0.92: child minus parent +0.104, placement-level 95% [+0.023, +0.185], seed-level [+0.083, +0.125], 5/0/0. The advantage does not depend on one fit. Report only: the child passes the unchanged qualification rule (0.00 untrained, 1.00 fitted), but the promotion-set (development 10-39) comparison was not run, so bank admission is not yet justified.
   Next: Run the development 10-39 comparison (or a qualification run) before admitting gen0_cand5_a0 as a fittable_seed; test geometry-scope transfer to other parents (R-012).
@@ -37,9 +38,6 @@ _Generated 2026-10-22T04:37:55 by `python scripts/research.py state` from `resea
 - D-003 · R-006 · **refuted** · 2026-10-22
   R-006 added a local VLM evidence arm to correction-LLM repair: Qwen2.5-VL-7B-Instruct (pinned cc59489, NF4 language weights, fp16 compute, 7.55 GiB on the T4) analysed the parent's worst failed screen episodes (five rule-selected, upright frames each) and its validated, geometry-merged analysis was appended to the Stage F numeric packet. Nine independent cells (three frozen Stage F structures x bundles 2620-2628), held-out pool 2629, arms no_repair / llm_numeric / llm_numeric_vision at matched repair-episode caps. Vision minus numeric held-out success: +0.000 [+0.000, +0.000], 0/0/9; all arms 0.440. Every packet carried valid analyses (23 returned, 0 rejected, 3 stage conflicts), but all 18 LLM children scored at or below their refitted parent on the screen and were rejected, so neither evidence level changed any outcome. Predicted +0.05 refuted; localisation benefit untested because no edit survived refit. With Stage F and R-005, the correction LLM's structural edits, not its evidence, are the bottleneck.
   Next: Do not add more evidence to correction-LLM repair; test whether any LLM edit can survive refit, or redirect effort to parameter search.
-- D-002 · R-004 · **refuted** · 2026-10-22
-  R-004 fitted the five seed-bank structures under five data-varying bundles (own demo sample, trajectory split, probe manifest and fitting seed; seeds 2400-2404, 2410-2414) and under a matched minibatch-only control (fixed sample/split 2700, probe 2710, fitting seeds 2701-2705), replicate r of both arms scored on the same qualification manifest (pool seed 2420+r). Between-replicate SE of bank-mean success: 0.0075 vs 0.0056, difference +0.0019, paired bootstrap 95% [-0.0034, +0.0054]; the predicted +0.01 is refuted and the direction is inconclusive. Bank-mean success 0.896 vs 0.911. Minibatch-only qualification did not materially understate bank-level uncertainty. One exception: simple_reach_push_shared_gain rejected fitting (step 0 selected) under 2 of 5 data draws, so its fitted success is data-sensitive (sd 0.088 vs 0.037).
-  Next: Keep the seed bank as is; treat simple_reach_push_shared_gain as data-sensitive when reading single-run results.
 
 ## Standing constraints
 
@@ -55,7 +53,7 @@ _Generated 2026-10-22T04:37:55 by `python scripts/research.py state` from `resea
 - The final-test split (config/manifests/push-v2_final_test.yaml) is locked until Phase 7, which needs the user's approval and a FreezeRecord. Qwen/E10 is also blocked. _(lares/eval/freeze.py; CLAUDE.md)_
 - Seeds 2400-2424 are held for config/fittable_bank/qualification_v2.yaml (predeclared, not run). New protocols pick seeds from 2600 upward. _(config/experiment_seed_ledger.jsonl; CLAUDE.md)_
 - Every protocol runs on the remote GPU box via `gpu run`, which bills by the hour; the implementer stops it afterwards. Live LLM or GPU spend needs the user's per-idea approval. _(CLAUDE.md, 'Remote GPU server')_
-- Spent seeds: [0, 1, 2, 1000, 1001, 1002, 2000, 2100, 2200, 2201, 2202, 2203, 2204, 2300, 2301, 2302, 2303, 2304, 2400, 2401, 2402, 2403, 2404, 2410, 2411, 2412, 2413, 2414, 2420, 2421, 2422, 2423, 2424, 2500, 2501, 2502, 2610, 2611, 2620, 2621, 2622, 2623, 2624, 2625, 2626, 2627, 2628, 2629, 2700, 2701, 2702, 2703, 2704, 2705, 2710, 2800, 2801, 2802, 2803, 2804, 2805, 2810, 2811, 2812, 2813, 2900, 2901, 2902, 2903, 2904, 2905, 2906, 3000, 3001]
+- Spent seeds: [0, 1, 2, 1000, 1001, 1002, 2000, 2100, 2200, 2201, 2202, 2203, 2204, 2300, 2301, 2302, 2303, 2304, 2400, 2401, 2402, 2403, 2404, 2410, 2411, 2412, 2413, 2414, 2420, 2421, 2422, 2423, 2424, 2500, 2501, 2502, 2610, 2611, 2620, 2621, 2622, 2623, 2624, 2625, 2626, 2627, 2628, 2629, 2700, 2701, 2702, 2703, 2704, 2705, 2710, 2800, 2801, 2802, 2803, 2804, 2805, 2810, 2811, 2812, 2813, 2900, 2901, 2902, 2903, 2904, 2905, 2906, 2910, 2911, 2912, 2913, 3000, 3001]
 
 ## Pointers
 

@@ -12,7 +12,7 @@
   "protocol": {
     "script": "scripts/stage_f.py",
     "config": "config/stage_f/stage_f.yaml",
-    "command": "gpu run -- python scripts/stage_f.py --config config/stage_f/stage_f.yaml --research-protocol pooled-optimizer --anchor-structures baseline61_gen0_cand2_a1,baseline61_gen0_cand1_a0 --additional-source logs/baseline_gpt61_sol_high --additional-count 2 --additional-rule lexicographic-valid-bounded-prior-success-le-0.40 --search-seed 2910 --fit-seed 2911 --probe-seed 2912 --confirmation-seed 2913 --probe-cases 10 --confirmation-cases 50 --search-original-local-global 1,3,4 --imitation-checkpoints 0,125,250,375,500,625,750,1000 --search-control-original-local-global 1,6,8 --imitation-control-checkpoints 0,62,125,187,250,312,375,437,500,562,625,687,750,875,1000 --manifest-dir config/manifests/research/pooled_optimizer --output logs/research/pooled_optimizer_s2910",
+    "command": "python scripts/stage_f.py pooled-optimizer --config config/stage_f/stage_f.yaml --additional-source logs/baseline_gpt61_sol_high --search-seed 2910 --fit-seed 2911 --probe-seed 2912 --heldout-seed 2913 --out-dir logs/research/pooled_optimizer_s2910",
     "seeds": [
       2910,
       2911,
@@ -20,21 +20,19 @@
       2913
     ],
     "manifests": [
-      "config/manifests/research/pooled_optimizer/probe_s2912.yaml",
-      "config/manifests/research/pooled_optimizer/confirmation_s2913.yaml"
+      "config/manifests/push-v2_train.yaml",
+      "config/manifests/push-v2_development.yaml"
     ],
     "episodes": 1760,
     "llm_calls": 0,
     "code_changes": [
-      "scripts/stage_f.py: extend the existing direct-search versus imitation experiment with a pooled selector and two equal-budget controls; all candidates start from each structure's frozen original parameters.",
-      "scripts/stage_f.py: freeze four structure IDs before new rollouts, retaining the two anchors and selecting two additional valid bounded-parameter structures using archived scores and lexical order; fail closed if unavailable. These are optimizer-study subjects, not fittable-lane parents.",
-      "scripts/stage_f.py: cache shared candidate evaluations. Each selector sees 15 candidates and 150 probe episodes per structure; the combined experiment evaluates at most 29 unique candidates per structure.",
-      "scripts/stage_f.py: freeze disjoint development-only probe and confirmation manifests; evaluate three selected winners per structure on confirmation, average paired differences across structures within placement, and adjust the two paired comparisons for multiplicity. Never select using imitation loss."
+      "scripts/stage_f.py (pooled-optimizer: 4 frozen subjects, 29 cached candidates per structure, three selectors of 15 under one tie rule, Bonferroni 97.5% intervals with Holm p-values)",
+      "tests/test_stage_f.py"
     ],
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "An upper paired confidence bound below +0.05 against either control refutes the stated margin. Zero-spanning intervals are inconclusive, and tied success is not improvement. Positive evidence requires multiplicity-adjusted paired lower bounds above zero against both controls.",
   "cost_estimate": {
@@ -55,11 +53,141 @@
     "note": "approved by advisor gpt-6.1-sol (consult call_00012, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
     "consultation": "research/consultations/2026-10-22T043319_call_00012.json"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-10-22T04:39:42",
+    "git_sha": "1481a722180587c3b5da19e57da6e9d7e1c165a6",
+    "dirty_worktree": true,
+    "log_dir": "logs/research/pooled_optimizer_s2910",
+    "finished_at": "2026-10-22T04:44:11"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": -0.055,
+      "pooled_minus_search_only": -0.055,
+      "pooled_minus_search_only_t975": [
+        -0.11049798707520114,
+        0.0004979870752011492
+      ],
+      "pooled_minus_search_only_holm_p": 0.05252841084879786,
+      "pooled_minus_imitation_only": 0.0,
+      "pooled_minus_imitation_only_t975": [
+        -0.03303393091143082,
+        0.03303393091143082
+      ],
+      "pooled_minus_imitation_only_holm_p": 1.0,
+      "by_group": {
+        "additional": {
+          "pooled": 0.02,
+          "search_only": 0.03,
+          "imitation_only": 0.0
+        },
+        "anchor": {
+          "pooled": 0.18000000000000002,
+          "search_only": 0.28,
+          "imitation_only": 0.2
+        }
+      },
+      "by_structure": {
+        "baseline61_gen0_cand2_a1": {
+          "selected": {
+            "pooled": "G4",
+            "search_only": "G6",
+            "imitation_only": "original"
+          },
+          "success": {
+            "pooled": 0.02,
+            "search_only": 0.56,
+            "imitation_only": 0.02
+          }
+        },
+        "baseline61_gen0_cand1_a0": {
+          "selected": {
+            "pooled": "fit250",
+            "search_only": "G6",
+            "imitation_only": "fit312"
+          },
+          "success": {
+            "pooled": 0.34,
+            "search_only": 0.0,
+            "imitation_only": 0.38
+          }
+        },
+        "baseline61_gen0_cand0_a0": {
+          "selected": {
+            "pooled": "G3",
+            "search_only": "G5",
+            "imitation_only": "original"
+          },
+          "success": {
+            "pooled": 0.0,
+            "search_only": 0.02,
+            "imitation_only": 0.0
+          }
+        },
+        "baseline61_gen0_cand3_a0": {
+          "selected": {
+            "pooled": "G4",
+            "search_only": "G4",
+            "imitation_only": "original"
+          },
+          "success": {
+            "pooled": 0.04,
+            "search_only": 0.04,
+            "imitation_only": 0.0
+          }
+        }
+      },
+      "episodes": {
+        "probe": 1160,
+        "confirmation": 550
+      }
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "controls are the equal-budget search-only and imitation-only selectors on the same subjects, probe and confirmation cases; the metric is already pooled minus the weaker comparison"
+    },
+    "artifacts": [
+      "logs/research/pooled_optimizer_s2910/summary.json",
+      "logs/research/pooled_optimizer_s2910/run.json",
+      "logs/research/pooled_optimizer_s2910/subjects.json",
+      "logs/research/pooled_optimizer_s2910/structures"
+    ],
+    "notes": "Four frozen subjects (anchors baseline61_gen0_cand2_a1 and gen0_cand1_a0; additional gen0_cand0_a0 and gen0_cand3_a0 by the frozen rule), 15 candidates per selector on probe s2912, confirmation s2913 (50). Pooled minus search-only -0.055, 97.5% [-0.110, +0.000], Holm p 0.053; pooled minus imitation-only +0.000 [-0.033, +0.033]. Upper bound against search-only is below +0.05: refuted, and the point estimate is negative. The search-only gain is one structure: on cand2_a1 the control's G6 draw (not in the pooled subset G1-G4) reached 0.56 while the pooled pick G4 (probe-best of its subset) scored 0.02, so search success there depends on drawing the right region. On cand1_a0 imitation dominates (pooled fit250 0.34, imitation-only fit312 0.38, search 0.00). The two additional subjects stay near zero under every selector (<= 0.04). Implementation: local/global draws from separate SeedSequence streams so pooled L1-L3/G1-G4 equal the control's; fit seed 2911 also seeds the demonstration split; 29 cached unique candidates per structure; 1710 episodes (1160 probe + 550 confirmation), 0 LLM calls."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": -0.055,
+    "delta": -0.055,
+    "matched": false
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.8,
+      "reasoning": "Pooled minus search-only is -0.055 with 97.5% [-0.110, +0.000]; the upper bound is below the predicted +0.05, which refutes the margin (and the prediction needed gains against both controls). Against imitation-only the pooled selector ties (+0.000 [-0.033, +0.033]). Complementarity does not show up at equal budget: on cand2_a1 everything rests on hitting one good global region (search-only's 6th global draw), which halving the global draws in the pooled set misses; on cand1_a0 imitation already wins; the two additional weak structures stay near zero under all selectors, so neither optimizer rescues them.",
+      "cited_artifacts": [
+        "logs/research/pooled_optimizer_s2910/summary.json"
+      ],
+      "next_experiment": "Weak zero-shot evolved structures are mostly not rescuable by parameter optimisation at this budget; prefer structural improvements that are known to work (geometry-scope mutation, D-006) and test their transfer (R-012) rather than optimiser mixing.",
+      "recorded_at": "2026-10-22T04:44:12",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "Both named equal-budget controls were measured [logs/research/pooled_optimizer_s2910/summary.json]. Pooled minus search-only was -0.055 with a 97.5% paired interval of [-0.110498, +0.000498], while pooled minus imitation-only was 0.000 with interval [-0.033034, +0.033034] [logs/research/pooled_optimizer_s2910/summary.json]. Both upper bounds fall below the predicted +0.05 margin, satisfying the predeclared refutation criterion [logs/research/pooled_optimizer_s2910/summary.json]. Both intervals include zero, so the direction of either difference remains inconclusive; the tie against imitation-only is not an improvement [logs/research/pooled_optimizer_s2910/summary.json].",
+      "cited_artifacts": [
+        "logs/research/pooled_optimizer_s2910/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T04:44:30",
+      "call_id": "call_00014"
+    }
+  ],
+  "decision_id": "D-007",
   "history": [
     {
       "at": "2026-10-22T04:33:47",
@@ -72,6 +200,30 @@
       "from": "proposed",
       "to": "approved",
       "note": "approved by advisor gpt-6.1-sol (consult call_00012, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T04:39:40",
+      "from": "approved",
+      "to": "approved",
+      "note": "implemented: local and global draws from separate SeedSequence streams so pooled L1-L3/G1-G4 equal the control's; the fit seed 2911 also seeds the demonstration split; additional subjects frozen to subjects.json before rollouts (gen0_cand0_a0, gen0_cand3_a0)"
+    },
+    {
+      "at": "2026-10-22T04:39:42",
+      "from": "approved",
+      "to": "running",
+      "note": "git 1481a72218 (dirty)"
+    },
+    {
+      "at": "2026-10-22T04:44:11",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=False"
+    },
+    {
+      "at": "2026-10-22T04:44:38",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-007: refuted"
     }
   ],
   "created_at": "2026-10-22T04:32:02"
