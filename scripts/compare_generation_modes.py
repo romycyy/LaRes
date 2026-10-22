@@ -189,7 +189,7 @@ RESEARCH_ARMS = {
 }
 
 
-def generate_one(prompts, contract: bool, run_dir, args, generator="single_phase"):
+def generate_one(prompts, contract, run_dir, args, generator="single_phase"):
     """One structure with at most one linked correction. Returns ``(final candidate, attempts)``.
 
     ``single_phase`` writes code from the plain prompt in one call; ``two_phase`` is the exploration lane's
@@ -208,7 +208,8 @@ def generate_one(prompts, contract: bool, run_dir, args, generator="single_phase
         args=SimpleNamespace(model=args.model, reasoning_effort=args.reasoning_effort, policy_gen_two_phase=two_phase,
                              policy_impl_mode=POLICY_IMPL_PER_IDEA),
         obs_dim=args.obs_dim, action_dim=args.action_dim, initial_system=prompts["initial_system"],
-        initial_user=prompts["initial_user"] + (SEARCHABILITY_CONTRACT if contract else ""),
+        initial_user=prompts["initial_user"] + (contract if isinstance(contract, str) else
+                                                (SEARCHABILITY_CONTRACT if contract else "")),
         task_description=prompts["task_description"], obs_description=prompts["obs_description"],
         input_dict_string=prompts["input_dict_string"], code_output_tip=prompts["code_output_tip"],
         data_pkl_path=data_pkl, env_name=args.env_name, real_num=1, max_total_attempts=3 if two_phase else 2,
@@ -384,6 +385,199 @@ def run_seedless_searchability(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  R-019/R-020/R-021: one shared-control suite on pick-place-v2 (advisor consult call_00031)
+# ---------------------------------------------------------------------------
+
+#: R-021's treatment, appended to the single-phase prompt. Every line was read from MetaWorld 3 source on 2026-10-22:
+#: sawyer_xyz_env.step / set_xyz_action / _get_curr_obs_combined_no_goal and SawyerPickPlaceV3Policy. No braces.
+GROUNDING_TABLE = """
+Verified interface for this task (read from the simulator source; use it exactly):
+- The executed action is tanh(mean) for each of the 4 action dimensions.
+- Action 0, 1, 2: end-effector displacement in x, y, z. Each is clipped to [-1, 1] and multiplied by 0.01 m, so 1.0
+  moves the end effector 1 cm along that axis in one step.
+- Action 3: gripper command. It drives the two fingers symmetrically; positive values close the fingers on the
+  object, and 0 or negative values leave them open. The scripted expert sends +1.0 to grasp and 0.0 otherwise.
+- obs field gripper: finger separation divided by 0.1 m, clipped to [0, 1]; 1.0 is fully open and it falls as the
+  fingers close on the puck.
+- obs fields tcp, obj, goal: end-effector, puck and target positions in metres (x, y, z); the target can be above
+  the table, so the puck must be lifted and carried, not pushed.
+- prev_tcp, prev_gripper, prev_obj: the same quantities one step earlier."""
+
+#: R-020's alternative selector: a probe episode "lifts" when the puck rises at least this far above its start.
+LIFT_THRESHOLD_M = 0.02
+SUITE_ARMS = {   # arm -> (generator, appendix, block seeds paired by index)
+    "control": ("single_phase", "", (3210, 3211, 3212, 3213)),
+    "grounded": ("single_phase", GROUNDING_TABLE, (3220, 3221, 3222, 3223)),
+    "two_phase": ("two_phase", "", (3200, 3201, 3202, 3205)),
+}
+
+
+def lift_probe(actor_policy, manifest, env, schema, horizon=150):
+    """Probe every case once: ``(success rate, lift rate, mean signed progress)``. Object z is obs index 6."""
+    from lares.eval.runner import PolicyActor, run_episode
+
+    successes, lifts, progress = [], [], []
+    for case in manifest.episodes:
+        heights = []
+        ep = run_episode(PolicyActor(actor_policy, deterministic=True, name="probe"), env, case, max_steps=horizon,
+                         schema=schema, observer=lambda step: heights.append(float(np.asarray(step["obs"])[6])))
+        successes.append(float(ep.success))
+        lifts.append(float(heights and max(heights) - heights[0] >= LIFT_THRESHOLD_M))
+        progress.append(float(ep.signed_goal_progress) if ep.signed_goal_progress is not None else 0.0)
+    return float(np.mean(successes)), float(np.mean(lifts)), float(np.mean(progress))
+
+
+def suite_select(trace, selector: str) -> int:
+    """``original``: success, then progress. ``lift``: success, then lift rate, then progress. Ties: earlier index."""
+    key = (lambda t: (-t["success"], -t["progress"])) if selector == "original" else \
+          (lambda t: (-t["success"], -t["lift"], -t["progress"]))
+    return min(range(len(trace)), key=lambda i: (*key(trace[i]), i))
+
+
+def suite_job(job) -> dict:
+    import torch
+
+    torch.set_num_threads(1)
+    from lares.core.obs_schema import get_obs_schema
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+    from lares.eval import EvaluationManifest, make_manifest_env
+    from lares.eval.runner import PolicyActor, evaluate_manifest
+    from lares.fitting.structure_bank import instantiate_source
+    from lares.search import rollout_search
+
+    ensure_mujoco_headless_gl()
+    schema = get_obs_schema(job["env_name"])
+    original = instantiate_source(job["source"], 39, 4, schema=schema)
+    original.fixed_action_scale = 0.1
+    probe = EvaluationManifest.load(job["probe_manifest"])
+    probe_env = make_manifest_env(probe, probe.resolve_pool(), 200)
+    cands = rollout_search.independent_candidates(original, job["search_seed"])
+    trace = []
+    for i, (kind, pol) in enumerate(cands):
+        s, l, g = lift_probe(pol, probe, probe_env, schema)
+        trace.append({"index": i, "kind": kind, "success": s, "lift": l, "progress": g})
+    picks = {sel: suite_select(trace, sel) for sel in job["selectors"]}
+    conf = EvaluationManifest.load(job["confirmation_manifest"])
+    conf_env = make_manifest_env(conf, conf.resolve_pool(), 200)
+    confirmed = {}
+    for i in sorted(set(picks.values())):
+        r = evaluate_manifest(PolicyActor(cands[i][1], deterministic=True, name=f"cand{i}"), conf, conf_env, max_steps=150)
+        confirmed[i] = {e.case_id: float(e.success) for e in r.episodes}
+    return {"slot": job["slot"], "trace": trace, "picks": picks, "confirmed": {str(k): v for k, v in confirmed.items()},
+            "episodes": {"probe": len(cands) * len(probe), "confirmation": len(confirmed) * len(conf)}}
+
+
+def suite_summary(slots, results, cases) -> dict:
+    """Three block-paired contrasts (t over the four blocks) and placement-level intervals. Invalid slots score 0."""
+    from lares.eval.stats import t_interval, win_loss_tie
+
+    zero = {c: 0.0 for c in cases}
+
+    def outcome(arm, block_index, selector="original"):
+        slot = next(s for s in slots if s["arm"] == arm and s["block_index"] == block_index)
+        r = results.get(slot["slot_id"])
+        return r["confirmed"][str(r["picks"][selector])] if r else zero
+
+    rate = lambda d: float(np.mean(list(d.values())))  # noqa: E731
+    contrasts = {"R-020_lift_minus_original_selector": (("control", "lift"), ("control", "original")),
+                 "R-021_grounded_minus_control": (("grounded", "original"), ("control", "original")),
+                 "R-019_single_minus_two_phase": (("control", "original"), ("two_phase", "original"))}
+    out = {}
+    for name, ((a_arm, a_sel), (b_arm, b_sel)) in contrasts.items():
+        blocks = [rate(outcome(a_arm, b, a_sel)) - rate(outcome(b_arm, b, b_sel)) for b in range(4)]
+        placement = [float(np.mean([outcome(a_arm, b, a_sel)[c] - outcome(b_arm, b, b_sel)[c] for b in range(4)]))
+                     for c in cases]
+        out[name] = {"paired_success_difference": float(np.mean(blocks)), "block_level": {"by_block": blocks,
+                     **t_interval(blocks), **win_loss_tie(blocks)}, "placement_level": t_interval(placement)}
+    out["by_slot"] = {s["slot_id"]: {"arm": s["arm"], "valid": s["valid"],
+                                      **({"picks": results[s["slot_id"]]["picks"],
+                                          "success": {sel: rate(outcome(s["arm"], s["block_index"], sel))
+                                                      for sel in results[s["slot_id"]]["picks"]},
+                                          "best_probe": max(t["success"] for t in results[s["slot_id"]]["trace"]),
+                                          "probe_lift_max": max(t["lift"] for t in results[s["slot_id"]]["trace"])}
+                                         if s["slot_id"] in results else {})} for s in slots}
+    return out
+
+
+def run_pick_place_suite(args) -> int:
+    import multiprocessing as mp
+
+    sys.path.insert(0, _SCRIPT_DIR)
+    import compare_child_vs_parent as cvp
+
+    os.makedirs(args.out_dir, exist_ok=True)
+    entries = [(seed, "generation_block", f"pick-place suite: {arm} block {i}")
+               for arm, (_, _, seeds) in SUITE_ARMS.items() for i, seed in enumerate(seeds)]
+    entries += [(args.probe_seed, "mt1_pool", "pick-place suite: 5-case selection probe"),
+                (args.heldout_seed, "mt1_pool", "pick-place suite: 30-case confirmation manifest")]
+    print(f"  pick-place suite: seeds {cvp.ensure_entries_reserved(entries, args.out_dir)}")
+    if args.reserve_only:
+        return 0
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise SystemExit("the suite needs OPENAI_API_KEY")
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    manifest_dir = os.path.join(args.out_dir, "manifests")
+    probe, probe_path = cvp.fresh_manifest(args.env_name, args.probe_seed, 5, 150, manifest_dir, role="probe")
+    conf, conf_path = cvp.fresh_manifest(args.env_name, args.heldout_seed, 30, 150, manifest_dir, role="confirmation",
+                                         also_disjoint_from=[probe])
+    prompts = load_policy_prompt_assets(args.env_name)
+    slots_path = os.path.join(args.out_dir, "slots.json")
+    if os.path.exists(slots_path):
+        with open(slots_path, encoding="utf-8") as f:
+            slots = json.load(f)
+    else:
+        slots = []
+        for arm, (generator, appendix, seeds) in SUITE_ARMS.items():
+            for i, seed in enumerate(seeds):
+                slot_id = f"{arm}_b{i}_s{seed}"
+                final, n = generate_one(prompts, appendix, os.path.join(args.out_dir, "generation", slot_id), args,
+                                        generator=generator)
+                entry = {"slot_id": slot_id, "arm": arm, "block_index": i, "seed": seed, "valid": bool(final.valid),
+                         "attempts": n, "stage": (final.validation or {}).get("stage"),
+                         "errors": (final.validation or {}).get("errors")}
+                if final.valid:
+                    path = os.path.join(args.out_dir, "structures", f"{slot_id}.py")
+                    os.makedirs(os.path.dirname(path), exist_ok=True)
+                    with open(path, "w", encoding="utf-8") as f:
+                        f.write(final.code)
+                    entry["source_path"] = path
+                slots.append(entry)
+                print(f"  {slot_id}: valid={final.valid} after {n} attempt(s)", flush=True)
+        with open(slots_path, "w", encoding="utf-8") as f:
+            json.dump(slots, f, indent=2)
+    jobs = []
+    for s in slots:
+        if s["valid"]:
+            with open(s["source_path"], encoding="utf-8") as f:
+                jobs.append({"slot": s["slot_id"], "source": f.read(), "search_seed": s["seed"], "env_name": args.env_name,
+                             "selectors": ["original", "lift"] if s["arm"] == "control" else ["original"],
+                             "probe_manifest": os.path.abspath(probe_path), "confirmation_manifest": os.path.abspath(conf_path)})
+    with mp.get_context("spawn").Pool(processes=min(8, max(1, len(jobs)))) as pool:
+        out = pool.map(suite_job, jobs)
+    results = {r["slot"]: r for r in out}
+    summary = suite_summary(slots, results, sorted(c.case_id for c in conf.episodes))
+    summary["episodes"] = {k: int(sum(r["episodes"][k] for r in out)) for k in ("probe", "confirmation")}
+    summary["llm_attempts"] = int(sum(s["attempts"] for s in slots))
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2)
+    with open(os.path.join(args.out_dir, "run.json"), "w", encoding="utf-8") as f:
+        json.dump({"argv": sys.argv, "arms": {k: [v[0], bool(v[1]), list(v[2])] for k, v in SUITE_ARMS.items()},
+                   "grounding_table": GROUNDING_TABLE, "lift_threshold_m": LIFT_THRESHOLD_M,
+                   "manifests": {"probe": probe.manifest_id, "confirmation": conf.manifest_id}}, f, indent=2)
+    with open(os.path.join(args.out_dir, "results.json"), "w", encoding="utf-8") as f:
+        json.dump(out, f, indent=2)
+    for sid, row in summary["by_slot"].items():
+        print(f"  {sid:<22} {row}")
+    for name in ("R-020_lift_minus_original_selector", "R-021_grounded_minus_control", "R-019_single_minus_two_phase"):
+        b = summary[name]["block_level"]
+        print(f"  {name}: {b['mean']:+.3f} [{b['low']}, {b['high']}] blocks {b['by_block']}")
+    print(f"  episodes {summary['episodes']}; LLM attempts {summary['llm_attempts']}")
+    return 0
+
+
 def parse_args():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--env-name", default="push-v2")
@@ -397,7 +591,7 @@ def parse_args():
     p.add_argument(
         "--out-dir", default=os.path.join(_PROJECT_ROOT, "logs", "generation_modes")
     )
-    p.add_argument("--research-mode", choices=sorted(RESEARCH_ARMS), default="")
+    p.add_argument("--research-mode", choices=sorted(RESEARCH_ARMS) + ["pick-place-suite"], default="")
     p.add_argument("--generation-seeds", type=int, nargs="+", default=[])
     p.add_argument("--search-seeds", type=int, nargs="+", default=[])
     p.add_argument("--probe-seed", type=int)
@@ -412,6 +606,8 @@ def separator(title):
 
 def main():
     args = parse_args()
+    if args.research_mode == "pick-place-suite":
+        return run_pick_place_suite(args)
     if args.research_mode:
         return run_seedless_searchability(args)
     if not os.environ.get("OPENAI_API_KEY"):

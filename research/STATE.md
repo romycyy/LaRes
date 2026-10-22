@@ -1,12 +1,12 @@
 # Research state
 
-_Generated 2026-10-22T07:08:23 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T07:14:53 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 0 |
+| running | 3 |
 | approved | 0 |
 | proposed | 0 |
 | decided | 15 |
@@ -14,7 +14,12 @@ _Generated 2026-10-22T07:08:23 by `python scripts/research.py state` from `resea
 
 ## Needs attention
 
-- Nothing open. Run `python scripts/research.py propose` to ask the advisor for ideas.
+- **R-019** [running] 1. Test seedless generator transfer to grasp-and-transport
+  - run the protocol, then `python scripts/research.py record R-019 --results <json>`
+- **R-020** [running] 2. Test whether search needs grasp-and-lift-aware selection
+  - run the protocol, then `python scripts/research.py record R-020 --results <json>`
+- **R-021** [running] 3. Test explicit observation and gripper-action grounding
+  - run the protocol, then `python scripts/research.py record R-021 --results <json>`
 
 ## Last 5 decisions
 

@@ -1,0 +1,85 @@
+{
+  "id": "R-021",
+  "title": "3. Test explicit observation and gripper-action grounding",
+  "hypothesis": "An explicit environment-derived observation/action contract prevents gripper-sign and coordinate-interpretation errors that otherwise make single-phase pick-place structures unsearchable.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "baseline",
+    "rationale": "Baseline is single-phase generation using the existing pick-place prompt assets unchanged. A 10-point confirmation gain would justify task-interface grounding before further search investment. Unlike D-013, this supplies interface semantics rather than restricting policy geometry or parameterisation."
+  },
+  "protocol": {
+    "script": "scripts/compare_generation_modes.py",
+    "config": "",
+    "command": "python scripts/compare_generation_modes.py --research-mode pick-place-suite --env-name pick-place-v2 --probe-seed 3214 --heldout-seed 3215 --out-dir logs/pick_place_selector_ablation",
+    "seeds": [
+      3220,
+      3221,
+      3222,
+      3223
+    ],
+    "manifests": [
+      "config/manifests/push-v2_development.yaml"
+    ],
+    "episodes": 620,
+    "llm_calls": 4,
+    "code_changes": [
+      "scripts/compare_generation_modes.py (--research-mode pick-place-suite: shared controls, lift-aware selector, grounding table, two-phase counterparts)",
+      "tests/test_stage_f.py"
+    ],
+    "needs_gpu": false,
+    "needs_llm": true
+  },
+  "status": "running",
+  "source": "advisor",
+  "falsified_by": "The block-level paired 95% interval has an upper bound below +0.10. A zero-spanning interval is inconclusive; additional independent paired generations evaluated on fresh confirmation cases would resolve the success effect.",
+  "cost_estimate": {
+    "episodes": 1240,
+    "llm_calls": 8,
+    "wall_time_minutes": 75
+  },
+  "open_question_refs": [
+    -1,
+    1
+  ],
+  "briefing_sha256": "f2284d9322b44ab614d943eaa753d73ae023f03ab223ece655a4899b6d6535a3",
+  "proposal_call_id": "call_00030",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T07:14:49",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00031, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T071247_call_00031.json"
+  },
+  "run": {
+    "started_at": "2026-10-22T07:14:52",
+    "git_sha": "dd60a340d0f8abe5a597b073f5c914511a42d09e",
+    "dirty_worktree": true,
+    "log_dir": "logs/pick_place_selector_ablation"
+  },
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-22T07:14:49",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00031: one preregistered shared-control suite on pick-place-v2 (4 single-phase control pools reused by all three contrasts; probe s3214 x5, confirmation s3215 x30 built under the out dir); grounding table verified from MetaWorld 3 source"
+    },
+    {
+      "at": "2026-10-22T07:14:49",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00031, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T07:14:52",
+      "from": "approved",
+      "to": "running",
+      "note": "git dd60a340d0 (dirty)"
+    }
+  ],
+  "created_at": "2026-10-22T07:11:02"
+}

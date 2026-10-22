@@ -1,0 +1,85 @@
+{
+  "id": "R-019",
+  "title": "1. Test seedless generator transfer to grasp-and-transport",
+  "hypothesis": "Single-phase generation preserves grasp-to-transport coordination better than ideas-then-implementation generation, giving rollout search better pick-place-v2 structures without a seed bank.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.15,
+    "against": "baseline",
+    "rationale": "Baseline is two-phase generation with identical rollout search. A 15-point fresh-case gain would justify transferring the recipe. D-014 tested pushing, not grasp transitions, and D-015's saturated bank cannot answer this question. This direct transfer decision has the highest expected information value."
+  },
+  "protocol": {
+    "script": "scripts/compare_generation_modes.py",
+    "config": "",
+    "command": "python scripts/compare_generation_modes.py --research-mode pick-place-suite --env-name pick-place-v2 --probe-seed 3214 --heldout-seed 3215 --out-dir logs/pick_place_selector_ablation",
+    "seeds": [
+      3200,
+      3201,
+      3202,
+      3205
+    ],
+    "manifests": [
+      "config/manifests/push-v2_development.yaml"
+    ],
+    "episodes": 620,
+    "llm_calls": 8,
+    "code_changes": [
+      "scripts/compare_generation_modes.py (--research-mode pick-place-suite: shared controls, lift-aware selector, grounding table, two-phase counterparts)",
+      "tests/test_stage_f.py"
+    ],
+    "needs_gpu": false,
+    "needs_llm": true
+  },
+  "status": "running",
+  "source": "advisor",
+  "falsified_by": "The block-level paired 95% interval has an upper bound below +0.15. An interval spanning zero is inconclusive, not evidence of improvement; resolving it requires fresh-case paired success from additional independent generation blocks.",
+  "cost_estimate": {
+    "episodes": 930,
+    "llm_calls": 9,
+    "wall_time_minutes": 60
+  },
+  "open_question_refs": [
+    -1,
+    4
+  ],
+  "briefing_sha256": "f2284d9322b44ab614d943eaa753d73ae023f03ab223ece655a4899b6d6535a3",
+  "proposal_call_id": "call_00030",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T07:14:49",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00031, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T071247_call_00031.json"
+  },
+  "run": {
+    "started_at": "2026-10-22T07:14:53",
+    "git_sha": "dd60a340d0f8abe5a597b073f5c914511a42d09e",
+    "dirty_worktree": true,
+    "log_dir": "logs/pick_place_selector_ablation"
+  },
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-22T07:14:49",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00031: one preregistered shared-control suite on pick-place-v2 (4 single-phase control pools reused by all three contrasts; probe s3214 x5, confirmation s3215 x30 built under the out dir); grounding table verified from MetaWorld 3 source"
+    },
+    {
+      "at": "2026-10-22T07:14:49",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00031, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T07:14:53",
+      "from": "approved",
+      "to": "running",
+      "note": "git dd60a340d0 (dirty)"
+    }
+  ],
+  "created_at": "2026-10-22T07:11:02"
+}

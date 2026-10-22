@@ -1,0 +1,86 @@
+{
+  "id": "R-020",
+  "title": "2. Test whether search needs grasp-and-lift-aware selection",
+  "hypothesis": "When pick-place success is sparse, ranking successful grasp-and-lift behaviour ahead of geometric goal progress selects more transferable controllers from the same rollout candidates.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "baseline",
+    "rationale": "Baseline is the unchanged phase-searchability selector applied to the identical candidate pool. A 10-point confirmation gain would identify candidate selection, rather than generation or additional search, as a pipeline bottleneck; sharing all search rollouts makes this inexpensive."
+  },
+  "protocol": {
+    "script": "scripts/compare_generation_modes.py",
+    "config": "",
+    "command": "python scripts/compare_generation_modes.py --research-mode pick-place-suite --env-name pick-place-v2 --probe-seed 3214 --heldout-seed 3215 --out-dir logs/pick_place_selector_ablation",
+    "seeds": [
+      3210,
+      3211,
+      3212,
+      3213,
+      3214,
+      3215
+    ],
+    "manifests": [
+      "config/manifests/push-v2_development.yaml"
+    ],
+    "episodes": 740,
+    "llm_calls": 4,
+    "code_changes": [
+      "scripts/compare_generation_modes.py (--research-mode pick-place-suite: shared controls, lift-aware selector, grounding table, two-phase counterparts)",
+      "tests/test_stage_f.py"
+    ],
+    "needs_gpu": false,
+    "needs_llm": true
+  },
+  "status": "running",
+  "source": "advisor",
+  "falsified_by": "The block-level paired 95% interval has an upper bound below +0.10. A zero-spanning interval is inconclusive; the resolving measurement is fresh-case paired success of the two selectors' winners over additional independent structure pools.",
+  "cost_estimate": {
+    "episodes": 740,
+    "llm_calls": 4,
+    "wall_time_minutes": 45
+  },
+  "open_question_refs": [
+    4
+  ],
+  "briefing_sha256": "f2284d9322b44ab614d943eaa753d73ae023f03ab223ece655a4899b6d6535a3",
+  "proposal_call_id": "call_00030",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T07:14:49",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00031, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T071247_call_00031.json"
+  },
+  "run": {
+    "started_at": "2026-10-22T07:14:51",
+    "git_sha": "dd60a340d0f8abe5a597b073f5c914511a42d09e",
+    "dirty_worktree": true,
+    "log_dir": "logs/pick_place_selector_ablation"
+  },
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-22T07:14:49",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00031: one preregistered shared-control suite on pick-place-v2 (4 single-phase control pools reused by all three contrasts; probe s3214 x5, confirmation s3215 x30 built under the out dir); grounding table verified from MetaWorld 3 source"
+    },
+    {
+      "at": "2026-10-22T07:14:49",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00031, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T07:14:51",
+      "from": "approved",
+      "to": "running",
+      "note": "git dd60a340d0 (dirty)"
+    }
+  ],
+  "created_at": "2026-10-22T07:11:02"
+}

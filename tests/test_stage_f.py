@@ -694,3 +694,41 @@ class TestSeedlessSearchability(unittest.TestCase):
         self.assertEqual(out["block_level"]["by_block"], {1: 1.0, 2: -1.0})
         self.assertAlmostEqual(out["paired_success_difference"], 0.0)
         self.assertEqual(out["step0_block_level"]["by_block"], {1: 0.0, 2: -1.0})
+
+
+class TestPickPlaceSuite(unittest.TestCase):
+    """R-019/20/21: the grounding table is format-safe; selectors and block contrasts behave as declared."""
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, os.path.join(_PROJECT_ROOT, "scripts"))
+        import compare_generation_modes as cgm
+
+        cls.cgm = cgm
+
+    def test_grounding_table_is_brace_free(self):
+        self.assertNotIn("{", self.cgm.GROUNDING_TABLE)
+        self.assertNotIn("}", self.cgm.GROUNDING_TABLE)
+
+    def test_lift_selector_breaks_success_ties_by_lift(self):
+        trace = [{"success": 0.0, "lift": 0.0, "progress": 0.3}, {"success": 0.0, "lift": 0.6, "progress": 0.1}]
+        self.assertEqual(self.cgm.suite_select(trace, "original"), 0)
+        self.assertEqual(self.cgm.suite_select(trace, "lift"), 1)
+
+    def test_block_contrasts_and_invalid_slots(self):
+        cases = ["a", "b"]
+        slots = [{"slot_id": f"{arm}_{b}", "arm": arm, "block_index": b, "valid": not (arm == "two_phase" and b == 0)}
+                 for arm in ("control", "grounded", "two_phase") for b in range(4)]
+        one, zero = {"a": 1.0, "b": 1.0}, {"a": 0.0, "b": 0.0}
+        results = {}
+        for s in slots:
+            if not s["valid"]:
+                continue
+            conf = {"0": zero, "3": one} if s["arm"] == "control" else {"0": one}
+            picks = {"original": 0, "lift": 3} if s["arm"] == "control" else {"original": 0}
+            results[s["slot_id"]] = {"confirmed": conf, "picks": picks, "trace": [{"success": 0.0, "lift": 0.0}]}
+        out = self.cgm.suite_summary(slots, results, cases)
+        self.assertAlmostEqual(out["R-020_lift_minus_original_selector"]["paired_success_difference"], 1.0)
+        self.assertAlmostEqual(out["R-021_grounded_minus_control"]["paired_success_difference"], 1.0)
+        self.assertAlmostEqual(out["R-019_single_minus_two_phase"]["block_level"]["by_block"][0], 0.0)
+        self.assertAlmostEqual(out["R-019_single_minus_two_phase"]["block_level"]["by_block"][1], -1.0)

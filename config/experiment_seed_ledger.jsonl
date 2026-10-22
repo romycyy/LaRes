@@ -139,3 +139,17 @@
 {"seed": 3133, "namespace": "mt1_pool", "use": "R-018 block 3: fresh 50-case confirmation of both incumbents", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
 {"seed": 3134, "namespace": "mt1_pool", "use": "R-018 block 4: fresh 50-case confirmation of both incumbents", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
 {"seed": 3135, "namespace": "mt1_pool", "use": "R-018 block 5: fresh 50-case confirmation of both incumbents", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
+{"seed": 3210, "namespace": "generation_block", "use": "pick-place suite: control block 0", "artifact": "logs/pick_place_selector_ablation", "recorded_at": "2026-10-22T07:14:55", "backfilled": false}
+{"seed": 3211, "namespace": "generation_block", "use": "pick-place suite: control block 1", "artifact": "logs/pick_place_selector_ablation", "recorded_at": "2026-10-22T07:14:55", "backfilled": false}
+{"seed": 3212, "namespace": "generation_block", "use": "pick-place suite: control block 2", "artifact": "logs/pick_place_selector_ablation", "recorded_at": "2026-10-22T07:14:55", "backfilled": false}
+{"seed": 3213, "namespace": "generation_block", "use": "pick-place suite: control block 3", "artifact": "logs/pick_place_selector_ablation", "recorded_at": "2026-10-22T07:14:55", "backfilled": false}
+{"seed": 3220, "namespace": "generation_block", "use": "pick-place suite: grounded block 0", "artifact": "logs/pick_place_selector_ablation", "recorded_at": "2026-10-22T07:14:55", "backfilled": false}
+{"seed": 3221, "namespace": "generation_block", "use": "pick-place suite: grounded block 1", "artifact": "logs/pick_place_selector_ablation", "recorded_at": "2026-10-22T07:14:55", "backfilled": false}
+{"seed": 3222, "namespace": "generation_block", "use": "pick-place suite: grounded block 2", "artifact": "logs/pick_place_selector_ablation", "recorded_at": "2026-10-22T07:14:55", "backfilled": false}
+{"seed": 3223, "namespace": "generation_block", "use": "pick-place suite: grounded block 3", "artifact": "logs/pick_place_selector_ablation", "recorded_at": "2026-10-22T07:14:55", "backfilled": false}
+{"seed": 3200, "namespace": "generation_block", "use": "pick-place suite: two_phase block 0", "artifact": "logs/pick_place_selector_ablation", "recorded_at": "2026-10-22T07:14:55", "backfilled": false}
+{"seed": 3201, "namespace": "generation_block", "use": "pick-place suite: two_phase block 1", "artifact": "logs/pick_place_selector_ablation", "recorded_at": "2026-10-22T07:14:55", "backfilled": false}
+{"seed": 3202, "namespace": "generation_block", "use": "pick-place suite: two_phase block 2", "artifact": "logs/pick_place_selector_ablation", "recorded_at": "2026-10-22T07:14:55", "backfilled": false}
+{"seed": 3205, "namespace": "generation_block", "use": "pick-place suite: two_phase block 3", "artifact": "logs/pick_place_selector_ablation", "recorded_at": "2026-10-22T07:14:55", "backfilled": false}
+{"seed": 3214, "namespace": "mt1_pool", "use": "pick-place suite: 5-case selection probe", "artifact": "logs/pick_place_selector_ablation", "recorded_at": "2026-10-22T07:14:55", "backfilled": false}
+{"seed": 3215, "namespace": "mt1_pool", "use": "pick-place suite: 30-case confirmation manifest", "artifact": "logs/pick_place_selector_ablation", "recorded_at": "2026-10-22T07:14:55", "backfilled": false}
