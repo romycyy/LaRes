@@ -121,3 +121,21 @@
 {"seed": 3045, "namespace": "fitting", "use": "phase-searchability: search RNG seed", "artifact": "logs/research/phase_searchability_s3040", "recorded_at": "2026-10-22T05:46:05", "backfilled": false}
 {"seed": 3046, "namespace": "mt1_pool", "use": "phase-searchability: 10-case selection probe", "artifact": "logs/research/phase_searchability_s3040", "recorded_at": "2026-10-22T05:46:05", "backfilled": false}
 {"seed": 3047, "namespace": "mt1_pool", "use": "phase-searchability: 50-case confirmation manifest", "artifact": "logs/research/phase_searchability_s3040", "recorded_at": "2026-10-22T05:46:05", "backfilled": false}
+{"seed": 3100, "namespace": "fitting", "use": "R-018 block 0: control run seed (config/two_lane_search.yaml)", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
+{"seed": 3102, "namespace": "fitting", "use": "R-018 block 1: control run seed (config/two_lane_search.yaml)", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
+{"seed": 3104, "namespace": "fitting", "use": "R-018 block 2: control run seed (config/two_lane_search.yaml)", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
+{"seed": 3106, "namespace": "fitting", "use": "R-018 block 3: control run seed (config/two_lane_search.yaml)", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
+{"seed": 3108, "namespace": "fitting", "use": "R-018 block 4: control run seed (config/two_lane_search.yaml)", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
+{"seed": 3110, "namespace": "fitting", "use": "R-018 block 5: control run seed (config/two_lane_search.yaml)", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
+{"seed": 3101, "namespace": "fitting", "use": "R-018 block 0: treatment run seed (config/two_lane_search_v2.yaml)", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
+{"seed": 3103, "namespace": "fitting", "use": "R-018 block 1: treatment run seed (config/two_lane_search_v2.yaml)", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
+{"seed": 3105, "namespace": "fitting", "use": "R-018 block 2: treatment run seed (config/two_lane_search_v2.yaml)", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
+{"seed": 3107, "namespace": "fitting", "use": "R-018 block 3: treatment run seed (config/two_lane_search_v2.yaml)", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
+{"seed": 3109, "namespace": "fitting", "use": "R-018 block 4: treatment run seed (config/two_lane_search_v2.yaml)", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
+{"seed": 3111, "namespace": "fitting", "use": "R-018 block 5: treatment run seed (config/two_lane_search_v2.yaml)", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
+{"seed": 3130, "namespace": "mt1_pool", "use": "R-018 block 0: fresh 50-case confirmation of both incumbents", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
+{"seed": 3131, "namespace": "mt1_pool", "use": "R-018 block 1: fresh 50-case confirmation of both incumbents", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
+{"seed": 3132, "namespace": "mt1_pool", "use": "R-018 block 2: fresh 50-case confirmation of both incumbents", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
+{"seed": 3133, "namespace": "mt1_pool", "use": "R-018 block 3: fresh 50-case confirmation of both incumbents", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
+{"seed": 3134, "namespace": "mt1_pool", "use": "R-018 block 4: fresh 50-case confirmation of both incumbents", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}
+{"seed": 3135, "namespace": "mt1_pool", "use": "R-018 block 5: fresh 50-case confirmation of both incumbents", "artifact": "logs/r018", "recorded_at": "2026-10-22T06:29:58", "backfilled": false}

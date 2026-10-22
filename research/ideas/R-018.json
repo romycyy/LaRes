@@ -50,7 +50,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "approved",
+  "status": "running",
   "source": "implementer",
   "falsified_by": "Upper paired 95% bound below +0.05 for incumbent-vs-incumbent on the fresh cases refutes; an interval spanning zero is inconclusive. Report the exploration-lane comparison separately.",
   "cost_estimate": {
@@ -71,7 +71,12 @@
     "note": "approved by advisor gpt-6.1-sol (consult call_00028, 'revise' with changes applied) under the user's 2026-10-22 session delegation; no live spend until the offline audit is done",
     "consultation": "research/consultations/2026-10-22T061513_call_00028.json"
   },
-  "run": {},
+  "run": {
+    "started_at": "2026-10-22T06:29:57",
+    "git_sha": "04fd32e6f22abfa84a033657f97245fc5984d7aa",
+    "dirty_worktree": false,
+    "log_dir": "logs/r018"
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -94,6 +99,12 @@
       "from": "proposed",
       "to": "approved",
       "note": "approved by advisor gpt-6.1-sol (consult call_00028, 'revise' with changes applied) under the user's 2026-10-22 session delegation; no live spend until the offline audit is done"
+    },
+    {
+      "at": "2026-10-22T06:29:57",
+      "from": "approved",
+      "to": "running",
+      "note": "git 04fd32e6f2"
     }
   ],
   "created_at": "2026-10-22T06:13:39"
