@@ -10,9 +10,9 @@
     "rationale": "At least one task must exhibit a learner–expert gap of 0.90 or more, with zero learner successes, to justify another trace-repair testbed rather than merely another difficult task."
   },
   "protocol": {
-    "script": "scripts/research.py",
-    "config": "config/two_lane_search_v2.yaml",
-    "command": "gpu run -- python scripts/research.py recoverable-plateau-scan --config config/two_lane_search_v2.yaml --tasks shelf-place-v2,basketball-v2,soccer-v2 --seeds 3810,3811,3812,3813,3814,3815,3816,3817,3818 --expert-cases 30 --expert-gate 0.9 --structures-per-task 1 --search-candidates 24 --probe-cases 5 --confirmation-cases 30 --handoffs-per-plateau 5 --bc-steps 0 --max-repair-per-candidate 1 --model gpt-6.1-sol --reasoning-effort high --temperature 1 --out-dir logs/research/recoverable_plateau_scan",
+    "script": "scripts/compare_generation_modes.py",
+    "config": "",
+    "command": "python scripts/compare_generation_modes.py --research-mode recoverable-plateau-scan --out-dir logs/research/recoverable_plateau_scan",
     "seeds": [
       3810,
       3811,
@@ -25,24 +25,18 @@
       3818
     ],
     "manifests": [
-      "logs/research/recoverable_plateau_scan/shelf-place-v2/manifests/probe.yaml",
-      "logs/research/recoverable_plateau_scan/shelf-place-v2/manifests/promotion.yaml",
-      "logs/research/recoverable_plateau_scan/basketball-v2/manifests/probe.yaml",
-      "logs/research/recoverable_plateau_scan/basketball-v2/manifests/promotion.yaml",
-      "logs/research/recoverable_plateau_scan/soccer-v2/manifests/probe.yaml",
-      "logs/research/recoverable_plateau_scan/soccer-v2/manifests/promotion.yaml"
+      "config/manifests/push-v2_development.yaml"
     ],
     "episodes": 555,
     "llm_calls": 6,
     "code_changes": [
-      "scripts/research.py: compose the existing expert-calibration, numerical-search and learner-to-expert-handoff paths into this subcommand. Unlike D-026, gate tasks independently rather than aborting the whole scan; unlike D-029, diagnose recoverability before requesting any trace-conditioned edit.",
-      "For each expert-qualified task, generate exactly one structure and search 24 candidates on five probe cases. Any probe success rejects plateau status. Otherwise confirm the probe-selected winner on development cases 10-39; any confirmation success also rejects plateau status. No replacement structure or repair edit.",
-      "For each confirmed plateau, restore five predeclared failed learner states at the attempted terminal-phase transition and measure expert continuation success and phase occupancy. Require at least three successful takeovers to label it recoverable. Obtain per-idea spend approval first; freeze manifests and resolved settings in the out-dir. Maximum budget is 90 expert + 360 search + 90 confirmation + 15 continuation episodes; early gates reduce this."
+      "scripts/compare_generation_modes.py (--research-mode recoverable-plateau-scan)",
+      "lares/repair/interventions.py (HandoffActor: horizontal-displacement trigger)"
     ],
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "approved",
+  "status": "running",
   "source": "advisor",
   "falsified_by": "Every expert-qualified task produces a learner success during search or confirmation, or every confirmed zero-success learner has fewer than three successful expert takeovers out of five. If no expert qualifies, the plateau question is inconclusive; the missing measurement is a reliable expert's success on those tasks.",
   "cost_estimate": {
@@ -63,7 +57,12 @@
     "note": "approved by advisor gpt-6.1-sol (consult call_00060, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
     "consultation": "research/consultations/2026-10-22T102044_call_00060.json"
   },
-  "run": {},
+  "run": {
+    "started_at": "2026-10-22T10:59:56",
+    "git_sha": "04e8b873fa7883548832f6a745c89ffd7cd8bb57",
+    "dirty_worktree": true,
+    "log_dir": "logs/research/recoverable_plateau_scan"
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -80,6 +79,18 @@
       "from": "proposed",
       "to": "approved",
       "note": "approved by advisor gpt-6.1-sol (consult call_00060, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T10:59:55",
+      "from": "approved",
+      "to": "approved",
+      "note": "terminal-entry criteria frozen before generation: shelf-place and basketball = object 3 cm above start for 3 steps; soccer = object moved 5 cm across the table for 3 steps; takeover cases = the first five confirmation cases (10-14); per task seeds b (pool), b+1 (generation), b+2 (search) for b = 3810, 3813, 3816"
+    },
+    {
+      "at": "2026-10-22T10:59:56",
+      "from": "approved",
+      "to": "running",
+      "note": "git 04e8b873fa (dirty)"
     }
   ],
   "created_at": "2026-10-22T10:19:43"

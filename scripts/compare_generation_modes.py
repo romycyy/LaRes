@@ -1928,6 +1928,118 @@ def run_assembly_parent_transfer(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  R-035: a second recoverable terminal-phase plateau?
+# ---------------------------------------------------------------------------
+
+#: Frozen before any generation (advisor consult call_00060). task -> (seed base, terminal-entry trigger kwargs).
+#: A trigger fires after three consecutive steps meeting it; "lift" = object 3 cm above its start, "xy" = object moved
+#: 5 cm across the table from its start (soccer is pushed, never lifted). No end-effector condition.
+PLATEAU_SCAN = {
+    "shelf-place-v2": (3810, {"lift_m": 0.03, "near_m": None}),
+    "basketball-v2": (3813, {"lift_m": 0.03, "near_m": None}),
+    "soccer-v2": (3816, {"xy_move_m": 0.05, "near_m": None}),
+}
+PLATEAU_EXPERT_GATE, PLATEAU_TAKEOVERS, PLATEAU_TAKEOVER_MIN = 0.90, 5, 3
+
+
+def run_recoverable_plateau_scan(args) -> int:
+    sys.path.insert(0, _SCRIPT_DIR)
+    import compare_child_vs_parent as cvp
+    from lares.core.obs_schema import get_obs_schema
+    from lares.core.training_pipeline import load_policy_prompt_assets as assets
+    from lares.eval import ExpertActor, make_manifest_env
+    from lares.eval.runner import PolicyActor, evaluate_manifest, run_episode
+    from lares.fitting.structure_bank import instantiate_source
+    from lares.repair.interventions import HANDOFF_LEARNER_THEN_EXPERT, HandoffActor
+    from lares.search import rollout_search
+
+    os.makedirs(args.out_dir, exist_ok=True)
+    entries = []
+    for task, (b, _) in PLATEAU_SCAN.items():
+        entries += [(b, "mt1_pool", f"R-035 {task}: probe and confirmation pool"),
+                    (b + 1, "generation_block", f"R-035 {task}: generation"), (b + 2, "fitting", f"R-035 {task}: search")]
+    print(f"  seeds: {cvp.ensure_entries_reserved(entries, args.out_dir)}")
+    if args.reserve_only:
+        return 0
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise SystemExit("R-035 needs OPENAI_API_KEY")
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    mdir, rows, episodes, found = os.path.join(args.out_dir, "manifests"), {}, {"expert": 0, "probe": 0, "confirmation": 0, "takeover": 0}, None
+    for task, (b, trigger) in PLATEAU_SCAN.items():
+        schema = get_obs_schema(task)
+        full, _ = cvp.fresh_manifest(task, b, 50, 150, mdir, role="plateau")
+        probe, confirm = full.head(5), full.slice(10, 40)
+        takeover_cases = confirm.head(PLATEAU_TAKEOVERS)          # predeclared: the first five confirmation cases
+        env = make_manifest_env(full, full.resolve_pool(), 200)
+        row = {"trigger": trigger, "takeover_cases": [c.case_id for c in takeover_cases.episodes]}
+        rows[task] = row
+        r = evaluate_manifest(ExpertActor(task), confirm, env, max_steps=150)
+        episodes["expert"] += len(r.episodes)
+        row["expert_success"] = r.success_rate
+        print(f"  {task}: expert {r.success_rate:.2f}", flush=True)
+        if r.success_rate < PLATEAU_EXPERT_GATE:
+            row["status"] = "expert not qualified"
+            continue
+        final, n = generate_one(assets(task), "", os.path.join(args.out_dir, "generation", task),
+                                SimpleNamespace(**{**vars(args), "env_name": task}), max_repair=1)
+        row.update(valid=bool(final.valid), attempts=n)
+        if not final.valid:
+            row["status"] = "structure invalid (not replaced)"
+            continue
+        original = instantiate_source(final.code, 39, 4, schema=schema)
+        original.fixed_action_scale = 0.1
+        cands, trace = rollout_search.independent_candidates(original, b + 2), []
+        for i, (kind, pol) in enumerate(cands):
+            pr = evaluate_manifest(PolicyActor(pol, name="probe"), probe, env, max_steps=150)
+            episodes["probe"] += len(pr.episodes)
+            prog = [e.signed_goal_progress for e in pr.episodes if e.signed_goal_progress is not None]
+            trace.append({"success": pr.success_rate, "progress": float(np.mean(prog)) if prog else 0.0})
+        row["probe_candidates_succeeding"] = sum(t["success"] > 0 for t in trace)
+        if row["probe_candidates_succeeding"]:
+            row["status"] = "not a plateau (probe success)"
+            print(f"  {task}: not a plateau ({row['probe_candidates_succeeding']} probe successes)", flush=True)
+            continue
+        pick = min(range(len(trace)), key=lambda i: (-trace[i]["success"], -trace[i]["progress"], i))
+        cr = evaluate_manifest(PolicyActor(cands[pick][1], name="confirm"), confirm, env, max_steps=150)
+        episodes["confirmation"] += len(cr.episodes)
+        row["learner_confirmation_success"] = cr.success_rate
+        if cr.success_rate > 0:
+            row["status"] = "not a plateau (confirmation success)"
+            continue
+        actor = HandoffActor(cands[pick][1], task, schema, HANDOFF_LEARNER_THEN_EXPERT, **trigger)
+        takeovers = []
+        for case in takeover_cases.episodes:
+            ep = run_episode(actor, env, case, max_steps=150, schema=schema)
+            takeovers.append({"case": case.case_id, "reached_terminal_entry": actor.handed_off,
+                              "handoff_step": actor.handoff_step, "success": float(ep.success)})
+        episodes["takeover"] += len(takeovers)
+        row["takeovers"] = takeovers
+        if not all(t["reached_terminal_entry"] for t in takeovers):
+            row["status"] = "plateau; recoverability not established (a takeover case never reached terminal entry)"
+        elif sum(t["success"] for t in takeovers) >= PLATEAU_TAKEOVER_MIN:
+            row["status"] = "recoverable plateau"
+            found = task
+        else:
+            row["status"] = "plateau, not recoverable"
+        print(f"  {task}: {row['status']} (takeovers {[t['success'] for t in takeovers]})", flush=True)
+        if found:
+            break
+    summary = {"rows": rows, "recoverable_plateau": found, "episodes": episodes,
+               "llm_attempts": int(sum(r.get("attempts", 0) for r in rows.values())),
+               "expert_qualified": [t for t, r in rows.items() if r.get("expert_success", 0) >= PLATEAU_EXPERT_GATE]}
+    gaps = [r["expert_success"] - r["learner_confirmation_success"] for r in rows.values() if "learner_confirmation_success" in r]
+    summary["promotion_success_rate"] = min((r["learner_confirmation_success"] for r in rows.values()
+                                             if "learner_confirmation_success" in r), default=None)
+    summary["max_expert_minus_learner"] = max(gaps) if gaps else None
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2, default=str)
+    print(f"  recoverable plateau: {found}; episodes {episodes}; LLM attempts {summary['llm_attempts']}", flush=True)
+    return 0
+
+
 def run_task_scan(args) -> int:
     import multiprocessing as mp
 
@@ -2024,7 +2136,8 @@ def parse_args():
     p.add_argument(
         "--out-dir", default=os.path.join(_PROJECT_ROOT, "logs", "generation_modes")
     )
-    p.add_argument("--research-mode", choices=sorted(RESEARCH_ARMS) + ["pick-place-suite", "task-scan", "contact-regime-scan"],
+    p.add_argument("--research-mode", choices=sorted(RESEARCH_ARMS) + ["pick-place-suite", "task-scan", "contact-regime-scan",
+                                                                        "recoverable-plateau-scan"],
                    default="")
     p.add_argument("--scan-set", choices=["default", "hard"], default="default")
     p.add_argument("--assembly-study", choices=["reciprocal-handoff", "expert-fit-vs-numerical", "targeted-placement-edit",
@@ -2065,6 +2178,8 @@ def main():
         return run_hammer_transfer(args)
     if args.assembly_study == "parent-transfer":
         return run_assembly_parent_transfer(args)
+    if args.research_mode == "recoverable-plateau-scan":
+        return run_recoverable_plateau_scan(args)
     if args.research_mode == "contact-regime-scan":
         return run_contact_regime_scan(args)
     if args.research_mode == "task-scan":

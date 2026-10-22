@@ -247,3 +247,12 @@
 {"seed": 3805, "namespace": "generation_block", "use": "R-034: edits of parent 0", "artifact": "logs/research/assembly_parent_transport", "recorded_at": "2026-10-22T10:21:39", "backfilled": false}
 {"seed": 3806, "namespace": "generation_block", "use": "R-034: edits of parent 1", "artifact": "logs/research/assembly_parent_transport", "recorded_at": "2026-10-22T10:21:39", "backfilled": false}
 {"seed": 3807, "namespace": "generation_block", "use": "R-034: edits of parent 2", "artifact": "logs/research/assembly_parent_transport", "recorded_at": "2026-10-22T10:21:39", "backfilled": false}
+{"seed": 3810, "namespace": "mt1_pool", "use": "R-035 shelf-place-v2: probe and confirmation pool", "artifact": "logs/research/recoverable_plateau_scan", "recorded_at": "2026-10-22T10:59:58", "backfilled": false}
+{"seed": 3811, "namespace": "generation_block", "use": "R-035 shelf-place-v2: generation", "artifact": "logs/research/recoverable_plateau_scan", "recorded_at": "2026-10-22T10:59:58", "backfilled": false}
+{"seed": 3812, "namespace": "fitting", "use": "R-035 shelf-place-v2: search", "artifact": "logs/research/recoverable_plateau_scan", "recorded_at": "2026-10-22T10:59:58", "backfilled": false}
+{"seed": 3813, "namespace": "mt1_pool", "use": "R-035 basketball-v2: probe and confirmation pool", "artifact": "logs/research/recoverable_plateau_scan", "recorded_at": "2026-10-22T10:59:58", "backfilled": false}
+{"seed": 3814, "namespace": "generation_block", "use": "R-035 basketball-v2: generation", "artifact": "logs/research/recoverable_plateau_scan", "recorded_at": "2026-10-22T10:59:58", "backfilled": false}
+{"seed": 3815, "namespace": "fitting", "use": "R-035 basketball-v2: search", "artifact": "logs/research/recoverable_plateau_scan", "recorded_at": "2026-10-22T10:59:58", "backfilled": false}
+{"seed": 3816, "namespace": "mt1_pool", "use": "R-035 soccer-v2: probe and confirmation pool", "artifact": "logs/research/recoverable_plateau_scan", "recorded_at": "2026-10-22T10:59:58", "backfilled": false}
+{"seed": 3817, "namespace": "generation_block", "use": "R-035 soccer-v2: generation", "artifact": "logs/research/recoverable_plateau_scan", "recorded_at": "2026-10-22T10:59:58", "backfilled": false}
+{"seed": 3818, "namespace": "fitting", "use": "R-035 soccer-v2: search", "artifact": "logs/research/recoverable_plateau_scan", "recorded_at": "2026-10-22T10:59:58", "backfilled": false}
