@@ -31,7 +31,7 @@
     "needs_gpu": false,
     "needs_llm": true
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The block-level paired 95% interval has an upper bound below +0.15. An interval spanning zero is inconclusive, not evidence of improvement; resolving it requires fresh-case paired success from additional independent generation blocks.",
   "cost_estimate": {
@@ -55,12 +55,285 @@
     "started_at": "2026-10-22T07:14:53",
     "git_sha": "dd60a340d0f8abe5a597b073f5c914511a42d09e",
     "dirty_worktree": true,
-    "log_dir": "logs/pick_place_selector_ablation"
+    "log_dir": "logs/pick_place_selector_ablation",
+    "finished_at": "2026-10-22T07:49:44"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.2833333333333333,
+      "block_t95": [
+        -0.4797904822732848,
+        1.0464571489399515
+      ],
+      "by_block": [
+        1.0,
+        0.09999999999999998,
+        0.0,
+        0.033333333333333326
+      ],
+      "placement_t95": [
+        0.24280266571320142,
+        0.32386400095346524
+      ],
+      "by_slot": {
+        "control_b0_s3210": {
+          "arm": "control",
+          "valid": true,
+          "picks": {
+            "original": 7,
+            "lift": 7
+          },
+          "success": {
+            "original": 1.0,
+            "lift": 1.0
+          },
+          "best_probe": 1.0,
+          "probe_lift_max": 1.0
+        },
+        "control_b1_s3211": {
+          "arm": "control",
+          "valid": true,
+          "picks": {
+            "original": 23,
+            "lift": 23
+          },
+          "success": {
+            "original": 1.0,
+            "lift": 1.0
+          },
+          "best_probe": 1.0,
+          "probe_lift_max": 1.0
+        },
+        "control_b2_s3212": {
+          "arm": "control",
+          "valid": true,
+          "picks": {
+            "original": 13,
+            "lift": 13
+          },
+          "success": {
+            "original": 1.0,
+            "lift": 1.0
+          },
+          "best_probe": 1.0,
+          "probe_lift_max": 1.0
+        },
+        "control_b3_s3213": {
+          "arm": "control",
+          "valid": true,
+          "picks": {
+            "original": 14,
+            "lift": 14
+          },
+          "success": {
+            "original": 1.0,
+            "lift": 1.0
+          },
+          "best_probe": 1.0,
+          "probe_lift_max": 1.0
+        },
+        "grounded_b0_s3220": {
+          "arm": "grounded",
+          "valid": true,
+          "picks": {
+            "original": 21
+          },
+          "success": {
+            "original": 1.0
+          },
+          "best_probe": 1.0,
+          "probe_lift_max": 1.0
+        },
+        "grounded_b1_s3221": {
+          "arm": "grounded",
+          "valid": true,
+          "picks": {
+            "original": 15
+          },
+          "success": {
+            "original": 1.0
+          },
+          "best_probe": 1.0,
+          "probe_lift_max": 1.0
+        },
+        "grounded_b2_s3222": {
+          "arm": "grounded",
+          "valid": true,
+          "picks": {
+            "original": 3
+          },
+          "success": {
+            "original": 1.0
+          },
+          "best_probe": 1.0,
+          "probe_lift_max": 1.0
+        },
+        "grounded_b3_s3223": {
+          "arm": "grounded",
+          "valid": true,
+          "picks": {
+            "original": 1
+          },
+          "success": {
+            "original": 1.0
+          },
+          "best_probe": 1.0,
+          "probe_lift_max": 1.0
+        },
+        "two_phase_b0_s3200": {
+          "arm": "two_phase",
+          "valid": true,
+          "picks": {
+            "original": 10
+          },
+          "success": {
+            "original": 0.0
+          },
+          "best_probe": 0.0,
+          "probe_lift_max": 1.0
+        },
+        "two_phase_b1_s3201": {
+          "arm": "two_phase",
+          "valid": true,
+          "picks": {
+            "original": 22
+          },
+          "success": {
+            "original": 0.9
+          },
+          "best_probe": 1.0,
+          "probe_lift_max": 1.0
+        },
+        "two_phase_b2_s3202": {
+          "arm": "two_phase",
+          "valid": true,
+          "picks": {
+            "original": 17
+          },
+          "success": {
+            "original": 1.0
+          },
+          "best_probe": 1.0,
+          "probe_lift_max": 1.0
+        },
+        "two_phase_b3_s3205": {
+          "arm": "two_phase",
+          "valid": true,
+          "picks": {
+            "original": 18
+          },
+          "success": {
+            "original": 0.9666666666666667
+          },
+          "best_probe": 1.0,
+          "probe_lift_max": 1.0
+        }
+      },
+      "candidates": {
+        "control_b0_s3210": {
+          "original_probe_success": 1.0,
+          "candidates_with_probe_success": 18
+        },
+        "control_b1_s3211": {
+          "original_probe_success": 1.0,
+          "candidates_with_probe_success": 16
+        },
+        "control_b2_s3212": {
+          "original_probe_success": 1.0,
+          "candidates_with_probe_success": 16
+        },
+        "control_b3_s3213": {
+          "original_probe_success": 1.0,
+          "candidates_with_probe_success": 20
+        },
+        "grounded_b0_s3220": {
+          "original_probe_success": 1.0,
+          "candidates_with_probe_success": 13
+        },
+        "grounded_b1_s3221": {
+          "original_probe_success": 1.0,
+          "candidates_with_probe_success": 17
+        },
+        "grounded_b2_s3222": {
+          "original_probe_success": 1.0,
+          "candidates_with_probe_success": 16
+        },
+        "grounded_b3_s3223": {
+          "original_probe_success": 0.0,
+          "candidates_with_probe_success": 9
+        },
+        "two_phase_b0_s3200": {
+          "original_probe_success": 0.0,
+          "candidates_with_probe_success": 0
+        },
+        "two_phase_b1_s3201": {
+          "original_probe_success": 1.0,
+          "candidates_with_probe_success": 17
+        },
+        "two_phase_b2_s3202": {
+          "original_probe_success": 1.0,
+          "candidates_with_probe_success": 9
+        },
+        "two_phase_b3_s3205": {
+          "original_probe_success": 0.8,
+          "candidates_with_probe_success": 13
+        }
+      },
+      "episodes": {
+        "probe": 1440,
+        "confirmation": 360
+      },
+      "llm_calls": 16
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "control is the two-phase ideas-then-implementation generator, same block index; the metric is already treatment minus control"
+    },
+    "artifacts": [
+      "logs/pick_place_selector_ablation/summary.json",
+      "logs/pick_place_selector_ablation/results.json",
+      "logs/pick_place_selector_ablation/run.json",
+      "logs/pick_place_selector_ablation/slots.json",
+      "logs/pick_place_selector_ablation/structures",
+      "logs/pick_place_selector_ablation/manifests",
+      "logs/pick_place_suite.run.log"
+    ],
+    "notes": "Shared-control suite on pick-place-v2 (no seed bank): 12 gpt-6.1-sol structures (4 single-phase controls, 4 single-phase with a source-verified interface table, 4 two-phase), all valid first time (16 calls); each given 24-candidate independent rollout search on a 5-case probe (s3214) with lift recorded, winners confirmed on 30 fresh cases (s3215). 1800 episodes (1440 probe + 360 confirmation). Ceiling: 7 of 8 single-phase structures already succeed untrained (probe 1.0 with lift), 12-17 of their 24 candidates succeed fully, and every single-phase winner scores 1.00 on confirmation. MetaWorld's pick-place success is puck-to-target <= 0.07 m. R-019: +0.283 block-level [-0.480, +1.046] by block [1.0, 0.09999999999999998, 0.0, 0.033333333333333326]. Two-phase block 0 found no successful candidate among 24 (0.00) while single-phase reached 1.00; the other blocks differ by 0.10, 0.00 and 0.03. Placement-level interval [+0.243, +0.324] treats the four blocks as fixed and is not the primary."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 0.2833333333333333,
+    "delta": 0.2833333333333333,
+    "matched": true
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.7,
+      "reasoning": "Single-phase minus two-phase is +0.283 at the block level [-0.480, +1.046]: the mean exceeds +0.15 but the interval spans zero because the difference is concentrated in one block (two-phase block 0 found no successful candidate, 1.00 vs 0.00); the other blocks differ by 0.10, 0.00 and 0.03. Consistent in direction with D-014, but on pick-place-v2 both generators usually solve the task, so four blocks cannot separate them.",
+      "cited_artifacts": [
+        "logs/pick_place_selector_ablation/summary.json"
+      ],
+      "next_experiment": "D-014's push-v2 result stands; on pick-place-v2 the more useful finding is that single-phase generation plus 24-candidate search solves the task seedless (8/8 structures at 1.00). A harder task (e.g. one where single-phase zero-shot fails) is needed to separate generators further.",
+      "recorded_at": "2026-10-22T07:49:47",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 0.99,
+      "reasoning": "The measured paired_success_difference against the two-phase baseline was +0.283, exceeding the predicted +0.15 point threshold [logs/pick_place_selector_ablation/summary.json]. However, the primary block-level 95% interval was [-0.480, +1.046], spanning both zero and the prediction threshold, so neither improvement nor refutation is established [logs/pick_place_selector_ablation/summary.json]. The block differences were +1.000, +0.100, 0.000, and +0.033, with the largest gain concentrated in one block [logs/pick_place_selector_ablation/summary.json]. The positive placement-level interval treats generation blocks as fixed and therefore does not resolve the uncertainty across independent generations [logs/pick_place_selector_ablation/summary.json].",
+      "cited_artifacts": [
+        "logs/pick_place_selector_ablation/summary.json"
+      ],
+      "next_experiment": "Subject to approval, reuse scripts/compare_generation_modes.py for four additional single-phase/two-phase blocks with unchanged rollout budgets and fresh generation, probe, and confirmation seeds 3230–3239, estimating 1,200 simulator episodes and 12 LLM calls.",
+      "recorded_at": "2026-10-22T07:50:54",
+      "call_id": "call_00034"
+    }
+  ],
+  "decision_id": "D-018",
   "history": [
     {
       "at": "2026-10-22T07:14:49",
@@ -79,6 +352,18 @@
       "from": "approved",
       "to": "running",
       "note": "git dd60a340d0 (dirty)"
+    },
+    {
+      "at": "2026-10-22T07:49:44",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=True"
+    },
+    {
+      "at": "2026-10-22T07:51:08",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-018: inconclusive"
     }
   ],
   "created_at": "2026-10-22T07:11:02"
