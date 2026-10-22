@@ -97,6 +97,17 @@ def parse_args():
     mst.add_argument("--out-dir", required=True)
     mst.add_argument("--workers", type=int, default=8)
     mst.add_argument("--reserve-only", action="store_true")
+    bo = sub.add_parser("bounds-only", help="R-009: LLM-narrowed parameter ranges vs matched random ranges")
+    bo.add_argument("--run", default="logs/two_lane_search", help="run whose fitting settings every fit reuses")
+    bo.add_argument("--parents", nargs="+", required=True)
+    bo.add_argument("--fit-seeds", type=int, nargs="+", required=True)
+    bo.add_argument("--probe-seed", type=int, required=True)
+    bo.add_argument("--heldout-seed", type=int, required=True)
+    bo.add_argument("--range-seed", type=int, required=True)
+    bo.add_argument("--model", default="gpt-6.1-sol")
+    bo.add_argument("--reasoning-effort", default="high")
+    bo.add_argument("--out-dir", required=True)
+    bo.add_argument("--reserve-only", action="store_true")
     return p.parse_args()
 
 
@@ -1316,8 +1327,252 @@ def cmd_mutation_scope_transfer(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  R-009: LLM-chosen parameter bounds versus width-matched random bounds
+# ---------------------------------------------------------------------------
+
+MAX_BOUND_EDITS = 2
+BOUNDS_PROMPT = """You are tuning how a symbolic push-v2 controller is fitted, not its code. The controller is fitted by
+imitation of an expert (Adam, deterministic MSE on tanh(mean)), and every gradient step clips each parameter to its
+declared range. Checkpoints at steps 0, 500 and 1000 are scored on 10 probe episodes and the best is kept.
+
+You may narrow the declared range of at most {max_edits} parameters. You may not change code, parameter names or
+initial values. Each new range must lie inside the original range and still contain the parameter's initial value.
+Narrowing keeps fitting out of regions you believe fail; it cannot add behaviour.
+
+## Controller source
+```python
+{source}
+```
+
+## Parameters (name: initial value, original range, fitted value at steps 500 and 1000 of an unedited fit)
+{parameters}
+
+## Unedited fit, probe results per checkpoint (success rate, mean signed goal progress)
+{trajectory}
+
+Return one JSON object and nothing else:
+{{"edits": [{{"parameter": "<name>", "range": [lo, hi], "rationale": "one sentence"}}], "expected_effect": "one sentence"}}
+An empty "edits" list is allowed if you would not narrow anything."""
+
+
+def validate_bound_edits(payload, initial: dict, ranges: dict, max_edits: int = MAX_BOUND_EDITS) -> tuple:
+    """``(edits, problems)``: edits are ``{name: (lo, hi)}`` that narrow an original range around its initial value.
+
+    Any problem makes the whole response a no-op (the arm is fitted with the parent's ranges); nothing is repaired.
+    """
+    problems, edits = [], {}
+    raw = payload.get("edits") if isinstance(payload, dict) else None
+    if not isinstance(raw, list):
+        return {}, ["the reply has no list 'edits'"]
+    if len(raw) > max_edits:
+        problems.append(f"{len(raw)} edits, above {max_edits}")
+    for e in raw:
+        name = e.get("parameter") if isinstance(e, dict) else None
+        rng_ = e.get("range") if isinstance(e, dict) else None
+        if name not in ranges:
+            problems.append(f"{name!r} is not a declared parameter")
+            continue
+        if name in edits:
+            problems.append(f"{name} edited twice")
+            continue
+        try:
+            lo, hi = float(rng_[0]), float(rng_[1])
+        except (TypeError, ValueError, IndexError):
+            problems.append(f"{name}: range {rng_!r} is not [lo, hi]")
+            continue
+        olo, ohi, v = float(ranges[name][0]), float(ranges[name][1]), float(initial[name])
+        if not (olo <= lo <= v <= hi <= ohi):
+            problems.append(f"{name}: [{lo}, {hi}] must lie in [{olo}, {ohi}] and contain the initial value {v}")
+        elif hi - lo >= ohi - olo:
+            problems.append(f"{name}: [{lo}, {hi}] does not narrow [{olo}, {ohi}]")
+        else:
+            edits[name] = (lo, hi)
+    return ({}, problems) if problems else (edits, [])
+
+
+def random_matched_bounds(edits: dict, initial: dict, ranges: dict, rng) -> dict:
+    """Same parameters and widths as ``edits``, placed uniformly where they still contain the initial value."""
+    out = {}
+    for name in sorted(edits):
+        width = edits[name][1] - edits[name][0]
+        olo, ohi, v = float(ranges[name][0]), float(ranges[name][1]), float(initial[name])
+        low_min, low_max = max(olo, v - width), min(v, ohi - width)
+        lo = float(rng.uniform(low_min, low_max)) if low_max > low_min else low_min
+        out[name] = (lo, lo + width)
+    return out
+
+
+def with_ranges(policy, overrides: dict):
+    """Install narrowed ranges on one instance: ``clip_params`` and every reader see them; code is untouched."""
+    base = dict(policy.get_param_ranges())
+    base.update({k: (float(lo), float(hi)) for k, (lo, hi) in overrides.items()})
+    policy.get_param_ranges = lambda _ranges=base: dict(_ranges)
+    return policy
+
+
+def bounds_summary(cells) -> dict:
+    """LLM minus random and LLM minus unedited, cells averaged within placement, t over placements."""
+    import numpy as np
+
+    from lares.eval.stats import t_interval, win_loss_tie
+
+    cases = sorted(cells[0]["confirmation"]["unedited"])
+
+    def contrast(a, b):
+        diffs = [float(np.mean([c["confirmation"][a][x] - c["confirmation"][b][x] for c in cells])) for x in cases]
+        return {"n_placements": len(cases), "n_cells": len(cells), **t_interval(diffs), **win_loss_tie(diffs)}
+
+    llm_random = contrast("llm", "random")
+    return {"paired_success_difference": llm_random["mean"], "llm_minus_random": llm_random,
+            "llm_minus_unedited": contrast("llm", "unedited"), "random_minus_unedited": contrast("random", "unedited"),
+            "by_cell": [{"parent": c["parent"], "fit_seed": c["fit_seed"], "edits": c["edits"], "random": c["random_bounds"],
+                         "edit_problems": c["edit_problems"], "selected_steps": c["selected_steps"],
+                         "success": {arm: float(np.mean(list(v.values()))) for arm, v in c["confirmation"].items()}}
+                        for c in cells]}
+
+
+def cmd_bounds_only(args) -> int:
+    import copy
+
+    import numpy as np
+    import torch
+
+    import compare_child_vs_parent as cvp
+    from lares.core.obs_schema import get_obs_schema
+    from lares.core.policy_generation import _LLMSession
+    from lares.core.training_pipeline import DemoBuffer, ensure_mujoco_headless_gl
+    from lares.eval import make_manifest_env
+    from lares.eval.runner import PolicyActor, evaluate_manifest
+    from lares.fitting.optimizers import fit_policy_with_objective, prepare_data, state_parameters_sha256
+    from lares.fitting.structure_bank import instantiate_source
+    from lares.search.generation import LABEL_BOUNDS_EDIT, LLMCallLedger
+    from lares.search.lanes import scale_parameter_names
+
+    os.makedirs(args.out_dir, exist_ok=True)
+    status = cvp.ensure_entries_reserved(
+        [(k, "fitting", "R-009 bounds-only: fitting block seed") for k in args.fit_seeds]
+        + [(args.probe_seed, "mt1_pool", "R-009: 10-case checkpoint probe"),
+           (args.heldout_seed, "mt1_pool", "R-009: 50-case confirmation manifest"),
+           (args.range_seed, "fitting", "R-009: random-bound placement seed")], args.out_dir)
+    print(f"  cells {[(p, k) for p in args.parents for k in args.fit_seeds]}; seeds: {status}")
+    if args.reserve_only:
+        return 0
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise SystemExit("R-009 needs OPENAI_API_KEY")
+    from openai import OpenAI
+
+    ensure_mujoco_headless_gl()
+    torch.set_num_threads(1)
+    schema = get_obs_schema("push-v2")
+    fitting = cvp.common_fitting(cvp.discover_pairs(os.path.join(_PROJECT_ROOT, args.run)))
+    probe, _ = cvp.fresh_manifest("push-v2", args.probe_seed, 10, 150, args.out_dir, role="probe")
+    conf, _ = cvp.fresh_manifest("push-v2", args.heldout_seed, 50, 150, args.out_dir, role="confirmation",
+                                 also_disjoint_from=[probe])
+    probe_env, conf_env = make_manifest_env(probe, probe.resolve_pool()), make_manifest_env(conf, conf.resolve_pool())
+    data = prepare_data(DemoBuffer.load(os.path.join(_PROJECT_ROOT, "logs", "baseline_lock", "demo_push-v2.pkl")),
+                        val_fraction=float(fitting["val_fraction"]), split_seed=int(fitting["split_seed"]))
+    with open(os.path.join(_PROJECT_ROOT, "config", "fittable_bank", "seed_bank.json"), encoding="utf-8") as f:
+        members = json.load(f)["members"]
+    llm_dir = os.path.join(args.out_dir, "llm")
+    session = _LLMSession(OpenAI(api_key=os.environ["OPENAI_API_KEY"]), args.model, LLMCallLedger(llm_dir),
+                          os.path.join(llm_dir, "transcript.jsonl"), 0, len(args.parents) * len(args.fit_seeds),
+                          reasoning_effort=args.reasoning_effort)
+    range_rngs = np.random.SeedSequence(int(args.range_seed)).spawn(len(args.parents) * len(args.fit_seeds))
+    probe_cache, episodes, cells = {}, {"probe": 0, "confirmation": 0}, []
+
+    def probe_score(policy):
+        # Arms share initial values, so step 0 is scored once per cell and reused (keyed by parameters).
+        key = state_parameters_sha256(policy.state_dict())
+        if key not in probe_cache:
+            result = evaluate_manifest(PolicyActor(policy, deterministic=True, name="probe"), probe, probe_env,
+                                       max_steps=150)
+            episodes["probe"] += len(result.episodes)
+            probe_cache[key] = sf.score_of(result)
+        return probe_cache[key]
+
+    def fit(source, overrides, seed, snapshots=None):
+        policy = with_ranges(instantiate_source(source, 39, 4, schema=schema), overrides)
+        policy.fixed_action_scale = float(fitting["fixed_action_scale"])
+        steps = iter(fitting["checkpoint_steps"])
+
+        def probe_fn(pol):
+            step = next(steps)
+            if snapshots is not None:
+                snapshots[step] = {n: float(p.detach().reshape(-1)[0]) for n, p in pol.named_parameters()}
+            return probe_score(pol)
+
+        result = fit_policy_with_objective(
+            policy, data, fitting["objective"], budget=int(fitting["budget_gradient_steps"]),
+            batch_size=min(int(fitting["batch_size"]), int(data.train_obs.shape[0])), lr=float(fitting["lr"]),
+            clip_grad_norm=float(fitting["clip_grad_norm"]), seed=int(seed), sampling=fitting["sampling"],
+            rollout_probe=probe_fn, checkpoint_steps=[int(s) for s in fitting["checkpoint_steps"]],
+            structure_id="bounds")
+        return policy, int(result.selected_step), result.checkpoint_history
+
+    index = 0
+    for pid in args.parents:
+        with open(os.path.join(_PROJECT_ROOT, members[pid]["source_path"]), encoding="utf-8") as f:
+            source = f.read()
+        template = instantiate_source(source, 39, 4, schema=schema)
+        scale = set(scale_parameter_names(template))
+        ranges = {k: v for k, v in template.get_param_ranges().items() if k not in scale}
+        initial = {n: float(p.detach().reshape(-1)[0]) for n, p in template.named_parameters() if n in ranges}
+        for seed in args.fit_seeds:
+            snaps = {}
+            unedited, step_u, history = fit(source, {}, seed, snapshots=snaps)
+            table = "\n".join(f"- {n}: {initial[n]:g}, [{ranges[n][0]:g}, {ranges[n][1]:g}], "
+                              f"{snaps.get(500, {}).get(n, float('nan')):.4g}, {snaps.get(1000, {}).get(n, float('nan')):.4g}"
+                              for n in sorted(ranges))
+            trajectory = "\n".join(f"- step {h['step']}: success {h['success']:.2f}, progress {h['progress']:+.4f}"
+                                   for h in history)
+            prompt = BOUNDS_PROMPT.format(max_edits=MAX_BOUND_EDITS, source=source.strip(), parameters=table,
+                                          trajectory=trajectory)
+            texts, record = session.call(LABEL_BOUNDS_EDIT, [{"role": "user", "content": prompt}],
+                                         purpose=f"bounds edit {pid} fit seed {seed}",
+                                         attempt_ids=[f"gen0_cand{index}_a0"], transcript_label="bounds_edit")
+            try:
+                payload = json.loads(texts[0].strip().removeprefix("```json").removesuffix("```"))
+            except (json.JSONDecodeError, IndexError):
+                payload = None
+            edits, problems = validate_bound_edits(payload, initial, ranges)
+            random_bounds = random_matched_bounds(edits, initial, ranges, np.random.default_rng(range_rngs[index]))
+            llm_pol, step_l, _ = fit(source, edits, seed)
+            rnd_pol, step_r, _ = fit(source, random_bounds, seed)
+            confirmation = {}
+            for arm, pol in (("unedited", unedited), ("llm", llm_pol), ("random", rnd_pol)):
+                result = evaluate_manifest(PolicyActor(pol, deterministic=True, name=arm), conf, conf_env, max_steps=150)
+                episodes["confirmation"] += len(result.episodes)
+                confirmation[arm] = {e.case_id: float(e.success) for e in result.episodes}
+            cells.append({"parent": pid, "fit_seed": seed, "llm_call_id": record.call_id, "reply": texts[0] if texts else "",
+                          "edits": {k: list(v) for k, v in edits.items()}, "edit_problems": problems,
+                          "random_bounds": {k: list(v) for k, v in random_bounds.items()},
+                          "selected_steps": {"unedited": step_u, "llm": step_l, "random": step_r},
+                          "confirmation": confirmation})
+            print(f"  {pid} s{seed}: edits {edits or problems}; success " + "  ".join(
+                f"{arm} {np.mean(list(v.values())):.2f}" for arm, v in confirmation.items()), flush=True)
+            index += 1
+    summary = bounds_summary(cells)
+    summary["episodes"] = episodes
+    summary["llm_calls"] = session.calls_made
+    with open(os.path.join(args.out_dir, "cells.json"), "w", encoding="utf-8") as f:
+        json.dump(cells, f, indent=2)
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2)
+    with open(os.path.join(args.out_dir, "run.json"), "w", encoding="utf-8") as f:
+        json.dump({"argv": sys.argv, **git_state(), "fitting": fitting, "prompt_template": BOUNDS_PROMPT,
+                   "manifests": {"probe": probe.manifest_id, "confirmation": conf.manifest_id}}, f, indent=2)
+    for name in ("llm_minus_random", "llm_minus_unedited", "random_minus_unedited"):
+        c = summary[name]
+        print(f"  {name:<22} {c['mean']:+.3f} [{c['low']:+.3f}, {c['high']:+.3f}] w/l/t {c['wins']}/{c['losses']}/{c['ties']}")
+    print(f"  episodes {episodes}; LLM calls {session.calls_made}")
+    return 0
+
+
 def main() -> int:
     args = parse_args()
+    if args.command == "bounds-only":
+        return cmd_bounds_only(args)
     if args.command == "mutation-scope-transfer":
         return cmd_mutation_scope_transfer(args)
     if args.command == "pooled-optimizer":

@@ -93,3 +93,8 @@
 {"seed": 2922, "namespace": "mt1_pool", "use": "R-012: 10-case checkpoint probe", "artifact": "logs/research/geometry_transfer_s2920", "recorded_at": "2026-10-22T04:49:19", "backfilled": false}
 {"seed": 2923, "namespace": "mt1_pool", "use": "R-012: 50-case confirmation manifest", "artifact": "logs/research/geometry_transfer_s2920", "recorded_at": "2026-10-22T04:49:19", "backfilled": false}
 {"seed": 2940, "namespace": "evaluation", "use": "R-013 promotion-set check (unused by a deterministic evaluation; reserved per the advisor)", "artifact": "logs/research/geometry_admission_s2940", "recorded_at": "2026-10-22T05:01:37", "backfilled": false}
+{"seed": 2823, "namespace": "fitting", "use": "R-009 bounds-only: fitting block seed", "artifact": "logs/research/bounds_only_s2820", "recorded_at": "2026-10-22T05:05:03", "backfilled": false}
+{"seed": 2824, "namespace": "fitting", "use": "R-009 bounds-only: fitting block seed", "artifact": "logs/research/bounds_only_s2820", "recorded_at": "2026-10-22T05:05:03", "backfilled": false}
+{"seed": 2820, "namespace": "mt1_pool", "use": "R-009: 10-case checkpoint probe", "artifact": "logs/research/bounds_only_s2820", "recorded_at": "2026-10-22T05:05:03", "backfilled": false}
+{"seed": 2822, "namespace": "mt1_pool", "use": "R-009: 50-case confirmation manifest", "artifact": "logs/research/bounds_only_s2820", "recorded_at": "2026-10-22T05:05:03", "backfilled": false}
+{"seed": 2825, "namespace": "fitting", "use": "R-009: random-bound placement seed", "artifact": "logs/research/bounds_only_s2820", "recorded_at": "2026-10-22T05:05:03", "backfilled": false}

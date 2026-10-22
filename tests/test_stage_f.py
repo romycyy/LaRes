@@ -558,3 +558,65 @@ class TestMutationScopeTransfer(unittest.TestCase):
         self.assertAlmostEqual(out["control_minus_parent"]["mean"], 0.0)
         self.assertEqual(out["validity"], {"valid": 1, "total": 2, "invalid": [
             {"attempt_id": "c0", "scope": self.stage_f.SCOPE_CONTROL, "stage": None, "errors": None}]})
+
+
+class TestBoundsOnly(unittest.TestCase):
+    """R-009: narrowed ranges only, validated strictly; random controls matched in width; clipping honours them."""
+
+    RANGES = {"a": (0.0, 10.0), "b": (-1.0, 1.0), "c": (0.0, 1.0)}
+    INITIAL = {"a": 3.0, "b": 0.0, "c": 0.5}
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, os.path.join(_PROJECT_ROOT, "scripts"))
+        import stage_f
+
+        cls.stage_f = stage_f
+
+    def test_valid_narrowing_is_accepted(self):
+        edits, problems = self.stage_f.validate_bound_edits(
+            {"edits": [{"parameter": "a", "range": [2.0, 5.0]}, {"parameter": "b", "range": [-0.5, 0.5]}]},
+            self.INITIAL, self.RANGES)
+        self.assertEqual((edits, problems), ({"a": (2.0, 5.0), "b": (-0.5, 0.5)}, []))
+
+    def test_any_bad_edit_makes_the_reply_a_no_op(self):
+        for payload in ({"edits": [{"parameter": "a", "range": [4.0, 5.0]}]},          # excludes the initial value
+                        {"edits": [{"parameter": "a", "range": [-1.0, 5.0]}]},         # leaves the original range
+                        {"edits": [{"parameter": "a", "range": [0.0, 10.0]}]},         # does not narrow
+                        {"edits": [{"parameter": "z", "range": [0.0, 1.0]}]},          # unknown parameter
+                        {"edits": [{"parameter": n, "range": [self.INITIAL[n] - 0.1, self.INITIAL[n] + 0.1]}
+                                   for n in ("a", "b", "c")]},                          # more than two
+                        None):
+            edits, problems = self.stage_f.validate_bound_edits(payload, self.INITIAL, self.RANGES)
+            self.assertEqual(edits, {})
+            self.assertTrue(problems)
+
+    def test_random_bounds_match_width_and_contain_the_initial_value(self):
+        import numpy as np
+
+        edits = {"a": (2.0, 5.0)}
+        for seed in range(20):
+            out = self.stage_f.random_matched_bounds(edits, self.INITIAL, self.RANGES, np.random.default_rng(seed))
+            lo, hi = out["a"]
+            self.assertAlmostEqual(hi - lo, 3.0)
+            self.assertTrue(0.0 <= lo <= 3.0 <= hi <= 10.0)
+
+    def test_overridden_ranges_are_what_clipping_enforces(self):
+        import torch
+
+        policy = instantiate_source(PARENT_SOURCE, 39, 4, schema=SCHEMA)
+        name = next(n for n in policy.get_param_ranges() if n != "log_std")
+        value = float(dict(policy.named_parameters())[name].detach().reshape(-1)[0])
+        self.stage_f.with_ranges(policy, {name: (value - 1e-3, value + 1e-3)})
+        with torch.no_grad():
+            dict(policy.named_parameters())[name].add_(5.0)
+        policy.clip_params()
+        self.assertAlmostEqual(float(dict(policy.named_parameters())[name].reshape(-1)[0]), value + 1e-3, places=5)
+
+    def test_summary_contrasts_average_cells_within_placements(self):
+        cells = [{"parent": "P", "fit_seed": s, "edits": {}, "random_bounds": {}, "edit_problems": [],
+                  "selected_steps": {}, "confirmation": {"unedited": {"x": 0.0, "y": 0.0}, "llm": {"x": 1.0, "y": 0.0},
+                                                         "random": {"x": 0.0, "y": 0.0}}} for s in (1, 2)]
+        out = self.stage_f.bounds_summary(cells)
+        self.assertAlmostEqual(out["llm_minus_random"]["mean"], 0.5)
+        self.assertAlmostEqual(out["random_minus_unedited"]["mean"], 0.0)
