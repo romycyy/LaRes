@@ -238,12 +238,15 @@ class HandoffActor(Actor):
 
     action_mode = ACTION_MODE_DETERMINISTIC
 
-    def __init__(self, policy, env_name: str, schema, direction: str, name=None):
+    def __init__(self, policy, env_name: str, schema, direction: str, name=None, lift_m: float = HANDOFF_LIFT_M,
+                 near_m: float | None = HANDOFF_NEAR_M):
         from lares.core.training_pipeline import get_expert_policy
 
         if direction not in (HANDOFF_LEARNER_THEN_EXPERT, HANDOFF_EXPERT_THEN_LEARNER):
             raise ValueError(f"unknown handoff direction {direction!r}")
         self.policy, self.schema, self.direction = policy, schema, direction
+        # ``near_m=None`` drops the end-effector condition (e.g. hammer-v2, whose tracked point is the hammer's centre).
+        self.lift_m, self.near_m = float(lift_m), near_m
         self.expert = get_expert_policy(env_name)
         self.name = name or f"handoff:{direction}"
         self.policy.eval()
@@ -259,7 +262,7 @@ class HandoffActor(Actor):
         obj = np.asarray(self.schema.slice(o, "obj")).reshape(-1)
         if self._z0 is None:
             self._z0 = float(obj[2])
-        ok = obj[2] - self._z0 >= HANDOFF_LIFT_M and np.linalg.norm(tcp - obj) <= HANDOFF_NEAR_M
+        ok = obj[2] - self._z0 >= self.lift_m and (self.near_m is None or np.linalg.norm(tcp - obj) <= self.near_m)
         self._streak = self._streak + 1 if ok else 0
         return self._streak >= HANDOFF_CONSECUTIVE
 

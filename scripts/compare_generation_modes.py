@@ -1663,6 +1663,150 @@ def run_assembly_expert_traces(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  R-033: does trace-guided editing transfer to a fresh hammer-v2 plateau parent?
+# ---------------------------------------------------------------------------
+
+TRANSFER_REQUEST = """Below is a controller for this task that never succeeds: run on its own, it and 23 numerical
+variations of its parameters succeed 0.00 of the time. After it lifts the hammer (3 cm above its start, three steps in
+a row), handing control to a scripted expert completes {successes} of {episodes} episodes.
+
+Rewrite the controller so that it succeeds on its own; no expert is available. You may change any part of it. Keep the
+class name GeneratedPolicy, read observations only through self.obs_field, and declare every parameter with
+get_param_ranges.
+
+```python
+{parent}
+```"""
+
+
+def run_hammer_transfer(args) -> int:
+    sys.path.insert(0, _SCRIPT_DIR)
+    import compare_child_vs_parent as cvp
+    from lares.core.obs_schema import get_obs_schema
+    from lares.core.training_pipeline import load_policy_prompt_assets as assets
+    from lares.eval import make_manifest_env
+    from lares.eval.runner import PolicyActor, evaluate_manifest, run_episode
+    from lares.eval.stats import t_interval, win_loss_tie
+    from lares.fitting.structure_bank import instantiate_source
+    from lares.repair.interventions import HANDOFF_LEARNER_THEN_EXPERT, HandoffActor
+    from lares.search import rollout_search
+
+    base, task = int(args.pool_seed), "hammer-v2"   # 3720 probe, 3721 gate, 3722 demos, 3723 eval, 3724 parent, 3725-6 blocks
+    os.makedirs(args.out_dir, exist_ok=True)
+    entries = [(base, "mt1_pool", "R-033: 5-case plateau probe"), (base + 1, "mt1_pool", "R-033: 30-case plateau gate"),
+               (base + 2, "mt1_pool", "R-033: handoff demonstrations"), (base + 3, "mt1_pool", "R-033: evaluation manifest"),
+               (base + 4, "generation_block", "R-033: parent generation and search"),
+               (base + 5, "generation_block", "R-033 block 0 edits"), (base + 6, "generation_block", "R-033 block 1 edits")]
+    print(f"  seeds: {cvp.ensure_entries_reserved(entries, args.out_dir)}")
+    if args.reserve_only:
+        return 0
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise SystemExit("R-033 needs OPENAI_API_KEY")
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    schema, mdir = get_obs_schema(task), os.path.join(args.out_dir, "manifests")
+    probe, _ = cvp.fresh_manifest(task, base, 5, 150, mdir, role="probe")
+    gate, _ = cvp.fresh_manifest(task, base + 1, 30, 150, mdir, role="gate", also_disjoint_from=[probe])
+    demo, _ = cvp.fresh_manifest(task, base + 2, 10, 150, mdir, role="demo", also_disjoint_from=[probe, gate])
+    full, _ = cvp.fresh_manifest(task, base + 3, 50, 150, mdir, role="eval", also_disjoint_from=[probe, gate, demo])
+    cases = full.slice(10, 40)
+    summary, episodes = {"gates": {}}, {"probe": 0, "gate": 0, "demo": 0, "eval": 0}
+
+    def finish(outcome):
+        summary.update(outcome=outcome, episodes=episodes)
+        with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+            json.dump(summary, f, indent=2, default=str)
+        print(f"  {outcome}; episodes {episodes}", flush=True)
+        return 0
+
+    # 1. Fresh parent and the plateau gate.
+    final, n = generate_one(assets(task), "", os.path.join(args.out_dir, "parent"),
+                            SimpleNamespace(**{**vars(args), "env_name": task}), max_repair=1)
+    summary["parent"] = {"valid": bool(final.valid), "attempts": n}
+    if not final.valid:
+        return finish("inconclusive: the hammer parent failed validation")
+    parent_source = final.code
+    with open(os.path.join(args.out_dir, "parent_policy.py"), "w", encoding="utf-8") as f:
+        f.write(parent_source)
+    original = instantiate_source(parent_source, 39, 4, schema=schema)
+    original.fixed_action_scale = 0.1
+    probe_env = make_manifest_env(probe, probe.resolve_pool(), 200)
+    cands, trace = rollout_search.independent_candidates(original, base + 4), []
+    for i, (kind, pol) in enumerate(cands):
+        r = evaluate_manifest(PolicyActor(pol, name="probe"), probe, probe_env, max_steps=150)
+        episodes["probe"] += len(r.episodes)
+        prog = [e.signed_goal_progress for e in r.episodes if e.signed_goal_progress is not None]
+        trace.append({"index": i, "kind": kind, "success": r.success_rate, "progress": float(np.mean(prog)) if prog else 0.0})
+    pick = min(range(len(trace)), key=lambda i: (-trace[i]["success"], -trace[i]["progress"], i))
+    summary["gates"]["probe_candidates_succeeding"] = sum(t["success"] > 0 for t in trace)
+    if summary["gates"]["probe_candidates_succeeding"]:
+        return finish("inconclusive: no generator plateau (a search candidate succeeded on the probe)")
+    gate_env = make_manifest_env(gate, gate.resolve_pool(), 200)
+    r = evaluate_manifest(PolicyActor(cands[pick][1], name="gate"), gate, gate_env, max_steps=150)
+    episodes["gate"] += len(r.episodes)
+    summary["gates"]["gate_success"] = r.success_rate
+    if r.success_rate > 0:
+        return finish("inconclusive: the selected parent succeeds on the gate cases")
+    # 2. Learner-to-expert handoff continuations.
+    actor = HandoffActor(cands[pick][1], task, schema, HANDOFF_LEARNER_THEN_EXPERT, near_m=None)
+    demo_env, eps = make_manifest_env(demo, demo.resolve_pool(), 200), []
+    for case in demo.episodes:
+        rows = []
+
+        def observe(step, _rows=rows):
+            if step.get("action") is not None and actor.handed_off:
+                o = np.asarray(step["obs"], dtype=np.float64)
+                _rows.append({"t": int(step["timestep"]), "tcp": o[0:3].round(4).tolist(), "gripper": round(float(o[3]), 3),
+                              "obj": o[4:7].round(4).tolist(), "goal": o[36:39].round(4).tolist(),
+                              "action": np.asarray(step["action"]).round(3).tolist()})
+
+        ep = run_episode(actor, demo_env, case, max_steps=150, schema=schema, observer=observe)
+        eps.append({"case": case.case_id, "success": float(ep.success), "handed_off": actor.handed_off, "rows": rows})
+    episodes["demo"] += len(demo)
+    traces = {"episodes": eps, "successes": int(sum(e["success"] for e in eps))}
+    with open(os.path.join(args.out_dir, "traces.json"), "w", encoding="utf-8") as f:
+        json.dump(traces, f, indent=2)
+    summary["gates"]["handoff_successes"] = traces["successes"]
+    summary["gates"]["handoff_reach"] = int(sum(e["handed_off"] for e in eps))
+    if traces["successes"] < 2:
+        return finish(f"inconclusive: {traces['successes']} successful handoff continuation(s), fewer than two")
+    # 3. Two blocks of summary-only vs trace edits, frozen, evaluated at declared values.
+    base_request = TRANSFER_REQUEST.replace("{successes}", str(traces["successes"])).replace(
+        "{episodes}", str(len(demo))).replace("{parent}", parent_source.strip())
+    block = trace_block(traces).replace("Successful expert continuations after your lift",
+                                        "Successful expert continuations after your controller lifted the hammer")
+    requests = {"summary_only": base_request, "handoff_trace": base_request + "\n" + block}
+    env = make_manifest_env(full, full.resolve_pool(), 200)
+    outcomes, edits = {}, {}
+    for b in range(2):
+        for arm in ("summary_only", "handoff_trace"):
+            label = f"b{b}_{arm}"
+            code, rec = make_edit(requests[arm], os.path.join(args.out_dir, "edits", label), args, task=task,
+                                  allow_correction=True)
+            edits[label] = {k: v for k, v in rec.items() if k != "code"}
+            if code is None:
+                outcomes[label] = {c.case_id: 0.0 for c in cases.episodes}
+            else:
+                pol = instantiate_source(code, 39, 4, schema=schema)
+                pol.fixed_action_scale = 0.1
+                r = evaluate_manifest(PolicyActor(pol, name=label), cases, env, max_steps=150)
+                episodes["eval"] += len(r.episodes)
+                outcomes[label] = {e.case_id: float(e.success) for e in r.episodes}
+            print(f"  {label}: valid={rec['valid']} corrected={rec.get('corrected')} success "
+                  f"{np.mean(list(outcomes[label].values())):.2f}", flush=True)
+    ids = sorted(c.case_id for c in cases.episodes)
+    avg = [float(np.mean([outcomes[f"b{b}_handoff_trace"][c] - outcomes[f"b{b}_summary_only"][c] for b in range(2)]))
+           for c in ids]
+    summary.update(paired_success_difference=float(np.mean(avg)), fixed_pair_average={**t_interval(avg), **win_loss_tie(avg)},
+                   per_block={b: t_interval([outcomes[f"b{b}_handoff_trace"][c] - outcomes[f"b{b}_summary_only"][c] for c in ids])
+                              for b in range(2)}, edits=edits,
+                   success={k: float(np.mean(list(v.values()))) for k, v in outcomes.items()})
+    a = summary["fixed_pair_average"]
+    return finish(f"trace - summary-only {a['mean']:+.3f} [{a['low']}, {a['high']}]; success {summary['success']}")
+
+
 def run_task_scan(args) -> int:
     import multiprocessing as mp
 
@@ -1763,7 +1907,8 @@ def parse_args():
                    default="")
     p.add_argument("--scan-set", choices=["default", "hard"], default="default")
     p.add_argument("--assembly-study", choices=["reciprocal-handoff", "expert-fit-vs-numerical", "targeted-placement-edit",
-                                                "breadth-vs-depth", "trace-edit-suite", "expert-only-traces"],
+                                                "breadth-vs-depth", "trace-edit-suite", "expert-only-traces",
+                                                "hammer-transfer"],
                    default="")
     p.add_argument("--pool-seed", type=int)
     p.add_argument("--demo-cases", type=int, default=5, help="trace-edit-suite: learner-to-expert handoff demonstrations")
@@ -1795,6 +1940,8 @@ def main():
         return run_assembly_trace_edits(args)
     if args.assembly_study == "expert-only-traces":
         return run_assembly_expert_traces(args)
+    if args.assembly_study == "hammer-transfer":
+        return run_hammer_transfer(args)
     if args.research_mode == "contact-regime-scan":
         return run_contact_regime_scan(args)
     if args.research_mode == "task-scan":

@@ -232,3 +232,10 @@
 {"seed": 3711, "namespace": "mt1_pool", "use": "R-032: evaluation manifest", "artifact": "logs/trace_generalisation/expert_only_s3710", "recorded_at": "2026-10-22T09:53:20", "backfilled": false}
 {"seed": 3712, "namespace": "generation_block", "use": "R-032 block 0 edits", "artifact": "logs/trace_generalisation/expert_only_s3710", "recorded_at": "2026-10-22T09:53:20", "backfilled": false}
 {"seed": 3713, "namespace": "generation_block", "use": "R-032 block 1 edits", "artifact": "logs/trace_generalisation/expert_only_s3710", "recorded_at": "2026-10-22T09:53:20", "backfilled": false}
+{"seed": 3720, "namespace": "mt1_pool", "use": "R-033: 5-case plateau probe", "artifact": "logs/trace_generalisation/hammer_s3720", "recorded_at": "2026-10-22T10:09:55", "backfilled": false}
+{"seed": 3721, "namespace": "mt1_pool", "use": "R-033: 30-case plateau gate", "artifact": "logs/trace_generalisation/hammer_s3720", "recorded_at": "2026-10-22T10:09:55", "backfilled": false}
+{"seed": 3722, "namespace": "mt1_pool", "use": "R-033: handoff demonstrations", "artifact": "logs/trace_generalisation/hammer_s3720", "recorded_at": "2026-10-22T10:09:55", "backfilled": false}
+{"seed": 3723, "namespace": "mt1_pool", "use": "R-033: evaluation manifest", "artifact": "logs/trace_generalisation/hammer_s3720", "recorded_at": "2026-10-22T10:09:55", "backfilled": false}
+{"seed": 3724, "namespace": "generation_block", "use": "R-033: parent generation and search", "artifact": "logs/trace_generalisation/hammer_s3720", "recorded_at": "2026-10-22T10:09:55", "backfilled": false}
+{"seed": 3725, "namespace": "generation_block", "use": "R-033 block 0 edits", "artifact": "logs/trace_generalisation/hammer_s3720", "recorded_at": "2026-10-22T10:09:55", "backfilled": false}
+{"seed": 3726, "namespace": "generation_block", "use": "R-033 block 1 edits", "artifact": "logs/trace_generalisation/hammer_s3720", "recorded_at": "2026-10-22T10:09:55", "backfilled": false}

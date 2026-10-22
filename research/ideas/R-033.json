@@ -11,8 +11,8 @@
   },
   "protocol": {
     "script": "scripts/compare_generation_modes.py",
-    "config": "config/two_lane_search_v2.yaml",
-    "command": "gpu run -- python scripts/compare_generation_modes.py --config config/two_lane_search_v2.yaml --mode trace-edit-suite --task hammer-v2 --parent-ref fresh --generation-seed 3724 --plateau-probe config/manifests/hammer-v2_development_probe_s3720.yaml --probe-seed 3720 --plateau-screen config/manifests/hammer-v2_development_gate_s3721.yaml --screen-seed 3721 --plateau-candidates 24 --require-zero-plateau --trace-source learner-handoff --demo-manifest config/manifests/hammer-v2_development_traces_s3722.yaml --demo-seed 3722 --demo-episodes 10 --trace-count 2 --trace-stride 4 --edit-scope all-phases --arms summary-only,handoff-trace --block-seeds 3725,3726 --eval-manifest config/manifests/hammer-v2_development_s3723.yaml --manifest-seed 3723 --eval-cases 10:40 --search-candidates 0 --bc-steps 0 --max-repair-per-candidate 1 --model gpt-6.1-sol --reasoning-effort high --temperature 1 --output logs/trace_generalisation/hammer_s3720",
+    "config": "",
+    "command": "python scripts/compare_generation_modes.py --assembly-study hammer-transfer --pool-seed 3720 --out-dir logs/trace_generalisation/hammer_s3720",
     "seeds": [
       3720,
       3721,
@@ -23,24 +23,18 @@
       3726
     ],
     "manifests": [
-      "config/manifests/hammer-v2_development_probe_s3720.yaml",
-      "config/manifests/hammer-v2_development_gate_s3721.yaml",
-      "config/manifests/hammer-v2_development_traces_s3722.yaml",
-      "config/manifests/hammer-v2_development_s3723.yaml"
+      "config/manifests/push-v2_development.yaml"
     ],
     "episodes": 280,
     "llm_calls": 10,
     "code_changes": [
-      "Extend trace-edit-suite with the shown conditional plateau gate, reusing existing generation and numerical-search machinery rather than adding a script.",
-      "Generate one hammer parent with at most one validity correction. Test 24 parameter candidates on five probe cases, including the initial vector; continue only if every candidate has zero success and the selected parent also scores zero on 30 disjoint gate cases.",
-      "Collect ten handoff episodes, switching to the calibrated expert after the hammer head rises 3 cm for three consecutive steps. Require two successful continuations and use the first two in manifest order; otherwise stop as inconclusive.",
-      "Run two paired edit blocks with identical summaries and full-controller edit permission; only one arm receives every-fourth-step successful continuation traces. Freeze edits before the separate 30-case evaluation, without subsequent search or fitting.",
-      "Use the preceding protocols' scoring and interval rules. Episode and call estimates are maximum planned costs before early stopping; require per-idea approval and stop the remote box afterward."
+      "scripts/compare_generation_modes.py (--assembly-study hammer-transfer: plateau gates, handoff traces, two blocks of frozen edits)",
+      "lares/repair/interventions.py (HandoffActor: optional end-effector condition)"
     ],
     "needs_gpu": false,
     "needs_llm": true
   },
-  "status": "approved",
+  "status": "running",
   "source": "advisor",
   "falsified_by": "After both eligibility gates pass, trace edits remain unsuccessful or have no positive paired advantage over summary-only edits. Failure to establish a generator plateau or obtain two successful handoffs is inconclusive, not a refutation.",
   "cost_estimate": {
@@ -62,7 +56,12 @@
     "note": "approved by advisor gpt-6.1-sol (consult call_00056, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
     "consultation": "research/consultations/2026-10-22T095221_call_00056.json"
   },
-  "run": {},
+  "run": {
+    "started_at": "2026-10-22T10:09:54",
+    "git_sha": "585e002286b52931aa0650dbb69a13f5eb0b1dd3",
+    "dirty_worktree": true,
+    "log_dir": "logs/trace_generalisation/hammer_s3720"
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -79,6 +78,18 @@
       "from": "proposed",
       "to": "approved",
       "note": "approved by advisor gpt-6.1-sol (consult call_00056, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T10:09:52",
+      "from": "approved",
+      "to": "approved",
+      "note": "implemented per consult call_00056; the hammer handoff fires on a 3 cm lift for three steps with no end-effector distance condition (the hammer's tracked point is its centre)"
+    },
+    {
+      "at": "2026-10-22T10:09:54",
+      "from": "approved",
+      "to": "running",
+      "note": "git 585e002286 (dirty)"
     }
   ],
   "created_at": "2026-10-22T09:51:23"

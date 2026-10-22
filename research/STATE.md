@@ -1,21 +1,21 @@
 # Research state
 
-_Generated 2026-10-22T10:08:53 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T10:09:54 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 0 |
-| approved | 1 |
+| running | 1 |
+| approved | 0 |
 | proposed | 0 |
 | decided | 28 |
 | rejected | 4 |
 
 ## Needs attention
 
-- **R-033** [approved] Transfer trace-guided structural repair to a gated hammer plateau
-  - `python scripts/research.py start R-033` then run its command
+- **R-033** [running] Transfer trace-guided structural repair to a gated hammer plateau
+  - run the protocol, then `python scripts/research.py record R-033 --results <json>`
 
 ## Last 5 decisions
 
