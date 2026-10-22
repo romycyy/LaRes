@@ -92,3 +92,4 @@
 {"seed": 2921, "namespace": "fitting", "use": "R-012 mutation-scope transfer: fit seed", "artifact": "logs/research/geometry_transfer_s2920", "recorded_at": "2026-10-22T04:49:19", "backfilled": false}
 {"seed": 2922, "namespace": "mt1_pool", "use": "R-012: 10-case checkpoint probe", "artifact": "logs/research/geometry_transfer_s2920", "recorded_at": "2026-10-22T04:49:19", "backfilled": false}
 {"seed": 2923, "namespace": "mt1_pool", "use": "R-012: 50-case confirmation manifest", "artifact": "logs/research/geometry_transfer_s2920", "recorded_at": "2026-10-22T04:49:19", "backfilled": false}
+{"seed": 2940, "namespace": "evaluation", "use": "R-013 promotion-set check (unused by a deterministic evaluation; reserved per the advisor)", "artifact": "logs/research/geometry_admission_s2940", "recorded_at": "2026-10-22T05:01:37", "backfilled": false}

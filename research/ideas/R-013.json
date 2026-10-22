@@ -1,0 +1,154 @@
+{
+  "id": "R-013",
+  "title": "Bank-admission check: the geometry child beats its parent on the promotion set (development 10-39)",
+  "hypothesis": "The geometry child gen0_cand5_a0, at the fitted state predeclared from R-010 (fit seed 2900), wins more promotion-set episodes than simple_damped_push at its identically fitted seed-2900 state, so it meets the remaining bank-admission requirement.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.03333333333333333,
+    "against": "simple_damped_push at its R-010 fit-seed-2900 selected state, on development cases 10-39",
+    "rationale": "Advisor consult call_00015: admission needs the unchanged qualification rule (met in R-010) and a strictly positive paired t lower bound on development 10-39; one case of 30 is the smallest difference that counts."
+  },
+  "protocol": {
+    "script": "scripts/compare_child_vs_parent.py",
+    "config": "",
+    "command": "python scripts/compare_child_vs_parent.py --run logs/two_lane_search --research-protocol promotion-check --child gen0_cand5_a0 --fit-seed 2900 --from-run logs/research/geometry_qualification_s2900 --eval-seed 2940 --out-dir logs/research/geometry_admission_s2940",
+    "seeds": [
+      2940
+    ],
+    "manifests": [
+      "config/manifests/push-v2_development.yaml"
+    ],
+    "episodes": 60,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/compare_child_vs_parent.py (--research-protocol promotion-check: rebuild both seed-2900 selected states by deterministic refit with no rollouts, verify them against R-010's recorded parameter hashes, then score both on development 10-39)",
+      "tests/test_child_vs_parent.py"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "decided",
+  "source": "implementer",
+  "falsified_by": "An upper paired 95% bound at or below zero refutes; a zero-spanning interval is inconclusive. Admission additionally requires a strictly positive paired lower bound. If a rebuilt state does not match R-010's recorded hash, nothing is scored and the idea is recorded as not run.",
+  "cost_estimate": {
+    "episodes": 60,
+    "llm_calls": 0,
+    "wall_time_minutes": 5
+  },
+  "open_question_refs": [
+    "D-006 (R-010) advisor verdict: promotion-set comparison missing",
+    "consult call_00015: separate 60-episode admission check"
+  ],
+  "briefing_sha256": "",
+  "proposal_call_id": "",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T05:01:02",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00017, run_as_is) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T050047_call_00017.json"
+  },
+  "run": {
+    "started_at": "2026-10-22T05:01:36",
+    "git_sha": "8b4b64f6f57460c1be554a7bcbb59b05d01e5b1d",
+    "dirty_worktree": true,
+    "log_dir": "logs/research/geometry_admission_s2940",
+    "finished_at": "2026-10-22T05:02:30"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.03333333333333333,
+      "paired_t95": [
+        -0.03484098807109009,
+        0.10150765473775675
+      ],
+      "wins_losses_ties": [
+        1,
+        0,
+        29
+      ],
+      "child_success": 1.0,
+      "parent_success": 0.9666666666666667,
+      "hash_verified": {
+        "child": true,
+        "parent": true
+      },
+      "episodes": 60
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "control is simple_damped_push at its R-010 fit-seed-2900 state; the metric is already child minus parent"
+    },
+    "artifacts": [
+      "logs/research/geometry_admission_s2940/summary.json"
+    ],
+    "notes": "Predeclared pair: R-010 fit seed 2900 selected states (both step 1000), rebuilt by deterministic refit with a snapshot-only probe (no rollouts); both rebuilt parameter hashes match R-010's recorded hashes. Development cases 10-39 (the promotion set): child 1.000, parent 0.967; paired +0.033 [-0.035, +0.102], 1/0/29. The point estimate equals the 1/30 threshold but the interval spans zero, so the admission requirement (strictly positive lower bound) is not met; the parent leaves only one case of 30 to win, a ceiling the promotion set cannot resolve. Eval seed 2940 reserved but unused by the deterministic evaluation. 60 episodes, 0 LLM calls."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 0.03333333333333333,
+    "delta": 0.03333333333333333,
+    "matched": true
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.8,
+      "reasoning": "Hash-verified predeclared pair on development 10-39: child 1.000 vs parent 0.967, paired +0.033 [-0.035, +0.102], 1/0/29. The interval spans zero, which the falsifier names inconclusive, and the admission rule's strictly positive lower bound is not met. This is a ceiling effect: the parent fails one promotion case, so 30 cases cannot show a difference the 100-case confirmation (D-004) and five-seed check (D-006) already found.",
+      "cited_artifacts": [
+        "logs/research/geometry_admission_s2940/summary.json"
+      ],
+      "next_experiment": "Do not admit on this evidence; if admission matters, use a larger fresh confirmation (the D-004/D-006 evidence already shows +0.10 to +0.11) and let the user rule whether that substitutes for the promotion-set rule.",
+      "recorded_at": "2026-10-22T05:02:30",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 0.99,
+      "reasoning": "Both rebuilt parameter hashes matched, and the specified fitted-parent control was measured [logs/research/geometry_admission_s2940/summary.json]. The paired_success_difference was +0.03333333333333333, matching the prediction threshold, with 1 win, 0 losses, and 29 ties [logs/research/geometry_admission_s2940/summary.json]. However, the paired interval [-0.03484098807109009, +0.10150765473775675] includes zero, so the point-estimate match is not evidence of an improvement [logs/research/geometry_admission_s2940/summary.json]. The admission requirement is unmet, but the positive upper bound also means the predeclared refutation condition is unmet [logs/research/geometry_admission_s2940/summary.json].",
+      "cited_artifacts": [
+        "logs/research/geometry_admission_s2940/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T05:02:51",
+      "call_id": "call_00018"
+    }
+  ],
+  "decision_id": "D-009",
+  "history": [
+    {
+      "at": "2026-10-22T04:59:19",
+      "from": "",
+      "to": "proposed",
+      "note": "proposed by the implementer per advisor consult call_00015 (separate bank-admission check); the frozen pair is R-010's fit seed 2900, chosen before any promotion-set result"
+    },
+    {
+      "at": "2026-10-22T05:01:02",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00017, run_as_is) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T05:01:36",
+      "from": "approved",
+      "to": "running",
+      "note": "git 8b4b64f6f5 (dirty)"
+    },
+    {
+      "at": "2026-10-22T05:02:30",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=True"
+    },
+    {
+      "at": "2026-10-22T05:02:59",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-009: inconclusive"
+    }
+  ],
+  "created_at": "2026-10-22T04:59:19"
+}

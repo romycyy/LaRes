@@ -15,7 +15,6 @@
     "command": "gpu run -- python scripts/stage_f.py --config config/stage_f/stage_f.yaml --research-protocol bounds-only --parents simple_damped_push,simple_reach_push_shared_gain --probe-seed 2820 --screen-seed 2821 --heldout-seed 2822 --fit-seeds 2823,2824 --range-seed 2825 --llm-model gpt-6.1-sol --reasoning-effort high --temperature 1 --output logs/research/bounds_only_s2820",
     "seeds": [
       2820,
-      2821,
       2822,
       2823,
       2824,
@@ -26,7 +25,7 @@
       "config/manifests/research/push-v2_development_screen_s2821.yaml",
       "config/manifests/research/push-v2_development_confirmation_s2822.yaml"
     ],
-    "episodes": 1080,
+    "episodes": 880,
     "llm_calls": 4,
     "code_changes": [
       "scripts/stage_f.py: add the research-protocol CLI used above. Use two allowed seed-bank parents and two fitting-seed blocks, with one numeric-evidence LLM call per cell and no correction calls.",
@@ -39,7 +38,7 @@
     "needs_gpu": false,
     "needs_llm": true
   },
-  "status": "proposed",
+  "status": "approved",
   "source": "advisor",
   "falsified_by": "An upper paired 95% confidence bound below +0.05 against random bounds refutes the prediction. No positive gain over the identically fitted unedited parent refutes the survive-refit claim; zero-spanning intervals are inconclusive.",
   "cost_estimate": {
@@ -54,12 +53,30 @@
   ],
   "briefing_sha256": "a711e545d506cccbb14233400c774eaff52ae25c86cde2f5d2404b8047b76f50",
   "proposal_call_id": "call_00006",
-  "approval": {},
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T05:01:02",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00017, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T050047_call_00017.json"
+  },
   "run": {},
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
   "decision_id": "",
-  "history": [],
+  "history": [
+    {
+      "at": "2026-10-22T05:01:02",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00017: no screen and no acceptance decisions; LLM evidence only from each parent's probe diagnostics and fitting trajectory; three arms on all 50 confirmation cases; step-0 probe outcomes shared within a cell; 880 episodes, 4 calls; seeds 2820, 2822-2825 (2821 left unused)"
+    },
+    {
+      "at": "2026-10-22T05:01:02",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00017, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    }
+  ],
   "created_at": "2026-10-22T04:17:05"
 }

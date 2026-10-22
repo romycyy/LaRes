@@ -1,24 +1,27 @@
 # Research state
 
-_Generated 2026-10-22T04:58:56 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T05:02:59 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 0 |
-| proposed | 1 |
-| decided | 8 |
+| approved | 1 |
+| proposed | 0 |
+| decided | 9 |
 | rejected | 3 |
 
 ## Needs attention
 
-- **R-009** [proposed] Test LLM bounds-only edits against matched random bounds
-  - USER decides: `python scripts/research.py approve R-009` or `reject R-009 --reason ...`
+- **R-009** [approved] Test LLM bounds-only edits against matched random bounds
+  - `python scripts/research.py start R-009` then run its command
 
 ## Last 5 decisions
 
+- D-009 · R-013 · **inconclusive** · 2026-10-22
+  R-013 rebuilt the predeclared seed-2900 fitted states of the geometry child gen0_cand5_a0 and its parent simple_damped_push by deterministic refit (no rollouts; both parameter hashes match R-010's records) and scored both on the promotion set (development 10-39). Child 1.000, parent 0.967: +0.033 [-0.035, +0.102], 1/0/29. The interval spans zero, so the bank-admission requirement (strictly positive lower bound) is not met, and the refutation condition is not met either. The parent fails only one promotion case, a ceiling that 30 cases cannot resolve; the child's advantage stands on the fresh-case evidence of D-004 and D-006.
+  Next: Bank admission of gen0_cand5_a0 needs a ruling on whether fresh-case evidence may substitute for the promotion-set rule; R-009 (LLM bounds-only edits) is approved and next.
 - D-008 · R-012 · **refuted** · 2026-10-22
   R-012 asked the LLM (gpt-6.1-sol, 9 calls) for code-only mutations of two reach-push seed-bank parents, two geometry-only and two gain/damping-only per parent, all valid, and fitted each child and parent identically under two seeds (probe s2922, confirmation s2923). Geometry minus gain/damping: -0.237 [-0.315, -0.160]; geometry minus parent: -0.193 [-0.234, -0.151]; gain/damping minus parent: +0.045 [-0.019, +0.109]. Three of four geometry children damaged a working controller (e.g. sharp_gate 0.98 -> 0.54). The damped-push geometry win (D-004, D-006) does not transfer as a scope rule; caveat: these edits were code-only, while the winning child added parameters.
   Next: Treat gen0_cand5_a0 as a single validated structure; run its cheap bank-admission check; do not spend further on scope rules.
@@ -31,9 +34,6 @@ _Generated 2026-10-22T04:58:56 by `python scripts/research.py state` from `resea
 - D-005 · R-008 · **inconclusive** · 2026-10-22
   R-008 compared direct rollout search (original + 3 local + 4 global draws) against rollout-selected imitation (8 checkpoints to 1000 steps), each with 80 probe episodes, from the frozen original parameters of the two weak evolved Stage F structures (seed 2812, split 2813, probe s2810, confirmation s2811). Search minus imitation: +0.080 [+0.002, +0.158]; the predicted +0.10 is neither supported nor refuted. The average hides a complete split: on baseline61_gen0_cand2_a1 one global draw reached 0.52 while imitation never left step 0 (0.00); on baseline61_gen0_cand1_a0 imitation reached 0.36 at step 125 while no search draw succeeded. The two optimisers fail on different structures; the probe agreed with confirmation in both.
   Next: Test pooling search candidates and imitation checkpoints under one rollout probe at the combined budget, over more weak structures.
-- D-004 · R-007 · **refuted** · 2026-10-22
-  R-007 refitted the frozen geometry-scope child gen0_cand5_a0 and its parent simple_damped_push identically (fit seed 2802, probe s2804), scored both on a fresh 30-case screen (s2800) and a 100-case confirmation set (s2801+s2805), and replayed Stage F's acceptance rule on 1000 ten-case subsets. A 30-case screen selects a better controller than a 10-case screen by only +0.0044 [+0.0019, +0.0069]: the ten-case screen keeps the child 96% of the time, rejecting it only on tied success. The predicted +0.02 is refuted; screen size is not what blocks good edits. The refitted child beats its parent by +0.110 [+0.048, +0.172], 11/0/89, replicating R-005's +0.14: this one LLM geometry mutation is a real improvement.
-  Next: Consider admitting gen0_cand5_a0 to the fittable seed bank via the qualification rule; investigate why geometry-scope mutation works where correction-LLM repair does not.
 
 ## Standing constraints
 
@@ -49,7 +49,7 @@ _Generated 2026-10-22T04:58:56 by `python scripts/research.py state` from `resea
 - The final-test split (config/manifests/push-v2_final_test.yaml) is locked until Phase 7, which needs the user's approval and a FreezeRecord. Qwen/E10 is also blocked. _(lares/eval/freeze.py; CLAUDE.md)_
 - Seeds 2400-2424 are held for config/fittable_bank/qualification_v2.yaml (predeclared, not run). New protocols pick seeds from 2600 upward. _(config/experiment_seed_ledger.jsonl; CLAUDE.md)_
 - Every protocol runs on the remote GPU box via `gpu run`, which bills by the hour; the implementer stops it afterwards. Live LLM or GPU spend needs the user's per-idea approval. _(CLAUDE.md, 'Remote GPU server')_
-- Spent seeds: [0, 1, 2, 1000, 1001, 1002, 2000, 2100, 2200, 2201, 2202, 2203, 2204, 2300, 2301, 2302, 2303, 2304, 2400, 2401, 2402, 2403, 2404, 2410, 2411, 2412, 2413, 2414, 2420, 2421, 2422, 2423, 2424, 2500, 2501, 2502, 2610, 2611, 2620, 2621, 2622, 2623, 2624, 2625, 2626, 2627, 2628, 2629, 2700, 2701, 2702, 2703, 2704, 2705, 2710, 2800, 2801, 2802, 2803, 2804, 2805, 2810, 2811, 2812, 2813, 2900, 2901, 2902, 2903, 2904, 2905, 2906, 2910, 2911, 2912, 2913, 2920, 2921, 2922, 2923, 3000, 3001]
+- Spent seeds: [0, 1, 2, 1000, 1001, 1002, 2000, 2100, 2200, 2201, 2202, 2203, 2204, 2300, 2301, 2302, 2303, 2304, 2400, 2401, 2402, 2403, 2404, 2410, 2411, 2412, 2413, 2414, 2420, 2421, 2422, 2423, 2424, 2500, 2501, 2502, 2610, 2611, 2620, 2621, 2622, 2623, 2624, 2625, 2626, 2627, 2628, 2629, 2700, 2701, 2702, 2703, 2704, 2705, 2710, 2800, 2801, 2802, 2803, 2804, 2805, 2810, 2811, 2812, 2813, 2900, 2901, 2902, 2903, 2904, 2905, 2906, 2910, 2911, 2912, 2913, 2920, 2921, 2922, 2923, 2940, 3000, 3001]
 
 ## Pointers
 

@@ -1,0 +1,34 @@
+{
+  "ideas": [
+    {
+      "id": "R-013",
+      "recommendation": "run_as_is",
+      "reasoning": "Run first: 60 simulator episodes and zero LLM calls settle the remaining admission requirement for one fixed child. The weakest point is precision from 30 paired cases; preserve the hash-verification gate and require a strictly positive paired interval lower bound for admission. Falsified_by: an upper paired 95% bound at or below zero; a zero-spanning interval is inconclusive, and a hash mismatch means nothing is scored.",
+      "suggested_changes": [],
+      "depends_on": []
+    },
+    {
+      "id": "R-009",
+      "recommendation": "revise",
+      "reasoning": "Bounds-only editing tests constraints on the fitting trajectory without changing executable structure, rather than another code-scope mutation. Its matched random control is informative, but the screen adds little to a report-only experiment that scores every arm, and identical step-0 evaluations are redundant. Retaining both parents and fitting blocks while removing that redundancy reduces the cost to 880 simulator episodes and four LLM calls; limited precision for a five-point effect remains the weakest point.",
+      "suggested_changes": [
+        "Reuse scripts/stage_f.py and config/stage_f/stage_f.yaml, implementing these changes within the proposed bounds-only protocol rather than adding another script.",
+        "Remove the ten-case screen and all acceptance or promotion decisions from this experiment. Build LLM evidence exclusively from each unedited parent's probe diagnostics and fitting trajectory; keep confirmation outcomes inaccessible until every edit and selected checkpoint is frozen.",
+        "Retain both original parents, two fitting blocks, checkpoints {0,500,1000}, and all three arms. Evaluate every selected arm on all 50 confirmation placements, regardless of probe performance.",
+        "Verify identical executable structure and initial parameter values, then share each cell's ten step-0 probe outcomes across its three arms. Cost: four cells times (seven distinct checkpoint evaluations times ten probe cases plus three arms times fifty confirmation cases) = 880 episodes.",
+        "Retain unused seeds 2820, 2822, 2823, 2824, and 2825; leave 2821 unused. Keep CPU fitting inside gpu run, the prescribed LLM settings, four calls without retries, and stop the remote instance afterward.",
+        "Preserve the prediction: paired_success_difference increase of at least 0.05 against width- and parameter-matched random bounds under identical fitting and checkpoint selection. Average paired confirmation outcomes within placement across the four fixed cells; report cell-level results separately.",
+        "Falsified_by: an upper paired 95% bound below 0.05 against random bounds refutes the predicted effect. Claim useful LLM guidance only with strictly positive paired lower bounds against both random bounds and the unedited parent; zero-spanning intervals are inconclusive about direction, and ties are not improvements."
+      ],
+      "depends_on": []
+    }
+  ],
+  "order": [
+    "R-013",
+    "R-009"
+  ],
+  "next_step": "Execute R-013's declared command through gpu run, reconstruct seed-2900 states only for hash verification without new rollouts, score only with evaluation seed 2940 if both hashes match, and stop the remote instance afterward.",
+  "call_id": "call_00017",
+  "briefing_sha256": "afbe4186370ce08a607839f8f5c650b68a63f679b27ea9f230c0b86a855f9186",
+  "question": "The user has delegated approve/reject to you for this session. Map: run_as_is = approve, drop = reject, revise = approve after listed changes, defer = leave proposed. R-013 is the separate 60-episode bank-admission check you requested in call_00015; since R-010 did not save fitted states, it rebuilds the predeclared seed-2900 states by deterministic refit (no rollouts) and verifies them against R-010's recorded parameter hashes before scoring. D-008 (R-012) just refuted geometry-scope transfer (-0.237 vs gain/damping; gain/damping vs parent +0.045 [-0.019, +0.109]). Should R-009 (LLM bounds-only edits) now run, be revised, or be dropped?"
+}

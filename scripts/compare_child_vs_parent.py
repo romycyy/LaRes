@@ -450,6 +450,10 @@ def nested_job(job) -> dict:
     else:
         out.update(selected_step=0, checkpoint_history=[])
     out["parameters_sha256"] = state_parameters_sha256(policy.state_dict())
+    state_path = os.path.join(job["out_dir"], "states", f"{job.get('label', job['policy_id'])}.pt")
+    os.makedirs(os.path.dirname(state_path), exist_ok=True)
+    torch.save(policy.state_dict(), state_path)
+    out["state_path"] = rel(state_path)
     for name, path in job["evaluate"].items():
         manifest = EvaluationManifest.load(path)
         env = make_manifest_env(manifest, manifest.resolve_pool())
@@ -668,13 +672,112 @@ def run_seed_robustness(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  R-013: promotion-set check of a predeclared fitted pair, rebuilt and hash-verified without rollouts
+# ---------------------------------------------------------------------------
+
+
+def rebuild_fitted_state(source_path, fitting, fit_seed, selected_step, demo_buffer, env_name="push-v2"):
+    """Refit deterministically and return ``(policy, sha)`` holding the state at ``selected_step``.
+
+    The checkpoint probe is replaced by one that snapshots parameters and runs no episode, so the gradient
+    trajectory is the original fit's and nothing is rolled out.
+    """
+    import copy
+
+    import torch
+
+    from lares.core.obs_schema import get_obs_schema
+    from lares.core.training_pipeline import DemoBuffer
+    from lares.fitting.checkpoints import RolloutScore
+    from lares.fitting.optimizers import fit_policy_with_objective, prepare_data, state_parameters_sha256
+    from lares.fitting.structure_bank import instantiate_source
+
+    torch.set_num_threads(1)
+    with open(source_path, encoding="utf-8") as f:
+        policy = instantiate_source(f.read(), 39, 4, get_obs_schema(env_name))
+    policy.fixed_action_scale = float(fitting["fixed_action_scale"])
+    steps = [int(s) for s in fitting["checkpoint_steps"]]
+    snapshots, order = {}, iter(steps)
+
+    def snapshot(pol):
+        snapshots[next(order)] = copy.deepcopy(pol.state_dict())
+        return RolloutScore(0.0, 0.0)
+
+    data = prepare_data(DemoBuffer.load(demo_buffer), val_fraction=float(fitting["val_fraction"]),
+                        split_seed=int(fitting["split_seed"]))
+    fit_policy_with_objective(
+        policy, data, fitting["objective"], budget=int(fitting["budget_gradient_steps"]),
+        batch_size=min(int(fitting["batch_size"]), int(data.train_obs.shape[0])), lr=float(fitting["lr"]),
+        clip_grad_norm=float(fitting["clip_grad_norm"]), seed=int(fit_seed), sampling=fitting["sampling"],
+        rollout_probe=snapshot, checkpoint_steps=steps, structure_id="rebuild",
+    )
+    policy.load_state_dict(snapshots[int(selected_step)])
+    return policy, state_parameters_sha256(policy.state_dict())
+
+
+def run_promotion_check(args) -> int:
+    from lares.eval import EvaluationManifest, make_manifest_env
+    from lares.eval.runner import PolicyActor, evaluate_manifest
+
+    pairs = {q["child_id"]: q for q in discover_pairs(args.run)}
+    pair, fitting = pairs[args.child], common_fitting(list(pairs.values()))
+    os.makedirs(args.out_dir, exist_ok=True)
+    status = ensure_entries_reserved([(args.eval_seed, "evaluation", "R-013 promotion-set check (unused by a "
+                                       "deterministic evaluation; reserved per the advisor)")], args.out_dir)
+    print(f"  pair {pair['child_id']} vs {pair['parent_id']}; seeds: {status}")
+    if args.reserve_only:
+        return 0
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    demo = os.path.join(_PROJECT_ROOT, args.demo_buffer)
+    rebuilt = {}
+    for role, pid, src in (("child", pair["child_id"], pair["child_source_path"]),
+                           ("parent", pair["parent_id"], pair["parent_source_path"])):
+        with open(os.path.join(args.from_run, "policies", f"{pid}_fit{args.fit_seed}.json"), encoding="utf-8") as f:
+            recorded = json.load(f)
+        policy, sha = rebuild_fitted_state(src, fitting, args.fit_seed, recorded["selected_step"], demo, args.env_name)
+        rebuilt[role] = {"policy_id": pid, "policy": policy, "selected_step": recorded["selected_step"],
+                         "recorded_sha256": recorded["parameters_sha256"], "rebuilt_sha256": sha}
+        print(f"  {role} {pid}: step {recorded['selected_step']}, hash {'matches' if sha == recorded['parameters_sha256'] else 'DIFFERS'}")
+    mismatched = [r for r in rebuilt.values() if r["rebuilt_sha256"] != r["recorded_sha256"]]
+    meta = {r: {k: v for k, v in d.items() if k != "policy"} for r, d in rebuilt.items()}
+    if mismatched:
+        with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+            json.dump({"scored": False, "reason": "a rebuilt state does not match its recorded hash", "rebuilt": meta}, f, indent=2)
+        raise SystemExit("hash mismatch: nothing scored")
+    development = EvaluationManifest.load(os.path.join(_PROJECT_ROOT, "config", "manifests", f"{args.env_name}_development.yaml"))
+    promotion = development.slice(10, 40)
+    env = make_manifest_env(development, development.resolve_pool())
+    per_case = {}
+    for role, d in rebuilt.items():
+        result = evaluate_manifest(PolicyActor(d["policy"], deterministic=True, name=role), promotion, env,
+                                   max_steps=args.horizon)
+        per_case[role] = {e.case_id: float(e.success) for e in result.episodes}
+        meta[role]["success_rate"] = result.success_rate
+    cases = sorted(per_case["child"])
+    diffs = [per_case["child"][c] - per_case["parent"][c] for c in cases]
+    summary = {"scored": True, "manifest_id": promotion.manifest_id, "paired_success_difference": float(np.mean(diffs)),
+               "paired": {"n": len(diffs), **t_interval(diffs), **win_loss_tie(diffs)}, "rebuilt": meta,
+               "per_case": per_case, "episodes": 2 * len(cases)}
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2, default=str)
+    pr = summary["paired"]
+    print(f"  {promotion.manifest_id}: child {meta['child']['success_rate']:.3f} parent {meta['parent']['success_rate']:.3f}; "
+          f"paired {pr['mean']:+.3f} [{pr['low']}, {pr['high']}] w/l/t {pr['wins']}/{pr['losses']}/{pr['ties']}")
+    return 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--run", required=True, help="two-lane run directory")
     p.add_argument("--baseline", default="", help="zero-shot baseline run directory (R-001 secondary)")
     p.add_argument("--pool-seed", type=int, help="fresh evaluation pool (R-005 mode)")
     p.add_argument("--fit-seed", type=int)
-    p.add_argument("--research-protocol", choices=["nested-screen", "seed-robustness"], default="")
+    p.add_argument("--research-protocol", choices=["nested-screen", "seed-robustness", "promotion-check"], default="")
+    p.add_argument("--from-run", default="", help="promotion-check: the run whose fit records name the pair")
+    p.add_argument("--eval-seed", type=int)
     p.add_argument("--fit-seeds", type=int, nargs="+", help="seed-robustness: fitting seeds")
     p.add_argument("--child", default="", help="nested-screen: the frozen child attempt id")
     p.add_argument("--screen-seed", type=int)
@@ -696,6 +799,10 @@ def main(argv=None) -> int:
         if missing:
             raise SystemExit(f"nested-screen needs --{', --'.join(m.replace('_', '-') for m in missing)}")
         return run_nested_screen(args)
+    if args.research_protocol == "promotion-check":
+        if not (args.child and args.fit_seed is not None and args.from_run and args.eval_seed is not None):
+            raise SystemExit("promotion-check needs --child, --fit-seed, --from-run and --eval-seed")
+        return run_promotion_check(args)
     if args.research_protocol == "seed-robustness":
         missing = [n for n in ("child", "fit_seeds", "probe_seed", "heldout_seed") if getattr(args, n) in (None, "")]
         if missing:
