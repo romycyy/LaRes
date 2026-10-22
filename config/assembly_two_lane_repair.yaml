@@ -1,0 +1,88 @@
+# ============================================================
+#  R-037: plateau-triggered expert-trace repair inside the real orchestrator, on assembly-v2
+#  (approved 2026-10-22 by the advisor under the user's delegation, consult call_00065; launch is the user's decision)
+#
+#  One generation of two structure slots. Slot 0 (the prefix) is a single-phase exploration treated by 24-candidate
+#  rollout search on the five probe cases (D-014). If every search candidate scored zero probe successes and the prefix
+#  was not promoted, the plateau trigger fires (at most once). With repair enabled, slot 1 is then one expert-trace
+#  whole-controller edit of the prefix candidate (D-027/D-028/D-030/D-032), with one linked validity correction; with
+#  repair disabled, or no trigger, slot 1 is another searched exploration. Nothing is fitted. Screening and the strict
+#  paired promotion rule on development cases 10-39 are unchanged.
+#
+#  Block A (defaults below):   --seed 3900 (repair enabled)   and   --seed 3901 --repair disabled
+#  Block B:  --dev-pool-seed 3912 --demo-pool-seed 3913 --fresh-pool-seed 3914, with --seed 3910 (enabled) and
+#            --seed 3911 --repair disabled
+#  Freeze before any run:  ... --freeze-manifests  (block A), and with block B's pool seeds; no LLM call, no episode.
+#  Fresh-evaluation manifests (3904, 3914) are built by scripts/evaluate_on_fresh_manifest.py after both runs of a block.
+#
+#  python scripts/run_full_evolution.py --config config/assembly_two_lane_repair.yaml --seed 3900 \
+#      --log-dir logs/r037/blockA_repair_on
+# ============================================================
+
+env_name: "assembly-v2"
+seed: 3900
+use_mt1: true
+
+# ---------- Evaluation contract ----------
+# Development pool: cases 0-9 screen, 10-39 promotion, 40-44 probe (45 cases). Demonstrations: 10 expert-only cases from
+# their own pool seed, sharing no placement with the development manifest. Both are frozen under manifest_dir.
+task_manifests:
+  development_pool_seed: 3902
+  demonstration_pool_seed: 3903
+  demonstration_cases: 10
+  fresh_evaluation_pool_seed: 3904   # 30 cases; scored only after both incumbents of the block are fixed
+  fresh_evaluation_cases: 30
+  manifest_dir: "./config/manifests/r037"
+eval_max_steps: 150
+expert_baseline: false        # the expert's development score is not part of R-037's budget
+
+# ---------- No imitation fitting ----------
+dataset_episodes: 0
+bc_steps: 0
+rl_iterations: 0
+rl_episodes: 0
+objective: deterministic_mse
+fixed_action_scale: 0.1
+checkpoint_steps: []
+rollout_checkpoint_probes: 0
+probe_episodes: 5
+max_repair_per_candidate: 1   # one linked validity correction per slot
+# Two slots x (one call + one correction) = 4 calls per run at most; 8 per block, under the advisor's 20.
+max_llm_calls_per_generation: 4
+max_llm_tokens_per_generation: null
+param_budget: [6, 10]
+
+# ---------- Screening and promotion (unchanged) ----------
+screen_episodes: 10
+expanded_episodes: 30
+promotion_challengers: 1
+eval_episodes: 30
+
+# ---------- LLM ----------
+model: "gpt-6.1-sol"
+reasoning_effort: high
+policy_gen_two_phase: true
+policy_impl_mode: per_idea
+num_generations: 1
+pop_size: 2
+elite_num: 1
+
+# ---------- Plateau-triggered trace repair (lares/search/lanes.py, PlateauRepairPlan) ----------
+plateau_repair:
+  structure_slots: 2
+  repair: enabled               # --repair disabled for the paired control run
+  fittable_lane: disabled
+  exploration_lane:
+    generator: single_phase
+    treatment: rollout_search
+    search_candidates: 24
+  operation: whole_controller_edit
+  max_triggers: 1
+  demonstrations:
+    episodes: 10
+    min_successes: 9             # fewer stops the run as inconclusive without spending the continuation
+    traces_shown: 2              # first two successful episodes, every 4th post-lift step
+
+# ---------- Logging ----------
+log_dir: "./logs/r037/run"
+record_demo_gif: false

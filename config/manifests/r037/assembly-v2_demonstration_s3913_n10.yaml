@@ -1,0 +1,76 @@
+manifest_id: assembly-v2:development_demonstration:s3913:n10
+environment:
+  package: metaworld
+  version_or_commit: 3.0.0
+  env_id: assembly-v2
+  env_id_v3: assembly-v3
+  reward_version: metaworld.envs.sawyer_assembly_peg_v3.SawyerNutAssemblyEnvV3.compute_reward
+  wrappers:
+  - NormalizedBoxEnv
+  - gym.TimeLimit
+  - lares.env_wrapper
+  horizon: 150
+  action_scale:
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  success_rule: info['success'] = float(obj_to_target <= TARGET_RADIUS=0.05)
+pool:
+  benchmark: MT1
+  env_id_v3: assembly-v3
+  seeds:
+  - 3913
+  tasks_per_seed: 50
+split: development
+episodes:
+- case_id: development-0000
+  task_id: MT1:assembly-v3:s3913:000
+  task_hash: 8dd7f762395eb4e3
+  reset_seed: 1000000
+  policy_seed: 9000000
+- case_id: development-0001
+  task_id: MT1:assembly-v3:s3913:001
+  task_hash: f1664158f55f7aff
+  reset_seed: 1000001
+  policy_seed: 9000001
+- case_id: development-0002
+  task_id: MT1:assembly-v3:s3913:002
+  task_hash: 3d6d58b27ffe7f0b
+  reset_seed: 1000002
+  policy_seed: 9000002
+- case_id: development-0003
+  task_id: MT1:assembly-v3:s3913:003
+  task_hash: 89b5a92799f68139
+  reset_seed: 1000003
+  policy_seed: 9000003
+- case_id: development-0004
+  task_id: MT1:assembly-v3:s3913:004
+  task_hash: 602931725e1afeef
+  reset_seed: 1000004
+  policy_seed: 9000004
+- case_id: development-0005
+  task_id: MT1:assembly-v3:s3913:005
+  task_hash: d1ba4b46cf884afe
+  reset_seed: 1000005
+  policy_seed: 9000005
+- case_id: development-0006
+  task_id: MT1:assembly-v3:s3913:006
+  task_hash: 1f27f2f37e37fd47
+  reset_seed: 1000006
+  policy_seed: 9000006
+- case_id: development-0007
+  task_id: MT1:assembly-v3:s3913:007
+  task_hash: 33a97f641da24229
+  reset_seed: 1000007
+  policy_seed: 9000007
+- case_id: development-0008
+  task_id: MT1:assembly-v3:s3913:008
+  task_hash: bbea7127ba556c81
+  reset_seed: 1000008
+  policy_seed: 9000008
+- case_id: development-0009
+  task_id: MT1:assembly-v3:s3913:009
+  task_hash: 7413249e01248d7c
+  reset_seed: 1000009
+  policy_seed: 9000009

@@ -64,6 +64,8 @@ def main():
     p.add_argument("--expert", action="store_true", help="Also score the scripted expert as a reference.")
     p.add_argument("--reference", default="", help="Label every other policy is paired against.")
     p.add_argument("--out-dir", required=True)
+    p.add_argument("--frozen", default="",
+                   help="a manifest frozen before the runs (R-037); the rebuilt manifest must match it case for case")
     args = p.parse_args()
 
     ensure_mujoco_headless_gl()
@@ -77,6 +79,12 @@ def main():
         manifest_id=f"{args.env_name}:development_confirmation:s{args.pool_seed}:n{args.episodes}",
     )
     assert_disjoint(committed + [manifest])
+    if args.frozen:
+        frozen = EvaluationManifest.load(args.frozen)
+        if (frozen.manifest_id, [c.to_dict() for c in frozen.episodes]) != (
+                manifest.manifest_id, [c.to_dict() for c in manifest.episodes]):
+            raise SystemExit(f"the rebuilt manifest differs from the frozen {args.frozen}; refusing to score")
+        print(f"  matches the frozen manifest {args.frozen}")
     os.makedirs(args.out_dir, exist_ok=True)
     manifest_path = manifest.save(os.path.join(args.out_dir, f"{args.env_name}_confirmation_s{args.pool_seed}.yaml"))
     print(f"  manifest {manifest.manifest_id}: {len(manifest)} cases, disjoint from {[m.manifest_id for m in committed]}")

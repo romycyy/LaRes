@@ -51,6 +51,9 @@ from lares.search.schemas import (  # noqa: F401  (lineage constants re-exported
     FITTABLE_LABEL,
     LANE_EXPLORATION,
     LANE_FITTABLE,
+    LANE_TRACE_REPAIR,
+    OPERATION_WHOLE_CONTROLLER,
+    TRACE_REPAIR_LABEL,
     LINEAGE_COMPLETE,
     LINEAGE_FAILED_VALIDATION,
     LINEAGE_LEGACY_MISSING,
@@ -503,6 +506,8 @@ class GeneratedCandidate:
     #: Allocated with the slot, before any call: the label, and for the fittable lane the
     #: seed-bank reference, the predeclared mutation scope and (once parsed) the mutation.
     lane_metadata: dict = field(default_factory=dict)
+    #: A slot with no proposal whose operation still edits a named policy (R-037's trace repair): that policy's id.
+    operation_parent_ids: list = field(default_factory=list)
 
     @property
     def attempt_id(self) -> str:
@@ -522,8 +527,8 @@ class GeneratedCandidate:
 
     @property
     def parent_ids(self) -> list:
-        """Semantic parents, declared by the proposal. Never the context list."""
-        return list(self.proposal.parent_ids) if self.proposal is not None else []
+        """Semantic parents, declared by the proposal (or by a proposal-free edit operation). Never the context list."""
+        return list(self.proposal.parent_ids) if self.proposal is not None else list(self.operation_parent_ids)
 
     @property
     def mode(self) -> str:
@@ -639,8 +644,18 @@ def check_lineage(candidate: GeneratedCandidate, feedback: FeedbackBundle | None
         meta = candidate.lane_metadata or {}
         if meta.get("label") not in EXPLORATION_LABELS or meta.get("seeded") is not False:
             problems.append(f"{candidate.attempt_id}: an exploration must be labelled one of {EXPLORATION_LABELS}, unseeded")
-        if candidate.proposal is not None:
+        if candidate.proposal is not None or candidate.operation_parent_ids:
             problems.append(f"{candidate.attempt_id}: an unseeded exploration has no proposal and no parent")
+        return problems
+    if candidate.lane == LANE_TRACE_REPAIR:
+        meta = candidate.lane_metadata or {}
+        edited = (meta.get("edited_candidate") or {}).get("candidate_id")
+        if meta.get("label") != TRACE_REPAIR_LABEL or meta.get("operation") != OPERATION_WHOLE_CONTROLLER:
+            problems.append(f"{candidate.attempt_id}: a trace repair is labelled {TRACE_REPAIR_LABEL!r}, "
+                            f"operation {OPERATION_WHOLE_CONTROLLER!r}")
+        if candidate.proposal is not None or not edited or candidate.operation_parent_ids != [edited]:
+            problems.append(f"{candidate.attempt_id}: a trace repair has no proposal and exactly one parent, the edited "
+                            f"candidate")
         return problems
 
     if candidate.generation == 0:

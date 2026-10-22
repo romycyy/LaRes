@@ -266,10 +266,11 @@ class TestAdvisorAndDecisions(unittest.TestCase):
 class TestCli(unittest.TestCase):
     def test_full_cycle_without_llm(self):
         with tempfile.TemporaryDirectory() as root:
-            idea = make_idea()
+            # The protocol check reads the real seed ledger, which grows as research runs (R-022 spent 2600), so
+            # this uses a seed far outside any range the project reserves.
+            idea = make_idea(seeds=(97001,))
             idea.validate(METRICS)
             idea.save(root)
-            # protocol check reads the real seed ledger; 2600 is unspent there.
             cli.main(["--root", root, "approve", "R-001", "--note", "ok"])
             cli.main(["--root", root, "start", "R-001"])
             results = os.path.join(root, "r.json")

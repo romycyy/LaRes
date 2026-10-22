@@ -262,3 +262,13 @@
 {"seed": 3823, "namespace": "generation_block", "use": "R-036: trace-repair branch", "artifact": "logs/research/two_lane_plateau_repair/block_0", "recorded_at": "2026-10-22T11:12:42", "backfilled": false}
 {"seed": 3824, "namespace": "generation_block", "use": "R-036: fresh branch", "artifact": "logs/research/two_lane_plateau_repair/block_0", "recorded_at": "2026-10-22T11:12:42", "backfilled": false}
 {"seed": 3825, "namespace": "fitting", "use": "R-036: reserved spare stream", "artifact": "logs/research/two_lane_plateau_repair/block_0", "recorded_at": "2026-10-22T11:12:42", "backfilled": false}
+{"seed": 3900, "namespace": "generation_block", "use": "R-037 block A: repair-enabled run seed (generation and search)", "artifact": "logs/r037", "recorded_at": "2026-10-22T13:05:25", "backfilled": false}
+{"seed": 3901, "namespace": "generation_block", "use": "R-037 block A: repair-disabled run seed (generation and search)", "artifact": "logs/r037", "recorded_at": "2026-10-22T13:05:25", "backfilled": false}
+{"seed": 3902, "namespace": "mt1_pool", "use": "R-037 block A: development pool (screen 0-9, promotion 10-39, probe 40-44)", "artifact": "logs/r037", "recorded_at": "2026-10-22T13:05:25", "backfilled": false}
+{"seed": 3903, "namespace": "mt1_pool", "use": "R-037 block A: expert demonstration manifest (10 cases)", "artifact": "logs/r037", "recorded_at": "2026-10-22T13:05:25", "backfilled": false}
+{"seed": 3904, "namespace": "mt1_pool", "use": "R-037 block A: fresh evaluation manifest (30 cases)", "artifact": "logs/r037", "recorded_at": "2026-10-22T13:05:25", "backfilled": false}
+{"seed": 3910, "namespace": "generation_block", "use": "R-037 block B: repair-enabled run seed (generation and search)", "artifact": "logs/r037", "recorded_at": "2026-10-22T13:05:25", "backfilled": false}
+{"seed": 3911, "namespace": "generation_block", "use": "R-037 block B: repair-disabled run seed (generation and search)", "artifact": "logs/r037", "recorded_at": "2026-10-22T13:05:25", "backfilled": false}
+{"seed": 3912, "namespace": "mt1_pool", "use": "R-037 block B: development pool (screen 0-9, promotion 10-39, probe 40-44)", "artifact": "logs/r037", "recorded_at": "2026-10-22T13:05:25", "backfilled": false}
+{"seed": 3913, "namespace": "mt1_pool", "use": "R-037 block B: expert demonstration manifest (10 cases)", "artifact": "logs/r037", "recorded_at": "2026-10-22T13:05:25", "backfilled": false}
+{"seed": 3914, "namespace": "mt1_pool", "use": "R-037 block B: fresh evaluation manifest (30 cases)", "artifact": "logs/r037", "recorded_at": "2026-10-22T13:05:25", "backfilled": false}

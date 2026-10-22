@@ -1422,6 +1422,9 @@ class EvolutionOrchestrator:
         max_llm_tokens_per_generation=None,
         promotion_challengers=1,
         lane_plan=None,
+        demonstration_manifest=None,
+        demonstration_env=None,
+        demonstration_actor=None,
     ):
         from lares.core.symbolic_policy import SymbolicPolicy
         from lares.eval.promotion import PromotionPolicy
@@ -1486,6 +1489,16 @@ class EvolutionOrchestrator:
         self.record_demo_gif = record_demo_gif
         #: A :class:`~lares.search.lanes.TwoLanePlan`, or ``None`` for the single-lane search.
         self.lane_plan = lane_plan
+        #: R-037: a two-slot plateau-repair plan rather than the nine-slot two-lane search.
+        self.plateau = getattr(lane_plan, "kind", "") == "plateau_repair"
+        #: Expert-only demonstrations for the trace-repair slot: a manifest disjoint from every learner manifest, its
+        #: own env, and (for tests) the actor; ``None`` means the task's scripted expert.
+        self.demonstration_manifest = demonstration_manifest
+        self.demonstration_env = demonstration_env
+        self.demonstration_actor = demonstration_actor
+        self.plateau_log: dict = {}
+        if self.plateau and lane_plan.repair and (demonstration_manifest is None or demonstration_env is None):
+            raise ValueError("a repair-enabled plateau plan needs demonstration_manifest and demonstration_env")
         if lane_plan is not None:
             if int(num_generations) != 1:
                 raise ValueError("a two-lane search runs exactly one generation; edit generations belong to Stage F")
@@ -1577,6 +1590,12 @@ class EvolutionOrchestrator:
                     f"the promotion manifest shares {len(overlap)} case(s) with the {name} manifest "
                     f"({sorted(overlap)[:3]}...); promotion evidence must be independent"
                 )
+        if self.demonstration_manifest is not None:
+            learner = {c.task_hash for m in (self.dev_manifest, self.probe_manifest) for c in m.episodes}
+            shared = (learner & {c.task_hash for c in self.demonstration_manifest.episodes}) - {""}
+            if shared:
+                raise ValueError(f"the demonstration manifest shares {len(shared)} placement(s) with a learner "
+                                 f"manifest; demonstrations must come from placements no candidate is scored on")
         if self.lane_plan is not None:
             overlap = {c.case_id for c in self.probe_manifest.episodes} & {c.case_id for c in self.screen_manifest.episodes}
             if self._probe_manifest is None or overlap:
@@ -1619,6 +1638,19 @@ class EvolutionOrchestrator:
         self.probe_batch = torch.tensor(obs, dtype=torch.float32)
         self.probe_batch_ref = self._tensor_artifact("reconstruction_probe_batch.pt", self.probe_batch)
 
+    def _write_probe_batch_from_resets(self, env, n=32):
+        """The reconstruction batch without demonstrations: reset observations of the screen cases plus seeded jitter."""
+        obs = []
+        for case in self.screen_manifest.episodes:
+            o, _ = env.reset(case)
+            obs.append(np.asarray(o, dtype=np.float32).reshape(-1))
+        base = np.stack(obs)
+        rng = np.random.default_rng(0)
+        rows = [base[i % len(base)] + (0.0 if i < len(base) else rng.normal(0.0, 0.01, base.shape[1]))
+                for i in range(n)]
+        self.probe_batch = torch.tensor(np.stack(rows), dtype=torch.float32)
+        self.probe_batch_ref = self._tensor_artifact("reconstruction_probe_batch.pt", self.probe_batch)
+
     def _write_run_manifest(self, args, probe_stream):
         from lares.fitting.checkpoints import CHECKPOINT_TIE_RULE
         from lares.fitting.optimizers import objective_config
@@ -1659,6 +1691,11 @@ class EvolutionOrchestrator:
             "split": self.data.split_info if self.data is not None else None,
             "probe_batch": self.probe_batch_ref,
             "two_lane_plan": self.lane_plan.to_dict() if self.lane_plan is not None else None,
+            "demonstration_manifest": (
+                {"manifest_id": self.demonstration_manifest.manifest_id,
+                 "case_ids": [c.case_id for c in self.demonstration_manifest.episodes]}
+                if self.demonstration_manifest is not None else None
+            ),
         }
         self.run_manifest_ref = self._artifact("run_manifest.json", json.dumps(payload, indent=2, default=str))
         return payload
@@ -1883,7 +1920,7 @@ class EvolutionOrchestrator:
             "final_loss": diag["train_loss"],
             "validation_loss_end": diag["validation_loss"],
             "num_steps": fit.selected_step,
-            "split": self.data.split_info,
+            "split": self.data.split_info if self.data is not None else None,
             "checkpoint_step": fit.selected_step,
             "objective": self.objective,
             "parameters_sha256": diag["parameters_sha256"],
@@ -2001,7 +2038,13 @@ class EvolutionOrchestrator:
         from lares.search import STATUS_EVALUATED, ExperimentRecord, source_hash
         from lares.search.generation import env_identity
         from lares.search.resources import ResourceLedger
-        from lares.search.schemas import EXPLORATION_SEARCHED_LABEL, FITTING_REJECTED, LANE_EXPLORATION, LANE_FITTABLE
+        from lares.search.schemas import (
+            CODE_DERIVED_LABELS,
+            FITTING_REJECTED,
+            LANE_EXPLORATION,
+            LANE_FITTABLE,
+            LANE_TRACE_REPAIR,
+        )
 
         gen = candidate.generation
         cid = candidate.candidate_id
@@ -2010,7 +2053,8 @@ class EvolutionOrchestrator:
         cand_dir = os.path.join(f"gen_{gen}", "candidates", candidate.attempt_id)
         screen = self.screen_manifest
         budget, steps, lane = self._fitting_settings(candidate)
-        searched = lane == LANE_EXPLORATION and (candidate.lane_metadata or {}).get("label") == EXPLORATION_SEARCHED_LABEL
+        searched = (lane in (LANE_EXPLORATION, LANE_TRACE_REPAIR)
+                    and (candidate.lane_metadata or {}).get("label") in CODE_DERIVED_LABELS)
         zero_shot_only = lane == LANE_EXPLORATION and not searched
         resources = ResourceLedger()
         llm, exclusive_totals, exclusive_wall = self._llm_evidence(candidate, args)
@@ -2145,7 +2189,7 @@ class EvolutionOrchestrator:
             "action_mode": fit.objective_config["execution"],
             "fixed_action_scale": self.fixed_action_scale,
             "steps": int(budget),
-            "split": self.data.split_info,
+            "split": self.data.split_info if self.data is not None else None,
             "frozen_parameters": fit.frozen_parameters,
             "checkpoint_steps": list(steps) if probe is not None else [],
             "checkpoint_tie_rule": CHECKPOINT_TIE_RULE,
@@ -2170,7 +2214,10 @@ class EvolutionOrchestrator:
             if zero_shot_only:
                 fitting["lane_fitting"] = "disabled: unseeded exploration, evaluated at its initial values"
             if searched:
-                fitting["lane_fitting"] = "disabled: single-phase exploration, treated by rollout search on the probe"
+                fitting["lane_fitting"] = (
+                    "disabled: trace repair, treated by rollout search on the probe" if lane == LANE_TRACE_REPAIR
+                    else "disabled: single-phase exploration, treated by rollout search on the probe"
+                )
                 fitting["search"] = fit.search
 
         record = ExperimentRecord(
@@ -2414,6 +2461,239 @@ class EvolutionOrchestrator:
     #  Public API
     # ------------------------------------------------------------------
 
+    def _plateau_generation(self, client, args, llm_transcript_path, envs, probe_env, parent_sources, gen_dir):
+        """R-037: the prefix slot, the plateau trigger, then one continuation slot. Returns what one generation does.
+
+        The prefix is a searched single-phase exploration, screened and challenged like any candidate. The trigger
+        reads its 24-candidate probe trace and the promotion outcome (:func:`~lares.search.lanes.plateau_trigger`).
+        With repair enabled and the trigger fired, the expert runs alone on the demonstration manifest; fewer than
+        ``min_demo_successes`` successes stop the run as inconclusive without spending the continuation. Otherwise the
+        continuation is one trace repair of the best failed prefix candidate. With repair disabled, or no trigger, the
+        continuation is another searched exploration and no demonstration is ever collected.
+        """
+        from lares.core.policy_generation import PlateauSlotGenerator
+        from lares.repair import traces as trace_source
+        from lares.search import lanes
+
+        plan = self.lane_plan
+        data_pkl_path = os.path.join(self.log_dir, "data.pkl")
+        with open(data_pkl_path, "wb") as f:
+            pickle.dump([{"obs": np.zeros(self.obs_dim)}], f)
+        generator = PlateauSlotGenerator(
+            client, args, gen_dir, self.obs_dim, self.action_dim, self.env_name,
+            load_policy_prompt_assets(self.env_name), plan, data_pkl_path, self.ledger,
+            llm_transcript_path=llm_transcript_path, max_total_calls=self.max_llm_calls_per_generation,
+            max_repair_per_candidate=self.max_repair_per_candidate, max_total_tokens=self.max_llm_tokens_per_generation,
+        )
+        log = {"plan": plan.to_dict(), "slot_ids": dict(generator.ids), "demonstrations": None, "edited_candidate": None}
+
+        def run_slot(produce):
+            started = time.time()
+            attempts = produce()
+            self.run_resources.add_wall_time("generation", time.time() - started)
+            return (attempts, *self._process_attempts(attempts, 0, envs, probe_env, args, None, parent_sources))
+
+        print("\n  Plateau repair: prefix slot (searched single-phase exploration)")
+        c0, r0, d0, f0 = run_slot(lambda: generator.exploration(0))
+        prefix_promoted = any((d.get("incumbent_comparison") or {}).get("promoted") for d in d0)
+        trigger = lanes.plateau_trigger(r0[0] if r0 else None, prefix_promoted)
+        log["trigger"] = trigger
+        print(f"  Plateau trigger: {'FIRED' if trigger['fired'] else 'not fired'} ({trigger['reason']})")
+
+        produce, continuation = (lambda: generator.exploration(1)), lanes.CONTINUATION_EXPLORATION
+        if trigger["fired"] and plan.repair:
+            edited = lanes.edited_candidate(r0)
+            log["edited_candidate"] = edited
+            demos = self._collect_demonstrations()
+            log["demonstrations"] = {k: v for k, v in demos.items() if k != "selected"}
+            if not demos["qualified"]:
+                continuation, produce = lanes.CONTINUATION_STOPPED, None
+                print(f"  Expert qualification failed ({demos['successes']}/{demos['episodes']} < "
+                      f"{plan.min_demo_successes}): the run stops as inconclusive; the continuation is not spent")
+            else:
+                continuation = lanes.CONTINUATION_TRACE_REPAIR
+                parent = next(r["code"] for r in r0 if r["candidate_id"] == edited["candidate_id"])
+                request = trace_source.repair_request(self.env_name, parent, demos["successes"], demos["episodes"],
+                                                      demos["selected"])
+                meta = plan.repair_metadata(edited, trigger, log["demonstrations"], demos["rule"])
+                meta["request_sha256"] = sha256_text(request)
+                produce = lambda: generator.trace_repair(1, edited, request, meta)  # noqa: E731
+        log["continuation"] = continuation
+        c1, r1, d1, f1 = ([], [], [], [])
+        if produce is not None:
+            print(f"\n  Plateau repair: continuation slot ({continuation})")
+            c1, r1, d1, f1 = run_slot(produce)
+        log["outcome"] = ("inconclusive: expert demonstrations did not qualify" if continuation == lanes.CONTINUATION_STOPPED
+                          else "triggered" if trigger["fired"] else "not triggered")
+        log["final_incumbent"] = self._incumbent_id
+        log["accounting"] = self._plateau_accounting(log)
+        self.plateau_log = log
+        self._artifact(os.path.join("gen_0", "plateau_repair.json"), json.dumps(log, indent=2, default=str))
+        return c0 + c1, r0 + r1, d0 + d1, f0 + f1
+
+    def _collect_demonstrations(self) -> dict:
+        """Expert-only episodes on the demonstration manifest, the qualification gate and the two traces shown."""
+        from lares.core.obs_schema import get_obs_schema
+        from lares.repair import traces as trace_source
+
+        plan = self.lane_plan
+        started = time.time()
+        traces = trace_source.collect_expert_traces(
+            self.env_name, self.demonstration_manifest, self.demonstration_env, get_obs_schema(self.env_name),
+            actor=self.demonstration_actor, max_steps=self.eval_max_steps,
+        )
+        self.run_resources.add_wall_time("evaluation", time.time() - started)
+        gate = trace_source.qualify(traces, plan.min_demo_successes)
+        selected = trace_source.select_traces(traces, plan.trace_episodes) if gate["qualified"] else []
+        self._artifact(os.path.join("gen_0", "demonstrations.json"), json.dumps(traces, indent=2, default=str))
+        print(f"  Expert demonstrations: {gate['successes']}/{gate['episodes']} successful on "
+              f"{self.demonstration_manifest.manifest_id}")
+        return {**gate, "manifest_id": self.demonstration_manifest.manifest_id, "rule": traces["rule"],
+                "case_ids": [e["case"] for e in traces["episodes"]],
+                "traces_case_ids": [e["case"] for e in selected],
+                "traces_sha256": trace_source.traces_sha256(selected) if selected else None,
+                "demonstrations_sha256": trace_source.traces_sha256(traces["episodes"]), "selected": selected}
+
+    def _plateau_accounting(self, log) -> dict:
+        """Simulator episodes and LLM calls the run spent, from the records, the demonstrations and the ledger."""
+        streams = ("screen", "probe", "expanded")
+        learner = {k: 0 for k in streams}
+        for record in self.records:
+            for k in streams:
+                learner[k] += int((record.resources or {}).get(f"{k}_episodes", 0) or 0)
+        demos = int((log.get("demonstrations") or {}).get("episodes", 0) or 0)
+        return {"learner_episodes": learner, "demonstration_episodes": demos,
+                "episodes_total": sum(learner.values()) + demos, "llm_calls": len(self.ledger),
+                "llm_tokens": self.ledger.totals()["llm_total_tokens"]}
+
+    def _process_attempts(self, candidates, gen, envs, probe_env, args, feedback_bundle, parent_sources):
+        """Record failed attempts, fit and screen the valid ones, then challenge the incumbent.
+
+        Returns ``(gen_results, decisions, failures)``. One generation calls this once; a plateau-repair run calls it
+        once per structure slot, so the continuation is screened and challenged against whatever the prefix left.
+        """
+        from lares.core.policy_generation import final_attempts
+        from lares.eval.promotion import NOT_BEST_SCREENED_CHALLENGER, holm_promotion, summarise_decisions
+        from lares.eval.report import CHECKPOINT_FITTED
+
+        final_by_slot = {c.candidate_id: c for c in final_attempts(candidates)}
+        failures = [c for c in final_by_slot.values() if not c.valid]
+        for c in candidates:
+            if not (c.valid and final_by_slot[c.candidate_id] is c):
+                self._record_failed_attempt(c, args, final_by_slot, feedback_bundle)
+
+        # --- Inner loop: fit, select, screen ------------------------------
+        screen = self.screen_manifest
+        expanded = self.promotion_manifest
+        gen_results = []
+        for c in final_by_slot.values():
+            if not c.valid:
+                continue
+            lane_note = f"{c.lane} lane; " if c.lane else ""
+            print(f"\n  --- {c.attempt_id} ({lane_note}{c.mode or 'idea'}; parents {c.parent_ids}) ---")
+            result = self._fit_and_screen(c, envs, probe_env, args, feedback_bundle)
+            self.run_resources.merge(
+                __import__("lares.search.resources", fromlist=["ResourceLedger"]).ResourceLedger(
+                    wall_time_seconds=dict(result["resources"].wall_time_seconds)
+                )
+            )
+            gen_results.append(result)
+            self.history.append(result)
+            parent_sources[c.candidate_id] = c.code
+            print(f"    zero-shot   {result['zero_shot_report'].headline()}")
+            if result["intermediate_report"] is not None:
+                print(f"    intermediate {result['intermediate_report'].headline()}")
+            print(f"    fitted      {result['screen_report'].headline()}")
+
+        decisions = []
+        if not gen_results:
+            print(f"  WARNING: Generation {gen + 1} produced no valid candidates.")
+        else:
+            # --- Screening: picks the challenger; it never replaces the incumbent ---
+            decisions = self.promotion_policy.screen(
+                [
+                    {"candidate_id": r["candidate_id"], "report": r["screen_report"], "valid": True}
+                    for r in gen_results
+                ]
+            )
+            print(f"\n  Screening on {len(screen)} cases (rule declared before the generation ran):")
+            print("    " + summarise_decisions(decisions).replace("\n", "\n    "))
+            by_id = {r["candidate_id"]: r for r in gen_results}
+            cleared = sorted(
+                (d for d in decisions if d["promoted"]),
+                key=lambda d: (d["success_rate"], d["progress"], d["mean_return"]),
+                reverse=True,
+            )
+            challengers = cleared[: self.promotion_challengers]
+            for d in decisions:
+                d["generation"] = gen
+                d["screen_cleared"] = bool(d["promoted"])
+                d["promotion_tested"] = any(d is c for c in challengers)
+                if d["promoted"] and not d["promotion_tested"]:
+                    d["promotion_evaluation"] = NOT_BEST_SCREENED_CHALLENGER
+
+            # --- Promotion: best screened challenger(s) on the promotion set -----
+            tested = []
+            for d in challengers:
+                r = by_id[d["candidate_id"]]
+                started = time.time()
+                exp_result, exp_report = self._evaluate_checkpoint(
+                    r["policy"], envs.development, expanded, r["candidate_id"],
+                    CHECKPOINT_FITTED, bc_stats=r["bc_stats"],
+                )
+                r["resources"].add_episodes("expanded", exp_result)
+                elapsed = time.time() - started
+                r["resources"].add_wall_time("evaluation", elapsed)
+                self.run_resources.add_wall_time("evaluation", elapsed)
+                r["report_refs"]["fitted_expanded"] = self._save_report(
+                    exp_report, f"{r['candidate_id']}_expanded.json", gen
+                )
+                self.archive.confirm(r["candidate_id"], exp_report)
+                r["expanded_record"] = exp_result
+                r["expanded_report"] = exp_report
+                r["eval"] = exp_result.fitness_dict()
+                r["score"] = self._score(r["eval"])
+                print(f"    promotion set {exp_report.headline()}")
+                tested.append((d, r, exp_result, exp_report))
+
+            comparisons = holm_promotion(
+                [(r["candidate_id"], exp_result) for _, r, exp_result, _ in tested],
+                self._incumbent_expanded,
+                self._incumbent_id,
+                excluded_manifest_ids=(screen.manifest_id, self.probe_manifest.manifest_id),
+            )
+            for (d, r, exp_result, exp_report), comparison in zip(tested, comparisons):
+                d["incumbent_comparison"] = comparison.to_dict()
+                ps = comparison.paired_success
+                low = "n/a" if ps["ci_low"] is None else f"{ps['ci_low']:+.3f}"
+                high = "n/a" if ps["ci_high"] is None else f"{ps['ci_high']:+.3f}"
+                print(
+                    f"      paired vs {comparison.incumbent_id}: success {ps['mean_difference']:+.3f} "
+                    f"{comparison.interval_level:.1%} t interval [{low}, {high}] "
+                    f"n={ps['n_paired']}  -> {comparison.reason}"
+                )
+                if comparison.promoted:
+                    self._incumbent_expanded = exp_result
+                    self._incumbent_id = r["candidate_id"]
+                    self.best_overall = {
+                        "policy": copy.deepcopy(r["policy"]),
+                        "code": r["code"],
+                        "score": r["score"],
+                        "eval": r["eval"],
+                        "response": r["response"],
+                        "candidate_id": r["candidate_id"],
+                        "attempt_id": r["attempt_id"],
+                        "report": exp_report,
+                    }
+            fittable_decisions = {}
+            if self.lane_plan is not None and not self.plateau:
+                fittable_decisions = self._fittable_promotion(gen_results, envs, expanded, screen, gen)
+            self.promotion_log.extend(decisions)
+            self._update_records_after_promotion(decisions, by_id, expanded, fittable_decisions)
+            if self.lane_plan is not None:
+                self._write_incumbents(gen, expanded)
+        return gen_results, decisions, failures
+
     def run(self, client, envs, demo_buffer, args, logger=None):
         """Execute the full evolution loop.
 
@@ -2433,13 +2713,6 @@ class EvolutionOrchestrator:
             for the incumbent found across all generations, or ``None`` if no
             candidate was ever promoted.
         """
-        from lares.core.policy_generation import final_attempts
-        from lares.eval.promotion import (
-            NOT_BEST_SCREENED_CHALLENGER,
-            holm_promotion,
-            summarise_decisions,
-        )
-        from lares.eval.report import CHECKPOINT_FITTED
         from lares.fitting.optimizers import prepare_data
         from lares.search.generation import LLMCallLedger, write_feedback_bundle
 
@@ -2474,8 +2747,15 @@ class EvolutionOrchestrator:
 
         ensure_mujoco_headless_gl()
         self.ledger = LLMCallLedger(self.log_dir)
-        self.data = prepare_data(demo_buffer, val_fraction=self.val_fraction, split_seed=self.split_seed)
-        self._write_probe_batch(demo_buffer)
+        if demo_buffer is None:
+            # Nothing is fitted (R-037), so no demonstration buffer exists; the reconstruction batch is read off the
+            # screen cases' reset observations on the GIF stream, which every later episode resets anyway.
+            if int(self.bc_steps) or (self.lane_plan is not None and self.lane_plan.fittable_slots):
+                raise ValueError("demo_buffer=None is allowed only when no candidate can be fitted (bc_steps 0, no fittable lane)")
+            self._write_probe_batch_from_resets(envs.gif)
+        else:
+            self.data = prepare_data(demo_buffer, val_fraction=self.val_fraction, split_seed=self.split_seed)
+            self._write_probe_batch(demo_buffer)
         self._write_run_manifest(args, probe_stream)
         self.check_manifest_isolation()
         if not self.probe_is_isolated:
@@ -2493,7 +2773,11 @@ class EvolutionOrchestrator:
 
             # --- Structure search: typed candidates with lineage -------------
             started = time.time()
-            if self.lane_plan is not None:
+            if self.plateau:
+                candidates, gen_results, decisions, failures = self._plateau_generation(
+                    client, args, llm_transcript_path, envs, probe_env, parent_sources, gen_dir
+                )
+            elif self.lane_plan is not None:
                 candidates = two_lane_generation(
                     client=client, env_name=self.env_name, obs_dim=self.obs_dim, action_dim=self.action_dim,
                     args=args, plan=self.lane_plan, log_dir=self.log_dir, logger=logger,
@@ -2522,124 +2806,13 @@ class EvolutionOrchestrator:
                 param_budget=self.param_budget,
                 max_total_tokens=self.max_llm_tokens_per_generation,
               )
-            self.run_resources.add_wall_time("generation", time.time() - started)
-
-            final_by_slot = {c.candidate_id: c for c in final_attempts(candidates)}
-            failures = [c for c in final_by_slot.values() if not c.valid]
-            for c in candidates:
-                if not (c.valid and final_by_slot[c.candidate_id] is c):
-                    self._record_failed_attempt(c, args, final_by_slot, feedback_bundle)
-
-            # --- Inner loop: fit, select, screen ------------------------------
+            if not self.plateau:
+                self.run_resources.add_wall_time("generation", time.time() - started)
+                gen_results, decisions, failures = self._process_attempts(
+                    candidates, gen, envs, probe_env, args, feedback_bundle, parent_sources
+                )
             screen = self.screen_manifest
             expanded = self.promotion_manifest
-            gen_results = []
-            for c in final_by_slot.values():
-                if not c.valid:
-                    continue
-                lane_note = f"{c.lane} lane; " if c.lane else ""
-                print(f"\n  --- {c.attempt_id} ({lane_note}{c.mode or 'idea'}; parents {c.parent_ids}) ---")
-                result = self._fit_and_screen(c, envs, probe_env, args, feedback_bundle)
-                self.run_resources.merge(
-                    __import__("lares.search.resources", fromlist=["ResourceLedger"]).ResourceLedger(
-                        wall_time_seconds=dict(result["resources"].wall_time_seconds)
-                    )
-                )
-                gen_results.append(result)
-                self.history.append(result)
-                parent_sources[c.candidate_id] = c.code
-                print(f"    zero-shot   {result['zero_shot_report'].headline()}")
-                if result["intermediate_report"] is not None:
-                    print(f"    intermediate {result['intermediate_report'].headline()}")
-                print(f"    fitted      {result['screen_report'].headline()}")
-
-            decisions = []
-            if not gen_results:
-                print(f"  WARNING: Generation {gen + 1} produced no valid candidates.")
-            else:
-                # --- Screening: picks the challenger; it never replaces the incumbent ---
-                decisions = self.promotion_policy.screen(
-                    [
-                        {"candidate_id": r["candidate_id"], "report": r["screen_report"], "valid": True}
-                        for r in gen_results
-                    ]
-                )
-                print(f"\n  Screening on {len(screen)} cases (rule declared before the generation ran):")
-                print("    " + summarise_decisions(decisions).replace("\n", "\n    "))
-                by_id = {r["candidate_id"]: r for r in gen_results}
-                cleared = sorted(
-                    (d for d in decisions if d["promoted"]),
-                    key=lambda d: (d["success_rate"], d["progress"], d["mean_return"]),
-                    reverse=True,
-                )
-                challengers = cleared[: self.promotion_challengers]
-                for d in decisions:
-                    d["generation"] = gen
-                    d["screen_cleared"] = bool(d["promoted"])
-                    d["promotion_tested"] = any(d is c for c in challengers)
-                    if d["promoted"] and not d["promotion_tested"]:
-                        d["promotion_evaluation"] = NOT_BEST_SCREENED_CHALLENGER
-
-                # --- Promotion: best screened challenger(s) on the promotion set -----
-                tested = []
-                for d in challengers:
-                    r = by_id[d["candidate_id"]]
-                    started = time.time()
-                    exp_result, exp_report = self._evaluate_checkpoint(
-                        r["policy"], envs.development, expanded, r["candidate_id"],
-                        CHECKPOINT_FITTED, bc_stats=r["bc_stats"],
-                    )
-                    r["resources"].add_episodes("expanded", exp_result)
-                    elapsed = time.time() - started
-                    r["resources"].add_wall_time("evaluation", elapsed)
-                    self.run_resources.add_wall_time("evaluation", elapsed)
-                    r["report_refs"]["fitted_expanded"] = self._save_report(
-                        exp_report, f"{r['candidate_id']}_expanded.json", gen
-                    )
-                    self.archive.confirm(r["candidate_id"], exp_report)
-                    r["expanded_record"] = exp_result
-                    r["expanded_report"] = exp_report
-                    r["eval"] = exp_result.fitness_dict()
-                    r["score"] = self._score(r["eval"])
-                    print(f"    promotion set {exp_report.headline()}")
-                    tested.append((d, r, exp_result, exp_report))
-
-                comparisons = holm_promotion(
-                    [(r["candidate_id"], exp_result) for _, r, exp_result, _ in tested],
-                    self._incumbent_expanded,
-                    self._incumbent_id,
-                    excluded_manifest_ids=(screen.manifest_id, self.probe_manifest.manifest_id),
-                )
-                for (d, r, exp_result, exp_report), comparison in zip(tested, comparisons):
-                    d["incumbent_comparison"] = comparison.to_dict()
-                    ps = comparison.paired_success
-                    low = "n/a" if ps["ci_low"] is None else f"{ps['ci_low']:+.3f}"
-                    high = "n/a" if ps["ci_high"] is None else f"{ps['ci_high']:+.3f}"
-                    print(
-                        f"      paired vs {comparison.incumbent_id}: success {ps['mean_difference']:+.3f} "
-                        f"{comparison.interval_level:.1%} t interval [{low}, {high}] "
-                        f"n={ps['n_paired']}  -> {comparison.reason}"
-                    )
-                    if comparison.promoted:
-                        self._incumbent_expanded = exp_result
-                        self._incumbent_id = r["candidate_id"]
-                        self.best_overall = {
-                            "policy": copy.deepcopy(r["policy"]),
-                            "code": r["code"],
-                            "score": r["score"],
-                            "eval": r["eval"],
-                            "response": r["response"],
-                            "candidate_id": r["candidate_id"],
-                            "attempt_id": r["attempt_id"],
-                            "report": exp_report,
-                        }
-                fittable_decisions = {}
-                if self.lane_plan is not None:
-                    fittable_decisions = self._fittable_promotion(gen_results, envs, expanded, screen, gen)
-                self.promotion_log.extend(decisions)
-                self._update_records_after_promotion(decisions, by_id, expanded, fittable_decisions)
-                if self.lane_plan is not None:
-                    self._write_incumbents(gen, expanded)
 
             # --- Evidence for the next generation, hashed as a bundle ---------
             text, context = self._build_evidence(gen, gen_results, failures, screen, demo_buffer=demo_buffer)

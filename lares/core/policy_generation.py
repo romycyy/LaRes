@@ -1345,6 +1345,113 @@ def _single_phase_exploration(session, prompts, user_content, allocator, make, s
     return out
 
 
+class PlateauSlotGenerator:
+    """R-037's two structure slots, generated one at a time so the second can depend on the first's outcome.
+
+    Both slot ids and their first attempts are allocated at construction, before any call. Slot 0 is always a
+    searched single-phase exploration. Slot 1 is decided by the orchestrator after slot 0 has been searched, screened
+    and challenged: :meth:`exploration` again, or :meth:`trace_repair`, one whole-controller edit of a named prefix
+    candidate written from expert traces. Every slot gets at most ``max_repair_per_candidate`` linked corrections, and
+    every call goes through one session, so the run's call budget covers both slots.
+    """
+
+    def __init__(self, client, args, dir_path, obs_dim, action_dim, env_name, prompts, plan, data_pkl_path, ledger,
+                 llm_transcript_path=None, max_total_calls=50, max_repair_per_candidate=1, max_total_tokens=None):
+        from lares.search.generation import CandidateAllocator
+
+        if not env_name:
+            raise ValueError("PlateauSlotGenerator requires env_name to bind the observation schema")
+        os.makedirs(dir_path, exist_ok=True)
+        self.dir_path, self.obs_dim, self.action_dim, self.env_name = dir_path, obs_dim, action_dim, env_name
+        self.prompts, self.plan, self.data_pkl_path = prompts, plan, data_pkl_path
+        self.max_repair_per_candidate = int(max_repair_per_candidate)
+        self.allocator = CandidateAllocator(0)
+        self.ids = {slot: cid for cid, slot in self.allocator.allocate_slots(plan.n)}
+        for cid in self.ids.values():
+            self.allocator.next_attempt(cid)
+        self.session = _LLMSession(client, args.model, ledger, llm_transcript_path, 0, max_total_calls,
+                                   max_tokens=max_total_tokens, reasoning_effort=getattr(args, "reasoning_effort", None))
+        fmt = dict(task=prompts["task_description"], obs_dim=obs_dim, action_dim=action_dim,
+                   obs_description=prompts["obs_description"], input_dict_string=prompts["input_dict_string"])
+        self.user_content = prompts["initial_user"].format(**fmt)
+
+    def _make(self, lane, metadata, parents=()):
+        from lares.search.generation import GeneratedCandidate
+
+        def make(cid, slot, attempt, lane_metadata=None, **kw):
+            return GeneratedCandidate(candidate_id=cid, generation=0, slot=slot, attempt=attempt, feedback_id=None,
+                                      context_parent_ids=list(parents), lane=lane,
+                                      lane_metadata=dict(lane_metadata if lane_metadata is not None else metadata),
+                                      operation_parent_ids=list(parents), **kw)
+        return make
+
+    def _finish(self, out):
+        for c in out:
+            _save_attempt(self.dir_path, c)
+        return out
+
+    def exploration(self, slot: int) -> list:
+        """A searched single-phase exploration in ``slot``; every attempt, failures included."""
+        from lares.search.schemas import LANE_EXPLORATION
+
+        spec = self.plan.slot(slot)
+        out = _single_phase_exploration(
+            self.session, self.prompts, self.user_content, self.allocator, self._make(LANE_EXPLORATION, spec.lane_metadata()),
+            [spec], self.ids, self.dir_path, self.data_pkl_path, self.obs_dim, self.action_dim, self.env_name,
+            self.max_repair_per_candidate)
+        return self._finish(out)
+
+    def trace_repair(self, slot: int, edited: dict, request: str, lane_metadata: dict) -> list:
+        """One whole-controller edit of ``edited`` from ``request`` (parent code and traces), plus linked corrections."""
+        from lares.search.generation import LABEL_CORRECTION, LABEL_REPAIR, attempt_id_for
+        from lares.search.schemas import LANE_TRACE_REPAIR, idea_from_code
+
+        cid, prompts = self.ids[slot], self.prompts
+        make = self._make(LANE_TRACE_REPAIR, lane_metadata, parents=[edited["candidate_id"]])
+        validate = _SlotValidator(self.dir_path, self.data_pkl_path, self.obs_dim, self.action_dim, self.env_name,
+                                  forbid_scale_parameters=False)
+
+        def attach(candidate):
+            candidate.policy, candidate.validation = validate(candidate.code, None, candidate.attempt_id)
+            if candidate.valid:
+                candidate.idea = idea_from_code(candidate.policy, candidate.code, f"gen0_idea{slot}",
+                                                f"trace repair of {edited['candidate_id']}")
+                candidate.idea.summary = ("Code-derived idea: a whole-controller rewrite of "
+                                          f"{edited['candidate_id']} written from expert traces, without a stated design.")
+            return candidate
+
+        if self.session.exhausted:
+            return self._finish([make(cid, slot, 0, validation={"passed": False, "stage": STAGE_BUDGET,
+                                                                 "errors": ["the LLM call budget is spent"]})])
+        user = self.user_content + "\n\n" + request + "\n" + prompts["code_output_tip"]
+        messages = [{"role": "system", "content": prompts["initial_system"]}, {"role": "user", "content": user}]
+        replies, record = self.session.call(LABEL_REPAIR, messages, purpose="trace_repair",
+                                            attempt_ids=[attempt_id_for(cid, 0)], transcript_label="trace_repair")
+        text = replies[0] if replies else ""
+        current = attach(make(cid, slot, 0, code=_extract_code_string(text), response=text, llm_call_ids=[record.call_id],
+                              mapping={"mode": "trace_repair", "call_id": record.call_id, "choice_index": 0}))
+        out, corrections = [current], 0
+        while (not current.valid and current.code and corrections < self.max_repair_per_candidate
+               and not self.session.exhausted):
+            corrections += 1
+            attempt = self.allocator.next_attempt(cid)
+            aid = attempt_id_for(cid, attempt)
+            repair = messages + [
+                {"role": "assistant", "content": f"```python\n{current.code}\n```"},
+                {"role": "user", "content": _build_error_feedback(current.code, "\n".join(current.validation.get("errors", [])))
+                 + "\n" + prompts["code_output_tip"]},
+            ]
+            fixes, fix_record = self.session.call(LABEL_CORRECTION, repair, purpose="validation_repair", attempt_ids=[aid],
+                                                  transcript_label="trace_repair_correction")
+            text = fixes[0] if fixes else ""
+            current = attach(make(cid, slot, attempt, code=_extract_code_string(text), response=text,
+                                  llm_call_ids=[fix_record.call_id], previous_attempt_id=current.attempt_id,
+                                  mapping={"mode": "trace_repair", "call_id": fix_record.call_id,
+                                           "corrects": current.attempt_id}))
+            out.append(current)
+        return self._finish(out)
+
+
 def _generate_single_phase(client, args, dir_path, generation, obs_dim, action_dim, env_name, prompts, n,
                            data_pkl_path, ledger, code_feedback, llm_transcript_path, max_total_calls,
                            max_repair_per_candidate):

@@ -44,6 +44,8 @@ from lares.search.schemas import (
     LANE_EXPLORATION,
     LANE_FITTABLE,
     LANES,
+    OPERATION_WHOLE_CONTROLLER,
+    TRACE_REPAIR_LABEL,
     fitting_metrics,
 )
 
@@ -715,6 +717,160 @@ def expected_budget(plan: TwoLanePlan, screen_episodes: int, promotion_episodes:
     }
 
 
+# ---------------------------------------------------------------------------
+#  R-037: plateau-triggered trace repair, two structure slots
+# ---------------------------------------------------------------------------
+
+PLATEAU_SLOTS = 2
+CONTINUATION_TRACE_REPAIR = "trace_repair"
+CONTINUATION_EXPLORATION = "fresh_exploration"
+CONTINUATION_STOPPED = "stopped_inconclusive"
+TRIGGER_RULE = ("after the prefix's 24-candidate probe search: fire only if every candidate scored zero probe "
+                "successes and no prefix candidate was promoted; at most once per run")
+
+
+@dataclass
+class PlateauRepairPlan:
+    """Two structure slots: a searched single-phase exploration (the prefix), then one continuation.
+
+    The continuation is decided only after the prefix has been searched, screened and challenged. With repair enabled
+    and the plateau trigger fired it is one expert-trace whole-controller edit of the prefix candidate; otherwise it is
+    another searched single-phase exploration. Nothing is fitted; the fittable lane does not exist here.
+    """
+
+    repair: bool
+    demo_episodes: int = 10
+    min_demo_successes: int = 9
+    trace_episodes: int = 2
+    max_triggers: int = 1
+    search_candidates: int = SEARCH_CANDIDATES
+    slots: list = field(default_factory=list)
+
+    kind = "plateau_repair"
+    fittable_budget = 0
+    checkpoint_steps = ()
+
+    def __post_init__(self):
+        if not self.slots:
+            mode = {"generator": GENERATOR_SINGLE_PHASE, "treatment": TREATMENT_ROLLOUT_SEARCH,
+                    "search_candidates": int(self.search_candidates)}
+            self.slots = [SlotSpec(slot=i, lane=LANE_EXPLORATION, exploration=dict(mode)) for i in range(PLATEAU_SLOTS)]
+
+    @property
+    def n(self) -> int:
+        return len(self.slots)
+
+    @property
+    def fittable_slots(self) -> list:
+        return []
+
+    @property
+    def exploration_slots(self) -> list:
+        return list(self.slots)
+
+    @property
+    def exploration_mode(self) -> dict:
+        return dict(self.slots[0].exploration)
+
+    def slot(self, index: int) -> SlotSpec:
+        return self.slots[int(index)]
+
+    def reference_ids(self) -> list:
+        return []
+
+    def parent_sources(self) -> dict:
+        return {}
+
+    def repair_metadata(self, edited: dict, trigger: dict, demonstrations: dict, rule: dict) -> dict:
+        """Lane metadata of the repair slot, allocated before its call."""
+        return {"label": TRACE_REPAIR_LABEL, "seeded": False, "fitting": "disabled", "operation": OPERATION_WHOLE_CONTROLLER,
+                "generator": GENERATOR_SINGLE_PHASE, "treatment": TREATMENT_ROLLOUT_SEARCH,
+                "search_candidates": int(self.search_candidates), "edited_candidate": dict(edited),
+                "trigger": dict(trigger), "demonstrations": dict(demonstrations), "trace_rule": dict(rule),
+                "budget": {"llm_calls_max": 2, "demonstration_episodes": int(self.demo_episodes)}}
+
+    def to_dict(self) -> dict:
+        return {
+            "kind": self.kind, "structure_slots": self.n, "repair": "enabled" if self.repair else "disabled",
+            "exploration_lane": self.exploration_mode, "fittable_lane": "disabled", "trigger_rule": TRIGGER_RULE,
+            "max_triggers": self.max_triggers, "operation": OPERATION_WHOLE_CONTROLLER, "corrections": 1,
+            "demonstrations": {"episodes": self.demo_episodes, "min_successes": self.min_demo_successes,
+                               "traces_shown": self.trace_episodes},
+        }
+
+
+def load_plateau_repair_plan(block: dict) -> PlateauRepairPlan:
+    """Build and check the ``plateau_repair`` config block; refuse anything but R-037's frozen shape."""
+    problems = []
+    if int(block.get("structure_slots", -1)) != PLATEAU_SLOTS:
+        problems.append(f"structure_slots must be {PLATEAU_SLOTS}, got {block.get('structure_slots')!r}")
+    repair = str(block.get("repair", "")).lower()
+    if repair not in ("enabled", "disabled"):
+        problems.append(f"repair must be 'enabled' or 'disabled', got {block.get('repair')!r}")
+    mode = block.get("exploration_lane") or {}
+    if (str(mode.get("generator")), str(mode.get("treatment"))) != (GENERATOR_SINGLE_PHASE, TREATMENT_ROLLOUT_SEARCH):
+        problems.append(f"exploration_lane must be {GENERATOR_SINGLE_PHASE} + {TREATMENT_ROLLOUT_SEARCH}, got {mode}")
+    if int(mode.get("search_candidates", SEARCH_CANDIDATES)) != SEARCH_CANDIDATES:
+        problems.append(f"exploration_lane.search_candidates must be {SEARCH_CANDIDATES}")
+    if str(block.get("fittable_lane", "")).lower() != "disabled":
+        problems.append("fittable_lane must be 'disabled'")
+    if str(block.get("operation", OPERATION_WHOLE_CONTROLLER)) != OPERATION_WHOLE_CONTROLLER:
+        problems.append(f"operation must be {OPERATION_WHOLE_CONTROLLER!r}")
+    if int(block.get("max_triggers", 1)) != 1:
+        problems.append("max_triggers must be 1")
+    demos = block.get("demonstrations") or {}
+    episodes, minimum = int(demos.get("episodes", 10)), int(demos.get("min_successes", 9))
+    if not 0 < minimum <= episodes:
+        problems.append(f"demonstrations.min_successes must be in 1..episodes, got {minimum}/{episodes}")
+    if int(demos.get("traces_shown", 2)) != 2:
+        problems.append("demonstrations.traces_shown must be 2 (D-030's protocol)")
+    if problems:
+        raise LanePlanError("plateau-repair plan refused:\n  " + "\n  ".join(problems))
+    return PlateauRepairPlan(repair=repair == "enabled", demo_episodes=episodes, min_demo_successes=minimum)
+
+
+def plateau_trigger(prefix_result, prefix_promoted: bool, already_fired: int = 0) -> dict:
+    """The trigger decision from the prefix's search trace and its promotion outcome."""
+    if already_fired:
+        return {"fired": False, "reason": "already fired once in this run", "rule": TRIGGER_RULE}
+    if prefix_result is None:
+        return {"fired": False, "reason": "the prefix produced no valid candidate, so nothing was searched",
+                "probe_successes": None, "prefix_promoted": bool(prefix_promoted), "rule": TRIGGER_RULE}
+    trace = (getattr(prefix_result["fit"], "search", None) or {}).get("trace") or []
+    if not trace:
+        raise ValueError(f"{prefix_result['candidate_id']}: the prefix carries no search trace")
+    successes = sum(1 for t in trace if float(t.get("success", 0.0)) > 0)
+    fired = successes == 0 and not prefix_promoted
+    return {"fired": bool(fired), "probe_successes": int(successes), "candidates": len(trace),
+            "prefix_promoted": bool(prefix_promoted), "prefix_candidate_id": prefix_result["candidate_id"],
+            "reason": "plateau: no probe success and no promotion" if fired else
+            ("a prefix candidate was promoted" if prefix_promoted else f"{successes} candidate(s) succeeded on the probe"),
+            "rule": TRIGGER_RULE}
+
+
+def edited_candidate(prefix_results: list) -> dict:
+    """The deterministic best failed prefix candidate: screen success, then progress, then the lower slot."""
+    from lares.eval.promotion import PromotionPolicy
+    from lares.search import source_hash
+
+    best = min(prefix_results, key=lambda r: (-r["screen_report"].rollout.success_rate,
+                                              -PromotionPolicy._progress(r["screen_report"]), r["candidate_idx"]))
+    return {"candidate_id": best["candidate_id"], "attempt_id": best["attempt_id"], "source_hash": source_hash(best["code"]),
+            "selection": "best failed prefix candidate by screen success, then progress, then lower slot"}
+
+
+def expected_plateau_budget(plan: PlateauRepairPlan, screen_episodes: int, promotion_episodes: int,
+                            probe_episodes: int, horizon: int, max_repair_per_candidate: int = 1) -> dict:
+    """Upper bounds for one run: each slot screens twice (zero-shot and selected), probes every search candidate and
+    may challenge once; a repair-enabled run may also spend its demonstration episodes."""
+    per_slot = 2 * screen_episodes + plan.search_candidates * probe_episodes + promotion_episodes
+    demos = plan.demo_episodes if plan.repair else 0
+    episodes = plan.n * per_slot + demos
+    return {"per_slot_episodes_max": per_slot, "demonstration_episodes_max": demos, "episodes_max": episodes,
+            "simulator_steps_max": episodes * horizon,
+            "llm": {"max_calls": plan.n * (1 + int(max_repair_per_candidate))}}
+
+
 __all__ = [
     "ALL", "DAMPED_PUSH_REFERENCE", "DAMPED_PUSH_SCOPES", "DATA_ROLES", "EXPLORATION_SLOTS", "FITTABLE_CHECKPOINTS",
     "FITTABLE_INCUMBENT", "FITTABLE_SLOTS", "LanePlanError", "MutationScope", "PERFORMANCE_INCUMBENT",
@@ -722,4 +878,7 @@ __all__ = [
     "check_bounded_mutation", "check_fixed_allocation", "check_mutation_declaration", "control_ids",
     "decide_fittable_incumbent", "expected_budget", "fitting_metrics", "fittable_eligibility",
     "lane_resource_totals", "load_structure_roles", "load_two_lane_plan", "slots_prompt_block",
+    "CONTINUATION_EXPLORATION", "CONTINUATION_STOPPED", "CONTINUATION_TRACE_REPAIR", "PLATEAU_SLOTS",
+    "PlateauRepairPlan", "TRIGGER_RULE", "edited_candidate", "expected_plateau_budget", "load_plateau_repair_plan",
+    "plateau_trigger",
 ]

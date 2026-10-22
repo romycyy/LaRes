@@ -63,13 +63,20 @@ BOUNDED_MODES = (MODE_REPAIR, MODE_SIMPLIFICATION, MODE_PARAMETER_ONLY)
 #: zero-shot designs that never consume fitting or probe resources.
 LANE_FITTABLE = "fittable"
 LANE_EXPLORATION = "exploration"
-LANES = (LANE_FITTABLE, LANE_EXPLORATION)
+#: R-037: the plateau-triggered expert-trace repair slot. One whole-controller edit of a named prefix candidate, written
+#: from successful expert-only demonstrations and treated by the same rollout search as a searched exploration.
+LANE_TRACE_REPAIR = "trace_repair"
+LANES = (LANE_FITTABLE, LANE_EXPLORATION, LANE_TRACE_REPAIR)
 FITTABLE_LABEL = "reference_seeded_bounded_mutation"
 EXPLORATION_LABEL = "unseeded_exploration"
 #: R-018: an exploration written by single-phase generation and treated by rollout search on the probe (never imitation
 #: fitting). Its idea is derived from the code, not stated by the generator.
 EXPLORATION_SEARCHED_LABEL = "unseeded_searched_exploration"
 EXPLORATION_LABELS = (EXPLORATION_LABEL, EXPLORATION_SEARCHED_LABEL)
+TRACE_REPAIR_LABEL = "plateau_triggered_trace_repair"
+OPERATION_WHOLE_CONTROLLER = "whole_controller_edit"
+#: Labels whose idea is read off validated code; a failed attempt of one has no idea to read.
+CODE_DERIVED_LABELS = (EXPLORATION_SEARCHED_LABEL, TRACE_REPAIR_LABEL)
 TREATMENT_ROLLOUT_SEARCH = "rollout_search"
 GENERATOR_SINGLE_PHASE = "single_phase"
 #: How a selected step of 0 is recorded: the probe preferred the untrained parameters.
@@ -625,7 +632,7 @@ class ExperimentRecord:
 
         stage = self.validation.get("stage", "")
         # A single-phase exploration's idea is read off code that validated; a failed attempt has none to read.
-        idea_exempt = (((lineage.get("lane_metadata") or {}).get("label") == EXPLORATION_SEARCHED_LABEL)
+        idea_exempt = (((lineage.get("lane_metadata") or {}).get("label") in CODE_DERIVED_LABELS)
                        and not self.validation.get("passed"))
         if stage not in PRE_IDEA_STAGES and not idea_exempt:
             _require(
@@ -638,6 +645,8 @@ class ExperimentRecord:
             self._validate_fittable_lineage(lineage, stage)
         elif lane == LANE_EXPLORATION:
             self._validate_exploration_lineage(lineage)
+        elif lane == LANE_TRACE_REPAIR:
+            self._validate_trace_repair_lineage(lineage)
         elif self.generation == 0:
             _require(
                 not self.parent_ids and not self.proposal_id,
@@ -702,11 +711,33 @@ class ExperimentRecord:
             _require(not idea or idea.get("origin") == IDEA_ORIGIN_CODE,
                      f"{who}: a single-phase exploration's idea must be marked code-derived")
 
+    def _validate_trace_repair_lineage(self, lineage):
+        """R-037: one whole-controller edit of a named, evaluated prefix candidate, written from expert traces."""
+        who = self.experiment_id
+        meta = lineage.get("lane_metadata") or {}
+        edited = meta.get("edited_candidate") or {}
+        _require(meta.get("label") == TRACE_REPAIR_LABEL and meta.get("operation") == OPERATION_WHOLE_CONTROLLER,
+                 f"{who}: a trace-repair record is labelled {TRACE_REPAIR_LABEL!r} with operation "
+                 f"{OPERATION_WHOLE_CONTROLLER!r}")
+        _require(edited.get("candidate_id") and edited.get("source_hash"),
+                 f"{who}: a trace repair names the edited candidate and its code hash")
+        _require(list(self.parent_ids) == [edited["candidate_id"]] and not self.proposal_id and not lineage.get("proposal"),
+                 f"{who}: a trace repair has exactly one parent, the edited candidate, and no proposal")
+        trigger = meta.get("trigger") or {}
+        _require(trigger.get("fired") is True and trigger.get("probe_successes") == 0 and trigger.get("prefix_promoted") is False,
+                 f"{who}: a trace repair exists only after a plateau trigger (no probe success, no promotion)")
+        demos = meta.get("demonstrations") or {}
+        _require(demos.get("manifest_id") and demos.get("traces_sha256") and demos.get("qualified") is True,
+                 f"{who}: a trace repair names its qualified demonstration manifest and its trace hash")
+        idea = lineage.get("idea") or {}
+        _require(not idea or idea.get("origin") == IDEA_ORIGIN_CODE,
+                 f"{who}: a trace repair's idea must be marked code-derived")
+
     def _validate_lane_fitting(self, lane):
         who = self.experiment_id
         step = self.fitting.get("selected_step")
-        searched = ((self.lineage or {}).get("lane_metadata") or {}).get("label") == EXPLORATION_SEARCHED_LABEL
-        if lane == LANE_EXPLORATION and searched:
+        searched = ((self.lineage or {}).get("lane_metadata") or {}).get("label") in CODE_DERIVED_LABELS
+        if lane in (LANE_EXPLORATION, LANE_TRACE_REPAIR) and searched:
             for key in ("bc_gradient_steps", "bc_objective_evaluations"):
                 _require(int(self.resources.get(key, 0) or 0) == 0, f"{who}: a searched exploration never fits ({key})")
             _require(float((self.resources.get("wall_time_seconds") or {}).get("fitting", 0.0)) == 0.0,

@@ -116,7 +116,13 @@ python scripts/stage_f.py report --run logs/stage_f/<run_dir>
 python scripts/run_full_evolution.py                                      # baseline: 9 unseeded zero-shot candidates
 python scripts/run_full_evolution.py --config config/two_lane_search.yaml # 6 fittable mutations + 3 explorations
 
-# Symbolic-policy evolution (primary entry point; config-driven, no CLI flags besides --config)
+# R-037: plateau-triggered trace repair through the real entry point (assembly-v2; two structure slots).
+# Freeze a block's manifests first (no LLM call, no episode), then the paired repair-on / repair-off runs.
+python scripts/run_full_evolution.py --config config/assembly_two_lane_repair.yaml --freeze-manifests
+python scripts/run_full_evolution.py --config config/assembly_two_lane_repair.yaml --seed 3900 --log-dir <dir>
+python scripts/run_full_evolution.py --config config/assembly_two_lane_repair.yaml --seed 3901 --repair disabled --log-dir <dir>
+
+# Symbolic-policy evolution (primary entry point; config-driven)
 python scripts/run_full_evolution.py
 python scripts/run_full_evolution.py --config path/to/custom.yaml   # see config/run_full_evolution.yaml
 
@@ -145,7 +151,7 @@ python -m unittest tests.test_evaluation_manifest tests.test_manifest_runner \
   tests.test_search tests.test_objectives tests.test_repair tests.test_freeze \
   tests.test_final_report tests.test_vision tests.test_fitting_provenance tests.test_provenance \
   tests.test_two_generation_mock tests.test_stage_e tests.test_fittable_bank tests.test_two_lane_search \
-  tests.test_replicate_bundles tests.test_stage_f tests.test_research
+  tests.test_replicate_bundles tests.test_stage_f tests.test_research tests.test_plateau_repair_mock
 python -m unittest tests.test_record_episode_gif.TestRecordEpisodeGif.test_saves_gif_and_returns_metadata
 ```
 
@@ -289,6 +295,19 @@ shape:
 - The orchestrator (`lane_plan=`) requires one generation, `pop_size` 9, global `bc_steps: 0`, one challenger,
   and a probe manifest disjoint from the screen. Records carry `lineage.lane` and `lineage.lane_metadata`, and
   `ExperimentRecord.validate` enforces the lane rules.
+
+**Plateau-triggered trace repair (`PlateauRepairPlan` in `lares/search/lanes.py`; R-037, 2026-10-22).** A
+`plateau_repair` config block replaces the two-lane plan with two structure slots generated one at a time
+(`PlateauSlotGenerator`). Slot 0 is a searched single-phase exploration; after it is screened and challenged,
+`plateau_trigger` fires only if all 24 search candidates scored zero probe successes and nothing was promoted. With
+repair enabled the expert runs alone on a disjoint demonstration manifest (`lares/repair/traces.py`; at least 9/10
+successes or the run stops inconclusive without spending slot 1) and slot 1 is one whole-controller edit of the best
+failed prefix candidate (lane `trace_repair`, one linked correction, parent = the edited candidate, searched like an
+exploration). Otherwise slot 1 is another searched exploration and no demonstration is ever collected. `task_manifests`
+builds development (screen/promotion/probe) and demonstration manifests for any task from pool seeds and freezes them;
+`demo_buffer` is `None` because nothing is fitted. The run log is `gen_0/plateau_repair.json` (trigger, edited candidate,
+demonstration hashes, continuation, final incumbent, episode and call accounting). Mocked gate:
+`tests/test_plateau_repair_mock.py`.
 
 **Replicate bundles (`lares/fitting/replicates.py`).** Future qualification varies data, not minibatch order:
 each replicate draws its own demonstration sample, trajectory-level split, probe manifest and qualification

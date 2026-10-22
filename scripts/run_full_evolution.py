@@ -144,6 +144,23 @@ def load_config(path: str) -> SimpleNamespace:
         raise ValueError(f"{path}: policy_gen_two_phase must be true so candidates carry lineage")
     # Two-lane search (decided 2026-09-14): the plan itself is built and checked in main().
     raw.setdefault("two_lane_search", None)
+    # R-037: plateau-triggered trace repair (two structure slots) and task manifests built from pool seeds.
+    raw.setdefault("plateau_repair", None)
+    raw.setdefault("task_manifests", None)
+    raw.setdefault("expert_baseline", True)
+    raw["expert_baseline"] = bool(raw["expert_baseline"])
+    if raw["plateau_repair"] is not None:
+        problems = []
+        if raw["two_lane_search"] is not None:
+            problems.append("plateau_repair and two_lane_search are separate plans; set one")
+        if int(raw["num_generations"]) != 1 or int(raw["pop_size"]) != 2:
+            problems.append("a plateau-repair run is one generation of two structure slots (num_generations 1, pop_size 2)")
+        if int(raw["bc_steps"]) != 0:
+            problems.append("bc_steps must be 0: nothing is fitted in a plateau-repair run")
+        if raw["task_manifests"] is None:
+            problems.append("a plateau-repair run needs task_manifests (development and demonstration pool seeds)")
+        if problems:
+            raise ValueError(f"{path}: " + "; ".join(problems))
     block = raw["two_lane_search"]
     if block is not None:
         problems = []
@@ -181,6 +198,58 @@ def load_split(cfg, split: str):
     return manifest, manifest.resolve_pool()
 
 
+def _build_or_load(env_name, split, pool_seed, episodes, horizon, path, manifest_id, disjoint_from=()):
+    """A frozen manifest: loaded (and its id checked) when ``path`` exists, otherwise built, checked and saved."""
+    from lares.eval.manifest import assert_disjoint, build_manifest
+
+    if os.path.isfile(path):
+        manifest = EvaluationManifest.load(path)
+        if manifest.manifest_id != manifest_id:
+            raise ValueError(f"{path} holds {manifest.manifest_id}, not {manifest_id}; it was frozen for another run")
+        return manifest
+    manifest, _ = build_manifest(env_name, split, [int(pool_seed)], horizon=horizon, num_episodes=episodes,
+                                 manifest_id=manifest_id)
+    assert_disjoint(list(disjoint_from) + [manifest])
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    manifest.save(path)
+    return manifest
+
+
+def load_task_manifests(cfg, include_fresh: bool = False) -> dict:
+    """R-037: the development manifest (screen, promotion, probe) and the demonstration manifest for ``cfg.env_name``,
+    built from the config's pool seeds and frozen under ``task_manifests.manifest_dir``.
+
+    Development cases are ordered screen (first ``screen_episodes``), promotion (next ``expanded_episodes``), probe
+    (last ``probe_episodes``). The demonstration manifest must share no placement with the development manifest.
+    """
+    block = cfg.task_manifests
+    base = block.get("manifest_dir", "config/manifests/task_pools")
+    base = base if os.path.isabs(base) else os.path.join(_PROJECT_ROOT, base)
+    dev_seed, demo_seed = int(block["development_pool_seed"]), int(block["demonstration_pool_seed"])
+    n_dev = cfg.screen_episodes + cfg.expanded_episodes + cfg.probe_episodes
+    n_demo = int(block.get("demonstration_cases", 10))
+    if dev_seed == demo_seed:
+        raise ValueError("the development and demonstration pool seeds must differ")
+    dev = _build_or_load(cfg.env_name, SPLIT_DEVELOPMENT, dev_seed, n_dev, cfg.eval_max_steps,
+                         os.path.join(base, f"{cfg.env_name}_development_s{dev_seed}_n{n_dev}.yaml"),
+                         f"{cfg.env_name}:development:s{dev_seed}:n{n_dev}")
+    demo = _build_or_load(cfg.env_name, SPLIT_DEVELOPMENT, demo_seed, n_demo, cfg.eval_max_steps,
+                          os.path.join(base, f"{cfg.env_name}_demonstration_s{demo_seed}_n{n_demo}.yaml"),
+                          f"{cfg.env_name}:development_demonstration:s{demo_seed}:n{n_demo}", disjoint_from=[dev])
+    if {c.task_hash for c in dev.episodes} & {c.task_hash for c in demo.episodes}:
+        raise ValueError("the demonstration manifest shares placements with the development manifest")
+    out = {"development": dev, "demonstration": demo}
+    if include_fresh and block.get("fresh_evaluation_pool_seed") is not None:
+        # Scored only after both incumbents of a block are fixed (scripts/evaluate_on_fresh_manifest.py --frozen);
+        # the id is the one that script builds, so the rebuilt manifest can be checked against this file.
+        fresh_seed, n_fresh = int(block["fresh_evaluation_pool_seed"]), int(block.get("fresh_evaluation_cases", 30))
+        out["fresh_evaluation"] = _build_or_load(
+            cfg.env_name, SPLIT_DEVELOPMENT, fresh_seed, n_fresh, cfg.eval_max_steps,
+            os.path.join(base, f"{cfg.env_name}_confirmation_s{fresh_seed}.yaml"),
+            f"{cfg.env_name}:development_confirmation:s{fresh_seed}:n{n_fresh}", disjoint_from=[dev, demo])
+    return out
+
+
 def parse_args() -> tuple:
     """Parse CLI args: ``(config path, seed override or None, log-dir override or None)``."""
     p = argparse.ArgumentParser(
@@ -195,11 +264,38 @@ def parse_args() -> tuple:
     p.add_argument("--seed", type=int, default=None,
                    help="run seed for a replicate (R-018): overrides `seed` and becomes the fitting and search seed")
     p.add_argument("--log-dir", default=None, help="override `log_dir` (a fresh directory per replicate run)")
+    p.add_argument("--repair", choices=("enabled", "disabled"), default=None,
+                   help="R-037: override plateau_repair.repair (the paired repair-on / repair-off runs of one block)")
+    p.add_argument("--dev-pool-seed", type=int, default=None, help="R-037: override task_manifests.development_pool_seed")
+    p.add_argument("--demo-pool-seed", type=int, default=None,
+                   help="R-037: override task_manifests.demonstration_pool_seed")
+    p.add_argument("--fresh-pool-seed", type=int, default=None,
+                   help="R-037: override task_manifests.fresh_evaluation_pool_seed")
+    p.add_argument("--freeze-manifests", action="store_true",
+                   help="R-037: build (or verify) the task manifests, print their ids and hashes, and exit; no LLM call "
+                        "and no episode")
     ns = p.parse_args()
     cfg_path = os.path.abspath(ns.config)
     if not os.path.isfile(cfg_path):
         p.error(f"Config file not found: {cfg_path}")
-    return cfg_path, ns.seed, ns.log_dir
+    overrides = {"repair": ns.repair, "development_pool_seed": ns.dev_pool_seed,
+                 "demonstration_pool_seed": ns.demo_pool_seed, "fresh_evaluation_pool_seed": ns.fresh_pool_seed,
+                 "freeze_manifests": ns.freeze_manifests or None}
+    return cfg_path, ns.seed, ns.log_dir, {k: v for k, v in overrides.items() if v is not None}
+
+
+def apply_overrides(cfg, overrides: dict):
+    """Apply the R-037 CLI overrides to their config blocks; refuse one whose block is absent."""
+    if "repair" in overrides:
+        if cfg.plateau_repair is None:
+            raise ValueError("--repair needs a plateau_repair block in the config")
+        cfg.plateau_repair = {**cfg.plateau_repair, "repair": overrides["repair"]}
+    for key in ("development_pool_seed", "demonstration_pool_seed", "fresh_evaluation_pool_seed"):
+        if key in overrides:
+            if cfg.task_manifests is None:
+                raise ValueError(f"--{key} needs a task_manifests block in the config")
+            cfg.task_manifests = {**cfg.task_manifests, key: int(overrides[key])}
+    return cfg
 
 
 # ---------------------------------------------------------------------------
@@ -266,8 +362,18 @@ def evaluate_expert_policy(env, env_name: str, manifest, max_steps: int = 150):
 
 
 def main() -> None:
-    cfg_path, seed_override, log_dir_override = parse_args()
-    cfg = load_config(cfg_path)
+    cfg_path, seed_override, log_dir_override, overrides = parse_args()
+    cfg = apply_overrides(load_config(cfg_path), overrides)
+    if overrides.get("freeze_manifests"):
+        if cfg.task_manifests is None:
+            raise SystemExit("--freeze-manifests needs a task_manifests block")
+        ensure_mujoco_headless_gl()
+        from lares.utils.hashing import sha256_text
+
+        for role, m in load_task_manifests(cfg, include_fresh=True).items():
+            digest = sha256_text("\n".join(f"{c.case_id}:{c.task_hash}:{c.reset_seed}" for c in m.episodes))
+            print(f"  {role:17s} {m.manifest_id}  {len(m)} cases  cases_sha256={digest}")
+        return
     if seed_override is not None:
         cfg.seed = int(seed_override)
         cfg.fit_seed = int(seed_override)
@@ -298,8 +404,20 @@ def main() -> None:
     # Headless SSH: MuJoCo must load EGL before MujocoEnv / first rgb_array render.
     ensure_mujoco_headless_gl()
 
-    train_manifest, train_pool = load_split(cfg, SPLIT_TRAIN)
-    dev_manifest_full, dev_pool = load_split(cfg, SPLIT_DEVELOPMENT)
+    demo_manifest = demo_pool = None
+    # Only a repair-enabled plateau run ever reads the demonstration manifest; the paired control never touches it.
+    repair_enabled = cfg.plateau_repair is not None and str(cfg.plateau_repair.get("repair")).lower() == "enabled"
+    if cfg.task_manifests is not None:
+        # R-037: manifests for any task, from the config's pool seeds; no train split when nothing is fitted.
+        task_manifests = load_task_manifests(cfg)
+        dev_manifest_full, dev_pool = task_manifests["development"], task_manifests["development"].resolve_pool()
+        if repair_enabled:
+            demo_manifest = task_manifests["demonstration"]
+            demo_pool = demo_manifest.resolve_pool()
+        train_manifest = train_pool = None
+    else:
+        train_manifest, train_pool = load_split(cfg, SPLIT_TRAIN)
+        dev_manifest_full, dev_pool = load_split(cfg, SPLIT_DEVELOPMENT)
     promotion = PromotionPolicy(
         screen_episodes=cfg.screen_episodes,
         expanded_episodes=cfg.expanded_episodes,
@@ -318,8 +436,9 @@ def main() -> None:
 
     # One env per stream. Collection, evaluation, probing and recording must not
     # be able to disturb each other's placements.
-    collect_env = make_env(cfg, train_pool)
-    rl_env = make_env(cfg, train_pool)
+    collect_env = make_env(cfg, train_pool) if train_manifest is not None else None
+    rl_env = make_env(cfg, train_pool) if train_manifest is not None else None
+    demo_env = make_env(cfg, demo_pool) if demo_manifest is not None else None
     dev_env = make_env(cfg, dev_pool)
     gif_env = make_env(cfg, dev_pool)
     probe_env = make_env(cfg, dev_pool)
@@ -327,7 +446,10 @@ def main() -> None:
 
     obs_dim, action_dim = policy_space_dims(dev_env)
     print(f"  obs_dim={obs_dim}, action_dim={action_dim}")
-    print(f"  train manifest      : {train_manifest.manifest_id} ({len(train_manifest)} cases)")
+    if train_manifest is not None:
+        print(f"  train manifest      : {train_manifest.manifest_id} ({len(train_manifest)} cases)")
+    if demo_manifest is not None:
+        print(f"  demonstration manifest: {demo_manifest.manifest_id} ({len(demo_manifest)} cases, disjoint placements)")
     print(f"  development manifest: {dev_manifest.manifest_id} ({len(dev_manifest)} cases)")
     print(f"  probe manifest      : {probe_manifest.manifest_id} ({len(probe_manifest)} cases, disjoint)")
     print(f"  development budget  : screen {promotion.screen_episodes}, "
@@ -339,24 +461,31 @@ def main() -> None:
     #  Expert baseline
     # -----------------------------------------------------------------------
     separator("Expert Baseline")
-    expert_record = evaluate_expert_policy(
-        dev_env, cfg.env_name, dev_manifest, max_steps=cfg.eval_max_steps
-    )
-    expert_result = expert_record.fitness_dict()
-    print_eval("MetaWorld built-in expert", expert_result)
-    expert_report = build_report(
-        expert_record, candidate_id="scripted_expert", checkpoint="fitted",
-        action_dim=action_dim,
-    )
-    expert_report.save(os.path.join(log_dir, "expert_report.json"))
-    print("\n" + episode_table(expert_report, limit=5))
+    expert_result = None
+    if cfg.expert_baseline:
+        expert_record = evaluate_expert_policy(
+            dev_env, cfg.env_name, dev_manifest, max_steps=cfg.eval_max_steps
+        )
+        expert_result = expert_record.fitness_dict()
+        print_eval("MetaWorld built-in expert", expert_result)
+        expert_report = build_report(
+            expert_record, candidate_id="scripted_expert", checkpoint="fitted",
+            action_dim=action_dim,
+        )
+        expert_report.save(os.path.join(log_dir, "expert_report.json"))
+        print("\n" + episode_table(expert_report, limit=5))
+    else:
+        print("  skipped (expert_baseline: false): no expert episode on the development cases")
 
     # -----------------------------------------------------------------------
     #  Stage 1: Expert dataset generation (or load cached buffer)
     # -----------------------------------------------------------------------
     separator("Stage 1: Expert Dataset Generation")
     demo_buffer_path: str = getattr(cfg, "demo_buffer_path", "")
-    if demo_buffer_path and os.path.isfile(demo_buffer_path):
+    if train_manifest is None:
+        demo_buf = None
+        print("  skipped: nothing is fitted, so no demonstration buffer is collected")
+    elif demo_buffer_path and os.path.isfile(demo_buffer_path):
         print(f"  Loading cached demo buffer: {demo_buffer_path}")
         demo_buf = DemoBuffer.load(demo_buffer_path)
         print(f"  Loaded {len(demo_buf)} transitions.")
@@ -416,7 +545,15 @@ def main() -> None:
     separator("LLM-Based Structure Evolution (Stages 2–4)")
 
     lane_plan = None
-    if cfg.two_lane_search is not None:
+    if cfg.plateau_repair is not None:
+        from lares.search.lanes import expected_plateau_budget, load_plateau_repair_plan
+
+        lane_plan = load_plateau_repair_plan(cfg.plateau_repair)
+        budget = expected_plateau_budget(lane_plan, cfg.screen_episodes, cfg.expanded_episodes, cfg.probe_episodes,
+                                         cfg.eval_max_steps, cfg.max_repair_per_candidate)
+        print(f"  Plateau repair: {lane_plan.n} structure slots, repair {lane_plan.to_dict()['repair']}; "
+              f"<= {budget['episodes_max']} episodes, <= {budget['llm']['max_calls']} LLM calls")
+    elif cfg.two_lane_search is not None:
         from lares.search.lanes import expected_budget, load_two_lane_plan
 
         lane_plan = load_two_lane_plan(cfg.two_lane_search)
@@ -445,7 +582,7 @@ def main() -> None:
         log_dir=log_dir,
         record_demo_gif=cfg.record_demo_gif,
         dev_manifest=dev_manifest,
-        train_cases=train_manifest.episodes,
+        train_cases=train_manifest.episodes if train_manifest is not None else (),
         eval_max_steps=cfg.eval_max_steps,
         promotion_policy=promotion,
         rollout_checkpoint_probes=cfg.rollout_checkpoint_probes,
@@ -460,6 +597,8 @@ def main() -> None:
         promotion_challengers=cfg.promotion_challengers,
         lane_plan=lane_plan,
         fit_seed=int(getattr(cfg, "fit_seed", 0)),
+        demonstration_manifest=demo_manifest,
+        demonstration_env=demo_env,
     )
 
     t0 = time.time()
@@ -495,13 +634,16 @@ def main() -> None:
         print("\n  Comparison:")
         print(f"  {'Stage':<35s} {'Reward':>10s} {'Success':>10s}")
         print(f"  {'-' * 57}")
-        print_eval("MetaWorld built-in expert", expert_result)
+        if expert_result is not None:
+            print_eval("MetaWorld built-in expert", expert_result)
         print_eval("LLM-evolved policy (best)", best["eval"])
     else:
         print("\n  WARNING: Evolution produced no valid policies.")
 
     print()
-    collect_env.close()
+    for env in (collect_env, demo_env):
+        if env is not None:
+            env.close()
     envs.close()
 
 
