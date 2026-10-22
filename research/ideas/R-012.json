@@ -1,0 +1,60 @@
+{
+  "id": "R-012",
+  "title": "Transfer geometry-only mutation beyond damped push",
+  "hypothesis": "Restricting mutations to object–goal-relative contact geometry transfers useful approach bias to other bank structures more reliably than equally constrained gain-and-damping edits.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "Matched gain-and-damping-only LLM mutations of the same parents",
+    "rationale": "A five-point scope contrast tests a mechanism absent from generic mutation and bounds-only experiments; a separate positive comparison with unedited parents prevents declaring a less harmful edit useful. Requires per-idea GPU and LLM approval; stop the remote box afterward."
+  },
+  "protocol": {
+    "script": "scripts/stage_f.py",
+    "config": "config/stage_f/stage_f.yaml",
+    "command": "gpu run -- python scripts/stage_f.py --config config/stage_f/stage_f.yaml --research-protocol mutation-scope-transfer --parents simple_reach_push_sharp_gate,simple_reach_push_shared_gain --scopes contact-geometry,gain-damping --children-per-parent-scope 2 --max-repair-per-candidate 0 --preserve-parameter-schema-bounds-initialization --fit-seeds 2920,2921 --probe-seed 2922 --confirmation-seed 2923 --probe-cases 10 --confirmation-cases 50 --checkpoints 0,500,1000 --max-fit-steps 1000 --no-screen-selection --llm-model gpt-6.1-sol --reasoning-effort high --temperature 1 --manifest-dir config/manifests/research/geometry_transfer --output logs/research/geometry_transfer_s2920",
+    "seeds": [
+      2920,
+      2921,
+      2922,
+      2923
+    ],
+    "manifests": [
+      "config/manifests/research/geometry_transfer/probe_s2922.yaml",
+      "config/manifests/research/geometry_transfer/confirmation_s2923.yaml"
+    ],
+    "episodes": 1600,
+    "llm_calls": 8,
+    "code_changes": [
+      "scripts/stage_f.py: add the named scope-transfer protocol using existing bounded mutation, validation, fitting, and evaluation machinery; generate two independent children per parent per scope, with no correction evidence or retries.",
+      "scripts/stage_f.py: enforce matched edit-size limits and unchanged parameter schema, bounds, and initialization. Geometry edits may change contact-target construction but not gains, damping, or gates; control edits may change gain/damping algebra but not geometry or gates.",
+      "scripts/stage_f.py: fit eight children and two unedited parents under two matched seeds using fixed demonstrations; select checkpoints only on a disjoint development probe and score every arm on frozen confirmation cases without screening winners.",
+      "scripts/stage_f.py: treat invalid children as parent fallbacks without replacement calls; report intention-to-treat scope differences and geometry-versus-parent differences, averaging over parents, draws, and fitting seeds within placement. Do not promote children or change bank roles."
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "proposed",
+  "source": "advisor",
+  "falsified_by": "An upper paired 95% bound below +0.05 for geometry minus gain/damping refutes the predicted scope advantage. An upper bound at or below zero for geometry minus unedited parents refutes useful transfer. Zero-spanning intervals are inconclusive; ties are not improvements.",
+  "cost_estimate": {
+    "episodes": 1600,
+    "llm_calls": 8,
+    "wall_time_minutes": 160
+  },
+  "open_question_refs": [
+    -2,
+    -1,
+    0
+  ],
+  "briefing_sha256": "9e070a39c46d6958d4b90ee960c2e925a2d27867baca70bd9eeaff2aeba90792",
+  "proposal_call_id": "call_00011",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [],
+  "created_at": "2026-10-22T04:32:02"
+}

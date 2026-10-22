@@ -165,6 +165,27 @@ class TestNestedScreen(unittest.TestCase):
             cvp.nested_screen_analysis({"a": (1, 0)}, {"b": (1, 0)}, {"c": 1}, {"c": 1}, replays=10, seed=0, subset=1)
 
 
+class TestSeedRobustness(unittest.TestCase):
+    RULE = {"improves_in_at_least": 3, "worst_seed_difference_at_least": -0.05, "mean_difference_greater_than": 0.0}
+
+    def test_reports_placement_and_seed_level_intervals_and_the_childs_qualification(self):
+        cases = [f"c{i}" for i in range(4)]
+        child = {s: {c: float(i < 3) for i, c in enumerate(cases)} for s in (1, 2, 3)}
+        parent = {1: {c: float(i < 2) for i, c in enumerate(cases)}, 2: {c: float(i < 3) for i, c in enumerate(cases)},
+                  3: {c: float(i < 1) for i, c in enumerate(cases)}}
+        step0 = {c: float(i < 1) for i, c in enumerate(cases)}
+        out = cvp.seed_robustness_analysis(child, parent, step0, step0, self.RULE)
+        self.assertEqual(out["seed_level"]["by_seed"], {1: 0.25, 2: 0.0, 3: 0.5})
+        self.assertAlmostEqual(out["paired_success_difference"], 0.25)
+        self.assertEqual(out["placement_level"]["n"], 4)
+        self.assertEqual(out["child_qualification_report_only"]["fitted_minus_step0_by_seed"], [0.5, 0.5, 0.5])
+        self.assertTrue(out["child_qualification_report_only"]["qualifies"])
+
+    def test_mismatched_seeds_are_refused(self):
+        with self.assertRaises(ValueError):
+            cvp.seed_robustness_analysis({1: {"a": 1}}, {2: {"a": 1}}, {"a": 0}, {"a": 0}, self.RULE)
+
+
 class TestSeeds(unittest.TestCase):
     def test_reserves_once_then_recognises_its_own_reservation(self):
         with tempfile.TemporaryDirectory() as d:

@@ -1,0 +1,47 @@
+{
+  "ideas": [
+    {
+      "id": "R-010",
+      "recommendation": "revise",
+      "reasoning": "At a ceiling of 1,100 simulator episodes and zero LLM calls, this is the cheapest test that can inform qualification and the subsequent geometry-transfer experiment. Its weakest point is that averaging over fitting seeds can hide seed-dependent reversals, leaving fitting robustness unresolved despite a positive placement-level average.",
+      "suggested_changes": [
+        "Reuse scripts/qualify_fittable_bank.py with config/fittable_bank/qualification_v2.yaml; retain seeds 2900-2906, report-only operation, unchanged qualification criteria, and no bank-role changes.",
+        "Report each fitting seed's confirmation paired_success_difference and a paired t interval across the five seed-level differences, alongside the planned placement-level interval; label zero-spanning seed-level evidence inconclusive for fitting robustness.",
+        "Retain prediction: paired_success_difference increase by at least 0.05 versus identically refitted simple_damped_push. Retain falsified_by: a placement-level paired 95% upper bound below 0.05 refutes that margin; zero-spanning intervals are inconclusive and ties cannot qualify.",
+        "Keep the 1,100-episode and zero-LLM-call ceiling, use no pool seed for more than 50 placements, run via gpu run, and stop the remote box afterward."
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "R-011",
+      "recommendation": "revise",
+      "reasoning": "At a ceiling of 1,760 episodes and zero LLM calls, the three selectors test optimizer complementarity without spending on new structures. Its weakest points are the inclusion of two previously studied anchors and unspecified handling of candidate nesting and probe ties; the pooled result alone cannot establish transfer to unfamiliar structures.",
+      "suggested_changes": [
+        "Reuse scripts/stage_f.py with config/stage_f/stage_f.yaml and seeds 2910-2913; freeze the four structure IDs before rollouts and retain fail-closed behavior if the additional subjects are unavailable.",
+        "Make the pooled search draws exact subsets of the search-control draws and reuse identical imitation checkpoints; predeclare one optimizer-neutral tie rule across selectors and cache shared evaluations.",
+        "Report the primary four-structure comparison plus separate descriptive contrasts for the two anchors and two additional subjects, without selecting structures using new outcomes.",
+        "Retain prediction: paired_success_difference increase by at least 0.05 against each equal-budget single-optimizer control. Retain falsified_by: a multiplicity-adjusted upper bound below 0.05 against either control refutes the margin; positive evidence requires adjusted lower bounds above zero against both.",
+        "Keep the 1,760-episode and zero-LLM-call ceiling, the 50-placement confirmation pool limit, and remote shutdown after gpu run."
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "R-012",
+      "recommendation": "defer",
+      "reasoning": "At 1,600 episodes and eight LLM calls, this provides the most direct scope-transfer test but spends calls before the cheaper fitting-robustness check is resolved. Two draws per parent and scope give limited mutation-level replication, so placement precision must not be presented as broad reliability across LLM mutations. Retain the prediction of paired_success_difference increase by at least 0.05 versus matched gain-and-damping edits, falsified_by an upper paired 95% bound below 0.05; an upper bound at or below zero versus unedited parents refutes useful transfer, while zero-spanning intervals remain inconclusive.",
+      "suggested_changes": [],
+      "depends_on": [
+        "R-010"
+      ]
+    }
+  ],
+  "order": [
+    "R-010",
+    "R-011",
+    "R-012"
+  ],
+  "next_step": "Implement the R-010 reporting revisions in the existing qualification script, verify manifest isolation and seed availability, then execute its approved capped run via gpu run and stop the remote box afterward.",
+  "call_id": "call_00012",
+  "briefing_sha256": "16af86c30f99dff73f6661f955fc7dfd69e55a939201ad4e827b28b3ac8f4319",
+  "question": "The user has delegated approve/reject to you for this session. Map: run_as_is = approve, drop = reject, revise = approve after listed changes, defer = leave proposed. The implementer will keep the protocols' substance but may implement them as new subcommands of the existing scripts with manifests built into the run's out-dir (the config/manifests/research paths are not required). Note: each MT1 pool seed yields at most 50 placements. Order them by value per episode and call."
+}

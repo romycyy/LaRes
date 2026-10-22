@@ -420,16 +420,16 @@ def nested_screen_analysis(child_screen, parent_screen, child_conf, parent_conf,
 
 
 def nested_job(job) -> dict:
-    """Refit one controller on the shared demonstrations, select on the fresh probe, score screen and confirmation."""
+    """Refit one controller on the shared demonstrations, select on the fresh probe, and score it on every manifest
+    in ``job["evaluate"]`` (name -> path). With ``fit: False`` the controller is scored at its declared values."""
     import torch
 
     torch.set_num_threads(1)
     from lares.core.obs_schema import get_obs_schema
-    from lares.core.training_pipeline import DemoBuffer, ensure_mujoco_headless_gl
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
     from lares.eval import EvaluationManifest, make_manifest_env
     from lares.eval.runner import PolicyActor, evaluate_manifest
-    from lares.fitting.checkpoints import RolloutScore
-    from lares.fitting.optimizers import fit_policy_with_objective, prepare_data, state_parameters_sha256
+    from lares.fitting.optimizers import state_parameters_sha256
     from lares.fitting.structure_bank import instantiate_source
 
     ensure_mujoco_headless_gl()
@@ -442,9 +442,43 @@ def nested_job(job) -> dict:
         if state_parameters_sha256(torch.load(job["check_state"], weights_only=True)) != \
                 state_parameters_sha256(policy.state_dict()):
             raise RuntimeError(f"{job['policy_id']}: source does not rebuild the run's initial state")
+    counters = {"probe_episodes": 0, **{f"{name}_episodes": 0 for name in job["evaluate"]}}
+    out = {"policy_id": job["policy_id"], "role": job["role"], "source_path": rel(job["source_path"]),
+           "source_sha256": sha256_file(job["source_path"]), "fit_seed": job.get("fit_seed")}
+    if job.get("fit", True):
+        out.update(_refit(job, policy, counters))
+    else:
+        out.update(selected_step=0, checkpoint_history=[])
+    out["parameters_sha256"] = state_parameters_sha256(policy.state_dict())
+    for name, path in job["evaluate"].items():
+        manifest = EvaluationManifest.load(path)
+        env = make_manifest_env(manifest, manifest.resolve_pool())
+        result = evaluate_manifest(PolicyActor(policy, deterministic=True, name=job["policy_id"]), manifest, env,
+                                   max_steps=horizon)
+        counters[f"{name}_episodes"] += len(result.episodes)
+        out[name] = {"manifest_id": manifest.manifest_id, "success_rate": result.success_rate,
+                     "per_case": {e.case_id: [float(e.success), float(e.signed_goal_progress)
+                                              if e.signed_goal_progress is not None else 0.0]
+                                  for e in result.episodes}}
+    out.update(resources=counters, wall_time_seconds=time.time() - started)
+    path = os.path.join(job["out_dir"], "policies", f"{job.get('label', job['policy_id'])}.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(out, f, indent=2, default=str)
+    return out
+
+
+def _refit(job, policy, counters) -> dict:
+    """Rollout-selected refit on the job's probe; leaves ``policy`` holding the selected state."""
+    from lares.core.training_pipeline import DemoBuffer
+    from lares.eval import EvaluationManifest, make_manifest_env
+    from lares.eval.runner import PolicyActor, evaluate_manifest
+    from lares.fitting.checkpoints import RolloutScore
+    from lares.fitting.optimizers import fit_policy_with_objective, prepare_data
+
+    fit_cfg, horizon = job["fitting"], int(job["horizon"])
     probe = EvaluationManifest.load(job["probe_manifest"])
     probe_env = make_manifest_env(probe, probe.resolve_pool())
-    counters = {"probe_episodes": 0, "screen_episodes": 0, "confirmation_episodes": 0}
 
     def score(pol):
         result = evaluate_manifest(PolicyActor(pol, deterministic=True, name="probe"), probe, probe_env,
@@ -463,25 +497,7 @@ def nested_job(job) -> dict:
         structure_id=job["policy_id"],
     )
     policy.load_state_dict(fit.selected_state)
-    out = {"policy_id": job["policy_id"], "role": job["role"], "source_path": rel(job["source_path"]),
-           "source_sha256": sha256_file(job["source_path"]), "selected_step": int(fit.selected_step),
-           "checkpoint_history": fit.checkpoint_history, "parameters_sha256": state_parameters_sha256(policy.state_dict())}
-    for name in ("screen", "confirmation"):
-        manifest = EvaluationManifest.load(job[f"{name}_manifest"])
-        env = make_manifest_env(manifest, manifest.resolve_pool())
-        result = evaluate_manifest(PolicyActor(policy, deterministic=True, name=job["policy_id"]), manifest, env,
-                                   max_steps=horizon)
-        counters[f"{name}_episodes"] += len(result.episodes)
-        out[name] = {"manifest_id": manifest.manifest_id, "success_rate": result.success_rate,
-                     "per_case": {e.case_id: [float(e.success), float(e.signed_goal_progress)
-                                              if e.signed_goal_progress is not None else 0.0]
-                                  for e in result.episodes}}
-    out.update(resources=counters, wall_time_seconds=time.time() - started)
-    path = os.path.join(job["out_dir"], "policies", f"{job['policy_id']}.json")
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(out, f, indent=2, default=str)
-    return out
+    return {"selected_step": int(fit.selected_step), "checkpoint_history": fit.checkpoint_history}
 
 
 def run_nested_screen(args) -> int:
@@ -512,8 +528,8 @@ def run_nested_screen(args) -> int:
                                      role="confirmation", also_disjoint_from=[probe, screen])
     common = {"env_name": args.env_name, "horizon": args.horizon, "fitting": fitting, "fit_seed": args.fit_seed,
               "out_dir": os.path.abspath(args.out_dir), "demo_buffer": os.path.join(_PROJECT_ROOT, args.demo_buffer),
-              "probe_manifest": os.path.abspath(probe_path), "screen_manifest": os.path.abspath(screen_path),
-              "confirmation_manifest": os.path.abspath(conf_path)}
+              "probe_manifest": os.path.abspath(probe_path),
+              "evaluate": {"screen": os.path.abspath(screen_path), "confirmation": os.path.abspath(conf_path)}}
     jobs = [{**common, "policy_id": pair["child_id"], "role": "child", "source_path": pair["child_source_path"],
              "check_state": pair["child_initial_state"]},
             {**common, "policy_id": pair["parent_id"], "role": "parent", "source_path": pair["parent_source_path"]}]
@@ -549,13 +565,117 @@ def run_nested_screen(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  R-010: does the child's advantage survive across fitting seeds?
+# ---------------------------------------------------------------------------
+
+
+def seed_robustness_analysis(child, parent, child_step0, parent_step0, rule) -> dict:
+    """``child``/``parent`` map fit seed -> {case: success}; ``*_step0`` map case -> success at declared values.
+
+    Primary: per placement, the mean over seeds of child minus parent, t over placements. Beside it: one
+    difference per seed, t over seeds (fitting robustness), and the unchanged qualification rule applied to the
+    child's own per-seed fitted-minus-step-0 differences (report only).
+    """
+    from lares.fitting.replicates import qualification_checks
+
+    seeds = sorted(child)
+    if sorted(parent) != seeds:
+        raise ValueError("child and parent were not fitted under the same seeds")
+    cases = sorted(child_step0)
+    for side in (child, parent):
+        for k in seeds:
+            if sorted(side[k]) != cases:
+                raise ValueError("every fit must be scored on the same confirmation cases")
+    per_case = [float(np.mean([child[k][c] - parent[k][c] for k in seeds])) for c in cases]
+    rate = lambda d: float(np.mean([float(v) for v in d.values()]))  # noqa: E731
+    per_seed = {int(k): rate(child[k]) - rate(parent[k]) for k in seeds}
+    child_gain = [rate(child[k]) - rate(child_step0) for k in seeds]
+    return {
+        "paired_success_difference": float(np.mean(per_case)),
+        "placement_level": {"n": len(cases), **t_interval(per_case), **win_loss_tie(per_case)},
+        "seed_level": {"by_seed": per_seed, **t_interval(list(per_seed.values())),
+                       **win_loss_tie(list(per_seed.values()))},
+        "success_by_seed": {"child": {int(k): rate(child[k]) for k in seeds},
+                            "parent": {int(k): rate(parent[k]) for k in seeds}},
+        "step0_success": {"child": rate(child_step0), "parent": rate(parent_step0)},
+        "child_qualification_report_only": {"fitted_minus_step0_by_seed": child_gain,
+                                            **qualification_checks(child_gain, rule)},
+    }
+
+
+def run_seed_robustness(args) -> int:
+    import multiprocessing as mp
+
+    import yaml
+
+    pairs = {q["child_id"]: q for q in discover_pairs(args.run)}
+    if args.child not in pairs:
+        raise SystemExit(f"{args.child} is not an evaluated fittable-lane child of {args.run}: {sorted(pairs)}")
+    pair, fitting = pairs[args.child], common_fitting(list(pairs.values()))
+    os.makedirs(args.out_dir, exist_ok=True)
+    status = ensure_entries_reserved(
+        [(x, "fitting", "R-010 geometry child seed robustness: fit seed") for x in args.fit_seeds]
+        + [(args.probe_seed, "mt1_pool", "R-010: 10-case checkpoint probe")]
+        + [(x, "mt1_pool", "R-010: confirmation manifest") for x in args.heldout_seed], args.out_dir)
+    print(f"  pair {pair['child_id']} vs {pair['parent_id']}; seeds: {status}")
+    if args.reserve_only:
+        return 0
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    probe, probe_path = fresh_manifest(args.env_name, args.probe_seed, 10, args.horizon, args.out_dir, role="probe")
+    conf, conf_path = fresh_manifest(args.env_name, args.heldout_seed, 50 * len(args.heldout_seed), args.horizon,
+                                     args.out_dir, role="confirmation", also_disjoint_from=[probe])
+    with open(os.path.join(_PROJECT_ROOT, "config", "fittable_bank", "qualification_v2.yaml"), encoding="utf-8") as f:
+        rule = yaml.safe_load(f)["qualification_rule"]["enters_fittable_seed_bank_if"]
+    common = {"env_name": args.env_name, "horizon": args.horizon, "fitting": fitting,
+              "out_dir": os.path.abspath(args.out_dir), "demo_buffer": os.path.join(_PROJECT_ROOT, args.demo_buffer),
+              "probe_manifest": os.path.abspath(probe_path), "evaluate": {"confirmation": os.path.abspath(conf_path)}}
+    sides = {"child": (pair["child_id"], pair["child_source_path"]), "parent": (pair["parent_id"], pair["parent_source_path"])}
+    jobs = []
+    for role, (pid, src) in sides.items():
+        extra = {"check_state": pair["child_initial_state"]} if role == "child" else {}
+        jobs.append({**common, **extra, "policy_id": pid, "role": role, "source_path": src, "fit": False,
+                     "label": f"{pid}_step0"})
+        jobs += [{**common, **extra, "policy_id": pid, "role": role, "source_path": src, "fit_seed": k,
+                  "label": f"{pid}_fit{k}"} for k in args.fit_seeds]
+    with open(os.path.join(args.out_dir, "run.json"), "w", encoding="utf-8") as f:
+        json.dump({"started_at": now(), "argv": sys.argv, "pair": {k: v for k, v in pair.items() if k != "objective_config"},
+                   "fitting": fitting, "fit_seeds": args.fit_seeds, "rule": rule,
+                   "manifests": {"probe": probe.manifest_id, "confirmation": conf.manifest_id},
+                   "demo_buffer_sha256": sha256_file(common["demo_buffer"])}, f, indent=2, default=str)
+    with mp.get_context("spawn").Pool(processes=min(int(args.workers), len(jobs))) as pool:
+        results = pool.map(nested_job, jobs)
+    conf_of = lambda r: {c: v[0] for c, v in r["confirmation"]["per_case"].items()}  # noqa: E731
+    fitted = {role: {r["fit_seed"]: conf_of(r) for r in results if r["role"] == role and r["fit_seed"] is not None}
+              for role in sides}
+    step0 = {r["role"]: conf_of(r) for r in results if r["fit_seed"] is None}
+    summary = seed_robustness_analysis(fitted["child"], fitted["parent"], step0["child"], step0["parent"], rule)
+    summary.update(child=pair["child_id"], parent=pair["parent_id"],
+                   selected_steps={f"{r['role']}_{r['fit_seed']}": r["selected_step"] for r in results},
+                   resources={k: int(sum(r["resources"].get(k, 0) for r in results))
+                              for k in ("probe_episodes", "confirmation_episodes")})
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2, default=str)
+    pl, sl = summary["placement_level"], summary["seed_level"]
+    print(f"  child {summary['success_by_seed']['child']}\n  parent {summary['success_by_seed']['parent']}")
+    print(f"  placement-level child - parent: {pl['mean']:+.3f} [{pl['low']:+.3f}, {pl['high']:+.3f}]; "
+          f"seed-level: {sl['mean']:+.3f} [{sl['low']:+.3f}, {sl['high']:+.3f}] w/l/t {sl['wins']}/{sl['losses']}/{sl['ties']}")
+    q = summary["child_qualification_report_only"]
+    print(f"  child qualification (report only): qualifies={q['qualifies']} gains {q['fitted_minus_step0_by_seed']}; "
+          f"resources {summary['resources']}")
+    return 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--run", required=True, help="two-lane run directory")
     p.add_argument("--baseline", default="", help="zero-shot baseline run directory (R-001 secondary)")
     p.add_argument("--pool-seed", type=int, help="fresh evaluation pool (R-005 mode)")
-    p.add_argument("--fit-seed", type=int, required=True)
-    p.add_argument("--research-protocol", choices=["nested-screen"], default="")
+    p.add_argument("--fit-seed", type=int)
+    p.add_argument("--research-protocol", choices=["nested-screen", "seed-robustness"], default="")
+    p.add_argument("--fit-seeds", type=int, nargs="+", help="seed-robustness: fitting seeds")
     p.add_argument("--child", default="", help="nested-screen: the frozen child attempt id")
     p.add_argument("--screen-seed", type=int)
     p.add_argument("--heldout-seed", type=int, nargs="+", help="confirmation pool seed(s); 50 placements each")
@@ -571,13 +691,18 @@ def main(argv=None) -> int:
     p.add_argument("--reserve-only", action="store_true", help="check and reserve the seeds, then stop")
     args = p.parse_args(argv)
     if args.research_protocol == "nested-screen":
-        missing = [n for n in ("child", "screen_seed", "heldout_seed", "probe_seed", "replay_seed")
+        missing = [n for n in ("child", "fit_seed", "screen_seed", "heldout_seed", "probe_seed", "replay_seed")
                    if getattr(args, n) in (None, "")]
         if missing:
             raise SystemExit(f"nested-screen needs --{', --'.join(m.replace('_', '-') for m in missing)}")
         return run_nested_screen(args)
-    if args.pool_seed is None:
-        raise SystemExit("--pool-seed is required")
+    if args.research_protocol == "seed-robustness":
+        missing = [n for n in ("child", "fit_seeds", "probe_seed", "heldout_seed") if getattr(args, n) in (None, "")]
+        if missing:
+            raise SystemExit(f"seed-robustness needs --{', --'.join(m.replace('_', '-') for m in missing)}")
+        return run_seed_robustness(args)
+    if args.pool_seed is None or args.fit_seed is None:
+        raise SystemExit("--pool-seed and --fit-seed are required")
 
     pairs = discover_pairs(args.run)
     fitting = common_fitting(pairs)

@@ -77,3 +77,10 @@
 {"seed": 2811, "namespace": "mt1_pool", "use": "R-008 search vs fitting: 50-case confirmation manifest", "artifact": "logs/research/search_replaces_fitting_s2810", "recorded_at": "2026-10-22T04:25:36", "backfilled": false}
 {"seed": 2812, "namespace": "fitting", "use": "R-008 search vs fitting: fitting seed and search RNG seed", "artifact": "logs/research/search_replaces_fitting_s2810", "recorded_at": "2026-10-22T04:25:36", "backfilled": false}
 {"seed": 2813, "namespace": "fitting", "use": "R-008 search vs fitting: demonstration split seed", "artifact": "logs/research/search_replaces_fitting_s2810", "recorded_at": "2026-10-22T04:25:36", "backfilled": false}
+{"seed": 2900, "namespace": "fitting", "use": "R-010 geometry child seed robustness: fit seed", "artifact": "logs/research/geometry_qualification_s2900", "recorded_at": "2026-10-22T04:34:55", "backfilled": false}
+{"seed": 2901, "namespace": "fitting", "use": "R-010 geometry child seed robustness: fit seed", "artifact": "logs/research/geometry_qualification_s2900", "recorded_at": "2026-10-22T04:34:55", "backfilled": false}
+{"seed": 2902, "namespace": "fitting", "use": "R-010 geometry child seed robustness: fit seed", "artifact": "logs/research/geometry_qualification_s2900", "recorded_at": "2026-10-22T04:34:55", "backfilled": false}
+{"seed": 2903, "namespace": "fitting", "use": "R-010 geometry child seed robustness: fit seed", "artifact": "logs/research/geometry_qualification_s2900", "recorded_at": "2026-10-22T04:34:55", "backfilled": false}
+{"seed": 2904, "namespace": "fitting", "use": "R-010 geometry child seed robustness: fit seed", "artifact": "logs/research/geometry_qualification_s2900", "recorded_at": "2026-10-22T04:34:55", "backfilled": false}
+{"seed": 2905, "namespace": "mt1_pool", "use": "R-010: 10-case checkpoint probe", "artifact": "logs/research/geometry_qualification_s2900", "recorded_at": "2026-10-22T04:34:55", "backfilled": false}
+{"seed": 2906, "namespace": "mt1_pool", "use": "R-010: confirmation manifest", "artifact": "logs/research/geometry_qualification_s2900", "recorded_at": "2026-10-22T04:34:55", "backfilled": false}
