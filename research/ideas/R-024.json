@@ -49,7 +49,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "running",
+  "status": "decided",
   "source": "implementer",
   "falsified_by": "Every harder task scores less than 0.20 below reach-v2 after search; then the recipe saturates these tasks too and method comparisons need a stricter success criterion rather than new tasks.",
   "cost_estimate": {
@@ -74,12 +74,148 @@
     "started_at": "2026-10-22T08:15:47",
     "git_sha": "090501bf791234470fa764af8d9cbec2cf4f39a6",
     "dirty_worktree": true,
-    "log_dir": "logs/research/hard_task_scan_s3300"
+    "log_dir": "logs/research/hard_task_scan_s3300",
+    "finished_at": "2026-10-22T08:23:35"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "promotion_success_rate": 0.0,
+      "assembly_first": 0.0,
+      "assembly_repeat": 0.0,
+      "tasks_at_least_0.20_below_reach": [
+        "assembly-v2"
+      ],
+      "stopped_early": true,
+      "rows": [
+        {
+          "task": "assembly-v2",
+          "label": "assembly-v2",
+          "generation_seed": 3300,
+          "pool_seed": 3310,
+          "valid": true,
+          "attempts": 1,
+          "stage": "passed",
+          "errors": [],
+          "source_path": "logs/research/hard_task_scan_s3300/structures/assembly-v2.py",
+          "confirmation_success": 0.0,
+          "untrained_probe_success": 0.0,
+          "candidates_with_probe_success": 0,
+          "best_probe_success": 0.0,
+          "episodes": {
+            "probe": 120,
+            "confirmation": 30
+          }
+        }
+      ],
+      "repeat": {
+        "task": "assembly-v2",
+        "label": "assembly-v2_repeat",
+        "generation_seed": 3320,
+        "pool_seed": 3321,
+        "valid": true,
+        "attempts": 1,
+        "stage": "passed",
+        "errors": [],
+        "source_path": "logs/research/hard_task_scan_s3300/structures/assembly-v2_repeat.py",
+        "confirmation_success": 0.0,
+        "untrained_probe_success": 0.0,
+        "candidates_with_probe_success": 0,
+        "best_probe_success": 0.0,
+        "episodes": {
+          "probe": 120,
+          "confirmation": 30
+        }
+      },
+      "schema_audit": [
+        {
+          "task": "assembly-v2",
+          "problems": [],
+          "objects_in_source": 1
+        },
+        {
+          "task": "peg-insert-side-v2",
+          "problems": [],
+          "objects_in_source": 1
+        },
+        {
+          "task": "hammer-v2",
+          "problems": [],
+          "objects_in_source": 2
+        },
+        {
+          "task": "shelf-place-v2",
+          "problems": [],
+          "objects_in_source": 1
+        },
+        {
+          "task": "basketball-v2",
+          "problems": [],
+          "objects_in_source": 1
+        },
+        {
+          "task": "soccer-v2",
+          "problems": [],
+          "objects_in_source": 1
+        }
+      ],
+      "episodes": {
+        "probe": 240,
+        "confirmation": 60
+      },
+      "schema_audit_episodes": 6,
+      "llm_calls": 2
+    },
+    "controls": {
+      "promotion_success_rate": 1.0,
+      "note": "control is R-022's reach-v2 arm (1.00 on fresh confirmation, D-019), historical"
+    },
+    "artifacts": [
+      "logs/research/hard_task_scan_s3300/summary.json",
+      "logs/research/hard_task_scan_s3300/schema_audit.json",
+      "logs/research/hard_task_scan_s3300/result_assembly-v2.json",
+      "logs/research/hard_task_scan_s3300/result_assembly-v2_repeat.json",
+      "logs/research/hard_task_scan_s3300/structures",
+      "logs/research/hard_task_scan_s3300/manifests",
+      "logs/hard_task_scan.run.log"
+    ],
+    "notes": "Six harder tasks registered on the V3 layout (hammer with a verified obj2 = nail); all schemas passed a simulator audit at reset and after one step (6 audit episodes) before any generation. Scan order assembly first. assembly-v2: single-phase gpt-6.1-sol structure (valid first time) + 24-candidate independent search: 0.00 on 30 fresh cases; the predeclared independent repeat (seeds 3320/3321) also 0.00. Both structures lift the nut (lift >= 2 cm on 16-18 of 24 candidates' probes) and move it toward the peg (best progress ~0.24), but no candidate ever seats it: the failure is the final precision placement. Per the protocol the scan stopped early; peg-insert-side, hammer, shelf-place, basketball and soccer were not run. 306 episodes (240 probe + 60 confirmation + 6 audit), 2 LLM calls."
+  },
+  "prediction_outcome": {
+    "metric": "promotion_success_rate",
+    "before": 1.0,
+    "after": 0.0,
+    "delta": -1.0,
+    "matched": true
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "supported",
+      "confidence": 0.85,
+      "reasoning": "assembly-v2 scores 0.00 on 30 fresh cases after single-phase generation plus 24-candidate search, 1.00 below reach-v2, and the predeclared independent repeat (fresh generation and cases) also scores 0.00, so the weakness is reproducible rather than a low draw. The predicted >= 0.20 drop for at least one task holds. Mechanistically both structures grasp and lift the nut and carry it partway (progress ~0.24) but never seat it on the peg.",
+      "cited_artifacts": [
+        "logs/research/hard_task_scan_s3300/summary.json"
+      ],
+      "next_experiment": "Use assembly-v2 as the testbed: R-023's structure-breadth design (four structures x six candidates vs one x twenty-four), the two-lane pipeline with a fitted lane (needs an assembly demonstration buffer from the expert), and repair aimed at the final placement phase.",
+      "recorded_at": "2026-10-22T08:23:36",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "supported",
+      "confidence": 0.99,
+      "reasoning": "Assembly-v2 scored 0.00 on 30 fresh confirmation cases after search, and the independent generation/search repeat also scored 0.00 on 30 cases [logs/research/hard_task_scan_s3300/result_assembly-v2.json] [logs/research/hard_task_scan_s3300/result_assembly-v2_repeat.json]. Against the specified, previously measured reach-v2 control of 1.00, the observed promotion_success_rate decrease was 1.00, exceeding the predicted threshold of 0.20 [logs/research/hard_task_scan_s3300/summary.json]. Finding assembly-v2 suffices for the existential prediction despite early stopping; the result does not establish failures on untested tasks or isolate a failure mechanism [logs/research/hard_task_scan_s3300/summary.json]. Recorded expenditure was 306 simulator episodes and 2 LLM calls [logs/research/hard_task_scan_s3300/summary.json].",
+      "cited_artifacts": [
+        "logs/research/hard_task_scan_s3300/summary.json",
+        "logs/research/hard_task_scan_s3300/result_assembly-v2.json",
+        "logs/research/hard_task_scan_s3300/result_assembly-v2_repeat.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T08:24:05",
+      "call_id": "call_00041"
+    }
+  ],
+  "decision_id": "D-020",
   "history": [
     {
       "at": "2026-10-22T08:12:46",
@@ -104,6 +240,18 @@
       "from": "approved",
       "to": "running",
       "note": "git 090501bf79 (dirty)"
+    },
+    {
+      "at": "2026-10-22T08:23:35",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=True"
+    },
+    {
+      "at": "2026-10-22T08:24:12",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-020: supported"
     }
   ],
   "created_at": "2026-10-22T08:12:46"
