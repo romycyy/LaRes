@@ -12,7 +12,7 @@
   "protocol": {
     "script": "scripts/stage_f.py",
     "config": "config/stage_f/stage_f.yaml",
-    "command": "gpu run -- python scripts/stage_f.py --config config/stage_f/stage_f.yaml --research-protocol mutation-scope-transfer --parents simple_reach_push_sharp_gate,simple_reach_push_shared_gain --scopes contact-geometry,gain-damping --children-per-parent-scope 2 --max-repair-per-candidate 0 --preserve-parameter-schema-bounds-initialization --fit-seeds 2920,2921 --probe-seed 2922 --confirmation-seed 2923 --probe-cases 10 --confirmation-cases 50 --checkpoints 0,500,1000 --max-fit-steps 1000 --no-screen-selection --llm-model gpt-6.1-sol --reasoning-effort high --temperature 1 --manifest-dir config/manifests/research/geometry_transfer --output logs/research/geometry_transfer_s2920",
+    "command": "python scripts/stage_f.py mutation-scope-transfer --parents simple_reach_push_sharp_gate simple_reach_push_shared_gain --children-per-parent-scope 2 --fit-seeds 2920 2921 --probe-seed 2922 --heldout-seed 2923 --out-dir logs/research/geometry_transfer_s2920",
     "seeds": [
       2920,
       2921,
@@ -20,21 +20,20 @@
       2923
     ],
     "manifests": [
-      "config/manifests/research/geometry_transfer/probe_s2922.yaml",
-      "config/manifests/research/geometry_transfer/confirmation_s2923.yaml"
+      "config/manifests/push-v2_train.yaml",
+      "config/manifests/push-v2_development.yaml"
     ],
     "episodes": 1600,
-    "llm_calls": 8,
+    "llm_calls": 9,
     "code_changes": [
-      "scripts/stage_f.py: add the named scope-transfer protocol using existing bounded mutation, validation, fitting, and evaluation machinery; generate two independent children per parent per scope, with no correction evidence or retries.",
-      "scripts/stage_f.py: enforce matched edit-size limits and unchanged parameter schema, bounds, and initialization. Geometry edits may change contact-target construction but not gains, damping, or gates; control edits may change gain/damping algebra but not geometry or gates.",
-      "scripts/stage_f.py: fit eight children and two unedited parents under two matched seeds using fixed demonstrations; select checkpoints only on a disjoint development probe and score every arm on frozen confirmation cases without screening winners.",
-      "scripts/stage_f.py: treat invalid children as parent fallbacks without replacement calls; report intention-to-treat scope differences and geometry-versus-parent differences, averaging over parents, draws, and fitting seeds within placement. Do not promote children or change bank roles."
+      "scripts/stage_f.py (mutation-scope-transfer: fittable-only code-only plan, 2 parents x 2 scopes x 2 draws, ITT fallbacks, matched contrasts)",
+      "lares/core/policy_generation.py (two-lane generator skips an empty exploration lane)",
+      "tests/test_stage_f.py"
     ],
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "proposed",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "An upper paired 95% bound below +0.05 for geometry minus gain/damping refutes the predicted scope advantage. An upper bound at or below zero for geometry minus unedited parents refutes useful transfer. Zero-spanning intervals are inconclusive; ties are not improvements.",
   "cost_estimate": {
@@ -49,12 +48,308 @@
   ],
   "briefing_sha256": "9e070a39c46d6958d4b90ee960c2e925a2d27867baca70bd9eeaff2aeba90792",
   "proposal_call_id": "call_00011",
-  "approval": {},
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
-  "history": [],
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T04:46:21",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00015, 'revise' with changes applied) under the user's 2026-10-22 session delegation; 1600 episodes, 8 gpt-6.1-sol calls",
+    "consultation": "research/consultations/2026-10-22T044606_call_00015.json"
+  },
+  "run": {
+    "started_at": "2026-10-22T04:49:18",
+    "git_sha": "503c9322dc4cd39297d420c07cc6494188c76cff",
+    "dirty_worktree": true,
+    "log_dir": "logs/research/geometry_transfer_s2920",
+    "finished_at": "2026-10-22T04:58:26"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": -0.2375,
+      "geometry_minus_control_t95": [
+        -0.3148824935102108,
+        -0.16011750648978915
+      ],
+      "geometry_minus_control_wlt": [
+        3,
+        36,
+        11
+      ],
+      "geometry_minus_parent": -0.1925,
+      "geometry_minus_parent_t95": [
+        -0.23386001398937997,
+        -0.15113998601062004
+      ],
+      "control_minus_parent": 0.045,
+      "control_minus_parent_t95": [
+        -0.019497724716260503,
+        0.1094977247162605
+      ],
+      "by_parent": {
+        "simple_reach_push_shared_gain": {
+          "geometry_minus_control": {
+            "mean": -0.335,
+            "t95": [
+              -0.43711614315769565,
+              -0.2328838568423044
+            ]
+          },
+          "geometry_minus_parent": {
+            "mean": -0.175,
+            "t95": [
+              -0.25394759860150584,
+              -0.09605240139849415
+            ]
+          },
+          "control_minus_parent": {
+            "mean": 0.16,
+            "t95": [
+              0.04996847595607269,
+              0.27003152404392733
+            ]
+          }
+        },
+        "simple_reach_push_sharp_gate": {
+          "geometry_minus_control": {
+            "mean": -0.14,
+            "t95": [
+              -0.22982507250064604,
+              -0.05017492749935398
+            ]
+          },
+          "geometry_minus_parent": {
+            "mean": -0.21,
+            "t95": [
+              -0.2864415259686171,
+              -0.13355847403138288
+            ]
+          },
+          "control_minus_parent": {
+            "mean": -0.07,
+            "t95": [
+              -0.12566729942282318,
+              -0.014332700577176824
+            ]
+          }
+        }
+      },
+      "by_child": {
+        "gen0_cand0_a0": {
+          "parent": "simple_reach_push_sharp_gate",
+          "scope": "contact_geometry",
+          "draw": 0,
+          "valid": true,
+          "success_by_seed": {
+            "2920": 0.54,
+            "2921": 0.54
+          },
+          "selected_step_by_seed": {
+            "2920": 0,
+            "2921": 0
+          }
+        },
+        "gen0_cand1_a0": {
+          "parent": "simple_reach_push_sharp_gate",
+          "scope": "contact_geometry",
+          "draw": 1,
+          "valid": true,
+          "success_by_seed": {
+            "2920": 1.0,
+            "2921": 1.0
+          },
+          "selected_step_by_seed": {
+            "2920": 1000,
+            "2921": 1000
+          }
+        },
+        "gen0_cand2_a0": {
+          "parent": "simple_reach_push_sharp_gate",
+          "scope": "gain_damping",
+          "draw": 0,
+          "valid": true,
+          "success_by_seed": {
+            "2920": 0.96,
+            "2921": 0.96
+          },
+          "selected_step_by_seed": {
+            "2920": 1000,
+            "2921": 1000
+          }
+        },
+        "gen0_cand3_a0": {
+          "parent": "simple_reach_push_sharp_gate",
+          "scope": "gain_damping",
+          "draw": 1,
+          "valid": true,
+          "success_by_seed": {
+            "2920": 0.88,
+            "2921": 0.84
+          },
+          "selected_step_by_seed": {
+            "2920": 1000,
+            "2921": 1000
+          }
+        },
+        "gen0_cand4_a0": {
+          "parent": "simple_reach_push_shared_gain",
+          "scope": "contact_geometry",
+          "draw": 0,
+          "valid": true,
+          "success_by_seed": {
+            "2920": 0.62,
+            "2921": 0.62
+          },
+          "selected_step_by_seed": {
+            "2920": 0,
+            "2921": 0
+          }
+        },
+        "gen0_cand5_a0": {
+          "parent": "simple_reach_push_shared_gain",
+          "scope": "contact_geometry",
+          "draw": 1,
+          "valid": true,
+          "success_by_seed": {
+            "2920": 0.28,
+            "2921": 0.26
+          },
+          "selected_step_by_seed": {
+            "2920": 1000,
+            "2921": 1000
+          }
+        },
+        "gen0_cand6_a0": {
+          "parent": "simple_reach_push_shared_gain",
+          "scope": "gain_damping",
+          "draw": 0,
+          "valid": true,
+          "success_by_seed": {
+            "2920": 0.8,
+            "2921": 0.84
+          },
+          "selected_step_by_seed": {
+            "2920": 1000,
+            "2921": 1000
+          }
+        },
+        "gen0_cand7_a0": {
+          "parent": "simple_reach_push_shared_gain",
+          "scope": "gain_damping",
+          "draw": 1,
+          "valid": true,
+          "success_by_seed": {
+            "2920": 0.74,
+            "2921": 0.74
+          },
+          "selected_step_by_seed": {
+            "2920": 1000,
+            "2921": 1000
+          }
+        }
+      },
+      "parent_success_by_seed": {
+        "simple_reach_push_shared_gain": {
+          "2920": 0.62,
+          "2921": 0.62
+        },
+        "simple_reach_push_sharp_gate": {
+          "2920": 0.98,
+          "2921": 0.98
+        }
+      },
+      "validity": {
+        "valid": 8,
+        "total": 8,
+        "invalid": []
+      },
+      "episodes": {
+        "probe_episodes": 600,
+        "confirmation_episodes": 1000
+      },
+      "llm_calls": 9
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "control is the matched gain-and-damping-only child (same parent, draw index and fit seed); the metric is already geometry minus control"
+    },
+    "artifacts": [
+      "logs/research/geometry_transfer_s2920/summary.json",
+      "logs/research/geometry_transfer_s2920/run.json",
+      "logs/research/geometry_transfer_s2920/children.json",
+      "logs/research/geometry_transfer_s2920/children",
+      "logs/research/geometry_transfer_s2920/generation"
+    ],
+    "notes": "Two seed-bank parents (sharp_gate 0.98, shared_gain 0.62 fitted), two code-only scopes, two draws each; 8/8 children valid; fit seeds 2920/2921, probe s2922, confirmation s2923; ITT (no fallbacks needed). Geometry minus gain/damping -0.237 [-0.315, -0.160] (3/36/11); geometry minus parent -0.193 [-0.234, -0.151]; gain/damping minus parent +0.045 [-0.019, +0.109]. Three of four geometry children hurt their parent (sharp_gate draw 0: 0.54 vs 0.98; shared_gain draw 1: 0.27 vs 0.62); one matched it (sharp_gate draw 1: 1.00). Gain/damping edits on shared_gain improved it (0.82, 0.74 vs 0.62), on sharp_gate slightly lowered it (0.96, 0.86). Seeds barely matter (fits nearly identical across seeds). Caveats: the advisor's revision made both scopes code-only (no added parameters), whereas the D-004/D-006 geometry child added parameters; the two draws per scope came from one design call, so they are not independent LLM samples; 9 LLM calls vs 8 approved (one design call + eight implementations). 1600 episodes."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": -0.2375,
+    "delta": -0.2375,
+    "matched": false
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.85,
+      "reasoning": "Geometry-only minus matched gain/damping-only children is -0.237 [-0.315, -0.160], 3/36/11, the opposite of the predicted +0.05; geometry children are also worse than their identically fitted parents, -0.193 [-0.234, -0.151], which refutes useful transfer by the predeclared rule (upper bound <= 0 against unedited parents). Three of four geometry children damaged a working controller. The D-004/D-006 benefit of the damped-push geometry child does not transfer to the reach-push family as code-only geometry edits; gain/damping edits were neutral to helpful (+0.045, interval spans zero), mainly on the weaker shared_gain parent.",
+      "cited_artifacts": [
+        "logs/research/geometry_transfer_s2920/summary.json"
+      ],
+      "next_experiment": "Do not generalise geometry-scope mutation; treat gen0_cand5_a0 as a single validated structure. The only consistent LLM win is structure-specific; next spend should be the cheap bank-admission check for gen0_cand5_a0, then consider gain/damping edits on the weakest bank member (shared_gain) as a small follow-up.",
+      "recorded_at": "2026-10-22T04:58:27",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "The named matched gain-and-damping control was measured: paired_success_difference was -0.2375, with a paired 95% interval of [-0.3149, -0.1601] [logs/research/geometry_transfer_s2920/summary.json]. The upper bound is below the predicted +0.05, refuting the scope advantage [logs/research/geometry_transfer_s2920/summary.json]. Geometry also underperformed unedited parents by -0.1925, with interval [-0.2339, -0.1511], meeting the separate falsification criterion for useful transfer [logs/research/geometry_transfer_s2920/summary.json]. Gain-and-damping mutations were not an established improvement over parents: their +0.045 contrast had a zero-spanning interval [-0.0195, +0.1095] and is inconclusive [logs/research/geometry_transfer_s2920/summary.json]. These conclusions apply to the tested children and parents, not to every possible mutation within either scope [logs/research/geometry_transfer_s2920/summary.json].",
+      "cited_artifacts": [
+        "logs/research/geometry_transfer_s2920/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T04:58:48",
+      "call_id": "call_00016"
+    }
+  ],
+  "decision_id": "D-008",
+  "history": [
+    {
+      "at": "2026-10-22T04:46:21",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00015: manifests in the out dir (probe s2922 x10, confirmation s2923 x50); both contrasts reported by parent and pooled with mutation-draw and fit-seed sensitivity; no winner selection or bank admission"
+    },
+    {
+      "at": "2026-10-22T04:46:21",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00015, 'revise' with changes applied) under the user's 2026-10-22 session delegation; 1600 episodes, 8 gpt-6.1-sol calls"
+    },
+    {
+      "at": "2026-10-22T04:49:17",
+      "from": "approved",
+      "to": "approved",
+      "note": "implemented with the existing two-lane generator: one design call returns all eight bounded mutations and each child gets one implementation call, no corrections = 9 calls (approved estimate 8; one-call deviation recorded). Two draws per (parent, scope) come from the same design call, so they are not independent LLM samples. Fitting settings reuse logs/two_lane_search's."
+    },
+    {
+      "at": "2026-10-22T04:49:18",
+      "from": "approved",
+      "to": "running",
+      "note": "git 503c9322dc (dirty)"
+    },
+    {
+      "at": "2026-10-22T04:58:26",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=False"
+    },
+    {
+      "at": "2026-10-22T04:58:56",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-008: refuted"
+    }
+  ],
   "created_at": "2026-10-22T04:32:02"
 }

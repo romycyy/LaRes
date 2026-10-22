@@ -27,7 +27,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "proposed",
+  "status": "rejected",
   "source": "implementer",
   "falsified_by": "promotion success no higher than the fixed-screen run, or a rotation schedule that overlaps the promotion slice (refused by check_manifest_isolation)",
   "cost_estimate": {
@@ -52,6 +52,12 @@
       "from": "",
       "to": "proposed",
       "note": "backfilled 2026-10-13 from the open questions in RESEARCH_HANDOFF.md / DEBUG_PROGRESS.md"
+    },
+    {
+      "at": "2026-10-22T04:46:20",
+      "from": "proposed",
+      "to": "rejected",
+      "note": "Rejected by the advisor (gpt-6.1-sol, consult call_00015) under the user's 2026-10-22 session delegation: the historical control confounds rotation with candidate draws; reconsideration needs a contemporaneous fixed-screen control and a rotation excluding development 10-39."
     }
   ],
   "created_at": "2026-10-13T23:48:52"

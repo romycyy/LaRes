@@ -478,3 +478,83 @@ class TestPooledOptimizer(unittest.TestCase):
             self.assertEqual([r["experiment_id"] for r in picked], ["gen0_cand0_a0", "gen0_cand4_a0"])
             with self.assertRaises(SystemExit):
                 self.stage_f.additional_subjects(d, {"gen0_cand0_a0", "gen0_cand1_a0"})
+
+
+class TestMutationScopeTransfer(unittest.TestCase):
+    """R-012: a fittable-only, code-only plan; generation with no exploration lane; the ITT summary."""
+
+    PARENTS = ["simple_reach_push_sharp_gate", "simple_reach_push_shared_gain"]
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, os.path.join(_PROJECT_ROOT, "scripts"))
+        import stage_f
+
+        cls.stage_f = stage_f
+        cls.plan = stage_f.transfer_plan(cls.PARENTS, 1)
+
+    def test_the_plan_is_fittable_only_code_only_and_ordered(self):
+        slots = self.plan.slots
+        self.assertEqual(len(slots), 4)
+        self.assertEqual([(s.reference.structure_id, s.scope.scope_id) for s in slots],
+                         [(p, sc) for p in self.PARENTS for sc in (self.stage_f.SCOPE_GEOMETRY, self.stage_f.SCOPE_CONTROL)])
+        self.assertEqual(self.plan.exploration_slots, [])
+        for s in slots:
+            self.assertEqual((s.scope.may_change, s.scope.may_remove, s.scope.allow_adds), ((), (), False))
+
+    def test_generation_needs_no_exploration_call_and_enforces_code_only_children(self):
+        import re
+
+        from test_two_lane_search import idea_for, mutation_entry  # noqa: E402
+
+        def strip(source):
+            out = re.sub(r"\n\s*self\.log_std = nn\.Parameter\(torch\.tensor\([^)]*\)\)", "", source)
+            out = re.sub(r'\n\s*"log_std": \([^)]*\),', "", out)
+            return out.replace("std = torch.exp(self.log_std) * torch.ones_like(mean)", "std = self.fixed_std(mean)")
+
+        geometry = ("to_obj = obj - tcp", "to_obj = obj - 0.02 * (goal - obj) / (torch.norm(goal - obj, dim=-1, "
+                    "keepdim=True) + 1e-8) - tcp")
+        control = ("(to_goal / d_goal)", "(to_goal / d_goal) * torch.clamp(d_goal / 0.05, max=1.0)")
+        kids = {}
+        for s in self.plan.slots:
+            old, new = geometry if s.scope.scope_id == self.stage_f.SCOPE_GEOMETRY else control
+            kids[s.slot] = (strip(s.reference.source).replace(old, new, 1), {}, f"{s.scope.scope_id} code-only edit")
+        # slot 3 smuggles in a changed initial value, which the code-only scope refuses
+        bad = kids[3][0].replace("torch.tensor(-0.5)", "torch.tensor(-0.4)")
+        mutations = [mutation_entry(s, kids[s.slot]) for s in self.plan.slots]
+        script = {"policy_fittable_mutations": [json.dumps({"mutations": mutations})],
+                  "policy_implement": [fence(kids[0][0]), fence(kids[1][0]), fence(kids[2][0]), fence(bad)]}
+        llm = ScriptedLLM(script)
+        with tempfile.TemporaryDirectory() as d, patch.object(pg, "_call_llm", side_effect=llm), patch.object(
+                pg, "_run_policy_validation_subprocess", return_value=(True, "Success!", "full")):
+            import pickle
+
+            import numpy as np
+
+            from lares.search.generation import LLMCallLedger
+
+            pkl = os.path.join(d, "data.pkl")
+            with open(pkl, "wb") as f:
+                pickle.dump([{"obs": np.zeros(39)}], f)
+            cands = pg.generate_two_lane_candidates(
+                MagicMock(), SimpleNamespace(model="stub", reasoning_effort="high"), d, 39, 4, "push-v2",
+                load_policy_prompt_assets("push-v2"), self.plan, pkl, LLMCallLedger(d),
+                max_total_calls=self.plan.n + 1, max_repair_per_candidate=0)
+        self.assertEqual([c.valid for c in cands], [True, True, True, False])
+        self.assertIn("changes", " ".join(cands[3].validation["errors"]))
+        self.assertNotIn("policy_ideas", [c.get("label") for c in getattr(llm, "calls", [])])
+
+    def test_invalid_children_score_as_their_parent_and_contrasts_are_matched(self):
+        def res(rate_a, rate_b, step=1000):
+            return {"confirmation": {"per_case": {"a": [rate_a, 0], "b": [rate_b, 0]}}, "selected_step": step}
+
+        children = [
+            {"attempt_id": "g0", "parent": "P", "scope": self.stage_f.SCOPE_GEOMETRY, "draw": 0, "valid": True},
+            {"attempt_id": "c0", "parent": "P", "scope": self.stage_f.SCOPE_CONTROL, "draw": 0, "valid": False},
+        ]
+        results = {("P", 1): res(0.0, 1.0), ("g0", 1): res(1.0, 1.0)}
+        out = self.stage_f.transfer_summary(children, results, [1])
+        self.assertAlmostEqual(out["geometry_minus_control"]["mean"], 0.5)   # control falls back to the parent
+        self.assertAlmostEqual(out["control_minus_parent"]["mean"], 0.0)
+        self.assertEqual(out["validity"], {"valid": 1, "total": 2, "invalid": [
+            {"attempt_id": "c0", "scope": self.stage_f.SCOPE_CONTROL, "stage": None, "errors": None}]})

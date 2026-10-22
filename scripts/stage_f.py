@@ -85,6 +85,18 @@ def parse_args():
     po.add_argument("--out-dir", required=True)
     po.add_argument("--workers", type=int, default=4)
     po.add_argument("--reserve-only", action="store_true")
+    mst = sub.add_parser("mutation-scope-transfer", help="R-012: geometry-only vs gain/damping-only LLM mutations")
+    mst.add_argument("--run", default="logs/two_lane_search", help="run whose fitting settings every fit reuses")
+    mst.add_argument("--parents", nargs="+", required=True)
+    mst.add_argument("--children-per-parent-scope", type=int, default=2)
+    mst.add_argument("--fit-seeds", type=int, nargs="+", required=True)
+    mst.add_argument("--probe-seed", type=int, required=True)
+    mst.add_argument("--heldout-seed", type=int, required=True)
+    mst.add_argument("--model", default="gpt-6.1-sol")
+    mst.add_argument("--reasoning-effort", default="high")
+    mst.add_argument("--out-dir", required=True)
+    mst.add_argument("--workers", type=int, default=8)
+    mst.add_argument("--reserve-only", action="store_true")
     return p.parse_args()
 
 
@@ -1111,8 +1123,203 @@ def cmd_pooled_optimizer(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  R-012: does a geometry-only mutation transfer beyond damped push?
+# ---------------------------------------------------------------------------
+
+SCOPE_GEOMETRY, SCOPE_CONTROL = "contact_geometry", "gain_damping"
+#: Both scopes are code-only: parameter names, bounds and initial values stay the parent's (advisor call_00015).
+TRANSFER_SCOPES = {
+    SCOPE_GEOMETRY: (
+        "code-only change to where the end effector aims or how the object-goal geometry is used: the reach target "
+        "point, the approach direction or offset relative to the object-goal line, the push direction. The gains, "
+        "any damping and the gate (its expression, sharpness and radius) stay exactly as in the parent. Every "
+        "parameter keeps its name, initial value and range; add, remove and change none."),
+    SCOPE_CONTROL: (
+        "code-only change to the gain and damping algebra: how the existing gains scale the reach and push drives, "
+        "or a velocity-damping term built from existing observations and parameters. Where the end effector aims, "
+        "the push direction and the gate stay exactly as in the parent. Every parameter keeps its name, initial "
+        "value and range; add, remove and change none."),
+}
+
+
+def transfer_plan(parent_ids, per_scope: int):
+    """A fittable-only plan: per parent, ``per_scope`` slots of each scope, geometry first, all code-only."""
+    from lares.search.lanes import MutationScope, ReferenceStructure, SlotSpec, TwoLanePlan
+    from lares.search.schemas import LANE_FITTABLE
+    from lares.utils.hashing import sha256_file
+
+    with open(os.path.join(_PROJECT_ROOT, "config", "fittable_bank", "seed_bank.json"), encoding="utf-8") as f:
+        members = json.load(f)["members"]
+    roles_path = os.path.join(_PROJECT_ROOT, "config", "fittable_bank", "structure_roles.yaml")
+    slots = []
+    for pid in parent_ids:
+        path = os.path.join(_PROJECT_ROOT, members[pid]["source_path"])
+        with open(path, encoding="utf-8") as f:
+            ref = ReferenceStructure(pid, "reach_push", rel(path), sha256_file(path), f.read())
+        for scope_id in (SCOPE_GEOMETRY, SCOPE_CONTROL):
+            scope = MutationScope(scope_id, TRANSFER_SCOPES[scope_id], may_change=(), may_remove=(), allow_adds=False)
+            slots += [SlotSpec(len(slots) + k, LANE_FITTABLE, ref, scope) for k in range(int(per_scope))]
+    slots = [SlotSpec(i, s.lane, s.reference, s.scope) for i, s in enumerate(slots)]
+    bank = os.path.join(_PROJECT_ROOT, "config", "fittable_bank", "seed_bank.json")
+    return TwoLanePlan(slots=slots, fittable_budget=1000, checkpoint_steps=(0, 500, 1000), max_parameter_changes=3,
+                       min_parent_parameters_kept=0.5, seed_bank_path=rel(bank), seed_bank_sha256=sha256_file(bank),
+                       roles_path=rel(roles_path), roles_sha256=sha256_file(roles_path))
+
+
+def transfer_generate(plan, args, out_dir) -> list:
+    """One design call plus one implementation per slot, no corrections. Cached: a rerun never calls again."""
+    import pickle
+
+    import numpy as np
+
+    from lares.core.policy_generation import generate_two_lane_candidates
+    from lares.core.training_pipeline import load_policy_prompt_assets
+    from lares.search.generation import LLMCallLedger
+
+    gen_dir = os.path.join(out_dir, "generation")
+    children_path = os.path.join(out_dir, "children.json")
+    if os.path.exists(children_path):
+        with open(children_path, encoding="utf-8") as f:
+            return json.load(f)
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise SystemExit("R-012 generation needs OPENAI_API_KEY")
+    from openai import OpenAI
+
+    os.makedirs(gen_dir, exist_ok=True)
+    data_pkl = os.path.join(gen_dir, "data.pkl")
+    with open(data_pkl, "wb") as f:
+        pickle.dump([{"obs": np.zeros(39)}], f)
+    candidates = generate_two_lane_candidates(
+        OpenAI(api_key=os.environ["OPENAI_API_KEY"]), SimpleNamespace(model=args.model, reasoning_effort=args.reasoning_effort),
+        gen_dir, 39, 4, "push-v2", load_policy_prompt_assets("push-v2"), plan, data_pkl, LLMCallLedger(gen_dir),
+        llm_transcript_path=os.path.join(gen_dir, "llm_transcript.jsonl"),
+        max_total_calls=plan.n + 1, max_repair_per_candidate=0,
+    )
+    children = []
+    for c in candidates:
+        spec = plan.slot(c.slot)
+        entry = {"slot": c.slot, "attempt_id": c.attempt_id, "parent": spec.reference.structure_id,
+                 "scope": spec.scope.scope_id, "draw": c.slot % args.children_per_parent_scope,
+                 "valid": bool(c.valid), "stage": (c.validation or {}).get("stage"),
+                 "errors": (c.validation or {}).get("errors"), "llm_call_ids": list(c.llm_call_ids or [])}
+        if c.valid:
+            path = os.path.join(out_dir, "children", f"{c.attempt_id}.py")
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(c.code)
+            entry["source_path"] = os.path.abspath(path)
+            entry["structural_change"] = ((c.lane_metadata or {}).get("mutation") or {}).get("structural_change")
+        children.append(entry)
+    with open(children_path, "w", encoding="utf-8") as f:
+        json.dump(children, f, indent=2)
+    return children
+
+
+def transfer_summary(children, results, fit_seeds) -> dict:
+    """Intention to treat: an invalid child scores as its parent. Geometry minus control is matched by parent, draw
+    and fit seed; both arms are also compared with the identically fitted parent. t over placements."""
+    import numpy as np
+
+    from lares.eval.stats import t_interval, win_loss_tie
+
+    def per_case(pid, seed):
+        return {c: v[0] for c, v in results[(pid, seed)]["confirmation"]["per_case"].items()}
+
+    def arm(child, seed):
+        return per_case(child["attempt_id"] if child["valid"] else child["parent"], seed)
+
+    cases = sorted(per_case(children[0]["parent"], fit_seeds[0]))
+    geo = [c for c in children if c["scope"] == SCOPE_GEOMETRY]
+    ctl = {(c["parent"], c["draw"]): c for c in children if c["scope"] == SCOPE_CONTROL}
+    cells = [(g, ctl[(g["parent"], g["draw"])], k) for g in geo for k in fit_seeds]
+
+    def contrast(a_of, b_of, subset=cells):
+        diffs = [float(np.mean([a_of(g, c, k)[x] - b_of(g, c, k)[x] for g, c, k in subset])) for x in cases]
+        return {"n_placements": len(cases), "n_cells": len(subset), **t_interval(diffs), **win_loss_tie(diffs)}
+
+    geo_arm = lambda g, c, k: arm(g, k)                      # noqa: E731
+    ctl_arm = lambda g, c, k: arm(c, k)                      # noqa: E731
+    par_arm = lambda g, c, k: per_case(g["parent"], k)       # noqa: E731
+    by_parent = {}
+    for pid in sorted({c["parent"] for c in children}):
+        mine = [cell for cell in cells if cell[0]["parent"] == pid]
+        by_parent[pid] = {"geometry_minus_control": contrast(geo_arm, ctl_arm, mine),
+                          "geometry_minus_parent": contrast(geo_arm, par_arm, mine),
+                          "control_minus_parent": contrast(ctl_arm, par_arm, mine)}
+    rate = lambda d: float(np.mean(list(d.values())))  # noqa: E731
+    by_child = {c["attempt_id"]: {"parent": c["parent"], "scope": c["scope"], "draw": c["draw"], "valid": c["valid"],
+                                  "success_by_seed": {k: rate(arm(c, k)) for k in fit_seeds},
+                                  "selected_step_by_seed": {k: results[(c["attempt_id"], k)]["selected_step"]
+                                                            for k in fit_seeds} if c["valid"] else None}
+                for c in children}
+    primary = contrast(geo_arm, ctl_arm)
+    return {"paired_success_difference": primary["mean"], "geometry_minus_control": primary,
+            "geometry_minus_parent": contrast(geo_arm, par_arm), "control_minus_parent": contrast(ctl_arm, par_arm),
+            "by_parent": by_parent, "by_child": by_child,
+            "parent_success_by_seed": {pid: {k: rate(per_case(pid, k)) for k in fit_seeds}
+                                       for pid in sorted({c["parent"] for c in children})},
+            "validity": {"valid": sum(c["valid"] for c in children), "total": len(children),
+                         "invalid": [{k: c.get(k) for k in ("attempt_id", "scope", "stage", "errors")}
+                                     for c in children if not c["valid"]]}}
+
+
+def cmd_mutation_scope_transfer(args) -> int:
+    import multiprocessing as mp
+
+    import compare_child_vs_parent as cvp
+
+    os.makedirs(args.out_dir, exist_ok=True)
+    status = cvp.ensure_entries_reserved(
+        [(k, "fitting", "R-012 mutation-scope transfer: fit seed") for k in args.fit_seeds]
+        + [(args.probe_seed, "mt1_pool", "R-012: 10-case checkpoint probe"),
+           (args.heldout_seed, "mt1_pool", "R-012: 50-case confirmation manifest")], args.out_dir)
+    plan = transfer_plan(args.parents, args.children_per_parent_scope)
+    print(f"  {plan.n} slots over {args.parents} x {list(TRANSFER_SCOPES)}; seeds: {status}")
+    if args.reserve_only:
+        return 0
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    children = transfer_generate(plan, args, args.out_dir)
+    print(f"  children valid {sum(c['valid'] for c in children)}/{len(children)}", flush=True)
+    probe, probe_path = cvp.fresh_manifest("push-v2", args.probe_seed, 10, 150, args.out_dir, role="probe")
+    conf, conf_path = cvp.fresh_manifest("push-v2", args.heldout_seed, 50, 150, args.out_dir, role="confirmation",
+                                         also_disjoint_from=[probe])
+    fitting = cvp.common_fitting(cvp.discover_pairs(os.path.join(_PROJECT_ROOT, args.run)))
+    common = {"env_name": "push-v2", "horizon": 150, "fitting": fitting, "out_dir": os.path.abspath(args.out_dir),
+              "demo_buffer": os.path.join(_PROJECT_ROOT, "logs", "baseline_lock", "demo_push-v2.pkl"),
+              "probe_manifest": os.path.abspath(probe_path), "evaluate": {"confirmation": os.path.abspath(conf_path)}}
+    with open(os.path.join(_PROJECT_ROOT, "config", "fittable_bank", "seed_bank.json"), encoding="utf-8") as f:
+        members = json.load(f)["members"]
+    subjects = [(pid, os.path.join(_PROJECT_ROOT, members[pid]["source_path"]), "parent") for pid in args.parents]
+    subjects += [(c["attempt_id"], c["source_path"], "child") for c in children if c["valid"]]
+    jobs = [{**common, "policy_id": pid, "role": role, "source_path": src, "fit_seed": k, "label": f"{pid}_fit{k}"}
+            for pid, src, role in subjects for k in args.fit_seeds]
+    with open(os.path.join(args.out_dir, "run.json"), "w", encoding="utf-8") as f:
+        json.dump({"argv": sys.argv, **git_state(), "plan": plan.to_dict(), "fitting": fitting,
+                   "manifests": {"probe": probe.manifest_id, "confirmation": conf.manifest_id},
+                   "fit_seeds": args.fit_seeds}, f, indent=2, default=str)
+    with mp.get_context("spawn").Pool(processes=min(int(args.workers), len(jobs))) as pool:
+        out = pool.map(cvp.nested_job, jobs)
+    results = {(r["policy_id"], r["fit_seed"]): r for r in out}
+    summary = transfer_summary(children, results, args.fit_seeds)
+    summary["episodes"] = {k: int(sum(r["resources"].get(k, 0) for r in out)) for k in ("probe_episodes", "confirmation_episodes")}
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2, default=str)
+    for name in ("geometry_minus_control", "geometry_minus_parent", "control_minus_parent"):
+        c = summary[name]
+        print(f"  {name:<24} {c['mean']:+.3f} [{c['low']:+.3f}, {c['high']:+.3f}] w/l/t {c['wins']}/{c['losses']}/{c['ties']}")
+    for cid, row in summary["by_child"].items():
+        print(f"    {cid:<16} {row['parent']:<30} {row['scope']:<17} valid={row['valid']} {row['success_by_seed']}")
+    print(f"  parents {summary['parent_success_by_seed']}; episodes {summary['episodes']}")
+    return 0
+
+
 def main() -> int:
     args = parse_args()
+    if args.command == "mutation-scope-transfer":
+        return cmd_mutation_scope_transfer(args)
     if args.command == "pooled-optimizer":
         return cmd_pooled_optimizer(args)
     if args.command == "search-vs-fit":

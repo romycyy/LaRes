@@ -88,3 +88,7 @@
 {"seed": 2911, "namespace": "fitting", "use": "R-011 pooled optimizer: fitting and demonstration split seed", "artifact": "logs/research/pooled_optimizer_s2910", "recorded_at": "2026-10-22T04:39:43", "backfilled": false}
 {"seed": 2912, "namespace": "mt1_pool", "use": "R-011 pooled optimizer: 10-case selection probe", "artifact": "logs/research/pooled_optimizer_s2910", "recorded_at": "2026-10-22T04:39:43", "backfilled": false}
 {"seed": 2913, "namespace": "mt1_pool", "use": "R-011 pooled optimizer: 50-case confirmation manifest", "artifact": "logs/research/pooled_optimizer_s2910", "recorded_at": "2026-10-22T04:39:43", "backfilled": false}
+{"seed": 2920, "namespace": "fitting", "use": "R-012 mutation-scope transfer: fit seed", "artifact": "logs/research/geometry_transfer_s2920", "recorded_at": "2026-10-22T04:49:19", "backfilled": false}
+{"seed": 2921, "namespace": "fitting", "use": "R-012 mutation-scope transfer: fit seed", "artifact": "logs/research/geometry_transfer_s2920", "recorded_at": "2026-10-22T04:49:19", "backfilled": false}
+{"seed": 2922, "namespace": "mt1_pool", "use": "R-012: 10-case checkpoint probe", "artifact": "logs/research/geometry_transfer_s2920", "recorded_at": "2026-10-22T04:49:19", "backfilled": false}
+{"seed": 2923, "namespace": "mt1_pool", "use": "R-012: 50-case confirmation manifest", "artifact": "logs/research/geometry_transfer_s2920", "recorded_at": "2026-10-22T04:49:19", "backfilled": false}

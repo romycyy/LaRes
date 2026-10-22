@@ -1203,15 +1203,18 @@ def generate_two_lane_candidates(
         len(fittable), "mutations", [attempt_id_for(ids[spec.slot], 0) for spec in fittable],
         "policy_fittable_mutations",
     )
-    exploration_user = prompts["ideas_user"].format(
-        n=len(exploration), param_min=param_budget[0], param_max=param_budget[1], **fmt
-    )
-    e_parses, e_calls, e_problems, e_texts = _request_structured(
-        session, [system, {"role": "user", "content": exploration_user}],
-        lambda text: parse_ideas_payload(text, len(exploration), 0, schema=schema, budget=param_budget,
-                                         slot_offset=exploration[0].slot),
-        len(exploration), "ideas", [attempt_id_for(ids[spec.slot], 0) for spec in exploration], "policy_ideas",
-    )
+    # A plan with no exploration slots (a research protocol, never the two-lane search) makes no exploration call.
+    e_parses, e_calls, e_problems, e_texts = [], [], [], []
+    if exploration:
+        exploration_user = prompts["ideas_user"].format(
+            n=len(exploration), param_min=param_budget[0], param_max=param_budget[1], **fmt
+        )
+        e_parses, e_calls, e_problems, e_texts = _request_structured(
+            session, [system, {"role": "user", "content": exploration_user}],
+            lambda text: parse_ideas_payload(text, len(exploration), 0, schema=schema, budget=param_budget,
+                                             slot_offset=exploration[0].slot),
+            len(exploration), "ideas", [attempt_id_for(ids[spec.slot], 0) for spec in exploration], "policy_ideas",
+        )
 
     lanes = (
         (fittable, f_parses, f_calls, f_problems, f_texts, STAGE_PROPOSAL),
@@ -1235,7 +1238,7 @@ def generate_two_lane_candidates(
                         ],
                         "raw_responses": texts,
                     }
-                    for specs, parses, calls, problems, texts, _ in lanes
+                    for specs, parses, calls, problems, texts, _ in lanes if specs
                 },
             },
             f,
