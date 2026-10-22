@@ -1226,6 +1226,189 @@ def run_assembly_breadth_depth(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  R-029: summary-only vs summary-plus-expert-trace placement edits of the recoverable assembly parent
+# ---------------------------------------------------------------------------
+
+TRACE_EVERY = 4          # subsample the expert continuation every 4 steps
+TRACE_MAX_EPISODES = 2   # at most two successful continuations in the prompt
+
+
+def collect_handoff_traces(policy, task, manifest, env, schema) -> dict:
+    """Learner-to-expert handoffs of ``policy`` on ``manifest``; returns successes and post-handoff state-action rows."""
+    from lares.eval.runner import run_episode
+    from lares.repair.interventions import HANDOFF_LEARNER_THEN_EXPERT, HandoffActor
+
+    actor = HandoffActor(policy, task, schema, HANDOFF_LEARNER_THEN_EXPERT)
+    episodes = []
+    for case in manifest.episodes:
+        rows = []
+
+        def observe(step, _rows=rows):
+            if step.get("action") is not None and actor.handed_off:
+                o = np.asarray(step["obs"], dtype=np.float64)
+                _rows.append({"t": int(step["timestep"]), "tcp": o[0:3].round(4).tolist(), "gripper": round(float(o[3]), 3),
+                              "obj": o[4:7].round(4).tolist(), "goal": o[36:39].round(4).tolist(),
+                              "action": np.asarray(step["action"]).round(3).tolist()})
+
+        ep = run_episode(actor, env, case, max_steps=150, schema=schema, observer=observe)
+        episodes.append({"case": case.case_id, "success": float(ep.success), "handed_off": actor.handed_off,
+                         "handoff_step": actor.handoff_step, "rows": rows})
+    return {"episodes": episodes, "successes": int(sum(e["success"] for e in episodes))}
+
+
+def trace_block(traces) -> str:
+    """The trace arm's extra evidence: ordered post-handoff rows of successful expert continuations, subsampled."""
+    ok = [e for e in traces["episodes"] if e["success"] and e["rows"]][:TRACE_MAX_EPISODES]
+    lines = ["", "Successful expert continuations after your lift (every 4th step; positions in metres; the action is",
+             "the executed action: x, y, z end-effector displacement and the gripper command):"]
+    for n, e in enumerate(ok):
+        lines.append(f"Episode {n + 1}:")
+        lines += [f"  t={r['t']} tcp={r['tcp']} gripper={r['gripper']} nut={r['obj']} goal={r['goal']} action={r['action']}"
+                  for r in e["rows"][::TRACE_EVERY]]
+    return "\n".join(lines)
+
+
+def make_edit(request, edit_dir, args, task="assembly-v2"):
+    """One gpt-6.1-sol structural edit, no correction. Returns ``(code or None, record)``. Cached on disk."""
+    import pickle
+
+    from openai import OpenAI
+
+    from lares.core.policy_generation import _extract_code_string, _LLMSession, _SlotValidator
+    from lares.core.training_pipeline import load_policy_prompt_assets as assets
+    from lares.search.generation import LABEL_REPAIR, LLMCallLedger
+
+    os.makedirs(edit_dir, exist_ok=True)
+    rec_path = os.path.join(edit_dir, "edit.json")
+    if os.path.exists(rec_path):
+        with open(rec_path, encoding="utf-8") as f:
+            rec = json.load(f)
+        return rec.get("code"), rec
+    prompts = assets(task)
+    data_pkl = os.path.join(edit_dir, "data.pkl")
+    with open(data_pkl, "wb") as f:
+        pickle.dump([{"obs": np.zeros(39)}], f)
+    session = _LLMSession(OpenAI(api_key=os.environ["OPENAI_API_KEY"]), args.model, LLMCallLedger(edit_dir),
+                          os.path.join(edit_dir, "transcript.jsonl"), 0, 1, reasoning_effort=args.reasoning_effort)
+    fmt = dict(task=prompts["task_description"], obs_dim=39, action_dim=4, obs_description=prompts["obs_description"],
+               input_dict_string=prompts["input_dict_string"])
+    user = prompts["initial_user"].format(**fmt) + "\n\n" + request + "\n" + prompts["code_output_tip"]
+    replies, record = session.call(LABEL_REPAIR, [{"role": "system", "content": prompts["initial_system"]},
+                                                  {"role": "user", "content": user}],
+                                   purpose="placement_edit", attempt_ids=[os.path.basename(edit_dir)], transcript_label="placement_edit")
+    code = _extract_code_string(replies[0] if replies else "")
+    policy, validation = _SlotValidator(edit_dir, data_pkl, 39, 4, task, forbid_scale_parameters=False)(code, None, "edit")
+    rec = {"valid": policy is not None, "validation": {k: validation.get(k) for k in ("passed", "stage", "errors")},
+           "call_id": record.call_id, "prompt_chars": len(user), "code": code if policy is not None else None}
+    with open(rec_path, "w", encoding="utf-8") as f:
+        json.dump(rec, f, indent=2, default=str)
+    return rec["code"], rec
+
+
+def search_and_promote(source, probe, promotion, probe_env, promo_env, search_seed, schema):
+    """24-candidate independent search on ``probe``; the winner's per-case success on ``promotion``."""
+    from lares.eval.runner import PolicyActor, evaluate_manifest
+    from lares.fitting.structure_bank import instantiate_source
+    from lares.search import rollout_search
+
+    original = instantiate_source(source, 39, 4, schema=schema)
+    original.fixed_action_scale = 0.1
+    cands, trace = rollout_search.independent_candidates(original, search_seed), []
+    for i, (kind, pol) in enumerate(cands):
+        r = evaluate_manifest(PolicyActor(pol, name="probe"), probe, probe_env, max_steps=150)
+        prog = [e.signed_goal_progress for e in r.episodes if e.signed_goal_progress is not None]
+        trace.append({"index": i, "kind": kind, "success": r.success_rate, "progress": float(np.mean(prog)) if prog else 0.0})
+    pick = min(range(len(trace)), key=lambda i: (-trace[i]["success"], -trace[i]["progress"], i))
+    r = evaluate_manifest(PolicyActor(cands[pick][1], name="winner"), promotion, promo_env, max_steps=150)
+    return {"trace": trace, "pick": pick, "outcomes": {e.case_id: float(e.success) for e in r.episodes},
+            "episodes": {"probe": len(cands) * len(probe), "promotion": len(promotion)}}
+
+
+def run_assembly_trace_edits(args) -> int:
+    sys.path.insert(0, _SCRIPT_DIR)
+    import compare_child_vs_parent as cvp
+    from lares.core.obs_schema import get_obs_schema
+    from lares.eval import make_manifest_env
+    from lares.eval.stats import t_interval, win_loss_tie
+
+    base = int(args.pool_seed)       # 3520: demos 3520, edits 3521-3524, manifests 3525-3528, search root 3529
+    os.makedirs(args.out_dir, exist_ok=True)
+    entries = [(base, "mt1_pool", "R-029: demonstration (handoff) manifest")]
+    entries += [(base + 1 + i, "generation_block", f"R-029 edit {i}") for i in range(4)]
+    entries += [(base + 5 + i, "mt1_pool", f"R-029 block {i // 2} {'probe' if i % 2 == 0 else 'promotion'}") for i in range(4)]
+    entries += [(base + 9, "fitting", "R-029: search root")]
+    print(f"  seeds: {cvp.ensure_entries_reserved(entries, args.out_dir)}")
+    if args.reserve_only:
+        return 0
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise SystemExit("R-029 needs OPENAI_API_KEY")
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    task, schema = "assembly-v2", get_obs_schema("assembly-v2")
+    mdir = os.path.join(args.out_dir, "manifests")
+    demo, _ = cvp.fresh_manifest(task, base, 5, 150, mdir, role="demo")
+    blocks = []
+    for b in range(2):
+        probe, _ = cvp.fresh_manifest(task, base + 5 + 2 * b, 5, 150, mdir, role="probe", also_disjoint_from=[demo])
+        promo, _ = cvp.fresh_manifest(task, base + 6 + 2 * b, 30, 150, mdir, role="promotion", also_disjoint_from=[demo, probe])
+        blocks.append((probe, promo))
+    parent, meta = frozen_d020_policy(EDIT_PARENT)
+    src, _, _ = D020_POLICIES[EDIT_PARENT]
+    with open(os.path.join(_PROJECT_ROOT, src), encoding="utf-8") as f:
+        parent_source = f.read()
+    demo_env = make_manifest_env(demo, demo.resolve_pool(), 200)
+    traces = collect_handoff_traces(parent, task, demo, demo_env, schema)
+    with open(os.path.join(args.out_dir, "traces.json"), "w", encoding="utf-8") as f:
+        json.dump(traces, f, indent=2)
+    print(f"  handoff demonstrations: {traces['successes']}/{len(demo)} successful continuations", flush=True)
+    summary = {"parent": EDIT_PARENT, "parent_meta": meta, "demo_successes": traces["successes"],
+               "episodes": {"demo": len(demo), "probe": 0, "promotion": 0}}
+    if traces["successes"] == 0:
+        summary["outcome"] = "inconclusive: no successful expert continuation, no generation call made"
+        with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+            json.dump(summary, f, indent=2)
+        print(f"  {summary['outcome']}")
+        return 0
+    base_request = EDIT_REQUEST.replace("{parent}", parent_source.strip())
+    requests = {"summary_only": base_request, "trace": base_request + "\n" + trace_block(traces)}
+    results, edits = {}, {}
+    for b, (probe, promo) in enumerate(blocks):
+        probe_env, promo_env = make_manifest_env(probe, probe.resolve_pool(), 200), make_manifest_env(promo, promo.resolve_pool(), 200)
+        for j, arm in enumerate(("summary_only", "trace")):
+            label = f"b{b}_{arm}"
+            code, rec = make_edit(requests[arm], os.path.join(args.out_dir, "edits", label), args)
+            edits[label] = {k: v for k, v in rec.items() if k != "code"}
+            print(f"  {label}: edit valid={rec['valid']}", flush=True)
+            if code is None:
+                results[label] = {"outcomes": {c.case_id: 0.0 for c in promo.episodes}, "invalid": True}
+                continue
+            r = search_and_promote(code, probe, promo, probe_env, promo_env, base + 9 + 10 * b + j, schema)
+            for k in ("probe", "promotion"):
+                summary["episodes"][k] += r["episodes"][k]
+            results[label] = r
+            print(f"  {label}: best probe {max(t['success'] for t in r['trace']):.2f}, promotion "
+                  f"{np.mean(list(r['outcomes'].values())):.2f}", flush=True)
+    per_block, pooled = {}, []
+    for b, (_, promo) in enumerate(blocks):
+        cases = sorted(c.case_id for c in promo.episodes)
+        d = [results[f"b{b}_trace"]["outcomes"][c] - results[f"b{b}_summary_only"]["outcomes"][c] for c in cases]
+        per_block[b] = {**t_interval(d), **win_loss_tie(d)}
+        pooled.append(d)
+    pair_avg = [float(np.mean([pooled[0][i], pooled[1][i]])) for i in range(len(pooled[0]))]
+    summary.update(per_block=per_block, fixed_pair_average={**t_interval(pair_avg), **win_loss_tie(pair_avg)},
+                   paired_success_difference=float(np.mean(pair_avg)), edits=edits,
+                   success={label: float(np.mean(list(r["outcomes"].values()))) for label, r in results.items()},
+                   trace_arm_zero_in_both_blocks=all(np.mean(list(results[f"b{b}_trace"]["outcomes"].values())) == 0 for b in range(2)))
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump({**summary, "traces_by_edit": {k: v.get("trace") for k, v in results.items()}}, f, indent=2, default=str)
+    a = summary["fixed_pair_average"]
+    print(f"  trace - summary-only (fixed-pair average): {a['mean']:+.3f} [{a['low']}, {a['high']}]; success {summary['success']}; "
+          f"episodes {summary['episodes']}", flush=True)
+    return 0
+
+
 def run_task_scan(args) -> int:
     import multiprocessing as mp
 
@@ -1325,7 +1508,7 @@ def parse_args():
     p.add_argument("--research-mode", choices=sorted(RESEARCH_ARMS) + ["pick-place-suite", "task-scan"], default="")
     p.add_argument("--scan-set", choices=["default", "hard"], default="default")
     p.add_argument("--assembly-study", choices=["reciprocal-handoff", "expert-fit-vs-numerical", "targeted-placement-edit",
-                                                "breadth-vs-depth"],
+                                                "breadth-vs-depth", "trace-edit-suite"],
                    default="")
     p.add_argument("--pool-seed", type=int)
     p.add_argument("--generation-seeds", type=int, nargs="+", default=[])
@@ -1350,6 +1533,8 @@ def main():
         return run_assembly_targeted_edit(args)
     if args.assembly_study == "breadth-vs-depth":
         return run_assembly_breadth_depth(args)
+    if args.assembly_study == "trace-edit-suite":
+        return run_assembly_trace_edits(args)
     if args.research_mode == "task-scan":
         return run_hard_scan(args) if args.scan_set == "hard" else run_task_scan(args)
     if args.research_mode == "pick-place-suite":

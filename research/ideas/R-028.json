@@ -35,7 +35,7 @@
     "needs_gpu": false,
     "needs_llm": true
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "A paired interval upper bound below +0.20 refutes the predicted gain. An interval containing zero is inconclusive about an advantage; tied success is not improvement.",
   "cost_estimate": {
@@ -59,12 +59,106 @@
     "started_at": "2026-10-22T08:50:49",
     "git_sha": "0328164098d8624c72efb0287f88ef2f252f045d",
     "dirty_worktree": true,
-    "log_dir": "logs/next_assembly_breadth_s3500"
+    "log_dir": "logs/next_assembly_breadth_s3500",
+    "finished_at": "2026-10-22T09:04:43"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.0,
+      "t95": [
+        0.0,
+        0.0
+      ],
+      "wlt": [
+        0,
+        0,
+        30
+      ],
+      "success": {
+        "depth": 0.0,
+        "breadth": 0.0
+      },
+      "picks": {
+        "depth": [
+          0,
+          23
+        ],
+        "breadth": [
+          3,
+          0
+        ]
+      },
+      "best_probe_by_structure": {
+        "0": 0.0,
+        "1": 0.0,
+        "2": 0.0,
+        "3": 0.0
+      },
+      "max_probe_progress_by_structure": {
+        "0": 0.2461492584355592,
+        "1": 0.2409032134716953,
+        "2": -0.0003176347988724848,
+        "3": 0.24875213661142972
+      },
+      "valid_structures": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "episodes": {
+        "probe": 210,
+        "promotion": 60
+      },
+      "llm_calls": 4
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "control is 24-candidate search of structure 0 (seed 3500); the metric is already breadth minus depth"
+    },
+    "artifacts": [
+      "logs/next_assembly_breadth_s3500/summary.json",
+      "logs/next_assembly_breadth_s3500/slots.json",
+      "logs/next_assembly_breadth_s3500/structures",
+      "logs/next_assembly_breadth_s3500/manifests"
+    ],
+    "notes": "Four fresh gpt-6.1-sol single-phase assembly-v2 structures (seeds 3500-3503, all valid, no corrections). Depth: 24 candidates of structure 0; breadth: first 6 of each structure (structure 0's six shared). Probe pool 3505 (5 cases), promotion pool 3506 (30), search root 3507. No candidate of any structure succeeded on the probe; both winners score 0.00 on promotion: +0.000 [0, 0], refuted. Best probe progress by structure {0: 0.2461492584355592, 1: 0.2409032134716953, 2: -0.0003176347988724848, 3: 0.24875213661142972}: three plateau near 0.24, the same ceiling as the D-020 structures; one makes no progress. 270 episodes, 4 LLM calls."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 0.0,
+    "delta": 0.0,
+    "matched": false
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.85,
+      "reasoning": "Breadth minus depth is +0.000 [0, 0] on 30 promotion cases; none of 42 distinct candidates across four new structures succeeded on the probe. The upper bound is below +0.20, refuting the breadth advantage at this budget. Three of four structures stop at the same ~0.24 progress as the D-020 pair, so the generator reproducibly produces assembly controllers that lift but cannot seat the nut; adding structures does not help.",
+      "cited_artifacts": [
+        "logs/next_assembly_breadth_s3500/summary.json"
+      ],
+      "next_experiment": "Structural variety from the plain generator is not the missing ingredient; R-029 (expert placement traces in the edit request) tests whether trajectory evidence is.",
+      "recorded_at": "2026-10-22T09:04:44",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "The named depth control was measured, and both selected winners scored 0.00 success with 30 paired ties [logs/next_assembly_breadth_s3500/summary.json]. The paired_success_difference was 0.000 with a reported 95% t interval of [0.000, 0.000], whose upper bound falls below the predicted +0.20 gain [logs/next_assembly_breadth_s3500/summary.json]. This tie provides no evidence of an advantage and does not distinguish mechanisms behind the failures [logs/next_assembly_breadth_s3500/summary.json]. The executed comparison used four structures and shared the depth structure with breadth, rather than generating five independent structures, so the verdict applies to the implemented allocation rather than the fully independent design [logs/next_assembly_breadth_s3500/slots.json].",
+      "cited_artifacts": [
+        "logs/next_assembly_breadth_s3500/summary.json",
+        "logs/next_assembly_breadth_s3500/slots.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T09:05:12",
+      "call_id": "call_00050"
+    }
+  ],
+  "decision_id": "D-024",
   "history": [
     {
       "at": "2026-10-22T08:50:41",
@@ -83,6 +177,18 @@
       "from": "approved",
       "to": "running",
       "note": "git 0328164098 (dirty)"
+    },
+    {
+      "at": "2026-10-22T09:04:43",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=False"
+    },
+    {
+      "at": "2026-10-22T09:05:13",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-024: refuted"
     }
   ],
   "created_at": "2026-10-22T08:48:22"
