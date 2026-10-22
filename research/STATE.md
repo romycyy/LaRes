@@ -1,24 +1,26 @@
 # Research state
 
-_Generated 2026-10-22T14:54:35 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T15:19:33 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 1 |
+| running | 0 |
 | approved | 0 |
 | proposed | 0 |
-| decided | 32 |
+| decided | 33 |
 | rejected | 4 |
 
 ## Needs attention
 
-- **R-037** [running] Trace repair inside the real orchestrator: an end-to-end assembly-v2 run of run_full_evolution.py
-  - run the protocol, then `python scripts/research.py record R-037 --results <json>`
+- Nothing open. Run `python scripts/research.py propose` to ask the advisor for ideas.
 
 ## Last 5 decisions
 
+- D-033 · R-037 · **supported** · 2026-10-22
+  R-037 integrated plateau-triggered expert-trace repair into EvolutionOrchestrator and made run_full_evolution.py task-generic (manifests from pool seeds, expert demonstrations via EXPERT_POLICY_MAP), passing a 21-test mocked gate before any spend. Live on assembly-v2, two blocks of paired repair-on/repair-off production runs: all four runs hit the plateau trigger; with repair on, demonstrations qualified 10/10 and the trace repair became the final incumbent through the unchanged strict promotion rule (30/30 on promotion cases), scoring 30/30 on frozen fresh cases in both blocks, while every repair-off candidate scored 0/30 there (the repair-off incumbent stayed null). Paired fresh difference +1.000 in each block (n=2 blocks, degenerate interval), 1560 episodes and 8 calls, every record traceable. The real pipeline reproduces D-032 without the study-mode emulation.
+  Next: Make plateau-triggered trace repair a standard pipeline option; check the trigger stays silent and costless on non-plateau tasks; look for a second plateau task.
 - D-032 · R-036 · **supported** · 2026-10-22
   R-036 piloted plateau-triggered trace repair inside the pipeline's selection and promotion on assembly-v2 (one block). The exploration lane plateaued (0/24 probe successes) and no prefix candidate passed promotion, so the incumbent stayed at 0.00. Forking at that checkpoint, the trace-repair branch (whole-controller edit with two expert-only traces) produced a controller at 1.00 that passed the strict paired promotion rule; the fresh no-trace generation stayed at 0.00. Final incumbents: +1.000 [1.0, 1.0], supported as a pilot. The pipeline steps were reproduced in a study mode, not run_full_evolution.py.
   Next: Build trace repair into the orchestrator with a plateau trigger and expert-demonstration source, generalise run_full_evolution.py beyond push-v2, and confirm with an independent block.
@@ -31,9 +33,6 @@ _Generated 2026-10-22T14:54:35 by `python scripts/research.py state` from `resea
 - D-029 · R-033 · **inconclusive** · 2026-10-22
   R-033 tried to test trace-guided editing on a fresh hammer-v2 plateau parent, but the plateau gate failed: 24-candidate search of the fresh structure already produced probe successes, so no handoff or edit stage ran (inconclusive, 120 episodes, 1 call). Hammer is not a plateau for single-phase generation plus search; assembly-v2 remains the only plateau found.
   Next: Scan shelf-place, basketball and soccer for another plateau, or test from a fresh assembly parent.
-- D-028 · R-032 · **supported** · 2026-10-22
-  R-032 replaced D-027's learner handoff traces with expert-only demonstrations (10/10 successful; rows from when the nut first rose 3 cm). Edits of the recoverable assembly-v2 parent that saw two such traces scored 1.00 on 30 fresh cases at their declared values (no search) in both blocks; summary-only edits scored 0.00: +1.000 [1.0, 1.0], supported. Learner-state alignment is not needed: plain expert demonstrations carry the placement geometry the edit lacks.
-  Next: Test transfer to hammer (R-033) and from a fresh generated parent; integrate trace-conditioned editing as a repair step.
 
 ## Standing constraints
 
