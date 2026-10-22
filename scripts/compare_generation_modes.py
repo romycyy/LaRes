@@ -189,7 +189,7 @@ RESEARCH_ARMS = {
 }
 
 
-def generate_one(prompts, contract, run_dir, args, generator="single_phase"):
+def generate_one(prompts, contract, run_dir, args, generator="single_phase", max_repair=1):
     """One structure with at most one linked correction. Returns ``(final candidate, attempts)``.
 
     ``single_phase`` writes code from the plain prompt in one call; ``two_phase`` is the exploration lane's
@@ -212,8 +212,8 @@ def generate_one(prompts, contract, run_dir, args, generator="single_phase"):
                                                 (SEARCHABILITY_CONTRACT if contract else "")),
         task_description=prompts["task_description"], obs_description=prompts["obs_description"],
         input_dict_string=prompts["input_dict_string"], code_output_tip=prompts["code_output_tip"],
-        data_pkl_path=data_pkl, env_name=args.env_name, real_num=1, max_total_attempts=3 if two_phase else 2,
-        max_repair_per_candidate=1, llm_transcript_path=os.path.join(run_dir, "transcript.log"),
+        data_pkl_path=data_pkl, env_name=args.env_name, real_num=1,
+        max_total_attempts=(2 if two_phase else 1) + int(max_repair), max_repair_per_candidate=int(max_repair), llm_transcript_path=os.path.join(run_dir, "transcript.log"),
         ideas_system=prompts["ideas_system"] if two_phase else None, ideas_user=prompts["ideas_user"] if two_phase else None,
     )
     final = final_attempts(candidates)[0]
@@ -1116,6 +1116,116 @@ def run_assembly_targeted_edit(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  R-028: structural breadth vs parameter depth on assembly-v2, at an equal 24-candidate budget
+# ---------------------------------------------------------------------------
+
+BREADTH_STRUCTURES, BREADTH_PER_STRUCTURE, DEPTH_CANDIDATES = 4, 6, 24
+
+
+def breadth_depth_select(scores: dict) -> dict:
+    """``scores[(k, i)]`` = probe score of structure k's candidate i. Depth: structure 0's 24 candidates; breadth: the
+    first six of each structure. Both pick success, then progress, then the earlier (structure, index)."""
+    def best(keys):
+        return min(keys, key=lambda key: (-scores[key]["success"], -scores[key]["progress"], key))
+
+    depth = [(0, i) for i in range(DEPTH_CANDIDATES)]
+    breadth = [(k, i) for k in range(BREADTH_STRUCTURES) for i in range(BREADTH_PER_STRUCTURE)]
+    return {"depth": best([k for k in depth if k in scores]), "breadth": best([k for k in breadth if k in scores])}
+
+
+def run_assembly_breadth_depth(args) -> int:
+    sys.path.insert(0, _SCRIPT_DIR)
+    import compare_child_vs_parent as cvp
+    from lares.core.obs_schema import get_obs_schema
+    from lares.core.training_pipeline import load_policy_prompt_assets as assets
+    from lares.eval import make_manifest_env
+    from lares.eval.runner import PolicyActor, evaluate_manifest
+    from lares.eval.stats import t_interval, win_loss_tie
+    from lares.fitting.structure_bank import instantiate_source
+    from lares.search import rollout_search
+
+    base = int(args.pool_seed)                     # 3500: generation seeds base..base+3, pools base+5/+6, search base+7
+    gens, probe_seed, promo_seed, search_seed = [base + k for k in range(BREADTH_STRUCTURES)], base + 5, base + 6, base + 7
+    os.makedirs(args.out_dir, exist_ok=True)
+    entries = [(g, "generation_block", f"R-028 structure {k} (0 = depth)") for k, g in enumerate(gens)]
+    entries += [(probe_seed, "mt1_pool", "R-028: 5-case probe"), (promo_seed, "mt1_pool", "R-028: 30-case promotion"),
+                (search_seed, "fitting", "R-028: search root")]
+    print(f"  seeds: {cvp.ensure_entries_reserved(entries, args.out_dir)}")
+    if args.reserve_only:
+        return 0
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise SystemExit("R-028 needs OPENAI_API_KEY")
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    task, schema = "assembly-v2", get_obs_schema("assembly-v2")
+    mdir = os.path.join(args.out_dir, "manifests")
+    probe, _ = cvp.fresh_manifest(task, probe_seed, 5, 150, mdir, role="probe")
+    promotion, _ = cvp.fresh_manifest(task, promo_seed, 30, 150, mdir, role="promotion", also_disjoint_from=[probe])
+    slots_path = os.path.join(args.out_dir, "slots.json")
+    if os.path.exists(slots_path):
+        with open(slots_path, encoding="utf-8") as f:
+            slots = json.load(f)
+    else:
+        slots = []
+        task_args = SimpleNamespace(**{**vars(args), "env_name": task})
+        for k, g in enumerate(gens):
+            final, n = generate_one(assets(task), "", os.path.join(args.out_dir, "generation", f"s{g}"), task_args, max_repair=0)
+            entry = {"structure": k, "seed": g, "valid": bool(final.valid), "attempts": n,
+                     "errors": (final.validation or {}).get("errors")}
+            if final.valid:
+                path = os.path.join(args.out_dir, "structures", f"s{g}.py")
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write(final.code)
+                entry["source_path"] = path
+            slots.append(entry)
+            print(f"  structure {k} (seed {g}): valid={final.valid}", flush=True)
+        with open(slots_path, "w", encoding="utf-8") as f:
+            json.dump(slots, f, indent=2)
+    env = make_manifest_env(probe, probe.resolve_pool(), 200)
+    promo_env = make_manifest_env(promotion, promotion.resolve_pool(), 200)
+    candidates, scores, episodes = {}, {}, {"probe": 0, "promotion": 0}
+    for s in slots:
+        if not s["valid"]:
+            continue            # an invalid structure contributes no candidates (its slots stay empty)
+        k = s["structure"]
+        with open(s["source_path"], encoding="utf-8") as f:
+            original = instantiate_source(f.read(), 39, 4, schema=schema)
+        original.fixed_action_scale = 0.1
+        n = DEPTH_CANDIDATES if k == 0 else BREADTH_PER_STRUCTURE
+        for i, (kind, pol) in enumerate(rollout_search.independent_candidates(original, search_seed + k)[:n]):
+            r = evaluate_manifest(PolicyActor(pol, name=f"s{k}c{i}"), probe, env, max_steps=150)
+            episodes["probe"] += len(r.episodes)
+            prog = [e.signed_goal_progress for e in r.episodes if e.signed_goal_progress is not None]
+            candidates[(k, i)] = pol
+            scores[(k, i)] = {"kind": kind, "success": r.success_rate, "progress": float(np.mean(prog)) if prog else 0.0}
+    picks = breadth_depth_select(scores) if scores else {}
+    outcomes = {}
+    for arm, key in picks.items():
+        if key not in outcomes:
+            r = evaluate_manifest(PolicyActor(candidates[key], name=arm), promotion, promo_env, max_steps=150)
+            episodes["promotion"] += len(r.episodes)
+            outcomes[key] = {e.case_id: float(e.success) for e in r.episodes}
+    zero = {c.case_id: 0.0 for c in promotion.episodes}
+    arm_out = {arm: outcomes.get(picks.get(arm), zero) for arm in ("depth", "breadth")}
+    diffs = [arm_out["breadth"][c] - arm_out["depth"][c] for c in sorted(zero)]
+    summary = {"paired_success_difference": float(np.mean(diffs)), "paired": {**t_interval(diffs), **win_loss_tie(diffs)},
+               "success": {a: float(np.mean(list(v.values()))) for a, v in arm_out.items()},
+               "picks": {a: list(v) for a, v in picks.items()}, "valid_structures": [s["structure"] for s in slots if s["valid"]],
+               "best_probe_by_structure": {k: max(v["success"] for (kk, _), v in scores.items() if kk == k)
+                                           for k in {kk for kk, _ in scores}},
+               "episodes": episodes, "llm_attempts": int(sum(s["attempts"] for s in slots))}
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump({**summary, "scores": {f"{k}_{i}": v for (k, i), v in scores.items()}}, f, indent=2)
+    p = summary["paired"]
+    print(f"  depth {summary['success']['depth']:.2f} breadth {summary['success']['breadth']:.2f}; breadth - depth "
+          f"{p['mean']:+.3f} [{p['low']}, {p['high']}]; best probe by structure {summary['best_probe_by_structure']}; "
+          f"episodes {episodes}", flush=True)
+    return 0
+
+
 def run_task_scan(args) -> int:
     import multiprocessing as mp
 
@@ -1214,7 +1324,8 @@ def parse_args():
     )
     p.add_argument("--research-mode", choices=sorted(RESEARCH_ARMS) + ["pick-place-suite", "task-scan"], default="")
     p.add_argument("--scan-set", choices=["default", "hard"], default="default")
-    p.add_argument("--assembly-study", choices=["reciprocal-handoff", "expert-fit-vs-numerical", "targeted-placement-edit"],
+    p.add_argument("--assembly-study", choices=["reciprocal-handoff", "expert-fit-vs-numerical", "targeted-placement-edit",
+                                                "breadth-vs-depth"],
                    default="")
     p.add_argument("--pool-seed", type=int)
     p.add_argument("--generation-seeds", type=int, nargs="+", default=[])
@@ -1237,6 +1348,8 @@ def main():
         return run_assembly_fit_vs_numerical(args)
     if args.assembly_study == "targeted-placement-edit":
         return run_assembly_targeted_edit(args)
+    if args.assembly_study == "breadth-vs-depth":
+        return run_assembly_breadth_depth(args)
     if args.research_mode == "task-scan":
         return run_hard_scan(args) if args.scan_set == "hard" else run_task_scan(args)
     if args.research_mode == "pick-place-suite":

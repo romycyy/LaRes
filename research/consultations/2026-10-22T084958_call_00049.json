@@ -1,0 +1,50 @@
+{
+  "ideas": [
+    {
+      "id": "R-028",
+      "recommendation": "revise",
+      "reasoning": "This directly tests whether structural coverage is more valuable than parameter depth, with the lowest episode budget of the three ideas. Sharing evaluations between arms reduces the cost to at most 270 episodes and four LLM calls, but the result remains conditional on four generated structures rather than establishing generator-wide reliability.",
+      "suggested_changes": [
+        "Preassign generation seed 3500 as the depth control and include it among the four breadth structures, generated with seeds 3500-3503. Share that structure's first six candidate evaluations between arms; depth adds 18 candidates, while breadth evaluates six candidates for each of the other three structures. Each arm still receives 24 candidate evaluations, but execution costs 210 search episodes plus 60 promotion episodes.",
+        "Reuse scripts/compare_generation_modes.py and its rollout_search infrastructure; reuse config/run_full_evolution.yaml for compatible common settings, overriding task-specific settings through the assembly preset. Keep bc_steps=0, gpt-6.1-sol/high/temperature=1, and no replacement calls.",
+        "Freeze the five-case probe and 30-case promotion manifests under the run out-dir before generation, using seeds 3505-3506 and search root 3507. Keep each placement pool within 50 cases, exclude the final-test split, and select both winners using only the probe.",
+        "Retain prediction: paired_success_difference, direction increase, threshold 0.20, against logs/next_assembly_breadth_s3500/depth. falsified_by: paired interval upper bound below 0.20; an interval containing zero is inconclusive about an advantage, and tied success never improves or promotes."
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "R-029",
+      "recommendation": "revise",
+      "reasoning": "Ordered expert continuations test whether missing placement information, rather than parameter coverage, limits the editor. At up to 605 episodes and four LLM calls, this offers a more direct assembly mechanism test than the task scan, but successful expert-only trajectories may poorly represent the parent's actual handoff states and two edit pairs cannot establish generator-wide reliability.",
+      "suggested_changes": [
+        "Use the five demonstration episodes for learner-to-expert handoffs from the frozen recoverable parent at the existing lift trigger, rather than expert-only resets. Include only successful expert continuations in the trace payload; if none succeeds, stop after five episodes with zero generation calls and report inconclusive.",
+        "Reuse scripts/compare_generation_modes.py, its existing handoff and targeted-edit machinery, and compatible runtime settings from config/run_full_evolution.yaml. Add only the trace-payload option and study preset; retain the original seed assignments, unchanged pre-lift logic, bc_steps=0, pinned model settings, and no replacement calls.",
+        "Give both arms the identical handoff summary and coordinate schema; only the trace arm additionally receives ordered successful state-action sequences. Preserve both blocks and the 605-episode/four-call ceiling, report each paired t interval and the fixed-pair average, and do not treat cases as generator replicates.",
+        "Keep manifests in the run out-dir, disjoint across demonstration, probe, and promotion roles, with at most 50 placements per pool seed. Retain prediction: paired_success_difference, direction increase, threshold 0.20, against logs/next_assembly_traces_s3520/summary_only; falsified_by: zero success in both trace blocks, or an interval upper bound below 0.20 for the predicted magnitude. An interval containing zero is inconclusive about an advantage."
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "R-030",
+      "recommendation": "defer",
+      "reasoning": "The scan would locate additional failure regimes, but its maximum 1050 episodes and six LLM calls buy a less direct explanation of assembly failure than either intervention above. Its weakest point is confounding contact regime with task identity and one generated structure per task; expert calibration verifies task solvability but does not remove that confounding.",
+      "suggested_changes": [
+        "Reconsider after R-028 and R-029; retain the existing runner and conditional repeat rather than building another scan framework. Treat any contact-regime interpretation as conditional on the sampled tasks and structures.",
+        "Retain prediction: screen_success_rate, direction increase, threshold 0.50 for mean hammer-and-soccer success against the peg-insert-side arm in logs/next_contact_regimes_s3540. falsified_by: with expert success at least 0.90 on all three contrast tasks, a contrast interval upper bound below 0.50; an interval containing zero is inconclusive about a difference. Failed calibration requires a source-verified expert success measurement on the affected task, not more learner search."
+      ],
+      "depends_on": [
+        "R-028",
+        "R-029"
+      ]
+    }
+  ],
+  "order": [
+    "R-028",
+    "R-029",
+    "R-030"
+  ],
+  "next_step": "Implement and run revised R-028 first via gpu run after freezing its manifests and shared-evaluation allocation; retain the GPU for the session and stop it at session completion.",
+  "call_id": "call_00049",
+  "briefing_sha256": "e644c76c46b5f740e9644769738f7627dfc5af4cd73eaf06e553433066fa7392",
+  "question": "Delegated approve/reject (run_as_is = approve, drop = reject, revise = approve after changes, defer = leave proposed). Manifests in run out-dirs (<= 50 placements per pool seed); the GPU stays up for the session. Approve at most two to run next, in order."
+}

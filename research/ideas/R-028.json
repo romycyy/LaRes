@@ -1,0 +1,89 @@
+{
+  "id": "R-028",
+  "title": "1. Trade assembly parameter-search depth for structural breadth",
+  "hypothesis": "Independent assembly structures escape shared placement-topology errors more efficiently than deeper parameter search within one structure.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.2,
+    "against": "logs/next_assembly_breadth_s3500/depth",
+    "rationale": "Compare four structures with six candidates each against one structure with 24 candidates, holding simulator search budget fixed; +0.20 is a useful gain over another unsuccessful search."
+  },
+  "protocol": {
+    "script": "scripts/compare_generation_modes.py",
+    "config": "",
+    "command": "python scripts/compare_generation_modes.py --assembly-study breadth-vs-depth --pool-seed 3500 --out-dir logs/next_assembly_breadth_s3500",
+    "seeds": [
+      3500,
+      3501,
+      3502,
+      3503,
+      3505,
+      3506,
+      3507
+    ],
+    "manifests": [
+      "config/manifests/push-v2_development.yaml"
+    ],
+    "episodes": 270,
+    "llm_calls": 4,
+    "code_changes": [
+      "Reuse existing suites and rollout_search; expose the assembly_breadth_depth study through the command shown. Generate five independent single-phase structures: one depth control and four breadth candidates. Unlike D-020's full-depth independent repeats, this tests allocation between topology coverage and parameter depth at equal episode cost.",
+      "Freeze a shared five-case probe and disjoint 30-case promotion manifest before generation. Search 24 candidates for depth and six per breadth structure, including each initial vector; select one winner per arm using only the probe. Evaluate both winners on identical promotion cases and report the paired t interval. Conclusions are conditional on these five structures, not generator-wide estimates.",
+      "Use generation seeds 3500-3504, manifest seeds 3505-3506, and search root 3507. Keep bc_steps=0 and gpt-6.1-sol/high/temperature=1. Permit no replacement generation calls; invalid slots remain failures. Require per-idea user approval and stop the remote box afterward."
+    ],
+    "needs_gpu": false,
+    "needs_llm": true
+  },
+  "status": "running",
+  "source": "advisor",
+  "falsified_by": "A paired interval upper bound below +0.20 refutes the predicted gain. An interval containing zero is inconclusive about an advantage; tied success is not improvement.",
+  "cost_estimate": {
+    "episodes": 300,
+    "llm_calls": 5,
+    "wall_time_minutes": 45
+  },
+  "open_question_refs": [
+    0,
+    4
+  ],
+  "briefing_sha256": "516892eb17a15ae9ecd2fd17d23ba1efd3cb13a370d3d6138f5b0f059fc5ea4f",
+  "proposal_call_id": "call_00048",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T08:50:41",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00049, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T084958_call_00049.json"
+  },
+  "run": {
+    "started_at": "2026-10-22T08:50:49",
+    "git_sha": "0328164098d8624c72efb0287f88ef2f252f045d",
+    "dirty_worktree": true,
+    "log_dir": "logs/next_assembly_breadth_s3500"
+  },
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-22T08:50:41",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00049: generation seeds 3500-3503 (3500 is the depth structure, its first six candidates shared), probe pool 3505, promotion pool 3506, search root 3507; 270 episodes, 4 calls, no corrections"
+    },
+    {
+      "at": "2026-10-22T08:50:41",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00049, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T08:50:49",
+      "from": "approved",
+      "to": "running",
+      "note": "git 0328164098 (dirty)"
+    }
+  ],
+  "created_at": "2026-10-22T08:48:22"
+}

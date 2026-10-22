@@ -787,3 +787,16 @@ class TestHandoff(unittest.TestCase):
         out = cgm.handoff_summary(outcomes, handoffs)
         self.assertAlmostEqual(out["paired_success_difference"], 0.25)
         self.assertAlmostEqual(out["by_structure"]["s1"]["handoff_reach_rate"]["expert_then_learner"], 0.5)
+
+
+class TestBreadthDepth(unittest.TestCase):
+    def test_arms_share_structure_zero_and_pick_by_success_then_progress(self):
+        sys.path.insert(0, os.path.join(_PROJECT_ROOT, "scripts"))
+        import compare_generation_modes as cgm
+
+        scores = {(0, i): {"success": 0.0, "progress": 0.1 * (i == 20)} for i in range(24)}
+        scores.update({(k, i): {"success": 0.0, "progress": 0.0} for k in (1, 2, 3) for i in range(6)})
+        scores[(2, 3)] = {"success": 0.4, "progress": 0.0}
+        picks = cgm.breadth_depth_select(scores)
+        self.assertEqual(picks["depth"], (0, 20))
+        self.assertEqual(picks["breadth"], (2, 3))

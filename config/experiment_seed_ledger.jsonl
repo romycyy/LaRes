@@ -195,3 +195,10 @@
 {"seed": 3420, "namespace": "mt1_pool", "use": "R-027: 50-case development manifest", "artifact": "logs/assembly_targeted_edit_s3420", "recorded_at": "2026-10-22T08:37:24", "backfilled": false}
 {"seed": 3421, "namespace": "fitting", "use": "R-027: parent search seed", "artifact": "logs/assembly_targeted_edit_s3420", "recorded_at": "2026-10-22T08:37:24", "backfilled": false}
 {"seed": 3422, "namespace": "fitting", "use": "R-027: edited-structure search seed", "artifact": "logs/assembly_targeted_edit_s3420", "recorded_at": "2026-10-22T08:37:24", "backfilled": false}
+{"seed": 3500, "namespace": "generation_block", "use": "R-028 structure 0 (0 = depth)", "artifact": "logs/next_assembly_breadth_s3500", "recorded_at": "2026-10-22T08:50:50", "backfilled": false}
+{"seed": 3501, "namespace": "generation_block", "use": "R-028 structure 1 (0 = depth)", "artifact": "logs/next_assembly_breadth_s3500", "recorded_at": "2026-10-22T08:50:50", "backfilled": false}
+{"seed": 3502, "namespace": "generation_block", "use": "R-028 structure 2 (0 = depth)", "artifact": "logs/next_assembly_breadth_s3500", "recorded_at": "2026-10-22T08:50:50", "backfilled": false}
+{"seed": 3503, "namespace": "generation_block", "use": "R-028 structure 3 (0 = depth)", "artifact": "logs/next_assembly_breadth_s3500", "recorded_at": "2026-10-22T08:50:50", "backfilled": false}
+{"seed": 3505, "namespace": "mt1_pool", "use": "R-028: 5-case probe", "artifact": "logs/next_assembly_breadth_s3500", "recorded_at": "2026-10-22T08:50:50", "backfilled": false}
+{"seed": 3506, "namespace": "mt1_pool", "use": "R-028: 30-case promotion", "artifact": "logs/next_assembly_breadth_s3500", "recorded_at": "2026-10-22T08:50:50", "backfilled": false}
+{"seed": 3507, "namespace": "fitting", "use": "R-028: search root", "artifact": "logs/next_assembly_breadth_s3500", "recorded_at": "2026-10-22T08:50:50", "backfilled": false}

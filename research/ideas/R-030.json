@@ -1,0 +1,69 @@
+{
+  "id": "R-030",
+  "title": "3. Test insertion specificity with an expert-calibrated hard-task scan",
+  "hypothesis": "Assembly exposes a precision-insertion limitation rather than generic manipulation difficulty, so searched structures will solve impact tasks more often than side insertion.",
+  "prediction": {
+    "metric": "screen_success_rate",
+    "direction": "increase",
+    "threshold": 0.5,
+    "against": "peg-insert-side arm in logs/next_contact_regimes_s3540",
+    "rationale": "The prespecified contrast is mean hammer-and-soccer success minus peg-insert-side success; a +0.50 gap would distinguish contact regimes rather than merely discover another isolated failure."
+  },
+  "protocol": {
+    "script": "scripts/compare_generation_modes.py",
+    "config": "",
+    "command": "gpu run 'python scripts/compare_generation_modes.py --study contact_regime_scan --seed 3540 --out-dir logs/next_contact_regimes_s3540'",
+    "seeds": [
+      3540,
+      3541,
+      3542,
+      3543,
+      3544,
+      3545
+    ],
+    "manifests": [
+      "logs/next_contact_regimes_s3540/manifests/peg-insert-side-v2_probe_s3540.yaml",
+      "logs/next_contact_regimes_s3540/manifests/peg-insert-side-v2_screen_s3540.yaml",
+      "logs/next_contact_regimes_s3540/manifests/hammer-v2_probe_s3541.yaml",
+      "logs/next_contact_regimes_s3540/manifests/hammer-v2_screen_s3541.yaml",
+      "logs/next_contact_regimes_s3540/manifests/shelf-place-v2_probe_s3542.yaml",
+      "logs/next_contact_regimes_s3540/manifests/shelf-place-v2_screen_s3542.yaml",
+      "logs/next_contact_regimes_s3540/manifests/basketball-v2_probe_s3543.yaml",
+      "logs/next_contact_regimes_s3540/manifests/basketball-v2_screen_s3543.yaml",
+      "logs/next_contact_regimes_s3540/manifests/soccer-v2_probe_s3544.yaml",
+      "logs/next_contact_regimes_s3540/manifests/soccer-v2_screen_s3544.yaml",
+      "logs/next_contact_regimes_s3540/manifests/selected_task_repeat_probe_s3545.yaml",
+      "logs/next_contact_regimes_s3540/manifests/selected_task_repeat_screen_s3545.yaml"
+    ],
+    "episodes": 1050,
+    "llm_calls": 6,
+    "code_changes": [
+      "Reuse task-scan mode and rollout_search; add an expert-calibrated contact_regime_scan preset with the CLI shown. Unlike D-020's censored stop-at-first-failure scan, complete all five tasks to test a prespecified contact-regime contrast.",
+      "Use the existing audited schemas, including hammer's verified obj2. Per task, generate one single-phase structure, search 24 candidates on five probe cases, and evaluate the winner plus the scripted expert on the same 30 screen cases: 900 episodes total. Probe and screen manifests must be frozen and disjoint; use separate named random streams under each task root.",
+      "Estimate the impact-minus-insertion contrast without treating different tasks as paired cases. Shelf-place and basketball provide transport controls but do not enter the primary contrast.",
+      "Repeat only the first task in the listed order with expert success at least 0.90 and learner success at most 0.20, using independent generation, search, and manifests under seed 3545. This adds at most 150 episodes and one LLM call and checks whether the candidate second testbed fails reproducibly.",
+      "Keep bc_steps=0, gpt-6.1-sol/high/temperature=1, and no replacement generation calls. Costs are upper bounds including the conditional repeat. Require per-idea user approval and stop the remote box afterward."
+    ],
+    "needs_gpu": false,
+    "needs_llm": true
+  },
+  "status": "proposed",
+  "source": "advisor",
+  "falsified_by": "With expert success at least 0.90 on the three contrast tasks, a contrast interval upper bound below +0.50 refutes the predicted separation. An interval including zero is inconclusive about a regime difference. Failed expert calibration makes the mechanism inconclusive pending a source-verified expert success measurement on the affected task.",
+  "cost_estimate": {
+    "episodes": 1050,
+    "llm_calls": 6,
+    "wall_time_minutes": 120
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "516892eb17a15ae9ecd2fd17d23ba1efd3cb13a370d3d6138f5b0f059fc5ea4f",
+  "proposal_call_id": "call_00048",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [],
+  "created_at": "2026-10-22T08:48:22"
+}

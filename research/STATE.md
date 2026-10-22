@@ -1,20 +1,25 @@
 # Research state
 
-_Generated 2026-10-22T08:43:53 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T08:50:49 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 0 |
-| approved | 0 |
-| proposed | 0 |
+| running | 1 |
+| approved | 1 |
+| proposed | 1 |
 | decided | 23 |
 | rejected | 4 |
 
 ## Needs attention
 
-- Nothing open. Run `python scripts/research.py propose` to ask the advisor for ideas.
+- **R-028** [running] 1. Trade assembly parameter-search depth for structural breadth
+  - run the protocol, then `python scripts/research.py record R-028 --results <json>`
+- **R-029** [approved] 2. Give assembly edits successful expert placement traces
+  - `python scripts/research.py start R-029` then run its command
+- **R-030** [proposed] 3. Test insertion specificity with an expert-calibrated hard-task scan
+  - USER decides: `python scripts/research.py approve R-030` or `reject R-030 --reason ...`
 
 ## Last 5 decisions
 

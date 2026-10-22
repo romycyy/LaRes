@@ -1,0 +1,87 @@
+{
+  "id": "R-029",
+  "title": "2. Give assembly edits successful expert placement traces",
+  "hypothesis": "Successful expert state-action sequences expose nut-to-peg placement geometry that handoff summaries and parameter-level imitation do not communicate to the symbolic editor.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.2,
+    "against": "logs/next_assembly_traces_s3520/summary_only",
+    "rationale": "Compare trace-conditioned and summary-only edits of the same recoverable parent under identical search; +0.20 requires actual seating rather than another small progress change."
+  },
+  "protocol": {
+    "script": "scripts/compare_generation_modes.py",
+    "config": "",
+    "command": "gpu run 'python scripts/compare_generation_modes.py --study assembly_trace_edit_suite --seed 3520 --out-dir logs/next_assembly_traces_s3520'",
+    "seeds": [
+      3520,
+      3521,
+      3522,
+      3523,
+      3524,
+      3525,
+      3526,
+      3527,
+      3528,
+      3529
+    ],
+    "manifests": [
+      "logs/next_assembly_traces_s3520/manifests/assembly-v2_demo_s3520.yaml",
+      "logs/next_assembly_traces_s3520/manifests/assembly-v2_probe_s3525.yaml",
+      "logs/next_assembly_traces_s3520/manifests/assembly-v2_probe_s3526.yaml",
+      "logs/next_assembly_traces_s3520/manifests/assembly-v2_promotion_s3527.yaml",
+      "logs/next_assembly_traces_s3520/manifests/assembly-v2_promotion_s3528.yaml"
+    ],
+    "episodes": 605,
+    "llm_calls": 4,
+    "code_changes": [
+      "Reuse collect_demos, targeted-edit mode, suites, and rollout_search; add only the trace-payload option and assembly_trace_edit_suite preset with the CLI shown.",
+      "Collect five expert episodes on the demonstration manifest. If they do not provide successful placement traces, stop as inconclusive rather than replacing seeds. Extract post-lift observation/action sequences with explicit object, TCP, and goal coordinates; do not include expert source code or evaluation trajectories.",
+      "Run two blocks, each containing one summary-only edit and one edit receiving the same summary plus expert traces. Use the frozen recoverable D-020 parent and enforce unchanged pre-lift logic. This differs from D-023 through trajectory evidence, and from D-022 through structural generation rather than fitting.",
+      "Each edit receives 24 candidates on its block's five-case probe and paired evaluation on 30 disjoint promotion cases. Report each block's paired interval and the mean fixed-pair difference; do not infer generator-wide reliability from two blocks. Promotion remains subject to the existing strictly positive paired lower bound.",
+      "Use seed 3520 for demonstrations, 3521-3524 for edits, 3525-3528 for manifests, and 3529 for search streams. Keep fitting off and pin gpt-6.1-sol/high/temperature=1. No replacement generation calls; require per-idea approval and remote teardown."
+    ],
+    "needs_gpu": false,
+    "needs_llm": true
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "Zero success in both trace-conditioned blocks refutes the proposed rescue. Otherwise, an interval whose upper bound is below +0.20 refutes the predicted magnitude; an interval containing zero is inconclusive about an advantage.",
+  "cost_estimate": {
+    "episodes": 605,
+    "llm_calls": 4,
+    "wall_time_minutes": 90
+  },
+  "open_question_refs": [
+    0,
+    4
+  ],
+  "briefing_sha256": "516892eb17a15ae9ecd2fd17d23ba1efd3cb13a370d3d6138f5b0f059fc5ea4f",
+  "proposal_call_id": "call_00048",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T08:50:41",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00049, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T084958_call_00049.json"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-22T08:50:41",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00049: traces come from learner-to-expert handoffs of the recoverable parent on five demonstration episodes (successful continuations only); both arms get the same handoff summary; 605 episodes, 4 calls"
+    },
+    {
+      "at": "2026-10-22T08:50:41",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00049, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    }
+  ],
+  "created_at": "2026-10-22T08:48:22"
+}
