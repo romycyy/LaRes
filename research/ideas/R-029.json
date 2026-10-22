@@ -36,7 +36,7 @@
     "needs_gpu": false,
     "needs_llm": true
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "Zero success in both trace-conditioned blocks refutes the proposed rescue. Otherwise, an interval whose upper bound is below +0.20 refutes the predicted magnitude; an interval containing zero is inconclusive about an advantage.",
   "cost_estimate": {
@@ -60,12 +60,120 @@
     "started_at": "2026-10-22T09:05:26",
     "git_sha": "f89ad2df6632ba8e0a832a01c65cf402252bc8a8",
     "dirty_worktree": true,
-    "log_dir": "logs/next_assembly_traces_s3520"
+    "log_dir": "logs/next_assembly_traces_s3520",
+    "finished_at": "2026-10-22T09:22:49"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.0,
+      "t95": [
+        0.0,
+        0.0
+      ],
+      "per_block": {
+        "0": {
+          "n": 30,
+          "mean": 0.0,
+          "se": 0.0,
+          "low": 0.0,
+          "high": 0.0,
+          "p_value": 1.0,
+          "median": 0.0,
+          "level": 0.95,
+          "wins": 0,
+          "losses": 0,
+          "ties": 30
+        },
+        "1": {
+          "n": 30,
+          "mean": 0.0,
+          "se": 0.0,
+          "low": 0.0,
+          "high": 0.0,
+          "p_value": 1.0,
+          "median": 0.0,
+          "level": 0.95,
+          "wins": 0,
+          "losses": 0,
+          "ties": 30
+        }
+      },
+      "success": {
+        "b0_summary_only": 0.0,
+        "b0_trace": 0.0,
+        "b1_summary_only": 0.0,
+        "b1_trace": 0.0
+      },
+      "edit_validity": {
+        "b0_summary_only": true,
+        "b0_trace": false,
+        "b1_summary_only": true,
+        "b1_trace": false
+      },
+      "trace_edit_errors": {
+        "b0_trace": [
+          "Error: policy failed validation.\n  [gate_not_a_lever] gate 'post_opened' is recorded, but forcing it to 0 or 1 never changes the action on any diagnostic state. Assign the returned value and use it: post_opened = self.record_gate('post_opened', post_opened)"
+        ],
+        "b1_trace": [
+          "Error: policy failed validation.\n  [gate_not_a_lever] gate 'open_enough' is recorded, but forcing it to 0 or 1 never changes the action on any diagnostic state. Assign the returned value and use it: open_enough = self.record_gate('open_enough', open_enough)\n  [gate_not_a_lever] gate 'placement_near' is recorded, but forcing it to 0 or 1 never changes the action on any diagnostic state. Assign the returned value and use it: placement_near = self.record_gate('placement_near', placement_near)\n  [gate_not_a_lever] gate 'settled' is recorded, but forcing it to 0 or 1 never changes the action on any diagnostic state. Assign the returned value and use it: settled = self.record_gate('settled', settled)"
+        ]
+      },
+      "handoff_demo_successes": 1,
+      "episodes": {
+        "demo": 5,
+        "probe": 240,
+        "promotion": 60
+      },
+      "llm_calls": 4
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "control is the summary-only edit in the same block (same handoff summary, no traces), searched identically; the metric is already trace minus summary-only"
+    },
+    "artifacts": [
+      "logs/next_assembly_traces_s3520/summary.json",
+      "logs/next_assembly_traces_s3520/traces.json",
+      "logs/next_assembly_traces_s3520/edits",
+      "logs/next_assembly_traces_s3520/manifests",
+      "logs/trace_edits.run.log"
+    ],
+    "notes": "Five learner-to-expert handoffs of the frozen recoverable parent on demonstration pool 3520: 1/5 expert continuations succeeded, so the trace arm saw one successful episode (every 4th post-handoff step). Both summary-only edits were valid and, after 24-candidate search, scored 0.00 (best probe 0.00). Both trace-conditioned edits failed validation on the same rule: gate_not_a_lever (they recorded new post-lift gates such as post_opened, placement_near and settled without using the returned values); the protocol allowed no correction, so by intention to treat both score 0.00. Trace minus summary-only: +0.000 [0, 0]. By the predeclared rule (zero success in both trace blocks) the prediction is refuted for the procedure as specified, but the trace treatment itself was never evaluated: the result is about edit validity, not about trace evidence. Note also that the expert completed only 1/5 handoffs here versus 0.67 in R-025. 305 episodes (5 demo + 240 probe + 60 promotion; invalid edits were not searched), 4 LLM calls."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 0.0,
+    "delta": 0.0,
+    "matched": false
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.55,
+      "reasoning": "By the predeclared rule (zero success in both trace-conditioned blocks) the prediction is refuted: trace minus summary-only is +0.000 [0, 0]. But both trace edits failed validation on gate_not_a_lever (recorded but unused post-lift gates), a formal defect that one correction would likely fix, and the protocol allowed none; so the trace evidence itself was never put to an autonomous test. Both summary-only edits were valid and scored 0.00, consistent with D-023.",
+      "cited_artifacts": [
+        "logs/next_assembly_traces_s3520/summary.json"
+      ],
+      "next_experiment": "If trace evidence is still worth testing, rerun with one validity correction per edit (the standard pipeline allowance) on fresh seeds, and with more successful continuations (only 1/5 here). Otherwise move to the remaining hard tasks (R-030 or a scan of peg-insert-side, hammer, shelf-place, basketball, soccer).",
+      "recorded_at": "2026-10-22T09:22:51",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "The matched summary-only control was measured, and both blocks had zero success in both arms [logs/next_assembly_traces_s3520/summary.json]. The reported paired_success_difference was 0.00 with interval [0.00, 0.00], failing the predicted increase of at least 0.20 and providing no evidence of an advantage [logs/next_assembly_traces_s3520/summary.json]. Both trace-conditioned edits failed gate_not_a_lever validation and received zero success under the no-correction protocol, satisfying the predeclared refutation criterion for the procedure as specified [logs/trace_edits.run.log; logs/next_assembly_traces_s3520/summary.json]. The placement-evidence mechanism remains inconclusive because no valid trace-conditioned edit reached rollout evaluation [logs/trace_edits.run.log].",
+      "cited_artifacts": [
+        "logs/next_assembly_traces_s3520/summary.json",
+        "logs/trace_edits.run.log"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T09:23:12",
+      "call_id": "call_00051"
+    }
+  ],
+  "decision_id": "D-025",
   "history": [
     {
       "at": "2026-10-22T08:50:41",
@@ -90,6 +198,18 @@
       "from": "approved",
       "to": "running",
       "note": "git f89ad2df66 (dirty)"
+    },
+    {
+      "at": "2026-10-22T09:22:49",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=False"
+    },
+    {
+      "at": "2026-10-22T09:23:19",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-025: refuted"
     }
   ],
   "created_at": "2026-10-22T08:48:22"
