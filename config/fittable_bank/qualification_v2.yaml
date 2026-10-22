@@ -41,6 +41,15 @@ seeds:
   qualification_pool_seeds: [2420, 2421, 2422, 2423, 2424]
   ledger: config/experiment_seed_ledger.jsonl
 
+# R-004 (approved 2026-10-22): the matched minibatch-only control. One fixed demonstration sample and split
+# (control data seed) and one fixed probe manifest; only the fitting seed varies across replicates. Replicate r of
+# this arm is scored on the same qualification manifest as replicate r of the data-varying arm, so both arms see
+# identical scoring placements. Run with: qualify_fittable_bank.py --config <this> replication --out-dir <dir>
+minibatch_control:
+  data_seed: 2700
+  probe_pool_seed: 2710
+  fitting_seeds: [2701, 2702, 2703, 2704, 2705]
+
 fitting:                                              # unchanged from v1
   objective: deterministic_mse
   sampling: uniform
@@ -54,6 +63,7 @@ fitting:                                              # unchanged from v1
 
 structures:
   roles: config/fittable_bank/structure_roles.yaml
+  seed_bank: config/fittable_bank/seed_bank.json          # source paths of the fittable seeds
   fittable_seeds: [simple_damped_push, simple_reach_push, simple_reach_push_damped,
                    simple_reach_push_shared_gain, simple_reach_push_sharp_gate]
   # Scored on the same bundles and reported, but never admitted to the seed bank whatever they score.

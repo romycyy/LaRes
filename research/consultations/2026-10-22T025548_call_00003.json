@@ -1,0 +1,69 @@
+{
+  "ideas": [
+    {
+      "id": "R-002",
+      "recommendation": "drop",
+      "reasoning": "Another run would test recurrence, not identify a model effect separately from sampling, and the proposed prediction contradicts the hypothesis. Its 130 simulator episodes and 12 LLM calls teach less about the operative fitted-bank method than R-004.",
+      "suggested_changes": [
+        "falsified_by: any successful rerun candidate would refute the literal zero-success hypothesis; the existing 0.20 cutoff instead tests a weaker claim. No rerun is authorized."
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "R-003",
+      "recommendation": "defer",
+      "reasoning": "Screen rotation could isolate selection overfitting, but the current development allocation leaves only cases 0-9 available after reserving promotion and fitting-probe cases. A historical control also confounds screen selection with candidate draw, so the proposed 130 episodes and 12 calls do not buy an interpretable comparison.",
+      "suggested_changes": [
+        "Before reconsideration, freeze a separate non-final screening pool disjoint from promotion cases 10-39 and fitting-probe cases 40-49; never rotate through either reserved slice.",
+        "Compare contemporaneous fixed and rotating screens using matched candidate-generation seeds and the same fitted-bank starting method, not the historical zero-success run. Reuse scripts/run_full_evolution.py and config/run_full_evolution.yaml; extend screen scheduling only if existing options cannot express it.",
+        "If revived, prediction: promotion_success_rate increase by at least 0.10 against the contemporaneous fixed-screen control. falsified_by: the upper paired confidence bound on the improvement is below 0.10; an interval including zero is inconclusive about direction.",
+        "Allow approximately 260 simulator episodes and 24 LLM calls for two original-sized runs, plus any additional fitting/probe episodes. Allocate fresh seeds only when this deferred protocol is finalized."
+      ],
+      "depends_on": [
+        "R-004",
+        "R-006"
+      ]
+    },
+    {
+      "id": "R-004",
+      "recommendation": "revise",
+      "reasoning": "This directly tests whether uncertainty attributed to fitting randomness survives variation in the data, without spending LLM calls. Its current mean-decrease prediction cannot test its variance mechanism, and comparison with historical means would confound data variation with evaluation conditions.",
+      "suggested_changes": [
+        "Hypothesis: varying demonstrations, split and probe selection increases between-fit uncertainty relative to varying only the minibatch seed.",
+        "Reuse scripts/qualify_fittable_bank.py and config/fittable_bank/qualification_v2.yaml, adding only the missing matched-control support. Keep the five eligible structures frozen; use identical fitting schedules and the same frozen non-final scoring manifest across arms, with checkpoint selection exclusively on disjoint rollout probes.",
+        "Use reserved seeds 2400-2424 for the independent-data bundles and fresh seeds 2700-2724 for the fixed-data, minibatch-only controls. Pair arm results by structure and replicate index; do not reuse spent seeds.",
+        "Prediction: success_se increase by at least 0.01 against the matched minibatch-only control, defining success_se identically in both arms as the between-bundle standard error of equally weighted bank-mean success, not binomial episode uncertainty. Report structure-specific spreads and use paired, structure-stratified resampling for the uncertainty difference.",
+        "falsified_by: the upper 95% interval bound on the success_se increase is below 0.01. An interval including zero is inconclusive about increased uncertainty; mean success need not decrease for the mechanism to hold.",
+        "Estimate approximately 1500 simulator episodes for two qualification-sized arms and zero LLM calls; itemize demonstration collection, probes and scoring before launch and add any episodes omitted from that estimate. Run through gpu run and stop the remote instance afterward."
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "R-006",
+      "recommendation": "revise",
+      "reasoning": "This tests whether additional grounding changes repair outcomes rather than merely changing the repair generator, making it distinct from bounded mutation. Nine independent bundles are appropriate for a feasibility pilot, not reliable confirmation of a five-point gain; 0.05 is a reasonable practical target, not a significance cutoff.",
+      "suggested_changes": [
+        "Approve E10 only for this amended development-only pilot under the delegated authority; Phase 7 remains blocked. Reuse scripts/stage_f.py and config/stage_f/stage_f.yaml with archived effective overrides, extending only the missing vision-arm wiring, analyst loading and tests.",
+        "Freeze Qwen/Qwen2.5-VL-7B-Instruct at a recorded immutable revision, using bitsandbytes NF4 4-bit language weights and fp16 compute, with unquantized vision components in fp16 and no bf16. Prefer its larger diagnostic capacity for this evidence test; this is a design choice, not demonstrated superiority over 3B. Process one episode's five frames at a time, cap image tokens and output length, and require a T4 memory smoke check before simulator spending; do not silently substitute another checkpoint.",
+        "Keep every correction/pipeline LLM call on gpt-6.1-sol, reasoning_effort high, temperature 1; Qwen is only the explicitly authorized visual analyst. Match numeric evidence, parent fits, repair caps, acceptance rules and held-out cases across arms, including no_repair.",
+        "Retain nine pilot replicates, but allocate independent data/split/probe bundles to each structure-replicate cell using fresh seeds 2620-2628, rather than treating three shared seed bundles crossed with three structures as nine independent draws. Freeze three eligible Stage F structures before outcomes are examined; pair all arms within each bundle and use a separate fresh held-out pool seed 2629.",
+        "Prediction: paired_success_difference increase by at least 0.05 against llm_numeric. Estimate uncertainty over the nine independent bundles, not the pooled episodes, and additionally report sensitivity to paired held-out-case resampling. falsified_by: an upper 95% interval bound below 0.05 refutes the target magnitude; an upper bound at or below zero refutes positive added value. An interval including zero is inconclusive about direction, and tied success is not improvement.",
+        "Audit frame citations and geometry consistency without consulting held-out outcomes; retain rejected or empty packets in the assigned-arm analysis. If most packets provide no valid visual evidence, the localization mechanism is inconclusive, although deployment reliability is still measured. Report vision versus no_repair separately: beating numeric repair alone would not establish that repair itself helps.",
+        "Keep the pilot estimate at approximately 2500 simulator episodes, at most 72 correction-LLM calls and 27 local VLM calls; include media reruns in the episode ledger. Use R-004 to finalize bundle independence, not to select structures retrospectively. Do not lower the 0.05 target or automatically expand after seeing results; an inconclusive pilot requires a separately specified confirmation sized from its paired variance.",
+        "Run via gpu run, verify that model loading and simulator/fitting workloads fit by scheduling them sequentially where needed, and stop the remote instance afterward. Never load or score the final-test manifest."
+      ],
+      "depends_on": [
+        "R-004"
+      ]
+    }
+  ],
+  "order": [
+    "R-004",
+    "R-006",
+    "R-003"
+  ],
+  "next_step": "Apply the R-004 matched-control and uncertainty-prediction changes, verify seed isolation and the complete episode ledger, then launch that qualification comparison via gpu run.",
+  "call_id": "call_00003",
+  "briefing_sha256": "d95cbb7d1d7bc2c384725f38af38efcfd9171d7da8d1b99afea350b7bbeb1c04",
+  "question": "For this session the user has delegated approve/reject to you. Map your recommendation to a decision: run_as_is = approve, drop = reject, revise = approve only after the listed changes are applied, defer = leave proposed. Note R-005 was just decided (D-001, refuted): bounded LLM mutations do not beat their identically fitted parent; seed bank + rollout-selected fitting carries the performance. For R-006 (VLM evidence in correction-LLM repair) also choose the vision checkpoint and quantization for a Tesla T4 (16 GB, fp16, no bf16): e.g. Qwen2.5-VL-3B-Instruct fp16 vs Qwen2.5-VL-7B-Instruct 4-bit (bitsandbytes nf4), or another; say which and why, and whether the 9-replicate design and the 0.05 threshold are right. Budget is not a hard constraint but prefer what teaches most per episode and call."
+}

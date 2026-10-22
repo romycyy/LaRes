@@ -26,3 +26,25 @@
 {"seed": 2502, "namespace": "fitting", "use": "Stage F replicate seeds", "artifact": "config/stage_f/stage_f.yaml", "recorded_at": "2026-10-13T22:54:49", "backfilled": false}
 {"seed": 2610, "namespace": "mt1_pool", "use": "R-005 child vs fitted parent fresh manifest", "artifact": "logs/child_vs_parent_2610", "recorded_at": "2026-10-22T02:20:54", "backfilled": false}
 {"seed": 2611, "namespace": "fitting", "use": "R-005 child and parent refits", "artifact": "logs/child_vs_parent_2610", "recorded_at": "2026-10-22T02:20:54", "backfilled": false}
+{"seed": 2400, "namespace": "fitting", "use": "R-004 data-varying bundle: demo sample, split and fitting seed", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2401, "namespace": "fitting", "use": "R-004 data-varying bundle: demo sample, split and fitting seed", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2402, "namespace": "fitting", "use": "R-004 data-varying bundle: demo sample, split and fitting seed", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2403, "namespace": "fitting", "use": "R-004 data-varying bundle: demo sample, split and fitting seed", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2404, "namespace": "fitting", "use": "R-004 data-varying bundle: demo sample, split and fitting seed", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2410, "namespace": "mt1_pool", "use": "R-004 data-varying bundle probe manifest", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2411, "namespace": "mt1_pool", "use": "R-004 data-varying bundle probe manifest", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2412, "namespace": "mt1_pool", "use": "R-004 data-varying bundle probe manifest", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2413, "namespace": "mt1_pool", "use": "R-004 data-varying bundle probe manifest", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2414, "namespace": "mt1_pool", "use": "R-004 data-varying bundle probe manifest", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2420, "namespace": "mt1_pool", "use": "R-004 qualification manifest shared by both arms", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2421, "namespace": "mt1_pool", "use": "R-004 qualification manifest shared by both arms", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2422, "namespace": "mt1_pool", "use": "R-004 qualification manifest shared by both arms", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2423, "namespace": "mt1_pool", "use": "R-004 qualification manifest shared by both arms", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2424, "namespace": "mt1_pool", "use": "R-004 qualification manifest shared by both arms", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2700, "namespace": "fitting", "use": "R-004 minibatch-only control: fixed demo sample and split", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2710, "namespace": "mt1_pool", "use": "R-004 minibatch-only control: fixed probe manifest", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2701, "namespace": "fitting", "use": "R-004 minibatch-only control fitting seed", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2702, "namespace": "fitting", "use": "R-004 minibatch-only control fitting seed", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2703, "namespace": "fitting", "use": "R-004 minibatch-only control fitting seed", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2704, "namespace": "fitting", "use": "R-004 minibatch-only control fitting seed", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}
+{"seed": 2705, "namespace": "fitting", "use": "R-004 minibatch-only control fitting seed", "artifact": "logs/fittable_bank_v2_replication", "recorded_at": "2026-10-22T02:58:35", "backfilled": false}

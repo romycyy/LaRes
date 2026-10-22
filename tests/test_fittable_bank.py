@@ -96,5 +96,55 @@ class TestQualificationRule(unittest.TestCase):
         self.assertFalse(result["checks"]["mean_difference_positive"])
 
 
+class TestReplicationComparison(unittest.TestCase):
+    """R-004: success_se, its paired bootstrap, and the seed reservation. No rollouts."""
+
+    def rows(self):
+        out = []
+        for rep, (a, b) in enumerate([(0.9, 0.80), (0.7, 0.82), (0.95, 0.81), (0.6, 0.79), (0.85, 0.80)]):
+            for sid, offset in (("s1", 0.05), ("s2", -0.05)):
+                out.append({"arm": "data_varying", "replicate": rep, "structure_id": sid, "selected_success": a + offset})
+                out.append({"arm": "minibatch_only", "replicate": rep, "structure_id": sid, "selected_success": b + offset})
+        return out
+
+    def test_bank_mean_weights_structures_equally_per_replicate(self):
+        self.assertEqual([round(x, 6) for x in qfb.bank_means(self.rows(), "data_varying")], [0.9, 0.7, 0.95, 0.6, 0.85])
+
+    def test_success_se_is_sd_over_replicates_divided_by_root_n(self):
+        import numpy as np
+
+        values = [0.9, 0.7, 0.95, 0.6, 0.85]
+        self.assertAlmostEqual(qfb.success_se(values), float(np.std(values, ddof=1) / np.sqrt(5)))
+
+    def test_bootstrap_difference_is_positive_when_data_varies_more(self):
+        rows = self.rows()
+        result = qfb.paired_se_bootstrap(qfb.bank_means(rows, "data_varying"), qfb.bank_means(rows, "minibatch_only"),
+                                         resamples=2000)
+        self.assertGreater(result["difference"], 0.05)
+        self.assertLessEqual(result["low"], result["difference"])
+        self.assertGreaterEqual(result["high"], result["low"])
+
+    def test_bootstrap_refuses_unpaired_arms(self):
+        with self.assertRaises(ValueError):
+            qfb.paired_se_bootstrap([0.1, 0.2, 0.3], [0.1, 0.2])
+
+    def test_reservation_is_idempotent_for_its_out_dir_and_refuses_reuse(self):
+        import tempfile
+
+        cfg = qfb.load_config(os.path.join(_PROJECT_ROOT, "config", "fittable_bank", "qualification_v2.yaml"))
+        cfg["seeds"] = {"data_seeds": [99100, 99101], "probe_pool_seeds": [99110, 99111],
+                        "qualification_pool_seeds": [99120, 99121]}
+        cfg["minibatch_control"] = {"data_seed": 99130, "probe_pool_seed": 99131, "fitting_seeds": [99132, 99133]}
+        with tempfile.TemporaryDirectory() as d:
+            ledger = os.path.join(d, "ledger.jsonl")
+            open(ledger, "w").close()
+            out = os.path.join(_PROJECT_ROOT, "logs", "r004_test")
+            self.assertEqual(qfb.ensure_replication_reserved(cfg, out, ledger_path=ledger), "reserved")
+            self.assertEqual(qfb.ensure_replication_reserved(cfg, out, ledger_path=ledger),
+                             "already reserved for this out-dir")
+            with self.assertRaises(SystemExit):
+                qfb.ensure_replication_reserved(cfg, out + "_other", ledger_path=ledger)
+
+
 if __name__ == "__main__":
     unittest.main()

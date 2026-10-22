@@ -42,6 +42,7 @@ from stage_e import (  # noqa: E402
     LEDGER_PATH,
     _outcome,
     now,
+    read_ledger,
     rel,
     require_clean_worktree,
     reserve_seeds,
@@ -418,6 +419,281 @@ def report(run_dir, cfg=None) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  Replication comparison (R-004): data-varying bundles against minibatch-only replicates
+# ---------------------------------------------------------------------------
+
+
+def bank_means(rows, arm) -> list:
+    """Equally weighted bank-mean selected success per replicate index of one arm."""
+    replicates = sorted({r["replicate"] for r in rows if r["arm"] == arm})
+    out = []
+    for rep in replicates:
+        mine = [r["selected_success"] for r in rows if r["arm"] == arm and r["replicate"] == rep]
+        out.append(float(np.mean(mine)))
+    return out
+
+
+def success_se(values) -> float:
+    """Between-replicate standard error: sample sd over replicates divided by sqrt(n)."""
+    arr = np.asarray(values, dtype=float)
+    return float(arr.std(ddof=1) / np.sqrt(arr.size)) if arr.size > 1 else float("nan")
+
+
+def paired_se_bootstrap(treated, control, resamples: int = 10_000, seed: int = 0, level: float = 0.95) -> dict:
+    """``success_se(treated) - success_se(control)`` with a percentile interval.
+
+    Replicate indices are resampled together, so replicate r of both arms (which share a scoring
+    manifest) stays paired. A resample whose indices are all equal has zero spread in both arms.
+    """
+    treated, control = np.asarray(treated, dtype=float), np.asarray(control, dtype=float)
+    if treated.size != control.size or treated.size < 2:
+        raise ValueError("both arms need the same number (>= 2) of replicates")
+    rng = np.random.default_rng(seed)
+    idx = rng.integers(0, treated.size, size=(int(resamples), treated.size))
+    diffs = np.array([success_se(treated[i]) - success_se(control[i]) for i in idx])
+    alpha = (1.0 - level) / 2.0
+    return {"difference": success_se(treated) - success_se(control), "low": float(np.quantile(diffs, alpha)),
+            "high": float(np.quantile(diffs, 1.0 - alpha)), "resamples": int(resamples), "seed": int(seed),
+            "level": level, "method": "paired percentile bootstrap over replicate indices"}
+
+
+def replication_seeds(cfg) -> dict:
+    s, c = cfg["seeds"], cfg["minibatch_control"]
+    return {
+        "data": [int(x) for x in s["data_seeds"]], "probe_pools": [int(x) for x in s["probe_pool_seeds"]],
+        "qualification_pools": [int(x) for x in s["qualification_pool_seeds"]],
+        "control_data": int(c["data_seed"]), "control_probe_pool": int(c["probe_pool_seed"]),
+        "control_fitting": [int(x) for x in c["fitting_seeds"]],
+    }
+
+
+def _replication_ledger_entries(seeds, artifact, stamp) -> list:
+    entries = [(x, "fitting", "R-004 data-varying bundle: demo sample, split and fitting seed") for x in seeds["data"]]
+    entries += [(x, "mt1_pool", "R-004 data-varying bundle probe manifest") for x in seeds["probe_pools"]]
+    entries += [(x, "mt1_pool", "R-004 qualification manifest shared by both arms") for x in seeds["qualification_pools"]]
+    entries += [(seeds["control_data"], "fitting", "R-004 minibatch-only control: fixed demo sample and split")]
+    entries += [(seeds["control_probe_pool"], "mt1_pool", "R-004 minibatch-only control: fixed probe manifest")]
+    entries += [(x, "fitting", "R-004 minibatch-only control fitting seed") for x in seeds["control_fitting"]]
+    return [{"seed": s, "namespace": ns, "use": use, "artifact": artifact, "recorded_at": stamp, "backfilled": False}
+            for s, ns, use in entries]
+
+
+def ensure_replication_reserved(cfg, out_dir, ledger_path=LEDGER_PATH) -> str:
+    """Reserve every seed for this out-dir, or confirm it already is; refuse any other use."""
+    seeds = replication_seeds(cfg)
+    artifact = rel(out_dir)
+    wanted = {(e["seed"], e["namespace"]) for e in _replication_ledger_entries(seeds, artifact, "")}
+    mine = {(int(e["seed"]), e["namespace"]) for e in read_ledger(ledger_path) if e.get("artifact") == artifact}
+    if mine == wanted:
+        return "already reserved for this out-dir"
+    if mine:
+        raise SystemExit(f"the ledger holds a partial reservation for {artifact}")
+    pools = seeds["probe_pools"] + seeds["qualification_pools"] + [seeds["control_probe_pool"]]
+    fitting = seeds["data"] + [seeds["control_data"]] + seeds["control_fitting"]
+    if len(set(pools + fitting)) != len(pools + fitting):
+        raise SystemExit("the replication seeds repeat")
+    conflicts = seed_conflicts(pools, fitting, ledger_path=ledger_path)
+    if conflicts:
+        raise SystemExit("seeds already used:\n  " + "\n  ".join(conflicts))
+    reserve_seeds(_replication_ledger_entries(seeds, artifact, now()), ledger_path=ledger_path)
+    return "reserved"
+
+
+def replication_job(job) -> dict:
+    """One fit (or one step-0 scoring) of one structure on one replicate's data and scoring manifest."""
+    import torch
+
+    torch.set_num_threads(1)
+    from lares.core.obs_schema import get_obs_schema
+    from lares.core.training_pipeline import DemoBuffer, ensure_mujoco_headless_gl
+    from lares.eval import EvaluationManifest, make_manifest_env
+    from lares.eval.runner import PolicyActor, evaluate_manifest
+    from lares.fitting.checkpoints import RolloutScore
+    from lares.fitting.optimizers import fit_policy_with_objective, state_parameters_sha256
+    from lares.fitting.replicates import ReplicateBundle
+    from lares.fitting.structure_bank import instantiate_source
+
+    ensure_mujoco_headless_gl()
+    started = time.time()
+    fit_cfg, horizon = job["fitting"], int(job["horizon"])
+    policy = instantiate_source(job["source"], 39, 4, get_obs_schema(job["env_name"]))
+    policy.fixed_action_scale = float(fit_cfg["fixed_action_scale"])
+    scoring = EvaluationManifest.load(job["scoring_manifest"])
+    out = {k: job[k] for k in ("arm", "replicate", "structure_id")}
+    out["scoring_manifest_id"] = scoring.manifest_id
+    probe_episodes = 0
+    if job["arm"] != "step0":
+        probe = EvaluationManifest.load(job["probe_manifest"])
+        probe_env = make_manifest_env(probe, probe.resolve_pool())
+        bundle = ReplicateBundle(job["replicate"], job["data_seed"], tuple(job["demo_episode_ids"]),
+                                 tuple(job["train_episode_ids"]), tuple(job["val_episode_ids"]), probe, scoring)
+        data = bundle.fitting_data(DemoBuffer.load(job["demo_buffer"]))
+
+        def score(pol):
+            nonlocal probe_episodes
+            result = evaluate_manifest(PolicyActor(pol, deterministic=True, name="probe"), probe, probe_env,
+                                       max_steps=horizon)
+            probe_episodes += len(result.episodes)
+            progress = [e.signed_goal_progress for e in result.episodes if e.signed_goal_progress is not None]
+            return RolloutScore(result.success_rate, float(np.mean(progress)) if progress else 0.0)
+
+        fit = fit_policy_with_objective(
+            policy, data, fit_cfg["objective"], budget=int(fit_cfg["budget"]),
+            batch_size=min(int(fit_cfg["batch_size"]), int(data.train_obs.shape[0])), lr=float(fit_cfg["lr"]),
+            clip_grad_norm=float(fit_cfg["clip_grad_norm"]), seed=int(job["fitting_seed"]),
+            sampling=fit_cfg["sampling"], rollout_probe=score,
+            checkpoint_steps=[int(s) for s in fit_cfg["checkpoint_steps"]], structure_id=job["structure_id"],
+        )
+        policy.load_state_dict(fit.selected_state)
+        out.update(bundle_id=bundle.bundle_id, data_seed=job["data_seed"], fitting_seed=job["fitting_seed"],
+                   probe_manifest_id=probe.manifest_id, selected_step=int(fit.selected_step),
+                   checkpoint_history=fit.checkpoint_history)
+    env = make_manifest_env(scoring, scoring.resolve_pool())
+    result = evaluate_manifest(PolicyActor(policy, deterministic=True, name=job["structure_id"]), scoring, env,
+                               max_steps=horizon)
+    out.update(selected_success=result.success_rate, parameters_sha256=state_parameters_sha256(policy.state_dict()),
+               probe_episodes=probe_episodes, scoring_episodes=len(result.episodes),
+               per_case={e.case_id: bool(e.success) for e in result.episodes},
+               wall_time_seconds=time.time() - started)
+    return out
+
+
+def cmd_replication(args) -> int:
+    """R-004: fit the seed bank under data-varying bundles and under minibatch-only replicates."""
+    import multiprocessing as mp
+
+    from lares.core.training_pipeline import DemoBuffer
+    from lares.fitting.replicates import sample_demonstration_episodes, split_episodes
+
+    cfg = load_config(args.config)
+    out_dir = os.path.abspath(args.out_dir)
+    os.makedirs(out_dir, exist_ok=True)
+    print(f"  seeds: {ensure_replication_reserved(cfg, out_dir)}")
+    if args.reserve_only:
+        return 0
+
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+    from lares.eval.manifest import SPLIT_DEVELOPMENT, EvaluationManifest, assert_disjoint, build_manifest
+    from lares.fitting.replicates import build_replicate_bundles
+
+    ensure_mujoco_headless_gl()
+    seeds, bundle_cfg, env_name = replication_seeds(cfg), cfg["replicate_bundle"], cfg["env_name"]
+    demo_path = os.path.join(_PROJECT_ROOT, bundle_cfg["demonstrations"]["source"])
+    if sha256_file(demo_path) != bundle_cfg["demonstrations"]["source_sha256"]:
+        raise SystemExit("the demonstration buffer does not match its declared hash")
+    buffer = DemoBuffer.load(demo_path)
+    manifest_dir = os.path.join(out_dir, "manifests")
+    os.makedirs(manifest_dir, exist_ok=True)
+
+    def factory(role, pool_seed, episodes, replicate):
+        path = os.path.join(manifest_dir, f"{env_name}_{role}_s{pool_seed}.yaml")
+        if os.path.exists(path):
+            return EvaluationManifest.load(path)
+        manifest, _ = build_manifest(env_name, SPLIT_DEVELOPMENT, [pool_seed], horizon=int(cfg["horizon"]),
+                                     num_episodes=episodes, manifest_id=f"{env_name}:r004_{role}:s{pool_seed}:n{episodes}")
+        manifest.save(path)
+        return manifest
+
+    n_demos, val_fraction = int(bundle_cfg["demonstrations"]["episodes_per_replicate"]), float(bundle_cfg["split"]["val_fraction"])
+    probe_n, qual_n = int(bundle_cfg["probe_manifest"]["episodes"]), int(bundle_cfg["qualification_manifest"]["episodes"])
+    bundles = build_replicate_bundles(buffer, seeds["data"], n_demos, val_fraction, factory, seeds["probe_pools"],
+                                      seeds["qualification_pools"], probe_n, qual_n)
+    control_probe = factory("probe", seeds["control_probe_pool"], probe_n, -1)
+    control_sample = sample_demonstration_episodes(list(buffer.episode_index()), n_demos, seeds["control_data"])
+    control_train, control_val = split_episodes(control_sample, val_fraction, seeds["control_data"])
+    known = unique_manifests([EvaluationManifest.load(p) for pattern in
+                              ("config/manifests/*.yaml", "config/**/*confirmation*.yaml", "config/**/*heldout*.yaml",
+                               "logs/**/*confirmation*.yaml")
+                              for p in glob.glob(os.path.join(_PROJECT_ROOT, pattern), recursive=True)])
+    mine = [b.probe_manifest for b in bundles] + [b.qualification_manifest for b in bundles] + [control_probe]
+    assert_disjoint(known + mine)
+
+    with open(os.path.join(_PROJECT_ROOT, cfg["structures"]["seed_bank"]), encoding="utf-8") as f:
+        members = json.load(f)["members"]
+    structures = {}
+    for sid in cfg["structures"]["fittable_seeds"]:
+        path = os.path.join(_PROJECT_ROOT, members[sid]["source_path"])
+        with open(path, encoding="utf-8") as f:
+            structures[sid] = {"source": f.read(), "source_path": rel(path), "source_sha256": sha256_file(path)}
+
+    common = {"env_name": env_name, "horizon": int(cfg["horizon"]), "fitting": cfg["fitting"], "demo_buffer": demo_path}
+    jobs = []
+    for b in bundles:
+        qual_path = os.path.join(manifest_dir, f"{env_name}_qualification_s{b.qualification_pool_seed}.yaml")
+        for sid, s in structures.items():
+            jobs.append({**common, "arm": "step0", "replicate": b.replicate, "structure_id": sid, "source": s["source"],
+                         "scoring_manifest": qual_path})
+            jobs.append({**common, "arm": "data_varying", "replicate": b.replicate, "structure_id": sid,
+                         "source": s["source"], "scoring_manifest": qual_path, "data_seed": b.data_seed,
+                         "fitting_seed": b.data_seed, "demo_episode_ids": list(b.demo_episode_ids),
+                         "train_episode_ids": list(b.train_episode_ids), "val_episode_ids": list(b.val_episode_ids),
+                         "probe_manifest": os.path.join(manifest_dir, f"{env_name}_probe_s{b.probe_pool_seed}.yaml")})
+            jobs.append({**common, "arm": "minibatch_only", "replicate": b.replicate, "structure_id": sid,
+                         "source": s["source"], "scoring_manifest": qual_path, "data_seed": seeds["control_data"],
+                         "fitting_seed": seeds["control_fitting"][b.replicate],
+                         "demo_episode_ids": list(control_sample), "train_episode_ids": list(control_train),
+                         "val_episode_ids": list(control_val),
+                         "probe_manifest": os.path.join(manifest_dir, f"{env_name}_probe_s{seeds['control_probe_pool']}.yaml")})
+    with open(os.path.join(out_dir, "run.json"), "w", encoding="utf-8") as f:
+        json.dump({"started_at": now(), "argv": sys.argv, "config": cfg, "config_sha256": sha256_file(args.config),
+                   "seeds": seeds, "bundles": [b.to_dict() for b in bundles],
+                   "control_bundle": {"demo_episode_ids": list(control_sample), "train_episode_ids": list(control_train),
+                                      "val_episode_ids": list(control_val), "probe_manifest_id": control_probe.manifest_id},
+                   "structures": {k: {x: v[x] for x in ("source_path", "source_sha256")} for k, v in structures.items()},
+                   "jobs": len(jobs)}, f, indent=2, default=str)
+    print(f"  {len(jobs)} jobs ({len(bundles)} replicates x {len(structures)} structures x step0/data_varying/minibatch_only)",
+          flush=True)
+    rows = []
+    with mp.get_context("spawn").Pool(processes=min(int(args.workers), len(jobs))) as pool:
+        for done in pool.imap_unordered(replication_job, jobs):
+            rows.append(done)
+            print(f"  {done['arm']:<15} r{done['replicate']} {done['structure_id']:<32} "
+                  f"step {done.get('selected_step', 0):>4}  success {done['selected_success']:.2f}", flush=True)
+    with open(os.path.join(out_dir, "rows.json"), "w", encoding="utf-8") as f:
+        json.dump(rows, f, indent=2, default=str)
+    return replication_report(out_dir, rows)
+
+
+def replication_report(out_dir, rows) -> int:
+    data, minibatch = bank_means(rows, "data_varying"), bank_means(rows, "minibatch_only")
+    per_structure = {}
+    for sid in sorted({r["structure_id"] for r in rows}):
+        entry = {}
+        for arm in ("step0", "data_varying", "minibatch_only"):
+            values = [r["selected_success"] for r in sorted(rows, key=lambda r: r["replicate"])
+                      if r["arm"] == arm and r["structure_id"] == sid]
+            entry[arm] = {"by_replicate": values, "mean": float(np.mean(values)),
+                          "sd": float(np.std(values, ddof=1)) if len(values) > 1 else None}
+        entry["selected_steps"] = {arm: [r.get("selected_step") for r in sorted(rows, key=lambda r: r["replicate"])
+                                         if r["arm"] == arm and r["structure_id"] == sid]
+                                   for arm in ("data_varying", "minibatch_only")}
+        per_structure[sid] = entry
+    summary = {
+        "success_se": {"data_varying": success_se(data), "minibatch_only": success_se(minibatch)},
+        "bank_mean_by_replicate": {"data_varying": data, "minibatch_only": minibatch,
+                                   "step0": bank_means(rows, "step0")},
+        "bank_mean": {"data_varying": float(np.mean(data)), "minibatch_only": float(np.mean(minibatch))},
+        "success_se_difference": paired_se_bootstrap(data, minibatch),
+        "mean_success_difference": t_interval([d - m for d, m in zip(data, minibatch)]),
+        "per_structure": per_structure,
+        "resources": {"probe_episodes": int(sum(r["probe_episodes"] for r in rows)),
+                      "scoring_episodes": int(sum(r["scoring_episodes"] for r in rows))},
+    }
+    with open(os.path.join(out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2, default=str)
+    d = summary["success_se_difference"]
+    print(f"\n  success_se data_varying {summary['success_se']['data_varying']:.4f}  minibatch_only "
+          f"{summary['success_se']['minibatch_only']:.4f}  difference {d['difference']:+.4f} "
+          f"[{d['low']:+.4f}, {d['high']:+.4f}]")
+    print(f"  bank mean data_varying {data}  minibatch_only {minibatch}")
+    for sid, e in per_structure.items():
+        print(f"    {sid:<32} data {e['data_varying']['by_replicate']}  minibatch {e['minibatch_only']['by_replicate']}"
+              f"  step0 {e['step0']['by_replicate']}")
+    print(f"  resources {summary['resources']}\n  written: {rel(os.path.join(out_dir, 'summary.json'))}")
+    return 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--config", default=CONFIG_PATH)
@@ -428,7 +704,13 @@ def main(argv=None) -> int:
     run.add_argument("--workers", type=int, default=8)
     rep = sub.add_parser("report")
     rep.add_argument("--run", required=True)
+    repl = sub.add_parser("replication", help="R-004: data-varying bundles vs minibatch-only replicates")
+    repl.add_argument("--out-dir", required=True)
+    repl.add_argument("--workers", type=int, default=8)
+    repl.add_argument("--reserve-only", action="store_true", help="check and reserve the seeds, then stop")
     args = p.parse_args(argv)
+    if args.command == "replication":
+        return cmd_replication(args)
     if args.command == "validate":
         return cmd_validate(args)
     if args.command == "build-manifest":

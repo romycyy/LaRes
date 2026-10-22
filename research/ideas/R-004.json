@@ -1,79 +1,320 @@
 {
   "id": "R-004",
   "title": "Replicate bundles that vary the data give independent fitting replicates",
-  "hypothesis": "When each replicate draws its own demonstrations, split and probe manifest (qualification_v2), the five seed-bank structures' fitted success varies more across replicates than under minibatch-seed-only replication, so the current five-seed intervals understate uncertainty.",
+  "hypothesis": "Varying the demonstrations, the trajectory-level split, the probe manifest and the fitting seed together (qualification_v2 bundles) increases between-replicate uncertainty in the five seed-bank structures' fitted success relative to varying only the minibatch seed on one fixed bundle, so minibatch-only intervals understate uncertainty.",
   "prediction": {
-    "metric": "promotion_success_rate",
-    "direction": "decrease",
-    "threshold": 0.05,
-    "against": "the fittable-bank qualification run logs/fittable_bank/20260914_040245 (mean fitted success per structure)",
-    "rationale": "a lower mean under data variation means the qualification run was optimistic; the spread is reported in notes"
+    "metric": "success_se",
+    "direction": "increase",
+    "threshold": 0.01,
+    "against": "matched minibatch-only control arm: one fixed demo sample/split (seed 2700) and probe manifest (pool seed 2710), fitting seeds 2701-2705; replicate r of both arms is scored on the same qualification manifest (pool seed 2420+r)",
+    "rationale": "success_se is defined identically in both arms as the between-replicate standard error of the equally weighted five-structure bank-mean selected success (sd over 5 replicates / sqrt 5), not binomial episode error. Because both arms share each replicate's scoring placements, the difference isolates data/split/probe variation. Interval: paired bootstrap over replicate indices (10,000 resamples); per-structure between-replicate spreads reported."
   },
   "protocol": {
     "script": "scripts/qualify_fittable_bank.py",
     "config": "config/fittable_bank/qualification_v2.yaml",
-    "command": "python scripts/qualify_fittable_bank.py run --config config/fittable_bank/qualification_v2.yaml",
+    "command": "python scripts/qualify_fittable_bank.py --config config/fittable_bank/qualification_v2.yaml replication --out-dir logs/fittable_bank_v2_replication",
     "seeds": [
       2400,
       2401,
       2402,
       2403,
       2404,
-      2405,
-      2406,
-      2407,
-      2408,
-      2409,
       2410,
       2411,
       2412,
       2413,
       2414,
-      2415,
-      2416,
-      2417,
-      2418,
-      2419,
       2420,
       2421,
       2422,
       2423,
-      2424
+      2424,
+      2700,
+      2701,
+      2702,
+      2703,
+      2704,
+      2705,
+      2710
     ],
-    "manifests": [],
-    "episodes": 750,
+    "manifests": [
+      "config/manifests/push-v2_train.yaml",
+      "config/manifests/push-v2_development.yaml"
+    ],
+    "episodes": 5250,
     "llm_calls": 0,
     "code_changes": [
-      "scripts/qualify_fittable_bank.py (--config for replicate bundles)"
+      "scripts/qualify_fittable_bank.py (replication subcommand: data-varying arm and matched minibatch-only control, shared scoring manifests, success_se and paired bootstrap)",
+      "config/fittable_bank/qualification_v2.yaml (control-arm seeds)",
+      "tests/test_fittable_bank.py (success_se and bootstrap)"
     ],
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "proposed",
+  "status": "decided",
   "source": "implementer",
-  "falsified_by": "mean fitted success within 0.05 of the 2026-09-14 run for every structure",
+  "falsified_by": "The upper 95% bound of the success_se increase is below 0.01. An interval including zero is inconclusive about increased uncertainty; mean success need not decrease for the mechanism to hold.",
   "cost_estimate": {
-    "episodes": 750,
+    "episodes": 5250,
     "llm_calls": 0,
-    "wall_time_minutes": 120
+    "wall_time_minutes": 30,
+    "breakdown": "step-0 scoring 5 structures x 5 qualification manifests x 50 = 1250 (shared by both arms); fits 2 arms x 5 replicates x 5 structures x (3 probe checkpoints x 10 + 50 scoring) = 4000; no new demonstration collection (bundles sample the existing 150-episode buffer)"
   },
   "open_question_refs": [
     "-2(b)"
   ],
   "briefing_sha256": "",
   "proposal_call_id": "",
-  "approval": {},
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T02:57:00",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00003, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T025548_call_00003.json"
+  },
+  "run": {
+    "started_at": "2026-10-22T02:58:34",
+    "git_sha": "984acef550ea632c8d9b45d95c8ca7382ce83860",
+    "dirty_worktree": true,
+    "log_dir": "logs/fittable_bank_v2_replication",
+    "finished_at": "2026-10-22T03:07:35"
+  },
+  "result": {
+    "metrics": {
+      "success_se": 0.007483314773547877,
+      "success_se_difference": 0.001911959462674244,
+      "success_se_difference_t95_bootstrap": [
+        -0.0034355632888638586,
+        0.005421620490562363
+      ],
+      "bank_mean_success_data_varying": 0.8959999999999999,
+      "bank_mean_by_replicate": {
+        "data_varying": [
+          0.9199999999999999,
+          0.8879999999999999,
+          0.876,
+          0.9039999999999999,
+          0.8919999999999998
+        ],
+        "minibatch_only": [
+          0.9,
+          0.9279999999999999,
+          0.9199999999999999,
+          0.9079999999999998,
+          0.9
+        ],
+        "step0": [
+          0.536,
+          0.488,
+          0.44800000000000006,
+          0.532,
+          0.5840000000000001
+        ]
+      },
+      "per_structure": {
+        "simple_damped_push": {
+          "sd_data_varying": 0.036331804249169895,
+          "sd_minibatch_only": 0.03033150177620617,
+          "mean_data_varying": 0.892,
+          "mean_minibatch_only": 0.908,
+          "mean_step0": 0.10800000000000001,
+          "selected_steps": {
+            "data_varying": [
+              1000,
+              1000,
+              1000,
+              1000,
+              1000
+            ],
+            "minibatch_only": [
+              1000,
+              1000,
+              1000,
+              1000,
+              1000
+            ]
+          }
+        },
+        "simple_reach_push": {
+          "sd_data_varying": 0.02607680962081058,
+          "sd_minibatch_only": 0.016733200530681527,
+          "mean_data_varying": 0.9560000000000001,
+          "mean_minibatch_only": 0.9559999999999998,
+          "mean_step0": 0.604,
+          "selected_steps": {
+            "data_varying": [
+              1000,
+              1000,
+              1000,
+              1000,
+              1000
+            ],
+            "minibatch_only": [
+              1000,
+              1000,
+              1000,
+              1000,
+              1000
+            ]
+          }
+        },
+        "simple_reach_push_damped": {
+          "sd_data_varying": 0.020000000000000018,
+          "sd_minibatch_only": 0.014142135623730963,
+          "mean_data_varying": 0.96,
+          "mean_minibatch_only": 0.96,
+          "mean_step0": 0.632,
+          "selected_steps": {
+            "data_varying": [
+              1000,
+              1000,
+              1000,
+              1000,
+              1000
+            ],
+            "minibatch_only": [
+              1000,
+              1000,
+              1000,
+              1000,
+              1000
+            ]
+          }
+        },
+        "simple_reach_push_shared_gain": {
+          "sd_data_varying": 0.08831760866327845,
+          "sd_minibatch_only": 0.0374165738677394,
+          "mean_data_varying": 0.6799999999999999,
+          "mean_minibatch_only": 0.74,
+          "mean_step0": 0.632,
+          "selected_steps": {
+            "data_varying": [
+              1000,
+              0,
+              0,
+              1000,
+              1000
+            ],
+            "minibatch_only": [
+              1000,
+              1000,
+              1000,
+              1000,
+              1000
+            ]
+          }
+        },
+        "simple_reach_push_sharp_gate": {
+          "sd_data_varying": 0.010954451150103331,
+          "sd_minibatch_only": 0.010954451150103331,
+          "mean_data_varying": 0.992,
+          "mean_minibatch_only": 0.992,
+          "mean_step0": 0.612,
+          "selected_steps": {
+            "data_varying": [
+              1000,
+              1000,
+              1000,
+              1000,
+              1000
+            ],
+            "minibatch_only": [
+              1000,
+              1000,
+              1000,
+              1000,
+              1000
+            ]
+          }
+        }
+      },
+      "resources": {
+        "probe_episodes": 1500,
+        "scoring_episodes": 3750
+      }
+    },
+    "controls": {
+      "success_se": 0.005571355310873633,
+      "bank_mean_success_minibatch_only": 0.9112
+    },
+    "artifacts": [
+      "logs/fittable_bank_v2_replication/summary.json",
+      "logs/fittable_bank_v2_replication/rows.json",
+      "logs/fittable_bank_v2_replication/run.json",
+      "logs/fittable_bank_v2_replication/manifests",
+      "logs/fittable_bank_v2_replication.run.log"
+    ],
+    "notes": "success_se data-varying 0.0075 vs minibatch-only 0.0056: difference +0.0019, paired bootstrap 95% [-0.0034, +0.0054] over 5 replicate indices (crude at n=5). Upper bound is below the 0.01 threshold. Bank-mean success: data-varying 0.896 vs minibatch-only 0.911, paired t -0.0152 [-0.0484, +0.0180]. Per structure the data-varying sd is larger or equal in all five, but small except simple_reach_push_shared_gain (sd 0.088 vs 0.037): under two of five data bundles its probe selected step 0 (fitting rejected, success 0.62/0.56 = its step-0 level), never under the fixed bundle. All other fits selected step 1000. Both arms of replicate r scored on the same qualification manifest (pool seed 2420+r), so evaluation placements are matched. Seeds spent: 2400-2404, 2410-2414, 2420-2424, 2700-2705, 2710; 2405-2409 and 2415-2419 untouched. Episodes 1500 probe + 3750 scoring = 5250."
+  },
+  "prediction_outcome": {
+    "metric": "success_se",
+    "before": 0.005571355310873633,
+    "after": 0.007483314773547877,
+    "delta": 0.001911959462674244,
+    "matched": false
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.75,
+      "reasoning": "success_se rose from 0.0056 (minibatch-only) to 0.0075 (data-varying), +0.0019 with paired bootstrap 95% [-0.0034, +0.0054]; the predeclared falsifier is an upper bound below 0.01, met. Bank-mean success is unchanged within noise (0.896 vs 0.911). Data variation does widen spreads a little in every structure, and in one (simple_reach_push_shared_gain) it flips probe selection to step 0 in 2/5 bundles, so it is not nothing; but at the bank level the minibatch-only intervals do not materially understate uncertainty. n=5 makes the bootstrap crude.",
+      "cited_artifacts": [
+        "logs/fittable_bank_v2_replication/summary.json"
+      ],
+      "next_experiment": "Keep the seed bank; flag simple_reach_push_shared_gain as data-sensitive (fitting rejected under 2/5 data draws). Future qualification can use data-varying bundles at no cost penalty, but this is not a reason to re-qualify.",
+      "recorded_at": "2026-10-22T03:07:36",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.93,
+      "reasoning": "The specified matched control was measured: success_se was 0.007483 for data-varying bundles versus 0.005571 for minibatch-only replicates [logs/fittable_bank_v2_replication/summary.json]. The difference was +0.001912, with paired-bootstrap 95% interval [-0.003436, +0.005422] [logs/fittable_bank_v2_replication/summary.json]. Its upper bound is below the predicted 0.01 increase, satisfying the approved falsification criterion [logs/fittable_bank_v2_replication/summary.json]. Because the interval includes zero, whether data variation increases uncertainty at all remains inconclusive; the positive point estimate is not evidence of a difference [logs/fittable_bank_v2_replication/summary.json].",
+      "cited_artifacts": [
+        "logs/fittable_bank_v2_replication/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T03:07:52",
+      "call_id": "call_00004"
+    }
+  ],
+  "decision_id": "D-002",
   "history": [
     {
       "at": "2026-10-13T23:48:52",
       "from": "",
       "to": "proposed",
       "note": "backfilled 2026-10-13 from the open questions in RESEARCH_HANDOFF.md / DEBUG_PROGRESS.md"
+    },
+    {
+      "at": "2026-10-22T02:56:54",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per advisor consult call_00003 (matched minibatch-only control, success_se prediction, shared scoring manifests per replicate index, itemised episodes 5250 vs the advisor's ~1500 estimate)"
+    },
+    {
+      "at": "2026-10-22T02:57:00",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00003, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T02:58:34",
+      "from": "approved",
+      "to": "running",
+      "note": "git 984acef550 (dirty)"
+    },
+    {
+      "at": "2026-10-22T03:07:35",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=False"
+    },
+    {
+      "at": "2026-10-22T03:07:58",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-002: refuted"
     }
   ],
   "created_at": "2026-10-13T23:48:52"

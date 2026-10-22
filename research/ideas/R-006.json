@@ -1,0 +1,70 @@
+{
+  "id": "R-006",
+  "title": "Vision evidence from a local Qwen VLM makes correction-LLM repair beat numeric-only repair",
+  "hypothesis": "Adding a validated visual failure analysis (Qwen VL on the five rule-selected frames of the parent's worst <=3 failed screen episodes, merged with the numbers by lares.vision.merge) to the Stage F numeric evidence packet lets the correction LLM localise the failing component, so its repairs win more held-out episodes than the identical numeric-only arm at the same repair-episode cap.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "arm llm_numeric (Stage F numeric packet, same structures, seeds, refit, acceptance rule and episode cap); paired per replicate (structure x seed), t interval over 9 replicates; no_repair reported as a second control",
+    "rationale": "Stage F LLM arms were flat (-0.004 to +0.011 vs no_repair) and intervention evidence gave the only LLM wins, so richer localising evidence is the open lever; +0.05 is the smallest held-out gain that would justify a VLM in the loop. With 9 replicates this is a pilot: a positive mean with an interval spanning zero is inconclusive."
+  },
+  "protocol": {
+    "script": "scripts/stage_f.py",
+    "config": "config/stage_f_vision/stage_f_vision.yaml",
+    "command": "python scripts/stage_f.py run --config config/stage_f_vision/stage_f_vision.yaml",
+    "seeds": [
+      2620,
+      2621,
+      2622
+    ],
+    "manifests": [
+      "config/manifests/push-v2_development.yaml",
+      "config/manifests/push-v2_train.yaml"
+    ],
+    "episodes": 2500,
+    "llm_calls": 72,
+    "code_changes": [
+      "lares/repair/correction.py (new evidence level numeric_vision and arm llm_numeric_vision; ArmContext.vision_fn)",
+      "lares/vision/analyst.py (QwenAnalyst: pinned checkpoint and fp16/4-bit load on the T4; no other change)",
+      "scripts/stage_f.py (vision arm wiring, --vision-model; held-out manifest from pool seed 2620)",
+      "config/stage_f_vision/stage_f_vision.yaml (new: arms no_repair, llm_numeric, llm_numeric_vision; Stage F structures)",
+      "tests/test_stage_f.py, tests/test_vision.py (ScriptedAnalyst; no model download)",
+      ".venv-metaworld on the GPU box: install transformers/accelerate (+ bitsandbytes if 4-bit) and pull the checkpoint"
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "proposed",
+  "source": "implementer",
+  "falsified_by": "Upper bound of the paired interval (vision minus numeric) <= 0 refutes any added value; upper bound below 0.05 refutes the predicted magnitude; an interval spanning zero with a positive mean is inconclusive. Also reported: analyses rejected by the schema (uncited frames, unmeasurable checks) and vision/geometry conflicts; if most analyses are rejected the arm did not test vision at all, and the result is recorded as inconclusive.",
+  "cost_estimate": {
+    "episodes": 2500,
+    "llm_calls": 72,
+    "vlm_calls": 27,
+    "wall_time_minutes": 150,
+    "breakdown": "9 replicates x (40 common preprocessing + 2 LLM arms x <=40 + <=3 media reruns + 3 arms x 50 held-out) ~ 2460; LLM <=4 calls per LLM arm x 2 x 9 = 72; VLM <=3 per replicate"
+  },
+  "open_question_refs": [
+    "RESEARCH_HANDOFF question 2 / E10 (Qwen checkpoint and quantization)",
+    "RESEARCH_HANDOFF 'Stage F: correction-LLM repair does not beat no repair (2026-10-13)'",
+    "user request 2026-10-22: implement VLM in the repair loop"
+  ],
+  "briefing_sha256": "",
+  "proposal_call_id": "",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-22T02:53:44",
+      "from": "",
+      "to": "proposed",
+      "note": "added 2026-10-22 at the user's request (VLM in repair). Phase 7 gate: Stages A-F are now recorded complete; final-test stays locked. Checkpoint choice deferred to the advisor consult."
+    }
+  ],
+  "created_at": "2026-10-22T02:53:44"
+}
