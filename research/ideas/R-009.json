@@ -1,0 +1,65 @@
+{
+  "id": "R-009",
+  "title": "Test LLM bounds-only edits against matched random bounds",
+  "hypothesis": "LLM-chosen parameter bounds constrain imitation updates to successful control regimes while preserving the parent's executable structure and initialization.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "Matched random-bound edits with identical fitting and rollout selection",
+    "rationale": "Five points over a width-matched random control would identify useful LLM guidance rather than generic regularization. This changes parameter metadata only, unlike the structural mutations and evidence-enriched repairs already decided. Remote and LLM spend require per-idea approval."
+  },
+  "protocol": {
+    "script": "scripts/stage_f.py",
+    "config": "config/stage_f/stage_f.yaml",
+    "command": "gpu run -- python scripts/stage_f.py --config config/stage_f/stage_f.yaml --research-protocol bounds-only --parents simple_damped_push,simple_reach_push_shared_gain --probe-seed 2820 --screen-seed 2821 --heldout-seed 2822 --fit-seeds 2823,2824 --range-seed 2825 --llm-model gpt-6.1-sol --reasoning-effort high --temperature 1 --output logs/research/bounds_only_s2820",
+    "seeds": [
+      2820,
+      2821,
+      2822,
+      2823,
+      2824,
+      2825
+    ],
+    "manifests": [
+      "config/manifests/research/push-v2_development_probe_s2820.yaml",
+      "config/manifests/research/push-v2_development_screen_s2821.yaml",
+      "config/manifests/research/push-v2_development_confirmation_s2822.yaml"
+    ],
+    "episodes": 1080,
+    "llm_calls": 4,
+    "code_changes": [
+      "scripts/stage_f.py: add the research-protocol CLI used above. Use two allowed seed-bank parents and two fitting-seed blocks, with one numeric-evidence LLM call per cell and no correction calls.",
+      "scripts/stage_f.py: accept only JSON metadata narrowing at most two original parameter intervals while retaining their original initial values. Reject changes to executable policy code, parameter names, initial values, or original legal limits; invalid responses become parent-equivalent no-ops without retries.",
+      "scripts/stage_f.py: construct a random control matching each LLM edit's changed parameters and interval widths, but randomly place admissible intervals containing the original initial values. Compare unedited, LLM-bound, and random-bound arms using identical demonstrations and fitting seeds.",
+      "scripts/stage_f.py: select checkpoints {0,500,1000} on a disjoint ten-case probe, then evaluate every arm on ten screen cases and fifty fresh confirmation cases, including shadow evaluation of rejected arms: 2 parents x 2 blocks x 3 arms x (30+10+50) = 1080 episodes.",
+      "scripts/stage_f.py: require positive paired lower bounds against both random bounds and the unedited parent before claiming a surviving useful edit. Average paired outcomes within confirmation placement across fixed cells; retain the existing acceptance and promotion rules and perform no promotions.",
+      "config/manifests/research/: generate the three development-only manifests named above. Force CPU fitting, require per-idea approval before remote or LLM spend, and stop the remote instance afterward."
+    ],
+    "needs_gpu": false,
+    "needs_llm": true
+  },
+  "status": "proposed",
+  "source": "advisor",
+  "falsified_by": "An upper paired 95% confidence bound below +0.05 against random bounds refutes the prediction. No positive gain over the identically fitted unedited parent refutes the survive-refit claim; zero-spanning intervals are inconclusive.",
+  "cost_estimate": {
+    "episodes": 1080,
+    "llm_calls": 4,
+    "wall_time_minutes": 60
+  },
+  "open_question_refs": [
+    -2,
+    0,
+    4
+  ],
+  "briefing_sha256": "a711e545d506cccbb14233400c774eaff52ae25c86cde2f5d2404b8047b76f50",
+  "proposal_call_id": "call_00006",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [],
+  "created_at": "2026-10-22T04:17:05"
+}

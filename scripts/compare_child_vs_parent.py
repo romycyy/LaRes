@@ -21,6 +21,13 @@ Seeds are checked against the seed ledger and every saved manifest, then reserve
 out-dir as the artifact. ``--reserve-only`` does just that, so the reservation can be committed
 from a machine without MetaWorld before the run. A rerun into the same out-dir reuses its manifest.
 
+``--research-protocol nested-screen`` (R-007) asks a narrower question of one frozen pair: would a 30-case
+screen keep a beneficial child that a 10-case screen rejects? Child and parent are refitted identically (checkpoint
+chosen on a fresh 10-case probe), both are scored on a fresh 30-case screen and a fresh 100-case confirmation
+manifest, and Stage F's acceptance rule is replayed on 1000 seeded 10-case subsets of the screen and on the whole
+screen. The statistic is the confirmation success of the controller each screen size selects, paired over the 100
+confirmation placements (replays are averaged within a placement; they are not replicates).
+
 Usage (from the project root)::
 
     python scripts/compare_child_vs_parent.py --run logs/two_lane_search \\
@@ -185,43 +192,54 @@ def summarise(per_case: dict, pairs: list, winner: str, baseline_id: str) -> dic
 
 def ensure_reserved(pool_seed: int, fit_seed: int, out_dir: str, ledger_path: str = SEED_LEDGER) -> str:
     """Reserve both seeds for this out-dir, or confirm they already are. Refuses any other use."""
+    return ensure_entries_reserved([(pool_seed, "mt1_pool", "R-005 child vs fitted parent fresh manifest"),
+                                    (fit_seed, "fitting", "R-005 child and parent refits")], out_dir, ledger_path)
+
+
+def ensure_entries_reserved(entries, out_dir: str, ledger_path: str = SEED_LEDGER) -> str:
+    """``entries`` is ``[(seed, namespace, use)]``; reserve them all for this out-dir or confirm they already are."""
     artifact = rel(out_dir)
     mine = {(int(e["seed"]), e["namespace"]) for e in read_ledger(ledger_path) if e.get("artifact") == artifact}
-    wanted = {(pool_seed, "mt1_pool"), (fit_seed, "fitting")}
+    wanted = {(int(seed), ns) for seed, ns, _ in entries}
     if mine == wanted:
         return "already reserved for this out-dir"
-    if mine:
-        raise SystemExit(f"the ledger holds a partial reservation for {artifact}: {sorted(mine)}")
-    conflicts = seed_conflicts([pool_seed], [fit_seed], ledger_path=ledger_path)
+    if not mine <= wanted:
+        raise SystemExit(f"the ledger holds a different reservation for {artifact}: {sorted(mine - wanted)}")
+    # A reservation may be extended with new seeds (never changed); only the new ones are checked and written.
+    entries = [(seed, ns, use) for seed, ns, use in entries if (int(seed), ns) not in mine]
+    pools = [seed for seed, ns, _ in entries if ns == "mt1_pool"]
+    fitting = [seed for seed, ns, _ in entries if ns != "mt1_pool"]
+    conflicts = seed_conflicts(pools, fitting, ledger_path=ledger_path)
     if conflicts:
         raise SystemExit("seeds already used:\n  " + "\n  ".join(conflicts))
     stamp = now()
-    reserve_seeds([
-        {"seed": pool_seed, "namespace": "mt1_pool", "use": "R-005 child vs fitted parent fresh manifest",
-         "artifact": artifact, "recorded_at": stamp, "backfilled": False},
-        {"seed": fit_seed, "namespace": "fitting", "use": "R-005 child and parent refits",
-         "artifact": artifact, "recorded_at": stamp, "backfilled": False},
-    ], ledger_path=ledger_path)
-    return "reserved"
+    reserve_seeds([{"seed": int(seed), "namespace": ns, "use": use, "artifact": artifact, "recorded_at": stamp,
+                    "backfilled": False} for seed, ns, use in entries], ledger_path=ledger_path)
+    return "reserved" if not mine else f"extended with {sorted(int(seed) for seed, _, _ in entries)}"
 
 
-def fresh_manifest(env_name: str, pool_seed: int, episodes: int, horizon: int, out_dir: str):
+def fresh_manifest(env_name: str, pool_seed: int, episodes: int, horizon: int, out_dir: str, role: str = "confirmation",
+                   also_disjoint_from=()):
     from lares.eval.manifest import SPLIT_DEVELOPMENT, EvaluationManifest, assert_disjoint, build_manifest
 
-    path = os.path.join(out_dir, f"{env_name}_confirmation_s{pool_seed}.yaml")
-    manifest_id = f"{env_name}:development_confirmation:s{pool_seed}:n{episodes}"
+    pool_seeds = [int(x) for x in (pool_seed if isinstance(pool_seed, (list, tuple)) else [pool_seed])]
+    label = "-".join(str(x) for x in pool_seeds)
+    path = os.path.join(out_dir, f"{env_name}_{role}_s{label}.yaml")
+    manifest_id = f"{env_name}:development_{role}:s{label}:n{episodes}"
     if os.path.exists(path):
         manifest = EvaluationManifest.load(path)
         if manifest.manifest_id != manifest_id:
             raise SystemExit(f"{rel(path)} holds {manifest.manifest_id}, not {manifest_id}")
         return manifest, path
-    manifest, _ = build_manifest(env_name, SPLIT_DEVELOPMENT, [pool_seed], horizon=horizon,
+    manifest, _ = build_manifest(env_name, SPLIT_DEVELOPMENT, pool_seeds, horizon=horizon,
                                  num_episodes=episodes, manifest_id=manifest_id)
     known = {}
     for pattern in ("config/manifests/*.yaml", "config/**/*confirmation*.yaml", "logs/**/*confirmation*.yaml"):
         for p in glob.glob(os.path.join(_PROJECT_ROOT, pattern), recursive=True):
             m = EvaluationManifest.load(p)
             known.setdefault(m.manifest_id, m)
+    for m in also_disjoint_from:
+        known.setdefault(m.manifest_id, m)
     assert_disjoint(list(known.values()) + [manifest])
     manifest.save(path)
     return manifest, path
@@ -337,12 +355,213 @@ def build_jobs(pairs, fitting, baseline, args, manifest_path) -> list:
     return jobs
 
 
+# ---------------------------------------------------------------------------
+#  R-007: nested screen replay
+# ---------------------------------------------------------------------------
+
+BRANCH_LOWER_SUCCESS = "child_lower_success"
+BRANCH_TIED_SUCCESS_LOWER_PROGRESS = "tied_success_lower_or_equal_progress"
+BRANCH_ACCEPTED = "accepted"
+
+
+def screen_decision(child: dict, parent: dict, cases) -> str:
+    """Stage F's acceptance rule on ``cases``: the child replaces the parent only if strictly better by the
+    checkpoint tie rule (success, then mean signed progress); an exact tie keeps the parent.
+
+    ``child``/``parent`` map case id to ``(success, progress)``.
+    """
+    from lares.fitting.checkpoints import RolloutScore, is_better_checkpoint
+
+    def score(side):
+        return RolloutScore(float(np.mean([side[c][0] for c in cases])), float(np.mean([side[c][1] for c in cases])))
+
+    c, q = score(child), score(parent)
+    if is_better_checkpoint(c, q):
+        return BRANCH_ACCEPTED
+    return BRANCH_LOWER_SUCCESS if c.success < q.success else BRANCH_TIED_SUCCESS_LOWER_PROGRESS
+
+
+def nested_screen_analysis(child_screen, parent_screen, child_conf, parent_conf, replays: int, seed: int,
+                           subset: int = 10) -> dict:
+    """Selected-controller confirmation success under a full screen versus seeded ``subset``-case replays.
+
+    Per confirmation placement c: the full screen selects one controller S30; the replays select the child with
+    frequency p10, so the expected success under a 10-case screen is p10 * child_c + (1 - p10) * parent_c. The
+    paired difference is success(S30, c) minus that, with a t interval over placements.
+    """
+    cases = sorted(child_screen)
+    if sorted(parent_screen) != cases or sorted(child_conf) != sorted(parent_conf):
+        raise ValueError("child and parent were not scored on the same cases")
+    rng = np.random.default_rng(int(seed))
+    branches = {BRANCH_ACCEPTED: 0, BRANCH_LOWER_SUCCESS: 0, BRANCH_TIED_SUCCESS_LOWER_PROGRESS: 0}
+    for _ in range(int(replays)):
+        draw = [cases[i] for i in sorted(rng.choice(len(cases), size=int(subset), replace=False))]
+        branches[screen_decision(child_screen, parent_screen, draw)] += 1
+    p10 = branches[BRANCH_ACCEPTED] / float(replays)
+    full = screen_decision(child_screen, parent_screen, cases)
+    conf_cases = sorted(child_conf)
+    selected30 = child_conf if full == BRANCH_ACCEPTED else parent_conf
+    diffs = [float(selected30[c]) - (p10 * float(child_conf[c]) + (1 - p10) * float(parent_conf[c])) for c in conf_cases]
+    child_minus_parent = [float(child_conf[c]) - float(parent_conf[c]) for c in conf_cases]
+    return {
+        "paired_success_difference": float(np.mean(diffs)),
+        "selected_controller_difference": {"n": len(diffs), **t_interval(diffs)},
+        "full_screen_decision": full,
+        "ten_case_acceptance_rate": p10,
+        "ten_case_branches": branches,
+        "replays": int(replays), "replay_seed": int(seed), "subset": int(subset),
+        "refitted_child_minus_parent_confirmation": {"n": len(child_minus_parent), **t_interval(child_minus_parent),
+                                                      **win_loss_tie(child_minus_parent)},
+        "screen_success": {"child": float(np.mean([child_screen[c][0] for c in cases])),
+                           "parent": float(np.mean([parent_screen[c][0] for c in cases]))},
+        "confirmation_success": {"child": float(np.mean([float(child_conf[c]) for c in conf_cases])),
+                                 "parent": float(np.mean([float(parent_conf[c]) for c in conf_cases]))},
+    }
+
+
+def nested_job(job) -> dict:
+    """Refit one controller on the shared demonstrations, select on the fresh probe, score screen and confirmation."""
+    import torch
+
+    torch.set_num_threads(1)
+    from lares.core.obs_schema import get_obs_schema
+    from lares.core.training_pipeline import DemoBuffer, ensure_mujoco_headless_gl
+    from lares.eval import EvaluationManifest, make_manifest_env
+    from lares.eval.runner import PolicyActor, evaluate_manifest
+    from lares.fitting.checkpoints import RolloutScore
+    from lares.fitting.optimizers import fit_policy_with_objective, prepare_data, state_parameters_sha256
+    from lares.fitting.structure_bank import instantiate_source
+
+    ensure_mujoco_headless_gl()
+    started = time.time()
+    fit_cfg, horizon = job["fitting"], int(job["horizon"])
+    with open(job["source_path"], encoding="utf-8") as f:
+        policy = instantiate_source(f.read(), 39, 4, get_obs_schema(job["env_name"]))
+    policy.fixed_action_scale = float(fit_cfg["fixed_action_scale"])
+    if job.get("check_state"):
+        if state_parameters_sha256(torch.load(job["check_state"], weights_only=True)) != \
+                state_parameters_sha256(policy.state_dict()):
+            raise RuntimeError(f"{job['policy_id']}: source does not rebuild the run's initial state")
+    probe = EvaluationManifest.load(job["probe_manifest"])
+    probe_env = make_manifest_env(probe, probe.resolve_pool())
+    counters = {"probe_episodes": 0, "screen_episodes": 0, "confirmation_episodes": 0}
+
+    def score(pol):
+        result = evaluate_manifest(PolicyActor(pol, deterministic=True, name="probe"), probe, probe_env,
+                                   max_steps=horizon)
+        counters["probe_episodes"] += len(result.episodes)
+        progress = [e.signed_goal_progress for e in result.episodes if e.signed_goal_progress is not None]
+        return RolloutScore(result.success_rate, float(np.mean(progress)) if progress else 0.0)
+
+    data = prepare_data(DemoBuffer.load(job["demo_buffer"]), val_fraction=float(fit_cfg["val_fraction"]),
+                        split_seed=int(fit_cfg["split_seed"]))
+    fit = fit_policy_with_objective(
+        policy, data, fit_cfg["objective"], budget=int(fit_cfg["budget_gradient_steps"]),
+        batch_size=min(int(fit_cfg["batch_size"]), int(data.train_obs.shape[0])), lr=float(fit_cfg["lr"]),
+        clip_grad_norm=float(fit_cfg["clip_grad_norm"]), seed=int(job["fit_seed"]), sampling=fit_cfg["sampling"],
+        rollout_probe=score, checkpoint_steps=[int(s) for s in fit_cfg["checkpoint_steps"]],
+        structure_id=job["policy_id"],
+    )
+    policy.load_state_dict(fit.selected_state)
+    out = {"policy_id": job["policy_id"], "role": job["role"], "source_path": rel(job["source_path"]),
+           "source_sha256": sha256_file(job["source_path"]), "selected_step": int(fit.selected_step),
+           "checkpoint_history": fit.checkpoint_history, "parameters_sha256": state_parameters_sha256(policy.state_dict())}
+    for name in ("screen", "confirmation"):
+        manifest = EvaluationManifest.load(job[f"{name}_manifest"])
+        env = make_manifest_env(manifest, manifest.resolve_pool())
+        result = evaluate_manifest(PolicyActor(policy, deterministic=True, name=job["policy_id"]), manifest, env,
+                                   max_steps=horizon)
+        counters[f"{name}_episodes"] += len(result.episodes)
+        out[name] = {"manifest_id": manifest.manifest_id, "success_rate": result.success_rate,
+                     "per_case": {e.case_id: [float(e.success), float(e.signed_goal_progress)
+                                              if e.signed_goal_progress is not None else 0.0]
+                                  for e in result.episodes}}
+    out.update(resources=counters, wall_time_seconds=time.time() - started)
+    path = os.path.join(job["out_dir"], "policies", f"{job['policy_id']}.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(out, f, indent=2, default=str)
+    return out
+
+
+def run_nested_screen(args) -> int:
+    import multiprocessing as mp
+
+    pairs = {q["child_id"]: q for q in discover_pairs(args.run)}
+    if args.child not in pairs:
+        raise SystemExit(f"{args.child} is not an evaluated fittable-lane child of {args.run}: {sorted(pairs)}")
+    pair, fitting = pairs[args.child], common_fitting(list(pairs.values()))
+    os.makedirs(args.out_dir, exist_ok=True)
+    status = ensure_entries_reserved([
+        (args.screen_seed, "mt1_pool", "R-007 nested screen: 30-case screen manifest"),
+        *[(x, "mt1_pool", "R-007 nested screen: 100-case confirmation manifest") for x in args.heldout_seed],
+        (args.probe_seed, "mt1_pool", "R-007 nested screen: 10-case checkpoint probe"),
+        (args.fit_seed, "fitting", "R-007 nested screen: child and parent refits"),
+        (args.replay_seed, "replay", "R-007 nested screen: ten-case subset replays"),
+    ], args.out_dir)
+    print(f"  pair {pair['child_id']} vs {pair['parent_id']}; seeds: {status}")
+    if args.reserve_only:
+        return 0
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    probe, probe_path = fresh_manifest(args.env_name, args.probe_seed, 10, args.horizon, args.out_dir, role="probe")
+    screen, screen_path = fresh_manifest(args.env_name, args.screen_seed, 30, args.horizon, args.out_dir,
+                                         role="screen", also_disjoint_from=[probe])
+    conf, conf_path = fresh_manifest(args.env_name, args.heldout_seed, 100, args.horizon, args.out_dir,
+                                     role="confirmation", also_disjoint_from=[probe, screen])
+    common = {"env_name": args.env_name, "horizon": args.horizon, "fitting": fitting, "fit_seed": args.fit_seed,
+              "out_dir": os.path.abspath(args.out_dir), "demo_buffer": os.path.join(_PROJECT_ROOT, args.demo_buffer),
+              "probe_manifest": os.path.abspath(probe_path), "screen_manifest": os.path.abspath(screen_path),
+              "confirmation_manifest": os.path.abspath(conf_path)}
+    jobs = [{**common, "policy_id": pair["child_id"], "role": "child", "source_path": pair["child_source_path"],
+             "check_state": pair["child_initial_state"]},
+            {**common, "policy_id": pair["parent_id"], "role": "parent", "source_path": pair["parent_source_path"]}]
+    with open(os.path.join(args.out_dir, "run.json"), "w", encoding="utf-8") as f:
+        json.dump({"started_at": now(), "argv": sys.argv, "pair": {k: v for k, v in pair.items()
+                                                                   if k != "objective_config"},
+                   "fitting": fitting, "seeds": {"screen": args.screen_seed, "confirmation": args.heldout_seed,
+                                                 "probe": args.probe_seed, "fit": args.fit_seed,
+                                                 "replay": args.replay_seed},
+                   "manifests": {"probe": probe.manifest_id, "screen": screen.manifest_id,
+                                 "confirmation": conf.manifest_id},
+                   "demo_buffer_sha256": sha256_file(common["demo_buffer"])}, f, indent=2, default=str)
+    with mp.get_context("spawn").Pool(processes=2) as pool:
+        child, parent = pool.map(nested_job, jobs)
+    summary = nested_screen_analysis(
+        {c: tuple(v) for c, v in child["screen"]["per_case"].items()},
+        {c: tuple(v) for c, v in parent["screen"]["per_case"].items()},
+        {c: v[0] for c, v in child["confirmation"]["per_case"].items()},
+        {c: v[0] for c, v in parent["confirmation"]["per_case"].items()},
+        replays=args.replays, seed=args.replay_seed)
+    summary.update(child=pair["child_id"], parent=pair["parent_id"],
+                   selected_steps={"child": child["selected_step"], "parent": parent["selected_step"]},
+                   resources={k: child["resources"][k] + parent["resources"][k] for k in child["resources"]})
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2, default=str)
+    d, r = summary["selected_controller_difference"], summary["refitted_child_minus_parent_confirmation"]
+    print(f"  screen success child {summary['screen_success']['child']:.3f} parent {summary['screen_success']['parent']:.3f}; "
+          f"full screen: {summary['full_screen_decision']}; 10-case acceptance {summary['ten_case_acceptance_rate']:.3f} "
+          f"{summary['ten_case_branches']}")
+    print(f"  selected-controller difference (30 vs 10): {d['mean']:+.4f} [{d['low']:+.4f}, {d['high']:+.4f}]")
+    print(f"  refitted child - parent on confirmation: {r['mean']:+.3f} [{r['low']:+.3f}, {r['high']:+.3f}] "
+          f"w/l/t {r['wins']}/{r['losses']}/{r['ties']}; resources {summary['resources']}")
+    return 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--run", required=True, help="two-lane run directory")
     p.add_argument("--baseline", default="", help="zero-shot baseline run directory (R-001 secondary)")
-    p.add_argument("--pool-seed", type=int, required=True)
+    p.add_argument("--pool-seed", type=int, help="fresh evaluation pool (R-005 mode)")
     p.add_argument("--fit-seed", type=int, required=True)
+    p.add_argument("--research-protocol", choices=["nested-screen"], default="")
+    p.add_argument("--child", default="", help="nested-screen: the frozen child attempt id")
+    p.add_argument("--screen-seed", type=int)
+    p.add_argument("--heldout-seed", type=int, nargs="+", help="confirmation pool seed(s); 50 placements each")
+    p.add_argument("--probe-seed", type=int)
+    p.add_argument("--replay-seed", type=int)
+    p.add_argument("--replays", type=int, default=1000)
     p.add_argument("--out-dir", required=True)
     p.add_argument("--env-name", default="push-v2")
     p.add_argument("--episodes", type=int, default=50)
@@ -351,6 +570,14 @@ def main(argv=None) -> int:
     p.add_argument("--workers", type=int, default=8)
     p.add_argument("--reserve-only", action="store_true", help="check and reserve the seeds, then stop")
     args = p.parse_args(argv)
+    if args.research_protocol == "nested-screen":
+        missing = [n for n in ("child", "screen_seed", "heldout_seed", "probe_seed", "replay_seed")
+                   if getattr(args, n) in (None, "")]
+        if missing:
+            raise SystemExit(f"nested-screen needs --{', --'.join(m.replace('_', '-') for m in missing)}")
+        return run_nested_screen(args)
+    if args.pool_seed is None:
+        raise SystemExit("--pool-seed is required")
 
     pairs = discover_pairs(args.run)
     fitting = common_fitting(pairs)

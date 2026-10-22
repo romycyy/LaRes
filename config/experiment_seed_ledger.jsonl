@@ -67,3 +67,9 @@
 {"seed": 2627, "namespace": "mt1_pool", "use": "R-006 vision repair pilot: cell probe manifest", "artifact": "config/stage_f_vision/stage_f_vision.yaml", "recorded_at": "2026-10-22T03:14:55", "backfilled": false}
 {"seed": 2628, "namespace": "mt1_pool", "use": "R-006 vision repair pilot: cell probe manifest", "artifact": "config/stage_f_vision/stage_f_vision.yaml", "recorded_at": "2026-10-22T03:14:55", "backfilled": false}
 {"seed": 2629, "namespace": "mt1_pool", "use": "R-006 vision repair pilot: held-out manifest", "artifact": "config/stage_f_vision/stage_f_vision.yaml", "recorded_at": "2026-10-22T03:14:55", "backfilled": false}
+{"seed": 2800, "namespace": "mt1_pool", "use": "R-007 nested screen: 30-case screen manifest", "artifact": "logs/research/nested_screen_s2800", "recorded_at": "2026-10-22T04:20:36", "backfilled": false}
+{"seed": 2801, "namespace": "mt1_pool", "use": "R-007 nested screen: 100-case confirmation manifest", "artifact": "logs/research/nested_screen_s2800", "recorded_at": "2026-10-22T04:20:36", "backfilled": false}
+{"seed": 2804, "namespace": "mt1_pool", "use": "R-007 nested screen: 10-case checkpoint probe", "artifact": "logs/research/nested_screen_s2800", "recorded_at": "2026-10-22T04:20:36", "backfilled": false}
+{"seed": 2802, "namespace": "fitting", "use": "R-007 nested screen: child and parent refits", "artifact": "logs/research/nested_screen_s2800", "recorded_at": "2026-10-22T04:20:36", "backfilled": false}
+{"seed": 2803, "namespace": "replay", "use": "R-007 nested screen: ten-case subset replays", "artifact": "logs/research/nested_screen_s2800", "recorded_at": "2026-10-22T04:20:36", "backfilled": false}
+{"seed": 2805, "namespace": "mt1_pool", "use": "R-007 nested screen: 100-case confirmation manifest", "artifact": "logs/research/nested_screen_s2800", "recorded_at": "2026-10-22T04:21:19", "backfilled": false}

@@ -1,0 +1,190 @@
+{
+  "id": "R-007",
+  "title": "Measure false rejection from a ten-case screen",
+  "hypothesis": "A thirty-case screen preserves beneficial frozen edits that a ten-case screen rejects through sampling ties.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.02,
+    "against": "Ten-case screening of the same frozen, identically refitted parent-child pair",
+    "rationale": "Measure independently evaluated success of the controller selected by each screen size; two percentage points would justify examining this bottleneck. Unlike R-003, this changes sample size without adaptive evolution or generation-wise rotation. Remote spend requires per-idea approval."
+  },
+  "protocol": {
+    "script": "scripts/compare_child_vs_parent.py",
+    "config": "config/two_lane_search.yaml",
+    "command": "python scripts/compare_child_vs_parent.py --run logs/two_lane_search --research-protocol nested-screen --child gen0_cand5_a0 --screen-seed 2800 --heldout-seed 2801 2805 --fit-seed 2802 --replay-seed 2803 --probe-seed 2804 --out-dir logs/research/nested_screen_s2800",
+    "seeds": [
+      2800,
+      2801,
+      2802,
+      2803,
+      2804,
+      2805
+    ],
+    "manifests": [
+      "config/manifests/push-v2_train.yaml",
+      "config/manifests/push-v2_development.yaml"
+    ],
+    "episodes": 320,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/compare_child_vs_parent.py (--research-protocol nested-screen: frozen gen0_cand5_a0 vs simple_damped_push, identical refit, probe s2804 x10, screen s2800 x30, confirmation s2801 x100, 1000 ten-case replays seeded 2803; manifests built into the out dir)",
+      "tests/test_child_vs_parent.py"
+    ],
+    "needs_gpu": false,
+    "needs_llm": false
+  },
+  "status": "decided",
+  "source": "advisor",
+  "falsified_by": "An upper paired 95% confidence bound below +0.02 refutes the predicted benefit; an interval including zero leaves the directional advantage inconclusive. Support requires a gain of at least +0.02 and a lower bound above zero.",
+  "cost_estimate": {
+    "episodes": 320,
+    "llm_calls": 0,
+    "wall_time_minutes": 20
+  },
+  "open_question_refs": [
+    0,
+    8
+  ],
+  "briefing_sha256": "a711e545d506cccbb14233400c774eaff52ae25c86cde2f5d2404b8047b76f50",
+  "proposal_call_id": "call_00006",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T04:19:03",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00007, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T041838_call_00007.json"
+  },
+  "run": {
+    "started_at": "2026-10-22T04:20:30",
+    "git_sha": "401ec7c33b32c50393202a4ae8e06f8d0f28bed3",
+    "dirty_worktree": true,
+    "log_dir": "logs/research/nested_screen_s2800",
+    "finished_at": "2026-10-22T04:22:56"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.004400000000000004,
+      "paired_success_difference_t95": [
+        0.0019041246290080298,
+        0.006895875370991978
+      ],
+      "ten_case_acceptance_rate": 0.96,
+      "ten_case_branches": {
+        "accepted": 960,
+        "child_lower_success": 0,
+        "tied_success_lower_or_equal_progress": 40
+      },
+      "full_screen_decision": "accepted",
+      "refitted_child_minus_parent_confirmation": 0.11,
+      "refitted_child_minus_parent_t95": [
+        0.04760311572520071,
+        0.1723968842747993
+      ],
+      "refitted_child_minus_parent_wlt": [
+        11,
+        0,
+        89
+      ],
+      "screen_success": {
+        "child": 1.0,
+        "parent": 0.8666666666666667
+      },
+      "confirmation_success": {
+        "child": 1.0,
+        "parent": 0.89
+      },
+      "selected_steps": {
+        "child": 1000,
+        "parent": 1000
+      },
+      "resources": {
+        "probe_episodes": 60,
+        "screen_episodes": 60,
+        "confirmation_episodes": 200
+      }
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "control is ten-case screening of the same refitted pair; the metric is already full-screen minus ten-case selection"
+    },
+    "artifacts": [
+      "logs/research/nested_screen_s2800/summary.json",
+      "logs/research/nested_screen_s2800/run.json",
+      "logs/research/nested_screen_s2800/policies"
+    ],
+    "notes": "Frozen pair gen0_cand5_a0 (geometry-scope mutation) vs simple_damped_push, both refitted with fit seed 2802 (budget 1000, checkpoints 0/500/1000 on a fresh 10-case probe s2804; both selected step {'child': 1000, 'parent': 1000}). 30-case screen (s2800): child 1.000, parent 0.867; full screen accepts. Ten-case replays (1000, seed 2803) accept 96.0%; the 40 rejections are all tied success with lower or equal progress, none lower success. Selected-controller paired difference over 100 confirmation placements (s2801+s2805): +0.0044 [+0.0019, +0.0069]; upper bound below the predicted +0.02. Secondary (decisive per the advisor): refitted child minus parent on confirmation +0.110 [+0.048, +0.172], 11/0/89, replicating R-005's +0.14 for this pair under a different fit seed and fresh cases. Deviation: an MT1 pool seed gives 50 placements, so the 100-case confirmation used pool seeds 2801 and 2805 (2805 added and reserved before the run). Replays are conditional on one fitted pair and one screen pool, not replicates. 320 episodes, 0 LLM calls."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 0.004400000000000004,
+    "delta": 0.004400000000000004,
+    "matched": false
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.85,
+      "reasoning": "Full-screen minus ten-case selected-controller success is +0.0044 [+0.0019, +0.0069] over 100 confirmation placements; the upper bound is below the predicted +0.02, which the predeclared falsifier names as refuting. The ten-case screen accepted the beneficial child in 96% of replays (rejections only on tied success), so screen sampling is not what blocks good edits for this pair. Separately, the refitted geometry-scope child beats its parent by +0.110 [+0.048, +0.172], 11/0/89, replicating R-005: this LLM mutation is genuinely beneficial and a 10-case screen keeps it. The repair failures in Stage F/R-006 are therefore about edit quality, not screen size.",
+      "cited_artifacts": [
+        "logs/research/nested_screen_s2800/summary.json"
+      ],
+      "next_experiment": "Treat gen0_cand5_a0 (geometry-scope damped push) as a validated fittable structure; consider admitting it to the seed bank under the qualification rule, and ask why geometry-scope edits work when correction-LLM repairs do not.",
+      "recorded_at": "2026-10-22T04:22:57",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "Against the measured ten-case screening control, thirty-case selection produced paired_success_difference +0.0044, with paired 95% interval [+0.0019, +0.0069] [logs/research/nested_screen_s2800/summary.json]. The upper bound is below the predicted +0.02 increase, refuting the prespecified magnitude despite a positive conditional difference [logs/research/nested_screen_s2800/summary.json]. Ten-case replays accepted the child 96% of the time; all 40 rejections involved tied success and lower or equal progress, rather than lower success [logs/research/nested_screen_s2800/summary.json]. The child independently outperformed its parent by +0.11 [+0.0476, +0.1724], but that child-parent advantage does not establish the predicted screen-size benefit [logs/research/nested_screen_s2800/summary.json]. These replay results are conditional on the fitted pair and screen pool, not independent replications across fitting and screening draws [logs/research/nested_screen_s2800/summary.json].",
+      "cited_artifacts": [
+        "logs/research/nested_screen_s2800/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T04:23:17",
+      "call_id": "call_00008"
+    }
+  ],
+  "decision_id": "D-004",
+  "history": [
+    {
+      "at": "2026-10-22T04:19:03",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00007: reuse compare_child_vs_parent.py; freeze gen0_cand5_a0 and parent; report refitted child-minus-parent separately; classify rejection branch; interval over confirmation placements; manifests built into the out dir instead of config/manifests/research"
+    },
+    {
+      "at": "2026-10-22T04:19:03",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00007, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T04:20:30",
+      "from": "approved",
+      "to": "running",
+      "note": "git 401ec7c33b (dirty)"
+    },
+    {
+      "at": "2026-10-22T04:21:18",
+      "from": "running",
+      "to": "running",
+      "note": "deviation: an MT1 pool seed yields 50 placements, so the approved 100-case confirmation manifest uses pool seeds 2801 and 2805 (2805 unused, reserved now); budget unchanged at 320 episodes"
+    },
+    {
+      "at": "2026-10-22T04:22:56",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=False"
+    },
+    {
+      "at": "2026-10-22T04:23:26",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-004: refuted"
+    }
+  ],
+  "created_at": "2026-10-22T04:17:05"
+}

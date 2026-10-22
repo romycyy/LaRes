@@ -134,6 +134,37 @@ class TestStatistic(unittest.TestCase):
             cvp.placement_differences(per_case, self.PAIRS)
 
 
+class TestNestedScreen(unittest.TestCase):
+    """R-007: Stage F's acceptance rule replayed on subsets of a larger screen."""
+
+    def test_the_rule_needs_strictly_better_success_or_progress(self):
+        child = {"a": (1.0, 0.2), "b": (0.0, 0.1)}
+        self.assertEqual(cvp.screen_decision(child, {"a": (0.0, 0.2), "b": (0.0, 0.1)}, ["a", "b"]), cvp.BRANCH_ACCEPTED)
+        self.assertEqual(cvp.screen_decision(child, {"a": (1.0, 0.3), "b": (1.0, 0.1)}, ["a", "b"]),
+                         cvp.BRANCH_LOWER_SUCCESS)
+        self.assertEqual(cvp.screen_decision(child, dict(child), ["a", "b"]), cvp.BRANCH_TIED_SUCCESS_LOWER_PROGRESS)
+
+    def test_a_child_better_only_on_part_of_the_screen_is_rejected_by_some_subsets(self):
+        cases = [f"s{i}" for i in range(30)]
+        # The child wins 6 of 30 screen cases and ties the rest at slightly lower progress.
+        child = {c: ((1.0 if i < 6 else 0.0), 0.10) for i, c in enumerate(cases)}
+        parent = {c: (0.0, 0.11) for c in cases}
+        conf = [f"c{i}" for i in range(20)]
+        child_conf = {c: (1.0 if i < 8 else 0.0) for i, c in enumerate(conf)}
+        parent_conf = {c: (1.0 if i < 4 else 0.0) for i, c in enumerate(conf)}
+        out = cvp.nested_screen_analysis(child, parent, child_conf, parent_conf, replays=500, seed=1)
+        self.assertEqual(out["full_screen_decision"], cvp.BRANCH_ACCEPTED)
+        self.assertTrue(0.0 < out["ten_case_acceptance_rate"] < 1.0)
+        self.assertEqual(sum(out["ten_case_branches"].values()), 500)
+        expected = (1 - out["ten_case_acceptance_rate"]) * 0.2      # 4 of 20 cases differ by 1
+        self.assertAlmostEqual(out["paired_success_difference"], expected)
+        self.assertAlmostEqual(out["refitted_child_minus_parent_confirmation"]["mean"], 0.2)
+
+    def test_unpaired_cases_are_refused(self):
+        with self.assertRaises(ValueError):
+            cvp.nested_screen_analysis({"a": (1, 0)}, {"b": (1, 0)}, {"c": 1}, {"c": 1}, replays=10, seed=0, subset=1)
+
+
 class TestSeeds(unittest.TestCase):
     def test_reserves_once_then_recognises_its_own_reservation(self):
         with tempfile.TemporaryDirectory() as d:

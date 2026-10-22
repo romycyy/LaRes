@@ -1,0 +1,77 @@
+{
+  "id": "R-008",
+  "title": "Replace imitation with direct search on weak evolved structures",
+  "hypothesis": "Direct rollout search escapes poor imitation trajectories in weak evolved structures by optimizing their existing parameters for task success.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "Rollout-selected imitation fitting alone at an equal selection-episode budget",
+    "rationale": "A ten-point gain would warrant replacing fitting for this stratum. Unlike Stage F's post-fit repair comparison, both treatments start from the frozen original parameter vector and neither receives repair. Remote spend requires per-idea approval."
+  },
+  "protocol": {
+    "script": "scripts/stage_f.py",
+    "config": "config/stage_f/stage_f.yaml",
+    "command": "python scripts/stage_f.py search-vs-fit --config config/stage_f/stage_f.yaml --probe-seed 2810 --heldout-seed 2811 --optimizer-seed 2812 --out-dir logs/research/search_replaces_fitting_s2810",
+    "seeds": [
+      2810,
+      2811,
+      2812
+    ],
+    "manifests": [
+      "config/manifests/research/push-v2_development_probe_s2810.yaml",
+      "config/manifests/research/push-v2_development_confirmation_s2811.yaml"
+    ],
+    "episodes": 520,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/stage_f.py: add the research-protocol CLI used above. Before new evaluations, select the two lowest archived-success non-bank evolved structures referenced by config/stage_f/selection.json; fail closed if fewer than two exist. Treat them only as diagnostic subjects, never as fittable-lane parents.",
+      "scripts/stage_f.py: for each structure and three optimizer seeds, compare eight parameter vectors from the existing Stage F search operator, including the original vector, against imitation checkpoints {0,125,250,375,500,625,750,1000}. Freeze topology and legal parameter bounds; disable all repair.",
+      "scripts/stage_f.py: each arm spends eighty selection episodes on the same ten-case probe and uses success-first rollout selection, never validation loss. Evaluate both selected controllers on the same fifty fresh confirmation cases: 2 structures x 3 seeds x (80+80+50+50) = 1560 episodes.",
+      "scripts/stage_f.py: average paired outcomes over the fixed structures and optimizer restarts within each confirmation placement before computing the paired interval; do not label restarts independent data replicates. Perform no promotions.",
+      "config/manifests/research/: generate the two development-only manifests named above. Force CPU execution, require remote-spend approval, and stop the remote instance afterward."
+    ],
+    "needs_gpu": false,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "An upper paired 95% confidence bound below +0.10 refutes the predicted gain; an interval including zero is inconclusive about directional superiority. Support requires at least +0.10 with a lower bound above zero.",
+  "cost_estimate": {
+    "episodes": 520,
+    "llm_calls": 0,
+    "wall_time_minutes": 80
+  },
+  "open_question_refs": [
+    -1,
+    4
+  ],
+  "briefing_sha256": "a711e545d506cccbb14233400c774eaff52ae25c86cde2f5d2404b8047b76f50",
+  "proposal_call_id": "call_00006",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T04:19:03",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00007, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T041838_call_00007.json"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-22T04:19:03",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00007: one optimizer seed (2812) first, 2 structures x 260 = 520 episodes; seeds 2813-2814 released; conclusions restricted to the two frozen diagnostic structures"
+    },
+    {
+      "at": "2026-10-22T04:19:03",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00007, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    }
+  ],
+  "created_at": "2026-10-22T04:17:05"
+}

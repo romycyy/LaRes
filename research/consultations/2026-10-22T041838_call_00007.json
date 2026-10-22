@@ -1,0 +1,48 @@
+{
+  "ideas": [
+    {
+      "id": "R-007",
+      "recommendation": "revise",
+      "reasoning": "This most cheaply distinguishes sampling-driven rejection from an edit that no longer benefits its parent: 320 simulator episodes and zero LLM calls. Its weakest point is that one frozen pair and one thirty-case screen establish only a conditional screening effect, not a general explanation for repair failures.",
+      "suggested_changes": [
+        "Reuse scripts/compare_child_vs_parent.py with config/two_lane_search.yaml; an additional script is unnecessary. Freeze gen0_cand5 and its unambiguous parent before evaluation, retaining seeds 2800–2804 and the 320-episode budget.",
+        "Report the refitted child-minus-parent confirmation difference separately from the selected-controller difference, and classify screen rejections by the actual acceptance-rule branch. Keep all thresholds unchanged between screen sizes.",
+        "Compute the selected-controller paired interval over independent confirmation placements, conditional on the fitted pair and screen pool; do not treat the 1000 subset replays as independent replicates.",
+        "Prediction retained: paired_success_difference increase by at least 0.02 versus ten-case screening of the same identically refitted pair. falsified_by: an upper paired 95% bound below +0.02; a zero-spanning interval is inconclusive about direction. If interpretation remains inconclusive, the decisive measurement is the refitted child-minus-parent paired confirmation difference."
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "R-008",
+      "recommendation": "revise",
+      "reasoning": "This directly tests whether rollout optimization finds useful parameters outside imitation trajectories without spending LLM calls. Three restarts are expensive for an initial diagnostic, while two deliberately weak structures still cannot establish a replacement rule for the broader structure population.",
+      "suggested_changes": [
+        "Reuse scripts/stage_f.py and config/stage_f/stage_f.yaml, but run only optimizer seed 2812 initially, retaining probe seed 2810 and confirmation seed 2811: two structures × one restart × 260 episodes = 520 episodes, zero LLM calls.",
+        "Preserve eight vectors or checkpoints and eighty selection episodes per arm, original-vector initialization, disjoint rollout selection, and disabled repair. Restrict conclusions to the two frozen diagnostic structures; additional restarts would require a separately approved follow-up.",
+        "Prediction retained: paired_success_difference increase by at least 0.10 versus rollout-selected imitation at equal selection-episode budgets. falsified_by: an upper paired 95% bound below +0.10; a zero-spanning interval is inconclusive about direction. Support requires an observed gain of at least +0.10 and a positive lower bound."
+      ],
+      "depends_on": [
+        "R-007"
+      ]
+    },
+    {
+      "id": "R-009",
+      "recommendation": "defer",
+      "reasoning": "Bounds-only editing isolates LLM guidance over interval placement, but its 1080 episodes and four LLM calls buy a narrower answer than the two cheaper diagnostics. Its weakest point is that unchanged executable structure does not guarantee an effective intervention: fitting must actually respond to the narrowed bounds, and the width-matched control conditions on the LLM's parameter choices. Retain the prediction of paired_success_difference increase by at least 0.05 versus matched random bounds; falsified_by: an upper paired 95% bound below +0.05, with zero-spanning intervals inconclusive, and require a positive paired lower bound against the unedited parent before calling an edit useful.",
+      "suggested_changes": [],
+      "depends_on": [
+        "R-007",
+        "R-008"
+      ]
+    }
+  ],
+  "order": [
+    "R-007",
+    "R-008",
+    "R-009"
+  ],
+  "next_step": "Implement and run revised R-007 first using seeds 2800–2804 on development-only manifests, capped at 320 episodes and zero LLM calls, then stop the remote instance.",
+  "call_id": "call_00007",
+  "briefing_sha256": "904a0ca74cc9be089495848cf5e7f760ee47a50a47df1242f512f104b6c553ed",
+  "question": "The user has delegated approve/reject to you for this session. Map: run_as_is = approve, drop = reject, revise = approve after listed changes, defer = leave proposed. Context: D-003 (R-006) just refuted VLM evidence in repair: all 18 LLM children in both arms scored at or below their refitted parent on a 10-case screen and were rejected. Note for R-007: the two-lane geometry-scope child (gen0_cand5) beat its parent by +0.14 on 50 fresh cases in R-005, so it is a real candidate for a beneficial edit; the implementer will use its own new script rather than overloading compare_child_vs_parent.py if cleaner. Judge which of these teach the most per episode and LLM call, and in what order."
+}
