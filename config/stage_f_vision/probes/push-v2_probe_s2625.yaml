@@ -1,0 +1,76 @@
+manifest_id: push-v2:cell_probe:s2625:n10
+environment:
+  package: metaworld
+  version_or_commit: 3.0.0
+  env_id: push-v2
+  env_id_v3: push-v3
+  reward_version: metaworld.envs.sawyer_push_v3.SawyerPushEnvV3.compute_reward
+  wrappers:
+  - NormalizedBoxEnv
+  - gym.TimeLimit
+  - lares.env_wrapper
+  horizon: 150
+  action_scale:
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  success_rule: info['success'] = float(obj_to_target <= TARGET_RADIUS=0.05)
+pool:
+  benchmark: MT1
+  env_id_v3: push-v3
+  seeds:
+  - 2625
+  tasks_per_seed: 50
+split: development
+episodes:
+- case_id: development-0000
+  task_id: MT1:push-v3:s2625:000
+  task_hash: 61b83748a87358cc
+  reset_seed: 1000000
+  policy_seed: 9000000
+- case_id: development-0001
+  task_id: MT1:push-v3:s2625:001
+  task_hash: 9617d07c573af803
+  reset_seed: 1000001
+  policy_seed: 9000001
+- case_id: development-0002
+  task_id: MT1:push-v3:s2625:002
+  task_hash: 7ae9281d12ef1fc1
+  reset_seed: 1000002
+  policy_seed: 9000002
+- case_id: development-0003
+  task_id: MT1:push-v3:s2625:003
+  task_hash: 2178373ff19791ae
+  reset_seed: 1000003
+  policy_seed: 9000003
+- case_id: development-0004
+  task_id: MT1:push-v3:s2625:004
+  task_hash: e3c4d1241b6e1f96
+  reset_seed: 1000004
+  policy_seed: 9000004
+- case_id: development-0005
+  task_id: MT1:push-v3:s2625:005
+  task_hash: 8045b3518aaadb21
+  reset_seed: 1000005
+  policy_seed: 9000005
+- case_id: development-0006
+  task_id: MT1:push-v3:s2625:006
+  task_hash: 4a87ecb72b6fb00b
+  reset_seed: 1000006
+  policy_seed: 9000006
+- case_id: development-0007
+  task_id: MT1:push-v3:s2625:007
+  task_hash: 684129ef5f1f8fdd
+  reset_seed: 1000007
+  policy_seed: 9000007
+- case_id: development-0008
+  task_id: MT1:push-v3:s2625:008
+  task_hash: 0aa5d23ccfd84d41
+  reset_seed: 1000008
+  policy_seed: 9000008
+- case_id: development-0009
+  task_id: MT1:push-v3:s2625:009
+  task_hash: acf0e2643c64d10f
+  reset_seed: 1000009
+  policy_seed: 9000009

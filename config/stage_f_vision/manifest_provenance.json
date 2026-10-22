@@ -1,0 +1,64 @@
+{
+  "manifest_id": "push-v2:development_heldout:s2629:n50",
+  "manifest_path": "config/stage_f_vision/push-v2_development_heldout_s2629.yaml",
+  "manifest_sha256": "0dcf6d81c84d14cf1231239b7a87fefdfbc31e5438e398cc5146630ceefbb012",
+  "pool_seed": 2629,
+  "episodes": 50,
+  "built_at": "2026-10-22T07:16:34",
+  "probes": {
+    "2620": {
+      "manifest_id": "push-v2:cell_probe:s2620:n10",
+      "path": "config/stage_f_vision/probes/push-v2_probe_s2620.yaml",
+      "sha256": "db66cab1d29056920e91cac29c555cae353c008e08b333615cfad6c21ab063ea"
+    },
+    "2621": {
+      "manifest_id": "push-v2:cell_probe:s2621:n10",
+      "path": "config/stage_f_vision/probes/push-v2_probe_s2621.yaml",
+      "sha256": "159e226964342cbbb27605a1b6901bb72e86d2086a5c1bd894d76b4e07d3e1ff"
+    },
+    "2622": {
+      "manifest_id": "push-v2:cell_probe:s2622:n10",
+      "path": "config/stage_f_vision/probes/push-v2_probe_s2622.yaml",
+      "sha256": "1d4a85abf737d03b1d1105f9a84dcfb3c2cba88c7839d03b1356fb1f087303bd"
+    },
+    "2623": {
+      "manifest_id": "push-v2:cell_probe:s2623:n10",
+      "path": "config/stage_f_vision/probes/push-v2_probe_s2623.yaml",
+      "sha256": "34ecb7f4a50ef1ea66df8fba682ac43152373d72d4d2ff4b9feeaa9ca33abd4b"
+    },
+    "2624": {
+      "manifest_id": "push-v2:cell_probe:s2624:n10",
+      "path": "config/stage_f_vision/probes/push-v2_probe_s2624.yaml",
+      "sha256": "b619876b3dcdff5f8ded3e79c4e86d26cc025c6bf9ca526325a250085555fb78"
+    },
+    "2625": {
+      "manifest_id": "push-v2:cell_probe:s2625:n10",
+      "path": "config/stage_f_vision/probes/push-v2_probe_s2625.yaml",
+      "sha256": "80b5b040bcf248de33fcc7cab708ed464d286b56b4719c06ece7c41733c187ee"
+    },
+    "2626": {
+      "manifest_id": "push-v2:cell_probe:s2626:n10",
+      "path": "config/stage_f_vision/probes/push-v2_probe_s2626.yaml",
+      "sha256": "24521ba52df6986fc624fd00c7a4c7b25c6905d0c03e09066c287b30ccfda0e5"
+    },
+    "2627": {
+      "manifest_id": "push-v2:cell_probe:s2627:n10",
+      "path": "config/stage_f_vision/probes/push-v2_probe_s2627.yaml",
+      "sha256": "4f43a226c8ed7f68b9b5dfd546e6c01b19b99799bb38599942d8e67d8b8390af"
+    },
+    "2628": {
+      "manifest_id": "push-v2:cell_probe:s2628:n10",
+      "path": "config/stage_f_vision/probes/push-v2_probe_s2628.yaml",
+      "sha256": "5f6c3889d2c7ddb2f4f02e8fa5120f894bbccc275b0f742892c6e871e54668cc"
+    }
+  },
+  "disjoint_from": [
+    "push-v2:development_confirmation:s2300:n50",
+    "push-v2:development:s2000:n50",
+    "push-v2:final_test:s3000-3001:n100",
+    "push-v2:train:s1000-1001-1002:n150",
+    "push-v2:development_confirmation:s2200:n50",
+    "push-v2:development_heldout:s2500:n50"
+  ],
+  "selection_sha256": "956f897f37d8154a3fd45215b1ef14c2a9fe90e7d6406726c2df1611ef6926a4"
+}

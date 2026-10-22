@@ -1,0 +1,83 @@
+# ============================================================
+#  R-006: vision evidence in correction-LLM repair (development-only E10 pilot)
+#  Approved 2026-10-22 by the advisor under the user's session delegation (research/ideas/R-006.json,
+#  consult call_00003). Phase 7 stays blocked; the final-test split is never loaded.
+#  Driver: scripts/stage_f.py
+#    reserve --config <this>          (locally: writes the seed ledger)
+#    build-manifest --config <this>   (GPU box: held-out + nine probe manifests; copy back and commit)
+#    vlm-smoke --config <this>        (GPU box: T4 memory check before any protocol spend)
+#    run --config <this>              (clean worktree; records the Git SHA)
+# ============================================================
+
+study: R-006 vision repair pilot
+env_name: push-v2
+horizon: 150
+out_dir: logs/stage_f_vision
+
+# Stage F's arms minus the ones this pilot does not test. llm_numeric is the primary control; no_repair is reported.
+arms: [no_repair, llm_numeric, llm_numeric_vision]
+
+structures:
+  bank: [simple_damped_push]
+  evolved:
+    # Stage F's frozen selection, reused unchanged (selected 2026-10-13, before any R-006 outcome existed).
+    selection_file: config/stage_f/selection.json
+
+# One independent bundle per (structure, replicate) cell. The cell seed draws the demonstration sample, the
+# trajectory-level split, the fitting seed and the MT1 pool of the cell's probe manifest. Arms are paired within a cell.
+cells:
+  - {structure: simple_damped_push, seed: 2620}
+  - {structure: simple_damped_push, seed: 2621}
+  - {structure: simple_damped_push, seed: 2622}
+  - {structure: baseline61_gen0_cand2_a1, seed: 2623}
+  - {structure: baseline61_gen0_cand2_a1, seed: 2624}
+  - {structure: baseline61_gen0_cand2_a1, seed: 2625}
+  - {structure: baseline61_gen0_cand1_a0, seed: 2626}
+  - {structure: baseline61_gen0_cand1_a0, seed: 2627}
+  - {structure: baseline61_gen0_cand1_a0, seed: 2628}
+
+bundle:
+  demonstrations: logs/baseline_lock/demo_push-v2.pkl
+  demonstrations_sha256: 00fd80a4686b7bb2ced65b2faa26d1b2bd886954ffce80d5afff6029802dc32e
+  episodes_per_cell: 120       # of 150, without replacement
+  val_fraction: 0.2
+  probe_episodes: 10           # checkpoint selection only
+
+seeds:
+  held_out_pool_seed: 2629
+  ledger: config/experiment_seed_ledger.jsonl
+
+manifests:
+  development: config/manifests/push-v2_development.yaml
+  screen_episodes: 10          # development cases 0-9: every arm's decision, and the frames the VLM sees
+  probe_dir: config/stage_f_vision/probes
+  held_out:
+    path: config/stage_f_vision/push-v2_development_heldout_s2629.yaml
+    manifest_id: push-v2:development_heldout:s2629:n50
+    episodes: 50               # scores every arm's result; decides nothing
+
+fitting:
+  objective: deterministic_mse
+  budget: 1000
+  checkpoint_steps: [0, 500, 1000]
+
+budget:
+  max_substitutions: 2         # unused here; kept so the cap matches Stage F's 60 repair-evaluation episodes
+  max_llm_calls: 4
+  max_repair_per_candidate: 1
+
+llm:
+  model: gpt-6.1-sol
+  reasoning_effort: high
+
+vision:
+  model: Qwen/Qwen2.5-VL-7B-Instruct
+  revision: cc594898137f460bfe9f0759e9844b3ce807cfb5
+  quantization: nf4            # language weights 4-bit, fp16 compute; vision tower and lm_head fp16 (T4: no bf16)
+  max_pixels: 200704           # 256 x 28 x 28: at most 256 visual tokens per frame
+  max_new_tokens: 512
+  episodes_per_packet: 3       # worst failed screen episodes, five rule-selected frames each
+
+analysis:
+  primary: llm_numeric_vision minus llm_numeric, held-out success, paired t over the nine cells
+  secondary: [llm_numeric_vision minus no_repair, held-out-case bootstrap of the primary, packet audits]

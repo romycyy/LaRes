@@ -1,13 +1,13 @@
 {
   "id": "R-006",
-  "title": "Vision evidence from a local Qwen VLM makes correction-LLM repair beat numeric-only repair",
+  "title": "Vision evidence from a local Qwen VLM makes correction-LLM repair beat numeric-only repair (development-only E10 pilot)",
   "hypothesis": "Adding a validated visual failure analysis (Qwen VL on the five rule-selected frames of the parent's worst <=3 failed screen episodes, merged with the numbers by lares.vision.merge) to the Stage F numeric evidence packet lets the correction LLM localise the failing component, so its repairs win more held-out episodes than the identical numeric-only arm at the same repair-episode cap.",
   "prediction": {
     "metric": "paired_success_difference",
     "direction": "increase",
     "threshold": 0.05,
-    "against": "arm llm_numeric (Stage F numeric packet, same structures, seeds, refit, acceptance rule and episode cap); paired per replicate (structure x seed), t interval over 9 replicates; no_repair reported as a second control",
-    "rationale": "Stage F LLM arms were flat (-0.004 to +0.011 vs no_repair) and intervention evidence gave the only LLM wins, so richer localising evidence is the open lever; +0.05 is the smallest held-out gain that would justify a VLM in the loop. With 9 replicates this is a pilot: a positive mean with an interval spanning zero is inconclusive."
+    "against": "arm llm_numeric in the same cell: same structure, same independent data/split/probe bundle and fitting seed, same common preprocessing, acceptance rule, repair-episode cap and held-out cases (pool seed 2629); no_repair reported as a second control",
+    "rationale": "Stage F LLM arms were flat and only intervention evidence produced LLM wins, so richer localising evidence is the open lever. 0.05 is a practical target, not a significance cutoff. Uncertainty is a paired t over the 9 independent cells (3 frozen Stage F structures x 3 bundles), with sensitivity to paired held-out-case resampling reported. Tied success is not improvement."
   },
   "protocol": {
     "script": "scripts/stage_f.py",
@@ -16,7 +16,14 @@
     "seeds": [
       2620,
       2621,
-      2622
+      2622,
+      2623,
+      2624,
+      2625,
+      2626,
+      2627,
+      2628,
+      2629
     ],
     "manifests": [
       "config/manifests/push-v2_development.yaml",
@@ -25,25 +32,26 @@
     "episodes": 2500,
     "llm_calls": 72,
     "code_changes": [
-      "lares/repair/correction.py (new evidence level numeric_vision and arm llm_numeric_vision; ArmContext.vision_fn)",
-      "lares/vision/analyst.py (QwenAnalyst: pinned checkpoint and fp16/4-bit load on the T4; no other change)",
-      "scripts/stage_f.py (vision arm wiring, --vision-model; held-out manifest from pool seed 2620)",
-      "config/stage_f_vision/stage_f_vision.yaml (new: arms no_repair, llm_numeric, llm_numeric_vision; Stage F structures)",
+      "lares/repair/correction.py (evidence level numeric_vision, arm llm_numeric_vision, ArmContext.vision_fn; vision reruns counted in the repair-episode cap)",
+      "lares/vision/analyst.py (QwenAnalyst: pinned revision, NF4 4-bit language weights with fp16 compute, vision tower unquantized fp16, capped image tokens and output length)",
+      "scripts/stage_f.py (per-cell independent bundles from config 'cells'; reserve/build for the vision config; vision arm wiring; VLM memory smoke check)",
+      "config/stage_f_vision/stage_f_vision.yaml (new; arms no_repair, llm_numeric, llm_numeric_vision; Stage F's frozen structures from config/stage_f/selection.json + simple_damped_push)",
       "tests/test_stage_f.py, tests/test_vision.py (ScriptedAnalyst; no model download)",
-      ".venv-metaworld on the GPU box: install transformers/accelerate (+ bitsandbytes if 4-bit) and pull the checkpoint"
+      ".venv-metaworld on the GPU box: transformers, accelerate, bitsandbytes; Qwen/Qwen2.5-VL-7B-Instruct@cc594898137f460bfe9f0759e9844b3ce807cfb5"
     ],
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "proposed",
+  "status": "running",
   "source": "implementer",
-  "falsified_by": "Upper bound of the paired interval (vision minus numeric) <= 0 refutes any added value; upper bound below 0.05 refutes the predicted magnitude; an interval spanning zero with a positive mean is inconclusive. Also reported: analyses rejected by the schema (uncited frames, unmeasurable checks) and vision/geometry conflicts; if most analyses are rejected the arm did not test vision at all, and the result is recorded as inconclusive.",
+  "falsified_by": "Upper 95% bound of vision-minus-numeric paired success below 0.05 refutes the target magnitude; at or below zero refutes positive added value; an interval including zero is inconclusive about direction. Frame-citation and geometry-consistency audits are made without consulting held-out outcomes; rejected or empty packets stay in the assigned-arm analysis. If most packets carry no valid visual evidence, the localisation mechanism is inconclusive. Vision vs no_repair is reported separately. No expansion after seeing results; an inconclusive pilot needs a separately specified confirmation sized from its paired variance.",
   "cost_estimate": {
     "episodes": 2500,
     "llm_calls": 72,
     "vlm_calls": 27,
-    "wall_time_minutes": 150,
-    "breakdown": "9 replicates x (40 common preprocessing + 2 LLM arms x <=40 + <=3 media reruns + 3 arms x 50 held-out) ~ 2460; LLM <=4 calls per LLM arm x 2 x 9 = 72; VLM <=3 per replicate"
+    "wall_time_minutes": 180,
+    "breakdown": "9 cells x (common preprocessing 30 probe + 10 screen; llm_numeric <=40; llm_numeric_vision <=40 + <=3 media reruns; 3 arms x 50 held-out) ~ 2490; correction LLM <=4 calls x 2 arms x 9 = 72 (gpt-6.1-sol, high, T=1); local VLM <=3 x 9 = 27",
+    "vision_model": "Qwen/Qwen2.5-VL-7B-Instruct@cc594898137f460bfe9f0759e9844b3ce807cfb5, bitsandbytes nf4 language weights, fp16 compute, vision tower fp16"
   },
   "open_question_refs": [
     "RESEARCH_HANDOFF question 2 / E10 (Qwen checkpoint and quantization)",
@@ -52,8 +60,18 @@
   ],
   "briefing_sha256": "",
   "proposal_call_id": "",
-  "approval": {},
-  "run": {},
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T03:09:49",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00003, 'revise' with changes applied) under the user's 2026-10-22 session delegation; E10 authorised for this development-only pilot, Phase 7 stays blocked",
+    "consultation": "research/consultations/2026-10-22T025548_call_00003.json"
+  },
+  "run": {
+    "started_at": "2026-10-22T03:14:54",
+    "git_sha": "a76cc5464c9b00ea4d79728492291aae9e8abc77",
+    "dirty_worktree": true,
+    "log_dir": "logs/stage_f_vision"
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -64,6 +82,24 @@
       "from": "",
       "to": "proposed",
       "note": "added 2026-10-22 at the user's request (VLM in repair). Phase 7 gate: Stages A-F are now recorded complete; final-test stays locked. Checkpoint choice deferred to the advisor consult."
+    },
+    {
+      "at": "2026-10-22T03:09:49",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per advisor consult call_00003: 7B NF4 pinned, 9 independent cell bundles 2620-2628, held-out 2629, three arms, audits, no post-hoc expansion"
+    },
+    {
+      "at": "2026-10-22T03:09:49",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00003, 'revise' with changes applied) under the user's 2026-10-22 session delegation; E10 authorised for this development-only pilot, Phase 7 stays blocked"
+    },
+    {
+      "at": "2026-10-22T03:14:54",
+      "from": "approved",
+      "to": "running",
+      "note": "git a76cc5464c (dirty)"
     }
   ],
   "created_at": "2026-10-22T02:53:44"

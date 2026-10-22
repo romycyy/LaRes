@@ -10,6 +10,8 @@ after that do the arms differ:
 ``llm_evidence_free``         a correction LLM sees the parent's code and nothing measured.
 ``llm_numeric``               ... plus the numeric evidence packet from the screen run.
 ``llm_numeric_intervention``  ... plus the outcomes of controlled substitutions.
+``llm_numeric_vision``        the numeric packet plus a validated visual analysis of the parent's worst
+                              failed screen episodes from a local vision model (R-006; not in Stage F's six).
 ``local_search``              perturb every declared parameter around the parent.
 ``global_search``             draw every declared parameter uniformly from its range.
 
@@ -56,6 +58,8 @@ ARM_LLM_NUMERIC = "llm_numeric"
 ARM_LLM_INTERVENTION = "llm_numeric_intervention"
 ARM_LOCAL_SEARCH = "local_search"
 ARM_GLOBAL_SEARCH = "global_search"
+ARM_LLM_VISION = "llm_numeric_vision"
+#: Stage F's frozen six; the default arm set.
 ARMS = (
     ARM_NO_REPAIR,
     ARM_LLM_EVIDENCE_FREE,
@@ -64,15 +68,19 @@ ARMS = (
     ARM_LOCAL_SEARCH,
     ARM_GLOBAL_SEARCH,
 )
+#: Every arm a run may name.
+ALL_ARMS = ARMS + (ARM_LLM_VISION,)
 
 EVIDENCE_NONE = "none"
 EVIDENCE_NUMERIC = "numeric"
 EVIDENCE_INTERVENTION = "numeric_intervention"
+EVIDENCE_VISION = "numeric_vision"
 #: What each LLM arm is shown. The arms differ in this and nothing else.
 LLM_ARM_EVIDENCE = {
     ARM_LLM_EVIDENCE_FREE: EVIDENCE_NONE,
     ARM_LLM_NUMERIC: EVIDENCE_NUMERIC,
     ARM_LLM_INTERVENTION: EVIDENCE_INTERVENTION,
+    ARM_LLM_VISION: EVIDENCE_VISION,
 }
 SEARCH_ARMS = (ARM_LOCAL_SEARCH, ARM_GLOBAL_SEARCH)
 
@@ -226,13 +234,19 @@ def episode_table(result) -> str:
 
 
 def build_evidence_text(level: str, parent_id: str, parent_source: str, control_result=None,
-                        control_report=None, study=None) -> str:
-    """The text a correction LLM is shown. Levels nest: each adds to the one before."""
+                        control_report=None, study=None, vision_block=None) -> str:
+    """The text a correction LLM is shown. Levels nest: each adds to the one before.
+
+    The intervention and vision levels each add one section to the numeric packet; they are
+    siblings, not nested in each other.
+    """
     from lares.repair.study import summarise as summarise_study
     from lares.search.feedback import CandidateEvidence, diagnostics_block
 
-    if level not in (EVIDENCE_NONE, EVIDENCE_NUMERIC, EVIDENCE_INTERVENTION):
+    if level not in (EVIDENCE_NONE, EVIDENCE_NUMERIC, EVIDENCE_INTERVENTION, EVIDENCE_VISION):
         raise ValueError(f"unknown evidence level {level!r}")
+    if level == EVIDENCE_VISION and vision_block is None:
+        raise ValueError("the vision level needs a visual-analysis block (an empty analysis says so itself)")
     lines = [
         "# Repair request",
         "",
@@ -270,6 +284,9 @@ def build_evidence_text(level: str, parent_id: str, parent_source: str, control_
             raise ValueError("the intervention level needs a substitution study")
         lines += ["## Controlled substitutions (expert-assisted; diagnoses, not scores)", "",
                   summarise_study(study), ""]
+    if level == EVIDENCE_VISION:
+        lines += ["## Visual failure analysis (local vision model; supporting evidence, checked against the numbers)",
+                  "", vision_block.strip(), ""]
     return "\n".join(lines) + "\n"
 
 
@@ -298,6 +315,15 @@ class ArmContext:
     param_budget: tuple = None
     #: ``(policy, structure, manifest, env, env_name, schema, max_steps) -> study payload``.
     study_fn: object = None
+    #: ``(policy, parent_id, control_result, ctx, run_dir) -> {"block", "run", "episodes_rerun"}``; see
+    #: :func:`vision_evidence`. Needed only by the vision arm.
+    vision_fn: object = None
+    #: Env for the probe manifest when it comes from another task pool than the screen; else ``env``.
+    probe_env: object = None
+
+    @property
+    def probe_stream_env(self):
+        return self.probe_env if self.probe_env is not None else self.env
 
 
 def _parameter_names(policy) -> list:
@@ -377,8 +403,24 @@ def run_llm_arm(arm, parent_id, parent, parent_source, control_result, ctx: ArmC
         chain["study"] = {"path": "study.json", "supported": [s.get("supported") for s in study["studies"]],
                           "rollout_episodes": study["rollout_episodes"],
                           "intervention_episodes": study["intervention_episodes"]}
+    vision_block = None
+    if level == EVIDENCE_VISION:
+        if ctx.vision_fn is None:
+            raise ValueError(f"{arm} needs ArmContext.vision_fn")
+        started = time.time()
+        vision = ctx.vision_fn(parent, parent_id, control_result, ctx, run_dir)
+        # The media reruns replay screen cases with rendering on: repair-evaluation episodes of this arm.
+        ledger.add("repair_episodes", int(vision["episodes_rerun"]))
+        ledger.add_wall_time("repair", time.time() - started)
+        vision_block = vision["block"]
+        with open(os.path.join(run_dir, "vision.json"), "w", encoding="utf-8") as f:
+            json.dump({k: v for k, v in vision.items() if k != "block"}, f, indent=2, default=str)
+        chain["vision"] = {"path": "vision.json", **{k: vision["run"].get(k) for k in (
+            "model_id", "episodes_analysed", "episodes_rerun", "frames_shown", "analyses_returned",
+            "analyses_rejected", "conflicts")}}
 
-    text = build_evidence_text(level, parent_id, parent_source, control_result, control_report, study)
+    text = build_evidence_text(level, parent_id, parent_source, control_result, control_report, study,
+                               vision_block=vision_block)
     bundle = write_feedback_bundle(run_dir, 0, ctx.screen.manifest_id, [parent_id], text)
     chain["evidence_packet"] = bundle.to_dict()
 
@@ -419,7 +461,7 @@ def run_llm_arm(arm, parent_id, parent, parent_source, control_result, ctx: ArmC
         chain["outcome"] = OUTCOME_NOT_A_REPAIR
         return parent, chain
 
-    child, child_prep = preprocess(final.policy, ctx.data, ctx.probe, ctx.env, ctx.budget, ctx.seed, ledger,
+    child, child_prep = preprocess(final.policy, ctx.data, ctx.probe, ctx.probe_stream_env, ctx.budget, ctx.seed, ledger,
                                    ctx.max_steps, structure_id=final.attempt_id)
     child_result = evaluate(child, ctx.screen, ctx.env, ledger, "repair", ctx.max_steps, f"{arm}:child")
     child_score, parent_score = score_of(child_result), score_of(control_result)
@@ -435,6 +477,30 @@ def run_llm_arm(arm, parent_id, parent, parent_source, control_result, ctx: ArmC
     with open(os.path.join(run_dir, "child_policy_source.py"), "w", encoding="utf-8") as f:
         f.write(final.code)
     return (child if replaced else parent), chain
+
+
+def vision_evidence(analyst, schema, limit: int = 3, save_media: bool = True):
+    """A ``vision_fn`` for :class:`ArmContext`: analyse the parent's worst failed screen episodes.
+
+    Re-runs up to ``limit`` failed screen cases with rendering on, shows the analyst the frames the fixed
+    media rule selects, validates and merges each analysis with the episode's numbers, and returns the
+    repair-prompt block. Rejected analyses are recorded and dropped; when nothing survives, the block says
+    so, and the arm still runs, so an empty packet is part of the assigned-arm result.
+    """
+    from lares.vision import analyse_failures, evidence_block
+
+    def vision_fn(policy, parent_id, control_result, ctx, run_dir):
+        actor = PolicyActor(policy, deterministic=True, name=parent_id)
+        analyses, merged, run = analyse_failures(
+            actor, ctx.env, ctx.screen, control_result, analyst, schema, candidate_id=parent_id,
+            max_steps=ctx.max_steps, limit=limit, media_dir=os.path.join(run_dir, "media") if save_media else "",
+        )
+        for analysis in analyses:
+            analysis.save(os.path.join(run_dir, "analyses"))
+        return {"block": evidence_block(merged, analyses), "run": run.to_dict(),
+                "episodes_rerun": int(run.episodes_rerun), "merged": [m.to_dict() for m in merged]}
+
+    return vision_fn
 
 
 class _NamedStructure:
@@ -467,14 +533,14 @@ def run_replicate(structure_id: str, source: str, build, ctx: ArmContext, held_o
     Writes ``<out_dir>/<arm>/chain.json`` per arm and returns the replicate dict.
     """
     held_out_env = held_out_env if held_out_env is not None else ctx.env
-    unknown = [a for a in arms if a not in ARMS]
+    unknown = [a for a in arms if a not in ALL_ARMS]
     if unknown:
-        raise ValueError(f"unknown arms {unknown}; expected a subset of {ARMS}")
+        raise ValueError(f"unknown arms {unknown}; expected a subset of {ALL_ARMS}")
     check_isolation(ctx.screen, ctx.probe, held_out)
     os.makedirs(out_dir, exist_ok=True)
 
     common = ResourceLedger()
-    parent, prep = preprocess(build(), ctx.data, ctx.probe, ctx.env, ctx.budget, ctx.seed, common,
+    parent, prep = preprocess(build(), ctx.data, ctx.probe, ctx.probe_stream_env, ctx.budget, ctx.seed, common,
                               ctx.max_steps, structure_id=structure_id)
     control = evaluate(parent, ctx.screen, ctx.env, common, "screen", ctx.max_steps, f"{structure_id}:control")
     parent_score = score_of(control)

@@ -44,7 +44,7 @@ DEFAULT_BUFFER = os.path.join(_PROJECT_ROOT, "logs", "baseline_lock", "demo_push
 def parse_args():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = p.add_subparsers(dest="command", required=True)
-    for name in ("select", "build-manifest"):
+    for name in ("select", "build-manifest", "reserve", "vlm-smoke"):
         sub.add_parser(name).add_argument("--config", default=CONFIG_PATH)
     run = sub.add_parser("run")
     run.add_argument("--config", default=None, help="run the frozen protocol; every other run flag is ignored")
@@ -53,7 +53,7 @@ def parse_args():
                      help="ids from the frozen bank or lares/fitting/fittable_variants/")
     run.add_argument("--seeds", nargs="+", type=int)
     run.add_argument("--held-out", help="manifest disjoint from the development screen and probe")
-    run.add_argument("--arms", nargs="+", default=list(sf.ARMS))
+    run.add_argument("--arms", nargs="+", default=list(sf.ARMS), help=f"subset of {list(sf.ALL_ARMS)}")
     run.add_argument("--buffer", default=DEFAULT_BUFFER)
     run.add_argument("--screen", type=int, default=10, help="development cases 0..N-1")
     run.add_argument("--probe", type=int, default=10, help="development tail")
@@ -91,9 +91,9 @@ def run(args, structures=None, extra_meta=None) -> int:
     from lares.eval import EvaluationManifest, make_manifest_env
     from lares.fitting import prepare_data
 
-    unknown = [a for a in args.arms if a not in sf.ARMS]
+    unknown = [a for a in args.arms if a not in sf.ALL_ARMS]
     if unknown:
-        raise SystemExit(f"unknown arms {unknown}; choose from {sf.ARMS}")
+        raise SystemExit(f"unknown arms {unknown}; choose from {sf.ALL_ARMS}")
     ensure_mujoco_headless_gl()
     schema = get_obs_schema(args.env_name)
     development = EvaluationManifest.load(os.path.join(MANIFESTS, f"{args.env_name}_development.yaml"))
@@ -170,6 +170,8 @@ def report(run_dir: str) -> int:
                 problems[f"{rep['structure_id']}_s{rep['seed']}/{row['arm']}"] = found
     summary = sf.summarise_replicates(replicates)
     summary["chain_problems"] = problems
+    if any(row["arm"] == sf.ARM_LLM_VISION for rep in replicates for row in rep["rows"]):
+        summary["vision"] = vision_summary(replicates)
     with open(os.path.join(run_dir, "summary.json"), "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
 
@@ -183,8 +185,52 @@ def report(run_dir: str) -> int:
     for arm, p in summary["paired"].items():
         interval = (f"[{p['ci95_low']:+.3f}, {p['ci95_high']:+.3f}]" if p["ci95_low"] is not None else "n/a")
         print(f"  {arm:<26}{p['mean_difference']:+.3f}  {interval}  w/l/t {p['wins']}/{p['losses']}/{p['ties']}")
+    if "vision" in summary:
+        v = summary["vision"]
+        p = v["paired_vs_llm_numeric"]
+        print(f"\nR-006 primary: {sf.ARM_LLM_VISION} - {sf.ARM_LLM_NUMERIC} over {p['n_replicates']} cells: "
+              f"{p['mean_difference']:+.3f}  [{p['ci95_low']:+.3f}, {p['ci95_high']:+.3f}]  "
+              f"w/l/t {p['wins']}/{p['losses']}/{p['ties']}")
+        cb = v["held_out_case_bootstrap"]
+        print(f"  held-out case resampling: [{cb['low']:+.3f}, {cb['high']:+.3f}]; packets {v['packets']}")
     print(f"\nchain problems: {problems or 'none'}")
     return 1 if problems else 0
+
+
+def vision_summary(replicates, resamples: int = 10_000, seed: int = 0) -> dict:
+    """R-006: vision minus numeric, paired per cell, plus held-out-case resampling and packet audits.
+
+    The case bootstrap resamples held-out cases (shared by every cell) and recomputes the mean over cells of
+    the paired difference; it shows how much the cell-level result leans on particular placements.
+    """
+    import numpy as np
+
+    rows = {(rep["structure_id"], rep["seed"]): {r["arm"]: r for r in rep["rows"]} for rep in replicates}
+    cells = sorted(k for k, arms in rows.items() if sf.ARM_LLM_VISION in arms and sf.ARM_LLM_NUMERIC in arms)
+    diffs = [rows[k][sf.ARM_LLM_VISION]["held_out"]["success"] - rows[k][sf.ARM_LLM_NUMERIC]["held_out"]["success"]
+             for k in cells]
+    cases = sorted(rows[cells[0]][sf.ARM_LLM_VISION]["held_out"]["per_case"]) if cells else []
+    per_case = np.array([[rows[k][sf.ARM_LLM_VISION]["held_out"]["per_case"][c]
+                          - rows[k][sf.ARM_LLM_NUMERIC]["held_out"]["per_case"][c] for c in cases] for k in cells])
+    low = high = None
+    if per_case.size:
+        rng = np.random.default_rng(seed)
+        idx = rng.integers(0, len(cases), size=(resamples, len(cases)))
+        means = per_case[:, idx].mean(axis=2).mean(axis=0)
+        low, high = float(np.quantile(means, 0.025)), float(np.quantile(means, 0.975))
+    packets = {"cells": len(cells), "with_valid_analysis": 0, "analyses_returned": 0, "analyses_rejected": 0,
+               "conflicts": 0, "episodes_rerun": 0}
+    for k in cells:
+        v = rows[k][sf.ARM_LLM_VISION].get("vision") or {}
+        packets["with_valid_analysis"] += int((v.get("analyses_returned") or 0) > 0)
+        for key in ("analyses_returned", "analyses_rejected", "conflicts", "episodes_rerun"):
+            packets[key] += int(v.get(key) or 0)
+    vs_none = [rows[k][sf.ARM_LLM_VISION]["held_out"]["success"] - rows[k][sf.ARM_NO_REPAIR]["held_out"]["success"]
+               for k in cells if sf.ARM_NO_REPAIR in rows[k]]
+    return {"cells": [list(k) for k in cells], "paired_vs_llm_numeric": sf.replicate_interval(diffs),
+            "paired_vs_no_repair": sf.replicate_interval(vs_none) if vs_none else None,
+            "held_out_case_bootstrap": {"low": low, "high": high, "resamples": resamples, "seed": seed},
+            "packets": packets}
 
 
 # ---------------------------------------------------------------------------
@@ -339,11 +385,31 @@ class _Spec:
         self.build = lambda _schema=None: instantiate_source(source, 39, 4, schema=schema)
 
 
+def selected_structures(cfg, schema) -> list:
+    """The frozen evolved selection, hash-checked."""
+    from lares.search.generation import sha256_text
+
+    with open(os.path.join(_PROJECT_ROOT, cfg["structures"]["evolved"]["selection_file"]), encoding="utf-8") as f:
+        selection = json.load(f)
+    out = []
+    for s in selection["selected"]:
+        with open(os.path.join(_PROJECT_ROOT, s["source_path"]), encoding="utf-8") as f:
+            source = f.read()
+        if sha256_text(source) != s["source_sha256"]:
+            raise SystemExit(f"{s['source_path']} no longer matches its frozen hash")
+        out.append(_Spec(s["structure_id"], source, schema))
+    return out
+
+
 def run_from_config(path) -> int:
     import stage_e
     from lares.core.obs_schema import get_obs_schema
 
     cfg = load_config(path)
+    if "cells" in cfg:
+        schema = get_obs_schema(cfg["env_name"])
+        bank = [_Spec(s.structure_id, s.source, schema) for s in load_structures(cfg["structures"]["bank"], schema)]
+        return run_cells(cfg, path, bank + selected_structures(cfg, schema))
     sha = stage_e.require_clean_worktree()
     schema = get_obs_schema(cfg["env_name"])
     held = cfg["manifests"]["held_out"]
@@ -377,12 +443,253 @@ def run_from_config(path) -> int:
     return run(args, structures=structures, extra_meta=extra)
 
 
+# ---------------------------------------------------------------------------
+#  Cell protocols (R-006): one independent data/split/probe bundle per (structure, replicate) cell
+# ---------------------------------------------------------------------------
+
+
+def cell_seeds(cfg) -> dict:
+    cells = [int(c["seed"]) for c in cfg["cells"]]
+    held = int(cfg["seeds"]["held_out_pool_seed"])
+    if len(set(cells + [held])) != len(cells) + 1:
+        raise SystemExit("cell and held-out seeds must be distinct")
+    return {"cells": cells, "held_out": held}
+
+
+def cmd_reserve(args) -> int:
+    """Reserve a cell protocol's seeds in the ledger (run locally, before the GPU box touches it)."""
+    import stage_e
+
+    cfg = load_config(args.config)
+    seeds, artifact = cell_seeds(cfg), rel(os.path.abspath(args.config))
+    mine = {(int(e["seed"]), e["namespace"]) for e in stage_e.read_ledger() if e.get("artifact") == artifact}
+    wanted = {(s, ns) for s in seeds["cells"] for ns in ("fitting", "mt1_pool")} | {(seeds["held_out"], "mt1_pool")}
+    if mine == wanted:
+        print(f"  seeds already reserved for {artifact}")
+        return 0
+    if mine:
+        raise SystemExit(f"the ledger holds a partial reservation for {artifact}")
+    conflicts = stage_e.seed_conflicts(seeds["cells"] + [seeds["held_out"]], seeds["cells"])
+    if conflicts:
+        raise SystemExit("seeds already used:\n  " + "\n  ".join(conflicts))
+    stamp, use = stage_e.now(), cfg.get("study", "cell protocol")
+    entries = [{"seed": s, "namespace": "fitting", "use": f"{use}: cell demo sample, split and fitting seed",
+                "artifact": artifact, "recorded_at": stamp, "backfilled": False} for s in seeds["cells"]]
+    entries += [{"seed": s, "namespace": "mt1_pool", "use": f"{use}: cell probe manifest", "artifact": artifact,
+                 "recorded_at": stamp, "backfilled": False} for s in seeds["cells"]]
+    entries.append({"seed": seeds["held_out"], "namespace": "mt1_pool", "use": f"{use}: held-out manifest",
+                    "artifact": artifact, "recorded_at": stamp, "backfilled": False})
+    stage_e.reserve_seeds(entries)
+    print(f"  reserved {len(entries)} seed uses for {artifact}")
+    return 0
+
+
+def probe_path(cfg, seed) -> str:
+    return os.path.join(_PROJECT_ROOT, cfg["manifests"]["probe_dir"], f"{cfg['env_name']}_probe_s{seed}.yaml")
+
+
+def build_cell_manifests(cfg, config_path) -> int:
+    """Held-out and per-cell probe manifests; refuses unless the seeds were reserved for this config."""
+    import stage_e
+    from lares.eval.manifest import SPLIT_DEVELOPMENT, EvaluationManifest, assert_disjoint, build_manifest
+
+    seeds, artifact = cell_seeds(cfg), rel(os.path.abspath(config_path))
+    reserved = {int(e["seed"]) for e in stage_e.read_ledger() if e.get("artifact") == artifact}
+    missing = sorted(set(seeds["cells"] + [seeds["held_out"]]) - reserved)
+    if missing:
+        raise SystemExit(f"seeds {missing} are not reserved for {artifact}; run `stage_f.py reserve` locally first")
+    held = cfg["manifests"]["held_out"]
+    out_path = os.path.join(_PROJECT_ROOT, held["path"])
+    if os.path.exists(out_path):
+        raise SystemExit(f"{rel(out_path)} exists and is immutable")
+    horizon, env_name = int(cfg["horizon"]), cfg["env_name"]
+    held_out, _ = build_manifest(env_name, SPLIT_DEVELOPMENT, [seeds["held_out"]], horizon=horizon,
+                                 num_episodes=int(held["episodes"]), manifest_id=held["manifest_id"])
+    probes = {s: build_manifest(env_name, SPLIT_DEVELOPMENT, [s], horizon=horizon,
+                                num_episodes=int(cfg["bundle"]["probe_episodes"]),
+                                manifest_id=f"{env_name}:cell_probe:s{s}:n{cfg['bundle']['probe_episodes']}")[0]
+              for s in seeds["cells"]}
+    known = stage_e.unique_manifests(
+        [EvaluationManifest.load(p) for p in sorted(glob.glob(os.path.join(_PROJECT_ROOT, "config", "**", "*.yaml"),
+                                                               recursive=True)) if _is_manifest(p)])
+    assert_disjoint(known + [held_out] + list(probes.values()))
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    held_out.save(out_path)
+    for s, m in probes.items():
+        os.makedirs(os.path.dirname(probe_path(cfg, s)), exist_ok=True)
+        m.save(probe_path(cfg, s))
+    provenance = {"manifest_id": held_out.manifest_id, "manifest_path": rel(out_path),
+                  "manifest_sha256": stage_e.sha256_file(out_path), "pool_seed": seeds["held_out"],
+                  "episodes": len(held_out), "built_at": stage_e.now(),
+                  "probes": {str(s): {"manifest_id": m.manifest_id, "path": rel(probe_path(cfg, s)),
+                                      "sha256": stage_e.sha256_file(probe_path(cfg, s))} for s, m in probes.items()},
+                  "disjoint_from": [m.manifest_id for m in known],
+                  "selection_sha256": stage_e.sha256_file(os.path.join(_PROJECT_ROOT,
+                                                                       cfg["structures"]["evolved"]["selection_file"]))}
+    with open(os.path.join(os.path.dirname(out_path), "manifest_provenance.json"), "x", encoding="utf-8") as f:
+        json.dump(provenance, f, indent=2)
+    print(f"  {held_out.manifest_id} and {len(probes)} probe manifests built; disjoint from {len(known)} saved manifests")
+    return 0
+
+
+def make_analyst(cfg):
+    from lares.vision import QwenAnalyst
+
+    v = cfg["vision"]
+    return QwenAnalyst(model_id=v["model"], quantization=v["quantization"], revision=v["revision"],
+                       max_pixels=v.get("max_pixels"), max_new_tokens=int(v.get("max_new_tokens", 512)))
+
+
+def cmd_vlm_smoke(args) -> int:
+    """Load the pinned VLM on the GPU and analyse one rendered screen failure, before any protocol spend.
+
+    Spends one development screen episode (case 0, the first evolved structure at its declared values), its media
+    rerun and one VLM call;
+    reports peak GPU memory, latency and whether the reply passes the analysis contract.
+    """
+    import torch
+
+    from lares.core.obs_schema import get_obs_schema
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+    from lares.eval import EvaluationManifest, make_manifest_env
+    from lares.eval.runner import PolicyActor, evaluate_manifest
+    from lares.vision import analyse_failures
+
+    cfg = load_config(args.config)
+    ensure_mujoco_headless_gl()
+    schema = get_obs_schema(cfg["env_name"])
+    development = EvaluationManifest.load(os.path.join(_PROJECT_ROOT, cfg["manifests"]["development"]))
+    case = development.head(1)
+    # An evolved structure: they score 0 untrained, so the case is a failure the analyst must read.
+    structure = selected_structures(cfg, schema)[0]
+    policy = structure.build(schema)
+    env = make_manifest_env(development, development.resolve_pool(), 200)
+    actor = PolicyActor(policy, deterministic=True, name=structure.structure_id)
+    result = evaluate_manifest(actor, case, env, max_steps=int(cfg["horizon"]))
+    if result.success_rate > 0:
+        print("  smoke case succeeded; no failure to analyse (memory still measured below)")
+    out = os.path.join(_PROJECT_ROOT, "logs", "stage_f_vision_smoke")
+    os.makedirs(out, exist_ok=True)
+    analyst = make_analyst(cfg)
+    torch.cuda.reset_peak_memory_stats()
+    started = time.time()
+    analyses, merged, run_info = analyse_failures(actor, env, case, result, analyst, schema,
+                                                  candidate_id=structure.structure_id, max_steps=int(cfg["horizon"]),
+                                                  limit=1, media_dir=os.path.join(out, "media"))
+    report = {"model": cfg["vision"], "peak_gpu_memory_gib": torch.cuda.max_memory_allocated() / 2**30,
+              "total_gpu_memory_gib": torch.cuda.get_device_properties(0).total_memory / 2**30,
+              "seconds": time.time() - started, "run": run_info.to_dict(),
+              "analyses": [a.to_dict() if hasattr(a, "to_dict") else str(a) for a in analyses],
+              "merged": [m.to_dict() for m in merged], "episodes": {"screen": 1, "media_reruns": run_info.episodes_rerun}}
+    with open(os.path.join(out, "smoke.json"), "w", encoding="utf-8") as f:
+        json.dump(report, f, indent=2, default=str)
+    print(f"  peak GPU memory {report['peak_gpu_memory_gib']:.2f} / {report['total_gpu_memory_gib']:.2f} GiB, "
+          f"{report['seconds']:.0f} s; analyses returned {run_info.analyses_returned}, "
+          f"rejected {run_info.analyses_rejected} {run_info.rejection_reasons}")
+    env.close()
+    return 0
+
+
+def run_cells(cfg, config_path, structures) -> int:
+    """Run a cell protocol: each cell fits and probes on its own bundle; screen and held-out are shared."""
+    import stage_e
+    from lares.core.obs_schema import get_obs_schema
+    from lares.core.training_pipeline import DemoBuffer, ensure_mujoco_headless_gl, load_policy_prompt_assets
+    from lares.eval import EvaluationManifest, make_manifest_env
+    from lares.fitting.replicates import ReplicateBundle, sample_demonstration_episodes, split_episodes
+
+    sha = stage_e.require_clean_worktree()
+    ensure_mujoco_headless_gl()
+    env_name, horizon = cfg["env_name"], int(cfg["horizon"])
+    schema = get_obs_schema(env_name)
+    held = cfg["manifests"]["held_out"]
+    with open(os.path.join(_PROJECT_ROOT, os.path.dirname(held["path"]), "manifest_provenance.json"),
+              encoding="utf-8") as f:
+        prov = json.load(f)
+    if stage_e.sha256_file(os.path.join(_PROJECT_ROOT, held["path"])) != prov["manifest_sha256"]:
+        raise SystemExit(f"{held['path']} no longer matches its frozen hash")
+    for s, p in prov["probes"].items():
+        if stage_e.sha256_file(os.path.join(_PROJECT_ROOT, p["path"])) != p["sha256"]:
+            raise SystemExit(f"{p['path']} no longer matches its frozen hash")
+    b = cfg["bundle"]
+    demo_path = os.path.join(_PROJECT_ROOT, b["demonstrations"])
+    if stage_e.sha256_file(demo_path) != b["demonstrations_sha256"]:
+        raise SystemExit("the demonstration buffer does not match its declared hash")
+    buffer = DemoBuffer.load(demo_path)
+    arms = list(cfg["arms"])
+    unknown = [a for a in arms if a not in sf.ALL_ARMS]
+    if unknown:
+        raise SystemExit(f"unknown arms {unknown}")
+    development = EvaluationManifest.load(os.path.join(_PROJECT_ROOT, cfg["manifests"]["development"]))
+    screen = development.head(int(cfg["manifests"]["screen_episodes"]))
+    held_out = EvaluationManifest.load(os.path.join(_PROJECT_ROOT, held["path"]))
+    fit, budget_cfg, llm = cfg["fitting"], cfg["budget"], cfg["llm"]
+    budget = sf.StageFBudget(screen_episodes=len(screen), probe_episodes=int(b["probe_episodes"]),
+                             fit_budget=int(fit["budget"]), checkpoint_steps=tuple(fit["checkpoint_steps"]),
+                             max_substitutions=int(budget_cfg["max_substitutions"]),
+                             max_llm_calls=int(budget_cfg["max_llm_calls"]))
+    client = None
+    llm_args = SimpleNamespace(model=llm["model"], reasoning_effort=llm["reasoning_effort"])
+    if any(a in sf.LLM_ARM_EVIDENCE for a in arms):
+        if not os.environ.get("OPENAI_API_KEY"):
+            raise SystemExit("the LLM arms need OPENAI_API_KEY")
+        from openai import OpenAI
+
+        client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    vision_fn = None
+    if sf.ARM_LLM_VISION in arms:
+        vision_fn = sf.vision_evidence(make_analyst(cfg), schema, limit=int(cfg["vision"]["episodes_per_packet"]))
+    by_id = {s.structure_id: s for s in structures}
+    env = make_manifest_env(development, development.resolve_pool(), 200)
+    held_out_env = make_manifest_env(held_out, held_out.resolve_pool(), 200)
+    prompts = load_policy_prompt_assets(env_name)
+    run_dir = os.path.join(_PROJECT_ROOT, cfg["out_dir"], time.strftime("%Y%m%d_%H%M%S"))
+    os.makedirs(run_dir, exist_ok=True)
+    meta = {"study": cfg.get("study"), "arms": arms, "cells": cfg["cells"], "budget": budget.to_dict(),
+            "acceptance_rule": sf.ACCEPTANCE_RULE, "llm": llm, "vision": cfg.get("vision"),
+            "manifests": {"screen": screen.manifest_id, "held_out": held_out.manifest_id,
+                          "probes": {k: v["manifest_id"] for k, v in prov["probes"].items()}},
+            "config": rel(os.path.abspath(config_path)), "config_sha256": stage_e.sha256_file(config_path),
+            "frozen_git_sha": sha, **git_state(), "held_out_manifest_sha256": prov["manifest_sha256"],
+            "selection_sha256": prov["selection_sha256"]}
+    with open(os.path.join(run_dir, "run.json"), "w", encoding="utf-8") as f:
+        json.dump(meta, f, indent=2, default=str)
+    print(f"cell run -> {run_dir}\n  cap {budget.repair_episode_cap} repair-evaluation episodes per arm", flush=True)
+    for cell in cfg["cells"]:
+        seed, structure = int(cell["seed"]), by_id[cell["structure"]]
+        probe = EvaluationManifest.load(probe_path(cfg, seed))
+        probe_env = make_manifest_env(probe, probe.resolve_pool(), 200)
+        sample = sample_demonstration_episodes(list(buffer.episode_index()), int(b["episodes_per_cell"]), seed)
+        train, val = split_episodes(sample, float(b["val_fraction"]), seed)
+        bundle = ReplicateBundle(seed, seed, sample, train, val, probe, held_out, seed,
+                                 int(cfg["seeds"]["held_out_pool_seed"]))
+        ctx = sf.ArmContext(env=env, env_name=env_name, schema=schema, data=bundle.fitting_data(buffer),
+                            screen=screen, probe=probe, budget=budget, seed=seed, max_steps=horizon, client=client,
+                            llm_args=llm_args, prompts=prompts, vision_fn=vision_fn, probe_env=probe_env)
+        rep_dir = os.path.join(run_dir, f"{structure.structure_id}_s{seed}")
+        rep = sf.run_replicate(structure.structure_id, structure.source, lambda s=structure: s.build(schema), ctx,
+                               held_out, rep_dir, arms=arms, held_out_env=held_out_env)
+        with open(os.path.join(rep_dir, "bundle.json"), "w", encoding="utf-8") as f:
+            json.dump(bundle.to_dict(), f, indent=2)
+        probe_env.close()
+        print(f"  {structure.structure_id} s{seed}: " + "  ".join(
+            f"{r['arm']} {r['held_out']['success']:.2f}" for r in rep["rows"]), flush=True)
+    env.close()
+    held_out_env.close()
+    return report(run_dir)
+
+
 def main() -> int:
     args = parse_args()
+    if args.command == "reserve":
+        return cmd_reserve(args)
+    if args.command == "vlm-smoke":
+        return cmd_vlm_smoke(args)
     if args.command == "select":
         return cmd_select(args)
     if args.command == "build-manifest":
-        return cmd_build_manifest(args)
+        cfg = load_config(args.config)
+        return build_cell_manifests(cfg, args.config) if "cells" in cfg else cmd_build_manifest(args)
     if args.command == "run":
         return run_from_config(args.config) if args.config else run(args)
     return report(args.run)

@@ -15,12 +15,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import os
 from dataclasses import asdict, dataclass, field
 
 #: Bumped whenever the prompt changes, so an analysis can be tied to the words
 #: that produced it. Recorded on every analysis.
-PROMPT_VERSION = "v1"
+#: v2 (2026-10-22, R-006): the prompt lists the frames shown, by id, timestep and moment, in image order,
+#: so a real model can cite them; v1 asked for citations without saying what the ids were.
+PROMPT_VERSION = "v2"
 
 
 def _require(condition, message):
@@ -160,6 +163,22 @@ def _measurable() -> set:
     return measurable_metrics()
 
 
+def _json_object(text: str) -> dict:
+    """The reply's JSON object. A markdown fence around it is transport, not content, and is removed;
+    anything else that is not one JSON object is refused with ``ValueError``, never repaired."""
+    body = text.strip()
+    fenced = re.match(r"^```(?:json)?\s*(.*?)\s*```$", body, flags=re.DOTALL)
+    if fenced:
+        body = fenced.group(1)
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"reply is not a JSON object ({exc}); first 120 chars: {text.strip()[:120]!r}") from exc
+    if not isinstance(payload, dict):
+        raise ValueError(f"reply is JSON but not an object: {type(payload).__name__}")
+    return payload
+
+
 def parse_analysis(text: str, candidate_id: str, case_id: str, model_id: str,
                    media, runtime=None) -> VisualFailureAnalysis:
     """Turn a model's JSON reply into an analysis, filling the fields we own.
@@ -169,7 +188,7 @@ def parse_analysis(text: str, candidate_id: str, case_id: str, model_id: str,
     because those are facts about the request rather than opinions about the
     video.
     """
-    payload = json.loads(text)
+    payload = _json_object(text)
     analysis_id = hashlib.sha256(
         f"{candidate_id}:{case_id}:{model_id}:{text}".encode("utf-8")
     ).hexdigest()[:16]

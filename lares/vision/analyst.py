@@ -70,9 +70,15 @@ class VisionAnalyst:
     def prompt(self, request: AnalysisRequest) -> str:
         from lares.search.schemas import measurable_metrics
 
-        return SYSTEM_PROMPT.replace(
+        text = SYSTEM_PROMPT.replace(
             "{measurable}", ", ".join(sorted(measurable_metrics()))
         )
+        if request.media:
+            lines = [f"- image {i + 1}: frame_or_clip_id \"{m.frame_or_clip_id}\", timestep {m.start_timestep} "
+                     f"({m.reason})" for i, m in enumerate(request.media)]
+            text += ("\n\nThe images above are, in order (cite these ids and timesteps exactly):\n"
+                     + "\n".join(lines))
+        return text
 
 
 class ScriptedAnalyst(VisionAnalyst):
@@ -117,7 +123,12 @@ class QwenAnalyst(VisionAnalyst):
     comparison, this raises and says so.
     """
 
-    def __init__(self, model_id: str = "", quantization: str = "fp16", device: str = "cuda"):
+    #: ``nf4`` quantizes the language model's linear layers to 4 bits (bitsandbytes) with fp16 compute and
+    #: leaves the vision tower and the output head in fp16. Chosen for R-006 (Qwen2.5-VL-7B on a 16 GB T4).
+    QUANTIZATIONS = ("fp16", "nf4")
+
+    def __init__(self, model_id: str = "", quantization: str = "fp16", device: str = "cuda", revision: str = "",
+                 max_pixels: int | None = None, max_new_tokens: int = 512):
         if not model_id:
             raise ValueError(
                 "QwenAnalyst needs an explicit model id. The checkpoint and "
@@ -125,9 +136,15 @@ class QwenAnalyst(VisionAnalyst):
                 "question 2) and picking one here would freeze it into the E10 "
                 "comparison without anyone choosing it."
             )
+        if quantization not in self.QUANTIZATIONS:
+            raise ValueError(f"quantization {quantization!r} is not one of {self.QUANTIZATIONS}")
         self.model_id = model_id
         self.quantization = quantization
         self.device = device
+        #: An immutable hub revision; without one the checkpoint can change under a frozen comparison.
+        self.revision = revision or None
+        self.max_pixels = max_pixels
+        self.max_new_tokens = int(max_new_tokens)
         self._model = None
         self._processor = None
 
@@ -142,10 +159,20 @@ class QwenAnalyst(VisionAnalyst):
                 "installing it and pulling a checkpoint is a deliberate, sizeable "
                 "step rather than an incidental one."
             ) from exc
-        self._processor = AutoProcessor.from_pretrained(self.model_id)
-        self._model = AutoModelForVision2Seq.from_pretrained(
-            self.model_id, torch_dtype="auto", device_map=self.device
-        )
+        import torch
+
+        processor_kwargs = {"max_pixels": int(self.max_pixels)} if self.max_pixels else {}
+        self._processor = AutoProcessor.from_pretrained(self.model_id, revision=self.revision, **processor_kwargs)
+        model_kwargs = {"torch_dtype": torch.float16, "device_map": self.device, "revision": self.revision}
+        if self.quantization == "nf4":
+            from transformers import BitsAndBytesConfig
+
+            model_kwargs["quantization_config"] = BitsAndBytesConfig(
+                load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.float16,
+                llm_int8_skip_modules=["visual", "lm_head"],
+            )
+        self._model = AutoModelForVision2Seq.from_pretrained(self.model_id, **model_kwargs)
+        self._model.eval()
 
     def analyse(self, request: AnalysisRequest):
         self._load()
@@ -158,10 +185,14 @@ class QwenAnalyst(VisionAnalyst):
         text = self._processor.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
         )
+        from PIL import Image
+
+        images = [frame if isinstance(frame, Image.Image) else Image.fromarray(frame) for frame in request.frames]
         inputs = self._processor(
-            text=[text], images=request.frames, return_tensors="pt"
+            text=[text], images=images, return_tensors="pt"
         ).to(self.device)
-        generated = self._model.generate(**inputs, max_new_tokens=512)
+        # Greedy decoding, so a frozen comparison does not also sample the analyst.
+        generated = self._model.generate(**inputs, max_new_tokens=self.max_new_tokens, do_sample=False)
         reply = self._processor.batch_decode(
             generated[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True
         )[0]
@@ -169,6 +200,8 @@ class QwenAnalyst(VisionAnalyst):
             reply, request.candidate_id, request.case_id, self.model_id, request.media,
             runtime={
                 "quantization": self.quantization,
+                "revision": self.revision,
+                "max_pixels": self.max_pixels,
                 "device": self.device,
                 "prompt_version": PROMPT_VERSION,
                 "media_selection_rule": MEDIA_SELECTION_RULE,

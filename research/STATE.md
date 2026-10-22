@@ -1,23 +1,23 @@
 # Research state
 
-_Generated 2026-10-22T03:07:58 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T03:14:54 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 0 |
+| running | 1 |
 | approved | 0 |
-| proposed | 2 |
+| proposed | 1 |
 | decided | 2 |
 | rejected | 2 |
 
 ## Needs attention
 
+- **R-006** [running] Vision evidence from a local Qwen VLM makes correction-LLM repair beat numeric-only repair (development-only E10 pilot)
+  - run the protocol, then `python scripts/research.py record R-006 --results <json>`
 - **R-003** [proposed] Rotating the development screen removes selection on fixed cases
   - USER decides: `python scripts/research.py approve R-003` or `reject R-003 --reason ...`
-- **R-006** [proposed] Vision evidence from a local Qwen VLM makes correction-LLM repair beat numeric-only repair
-  - USER decides: `python scripts/research.py approve R-006` or `reject R-006 --reason ...`
 
 ## Last 5 decisions
 

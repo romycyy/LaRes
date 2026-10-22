@@ -287,6 +287,14 @@ class TestParsing(unittest.TestCase):
         )
         self.assertEqual(analysis.runtime["quantization"], "fp16")
 
+    def test_a_fenced_json_reply_is_parsed_and_prose_is_refused(self):
+        fenced = "```json\n" + a_reply() + "\n```"
+        self.assertEqual(parse_analysis(fenced, "c0", "case_0", "m", [a_media_item()]).case_id, "case_0")
+        with self.assertRaises(ValueError):
+            parse_analysis("The robot missed the puck.", "c0", "case_0", "m", [a_media_item()])
+        with self.assertRaises(ValueError):
+            parse_analysis("[1, 2]", "c0", "case_0", "m", [a_media_item()])
+
 
 # ---------------------------------------------------------------------------
 #  Media selection
@@ -503,6 +511,12 @@ class TestAnalysts(unittest.TestCase):
             frames=[np.zeros((2, 2, 3), dtype=np.uint8)],
         )
 
+    def test_the_prompt_lists_the_frames_shown_so_they_can_be_cited(self):
+        prompt = ScriptedAnalyst([]).prompt(self._request())
+        item = a_media_item()
+        self.assertIn(f'"{item.frame_or_clip_id}"', prompt)
+        self.assertIn(f"timestep {item.start_timestep}", prompt)
+
     def test_a_scripted_reply_becomes_a_valid_analysis(self):
         analysis = ScriptedAnalyst([a_reply()]).analyse(self._request())
         self.assertTrue(analysis.validate())
@@ -538,6 +552,13 @@ class TestAnalysts(unittest.TestCase):
         analyst = QwenAnalyst(model_id="Qwen/Qwen2-VL-2B-Instruct", quantization="fp16")
         self.assertEqual(analyst.quantization, "fp16")
         self.assertIn("Qwen", analyst.model_id)
+
+    def test_qwen_pins_a_revision_and_accepts_only_known_quantizations(self):
+        analyst = QwenAnalyst(model_id="Qwen/Qwen2.5-VL-7B-Instruct", quantization="nf4", revision="abc123",
+                              max_pixels=200704, max_new_tokens=256)
+        self.assertEqual((analyst.revision, analyst.max_pixels, analyst.max_new_tokens), ("abc123", 200704, 256))
+        with self.assertRaises(ValueError):
+            QwenAnalyst(model_id="Qwen/Qwen2.5-VL-7B-Instruct", quantization="int3")
 
 
 class EchoAnalyst(ScriptedAnalyst):
@@ -603,6 +624,12 @@ class TestAnalysisPipeline(unittest.TestCase):
         self.assertEqual(analyses, [])
         self.assertEqual(run.analyses_rejected, 1)
         self.assertIn("never shown", run.rejection_reasons[0])
+
+    def test_a_reply_that_is_not_json_is_rejected_not_raised(self):
+        analyses, _, run = self._run(ScriptedAnalyst(["I think the gripper missed."]), limit=1)
+        self.assertEqual(analyses, [])
+        self.assertEqual(run.analyses_rejected, 1)
+        self.assertIn("not a JSON object", run.rejection_reasons[0])
 
     def test_no_analyst_output_is_the_numeric_only_arm(self):
         analyses, merged, run = self._run(ScriptedAnalyst([]), limit=2)

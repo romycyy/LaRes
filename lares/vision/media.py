@@ -57,6 +57,11 @@ class EpisodeMedia:
         return len(self.tcp)
 
 
+#: MetaWorld's offscreen ``rgb_array`` render (camera 2, MuJoCo 3) comes out upside down: floor at the top.
+#: Seen on the R-006 smoke frame (2026-10-22). Frames are flipped back before anyone, model or person, sees them.
+FLIP_RENDER_VERTICALLY = True
+
+
 class EpisodeRecorder:
     """A `run_episode` observer that renders and keeps the per-step geometry.
 
@@ -81,12 +86,15 @@ class EpisodeRecorder:
         if not callable(render):
             return None
         try:
-            return render()
+            frame = render()
         except Exception:
             # A missing renderer must not take the episode down with it; the
             # geometry is still worth having and the caller is told.
             self.render = False
             return None
+        if frame is not None and FLIP_RENDER_VERTICALLY:
+            frame = np.ascontiguousarray(np.asarray(frame)[::-1])
+        return frame
 
     def __call__(self, step: dict) -> None:
         frame = self._frame()

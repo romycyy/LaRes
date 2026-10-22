@@ -101,17 +101,23 @@ def analyse_failures(
         run.episodes_analysed += 1
         run.frames_shown += len(items)
 
-        analysis = analyst.analyse(AnalysisRequest(
-            candidate_id=candidate_id,
-            case_id=record.case_id,
-            media=items,
-            frames=frames,
-            metadata={
-                "success": record.success,
-                "length": record.length,
-                "timed_out": record.timed_out,
-            },
-        ))
+        try:
+            analysis = analyst.analyse(AnalysisRequest(
+                candidate_id=candidate_id,
+                case_id=record.case_id,
+                media=items,
+                frames=frames,
+                metadata={
+                    "success": record.success,
+                    "length": record.length,
+                    "timed_out": record.timed_out,
+                },
+            ))
+        except ValueError as exc:
+            # A reply that is not one JSON object is a rejected analysis, recorded, not a crash.
+            run.analyses_rejected += 1
+            run.rejection_reasons.append(f"{record.case_id}: {exc}")
+            continue
         if analysis is None:
             continue
         try:

@@ -187,7 +187,7 @@ class TestFullReplicate(StageFCase):
 
     def test_each_llm_arm_is_shown_only_its_evidence_level(self):
         texts = {}
-        for arm in sf.LLM_ARM_EVIDENCE:
+        for arm in (a for a in sf.LLM_ARM_EVIDENCE if a in self.rows):
             packet = self.rows[arm]["evidence_packet"]
             with open(os.path.join(self.out, arm, packet["text_path"]), encoding="utf-8") as f:
                 texts[arm] = f.read()
@@ -223,7 +223,7 @@ class TestFullReplicate(StageFCase):
         self.assertEqual(row["resources"]["bc_gradient_steps"], 0)
 
     def test_repair_chains_trace_to_parent_packet_and_ledger(self):
-        for arm in sf.LLM_ARM_EVIDENCE:
+        for arm in (a for a in sf.LLM_ARM_EVIDENCE if a in self.rows):
             row = self.rows[arm]
             self.assertEqual(sf.verify_chain(row, os.path.join(self.out, arm)), [], arm)
             for attempt in row["attempts"]:
@@ -269,6 +269,59 @@ class TestFullReplicate(StageFCase):
             self.assertEqual(len(row["held_out"]["per_case"]), len(self.held_out))
 
 
+def stub_vision(policy, parent_id, control_result, ctx, run_dir):
+    """Two media reruns and one fixed analysis block, with no renderer and no model."""
+    return {"block": "Visual analysis: the gripper stops short of the puck in both episodes.",
+            "run": {"model_id": "scripted", "episodes_analysed": 2, "episodes_rerun": 2, "frames_shown": 10,
+                    "analyses_returned": 2, "analyses_rejected": 0, "conflicts": 0},
+            "episodes_rerun": 2, "merged": []}
+
+
+class TestVisionArm(StageFCase):
+    """R-006: the vision arm is the numeric arm plus one section, charged for its media reruns."""
+
+    ARMS = (sf.ARM_NO_REPAIR, sf.ARM_LLM_NUMERIC, sf.ARM_LLM_VISION)
+
+    def context(self, seed=0, study_fn=None):
+        ctx = super().context(seed, study_fn)
+        ctx.vision_fn = stub_vision
+        return ctx
+
+    def setUp(self):
+        super().setUp()
+        replies = {"policy_proposals": [proposals(), proposals()],
+                   "policy_implement": [fence(CHILD), fence(CHILD)], "policy_correction": []}
+        self.rep, self.out, self.llm = self.run_replicate(replies, arms=self.ARMS)
+        self.rows = {r["arm"]: r for r in self.rep["rows"]}
+
+    def text(self, arm):
+        packet = self.rows[arm]["evidence_packet"]
+        with open(os.path.join(self.out, arm, packet["text_path"]), encoding="utf-8") as f:
+            return f.read()
+
+    def test_the_vision_packet_is_the_numeric_packet_plus_one_section(self):
+        numeric, vision = self.text(sf.ARM_LLM_NUMERIC), self.text(sf.ARM_LLM_VISION)
+        self.assertNotIn("Visual failure analysis", numeric)
+        self.assertIn("Visual failure analysis", vision)
+        self.assertIn("stops short of the puck", vision)
+        self.assertTrue(vision.startswith(numeric.rstrip("\n")))
+        self.assertEqual(self.rows[sf.ARM_LLM_VISION]["evidence_level"], sf.EVIDENCE_VISION)
+
+    def test_media_reruns_are_charged_to_the_vision_arm_and_kept_under_the_cap(self):
+        vision, numeric = self.rows[sf.ARM_LLM_VISION], self.rows[sf.ARM_LLM_NUMERIC]
+        self.assertEqual(vision["resources"]["repair_episodes"] - numeric["resources"]["repair_episodes"], 2)
+        self.assertLessEqual(vision["repair_episodes_spent"], self.budget.repair_episode_cap)
+        self.assertEqual(vision["vision"]["analyses_returned"], 2)
+        self.assertTrue(os.path.isfile(os.path.join(self.out, sf.ARM_LLM_VISION, "vision.json")))
+
+    def test_the_vision_chain_verifies(self):
+        self.assertEqual(sf.verify_chain(self.rows[sf.ARM_LLM_VISION], os.path.join(self.out, sf.ARM_LLM_VISION)), [])
+
+    def test_the_vision_arm_without_a_vision_fn_is_refused(self):
+        with self.assertRaises(ValueError):
+            sf.build_evidence_text(sf.EVIDENCE_VISION, PARENT, PARENT_SOURCE, MagicMock(), MagicMock())
+
+
 class TestGenerationFailure(StageFCase):
     def test_a_repair_that_never_validates_keeps_the_parent(self):
         replies = {"policy_proposals": [proposals()], "policy_implement": [fence(CHILD_RAW)],
@@ -287,3 +340,28 @@ class TestGenerationFailure(StageFCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestVisionSummary(unittest.TestCase):
+    """R-006's report: vision minus numeric paired per cell, case resampling, packet audits."""
+
+    def test_pairs_within_cells_and_counts_packets(self):
+        sys.path.insert(0, os.path.join(_PROJECT_ROOT, "scripts"))
+        import stage_f
+
+        def per_case(rate):
+            return {f"c{j}": float(j < round(rate * 10)) for j in range(10)}
+
+        reps = []
+        for seed, (v, n) in enumerate([(0.6, 0.5), (0.4, 0.4), (0.7, 0.6)]):
+            reps.append({"structure_id": "s", "seed": seed, "rows": [
+                {"arm": sf.ARM_LLM_VISION, "held_out": {"success": v, "per_case": per_case(v)},
+                 "vision": {"analyses_returned": seed, "analyses_rejected": 1, "conflicts": 0, "episodes_rerun": 3}},
+                {"arm": sf.ARM_LLM_NUMERIC, "held_out": {"success": n, "per_case": per_case(n)}},
+                {"arm": sf.ARM_NO_REPAIR, "held_out": {"success": 0.3, "per_case": per_case(0.3)}}]})
+        summary = stage_f.vision_summary(reps, resamples=200)
+        self.assertAlmostEqual(summary["paired_vs_llm_numeric"]["mean_difference"], 0.2 / 3)
+        self.assertEqual(summary["paired_vs_llm_numeric"]["n_replicates"], 3)
+        self.assertEqual(summary["packets"]["with_valid_analysis"], 2)
+        self.assertEqual(summary["packets"]["episodes_rerun"], 9)
+        self.assertLessEqual(summary["held_out_case_bootstrap"]["low"], summary["held_out_case_bootstrap"]["high"])
