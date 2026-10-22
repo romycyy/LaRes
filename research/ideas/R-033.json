@@ -1,0 +1,85 @@
+{
+  "id": "R-033",
+  "title": "Transfer trace-guided structural repair to a gated hammer plateau",
+  "hypothesis": "Successful expert hammer continuations expose missing strike geometry and timing that structural edits can incorporate when parameter search cannot produce success.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.3,
+    "against": "matched summary-only edits of the freshly generated hammer plateau parent",
+    "rationale": "A 0.30 gain on untouched development cases would establish useful cross-task transfer; the plateau gate prevents attributing an ordinary solvable generation to trace-guided repair."
+  },
+  "protocol": {
+    "script": "scripts/compare_generation_modes.py",
+    "config": "config/two_lane_search_v2.yaml",
+    "command": "gpu run -- python scripts/compare_generation_modes.py --config config/two_lane_search_v2.yaml --mode trace-edit-suite --task hammer-v2 --parent-ref fresh --generation-seed 3724 --plateau-probe config/manifests/hammer-v2_development_probe_s3720.yaml --probe-seed 3720 --plateau-screen config/manifests/hammer-v2_development_gate_s3721.yaml --screen-seed 3721 --plateau-candidates 24 --require-zero-plateau --trace-source learner-handoff --demo-manifest config/manifests/hammer-v2_development_traces_s3722.yaml --demo-seed 3722 --demo-episodes 10 --trace-count 2 --trace-stride 4 --edit-scope all-phases --arms summary-only,handoff-trace --block-seeds 3725,3726 --eval-manifest config/manifests/hammer-v2_development_s3723.yaml --manifest-seed 3723 --eval-cases 10:40 --search-candidates 0 --bc-steps 0 --max-repair-per-candidate 1 --model gpt-6.1-sol --reasoning-effort high --temperature 1 --output logs/trace_generalisation/hammer_s3720",
+    "seeds": [
+      3720,
+      3721,
+      3722,
+      3723,
+      3724,
+      3725,
+      3726
+    ],
+    "manifests": [
+      "config/manifests/hammer-v2_development_probe_s3720.yaml",
+      "config/manifests/hammer-v2_development_gate_s3721.yaml",
+      "config/manifests/hammer-v2_development_traces_s3722.yaml",
+      "config/manifests/hammer-v2_development_s3723.yaml"
+    ],
+    "episodes": 280,
+    "llm_calls": 10,
+    "code_changes": [
+      "Extend trace-edit-suite with the shown conditional plateau gate, reusing existing generation and numerical-search machinery rather than adding a script.",
+      "Generate one hammer parent with at most one validity correction. Test 24 parameter candidates on five probe cases, including the initial vector; continue only if every candidate has zero success and the selected parent also scores zero on 30 disjoint gate cases.",
+      "Collect ten handoff episodes, switching to the calibrated expert after the hammer head rises 3 cm for three consecutive steps. Require two successful continuations and use the first two in manifest order; otherwise stop as inconclusive.",
+      "Run two paired edit blocks with identical summaries and full-controller edit permission; only one arm receives every-fourth-step successful continuation traces. Freeze edits before the separate 30-case evaluation, without subsequent search or fitting.",
+      "Use the preceding protocols' scoring and interval rules. Episode and call estimates are maximum planned costs before early stopping; require per-idea approval and stop the remote box afterward."
+    ],
+    "needs_gpu": false,
+    "needs_llm": true
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "After both eligibility gates pass, trace edits remain unsuccessful or have no positive paired advantage over summary-only edits. Failure to establish a generator plateau or obtain two successful handoffs is inconclusive, not a refutation.",
+  "cost_estimate": {
+    "episodes": 280,
+    "llm_calls": 10,
+    "wall_time_minutes": 60
+  },
+  "open_question_refs": [
+    0,
+    3,
+    6,
+    9
+  ],
+  "briefing_sha256": "f829f30bf39020bf30824d9e4526346e2ccb4284ac5da7220e94974fab82ffdf",
+  "proposal_call_id": "call_00055",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T09:52:32",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00056, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T095221_call_00056.json"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-22T09:52:32",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00056 (manifests under logs/trace_generalisation/..., one validity correction per edit, block differences averaged within cases, GPU kept up per the user)"
+    },
+    {
+      "at": "2026-10-22T09:52:32",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00056, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    }
+  ],
+  "created_at": "2026-10-22T09:51:23"
+}

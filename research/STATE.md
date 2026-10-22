@@ -1,20 +1,23 @@
 # Research state
 
-_Generated 2026-10-22T09:49:16 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T09:53:18 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 0 |
-| approved | 0 |
+| running | 1 |
+| approved | 1 |
 | proposed | 0 |
 | decided | 27 |
 | rejected | 4 |
 
 ## Needs attention
 
-- Nothing open. Run `python scripts/research.py propose` to ask the advisor for ideas.
+- **R-032** [running] Can expert-only placement traces replace learner handoffs?
+  - run the protocol, then `python scripts/research.py record R-032 --results <json>`
+- **R-033** [approved] Transfer trace-guided structural repair to a gated hammer plateau
+  - `python scripts/research.py start R-033` then run its command
 
 ## Last 5 decisions
 

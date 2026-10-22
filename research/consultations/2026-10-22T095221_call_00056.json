@@ -1,0 +1,37 @@
+{
+  "ideas": [
+    {
+      "id": "R-032",
+      "recommendation": "revise",
+      "reasoning": "Expert-only post-lift traces may supply placement geometry missing from demonstration summaries, making this the cleaner mechanism test at 130 simulator episodes and at most 8 LLM calls. Its weakest point is the absence of a concurrent handoff-trace arm: it tests expert-only sufficiency for this parent, not equivalence to learner handoffs.",
+      "suggested_changes": [
+        "Reuse scripts/compare_generation_modes.py and config/two_lane_search_v2.yaml; place both generated manifests under logs/trace_generalisation/expert_only_s3710/manifests/ and update the manifest arguments, with at most 50 placements per pool seed. Retain unspent seeds 3710-3713.",
+        "Retain one validity correction per edit, four frozen edit slots, fixed-denominator scoring with invalid slots counted unsuccessful, no fitting, and no rollout-based selection. Compute the primary paired effect by averaging the two block differences within each evaluation case before constructing the case-paired t interval; also report each block separately.",
+        "Prediction: paired_success_difference, direction increase, threshold 0.50, compared against matched expert-demonstration-summary-only edits of D-020:recoverable. falsified_by: a paired interval upper bound below 0.50 refutes the predicted magnitude; an interval including zero leaves any advantage inconclusive, and fewer than two successful demonstrations makes the experiment inconclusive.",
+        "Remove the inherited per-idea shutdown instruction: keep the GPU up between session experiments and stop it when the session ends. Preserve the positive paired-interval promotion requirement."
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "R-033",
+      "recommendation": "revise",
+      "reasoning": "Successful hammer continuations may expose strike geometry that structural editing can incorporate after bounded parameter search fails. This offers independent cross-task information at up to 280 simulator episodes and 10 LLM calls, but failed eligibility gates can consume episodes without testing the trace intervention, so it should run second regardless of R-032's outcome.",
+      "suggested_changes": [
+        "Reuse scripts/compare_generation_modes.py and config/two_lane_search_v2.yaml; put all four generated manifests under logs/trace_generalisation/hammer_s3720/manifests/, update their arguments, and cap each pool seed at 50 placements. Retain unspent seeds 3720-3726.",
+        "Describe eligibility as a bounded-search plateau, not proof that parameter search cannot succeed. Preserve sequential early stopping: 120 probe episodes, then 30 gate episodes, then 10 handoff episodes, then 120 edit-evaluation episodes; permit at most one validity correction for the parent and each edit.",
+        "Retain all four edit slots with invalid slots counted unsuccessful, and average block differences within cases before constructing the paired t interval. Freeze edits before evaluation, with no subsequent search or fitting; failed plateau or successful-handoff requirements are inconclusive.",
+        "Prediction: paired_success_difference, direction increase, threshold 0.30, compared against matched summary-only edits of the freshly generated hammer plateau parent. falsified_by: after both eligibility gates pass, a paired interval upper bound below 0.30 refutes the predicted magnitude; an interval including zero leaves any advantage inconclusive.",
+        "Replace per-idea shutdown with session-end shutdown and retain the positive paired-interval promotion requirement. Do not condition execution on R-032 succeeding: this tests learner-handoff transfer, not expert-only sufficiency."
+      ],
+      "depends_on": []
+    }
+  ],
+  "order": [
+    "R-032",
+    "R-033"
+  ],
+  "next_step": "Have Claude Code apply the protocol corrections and run revised R-032 first.",
+  "call_id": "call_00056",
+  "briefing_sha256": "5725842bb6a46f39ba3e6399bab24923eef456fd62b6de3855dffbc156a667c0",
+  "question": "Delegated approve/reject (run_as_is = approve, drop = reject, revise = approve after changes, defer = leave proposed). One validity correction per edit is now the standard (D-027). Manifests in run out-dirs (<= 50 placements per pool seed); GPU stays up for the session. Approve at most two, in order."
+}

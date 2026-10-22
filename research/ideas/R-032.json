@@ -1,0 +1,92 @@
+{
+  "id": "R-032",
+  "title": "Can expert-only placement traces replace learner handoffs?",
+  "hypothesis": "Expert-only post-lift traces encode sufficient placement geometry to improve assembly edits without showing expert recovery from learner-visited states.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.5,
+    "against": "matched expert-demonstration-summary-only edits of D-020:recoverable",
+    "rationale": "A large untrained success gain tests whether learner-state alignment is necessary, rather than retesting D-027's handoff-conditioned intervention."
+  },
+  "protocol": {
+    "script": "scripts/compare_generation_modes.py",
+    "config": "",
+    "command": "python scripts/compare_generation_modes.py --assembly-study expert-only-traces --pool-seed 3710 --out-dir logs/trace_generalisation/expert_only_s3710",
+    "seeds": [
+      3710,
+      3711,
+      3712,
+      3713
+    ],
+    "manifests": [
+      "config/manifests/push-v2_development.yaml"
+    ],
+    "episodes": 130,
+    "llm_calls": 8,
+    "code_changes": [
+      "scripts/compare_generation_modes.py (--assembly-study expert-only-traces)"
+    ],
+    "needs_gpu": false,
+    "needs_llm": true
+  },
+  "status": "running",
+  "source": "advisor",
+  "falsified_by": "Expert-only trace edits score zero in both blocks or fail to outperform their summary-only controls; a paired interval including zero leaves sufficiency inconclusive.",
+  "cost_estimate": {
+    "episodes": 130,
+    "llm_calls": 8,
+    "wall_time_minutes": 35
+  },
+  "open_question_refs": [
+    0,
+    3,
+    6,
+    9
+  ],
+  "briefing_sha256": "f829f30bf39020bf30824d9e4526346e2ccb4284ac5da7220e94974fab82ffdf",
+  "proposal_call_id": "call_00055",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T09:52:32",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00056, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T095221_call_00056.json"
+  },
+  "run": {
+    "started_at": "2026-10-22T09:53:18",
+    "git_sha": "ea89867353706a38800417a8a380e63b01c7de98",
+    "dirty_worktree": true,
+    "log_dir": "logs/trace_generalisation/expert_only_s3710"
+  },
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-22T09:52:32",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00056 (manifests under logs/trace_generalisation/..., one validity correction per edit, block differences averaged within cases, GPU kept up per the user)"
+    },
+    {
+      "at": "2026-10-22T09:52:32",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00056, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T09:53:17",
+      "from": "approved",
+      "to": "approved",
+      "note": "implemented: expert-only demonstrations on pool 3710 (10 cases); post-lift = object >= 3 cm above its start (the expert's grasp never met the learner handoff trigger in R-025); first two successful episodes, every 4th step; four frozen edits evaluated at declared values on cases 10-39 of pool 3711"
+    },
+    {
+      "at": "2026-10-22T09:53:18",
+      "from": "approved",
+      "to": "running",
+      "note": "git ea89867353 (dirty)"
+    }
+  ],
+  "created_at": "2026-10-22T09:51:23"
+}

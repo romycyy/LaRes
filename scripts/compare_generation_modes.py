@@ -1539,6 +1539,130 @@ def run_contact_regime_scan(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  R-032: expert-only placement traces (no learner handoff) vs an expert-demonstration summary
+# ---------------------------------------------------------------------------
+
+EXPERT_ONLY_REQUEST = """Below is a controller for this task that grasps the nut and lifts it, but never seats it on the peg:
+run on its own it succeeds 0.00 of the time, and it stops making progress after the lift. A scripted expert solves
+this task; it succeeded on {successes} of {episodes} demonstration episodes.
+
+Rewrite the controller. Keep everything it does before the lift (approach, descent, grasp, lift) exactly as it is,
+and change only the control after the lift so that it carries the nut over the peg, aligns it, lowers it onto the
+peg and releases it. The controller must run on its own; no expert is available. Keep the class name GeneratedPolicy,
+read observations only through self.obs_field, and declare every parameter with get_param_ranges.
+
+```python
+{parent}
+```"""
+POST_LIFT_M = 0.03
+
+
+def collect_expert_traces(task, manifest, env, schema) -> dict:
+    """Expert-only episodes; rows from the first step the object is POST_LIFT_M above its start, per episode."""
+    from lares.eval import ExpertActor
+    from lares.eval.runner import run_episode
+
+    expert, episodes = ExpertActor(task), []
+    for case in manifest.episodes:
+        rows, state = [], {"z0": None, "lifted": False}
+
+        def observe(step, _rows=rows, _s=state):
+            if step.get("action") is None:
+                return
+            o = np.asarray(step["obs"], dtype=np.float64)
+            if _s["z0"] is None:
+                _s["z0"] = float(o[6])
+            _s["lifted"] = _s["lifted"] or float(o[6]) - _s["z0"] >= POST_LIFT_M
+            if _s["lifted"]:
+                _rows.append({"t": int(step["timestep"]), "tcp": o[0:3].round(4).tolist(), "gripper": round(float(o[3]), 3),
+                              "obj": o[4:7].round(4).tolist(), "goal": o[36:39].round(4).tolist(),
+                              "action": np.asarray(step["action"]).round(3).tolist()})
+
+        ep = run_episode(expert, env, case, max_steps=150, schema=schema, observer=observe)
+        episodes.append({"case": case.case_id, "success": float(ep.success), "rows": rows})
+    return {"episodes": episodes, "successes": int(sum(e["success"] for e in episodes))}
+
+
+def run_assembly_expert_traces(args) -> int:
+    sys.path.insert(0, _SCRIPT_DIR)
+    import compare_child_vs_parent as cvp
+    from lares.core.obs_schema import get_obs_schema
+    from lares.eval import make_manifest_env
+    from lares.eval.runner import PolicyActor, evaluate_manifest
+    from lares.eval.stats import t_interval, win_loss_tie
+    from lares.fitting.structure_bank import instantiate_source
+
+    base = int(args.pool_seed)       # 3710 demos, 3711 evaluation manifest, 3712-3713 block edit labels
+    os.makedirs(args.out_dir, exist_ok=True)
+    entries = [(base, "mt1_pool", "R-032: expert demonstration manifest"), (base + 1, "mt1_pool", "R-032: evaluation manifest"),
+               (base + 2, "generation_block", "R-032 block 0 edits"), (base + 3, "generation_block", "R-032 block 1 edits")]
+    print(f"  seeds: {cvp.ensure_entries_reserved(entries, args.out_dir)}")
+    if args.reserve_only:
+        return 0
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise SystemExit("R-032 needs OPENAI_API_KEY")
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    task, schema = "assembly-v2", get_obs_schema("assembly-v2")
+    mdir = os.path.join(args.out_dir, "manifests")
+    demo, _ = cvp.fresh_manifest(task, base, 10, 150, mdir, role="demo")
+    full, _ = cvp.fresh_manifest(task, base + 1, 50, 150, mdir, role="eval", also_disjoint_from=[demo])
+    cases = full.slice(10, 40)
+    traces = collect_expert_traces(task, demo, make_manifest_env(demo, demo.resolve_pool(), 200), schema)
+    with open(os.path.join(args.out_dir, "traces.json"), "w", encoding="utf-8") as f:
+        json.dump(traces, f, indent=2)
+    print(f"  expert demonstrations: {traces['successes']}/{len(demo)} successful", flush=True)
+    summary = {"demo_successes": traces["successes"], "episodes": {"demo": len(demo), "eval": 0}}
+    if traces["successes"] < 2:
+        summary["outcome"] = "inconclusive: fewer than two successful expert demonstrations; no generation call made"
+        with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+            json.dump(summary, f, indent=2)
+        print(f"  {summary['outcome']}")
+        return 0
+    src, _, _ = D020_POLICIES[EDIT_PARENT]
+    with open(os.path.join(_PROJECT_ROOT, src), encoding="utf-8") as f:
+        parent_source = f.read()
+    base_request = EXPERT_ONLY_REQUEST.replace("{successes}", str(traces["successes"])).replace(
+        "{episodes}", str(len(demo))).replace("{parent}", parent_source.strip())
+    block = trace_block(traces).replace("Successful expert continuations after your lift",
+                                        "Successful expert episodes after the expert lifted the nut")
+    requests = {"summary_only": base_request, "expert_only_trace": base_request + "\n" + block}
+    env = make_manifest_env(full, full.resolve_pool(), 200)
+    outcomes, edits = {}, {}
+    for b in range(2):
+        for arm in ("summary_only", "expert_only_trace"):
+            label = f"b{b}_{arm}"
+            code, rec = make_edit(requests[arm], os.path.join(args.out_dir, "edits", label), args, allow_correction=True)
+            edits[label] = {k: v for k, v in rec.items() if k != "code"}
+            if code is None:
+                outcomes[label] = {c.case_id: 0.0 for c in cases.episodes}
+            else:                                   # frozen edit at its declared values: no search, no fitting
+                pol = instantiate_source(code, 39, 4, schema=schema)
+                pol.fixed_action_scale = 0.1
+                r = evaluate_manifest(PolicyActor(pol, name=label), cases, env, max_steps=150)
+                summary["episodes"]["eval"] += len(r.episodes)
+                outcomes[label] = {e.case_id: float(e.success) for e in r.episodes}
+            print(f"  {label}: valid={rec['valid']} corrected={rec.get('corrected')} success "
+                  f"{np.mean(list(outcomes[label].values())):.2f}", flush=True)
+    ids = sorted(c.case_id for c in cases.episodes)
+    per_block = {}
+    for b in range(2):
+        d = [outcomes[f"b{b}_expert_only_trace"][c] - outcomes[f"b{b}_summary_only"][c] for c in ids]
+        per_block[b] = {**t_interval(d), **win_loss_tie(d)}
+    avg = [float(np.mean([outcomes[f"b{b}_expert_only_trace"][c] - outcomes[f"b{b}_summary_only"][c] for b in range(2)]))
+           for c in ids]
+    summary.update(paired_success_difference=float(np.mean(avg)), fixed_pair_average={**t_interval(avg), **win_loss_tie(avg)},
+                   per_block=per_block, edits=edits, success={k: float(np.mean(list(v.values()))) for k, v in outcomes.items()})
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2, default=str)
+    a = summary["fixed_pair_average"]
+    print(f"  expert-only trace - summary: {a['mean']:+.3f} [{a['low']}, {a['high']}]; success {summary['success']}; "
+          f"episodes {summary['episodes']}", flush=True)
+    return 0
+
+
 def run_task_scan(args) -> int:
     import multiprocessing as mp
 
@@ -1639,7 +1763,7 @@ def parse_args():
                    default="")
     p.add_argument("--scan-set", choices=["default", "hard"], default="default")
     p.add_argument("--assembly-study", choices=["reciprocal-handoff", "expert-fit-vs-numerical", "targeted-placement-edit",
-                                                "breadth-vs-depth", "trace-edit-suite"],
+                                                "breadth-vs-depth", "trace-edit-suite", "expert-only-traces"],
                    default="")
     p.add_argument("--pool-seed", type=int)
     p.add_argument("--demo-cases", type=int, default=5, help="trace-edit-suite: learner-to-expert handoff demonstrations")
@@ -1669,6 +1793,8 @@ def main():
         return run_assembly_breadth_depth(args)
     if args.assembly_study == "trace-edit-suite":
         return run_assembly_trace_edits(args)
+    if args.assembly_study == "expert-only-traces":
+        return run_assembly_expert_traces(args)
     if args.research_mode == "contact-regime-scan":
         return run_contact_regime_scan(args)
     if args.research_mode == "task-scan":
