@@ -1,0 +1,265 @@
+{
+  "id": "R-017",
+  "title": "Single-phase seedless generation beats the two-phase ideas prompt under rollout search",
+  "hypothesis": "The two-phase ideas prompt (designs first, then per-idea implementation, as in the gpt-6.1-sol baseline and the exploration lane) produces structures that rollout search rescues less often than the single-phase prompt, so the exploration lane should switch prompts.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.15,
+    "against": "two-phase per-idea seedless generation (ideas_system/ideas_user then one implementation) in the same block, under identical 24-candidate independent rollout search",
+    "rationale": "D-013's side observation: single-phase structures reached 0.80-1.00 after search versus 0.00 for the two-phase baseline run's promotion set; 0.15 is the smallest gain that would justify switching the exploration lane's prompt. Generation-block paired means give the primary interval."
+  },
+  "protocol": {
+    "script": "scripts/compare_generation_modes.py",
+    "config": "",
+    "command": "python scripts/compare_generation_modes.py --research-mode phase-searchability --generation-seeds 3040 3041 3042 3043 --search-seeds 3044 3045 --probe-seed 3046 --heldout-seed 3047 --out-dir logs/research/phase_searchability_s3040",
+    "seeds": [
+      3040,
+      3041,
+      3042,
+      3043,
+      3044,
+      3045,
+      3046,
+      3047
+    ],
+    "manifests": [
+      "config/manifests/push-v2_development.yaml"
+    ],
+    "episodes": 5040,
+    "llm_calls": 20,
+    "code_changes": [
+      "scripts/compare_generation_modes.py (--research-mode phase-searchability: arms single_phase and two_phase, otherwise the seedless-searchability machinery)",
+      "tests/test_stage_f.py"
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "decided",
+  "source": "implementer",
+  "falsified_by": "The block-level paired 95% upper bound below +0.15 refutes the predicted margin; an interval spanning zero is inconclusive. Invalid slots score zero in both arms; untrained (step-0) differences are reported as secondary.",
+  "cost_estimate": {
+    "episodes": 5040,
+    "llm_calls": 20,
+    "wall_time_minutes": 40,
+    "breakdown": "8 structures x 2 search seeds x (24 x 10 probe + 50 confirmation) + 8 x 50 original confirmation = 5040; LLM: single-phase 1 call + <=1 correction, two-phase 1 design + 1 implementation + <=1 correction, x 4 blocks = <=20"
+  },
+  "open_question_refs": [
+    "D-013 side observation",
+    "logs/baseline_gpt61_sol_high (two-phase, 0.00)"
+  ],
+  "briefing_sha256": "",
+  "proposal_call_id": "",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T05:45:57",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00026, run_as_is) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T054534_call_00026.json"
+  },
+  "run": {
+    "started_at": "2026-10-22T05:46:04",
+    "git_sha": "bfc31a5183925a66ef4220815fd4d727c78b15b7",
+    "dirty_worktree": true,
+    "log_dir": "logs/research/phase_searchability_s3040",
+    "finished_at": "2026-10-22T06:12:34"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.6975,
+      "block_t95": [
+        0.3949234328828564,
+        1.0000765671171437
+      ],
+      "by_block": {
+        "3040": 0.44,
+        "3041": 0.79,
+        "3042": 0.6799999999999999,
+        "3043": 0.88
+      },
+      "placement_t95": [
+        0.658130732625354,
+        0.736869267374646
+      ],
+      "placement_wlt": [
+        50,
+        0,
+        0
+      ],
+      "step0_single_minus_two": 0.25,
+      "step0_by_block": {
+        "3040": 0.0,
+        "3041": 0.0,
+        "3042": 0.1,
+        "3043": 0.9
+      },
+      "by_slot": {
+        "b3040_two_phase": {
+          "block": 3040,
+          "arm": "two_phase",
+          "valid": true,
+          "searched": {
+            "3044": 0.0,
+            "3045": 0.0
+          },
+          "original": 0.0
+        },
+        "b3040_single_phase": {
+          "block": 3040,
+          "arm": "single_phase",
+          "valid": true,
+          "searched": {
+            "3044": 0.38,
+            "3045": 0.5
+          },
+          "original": 0.0
+        },
+        "b3041_two_phase": {
+          "block": 3041,
+          "arm": "two_phase",
+          "valid": true,
+          "searched": {
+            "3044": 0.04,
+            "3045": 0.0
+          },
+          "original": 0.0
+        },
+        "b3041_single_phase": {
+          "block": 3041,
+          "arm": "single_phase",
+          "valid": true,
+          "searched": {
+            "3044": 0.82,
+            "3045": 0.8
+          },
+          "original": 0.0
+        },
+        "b3042_two_phase": {
+          "block": 3042,
+          "arm": "two_phase",
+          "valid": true,
+          "searched": {
+            "3044": 0.64,
+            "3045": 0.0
+          },
+          "original": 0.0
+        },
+        "b3042_single_phase": {
+          "block": 3042,
+          "arm": "single_phase",
+          "valid": true,
+          "searched": {
+            "3044": 1.0,
+            "3045": 1.0
+          },
+          "original": 0.1
+        },
+        "b3043_two_phase": {
+          "block": 3043,
+          "arm": "two_phase",
+          "valid": true,
+          "searched": {
+            "3044": 0.06,
+            "3045": 0.02
+          },
+          "original": 0.0
+        },
+        "b3043_single_phase": {
+          "block": 3043,
+          "arm": "single_phase",
+          "valid": true,
+          "searched": {
+            "3044": 0.88,
+            "3045": 0.96
+          },
+          "original": 0.9
+        }
+      },
+      "episodes": {
+        "probe": 3840,
+        "confirmation": 1200
+      },
+      "llm_calls": 13
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "control is the two-phase per-idea generator (ideas prompt, then one implementation) in the same block, searched identically; the metric is already single-phase minus two-phase"
+    },
+    "artifacts": [
+      "logs/research/phase_searchability_s3040/summary.json",
+      "logs/research/phase_searchability_s3040/run.json",
+      "logs/research/phase_searchability_s3040/slots.json",
+      "logs/research/phase_searchability_s3040/structures",
+      "logs/research/phase_searchability_s3040/generation",
+      "logs/phase_searchability.run.log"
+    ],
+    "notes": "Four generation blocks (3040-3043), one gpt-6.1-sol structure per generator per block (all valid; one two-phase correction); 24-candidate independent rollout search under seeds 3044/3045, probe s3046 (10), confirmation s3047 (50). Single-phase minus two-phase after search: block-level +0.698 [+0.395, +1.000]; placement-level [+0.658, +0.737]. Single-phase won every block: searched success 0.44, 0.81, 1.00, 0.92 vs two-phase 0.00, 0.02, 0.32, 0.04. Untrained, single minus two +0.250 (single 0.00/0.00/0.10/0.90; two-phase 0.00 everywhere, matching the gpt-6.1-sol baseline run). Replicates D-013's side observation with fresh blocks. Caveats: four blocks; the single-phase prompt is the legacy initial prompt, so the difference bundles prompt wording with the design-then-implement split; 13 LLM calls (within the 20 estimate), 5040 episodes."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 0.6975,
+    "delta": 0.6975,
+    "matched": true
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "supported",
+      "confidence": 0.85,
+      "reasoning": "Single-phase minus two-phase seedless generation under identical 24-candidate rollout search is +0.698, block-level 95% [+0.395, +1.000] over four independent generation blocks, placement-level [+0.658, +0.737]. The predicted +0.15 is exceeded and the lower bound is well above it. Single-phase won every block (0.44-1.00 vs 0.00-0.32); two-phase structures scored 0.00 untrained, reproducing the gpt-6.1-sol baseline's failure. Caveat: the arms differ in prompt wording as well as the design/implementation split, so the effect is of the whole generator, not of phasing alone.",
+      "cited_artifacts": [
+        "logs/research/phase_searchability_s3040/summary.json"
+      ],
+      "next_experiment": "Change the pipeline: make single-phase generation plus 24-candidate rollout search the exploration lane's default (keeping lineage via a minimal idea record), then rerun the end-to-end two-lane search against the current configuration on a fresh confirmation set.",
+      "recorded_at": "2026-10-22T06:12:35",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "supported",
+      "confidence": 0.96,
+      "reasoning": "The named two-phase control was measured under the same rollout-search protocol [logs/research/phase_searchability_s3040/run.json]. The primary paired_success_difference was +0.6975, with a generation-block 95% interval of [+0.3949, +1.0001], entirely above the predicted +0.15 margin [logs/research/phase_searchability_s3040/summary.json]. All four generation blocks favored single-phase, with differences ranging from +0.44 to +0.88 [logs/research/phase_searchability_s3040/summary.json]. This supports switching to the tested single-phase prompt bundle, but the pre-search difference of +0.25 means the result does not isolate greater search rescue as the cause [logs/research/phase_searchability_s3040/summary.json].",
+      "cited_artifacts": [
+        "logs/research/phase_searchability_s3040/run.json",
+        "logs/research/phase_searchability_s3040/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T06:13:05",
+      "call_id": "call_00027"
+    }
+  ],
+  "decision_id": "D-014",
+  "history": [
+    {
+      "at": "2026-10-22T05:45:03",
+      "from": "",
+      "to": "proposed",
+      "note": "proposed by the implementer from D-013's side observation"
+    },
+    {
+      "at": "2026-10-22T05:45:57",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00026, run_as_is) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T05:46:04",
+      "from": "approved",
+      "to": "running",
+      "note": "git bfc31a5183 (dirty)"
+    },
+    {
+      "at": "2026-10-22T06:12:34",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=True"
+    },
+    {
+      "at": "2026-10-22T06:13:13",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-014: supported"
+    }
+  ],
+  "created_at": "2026-10-22T05:45:03"
+}

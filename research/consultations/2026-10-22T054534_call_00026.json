@@ -1,0 +1,18 @@
+{
+  "ideas": [
+    {
+      "id": "R-017",
+      "recommendation": "run_as_is",
+      "reasoning": "This directly tests generation mode under matched rollout search using scripts/compare_generation_modes.py; 5,040 simulator episodes and at most 20 LLM calls also provide untrained comparisons without additional evaluation cost. Its weakest point is only four independent generation blocks: repeated search seeds measure optimizer variability, not additional prompt replication. Retain the prediction that paired_success_difference will increase by at least 0.15 against same-block two-phase generation under identical 24-candidate search; falsified_by: the generation-block paired 95% upper bound is below +0.15, while an interval including zero provides no evidence of a difference.",
+      "suggested_changes": [],
+      "depends_on": []
+    }
+  ],
+  "order": [
+    "R-017"
+  ],
+  "next_step": "Run R-017 first via gpu run with the stated command, preserving the deployed generation settings from config/two_lane_search.yaml and saving the disjoint probe and confirmation manifests under logs/research/phase_searchability_s3040.",
+  "call_id": "call_00026",
+  "briefing_sha256": "76f3839818e688c4d23ef6abf2e50c7f064a13767ddbd007ce5822c2b6846128",
+  "question": "Delegated approve/reject (run_as_is = approve, drop = reject, revise = approve after changes, defer = leave proposed). R-017 tests D-013's side observation directly. Note the two-phase arm is the generator the exploration lane and the gpt-6.1-sol baseline use (ideas prompt, per-idea implementation). Manifests go in the out-dir (<= 50 placements per pool seed); the GPU stays up for the session."
+}

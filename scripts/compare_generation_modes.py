@@ -182,8 +182,18 @@ Parameterization contract (follow it exactly):
 - Use between 6 and 10 parameters."""
 
 
-def generate_one(prompts, contract: bool, run_dir, args):
-    """One structure, single-phase, with at most one linked correction. Returns ``(final candidate, calls)``."""
+#: Arms of each research mode: arm name -> (generator, contract appended?). The first arm is the control.
+RESEARCH_ARMS = {
+    "seedless-searchability": (("baseline", "single_phase", False), ("contract", "single_phase", True)),
+    "phase-searchability": (("two_phase", "two_phase", False), ("single_phase", "single_phase", False)),
+}
+
+
+def generate_one(prompts, contract: bool, run_dir, args, generator="single_phase"):
+    """One structure with at most one linked correction. Returns ``(final candidate, attempts)``.
+
+    ``single_phase`` writes code from the plain prompt in one call; ``two_phase`` is the exploration lane's
+    generator: one ideas call, then one per-idea implementation."""
     import pickle
 
     from openai import OpenAI
@@ -192,15 +202,18 @@ def generate_one(prompts, contract: bool, run_dir, args):
     data_pkl = os.path.join(run_dir, "data.pkl")
     with open(data_pkl, "wb") as f:
         pickle.dump([{"obs": np.zeros(args.obs_dim)}], f)
+    two_phase = generator == "two_phase"
     candidates = get_symbolic_policies(
         client=OpenAI(api_key=os.environ["OPENAI_API_KEY"]), dir_path=run_dir, llm_iter=0,
-        args=SimpleNamespace(model=args.model, reasoning_effort=args.reasoning_effort, policy_gen_two_phase=False),
+        args=SimpleNamespace(model=args.model, reasoning_effort=args.reasoning_effort, policy_gen_two_phase=two_phase,
+                             policy_impl_mode=POLICY_IMPL_PER_IDEA),
         obs_dim=args.obs_dim, action_dim=args.action_dim, initial_system=prompts["initial_system"],
         initial_user=prompts["initial_user"] + (SEARCHABILITY_CONTRACT if contract else ""),
         task_description=prompts["task_description"], obs_description=prompts["obs_description"],
         input_dict_string=prompts["input_dict_string"], code_output_tip=prompts["code_output_tip"],
-        data_pkl_path=data_pkl, env_name=args.env_name, real_num=1, max_total_attempts=2,
+        data_pkl_path=data_pkl, env_name=args.env_name, real_num=1, max_total_attempts=3 if two_phase else 2,
         max_repair_per_candidate=1, llm_transcript_path=os.path.join(run_dir, "transcript.log"),
+        ideas_system=prompts["ideas_system"] if two_phase else None, ideas_user=prompts["ideas_user"] if two_phase else None,
     )
     final = final_attempts(candidates)[0]
     return final, len(candidates)
@@ -256,9 +269,9 @@ def searchability_job(job) -> dict:
     return out
 
 
-def searchability_summary(slots, results, search_seeds) -> dict:
-    """Contract minus baseline per generation block (mean over both search seeds), plus placement-level pairing.
-    An invalid slot scores zero on every case."""
+def searchability_summary(slots, results, search_seeds, arms=("baseline", "contract")) -> dict:
+    """Treatment minus control (``arms`` = (control, treatment)) per generation block, mean over both search seeds,
+    plus placement-level pairing. An invalid slot scores zero on every case."""
     from lares.eval.stats import t_interval, win_loss_tie
 
     cases = sorted(next(iter(results.values()))["searched"])
@@ -277,12 +290,12 @@ def searchability_summary(slots, results, search_seeds) -> dict:
     by = {(s["block"], s["arm"]): s["slot_id"] for s in slots}
     block_diffs, per_case = {}, {c: [] for c in cases}
     for b in blocks:
-        t, c = by[(b, "contract")], by[(b, "baseline")]
+        t, c = by[(b, arms[1])], by[(b, arms[0])]
         block_diffs[b] = float(np.mean([rate(searched(t, k)) - rate(searched(c, k)) for k in search_seeds]))
         for x in cases:
             per_case[x].append(float(np.mean([searched(t, k)[x] - searched(c, k)[x] for k in search_seeds])))
     placement = [float(np.mean(v)) for v in per_case.values()]
-    step0 = [rate(original(by[(b, "contract")])) - rate(original(by[(b, "baseline")])) for b in blocks]
+    step0 = [rate(original(by[(b, arms[1])])) - rate(original(by[(b, arms[0])])) for b in blocks]
     return {"paired_success_difference": float(np.mean(list(block_diffs.values()))),
             "block_level": {"by_block": block_diffs, **t_interval(list(block_diffs.values()))},
             "placement_level": {"n": len(cases), **t_interval(placement), **win_loss_tie(placement)},
@@ -299,12 +312,14 @@ def run_seedless_searchability(args) -> int:
     import compare_child_vs_parent as cvp
 
     os.makedirs(args.out_dir, exist_ok=True)
+    arms = RESEARCH_ARMS[args.research_mode]
+    tag = args.research_mode
     status = cvp.ensure_entries_reserved(
-        [(k, "generation_block", "R-015: generation block label") for k in args.generation_seeds]
-        + [(k, "fitting", "R-015: search RNG seed") for k in args.search_seeds]
-        + [(args.probe_seed, "mt1_pool", "R-015: 10-case selection probe"),
-           (args.heldout_seed, "mt1_pool", "R-015: 50-case confirmation manifest")], args.out_dir)
-    print(f"  blocks {args.generation_seeds} x [baseline, contract]; search seeds {args.search_seeds}; seeds: {status}")
+        [(k, "generation_block", f"{tag}: generation block label") for k in args.generation_seeds]
+        + [(k, "fitting", f"{tag}: search RNG seed") for k in args.search_seeds]
+        + [(args.probe_seed, "mt1_pool", f"{tag}: 10-case selection probe"),
+           (args.heldout_seed, "mt1_pool", f"{tag}: 50-case confirmation manifest")], args.out_dir)
+    print(f"  blocks {args.generation_seeds} x {[a[0] for a in arms]}; search seeds {args.search_seeds}; seeds: {status}")
     if args.reserve_only:
         return 0
     if not os.environ.get("OPENAI_API_KEY"):
@@ -320,9 +335,10 @@ def run_seedless_searchability(args) -> int:
     else:
         slots, calls = [], 0
         for block in args.generation_seeds:
-            for arm in ("baseline", "contract"):
+            for arm, generator, contract in arms:
                 slot_id = f"b{block}_{arm}"
-                final, n = generate_one(prompts, arm == "contract", os.path.join(args.out_dir, "generation", slot_id), args)
+                final, n = generate_one(prompts, contract, os.path.join(args.out_dir, "generation", slot_id), args,
+                                        generator=generator)
                 calls += n
                 entry = {"slot_id": slot_id, "block": block, "arm": arm, "valid": bool(final.valid), "attempts": n,
                          "stage": (final.validation or {}).get("stage"), "errors": (final.validation or {}).get("errors")}
@@ -351,7 +367,7 @@ def run_seedless_searchability(args) -> int:
     with mp.get_context("spawn").Pool(processes=min(8, max(1, len(jobs)))) as pool:
         out = pool.map(searchability_job, jobs)
     results = {(r["slot"], r["search_seed"]): r for r in out}
-    summary = searchability_summary(slots, results, args.search_seeds)
+    summary = searchability_summary(slots, results, args.search_seeds, arms=(arms[0][0], arms[1][0]))
     summary["episodes"] = {k: int(sum(r["episodes"][k] for r in out)) for k in ("probe", "confirmation")}
     summary["llm_attempts"] = int(sum(s["attempts"] for s in slots))
     with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
@@ -363,7 +379,7 @@ def run_seedless_searchability(args) -> int:
     for sid, row in summary["by_slot"].items():
         print(f"  {sid:<16} valid={row['valid']} original {row['original']:.2f} searched {row['searched']}")
     bl, pl = summary["block_level"], summary["placement_level"]
-    print(f"  contract - baseline: block {bl['mean']:+.3f} [{bl['low']}, {bl['high']}]; placement {pl['mean']:+.3f} "
+    print(f"  {arms[1][0]} - {arms[0][0]}: block {bl['mean']:+.3f} [{bl['low']}, {bl['high']}]; placement {pl['mean']:+.3f} "
           f"[{pl['low']:+.3f}, {pl['high']:+.3f}]; episodes {summary['episodes']}; LLM attempts {summary['llm_attempts']}")
     return 0
 
@@ -381,7 +397,7 @@ def parse_args():
     p.add_argument(
         "--out-dir", default=os.path.join(_PROJECT_ROOT, "logs", "generation_modes")
     )
-    p.add_argument("--research-mode", choices=["seedless-searchability"], default="")
+    p.add_argument("--research-mode", choices=sorted(RESEARCH_ARMS), default="")
     p.add_argument("--generation-seeds", type=int, nargs="+", default=[])
     p.add_argument("--search-seeds", type=int, nargs="+", default=[])
     p.add_argument("--probe-seed", type=int)
@@ -396,7 +412,7 @@ def separator(title):
 
 def main():
     args = parse_args()
-    if args.research_mode == "seedless-searchability":
+    if args.research_mode:
         return run_seedless_searchability(args)
     if not os.environ.get("OPENAI_API_KEY"):
         print("OPENAI_API_KEY is not set; this comparison makes live calls.")
