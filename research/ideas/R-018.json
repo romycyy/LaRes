@@ -50,7 +50,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "running",
+  "status": "decided",
   "source": "implementer",
   "falsified_by": "Upper paired 95% bound below +0.05 for incumbent-vs-incumbent on the fresh cases refutes; an interval spanning zero is inconclusive. Report the exploration-lane comparison separately.",
   "cost_estimate": {
@@ -75,12 +75,171 @@
     "started_at": "2026-10-22T06:29:57",
     "git_sha": "04fd32e6f22abfa84a033657f97245fc5984d7aa",
     "dirty_worktree": false,
-    "log_dir": "logs/r018"
+    "log_dir": "logs/r018",
+    "finished_at": "2026-10-22T07:07:54"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": -0.006666666666666665,
+      "run_level_t95": [
+        -0.03534270755748655,
+        0.022009374224153222
+      ],
+      "block_differences": [
+        0.0,
+        0.02,
+        0.0,
+        -0.06,
+        0.0,
+        0.0
+      ],
+      "wins": 1,
+      "losses": 1,
+      "ties": 4,
+      "incumbent_lane": "fittable in all 12 runs (promotion-set success 1.00 in all)",
+      "exploration_screen_success_by_run": {
+        "control_s3100": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "control_s3102": [
+          0.0,
+          0.0,
+          0.2
+        ],
+        "control_s3104": [
+          0.0,
+          0.0,
+          0.1
+        ],
+        "control_s3106": [
+          0.0,
+          0.0,
+          0.2
+        ],
+        "control_s3108": [
+          0.0,
+          0.0,
+          0.1
+        ],
+        "control_s3110": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "v2_s3101": [
+          0.9,
+          1.0,
+          1.0
+        ],
+        "v2_s3103": [
+          0.0,
+          0.6,
+          0.9
+        ],
+        "v2_s3105": [
+          0.8,
+          0.8,
+          0.9
+        ],
+        "v2_s3107": [
+          0.4,
+          0.9,
+          1.0
+        ],
+        "v2_s3109": [
+          0.5,
+          1.0,
+          1.0
+        ],
+        "v2_s3111": [
+          0.4,
+          0.9,
+          1.0
+        ]
+      },
+      "exploration_best_screen_mean": {
+        "control": 0.09999999999999999,
+        "v2": 0.9666666666666667
+      },
+      "exploration_mean_screen": {
+        "control": 0.03333333333333333,
+        "v2": 0.7777777777777778
+      },
+      "llm_calls": {
+        "control_runs": [
+          11,
+          11,
+          11,
+          11,
+          12,
+          11
+        ],
+        "v2_runs": [
+          10,
+          10,
+          10,
+          10,
+          10,
+          10
+        ]
+      },
+      "episodes": {
+        "control_run": 450,
+        "v2_run": 1200,
+        "confirmation": 600
+      }
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "control is a fresh rerun of config/two_lane_search.yaml per block; the metric is already v2 minus control incumbent success on the block's fresh cases"
+    },
+    "artifacts": [
+      "logs/r018",
+      "logs/r018/confirmation_b0",
+      "logs/r018/confirmation_b1",
+      "logs/r018/confirmation_b2",
+      "logs/r018/confirmation_b3",
+      "logs/r018/confirmation_b4",
+      "logs/r018/confirmation_b5"
+    ],
+    "notes": "Six paired blocks (control seeds 3100-3110 even, v2 seeds 3101-3111 odd), each pair's performance incumbents scored on that block's fresh 50-case manifest (pool seeds 3130-3135). v2 minus control incumbent success per block [0.0, 0.02, 0.0, -0.06, 0.0, 0.0]; run-level mean -0.0067, paired t95 (5 df) [-0.0353, +0.0220]: the upper bound is below +0.05, refuting the predicted magnitude. Mechanism: in all twelve runs the incumbent came from the unchanged fittable lane (promotion-set success 1.00), so exploration candidates could at best tie and ties never promote; both configurations end at 0.94-1.00 on fresh cases. Exploration lane, reported separately (screen success, 10 cases): mean over the lane 0.03 control vs 0.78 v2; best per run 0.10 vs 0.97. The v2 lane does what D-014 predicts, but the fittable lane already saturates the task. Costs per run: control 450 episodes and 11-12 calls; v2 1200 episodes (900 probe) and 10 calls; confirmation 600 episodes. Totals ~10,500 episodes and 133 calls, within the 18,600 / 270 ceiling."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": -0.006666666666666665,
+    "delta": -0.006666666666666665,
+    "matched": false
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.85,
+      "reasoning": "Six paired blocks: v2 minus control incumbent success on fresh cases is -0.007, run-level paired t95 [-0.035, +0.022]; the upper bound is below +0.05, refuting the predicted improvement of the selected incumbent. The reason is a ceiling, not a failed lane: all twelve incumbents came from the unchanged fittable lane at 1.00 promotion-set success, so exploration candidates could only tie, and ties never promote. The new lane itself works as D-014 predicted: exploration screen success rose from a mean of 0.03 to 0.78 (best per run 0.10 to 0.97) for 10 instead of 11-12 LLM calls and ~750 extra probe episodes per run.",
+      "cited_artifacts": [
+        "logs/r018/research_result.json"
+      ],
+      "next_experiment": "Keep two_lane_search_v2 as an option, not the default, on push-v2: the fittable lane already saturates it. The v2 lane's value is for tasks or settings without a strong seed bank; test it on a harder MetaWorld task (or with the fittable lane disabled) where the incumbent is not at ceiling.",
+      "recorded_at": "2026-10-22T07:07:55",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.98,
+      "reasoning": "The named fresh-rerun control was measured across six paired blocks [logs/r018]. The incumbent paired_success_difference was -0.00667, with a run-level 95% interval of [-0.03534, +0.02201]; the upper bound is below the predicted +0.05, refuting the predicted magnitude [logs/r018]. Because that interval includes zero, it does not establish a performance difference in either direction [logs/r018]. Every selected incumbent came from the fittable lane; best exploration screen success averaged 0.9667 versus 0.1000 for control, but this screening comparison does not establish the secondary held-out prediction [logs/r018]. That secondary prediction remains inconclusive; paired fresh-confirmation success of the screen-selected exploration winners is the missing measurement [logs/r018].",
+      "cited_artifacts": [
+        "logs/r018"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T07:08:14",
+      "call_id": "call_00029"
+    }
+  ],
+  "decision_id": "D-015",
   "history": [
     {
       "at": "2026-10-22T06:13:39",
@@ -105,6 +264,18 @@
       "from": "approved",
       "to": "running",
       "note": "git 04fd32e6f2"
+    },
+    {
+      "at": "2026-10-22T07:07:54",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=False"
+    },
+    {
+      "at": "2026-10-22T07:08:23",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-015: refuted"
     }
   ],
   "created_at": "2026-10-22T06:13:39"
