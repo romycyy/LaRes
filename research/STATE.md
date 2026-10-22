@@ -1,24 +1,26 @@
 # Research state
 
-_Generated 2026-10-22T08:37:23 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T08:43:53 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 1 |
+| running | 0 |
 | approved | 0 |
 | proposed | 0 |
-| decided | 22 |
+| decided | 23 |
 | rejected | 4 |
 
 ## Needs attention
 
-- **R-027** [running] A handoff-guided placement edit lets the recoverable assembly structure seat the nut
-  - run the protocol, then `python scripts/research.py record R-027 --results <json>`
+- Nothing open. Run `python scripts/research.py propose` to ask the advisor for ideas.
 
 ## Last 5 decisions
 
+- D-023 · R-027 · **refuted** · 2026-10-22
+  R-027 asked gpt-6.1-sol for one structural edit of the recoverable D-020 assembly-v2 parent, given the D-021 handoff evidence (expert completes 0.67 of its lifted grasps), keeping pre-lift logic and rewriting post-lift placement. The edit was valid first time, but under identical 24-candidate search neither the edit nor the parent ever succeeded: +0.000 [0, 0] on 30 promotion cases, refuted. Goal progress barely moved (0.220 to 0.225).
+  Next: Assembly placement is not produced by parameter methods (D-022) or one targeted edit (D-023); consider breadth of independent edits, expert placement traces in the prompt, or the five hard tasks left unscanned.
 - D-022 · R-026 · **refuted** · 2026-10-22
   R-026 fitted the two frozen D-020 assembly-v2 structures to ten successful expert demonstrations (deterministic MSE, checkpoints 0-1000 selected by rollout on 5 probe cases) and compared the winner with a five-candidate numerical search from the same starting vector, on 30 screen cases. Both arms scored 0.00: +0.000 [0, 0], refuted. Imitation never produced a probe success and lowered goal progress at every checkpoint (0.23 to 0.13-0.18), so step 0 was kept; gradients did reach the placement parameters.
   Next: Parameter-level methods cannot seat the nut with these structures; try structural changes aimed at placement, or more independent structures (R-027).
@@ -31,9 +33,6 @@ _Generated 2026-10-22T08:37:23 by `python scripts/research.py state` from `resea
 - D-019 · R-022 · **refuted** · 2026-10-22
   R-022 scanned eight schema-supported MetaWorld tasks (reach, door-open/close, drawer-open/close, window-open/close, button-press) with one gpt-6.1-sol single-phase structure each, 24-candidate independent rollout search on a 5-case probe and the winner on 30 fresh cases. Every task reached 1.00; six structures already succeeded untrained, and search lifted button-press (0.2) and door-open (0.8) to 1.0. No task fell 0.20 below reach: refuted. With push-v2 and pick-place-v2, the single-phase + search recipe now saturates every task this codebase supports.
   Next: Method comparisons need harder tasks (new observation schemas and prompt assets for assembly, peg-insert, multi-object tasks) or a stricter success criterion; R-023 should not run under its own predeclared rule.
-- D-018 · R-019 · **inconclusive** · 2026-10-22
-  R-019 compared single-phase and two-phase seedless generation on pick-place-v2 under identical 24-candidate rollout search (four blocks, shared controls with R-020/R-021). Single minus two-phase: +0.283 block-level [-0.480, +1.046], inconclusive: one two-phase structure found no successful candidate (1.00 vs 0.00) while the other blocks differ by at most 0.10. The suite's main finding: with no seed bank, single-phase gpt-6.1-sol structures plus 24-candidate search solve pick-place-v2 (8/8 at 1.00 on 30 fresh cases; 7/8 succeed untrained).
-  Next: Find a task where single-phase zero-shot fails before testing generator or selector variants further; consider the D-014 recipe as the seedless default.
 
 ## Standing constraints
 
@@ -49,7 +48,7 @@ _Generated 2026-10-22T08:37:23 by `python scripts/research.py state` from `resea
 - The final-test split (config/manifests/push-v2_final_test.yaml) is locked until Phase 7, which needs the user's approval and a FreezeRecord. Qwen/E10 is also blocked. _(lares/eval/freeze.py; CLAUDE.md)_
 - Seeds 2400-2424 are held for config/fittable_bank/qualification_v2.yaml (predeclared, not run). New protocols pick seeds from 2600 upward. _(config/experiment_seed_ledger.jsonl; CLAUDE.md)_
 - Every protocol runs on the remote GPU box via `gpu run`, which bills by the hour; the implementer stops it afterwards. Live LLM or GPU spend needs the user's per-idea approval. _(CLAUDE.md, 'Remote GPU server')_
-- Spent seeds: [0, 1, 2, 1000, 1001, 1002, 2000, 2100, 2200, 2201, 2202, 2203, 2204, 2300, 2301, 2302, 2303, 2304, 2400, 2401, 2402, 2403, 2404, 2410, 2411, 2412, 2413, 2414, 2420, 2421, 2422, 2423, 2424, 2500, 2501, 2502, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2607, 2610, 2611, 2612, 2613, 2614, 2615, 2616, 2617, 2618, 2619, 2620, 2621, 2622, 2623, 2624, 2625, 2626, 2627, 2628, 2629, 2700, 2701, 2702, 2703, 2704, 2705, 2710, 2800, 2801, 2802, 2803, 2804, 2805, 2810, 2811, 2812, 2813, 2820, 2822, 2823, 2824, 2825, 2900, 2901, 2902, 2903, 2904, 2905, 2906, 2910, 2911, 2912, 2913, 2920, 2921, 2922, 2923, 2940, 3000, 3001, 3010, 3011, 3012, 3013, 3020, 3021, 3022, 3023, 3024, 3025, 3026, 3030, 3031, 3032, 3033, 3040, 3041, 3042, 3043, 3044, 3045, 3046, 3047, 3100, 3101, 3102, 3103, 3104, 3105, 3106, 3107, 3108, 3109, 3110, 3111, 3130, 3131, 3132, 3133, 3134, 3135, 3200, 3201, 3202, 3205, 3210, 3211, 3212, 3213, 3214, 3215, 3220, 3221, 3222, 3223, 3300, 3301, 3302, 3303, 3304, 3305, 3310, 3311, 3312, 3313, 3314, 3315, 3320, 3321, 3330, 3331, 3332, 3333, 3334, 3335, 3400, 3410]
+- Spent seeds: [0, 1, 2, 1000, 1001, 1002, 2000, 2100, 2200, 2201, 2202, 2203, 2204, 2300, 2301, 2302, 2303, 2304, 2400, 2401, 2402, 2403, 2404, 2410, 2411, 2412, 2413, 2414, 2420, 2421, 2422, 2423, 2424, 2500, 2501, 2502, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2607, 2610, 2611, 2612, 2613, 2614, 2615, 2616, 2617, 2618, 2619, 2620, 2621, 2622, 2623, 2624, 2625, 2626, 2627, 2628, 2629, 2700, 2701, 2702, 2703, 2704, 2705, 2710, 2800, 2801, 2802, 2803, 2804, 2805, 2810, 2811, 2812, 2813, 2820, 2822, 2823, 2824, 2825, 2900, 2901, 2902, 2903, 2904, 2905, 2906, 2910, 2911, 2912, 2913, 2920, 2921, 2922, 2923, 2940, 3000, 3001, 3010, 3011, 3012, 3013, 3020, 3021, 3022, 3023, 3024, 3025, 3026, 3030, 3031, 3032, 3033, 3040, 3041, 3042, 3043, 3044, 3045, 3046, 3047, 3100, 3101, 3102, 3103, 3104, 3105, 3106, 3107, 3108, 3109, 3110, 3111, 3130, 3131, 3132, 3133, 3134, 3135, 3200, 3201, 3202, 3205, 3210, 3211, 3212, 3213, 3214, 3215, 3220, 3221, 3222, 3223, 3300, 3301, 3302, 3303, 3304, 3305, 3310, 3311, 3312, 3313, 3314, 3315, 3320, 3321, 3330, 3331, 3332, 3333, 3334, 3335, 3400, 3410, 3420, 3421, 3422]
 
 ## Pointers
 

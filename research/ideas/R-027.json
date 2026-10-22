@@ -29,7 +29,7 @@
     "needs_gpu": false,
     "needs_llm": true
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The upper paired confidence bound for edited-minus-parent success is below 0.10. An interval spanning both zero and 0.10 is inconclusive; an interval containing zero is never evidence of improvement.",
   "cost_estimate": {
@@ -53,12 +53,104 @@
     "started_at": "2026-10-22T08:37:23",
     "git_sha": "45cddef24ece001c3a505cf6369c40c64ec9e38c",
     "dirty_worktree": true,
-    "log_dir": "logs/assembly_targeted_edit_s3420"
+    "log_dir": "logs/assembly_targeted_edit_s3420",
+    "finished_at": "2026-10-22T08:43:31"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.0,
+      "t95": [
+        0.0,
+        0.0
+      ],
+      "wlt": [
+        0,
+        0,
+        30
+      ],
+      "success": {
+        "parent": 0.0,
+        "edited": 0.0
+      },
+      "untrained_probe": {
+        "parent": {
+          "index": 0,
+          "kind": "original",
+          "success": 0.0,
+          "progress": 0.21980384871227762
+        },
+        "edited": {
+          "index": 0,
+          "kind": "original",
+          "success": 0.0,
+          "progress": 0.2253856175408544
+        }
+      },
+      "best_probe_success": {
+        "parent": 0.0,
+        "edited": 0.0
+      },
+      "max_probe_progress": {
+        "parent": 0.2227489572776201,
+        "edited": 0.22869763891106293
+      },
+      "picks": {
+        "parent": 16,
+        "edited": 13
+      },
+      "episodes": {
+        "probe": 240,
+        "promotion": 60
+      },
+      "llm_calls": 1
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "control is 24-candidate search of the unchanged recoverable parent (assembly_repeat); the metric is already edited minus parent"
+    },
+    "artifacts": [
+      "logs/assembly_targeted_edit_s3420/summary.json",
+      "logs/assembly_targeted_edit_s3420/edit/edited_policy.py",
+      "logs/assembly_targeted_edit_s3420/edit/attempts.json",
+      "logs/assembly_targeted_edit_s3420/edit",
+      "logs/assembly_targeted_edit_s3420/manifests"
+    ],
+    "notes": "Fresh development pool 3420 frozen before the call (probe 0-4, promotion 10-39). One gpt-6.1-sol structural edit of assembly_repeat, given the D-021 handoff evidence and asked to keep pre-lift logic and rewrite only post-lift placement; valid on the first call (1 LLM call, no correction). Under identical 24-candidate search (seeds 3421/3422) neither arm produced a single probe success; promotion success 0.00 vs 0.00: +0.000 [0, 0], refuted (upper bound below +0.10). The edit did not change outcomes measurably: untrained probe progress 0.220 vs 0.225, best probe progress 0.223 vs 0.229. The placement behaviour the expert supplies after the lift was not produced by one edit. 300 episodes."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 0.0,
+    "delta": 0.0,
+    "matched": false
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.8,
+      "reasoning": "Edited minus parent under identical 24-candidate search is +0.000 [0, 0] on 30 promotion cases; neither arm ever succeeded on the probe. The upper bound is below +0.10, refuting the claim that one handoff-guided placement edit lets the recoverable structure seat the nut. Goal progress barely moved (0.220 -> 0.225 untrained), so the edit did not create the post-lift placement behaviour the expert supplies.",
+      "cited_artifacts": [
+        "logs/assembly_targeted_edit_s3420/summary.json"
+      ],
+      "next_experiment": "Assembly needs placement behaviour no single edit or parameter method has produced. Options: several independent edits or generations (breadth), giving the LLM state traces of the expert's placement phase, or accepting assembly as beyond the current generator and moving to the remaining hard tasks (peg-insert-side, hammer, shelf-place, basketball, soccer) left unscanned by R-024's early stop.",
+      "recorded_at": "2026-10-22T08:43:33",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "The named unchanged-parent numerical-search control was measured under the matched search protocol [logs/assembly_targeted_edit_s3420/summary.json]. Both arms scored 0.00 success, giving paired_success_difference 0.000 with paired t95 interval [0.000, 0.000] and all 30 cases tied [logs/assembly_targeted_edit_s3420/summary.json]. The upper bound is below the prespecified +0.10 threshold, satisfying the falsification rule; tied success provides no evidence of improvement [logs/assembly_targeted_edit_s3420/summary.json]. This refutes the tested edit-and-search prediction without establishing why either arm failed [logs/assembly_targeted_edit_s3420/summary.json].",
+      "cited_artifacts": [
+        "logs/assembly_targeted_edit_s3420/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T08:43:52",
+      "call_id": "call_00047"
+    }
+  ],
+  "decision_id": "D-023",
   "history": [
     {
       "at": "2026-10-22T08:37:13",
@@ -77,6 +169,18 @@
       "from": "approved",
       "to": "running",
       "note": "git 45cddef24e (dirty)"
+    },
+    {
+      "at": "2026-10-22T08:43:31",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=False"
+    },
+    {
+      "at": "2026-10-22T08:43:53",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-023: refuted"
     }
   ],
   "created_at": "2026-10-22T08:27:09"
