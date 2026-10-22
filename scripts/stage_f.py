@@ -67,6 +67,14 @@ def parse_args():
     run.add_argument("--out-dir", default=os.path.join(_PROJECT_ROOT, "logs", "stage_f"))
     report = sub.add_parser("report")
     report.add_argument("--run", required=True)
+    svf = sub.add_parser("search-vs-fit", help="R-008: rollout search vs rollout-selected imitation on weak structures")
+    svf.add_argument("--config", default=CONFIG_PATH)
+    svf.add_argument("--probe-seed", type=int, required=True)
+    svf.add_argument("--heldout-seed", type=int, required=True)
+    svf.add_argument("--optimizer-seed", type=int, required=True)
+    svf.add_argument("--split-seed", type=int, required=True)
+    svf.add_argument("--out-dir", required=True)
+    svf.add_argument("--reserve-only", action="store_true")
     return p.parse_args()
 
 
@@ -679,8 +687,181 @@ def run_cells(cfg, config_path, structures) -> int:
     return report(run_dir)
 
 
+# ---------------------------------------------------------------------------
+#  R-008: direct rollout search versus rollout-selected imitation, from the frozen original vector
+# ---------------------------------------------------------------------------
+
+#: Fixed before scoring (advisor consult call_00009): the original vector first, then local and global draws
+#: interleaved. Every local draw is centred on the original, never on a running winner.
+SEARCH_ORDER = ("original", "local", "global", "local", "global", "local", "global", "global")
+#: Eight imitation checkpoints; step 0 is the original vector, so both arms can keep it.
+FIT_CHECKPOINTS = (0, 125, 250, 375, 500, 625, 750, 1000)
+
+
+def search_candidates(original, rng):
+    """The eight search candidates in :data:`SEARCH_ORDER`, each a copy of ``original`` (perturbed except the first)."""
+    import copy
+
+    out = []
+    for kind in SEARCH_ORDER:
+        candidate = copy.deepcopy(original)
+        if kind != "original":
+            sf._propose(candidate, sf.ARM_LOCAL_SEARCH if kind == "local" else sf.ARM_GLOBAL_SEARCH, rng)
+        out.append((kind, candidate))
+    return out
+
+
+def search_vs_fit_job(job) -> dict:
+    import numpy as np
+    import torch
+
+    torch.set_num_threads(1)
+    from lares.core.obs_schema import get_obs_schema
+    from lares.core.training_pipeline import DemoBuffer, ensure_mujoco_headless_gl
+    from lares.eval import EvaluationManifest, make_manifest_env
+    from lares.eval.runner import PolicyActor, evaluate_manifest
+    from lares.fitting.checkpoints import is_better_checkpoint
+    from lares.fitting.objectives import DETERMINISTIC_MSE
+    from lares.fitting.optimizers import fit_policy_with_objective, prepare_data, state_parameters_sha256
+    from lares.fitting.structure_bank import instantiate_source
+
+    ensure_mujoco_headless_gl()
+    started, horizon = time.time(), int(job["horizon"])
+    schema = get_obs_schema(job["env_name"])
+
+    def build():
+        policy = instantiate_source(job["source"], 39, 4, schema=schema)
+        policy.fixed_action_scale = float(job["fixed_action_scale"])
+        return policy
+
+    probe = EvaluationManifest.load(job["probe_manifest"])
+    probe_env = make_manifest_env(probe, probe.resolve_pool(), 200)
+    episodes = {"search_selection": 0, "fitting_selection": 0, "confirmation": 0}
+
+    def probe_score(policy, arm):
+        result = evaluate_manifest(PolicyActor(policy, deterministic=True, name=f"{arm}:probe"), probe, probe_env,
+                                   max_steps=horizon)
+        episodes[f"{arm}_selection"] += len(result.episodes)
+        return sf.score_of(result)
+
+    # Search arm: its own RNG instance, so the fitting arm cannot shift its draws.
+    search_rng = np.random.default_rng(int(job["optimizer_seed"]))
+    best, best_score, trace = None, None, []
+    for index, (kind, candidate) in enumerate(search_candidates(build(), search_rng)):
+        score = probe_score(candidate, "search")
+        trace.append({"index": index, "kind": kind, **score.to_dict()})
+        if is_better_checkpoint(score, best_score):
+            best, best_score, best_index = candidate, score, index
+
+    # Fitting arm: rollout-selected imitation over eight checkpoints on the same probe.
+    data = prepare_data(DemoBuffer.load(job["demo_buffer"]), split_seed=int(job["split_seed"]))
+    fitted = build()
+    fit = fit_policy_with_objective(fitted, data, DETERMINISTIC_MSE, budget=int(FIT_CHECKPOINTS[-1]),
+                                    seed=int(job["optimizer_seed"]), rollout_probe=lambda p: probe_score(p, "fitting"),
+                                    checkpoint_steps=FIT_CHECKPOINTS, structure_id=job["structure_id"])
+    fitted.load_state_dict(fit.selected_state)
+
+    confirmation = EvaluationManifest.load(job["confirmation_manifest"])
+    conf_env = make_manifest_env(confirmation, confirmation.resolve_pool(), 200)
+    scored = {}
+    for arm, policy in (("search", best), ("fitting", fitted)):
+        result = evaluate_manifest(PolicyActor(policy, deterministic=True, name=arm), confirmation, conf_env,
+                                   max_steps=horizon)
+        episodes["confirmation"] += len(result.episodes)
+        scored[arm] = {"success_rate": result.success_rate,
+                       "per_case": {e.case_id: float(e.success) for e in result.episodes},
+                       "parameters_sha256": state_parameters_sha256(policy.state_dict())}
+    out = {"structure_id": job["structure_id"], "search": {**scored["search"], "selected_index": best_index,
+                                                           "selected_kind": SEARCH_ORDER[best_index], "trace": trace},
+           "fitting": {**scored["fitting"], "selected_step": int(fit.selected_step),
+                       "checkpoint_history": fit.checkpoint_history},
+           "episodes": episodes, "wall_time_seconds": time.time() - started}
+    path = os.path.join(job["out_dir"], "structures", f"{job['structure_id']}.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(out, f, indent=2, default=str)
+    return out
+
+
+def search_vs_fit_summary(results) -> dict:
+    """Search minus fitting confirmation success, averaged over structures within each placement, t over placements."""
+    import numpy as np
+
+    from lares.eval.stats import t_interval, win_loss_tie
+
+    cases = sorted(results[0]["search"]["per_case"])
+    per_case = [float(np.mean([r["search"]["per_case"][c] - r["fitting"]["per_case"][c] for r in results]))
+                for c in cases]
+    per_structure = {r["structure_id"]: {
+        "search": r["search"]["success_rate"], "fitting": r["fitting"]["success_rate"],
+        "difference": r["search"]["success_rate"] - r["fitting"]["success_rate"],
+        "search_selected": r["search"]["selected_kind"], "fitting_selected_step": r["fitting"]["selected_step"],
+    } for r in results}
+    return {"paired_success_difference": float(np.mean(per_case)),
+            "primary": {"n_placements": len(cases), "n_structures": len(results), **t_interval(per_case),
+                        **win_loss_tie(per_case)},
+            "per_structure": per_structure,
+            "episodes": {k: int(sum(r["episodes"][k] for r in results)) for k in results[0]["episodes"]}}
+
+
+def cmd_search_vs_fit(args) -> int:
+    import multiprocessing as mp
+
+    import compare_child_vs_parent as cvp
+    from lares.core.obs_schema import get_obs_schema
+
+    cfg = load_config(args.config)
+    os.makedirs(args.out_dir, exist_ok=True)
+    status = cvp.ensure_entries_reserved([
+        (args.probe_seed, "mt1_pool", "R-008 search vs fitting: 10-case selection probe"),
+        (args.heldout_seed, "mt1_pool", "R-008 search vs fitting: 50-case confirmation manifest"),
+        (args.optimizer_seed, "fitting", "R-008 search vs fitting: fitting seed and search RNG seed"),
+        (args.split_seed, "fitting", "R-008 search vs fitting: demonstration split seed"),
+    ], args.out_dir)
+    schema = get_obs_schema(cfg["env_name"])
+    structures = selected_structures(cfg, schema)
+    if len(structures) < 2:
+        raise SystemExit("R-008 needs two evolved diagnostic structures in the frozen selection")
+    print(f"  structures {[s.structure_id for s in structures]}; seeds: {status}")
+    if args.reserve_only:
+        return 0
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    horizon = int(cfg["horizon"])
+    probe, probe_path = cvp.fresh_manifest(cfg["env_name"], args.probe_seed, 10, horizon, args.out_dir, role="probe")
+    conf, conf_path = cvp.fresh_manifest(cfg["env_name"], args.heldout_seed, 50, horizon, args.out_dir,
+                                         role="confirmation", also_disjoint_from=[probe])
+    common = {"env_name": cfg["env_name"], "horizon": horizon, "fixed_action_scale": 0.1,
+              "optimizer_seed": args.optimizer_seed, "split_seed": args.split_seed,
+              "demo_buffer": os.path.join(_PROJECT_ROOT, cfg["fitting"]["demo_buffer"]),
+              "probe_manifest": os.path.abspath(probe_path), "confirmation_manifest": os.path.abspath(conf_path),
+              "out_dir": os.path.abspath(args.out_dir)}
+    jobs = [{**common, "structure_id": s.structure_id, "source": s.source} for s in structures[:2]]
+    with open(os.path.join(args.out_dir, "run.json"), "w", encoding="utf-8") as f:
+        json.dump({"argv": sys.argv, **git_state(), "search_order": SEARCH_ORDER, "fit_checkpoints": FIT_CHECKPOINTS,
+                   "local_sigma_fraction": sf.LOCAL_SEARCH_SIGMA, "structures": [j["structure_id"] for j in jobs],
+                   "manifests": {"probe": probe.manifest_id, "confirmation": conf.manifest_id},
+                   "seeds": {"probe": args.probe_seed, "confirmation": args.heldout_seed,
+                             "optimizer": args.optimizer_seed, "split": args.split_seed}}, f, indent=2)
+    with mp.get_context("spawn").Pool(processes=len(jobs)) as pool:
+        results = pool.map(search_vs_fit_job, jobs)
+    summary = search_vs_fit_summary(results)
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2)
+    pr = summary["primary"]
+    for sid, row in summary["per_structure"].items():
+        print(f"  {sid:<28} search {row['search']:.2f} ({row['search_selected']})  fitting {row['fitting']:.2f} "
+              f"(step {row['fitting_selected_step']})  {row['difference']:+.2f}")
+    print(f"  search - fitting, placement-averaged over {pr['n_placements']} cases: {pr['mean']:+.3f} "
+          f"[{pr['low']:+.3f}, {pr['high']:+.3f}]; episodes {summary['episodes']}")
+    return 0
+
+
 def main() -> int:
     args = parse_args()
+    if args.command == "search-vs-fit":
+        return cmd_search_vs_fit(args)
     if args.command == "reserve":
         return cmd_reserve(args)
     if args.command == "vlm-smoke":

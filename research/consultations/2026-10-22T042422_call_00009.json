@@ -1,0 +1,25 @@
+{
+  "ideas": [
+    {
+      "id": "R-008",
+      "recommendation": "revise",
+      "reasoning": "Run this first: a fixed local/global mixture tests whether parameter exploration escapes the imitation trajectory at matched rollout cost and zero LLM calls. Mixing search scales avoids making the comparison depend entirely on either neighborhood quality or broad-range sampling, but cannot establish which operator is better. The scope remains diagnostic for two weak structures, and the contradictory restart counts must be resolved without silently increasing spend.",
+      "suggested_changes": [
+        "Use scripts/stage_f.py and config/stage_f/stage_f.yaml with eight search candidates ordered: original, local1, global1, local2, global2, local3, global3, global4. Use the existing local_search operator for three Gaussian draws and global_search for four uniform draws, preserving their legal-bound handling. Center every local draw on the frozen original, not an updated winner; fix this allocation before scoring.",
+        "Confirm fitting seed 2812 and search RNG seed 2812, using separate RNG instances so execution order cannot couple their random streams. Share the frozen demonstration sample across fits, but use fresh split seed 2813 rather than spent seed 0; construct that split once and share it across fits.",
+        "Confirm both arms select lexicographically by probe success_rate, then signed_goal_progress, then earlier candidate. The original vector and fitting step 0 are first; retain the specified eight fitting checkpoints and never select on validation loss.",
+        "Resolve the inconsistent budget in favor of the listed 520 episodes: two structures, one paired optimizer restart at seed 2812, and 80 search-selection + 80 fitting-selection + 50 search-confirmation + 50 fitting-confirmation episodes per structure. Remove the stale three-restart wording; three restarts would require 1560 episodes. Estimated LLM calls remain 0.",
+        "Retain the prediction: paired_success_difference increases by at least 0.10 against rollout-selected imitation fitting at equal selection-episode budget. falsified_by: an upper paired 95% confidence bound below +0.10; support requires an estimated gain of at least +0.10 and a lower bound above zero. An interval including zero is inconclusive about directional superiority, and tied success is not improvement.",
+        "Keep probe seed 2810 and confirmation seed 2811, compute the paired interval across confirmation placements after averaging the two structures within each placement, and make no promotions. Execute the existing development-only protocol through gpu run with CPU execution and stop the remote instance afterward."
+      ],
+      "depends_on": []
+    }
+  ],
+  "order": [
+    "R-008"
+  ],
+  "next_step": "Update the existing R-008 protocol with the fixed four-global/three-local allocation, fresh split seed 2813, and consistent 520-episode accounting, then execute the already-approved run.",
+  "call_id": "call_00009",
+  "briefing_sha256": "29e2a5ebe5f8a47bf1dfc1aa9729c0865287f38f094522b171a59574b50b59f5",
+  "question": "Implementation choice for approved R-008 (no re-approval needed): 'eight parameter vectors from the existing Stage F search operator, including the original vector'. Stage F has two operators: local_search (Gaussian, sigma = 0.1 x each parameter's declared range, around the parent) and global_search (uniform within declared ranges). Both start here from the frozen original vector (not fitted). Which operator should the search arm use, or should the 7 non-original vectors be split (e.g. 4 global + 3 local)? Also confirm: the fitting arm uses fit seed 2812 (same as the search RNG seed), shared demonstrations with split seed 0, and both arms select by the success-then-progress-then-earlier tie rule, with the original vector / step 0 as the first candidate. Answer with recommendation run_as_is if my defaults are fine, otherwise revise with the exact choice in suggested_changes."
+}

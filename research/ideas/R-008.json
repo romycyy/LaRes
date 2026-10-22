@@ -12,29 +12,27 @@
   "protocol": {
     "script": "scripts/stage_f.py",
     "config": "config/stage_f/stage_f.yaml",
-    "command": "python scripts/stage_f.py search-vs-fit --config config/stage_f/stage_f.yaml --probe-seed 2810 --heldout-seed 2811 --optimizer-seed 2812 --out-dir logs/research/search_replaces_fitting_s2810",
+    "command": "python scripts/stage_f.py search-vs-fit --config config/stage_f/stage_f.yaml --probe-seed 2810 --heldout-seed 2811 --optimizer-seed 2812 --split-seed 2813 --out-dir logs/research/search_replaces_fitting_s2810",
     "seeds": [
       2810,
       2811,
-      2812
+      2812,
+      2813
     ],
     "manifests": [
-      "config/manifests/research/push-v2_development_probe_s2810.yaml",
-      "config/manifests/research/push-v2_development_confirmation_s2811.yaml"
+      "config/manifests/push-v2_train.yaml",
+      "config/manifests/push-v2_development.yaml"
     ],
     "episodes": 520,
     "llm_calls": 0,
     "code_changes": [
-      "scripts/stage_f.py: add the research-protocol CLI used above. Before new evaluations, select the two lowest archived-success non-bank evolved structures referenced by config/stage_f/selection.json; fail closed if fewer than two exist. Treat them only as diagnostic subjects, never as fittable-lane parents.",
-      "scripts/stage_f.py: for each structure and three optimizer seeds, compare eight parameter vectors from the existing Stage F search operator, including the original vector, against imitation checkpoints {0,125,250,375,500,625,750,1000}. Freeze topology and legal parameter bounds; disable all repair.",
-      "scripts/stage_f.py: each arm spends eighty selection episodes on the same ten-case probe and uses success-first rollout selection, never validation loss. Evaluate both selected controllers on the same fifty fresh confirmation cases: 2 structures x 3 seeds x (80+80+50+50) = 1560 episodes.",
-      "scripts/stage_f.py: average paired outcomes over the fixed structures and optimizer restarts within each confirmation placement before computing the paired interval; do not label restarts independent data replicates. Perform no promotions.",
-      "config/manifests/research/: generate the two development-only manifests named above. Force CPU execution, require remote-spend approval, and stop the remote instance afterward."
+      "scripts/stage_f.py (search-vs-fit: 8 search candidates original/local x3/global x4 in fixed order, 8 imitation checkpoints 0..1000, shared 10-case probe s2810, 50-case confirmation s2811 built into the out dir)",
+      "tests/test_stage_f.py"
     ],
     "needs_gpu": false,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "An upper paired 95% confidence bound below +0.10 refutes the predicted gain; an interval including zero is inconclusive about directional superiority. Support requires at least +0.10 with a lower bound above zero.",
   "cost_estimate": {
@@ -54,11 +52,92 @@
     "note": "approved by advisor gpt-6.1-sol (consult call_00007, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
     "consultation": "research/consultations/2026-10-22T041838_call_00007.json"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-10-22T04:25:35",
+    "git_sha": "fde22ef24d2f7976def7c67a9a2a7a62535e3020",
+    "dirty_worktree": true,
+    "log_dir": "logs/research/search_replaces_fitting_s2810",
+    "finished_at": "2026-10-22T04:28:57"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.08,
+      "paired_success_difference_t95": [
+        0.0021165578049845007,
+        0.1578834421950155
+      ],
+      "wins_losses_ties_by_placement": [
+        12,
+        4,
+        34
+      ],
+      "per_structure": {
+        "baseline61_gen0_cand2_a1": {
+          "search": 0.52,
+          "fitting": 0.0,
+          "difference": 0.52,
+          "search_selected": "global",
+          "fitting_selected_step": 0
+        },
+        "baseline61_gen0_cand1_a0": {
+          "search": 0.0,
+          "fitting": 0.36,
+          "difference": -0.36,
+          "search_selected": "global",
+          "fitting_selected_step": 125
+        }
+      },
+      "episodes": {
+        "search_selection": 160,
+        "fitting_selection": 160,
+        "confirmation": 200
+      }
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "control is rollout-selected imitation fitting on the same structure, probe and confirmation cases; the metric is already search minus fitting"
+    },
+    "artifacts": [
+      "logs/research/search_replaces_fitting_s2810/summary.json",
+      "logs/research/search_replaces_fitting_s2810/run.json",
+      "logs/research/search_replaces_fitting_s2810/structures"
+    ],
+    "notes": "Two frozen evolved structures from config/stage_f/selection.json, one restart (seed 2812), split seed 2813, probe s2810 (10), confirmation s2811 (50). Search minus fitting, structures averaged within placement: +0.080 [+0.002, +0.158]. The structures disagree completely: baseline61_gen0_cand2_a1 search 0.52 (global draw 7, the only probe success among 16 candidates) vs fitting 0.00 (step 0 kept; every imitation checkpoint had negative progress); baseline61_gen0_cand1_a0 search 0.00 (no search candidate succeeded on the probe) vs fitting 0.36 (step 125, probe 0.5). Probe and confirmation agreed in both, so this is not selection noise. The placement-level interval treats the two structures as fixed and does not reflect structure-to-structure variation, which dominates here (+0.52 vs -0.36); the result is a two-structure diagnostic. Implication: search and imitation fail on different structures; taking the better of the two at the combined 160-episode selection budget would have scored 0.52 and 0.36. 520 episodes, 0 LLM calls."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 0.08,
+    "delta": 0.08,
+    "matched": false
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.75,
+      "reasoning": "Search minus rollout-selected imitation is +0.080 [+0.002, +0.158] over 50 placements. Support needs a gain of at least +0.10 with a positive lower bound: the mean is below 0.10, so not supported. Refutation needs an upper bound below +0.10: it is 0.158, so not refuted. More importantly the average hides a complete split: search wins one structure by +0.52 (imitation never leaves step 0 there) and loses the other by -0.36 (imitation finds 0.36 at step 125, random search finds nothing). The interval is conditional on these two structures and understates between-structure variation.",
+      "cited_artifacts": [
+        "logs/research/search_replaces_fitting_s2810/summary.json"
+      ],
+      "next_experiment": "Test a combined selector: search candidates and imitation checkpoints pooled under one rollout probe at the combined budget, against each alone, over more weak structures (fresh evolved candidates), since the two methods fail on different structures.",
+      "recorded_at": "2026-10-22T04:28:58",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 0.98,
+      "reasoning": "The named control was measured, with search and rollout-selected imitation fitting each receiving 160 selection episodes [logs/research/search_replaces_fitting_s2810/summary.json]. The paired_success_difference was +0.080 with a paired 95% interval of [+0.0021, +0.1579], supporting a positive difference for these frozen structures but not meeting the predicted gain [logs/research/search_replaces_fitting_s2810/summary.json]. The interval still contains the predicted threshold, so the approved refutation condition was not met either [logs/research/search_replaces_fitting_s2810/summary.json]. Structure-specific differences were opposite in sign (+0.52 and -0.36), and the placement-level interval does not establish superiority across weak evolved structures generally [logs/research/search_replaces_fitting_s2810/summary.json].",
+      "cited_artifacts": [
+        "logs/research/search_replaces_fitting_s2810/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T04:29:28",
+      "call_id": "call_00010"
+    }
+  ],
+  "decision_id": "D-005",
   "history": [
     {
       "at": "2026-10-22T04:19:03",
@@ -71,6 +150,30 @@
       "from": "proposed",
       "to": "approved",
       "note": "approved by advisor gpt-6.1-sol (consult call_00007, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T04:25:34",
+      "from": "approved",
+      "to": "approved",
+      "note": "implementation fixed per consult call_00009: interleaved 3 local + 4 global draws centred on the original; fit and search seed 2812 with separate RNGs; split seed 2813; 520 episodes"
+    },
+    {
+      "at": "2026-10-22T04:25:35",
+      "from": "approved",
+      "to": "running",
+      "note": "git fde22ef24d (dirty)"
+    },
+    {
+      "at": "2026-10-22T04:28:57",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=False"
+    },
+    {
+      "at": "2026-10-22T04:29:36",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-005: inconclusive"
     }
   ],
   "created_at": "2026-10-22T04:17:05"

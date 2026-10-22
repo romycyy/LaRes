@@ -365,3 +365,46 @@ class TestVisionSummary(unittest.TestCase):
         self.assertEqual(summary["packets"]["with_valid_analysis"], 2)
         self.assertEqual(summary["packets"]["episodes_rerun"], 9)
         self.assertLessEqual(summary["held_out_case_bootstrap"]["low"], summary["held_out_case_bootstrap"]["high"])
+
+
+class TestSearchVsFit(unittest.TestCase):
+    """R-008: the fixed search order and the placement-averaged statistic."""
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, os.path.join(_PROJECT_ROOT, "scripts"))
+        import stage_f
+
+        cls.stage_f = stage_f
+
+    def test_candidates_follow_the_declared_order_and_stay_in_range(self):
+        import numpy as np
+        import torch
+
+        original = instantiate_source(PARENT_SOURCE, 39, 4, schema=SCHEMA)
+        cands = self.stage_f.search_candidates(original, np.random.default_rng(2812))
+        self.assertEqual([k for k, _ in cands], list(self.stage_f.SEARCH_ORDER))
+        self.assertTrue(all(torch.equal(a, b) for a, b in zip(cands[0][1].parameters(), original.parameters())))
+        ranges = original.get_param_ranges()
+        for _, cand in cands[1:]:
+            for name, p in cand.named_parameters():
+                if name in ranges:
+                    self.assertTrue(float(p.min()) >= ranges[name][0] - 1e-6 and float(p.max()) <= ranges[name][1] + 1e-6)
+        again = self.stage_f.search_candidates(original, np.random.default_rng(2812))
+        self.assertTrue(all(torch.equal(a, b) for (_, x), (_, y) in zip(cands, again)
+                            for a, b in zip(x.parameters(), y.parameters())))
+
+    def test_the_statistic_averages_structures_within_each_placement(self):
+        def row(sid, search, fitting):
+            return {"structure_id": sid, "episodes": {"search_selection": 80, "fitting_selection": 80, "confirmation": 100},
+                    "search": {"success_rate": sum(search.values()) / len(search), "per_case": search,
+                               "selected_kind": "global"},
+                    "fitting": {"success_rate": sum(fitting.values()) / len(fitting), "per_case": fitting,
+                                "selected_step": 500}}
+
+        results = [row("a", {"c0": 1.0, "c1": 0.0}, {"c0": 0.0, "c1": 0.0}),
+                   row("b", {"c0": 1.0, "c1": 1.0}, {"c0": 1.0, "c1": 0.0})]
+        summary = self.stage_f.search_vs_fit_summary(results)
+        self.assertAlmostEqual(summary["paired_success_difference"], 0.5)   # c0: (1+0)/2, c1: (0+1)/2
+        self.assertEqual(summary["primary"]["n_placements"], 2)
+        self.assertEqual(summary["episodes"]["confirmation"], 200)
