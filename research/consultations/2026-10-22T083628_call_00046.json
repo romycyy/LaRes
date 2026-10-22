@@ -1,0 +1,25 @@
+{
+  "ideas": [
+    {
+      "id": "R-027",
+      "recommendation": "revise",
+      "reasoning": "Test a handoff-conditioned placement edit first: it directly tests missing post-lift logic for at most 300 simulator episodes and two LLM calls, versus 840 episodes and four calls for breadth-versus-depth. Its weakness is scope: one recoverable anchor can establish a local structural improvement, not general superiority of editing or structural breadth.",
+      "suggested_changes": [
+        "Replace independent generation with one placement-focused structural edit of the D-020 parent whose grasp was recoverable in R-025. Hypothesis: missing post-lift placement logic prevents seating despite a recoverable grasp. Supply the parent and existing handoff evidence, preserve its pre-lift logic, and permit post-lift control-flow changes; evaluation must remain fully autonomous without expert handoffs. This differs from generic repair by targeting a localized assembly bottleneck.",
+        "Reuse scripts/compare_generation_modes.py, config/environment.yaml, and the existing audited assembly-v2 setup; extend the existing study dispatcher rather than create another script. Compare 24 numerical candidates from the unchanged parent against 24 from the edited structure, including each starting vector. Use identical search budgets, bc_steps=0, and success-then-progress selection.",
+        "Use unused master seed 3420 and arm search seeds 3421–3422. Before the LLM call, freeze logs/assembly_targeted_edit_s3420/manifests/assembly-v2_development_s3420.yaml: probe cases 0–4 and promotion cases 10–39. Screen only each arm's probe-selected winner; do not expose new probe or screen outcomes to the LLM or access final-test.",
+        "Prediction: metric=paired_success_difference, direction=increase, threshold=0.10, against=24-candidate numerical search of the unchanged recoverable D-020 parent. Report the case-paired t interval on the 30 promotion cases; promote only with a strictly positive lower bound, never on tied success.",
+        "falsified_by: the upper paired confidence bound for edited-minus-parent success is below 0.10. An interval spanning both zero and 0.10 is inconclusive; the resolving measurement is the same matched contrast using an independently generated placement edit on a fresh development manifest. An interval containing zero is never evidence of improvement.",
+        "Budget at most 300 simulator episodes: 2×24×5 probe episodes plus 2×30 promotion episodes. Use one gpt-6.1-sol edit call and at most one validity-correction call, reasoning_effort=high and temperature=1; retain an invalid edit slot without resampling. Run through gpu run, keep the allocation up during the session, and stop it when the session ends."
+      ],
+      "depends_on": []
+    }
+  ],
+  "order": [
+    "R-027"
+  ],
+  "next_step": "Have Claude Code prepare the revised targeted-edit comparison and freeze its development manifest before making the single structural-edit call.",
+  "call_id": "call_00046",
+  "briefing_sha256": "7034a3f4cdd34095cf90b5f7dc867a6dac50d75a71ea7ad20638ec9a067c82cf",
+  "question": "Delegated approve/reject (run_as_is = approve, drop = reject, revise = approve after changes, defer = leave proposed). You deferred R-027 until R-025 and R-026 were in. D-021 (R-025): expert completes learner grasps for one frozen structure (0.00 -> 0.67) but not the other; D-022 (R-026): rollout-selected imitation and numerical search both stay at 0.00 on assembly-v2. So parameter-level methods cannot seat the nut with these two structures; structural variety may be what is missing. Decide R-027 now; if you would rather test a different structural lever (e.g. an LLM structural edit given the handoff evidence), say so in suggested_changes. Manifests go in run out-dirs; GPU stays up for the session."
+}

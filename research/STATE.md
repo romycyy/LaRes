@@ -1,21 +1,21 @@
 # Research state
 
-_Generated 2026-10-22T08:35:27 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T08:37:23 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 0 |
+| running | 1 |
 | approved | 0 |
-| proposed | 1 |
+| proposed | 0 |
 | decided | 22 |
 | rejected | 4 |
 
 ## Needs attention
 
-- **R-027** [proposed] Trade half the search depth for a second assembly structure
-  - USER decides: `python scripts/research.py approve R-027` or `reject R-027 --reason ...`
+- **R-027** [running] A handoff-guided placement edit lets the recoverable assembly structure seat the nut
+  - run the protocol, then `python scripts/research.py record R-027 --results <json>`
 
 ## Last 5 decisions
 

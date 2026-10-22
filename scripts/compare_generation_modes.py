@@ -981,6 +981,141 @@ def run_assembly_fit_vs_numerical(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  R-027: one handoff-guided structural edit of the recoverable assembly parent
+# ---------------------------------------------------------------------------
+
+EDIT_PARENT = "assembly_repeat"     # D-021: the expert completes 0.67 of its lifted grasps
+EDIT_REQUEST = """Below is a controller for this task that grasps the nut and lifts it, but never seats it on the peg.
+
+Evidence from 30 development episodes: run on its own, it succeeds 0.00 of the time; after it has lifted the nut
+(3 cm above its start, gripper within 4 cm, three steps in a row), handing control to a scripted expert raises
+success to 0.67. So its grasp and lift are usually good enough, and what is missing is the behaviour after the lift.
+
+Rewrite the controller. Keep everything it does before the lift (approach, descent, grasp, lift) exactly as it is,
+and change only the control after the lift so that it carries the nut over the peg, aligns it, lowers it onto the
+peg and releases it. The controller must run on its own; no expert is available. Keep the class name GeneratedPolicy,
+read observations only through self.obs_field, and declare every parameter with get_param_ranges.
+
+```python
+{parent}
+```"""
+
+
+def run_assembly_targeted_edit(args) -> int:
+    import pickle
+
+    sys.path.insert(0, _SCRIPT_DIR)
+    import compare_child_vs_parent as cvp
+    from lares.core.obs_schema import get_obs_schema
+    from lares.core.policy_generation import (_build_error_feedback, _extract_code_string, _LLMSession,
+                                              _SlotValidator)
+    from lares.core.training_pipeline import load_policy_prompt_assets as assets
+    from lares.eval import make_manifest_env
+    from lares.eval.runner import PolicyActor, evaluate_manifest
+    from lares.eval.stats import t_interval, win_loss_tie
+    from lares.fitting.structure_bank import instantiate_source
+    from lares.search import rollout_search
+    from lares.search.generation import LABEL_CORRECTION, LABEL_REPAIR, LLMCallLedger
+
+    seed = int(args.pool_seed)
+    os.makedirs(args.out_dir, exist_ok=True)
+    status = cvp.ensure_entries_reserved([(seed, "mt1_pool", "R-027: 50-case development manifest"),
+                                          (seed + 1, "fitting", "R-027: parent search seed"),
+                                          (seed + 2, "fitting", "R-027: edited-structure search seed")], args.out_dir)
+    print(f"  seeds: {status}")
+    if args.reserve_only:
+        return 0
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise SystemExit("R-027 needs OPENAI_API_KEY")
+    from openai import OpenAI
+
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    task, schema = "assembly-v2", get_obs_schema("assembly-v2")
+    # Frozen before the LLM call; no outcome on it reaches the prompt.
+    full, _ = cvp.fresh_manifest(task, seed, 50, 150, os.path.join(args.out_dir, "manifests"), role="edit")
+    probe, promotion = full.slice(0, 5), full.slice(10, 40)
+    src, _, _ = D020_POLICIES[EDIT_PARENT]
+    with open(os.path.join(_PROJECT_ROOT, src), encoding="utf-8") as f:
+        parent_source = f.read()
+    edit_dir = os.path.join(args.out_dir, "edit")
+    os.makedirs(edit_dir, exist_ok=True)
+    edited_path = os.path.join(edit_dir, "edited_policy.py")
+    if not os.path.exists(edited_path):
+        prompts = assets(task)
+        data_pkl = os.path.join(edit_dir, "data.pkl")
+        with open(data_pkl, "wb") as f:
+            pickle.dump([{"obs": np.zeros(39)}], f)
+        validate = _SlotValidator(edit_dir, data_pkl, 39, 4, task, forbid_scale_parameters=False)
+        session = _LLMSession(OpenAI(api_key=os.environ["OPENAI_API_KEY"]), args.model, LLMCallLedger(edit_dir),
+                              os.path.join(edit_dir, "transcript.jsonl"), 0, 2, reasoning_effort=args.reasoning_effort)
+        fmt = dict(task=prompts["task_description"], obs_dim=39, action_dim=4, obs_description=prompts["obs_description"],
+                   input_dict_string=prompts["input_dict_string"])
+        user = prompts["initial_user"].format(**fmt) + "\n\n" + EDIT_REQUEST.replace("{parent}", parent_source.strip()) \
+            + "\n" + prompts["code_output_tip"]
+        messages = [{"role": "system", "content": prompts["initial_system"]}, {"role": "user", "content": user}]
+        replies, _ = session.call(LABEL_REPAIR, messages, purpose="placement_edit", attempt_ids=["r027_edit_a0"],
+                                  transcript_label="placement_edit")
+        code = _extract_code_string(replies[0] if replies else "")
+        policy, validation = validate(code, None, "r027_edit_a0")
+        attempts = [{"attempt": 0, "validation": {k: validation.get(k) for k in ("passed", "stage", "errors")}}]
+        if policy is None and code:
+            repair = messages + [{"role": "assistant", "content": f"```python\n{code}\n```"},
+                                 {"role": "user", "content": _build_error_feedback(code, "\n".join(validation.get("errors", [])))
+                                  + "\n" + prompts["code_output_tip"]}]
+            fixes, _ = session.call(LABEL_CORRECTION, repair, purpose="validation_repair", attempt_ids=["r027_edit_a1"],
+                                    transcript_label="placement_edit_repair")
+            code = _extract_code_string(fixes[0] if fixes else "")
+            policy, validation = validate(code, None, "r027_edit_a1")
+            attempts.append({"attempt": 1, "validation": {k: validation.get(k) for k in ("passed", "stage", "errors")}})
+        with open(os.path.join(edit_dir, "attempts.json"), "w", encoding="utf-8") as f:
+            json.dump({"attempts": attempts, "llm_calls": session.calls_made}, f, indent=2, default=str)
+        if policy is None:
+            print(f"  edit invalid after {len(attempts)} attempt(s): {validation.get('errors')}")
+            with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+                json.dump({"edit_valid": False, "attempts": attempts}, f, indent=2, default=str)
+            return 0
+        with open(edited_path, "w", encoding="utf-8") as f:
+            f.write(code)
+    with open(edited_path, encoding="utf-8") as f:
+        edited_source = f.read()
+    env = make_manifest_env(full, full.resolve_pool(), 200)
+    episodes = {"probe": 0, "promotion": 0}
+
+    def search(source, search_seed):
+        original = instantiate_source(source, 39, 4, schema=schema)
+        original.fixed_action_scale = 0.1
+        trace, cands = [], rollout_search.independent_candidates(original, search_seed)
+        for i, (kind, pol) in enumerate(cands):
+            r = evaluate_manifest(PolicyActor(pol, name="probe"), probe, env, max_steps=150)
+            episodes["probe"] += len(r.episodes)
+            prog = [e.signed_goal_progress for e in r.episodes if e.signed_goal_progress is not None]
+            trace.append({"index": i, "kind": kind, "success": r.success_rate, "progress": float(np.mean(prog)) if prog else 0.0})
+        pick = min(range(len(trace)), key=lambda i: (-trace[i]["success"], -trace[i]["progress"], i))
+        r = evaluate_manifest(PolicyActor(cands[pick][1], name="winner"), promotion, env, max_steps=150)
+        episodes["promotion"] += len(r.episodes)
+        return {"trace": trace, "pick": pick, "outcomes": {e.case_id: float(e.success) for e in r.episodes}}
+
+    arms = {"parent": search(parent_source, seed + 1), "edited": search(edited_source, seed + 2)}
+    cases = sorted(arms["parent"]["outcomes"])
+    diffs = [arms["edited"]["outcomes"][c] - arms["parent"]["outcomes"][c] for c in cases]
+    rate = lambda d: float(np.mean(list(d.values())))  # noqa: E731
+    summary = {"edit_valid": True, "parent": EDIT_PARENT, "paired_success_difference": float(np.mean(diffs)),
+               "paired": {**t_interval(diffs), **win_loss_tie(diffs)},
+               "success": {k: rate(v["outcomes"]) for k, v in arms.items()},
+               "untrained_probe": {k: v["trace"][0] for k, v in arms.items()},
+               "best_probe_success": {k: max(t["success"] for t in v["trace"]) for k, v in arms.items()},
+               "picks": {k: v["pick"] for k, v in arms.items()}, "episodes": episodes, "manifest_id": full.manifest_id}
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump({**summary, "traces": {k: v["trace"] for k, v in arms.items()}}, f, indent=2)
+    p = summary["paired"]
+    print(f"  parent {summary['success']['parent']:.2f} edited {summary['success']['edited']:.2f}; edited - parent "
+          f"{p['mean']:+.3f} [{p['low']}, {p['high']}]; best probe {summary['best_probe_success']}; episodes {episodes}")
+    return 0
+
+
 def run_task_scan(args) -> int:
     import multiprocessing as mp
 
@@ -1079,7 +1214,8 @@ def parse_args():
     )
     p.add_argument("--research-mode", choices=sorted(RESEARCH_ARMS) + ["pick-place-suite", "task-scan"], default="")
     p.add_argument("--scan-set", choices=["default", "hard"], default="default")
-    p.add_argument("--assembly-study", choices=["reciprocal-handoff", "expert-fit-vs-numerical"], default="")
+    p.add_argument("--assembly-study", choices=["reciprocal-handoff", "expert-fit-vs-numerical", "targeted-placement-edit"],
+                   default="")
     p.add_argument("--pool-seed", type=int)
     p.add_argument("--generation-seeds", type=int, nargs="+", default=[])
     p.add_argument("--search-seeds", type=int, nargs="+", default=[])
@@ -1099,6 +1235,8 @@ def main():
         return run_assembly_handoff(args)
     if args.assembly_study == "expert-fit-vs-numerical":
         return run_assembly_fit_vs_numerical(args)
+    if args.assembly_study == "targeted-placement-edit":
+        return run_assembly_targeted_edit(args)
     if args.research_mode == "task-scan":
         return run_hard_scan(args) if args.scan_set == "hard" else run_task_scan(args)
     if args.research_mode == "pick-place-suite":
