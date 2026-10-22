@@ -106,3 +106,10 @@
 {"seed": 3031, "namespace": "fitting", "use": "R-016 adaptive search: search RNG seed", "artifact": "logs/research/adaptive_search_s3030", "recorded_at": "2026-10-22T05:20:18", "backfilled": false}
 {"seed": 3032, "namespace": "mt1_pool", "use": "R-016: 5-case selection probe", "artifact": "logs/research/adaptive_search_s3030", "recorded_at": "2026-10-22T05:20:18", "backfilled": false}
 {"seed": 3033, "namespace": "mt1_pool", "use": "R-016: 50-case confirmation manifest", "artifact": "logs/research/adaptive_search_s3030", "recorded_at": "2026-10-22T05:20:18", "backfilled": false}
+{"seed": 3020, "namespace": "generation_block", "use": "R-015: generation block label", "artifact": "logs/research/seedless_searchability_s3020", "recorded_at": "2026-10-22T05:26:39", "backfilled": false}
+{"seed": 3021, "namespace": "generation_block", "use": "R-015: generation block label", "artifact": "logs/research/seedless_searchability_s3020", "recorded_at": "2026-10-22T05:26:39", "backfilled": false}
+{"seed": 3022, "namespace": "generation_block", "use": "R-015: generation block label", "artifact": "logs/research/seedless_searchability_s3020", "recorded_at": "2026-10-22T05:26:39", "backfilled": false}
+{"seed": 3023, "namespace": "fitting", "use": "R-015: search RNG seed", "artifact": "logs/research/seedless_searchability_s3020", "recorded_at": "2026-10-22T05:26:39", "backfilled": false}
+{"seed": 3024, "namespace": "fitting", "use": "R-015: search RNG seed", "artifact": "logs/research/seedless_searchability_s3020", "recorded_at": "2026-10-22T05:26:39", "backfilled": false}
+{"seed": 3025, "namespace": "mt1_pool", "use": "R-015: 10-case selection probe", "artifact": "logs/research/seedless_searchability_s3020", "recorded_at": "2026-10-22T05:26:39", "backfilled": false}
+{"seed": 3026, "namespace": "mt1_pool", "use": "R-015: 50-case confirmation manifest", "artifact": "logs/research/seedless_searchability_s3020", "recorded_at": "2026-10-22T05:26:39", "backfilled": false}

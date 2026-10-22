@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-10-22T05:23:32 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T05:44:46 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
@@ -8,17 +8,19 @@ _Generated 2026-10-22T05:23:32 by `python scripts/research.py state` from `resea
 | analysed | 0 |
 | running | 0 |
 | approved | 0 |
-| proposed | 1 |
-| decided | 12 |
+| proposed | 0 |
+| decided | 13 |
 | rejected | 3 |
 
 ## Needs attention
 
-- **R-015** [proposed] Generate fit-ready structures without supplying a parent
-  - USER decides: `python scripts/research.py approve R-015` or `reject R-015 --reason ...`
+- Nothing open. Run `python scripts/research.py propose` to ask the advisor for ideas.
 
 ## Last 5 decisions
 
+- D-013 · R-015 · **refuted** · 2026-10-22
+  R-015 appended a parameterization contract (smooth sigmoid gates, unit-direction drives scaled by bounded gains, 6-10 bounded parameters) to the single-phase seedless generation prompt and compared it with the same prompt without the contract: three blocks, one gpt-6.1-sol structure per prompt (all valid first time), each given 24-candidate independent rollout search under two seeds (probe s3025, confirmation s3026). Contract minus baseline: -0.293, block-level [-0.655, +0.069], placement-level [-0.365, -0.221]; worse in every block, untrained and searched. The predicted +0.10 is refuted. Side observation: the plain single-phase prompt's structures scored 0.16-0.88 untrained and 0.80-1.00 after search, against 0.00 for the two-phase gpt-6.1-sol baseline run.
+  Next: Test single-phase versus two-phase seedless generation under rollout search with more blocks; if it holds, switch the exploration lane's prompt and add rollout search.
 - D-012 · R-016 · **inconclusive** · 2026-10-22
   R-016 compared progress-guided adaptive parameter search (two batches of 8 from a Gaussian over the top-3 candidates) with budget-matched independent local/global draws, 24 candidates per arm with the first 8 shared, on two weak evolved structures x two search seeds (5-case probe s3032, confirmation s3033). Adaptive minus independent: +0.070 placement-level [+0.038, +0.102], 14/0/36, but cell-level [-0.069, +0.209]; the predicted +0.08 is neither supported nor refuted. All gains are on baseline61_gen0_cand2_a1 (0.94 vs 0.76, 0.10 vs 0.00); gen0_cand1_a0 tied on a shared-batch pick. Notably, 24-candidate rollout search lifted these 0.00-zero-shot structures to 0.42-0.94 in three of four cells.
   Next: Confirm on more weak structures with a larger probe before changing the exploration lane; 24-candidate rollout search itself looks like a strong rescue for zero-shot structures.
@@ -31,9 +33,6 @@ _Generated 2026-10-22T05:23:32 by `python scripts/research.py state` from `resea
 - D-009 · R-013 · **inconclusive** · 2026-10-22
   R-013 rebuilt the predeclared seed-2900 fitted states of the geometry child gen0_cand5_a0 and its parent simple_damped_push by deterministic refit (no rollouts; both parameter hashes match R-010's records) and scored both on the promotion set (development 10-39). Child 1.000, parent 0.967: +0.033 [-0.035, +0.102], 1/0/29. The interval spans zero, so the bank-admission requirement (strictly positive lower bound) is not met, and the refutation condition is not met either. The parent fails only one promotion case, a ceiling that 30 cases cannot resolve; the child's advantage stands on the fresh-case evidence of D-004 and D-006.
   Next: Bank admission of gen0_cand5_a0 needs a ruling on whether fresh-case evidence may substitute for the promotion-set rule; R-009 (LLM bounds-only edits) is approved and next.
-- D-008 · R-012 · **refuted** · 2026-10-22
-  R-012 asked the LLM (gpt-6.1-sol, 9 calls) for code-only mutations of two reach-push seed-bank parents, two geometry-only and two gain/damping-only per parent, all valid, and fitted each child and parent identically under two seeds (probe s2922, confirmation s2923). Geometry minus gain/damping: -0.237 [-0.315, -0.160]; geometry minus parent: -0.193 [-0.234, -0.151]; gain/damping minus parent: +0.045 [-0.019, +0.109]. Three of four geometry children damaged a working controller (e.g. sharp_gate 0.98 -> 0.54). The damped-push geometry win (D-004, D-006) does not transfer as a scope rule; caveat: these edits were code-only, while the winning child added parameters.
-  Next: Treat gen0_cand5_a0 as a single validated structure; run its cheap bank-admission check; do not spend further on scope rules.
 
 ## Standing constraints
 
@@ -49,7 +48,7 @@ _Generated 2026-10-22T05:23:32 by `python scripts/research.py state` from `resea
 - The final-test split (config/manifests/push-v2_final_test.yaml) is locked until Phase 7, which needs the user's approval and a FreezeRecord. Qwen/E10 is also blocked. _(lares/eval/freeze.py; CLAUDE.md)_
 - Seeds 2400-2424 are held for config/fittable_bank/qualification_v2.yaml (predeclared, not run). New protocols pick seeds from 2600 upward. _(config/experiment_seed_ledger.jsonl; CLAUDE.md)_
 - Every protocol runs on the remote GPU box via `gpu run`, which bills by the hour; the implementer stops it afterwards. Live LLM or GPU spend needs the user's per-idea approval. _(CLAUDE.md, 'Remote GPU server')_
-- Spent seeds: [0, 1, 2, 1000, 1001, 1002, 2000, 2100, 2200, 2201, 2202, 2203, 2204, 2300, 2301, 2302, 2303, 2304, 2400, 2401, 2402, 2403, 2404, 2410, 2411, 2412, 2413, 2414, 2420, 2421, 2422, 2423, 2424, 2500, 2501, 2502, 2610, 2611, 2620, 2621, 2622, 2623, 2624, 2625, 2626, 2627, 2628, 2629, 2700, 2701, 2702, 2703, 2704, 2705, 2710, 2800, 2801, 2802, 2803, 2804, 2805, 2810, 2811, 2812, 2813, 2820, 2822, 2823, 2824, 2825, 2900, 2901, 2902, 2903, 2904, 2905, 2906, 2910, 2911, 2912, 2913, 2920, 2921, 2922, 2923, 2940, 3000, 3001, 3010, 3011, 3012, 3013, 3030, 3031, 3032, 3033]
+- Spent seeds: [0, 1, 2, 1000, 1001, 1002, 2000, 2100, 2200, 2201, 2202, 2203, 2204, 2300, 2301, 2302, 2303, 2304, 2400, 2401, 2402, 2403, 2404, 2410, 2411, 2412, 2413, 2414, 2420, 2421, 2422, 2423, 2424, 2500, 2501, 2502, 2610, 2611, 2620, 2621, 2622, 2623, 2624, 2625, 2626, 2627, 2628, 2629, 2700, 2701, 2702, 2703, 2704, 2705, 2710, 2800, 2801, 2802, 2803, 2804, 2805, 2810, 2811, 2812, 2813, 2820, 2822, 2823, 2824, 2825, 2900, 2901, 2902, 2903, 2904, 2905, 2906, 2910, 2911, 2912, 2913, 2920, 2921, 2922, 2923, 2940, 3000, 3001, 3010, 3011, 3012, 3013, 3020, 3021, 3022, 3023, 3024, 3025, 3026, 3030, 3031, 3032, 3033]
 
 ## Pointers
 

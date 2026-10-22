@@ -663,3 +663,34 @@ class TestAdaptiveSearch(unittest.TestCase):
         out = self.stage_f.adaptive_summary(cells)
         self.assertAlmostEqual(out["paired_success_difference"], 0.25)
         self.assertEqual(out["episodes"], {"probe": 320, "confirmation": 150})
+
+
+class TestSeedlessSearchability(unittest.TestCase):
+    """R-015: the contract survives str.format; invalid slots score zero; blocks pair the two prompts."""
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, os.path.join(_PROJECT_ROOT, "scripts"))
+        import compare_generation_modes as cgm
+
+        cls.cgm = cgm
+
+    def test_the_contract_is_safe_inside_a_format_template(self):
+        self.assertNotIn("{", self.cgm.SEARCHABILITY_CONTRACT)
+        self.assertNotIn("}", self.cgm.SEARCHABILITY_CONTRACT)
+        prompts = load_policy_prompt_assets("push-v2")
+        (prompts["initial_user"] + self.cgm.SEARCHABILITY_CONTRACT).format(
+            task="t", obs_dim=39, action_dim=4, obs_description="o", input_dict_string="i")
+
+    def test_block_pairing_and_invalid_slots(self):
+        slots = [{"slot_id": "b1_baseline", "block": 1, "arm": "baseline", "valid": True},
+                 {"slot_id": "b1_contract", "block": 1, "arm": "contract", "valid": True},
+                 {"slot_id": "b2_baseline", "block": 2, "arm": "baseline", "valid": True},
+                 {"slot_id": "b2_contract", "block": 2, "arm": "contract", "valid": False}]
+        one, zero = {"x": 1.0, "y": 1.0}, {"x": 0.0, "y": 0.0}
+        results = {("b1_baseline", 7): {"searched": zero, "original": zero}, ("b1_contract", 7): {"searched": one, "original": zero},
+                   ("b2_baseline", 7): {"searched": one, "original": one}}
+        out = self.cgm.searchability_summary(slots, results, [7])
+        self.assertEqual(out["block_level"]["by_block"], {1: 1.0, 2: -1.0})
+        self.assertAlmostEqual(out["paired_success_difference"], 0.0)
+        self.assertEqual(out["step0_block_level"]["by_block"], {1: 0.0, 2: -1.0})

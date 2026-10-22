@@ -1,0 +1,28 @@
+{
+  "ideas": [
+    {
+      "id": "R-015",
+      "recommendation": "revise",
+      "reasoning": "Compare the prompts under identical nonadaptive rollout search: this isolates whether the parameterization contract improves searchability without also testing imitation or adaptive optimization. Reusing each generated structure for step-zero and searched confirmation comparisons extracts more information per LLM call, but three generation blocks remain a weak basis for generalizing across generated structures.",
+      "suggested_changes": [
+        "Hypothesis: Bounded, phase-scaled parameters and smooth transitions make parameter perturbations behaviorally useful, increasing the success attainable by budget-matched direct rollout search.",
+        "Reuse scripts/compare_generation_modes.py and config/two_lane_search.yaml, extending the existing script rather than adding a new one; reuse the existing independent local/global rollout-search implementation. Set bc_steps=0 and omit imitation checkpoints and adaptive-search arms.",
+        "Keep three blocked prompt pairs using generation seeds 3020–3022 and two matched search replicates using seeds 3023–3024. Give every structure 24 candidates per replicate, including its original parameters; freeze the sampler, parameter-coordinate normalization, selection rule, and tie-breaks before generation.",
+        "Use 10 shared development probe placements from seed 3025 and 50 disjoint development confirmation placements from seed 3026. Write manifests and provenance into the out-dir, never config/manifests; use at most 50 placements per pool seed. Select exclusively on the probe, then confirm every slot's selected candidate and its original parameters, without confirmation-driven reselection.",
+        "Prediction: paired_success_difference will increase by at least 0.10 for the contract prompt against the baseline zero-shot prompt under identical 24-candidate rollout search, averaging all generation slots and both search replicates. Use generation-block paired means for the primary 95% interval; treat placements and search seeds as repeated measurements, not independent structure replicates.",
+        "falsified_by: The primary paired interval's upper bound is below +0.10. An interval containing zero leaves directional improvement inconclusive; the resolving measurement is the same searched-confirmation comparison across additional independent generation blocks. Tied success is not improvement. Invalid slots count as zero without replacement; report step-zero comparisons as secondary diagnostics.",
+        "Preserve identical interfaces and validity rules across prompts, with no parent code, retrieval, or behavioral feedback. Use gpt-6.1-sol, reasoning_effort high, temperature 1, with at most one linked validity correction per slot.",
+        "Estimated cost: at most 3,780 simulator scoring episodes: 2,880 probe, 600 searched confirmation, and 300 original-parameter confirmation, reduced by cached duplicates or invalid slots. Budget six initial LLM calls plus at most six corrections, twelve calls total; do not add an imitation comparison.",
+        "Retain development-only evaluation, no promotion, and the approval gate; never access final-test. Run via gpu run, omit per-run GPU shutdown, and leave the GPU up through the session with shutdown at session end."
+      ],
+      "depends_on": []
+    }
+  ],
+  "order": [
+    "R-015"
+  ],
+  "next_step": "Have Claude Code freeze the revised direct-search protocol and cost accounting in R-015, then run that prompt comparison first.",
+  "call_id": "call_00024",
+  "briefing_sha256": "21e1a684a8f1fff01d2cd08fb38d6067223fc0fcebd0382dbb46865289186a9b",
+  "question": "Delegated approve/reject (run_as_is = approve, drop = reject, revise = approve after changes, defer = leave proposed). You deferred R-015 until the two zero-LLM mechanism tests ran: D-011 (R-014) refuted that the geometry child's gain needs its added parameter fitted (clamped = trainable = 1.00); D-012 (R-016) adaptive search +0.070 [+0.038, +0.102] placement-level, cell-level spans zero, and 24-candidate rollout search alone lifted zero-shot structures to 0.42-0.94. Given that rollout search rescues weak zero-shot structures, should R-015 compare the generation prompts under rollout search instead of imitation fitting, or run as revised? Manifests go in the out-dir (<= 50 placements per pool seed); the GPU stays up for the session."
+}

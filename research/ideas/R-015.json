@@ -1,18 +1,18 @@
 {
   "id": "R-015",
   "title": "Generate fit-ready structures without supplying a parent",
-  "hypothesis": "A phase-scaled, smooth-gating parameterization contract makes seedless generation produce structures that rollout-selected fitting can improve.",
+  "hypothesis": "Bounded, phase-scaled parameters and smooth transitions make parameter perturbations behaviorally useful, increasing the success attainable by budget-matched direct rollout search on seedless generated structures.",
   "prediction": {
     "metric": "paired_success_difference",
     "direction": "increase",
     "threshold": 0.1,
-    "against": "baseline zero-shot generation prompt, given identical rollout-selected fitting",
-    "rationale": "Compare confirmation success after identical treatment, not imitation loss or raw behavior; ten percentage points would warrant changing the exploration prompt."
+    "against": "the same single-phase generation prompt without the contract, under identical 24-candidate independent rollout search",
+    "rationale": "Generation-block paired means give the primary interval (3 blocks); placements and search seeds are repeated measurements. Invalid slots count as zero."
   },
   "protocol": {
     "script": "scripts/compare_generation_modes.py",
     "config": "config/two_lane_search.yaml",
-    "command": "gpu run -- python scripts/compare_generation_modes.py --config config/two_lane_search.yaml --research-mode seedless-fittability-contract --generation-seeds 3020 3021 3022 --fit-seeds 3023 3024 --probe-seed 3025 --probe-cases 10 --confirmation-seed 3026 --confirmation-cases 50 --checkpoints 0 125 250 500 750 1000 --model gpt-6.1-sol --reasoning-effort high --temperature 1 --max-corrections-per-slot 1 --no-promotion --require-approval --stop-gpu-on-exit",
+    "command": "python scripts/compare_generation_modes.py --research-mode seedless-searchability --generation-seeds 3020 3021 3022 --search-seeds 3023 3024 --probe-seed 3025 --heldout-seed 3026 --out-dir logs/research/seedless_searchability_s3020",
     "seeds": [
       3020,
       3021,
@@ -23,21 +23,18 @@
       3026
     ],
     "manifests": [
-      "config/manifests/push-v2_development_probe_s3025.yaml",
-      "config/manifests/push-v2_development_confirmation_s3026.yaml"
+      "config/manifests/push-v2_development.yaml"
     ],
-    "episodes": 1320,
+    "episodes": 3780,
     "llm_calls": 12,
     "code_changes": [
-      "scripts/compare_generation_modes.py: add the declared research-mode flags, approval gate, and remote shutdown handling.",
-      "scripts/compare_generation_modes.py: create three blocked prompt pairs; treatment requires bounded trainable geometry, phase-scaled parameters, and smooth transitions, without parent code, bank retrieval, or additional feedback.",
-      "scripts/compare_generation_modes.py: apply identical rollout-selected fitting to both prompts, including step zero; score every slot on confirmation rather than reporting only the winner.",
-      "scripts/compare_generation_modes.py: generate disjoint development-only manifests and report paired intervals clustered by generation block and placement."
+      "scripts/compare_generation_modes.py (--research-mode seedless-searchability: per block one baseline and one contract structure via single-phase generation with one correction; 24-candidate independent rollout search x 2 seeds; confirm selected and original)",
+      "tests/test_two_lane_search.py or a new focused test"
     ],
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "proposed",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The upper 95% paired interval is below +0.10; an interval containing zero leaves a directional improvement inconclusive. Invalid generation slots count as zero, not replacement opportunities.",
   "cost_estimate": {
@@ -51,12 +48,192 @@
   ],
   "briefing_sha256": "04f6fbc36feb356de5411c48a44dc190ee4235866976fc366e1d8bc09ad21cb0",
   "proposal_call_id": "call_00020",
-  "approval": {},
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
-  "history": [],
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T05:25:33",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00024, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T052446_call_00024.json"
+  },
+  "run": {
+    "started_at": "2026-10-22T05:26:38",
+    "git_sha": "da232834de2bdccdb1c0163e84ff5679d841ff19",
+    "dirty_worktree": true,
+    "log_dir": "logs/research/seedless_searchability_s3020",
+    "finished_at": "2026-10-22T05:44:20"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": -0.29333333333333333,
+      "block_t95": [
+        -0.655313484206806,
+        0.06864681754013935
+      ],
+      "by_block": {
+        "3020": -0.13999999999999996,
+        "3021": -0.31,
+        "3022": -0.43000000000000005
+      },
+      "placement_t95": [
+        -0.3653013735065549,
+        -0.22136529316011166
+      ],
+      "placement_wlt": [
+        3,
+        39,
+        8
+      ],
+      "step0_contract_minus_baseline": -0.24,
+      "step0_by_block": {
+        "3020": -0.07999999999999996,
+        "3021": -0.16,
+        "3022": -0.48
+      },
+      "by_slot": {
+        "b3020_baseline": {
+          "block": 3020,
+          "arm": "baseline",
+          "valid": true,
+          "searched": {
+            "3023": 1.0,
+            "3024": 0.98
+          },
+          "original": 0.88
+        },
+        "b3020_contract": {
+          "block": 3020,
+          "arm": "contract",
+          "valid": true,
+          "searched": {
+            "3023": 0.8,
+            "3024": 0.9
+          },
+          "original": 0.8
+        },
+        "b3021_baseline": {
+          "block": 3021,
+          "arm": "baseline",
+          "valid": true,
+          "searched": {
+            "3023": 0.84,
+            "3024": 0.94
+          },
+          "original": 0.16
+        },
+        "b3021_contract": {
+          "block": 3021,
+          "arm": "contract",
+          "valid": true,
+          "searched": {
+            "3023": 0.58,
+            "3024": 0.58
+          },
+          "original": 0.0
+        },
+        "b3022_baseline": {
+          "block": 3022,
+          "arm": "baseline",
+          "valid": true,
+          "searched": {
+            "3023": 0.8,
+            "3024": 0.38
+          },
+          "original": 0.48
+        },
+        "b3022_contract": {
+          "block": 3022,
+          "arm": "contract",
+          "valid": true,
+          "searched": {
+            "3023": 0.1,
+            "3024": 0.22
+          },
+          "original": 0.0
+        }
+      },
+      "episodes": {
+        "probe": 2880,
+        "confirmation": 850
+      },
+      "llm_calls": 6
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "control is the same single-phase prompt without the contract, generated in the same block and searched identically; the metric is already contract minus baseline"
+    },
+    "artifacts": [
+      "logs/research/seedless_searchability_s3020/summary.json",
+      "logs/research/seedless_searchability_s3020/run.json",
+      "logs/research/seedless_searchability_s3020/slots.json",
+      "logs/research/seedless_searchability_s3020/structures",
+      "logs/research/seedless_searchability_s3020/generation"
+    ],
+    "notes": "Three generation blocks (3020-3022) x [baseline, contract], one structure each via single-phase gpt-6.1-sol generation (all 6 valid on the first call, no corrections); 24-candidate independent rollout search under seeds 3023/3024 on probe s3025 (10), confirmation s3026 (50). Contract minus baseline: block-level -0.293 [-0.655, +0.069]; placement-level [-0.365, -0.221]; contract worse in all three blocks. Untrained (step 0): contract minus baseline -0.240. Side observation (not the tested hypothesis; three structures only): the baseline single-phase prompt produced structures scoring 0.88, 0.16, 0.48 untrained and 0.80-1.00 after search, whereas the logs/baseline_gpt61_sol_high two-phase run reached 0.00 on its promotion set. 3730 episodes (2880 probe + 850 confirmation), 6 LLM calls."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": -0.29333333333333333,
+    "delta": -0.29333333333333333,
+    "matched": false
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.85,
+      "reasoning": "Contract minus baseline under identical 24-candidate rollout search is -0.293 at the block level [-0.655, +0.069] and [-0.365, -0.221] by placement; the upper block bound is below the predicted +0.10, which refutes, and the contract was worse in every block, both untrained and after search. The contract's constraints (unit-direction drives, specific gate ranges) produced structures that search could not repair as well as the unconstrained prompt's. Side observation: the plain single-phase prompt's three structures reached 0.16-0.88 untrained and 0.80-1.00 after search, far above the two-phase gpt-6.1-sol baseline's 0.00.",
+      "cited_artifacts": [
+        "logs/research/seedless_searchability_s3020/summary.json"
+      ],
+      "next_experiment": "Test the side observation directly: single-phase versus the two-phase ideas prompt for seedless generation, both under 24-candidate rollout search, with more blocks; if it holds, the exploration lane should switch prompts and add rollout search.",
+      "recorded_at": "2026-10-22T05:44:21",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.98,
+      "reasoning": "The specified no-contract control was measured under matched rollout search [logs/research/seedless_searchability_s3020/summary.json]. The primary generation-block paired_success_difference was -0.2933, with a 95% interval of [-0.6553, +0.0686] [logs/research/seedless_searchability_s3020/summary.json]. Its upper bound is below the predicted +0.10 improvement, satisfying the predeclared falsification condition [logs/research/seedless_searchability_s3020/summary.json]. Because the primary interval includes zero, whether the contract decreases success remains inconclusive; the narrower placement-level interval does not establish a generation-level difference [logs/research/seedless_searchability_s3020/summary.json].",
+      "cited_artifacts": [
+        "logs/research/seedless_searchability_s3020/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T05:44:38",
+      "call_id": "call_00025"
+    }
+  ],
+  "decision_id": "D-013",
+  "history": [
+    {
+      "at": "2026-10-22T05:25:33",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00024: compared under identical non-adaptive 24-candidate rollout search (no imitation, no adaptive arm); 3 blocks x 2 prompts x 1 structure; single-phase generation (one call + at most one correction per slot = 12 calls max); 3780 episodes max"
+    },
+    {
+      "at": "2026-10-22T05:25:33",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00024, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T05:26:38",
+      "from": "approved",
+      "to": "running",
+      "note": "git da232834de (dirty)"
+    },
+    {
+      "at": "2026-10-22T05:44:20",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=False"
+    },
+    {
+      "at": "2026-10-22T05:44:46",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-013: refuted"
+    }
+  ],
   "created_at": "2026-10-22T05:14:40"
 }
