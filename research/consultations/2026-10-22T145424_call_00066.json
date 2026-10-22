@@ -1,0 +1,18 @@
+{
+  "ideas": [
+    {
+      "id": "R-037",
+      "recommendation": "run_as_is",
+      "reasoning": "A: reconcile the idea file with R-037's own pre-launch reservations; do not change the checker or reserve replacement seeds. This bookkeeping costs 0 simulator episodes and 0 LLM calls, leaving both approved blocks and their budgets unchanged. Preserve falsified_by: an upper paired bound below +0.30 for paired_success_difference against repair-off refutes the integrated effect; a block without a plateau trigger remains inconclusive.",
+      "suggested_changes": [],
+      "depends_on": []
+    }
+  ],
+  "order": [
+    "R-037"
+  ],
+  "next_step": "Edit only R-037's idea file: set protocol.seeds to [], replace the stale push-v2 manifest entry with the six exact frozen assembly-v2 manifest paths under config/manifests/r037/, and record in history that seeds 3900–3904/3910–3914 were reserved and manifests frozen before launch under logs/r037 per call_00065, committed as 90b1648.",
+  "call_id": "call_00066",
+  "briefing_sha256": "835bb405bf0c2c63d3aaa0eb18b6bec80674203fcc49c5cfb3cffbc43c8f915b",
+  "question": "Procedural question only (the user has approved launching R-037 both blocks). Your call_00065 required reserving seeds 3900-3904/3910-3914 in the ledger and freezing all assembly-v2 manifests BEFORE launch; both are done and committed (commit 90b1648; ledger artifact logs/r037; manifests config/manifests/r037/*). But research.py start re-runs check_idea, which now reports all ten protocol seeds as 'spent' (by R-037's own reservation and frozen manifests), so the idea cannot move approved->running. The house rule is: fix the idea file, never the check. Choose one: (A) edit R-037's idea file so protocol.seeds lists nothing new to consume and protocol.manifests lists the six frozen r037 manifest files (fixing the stale push-v2 entry), recording in history that the seeds were reserved and manifests frozen pre-launch under artifact logs/r037 per call_00065; (B) change start_run so seeds whose ledger artifact equals the idea's run log_dir are not counted as spent (a check change); (C) something else. Answer with run_as_is=A, revise=B or C with details."
+}

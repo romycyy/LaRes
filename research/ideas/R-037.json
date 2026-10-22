@@ -11,22 +11,16 @@
   },
   "protocol": {
     "script": "scripts/run_full_evolution.py",
-    "config": "config/two_lane_search_v2.yaml",
-    "command": "python scripts/run_full_evolution.py --config config/assembly_two_lane_repair.yaml --seed <s> --log-dir <dir> (repair on/off configs, two seeds each)",
-    "seeds": [
-      3900,
-      3901,
-      3902,
-      3903,
-      3904,
-      3910,
-      3911,
-      3912,
-      3913,
-      3914
-    ],
+    "config": "config/assembly_two_lane_repair.yaml",
+    "command": "python scripts/run_full_evolution.py --config config/assembly_two_lane_repair.yaml --seed <3900|3910> --log-dir logs/r037/block<A|B>_repair_on [--dev-pool-seed 3912 --demo-pool-seed 3913] and the same with --seed <3901|3911> --repair disabled; then scripts/evaluate_on_fresh_manifest.py --env-name assembly-v2 --pool-seed <3904|3914> --episodes 30 --frozen <manifest>",
+    "seeds": [],
     "manifests": [
-      "config/manifests/push-v2_development.yaml"
+      "config/manifests/r037/assembly-v2_confirmation_s3904.yaml",
+      "config/manifests/r037/assembly-v2_confirmation_s3914.yaml",
+      "config/manifests/r037/assembly-v2_demonstration_s3903_n10.yaml",
+      "config/manifests/r037/assembly-v2_demonstration_s3913_n10.yaml",
+      "config/manifests/r037/assembly-v2_development_s3902_n45.yaml",
+      "config/manifests/r037/assembly-v2_development_s3912_n45.yaml"
     ],
     "episodes": 1660,
     "llm_calls": 40,
@@ -84,6 +78,12 @@
       "from": "proposed",
       "to": "approved",
       "note": "approved by advisor gpt-6.1-sol (consult call_00065, 'revise' with changes applied) under the user's 2026-10-22 session delegation; the advisor reserves the live launch for the user after the mocked gate passes"
+    },
+    {
+      "at": "2026-10-22T14:55:00",
+      "from": "approved",
+      "to": "approved",
+      "note": "idea file reconciled per advisor consult call_00066 (option A): seeds 3900-3904/3910-3914 were reserved (artifact logs/r037) and the six assembly-v2 manifests frozen before launch per call_00065, committed as 90b1648; protocol.seeds is therefore empty and protocol.manifests names the frozen files (the push-v2 entry was stale)"
     }
   ],
   "created_at": "2026-10-22T11:29:05"
