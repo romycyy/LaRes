@@ -36,7 +36,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "Every expert-qualified task produces a learner success during search or confirmation, or every confirmed zero-success learner has fewer than three successful expert takeovers out of five. If no expert qualifies, the plateau question is inconclusive; the missing measurement is a reliable expert's success on those tasks.",
   "cost_estimate": {
@@ -61,12 +61,91 @@
     "started_at": "2026-10-22T10:59:56",
     "git_sha": "04e8b873fa7883548832f6a745c89ffd7cd8bb57",
     "dirty_worktree": true,
-    "log_dir": "logs/research/recoverable_plateau_scan"
+    "log_dir": "logs/research/recoverable_plateau_scan",
+    "finished_at": "2026-10-22T11:10:05"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "promotion_success_rate": 1.0,
+      "note_on_metric": "no task reached confirmation; every task's search already succeeded on the probe",
+      "rows": {
+        "shelf-place-v2": {
+          "expert_success": 1.0,
+          "probe_candidates_succeeding": 22,
+          "status": "not a plateau (probe success)",
+          "attempts": 1
+        },
+        "basketball-v2": {
+          "expert_success": 1.0,
+          "probe_candidates_succeeding": 20,
+          "status": "not a plateau (probe success)",
+          "attempts": 1
+        },
+        "soccer-v2": {
+          "expert_success": 0.9,
+          "probe_candidates_succeeding": 23,
+          "status": "not a plateau (probe success)",
+          "attempts": 1
+        }
+      },
+      "recoverable_plateau": null,
+      "expert_qualified": [
+        "shelf-place-v2",
+        "basketball-v2",
+        "soccer-v2"
+      ],
+      "episodes": {
+        "expert": 90,
+        "probe": 360,
+        "confirmation": 0,
+        "takeover": 0
+      },
+      "llm_calls": 3
+    },
+    "controls": {
+      "note": "control is each task's scripted expert on its 30 confirmation cases (all >= 0.90)"
+    },
+    "artifacts": [
+      "logs/research/recoverable_plateau_scan/summary.json",
+      "logs/research/recoverable_plateau_scan/manifests",
+      "logs/research/recoverable_plateau_scan/generation",
+      "logs/plateau_scan.run.log"
+    ],
+    "notes": "Sequential scan in frozen order (shelf-place, basketball, soccer). Experts: 1.00, 1.00, 0.90 (all qualified). One gpt-6.1-sol single-phase structure per task (all valid first time) with 24-candidate search on 5 probe cases: 22, 20 and 23 of 24 candidates succeeded, so none is a plateau and no confirmation or takeover stage ran. Refuted by the predeclared rule (every expert-qualified task produced a learner success in search). Across D-019, D-016..D-018, D-029 and this scan, assembly-v2 is the only MetaWorld task found where single-phase generation plus search plateaus. 450 episodes, 3 LLM calls."
+  },
+  "prediction_outcome": {
+    "metric": "promotion_success_rate",
+    "before": null,
+    "after": 1.0,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.85,
+      "reasoning": "All three experts qualified (1.00, 1.00, 0.90), and every task's single-phase structure plus 24-candidate search already succeeded on the probe (22, 20 and 23 of 24 candidates), which is the predeclared refutation condition. No second plateau exists among the scanned tasks; assembly-v2 remains the only one.",
+      "cited_artifacts": [
+        "logs/research/recoverable_plateau_scan/summary.json"
+      ],
+      "next_experiment": "The recipe solves every single-object MetaWorld task scanned except assembly; trace-guided editing fixes assembly. Next: integrate trace-guided repair into the pipeline (R-036) so assembly is solved end to end, and consider a multi-task MT10/MT50 benchmark run as the final evaluation.",
+      "recorded_at": "2026-10-22T11:10:06",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "The task-matched expert controls were measured and qualified: shelf-place and basketball scored 1.00, and soccer scored 0.90 [logs/research/recoverable_plateau_scan/summary.json]. Their searches produced 22, 20, and 23 successful probe candidates, respectively, satisfying the predeclared falsification condition that every expert-qualified task produces a learner success during search [logs/research/recoverable_plateau_scan/summary.json]. No learner confirmation or takeover episodes ran, so the reported promotion_success_rate of 1.0 does not establish a confirmation-set learner–expert gap; the refutation rests on the search stopping rule [logs/research/recoverable_plateau_scan/summary.json]. Actual expenditure was 450 simulator episodes and 3 LLM calls [logs/research/recoverable_plateau_scan/summary.json].",
+      "cited_artifacts": [
+        "logs/research/recoverable_plateau_scan/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T11:10:27",
+      "call_id": "call_00062"
+    }
+  ],
+  "decision_id": "D-031",
   "history": [
     {
       "at": "2026-10-22T10:20:53",
@@ -91,6 +170,18 @@
       "from": "approved",
       "to": "running",
       "note": "git 04e8b873fa (dirty)"
+    },
+    {
+      "at": "2026-10-22T11:10:05",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-10-22T11:10:37",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-031: refuted"
     }
   ],
   "created_at": "2026-10-22T10:19:43"
