@@ -47,7 +47,7 @@
     "needs_gpu": false,
     "needs_llm": true
   },
-  "status": "proposed",
+  "status": "approved",
   "source": "advisor",
   "falsified_by": "With expert success at least 0.90 on the three contrast tasks, a contrast interval upper bound below +0.50 refutes the predicted separation. An interval including zero is inconclusive about a regime difference. Failed expert calibration makes the mechanism inconclusive pending a source-verified expert success measurement on the affected task.",
   "cost_estimate": {
@@ -58,12 +58,30 @@
   "open_question_refs": [],
   "briefing_sha256": "516892eb17a15ae9ecd2fd17d23ba1efd3cb13a370d3d6138f5b0f059fc5ea4f",
   "proposal_call_id": "call_00048",
-  "approval": {},
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T09:25:06",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00052, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T092443_call_00052.json"
+  },
   "run": {},
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
   "decision_id": "",
-  "history": [],
+  "history": [
+    {
+      "at": "2026-10-22T09:25:06",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00052: tasks peg-insert-side, hammer, soccer only; 90-episode expert calibration first (stop if any < 0.90); one structure per task; ceiling 540 episodes, 3 calls; seeds 3540, 3541, 3544"
+    },
+    {
+      "at": "2026-10-22T09:25:06",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00052, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    }
+  ],
   "created_at": "2026-10-22T08:48:22"
 }

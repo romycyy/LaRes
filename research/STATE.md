@@ -1,21 +1,23 @@
 # Research state
 
-_Generated 2026-10-22T09:23:19 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T09:25:16 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 0 |
-| approved | 0 |
-| proposed | 1 |
+| running | 1 |
+| approved | 1 |
+| proposed | 0 |
 | decided | 25 |
 | rejected | 4 |
 
 ## Needs attention
 
-- **R-030** [proposed] 3. Test insertion specificity with an expert-calibrated hard-task scan
-  - USER decides: `python scripts/research.py approve R-030` or `reject R-030 --reason ...`
+- **R-031** [running] Trace-conditioned assembly edits with one validity correction
+  - run the protocol, then `python scripts/research.py record R-031 --results <json>`
+- **R-030** [approved] 3. Test insertion specificity with an expert-calibrated hard-task scan
+  - `python scripts/research.py start R-030` then run its command
 
 ## Last 5 decisions
 

@@ -1,0 +1,96 @@
+{
+  "id": "R-031",
+  "title": "Trace-conditioned assembly edits with one validity correction",
+  "hypothesis": "Successful expert placement traces let an edit of the recoverable assembly parent seat the nut, once the edit is allowed the pipeline's standard single validity correction (D-025's trace edits failed only on gate_not_a_lever).",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.2,
+    "against": "summary-only edits of the same parent in the same blocks, also allowed one validity correction, under identical 24-candidate search",
+    "rationale": "Same design as R-029 with one correction per edit (the standard allowance) and more demonstration handoffs so that several successful continuations are available."
+  },
+  "protocol": {
+    "script": "scripts/compare_generation_modes.py",
+    "config": "",
+    "command": "python scripts/compare_generation_modes.py --assembly-study trace-edit-suite --pool-seed 3600 --demo-cases 10 --min-continuations 2 --allow-correction --out-dir logs/next_assembly_traces_s3600",
+    "seeds": [
+      3600,
+      3601,
+      3602,
+      3603,
+      3604,
+      3605,
+      3606,
+      3607,
+      3608,
+      3609
+    ],
+    "manifests": [
+      "config/manifests/push-v2_development.yaml"
+    ],
+    "episodes": 610,
+    "llm_calls": 8,
+    "code_changes": [
+      "scripts/compare_generation_modes.py (trace-edit-suite: --allow-correction (one validity correction per edit) and --demo-cases)"
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "running",
+  "source": "implementer",
+  "falsified_by": "Zero success in both trace blocks among valid edits, or a fixed-pair interval upper bound below +0.20; an interval containing zero is inconclusive about an advantage. Invalid edits after the correction still score zero (intention to treat).",
+  "cost_estimate": {
+    "episodes": 610,
+    "llm_calls": 8,
+    "wall_time_minutes": 30,
+    "breakdown": "10 demo handoffs + 2 blocks x 2 edits x (24 x 5 probe + 30 promotion) = 610; 4 edits + <= 4 corrections"
+  },
+  "open_question_refs": [
+    "D-025 (R-029): trace edits untested because of gate_not_a_lever with no correction"
+  ],
+  "briefing_sha256": "",
+  "proposal_call_id": "",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T09:25:06",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00052, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T092443_call_00052.json"
+  },
+  "run": {
+    "started_at": "2026-10-22T09:25:16",
+    "git_sha": "d4e32d0dea4c9a68fc01b5a8d39d48ec232cd040",
+    "dirty_worktree": true,
+    "log_dir": "logs/next_assembly_traces_s3600"
+  },
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-22T09:23:35",
+      "from": "",
+      "to": "proposed",
+      "note": "proposed by the implementer after D-025"
+    },
+    {
+      "at": "2026-10-22T09:25:06",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00052: demonstration gate (>= 2 of 10 successful continuations before any edit call), manifests under the out dir, exactly one validation-only correction per edit"
+    },
+    {
+      "at": "2026-10-22T09:25:06",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00052, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T09:25:16",
+      "from": "approved",
+      "to": "running",
+      "note": "git d4e32d0dea (dirty)"
+    }
+  ],
+  "created_at": "2026-10-22T09:23:35"
+}

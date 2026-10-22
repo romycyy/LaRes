@@ -1269,13 +1269,14 @@ def trace_block(traces) -> str:
     return "\n".join(lines)
 
 
-def make_edit(request, edit_dir, args, task="assembly-v2"):
-    """One gpt-6.1-sol structural edit, no correction. Returns ``(code or None, record)``. Cached on disk."""
+def make_edit(request, edit_dir, args, task="assembly-v2", allow_correction=False):
+    """One gpt-6.1-sol structural edit and, if allowed, one validation-only correction. Returns ``(code or None,
+    record)``. Cached on disk."""
     import pickle
 
     from openai import OpenAI
 
-    from lares.core.policy_generation import _extract_code_string, _LLMSession, _SlotValidator
+    from lares.core.policy_generation import _build_error_feedback, _extract_code_string, _LLMSession, _SlotValidator
     from lares.core.training_pipeline import load_policy_prompt_assets as assets
     from lares.search.generation import LABEL_REPAIR, LLMCallLedger
 
@@ -1290,7 +1291,8 @@ def make_edit(request, edit_dir, args, task="assembly-v2"):
     with open(data_pkl, "wb") as f:
         pickle.dump([{"obs": np.zeros(39)}], f)
     session = _LLMSession(OpenAI(api_key=os.environ["OPENAI_API_KEY"]), args.model, LLMCallLedger(edit_dir),
-                          os.path.join(edit_dir, "transcript.jsonl"), 0, 1, reasoning_effort=args.reasoning_effort)
+                          os.path.join(edit_dir, "transcript.jsonl"), 0, 2 if allow_correction else 1,
+                          reasoning_effort=args.reasoning_effort)
     fmt = dict(task=prompts["task_description"], obs_dim=39, action_dim=4, obs_description=prompts["obs_description"],
                input_dict_string=prompts["input_dict_string"])
     user = prompts["initial_user"].format(**fmt) + "\n\n" + request + "\n" + prompts["code_output_tip"]
@@ -1298,8 +1300,24 @@ def make_edit(request, edit_dir, args, task="assembly-v2"):
                                                   {"role": "user", "content": user}],
                                    purpose="placement_edit", attempt_ids=[os.path.basename(edit_dir)], transcript_label="placement_edit")
     code = _extract_code_string(replies[0] if replies else "")
-    policy, validation = _SlotValidator(edit_dir, data_pkl, 39, 4, task, forbid_scale_parameters=False)(code, None, "edit")
+    validator = _SlotValidator(edit_dir, data_pkl, 39, 4, task, forbid_scale_parameters=False)
+    policy, validation = validator(code, None, "edit")
+    first = {k: validation.get(k) for k in ("passed", "stage", "errors")}
+    corrected = False
+    if policy is None and code and allow_correction:
+        messages = [{"role": "system", "content": prompts["initial_system"]}, {"role": "user", "content": user},
+                    {"role": "assistant", "content": f"```python\n{code}\n```"},
+                    {"role": "user", "content": _build_error_feedback(code, "\n".join(validation.get("errors", [])))
+                     + "\n" + prompts["code_output_tip"]}]
+        from lares.search.generation import LABEL_CORRECTION
+
+        fixes, _ = session.call(LABEL_CORRECTION, messages, purpose="validation_repair",
+                                attempt_ids=[os.path.basename(edit_dir) + "_a1"], transcript_label="placement_edit_repair")
+        code = _extract_code_string(fixes[0] if fixes else "")
+        policy, validation = validator(code, None, "edit_a1")
+        corrected = True
     rec = {"valid": policy is not None, "validation": {k: validation.get(k) for k in ("passed", "stage", "errors")},
+           "first_attempt": first, "corrected": corrected, "llm_calls": session.calls_made,
            "call_id": record.call_id, "prompt_chars": len(user), "code": code if policy is not None else None}
     with open(rec_path, "w", encoding="utf-8") as f:
         json.dump(rec, f, indent=2, default=str)
@@ -1348,7 +1366,7 @@ def run_assembly_trace_edits(args) -> int:
     ensure_mujoco_headless_gl()
     task, schema = "assembly-v2", get_obs_schema("assembly-v2")
     mdir = os.path.join(args.out_dir, "manifests")
-    demo, _ = cvp.fresh_manifest(task, base, 5, 150, mdir, role="demo")
+    demo, _ = cvp.fresh_manifest(task, base, int(args.demo_cases), 150, mdir, role="demo")
     blocks = []
     for b in range(2):
         probe, _ = cvp.fresh_manifest(task, base + 5 + 2 * b, 5, 150, mdir, role="probe", also_disjoint_from=[demo])
@@ -1365,8 +1383,9 @@ def run_assembly_trace_edits(args) -> int:
     print(f"  handoff demonstrations: {traces['successes']}/{len(demo)} successful continuations", flush=True)
     summary = {"parent": EDIT_PARENT, "parent_meta": meta, "demo_successes": traces["successes"],
                "episodes": {"demo": len(demo), "probe": 0, "promotion": 0}}
-    if traces["successes"] == 0:
-        summary["outcome"] = "inconclusive: no successful expert continuation, no generation call made"
+    if traces["successes"] < int(args.min_continuations):
+        summary["outcome"] = (f"inconclusive: {traces['successes']} successful expert continuation(s), fewer than "
+                              f"{args.min_continuations}; no generation call made")
         with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2)
         print(f"  {summary['outcome']}")
@@ -1378,7 +1397,8 @@ def run_assembly_trace_edits(args) -> int:
         probe_env, promo_env = make_manifest_env(probe, probe.resolve_pool(), 200), make_manifest_env(promo, promo.resolve_pool(), 200)
         for j, arm in enumerate(("summary_only", "trace")):
             label = f"b{b}_{arm}"
-            code, rec = make_edit(requests[arm], os.path.join(args.out_dir, "edits", label), args)
+            code, rec = make_edit(requests[arm], os.path.join(args.out_dir, "edits", label), args,
+                                  allow_correction=bool(args.allow_correction))
             edits[label] = {k: v for k, v in rec.items() if k != "code"}
             print(f"  {label}: edit valid={rec['valid']}", flush=True)
             if code is None:
@@ -1511,6 +1531,9 @@ def parse_args():
                                                 "breadth-vs-depth", "trace-edit-suite"],
                    default="")
     p.add_argument("--pool-seed", type=int)
+    p.add_argument("--demo-cases", type=int, default=5, help="trace-edit-suite: learner-to-expert handoff demonstrations")
+    p.add_argument("--min-continuations", type=int, default=1, help="trace-edit-suite: successful continuations required")
+    p.add_argument("--allow-correction", action="store_true", help="trace-edit-suite: one validation-only correction per edit")
     p.add_argument("--generation-seeds", type=int, nargs="+", default=[])
     p.add_argument("--search-seeds", type=int, nargs="+", default=[])
     p.add_argument("--probe-seed", type=int)

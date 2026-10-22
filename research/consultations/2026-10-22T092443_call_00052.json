@@ -1,0 +1,38 @@
+{
+  "ideas": [
+    {
+      "id": "R-031",
+      "recommendation": "revise",
+      "reasoning": "This directly tests whether successful continuation evidence changes placement behavior under a matched validity allowance. A demonstration gate costs only 10 episodes before committing to the full budget of 610 episodes and at most 8 LLM calls; its weakest points are uncertain demonstration yield and only two generation blocks.",
+      "suggested_changes": [
+        "Run the 10 demonstration handoffs first using the existing trace-edit-suite in scripts/compare_generation_modes.py. Require at least two successful continuations before generating edits; otherwise stop with the trace mechanism inconclusive and report expert continuation success at these handoffs as the missing measurement.",
+        "Use frozen assembly-v2 manifests in logs/next_assembly_traces_s3600, not the listed push-v2 development manifest. Retain unspent seeds 3600–3609 with distinct demonstration, probe, and promotion streams; share evaluation cases between matched arms.",
+        "Allow exactly one validation-only correction per edit, with no outer retries; remaining invalid edits score zero intention-to-treat. Keep bc_steps=0 and gpt-6.1-sol/high/temperature=1.",
+        "Prediction: metric=paired_success_difference, direction=increase, threshold=0.20, control=summary-only edits of the same parent with the same correction allowance and search budget. falsified_by: a fixed-pair interval upper bound below +0.20; an interval containing zero is inconclusive about any advantage. If trace edits remain invalid, their mechanism remains untested.",
+        "Wrap the command in gpu run. Keep the GPU box up between session experiments and stop it at session end."
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "R-030",
+      "recommendation": "revise",
+      "reasoning": "The prespecified three-task contrast provides broader coverage for at most 540 episodes and 3 LLM calls, without spending on transport controls or a separate reproducibility question. Its weakest point is that one generated structure per task cannot distinguish a general contact-regime mechanism from task-specific or generation-specific difficulty.",
+      "suggested_changes": [
+        "Reuse scripts/compare_generation_modes.py and its task-scan/rollout-search machinery, adding only the proposed contact_regime_scan preset. Initially run peg-insert-side, hammer, and soccer; defer shelf-place, basketball, and the conditional repeat.",
+        "Retain unspent seeds 3540, 3541, and 3544 and the corresponding frozen probe/screen manifests under logs/next_contact_regimes_s3540. Complete all three 30-case expert screens first: 90 episodes and zero LLM calls. If any expert scores below 0.90, stop before generation and mark the mechanism inconclusive pending source-verified expert success on that task.",
+        "After calibration, generate one structure per task, search 24 candidates on five disjoint probe cases, and screen each winner on its 30 cases. Total ceiling: 540 episodes and 3 LLM calls; keep bc_steps=0, the prescribed model settings, and no replacement generations.",
+        "Prediction: metric=screen_success_rate, direction=increase, threshold=0.50, control=peg-insert-side learner success; compare the mean hammer-and-soccer learner success against that control. falsified_by: an unpaired, task-stratified contrast interval upper bound below +0.50 after expert calibration; an interval containing zero is inconclusive about any difference. Interpret this as a fixed-task contrast, not a demonstrated causal contact-regime effect.",
+        "Run through gpu run, preserving the session-level GPU shutdown plan."
+      ],
+      "depends_on": []
+    }
+  ],
+  "order": [
+    "R-031",
+    "R-030"
+  ],
+  "next_step": "Have Claude Code run R-031's 10-handoff demonstration gate before spending any edit-generation calls.",
+  "call_id": "call_00052",
+  "briefing_sha256": "f0463d97383a488c84d71f3ecf43d8f5dbc987774c012f8d82aad94453757824",
+  "question": "Delegated approve/reject (run_as_is = approve, drop = reject, revise = approve after changes, defer = leave proposed). Context: D-024 (breadth = depth = 0.00 on assembly), D-025 (trace edits failed validation on gate_not_a_lever with no correction allowed; summary-only edits valid but 0.00; only 1/5 expert handoffs succeeded). R-031 reruns R-029 with one validity correction and 10 handoff demos. R-030 is the contact-regime scan you deferred. Approve at most two, in order. Manifests in run out-dirs; GPU stays up for the session."
+}
