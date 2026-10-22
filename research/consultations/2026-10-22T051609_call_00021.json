@@ -1,0 +1,54 @@
+{
+  "ideas": [
+    {
+      "id": "R-014",
+      "recommendation": "revise",
+      "reasoning": "The movable-versus-clamped child comparison isolates whether learning the added dimensions improves control, without requiring another LLM intervention. It offers the highest immediate information per episode, but one structure and two fits cannot establish a general mutation rule or justify bank admission.",
+      "suggested_changes": [
+        "Reuse scripts/compare_child_vs_parent.py and config/two_lane_search.yaml, but omit the parent evaluation arm: compare only fully trainable and child-only-parameter-clamped versions with matched shared-parameter initialization, training data, and checkpoint selection.",
+        "Keep seeds 3010-3013 and the six checkpoints, including step zero; select each arm's checkpoint independently on the disjoint probe. The revised simulator budget is at most 440 episodes and 0 LLM calls.",
+        "Build and freeze the 10-case probe and 50-case confirmation manifests in the run's out-dir, recording provenance and disjointness; neither pool needs more than 50 placements. Report placement-paired and fit-seed-paired uncertainty without treating their product as independent replication.",
+        "Retain prediction: paired_success_difference, direction increase, threshold 0.05, against the same frozen child with all child-only parameters clamped at declared initial values. falsified_by: the upper 95% paired interval is below +0.05; an interval spanning zero supplies no evidence of directional improvement.",
+        "Record delegated approval, retain --no-promotion, and remove --stop-gpu-on-exit and shutdown implementation work; leave the GPU box running for the session. Keep the child evaluation-only and never access final-test."
+      ],
+      "depends_on": []
+    },
+    {
+      "id": "R-015",
+      "recommendation": "defer",
+      "reasoning": "The parameterization contract could make seedless structures more amenable to fitting, but the fitted-only comparison measures the contract's total benefit rather than proving that fitting caused it. Its three generation blocks offer limited precision for up to 1320 episodes and 12 LLM calls, so the two zero-LLM mechanism tests should come first.",
+      "suggested_changes": [
+        "Before reconsideration, narrow the hypothesis to: phase-scaled parameters and smooth gates improve seedless structures' success after identical rollout-selected fitting. Do not interpret a prompt-arm difference as evidence that fitting itself helped.",
+        "Retain prediction: paired_success_difference, direction increase, threshold 0.10, against the baseline zero-shot generation prompt under identical rollout-selected fitting. falsified_by: the upper 95% paired interval is below +0.10; an interval spanning zero supplies no evidence of directional improvement.",
+        "Reuse scripts/compare_generation_modes.py and config/two_lane_search.yaml; retain all-slot scoring, step zero, and invalid-slot zeros. Permit the single correction only for interface or validation failures, not behavioral repair, and report generation-block and placement uncertainty separately.",
+        "If subsequently approved, retain seeds 3020-3026, build frozen development-only manifests in the run's out-dir, remove --stop-gpu-on-exit, and keep --no-promotion. Budget at most 1320 simulator episodes and 12 LLM calls using gpt-6.1-sol, reasoning_effort high, temperature 1; spend nothing on this idea yet."
+      ],
+      "depends_on": [
+        "R-014",
+        "R-016"
+      ]
+    },
+    {
+      "id": "R-016",
+      "recommendation": "revise",
+      "reasoning": "Progress-guided proposal updates test whether sequential adaptation finds useful parameter regions more efficiently than independent draws, rather than repeating search-versus-imitation or candidate pooling. This is a distinct zero-LLM experiment, but adaptation on five placements risks probe overfitting and four structure/search-seed cells limit generalization.",
+      "suggested_changes": [
+        "Reuse scripts/benchmark_fitting.py and config/two_lane_search.yaml with seeds 3030-3033, bc_steps 0, and the two frozen structures. Share the original plus seven independent local/global proposals as the first eight candidates in both arms, then keep the control's remaining 16 draws independent while adapting only the treatment's remaining two batches.",
+        "Cache the shared first-batch rollouts within each paired cell. This preserves 24 candidates per arm while reducing the maximum simulator budget from 1360 to 1200 episodes, with 0 LLM calls; invalid candidates still consume candidate slots.",
+        "Predeclare the independent proposal mixture, adaptive update and variance floor, 20% global-mixture rule, signed-progress definition, and deterministic success-then-progress tie-breaking. Use identical finalist selection in both arms and never feed confirmation outcomes back into proposals.",
+        "Retain prediction: paired_success_difference, direction increase, threshold 0.08, against budget-matched independent parameter search on the same two structures. falsified_by: the upper 95% paired interval is below +0.08; an interval spanning zero supplies no evidence of directional improvement, and this pilot cannot establish general lane replacement.",
+        "Build frozen 5-case probe and 50-case confirmation manifests in the run's out-dir and report placement-paired and structure/search-seed-cell uncertainty. Record delegated approval, retain --no-promotion, remove --stop-gpu-on-exit and shutdown work, leave the GPU running, and never access final-test."
+      ],
+      "depends_on": []
+    }
+  ],
+  "order": [
+    "R-014",
+    "R-016",
+    "R-015"
+  ],
+  "next_step": "Have Claude Code implement and run revised R-014 under delegated approval, with frozen out-dir development manifests and a 440-episode ceiling, leaving the GPU box running.",
+  "call_id": "call_00021",
+  "briefing_sha256": "97cb7cea61b06bdcca3c8234a616a13d49d9dcff353b803fc634e926d9a5440e",
+  "question": "The user has delegated approve/reject to you for this session. Map: run_as_is = approve, drop = reject, revise = approve after listed changes, defer = leave proposed. The implementer builds manifests in the run's out-dir (each MT1 pool seed yields at most 50 placements) and keeps the GPU box running until the session ends (the user's instruction overrides 'stop the remote instance'). Judge value per episode and LLM call given D-001..D-010, and order them."
+}

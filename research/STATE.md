@@ -1,23 +1,29 @@
 # Research state
 
-_Generated 2026-10-22T05:12:15 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T05:19:03 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 0 |
-| proposed | 0 |
-| decided | 10 |
+| approved | 1 |
+| proposed | 1 |
+| decided | 11 |
 | rejected | 3 |
 
 ## Needs attention
 
-- Nothing open. Run `python scripts/research.py propose` to ask the advisor for ideas.
+- **R-016** [approved] Adapt parameter proposals using progress before success appears
+  - `python scripts/research.py start R-016` then run its command
+- **R-015** [proposed] Generate fit-ready structures without supplying a parent
+  - USER decides: `python scripts/research.py approve R-015` or `reject R-015 --reason ...`
 
 ## Last 5 decisions
 
+- D-011 · R-014 · **refuted** · 2026-10-22
+  R-014 clamped the geometry child's only added parameter (approach_standoff, fixed at its declared 0.02) and compared it with the fully trainable child under identical fitting (seeds 3010/3011, probe s3012, confirmation s3013). Both reach 1.00 under both seeds: +0.000 [0, 0], 0/0/50. The predicted +0.05 is refuted: the child's advantage over simple_damped_push (D-006) comes from its changed forward geometry with a fixed 0.02 standoff, not from fitting the added dimension.
+  Next: A hand-written simple_damped_push variant with a fixed 0.02 standoff would reproduce the gain without an LLM; R-016 (adaptive search) is next.
 - D-010 · R-009 · **refuted** · 2026-10-22
   R-009 let gpt-6.1-sol narrow at most two parameter ranges (no code change) of two seed-bank parents, given the unedited fit's probe trajectory, and compared against width-matched random ranges and the unedited fit, all fitted identically (fit seeds 2823/2824, probe s2820, confirmation s2822). The LLM made no edit for simple_damped_push and raised the contact_radius floor for shared_gain; LLM minus random +0.000 [+0.000, +0.000], 0/0/50, and both edited arms equal the unedited fit within noise (+0.010 [-0.004, +0.024]). The predicted +0.05 is refuted; the bounds rarely bind under rollout-selected fitting.
   Next: LLM interventions on the fitted seed bank (bounded mutation, repair, scope edits, bounds) are null or negative except one structure; prefer a ruling on admitting gen0_cand5_a0 and changes to the search pipeline itself.
@@ -30,9 +36,6 @@ _Generated 2026-10-22T05:12:15 by `python scripts/research.py state` from `resea
 - D-007 · R-011 · **refuted** · 2026-10-22
   R-011 pooled 15 candidates per structure (original, 3 local and 4 global search draws, 7 imitation checkpoints) under one rollout probe and compared the pick against equal-budget search-only (15 draws) and imitation-only (15 checkpoints) selectors on four frozen weak evolved structures (probe s2912, confirmation s2913). Pooled minus search-only -0.055, 97.5% [-0.110, +0.000]; pooled minus imitation-only +0.000 [-0.033, +0.033]: the predicted +0.05 against both is refuted. Search's lead rests on one lucky global draw on cand2_a1 (0.56) outside the pooled subset; imitation wins cand1_a0; the two additional structures stay near zero under every selector. Parameter optimisation does not rescue weak zero-shot evolved structures at this budget.
   Next: Prefer structural changes known to work (geometry-scope mutation, D-006) over optimiser mixing; test their transfer to other parents (R-012).
-- D-006 · R-010 · **supported** · 2026-10-22
-  R-010 refitted the LLM geometry-scope child gen0_cand5_a0 and its parent simple_damped_push under five fitting seeds (2900-2904; probe s2905) and scored both on 50 fresh cases (s2906). The child reached 1.00 under every seed, the parent 0.88-0.92: child minus parent +0.104, placement-level 95% [+0.023, +0.185], seed-level [+0.083, +0.125], 5/0/0. The advantage does not depend on one fit. Report only: the child passes the unchanged qualification rule (0.00 untrained, 1.00 fitted), but the promotion-set (development 10-39) comparison was not run, so bank admission is not yet justified.
-  Next: Run the development 10-39 comparison (or a qualification run) before admitting gen0_cand5_a0 as a fittable_seed; test geometry-scope transfer to other parents (R-012).
 
 ## Standing constraints
 
@@ -48,7 +51,7 @@ _Generated 2026-10-22T05:12:15 by `python scripts/research.py state` from `resea
 - The final-test split (config/manifests/push-v2_final_test.yaml) is locked until Phase 7, which needs the user's approval and a FreezeRecord. Qwen/E10 is also blocked. _(lares/eval/freeze.py; CLAUDE.md)_
 - Seeds 2400-2424 are held for config/fittable_bank/qualification_v2.yaml (predeclared, not run). New protocols pick seeds from 2600 upward. _(config/experiment_seed_ledger.jsonl; CLAUDE.md)_
 - Every protocol runs on the remote GPU box via `gpu run`, which bills by the hour; the implementer stops it afterwards. Live LLM or GPU spend needs the user's per-idea approval. _(CLAUDE.md, 'Remote GPU server')_
-- Spent seeds: [0, 1, 2, 1000, 1001, 1002, 2000, 2100, 2200, 2201, 2202, 2203, 2204, 2300, 2301, 2302, 2303, 2304, 2400, 2401, 2402, 2403, 2404, 2410, 2411, 2412, 2413, 2414, 2420, 2421, 2422, 2423, 2424, 2500, 2501, 2502, 2610, 2611, 2620, 2621, 2622, 2623, 2624, 2625, 2626, 2627, 2628, 2629, 2700, 2701, 2702, 2703, 2704, 2705, 2710, 2800, 2801, 2802, 2803, 2804, 2805, 2810, 2811, 2812, 2813, 2820, 2822, 2823, 2824, 2825, 2900, 2901, 2902, 2903, 2904, 2905, 2906, 2910, 2911, 2912, 2913, 2920, 2921, 2922, 2923, 2940, 3000, 3001]
+- Spent seeds: [0, 1, 2, 1000, 1001, 1002, 2000, 2100, 2200, 2201, 2202, 2203, 2204, 2300, 2301, 2302, 2303, 2304, 2400, 2401, 2402, 2403, 2404, 2410, 2411, 2412, 2413, 2414, 2420, 2421, 2422, 2423, 2424, 2500, 2501, 2502, 2610, 2611, 2620, 2621, 2622, 2623, 2624, 2625, 2626, 2627, 2628, 2629, 2700, 2701, 2702, 2703, 2704, 2705, 2710, 2800, 2801, 2802, 2803, 2804, 2805, 2810, 2811, 2812, 2813, 2820, 2822, 2823, 2824, 2825, 2900, 2901, 2902, 2903, 2904, 2905, 2906, 2910, 2911, 2912, 2913, 2920, 2921, 2922, 2923, 2940, 3000, 3001, 3010, 3011, 3012, 3013]
 
 ## Pointers
 

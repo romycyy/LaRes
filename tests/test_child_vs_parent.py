@@ -208,3 +208,34 @@ class TestSeeds(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestAddedParameterAblation(unittest.TestCase):
+    def test_child_only_parameters_and_clamping(self):
+        from lares.core.obs_schema import get_obs_schema
+        from lares.fitting.structure_bank import instantiate_source
+
+        schema = get_obs_schema("push-v2")
+        child = os.path.join(_PROJECT_ROOT, "logs", "two_lane_search", "gen_0", "candidates", "gen0_cand5_a0",
+                             "policy_source.py")
+        if not os.path.exists(child):
+            self.skipTest("the two-lane run is not on this machine")
+        with open(child) as f:
+            c = instantiate_source(f.read(), 39, 4, schema)
+        with open(os.path.join(_PROJECT_ROOT, PARENTS["simple_damped_push"])) as f:
+            p = instantiate_source(f.read(), 39, 4, schema)
+        self.assertEqual(cvp.child_only_parameters(c, p), ["approach_standoff"])
+        cvp.with_ranges(c, {"approach_standoff": (0.02, 0.02)})
+        import torch
+
+        with torch.no_grad():
+            c.approach_standoff.add_(0.01)
+        c.clip_params()
+        self.assertAlmostEqual(float(c.approach_standoff), 0.02, places=6)
+
+    def test_ablation_analysis_pairs_by_seed_and_placement(self):
+        trainable = {1: {"a": 1.0, "b": 1.0}, 2: {"a": 1.0, "b": 0.0}}
+        clamped = {1: {"a": 0.0, "b": 1.0}, 2: {"a": 1.0, "b": 0.0}}
+        out = cvp.ablation_analysis(trainable, clamped)
+        self.assertAlmostEqual(out["paired_success_difference"], 0.25)
+        self.assertEqual(out["seed_level"]["by_seed"], {1: 0.5, 2: 0.0})

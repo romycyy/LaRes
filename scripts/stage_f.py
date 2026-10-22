@@ -1403,12 +1403,7 @@ def random_matched_bounds(edits: dict, initial: dict, ranges: dict, rng) -> dict
     return out
 
 
-def with_ranges(policy, overrides: dict):
-    """Install narrowed ranges on one instance: ``clip_params`` and every reader see them; code is untouched."""
-    base = dict(policy.get_param_ranges())
-    base.update({k: (float(lo), float(hi)) for k, (lo, hi) in overrides.items()})
-    policy.get_param_ranges = lambda _ranges=base: dict(_ranges)
-    return policy
+from compare_child_vs_parent import with_ranges  # noqa: E402  (one copy, shared with R-014's clamp)
 
 
 def bounds_summary(cells) -> dict:

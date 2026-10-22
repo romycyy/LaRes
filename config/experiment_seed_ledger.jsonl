@@ -98,3 +98,7 @@
 {"seed": 2820, "namespace": "mt1_pool", "use": "R-009: 10-case checkpoint probe", "artifact": "logs/research/bounds_only_s2820", "recorded_at": "2026-10-22T05:05:03", "backfilled": false}
 {"seed": 2822, "namespace": "mt1_pool", "use": "R-009: 50-case confirmation manifest", "artifact": "logs/research/bounds_only_s2820", "recorded_at": "2026-10-22T05:05:03", "backfilled": false}
 {"seed": 2825, "namespace": "fitting", "use": "R-009: random-bound placement seed", "artifact": "logs/research/bounds_only_s2820", "recorded_at": "2026-10-22T05:05:03", "backfilled": false}
+{"seed": 3010, "namespace": "fitting", "use": "R-014 added-parameter ablation: fit seed", "artifact": "logs/research/added_parameter_ablation_s3010", "recorded_at": "2026-10-22T05:17:20", "backfilled": false}
+{"seed": 3011, "namespace": "fitting", "use": "R-014 added-parameter ablation: fit seed", "artifact": "logs/research/added_parameter_ablation_s3010", "recorded_at": "2026-10-22T05:17:20", "backfilled": false}
+{"seed": 3012, "namespace": "mt1_pool", "use": "R-014: 10-case checkpoint probe", "artifact": "logs/research/added_parameter_ablation_s3010", "recorded_at": "2026-10-22T05:17:20", "backfilled": false}
+{"seed": 3013, "namespace": "mt1_pool", "use": "R-014: 50-case confirmation manifest", "artifact": "logs/research/added_parameter_ablation_s3010", "recorded_at": "2026-10-22T05:17:20", "backfilled": false}

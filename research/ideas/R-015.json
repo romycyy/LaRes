@@ -1,0 +1,62 @@
+{
+  "id": "R-015",
+  "title": "Generate fit-ready structures without supplying a parent",
+  "hypothesis": "A phase-scaled, smooth-gating parameterization contract makes seedless generation produce structures that rollout-selected fitting can improve.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "baseline zero-shot generation prompt, given identical rollout-selected fitting",
+    "rationale": "Compare confirmation success after identical treatment, not imitation loss or raw behavior; ten percentage points would warrant changing the exploration prompt."
+  },
+  "protocol": {
+    "script": "scripts/compare_generation_modes.py",
+    "config": "config/two_lane_search.yaml",
+    "command": "gpu run -- python scripts/compare_generation_modes.py --config config/two_lane_search.yaml --research-mode seedless-fittability-contract --generation-seeds 3020 3021 3022 --fit-seeds 3023 3024 --probe-seed 3025 --probe-cases 10 --confirmation-seed 3026 --confirmation-cases 50 --checkpoints 0 125 250 500 750 1000 --model gpt-6.1-sol --reasoning-effort high --temperature 1 --max-corrections-per-slot 1 --no-promotion --require-approval --stop-gpu-on-exit",
+    "seeds": [
+      3020,
+      3021,
+      3022,
+      3023,
+      3024,
+      3025,
+      3026
+    ],
+    "manifests": [
+      "config/manifests/push-v2_development_probe_s3025.yaml",
+      "config/manifests/push-v2_development_confirmation_s3026.yaml"
+    ],
+    "episodes": 1320,
+    "llm_calls": 12,
+    "code_changes": [
+      "scripts/compare_generation_modes.py: add the declared research-mode flags, approval gate, and remote shutdown handling.",
+      "scripts/compare_generation_modes.py: create three blocked prompt pairs; treatment requires bounded trainable geometry, phase-scaled parameters, and smooth transitions, without parent code, bank retrieval, or additional feedback.",
+      "scripts/compare_generation_modes.py: apply identical rollout-selected fitting to both prompts, including step zero; score every slot on confirmation rather than reporting only the winner.",
+      "scripts/compare_generation_modes.py: generate disjoint development-only manifests and report paired intervals clustered by generation block and placement."
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "proposed",
+  "source": "advisor",
+  "falsified_by": "The upper 95% paired interval is below +0.10; an interval containing zero leaves a directional improvement inconclusive. Invalid generation slots count as zero, not replacement opportunities.",
+  "cost_estimate": {
+    "episodes": 1320,
+    "llm_calls": 12,
+    "wall_time_minutes": 180
+  },
+  "open_question_refs": [
+    -1,
+    1
+  ],
+  "briefing_sha256": "04f6fbc36feb356de5411c48a44dc190ee4235866976fc366e1d8bc09ad21cb0",
+  "proposal_call_id": "call_00020",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [],
+  "created_at": "2026-10-22T05:14:40"
+}

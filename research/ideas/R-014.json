@@ -1,0 +1,180 @@
+{
+  "id": "R-014",
+  "title": "Ablate the geometry child's added trainable dimensions",
+  "hypothesis": "The geometry child's advantage depends on fitting its added parameters, rather than only on its changed forward geometry.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "gen0_cand5_a0 with all child-only parameters clamped at declared initial values",
+    "rationale": "Holding child code fixed isolates trainable expressivity; five percentage points would justify allowing parameter additions, unlike the code-only intervention in D-008."
+  },
+  "protocol": {
+    "script": "scripts/compare_child_vs_parent.py",
+    "config": "",
+    "command": "python scripts/compare_child_vs_parent.py --run logs/two_lane_search --research-protocol added-parameter-ablation --child gen0_cand5_a0 --fit-seeds 3010 3011 --probe-seed 3012 --heldout-seed 3013 --out-dir logs/research/added_parameter_ablation_s3010",
+    "seeds": [
+      3010,
+      3011,
+      3012,
+      3013
+    ],
+    "manifests": [
+      "config/manifests/push-v2_train.yaml",
+      "config/manifests/push-v2_development.yaml"
+    ],
+    "episodes": 440,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/compare_child_vs_parent.py (--research-protocol added-parameter-ablation: trainable child vs child with child-only parameters clamped at their initial values, checkpoints 0/125/250/500/750/1000, no parent arm)",
+      "tests/test_child_vs_parent.py"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "decided",
+  "source": "advisor",
+  "falsified_by": "The upper 95% paired interval is below +0.05; an interval containing zero is inconclusive about directional benefit, not evidence of improvement.",
+  "cost_estimate": {
+    "episodes": 660,
+    "llm_calls": 0,
+    "wall_time_minutes": 90
+  },
+  "open_question_refs": [
+    -2,
+    -1,
+    0
+  ],
+  "briefing_sha256": "04f6fbc36feb356de5411c48a44dc190ee4235866976fc366e1d8bc09ad21cb0",
+  "proposal_call_id": "call_00020",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T05:16:30",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00021, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T051609_call_00021.json"
+  },
+  "run": {
+    "started_at": "2026-10-22T05:17:19",
+    "git_sha": "99be396f59b6fe1b5f01929604f2e89428c34736",
+    "dirty_worktree": true,
+    "log_dir": "logs/research/added_parameter_ablation_s3010",
+    "finished_at": "2026-10-22T05:18:35"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.0,
+      "placement_t95": [
+        0.0,
+        0.0
+      ],
+      "wlt": [
+        0,
+        0,
+        50
+      ],
+      "seed_level": {
+        "3010": 0.0,
+        "3011": 0.0
+      },
+      "success_by_seed": {
+        "trainable": {
+          "3010": 1.0,
+          "3011": 1.0
+        },
+        "clamped": {
+          "3010": 1.0,
+          "3011": 1.0
+        }
+      },
+      "selected_steps": {
+        "trainable_fit3010": 1000,
+        "trainable_fit3011": 1000,
+        "clamped_fit3010": 1000,
+        "clamped_fit3011": 1000
+      },
+      "resources": {
+        "probe_episodes": 240,
+        "confirmation_episodes": 200
+      }
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "control is the same child with its child-only parameter (approach_standoff) clamped at its initial value 0.02; the metric is already trainable minus clamped"
+    },
+    "artifacts": [
+      "logs/research/added_parameter_ablation_s3010/summary.json",
+      "logs/research/added_parameter_ablation_s3010/run.json",
+      "logs/research/added_parameter_ablation_s3010/policies",
+      "logs/research/added_parameter_ablation_s3010/states"
+    ],
+    "notes": "gen0_cand5_a0 adds one parameter to simple_damped_push, approach_standoff (initial 0.02, range [0, 0.045]). Clamped by a zero-width range so fitting cannot move it; everything else identical (fit seeds 3010/3011, checkpoints 0/125/250/500/750/1000 on probe s3012, confirmation s3013). Both arms reach 1.00 under both seeds and both select step 1000: trainable minus clamped +0.000 [0.0, 0.0], 0/0/50. The advantage over the parent (D-006) therefore comes from the child's forward geometry with the standoff fixed at 0.02, not from fitting the added dimension. Implication for D-008: the code-only restriction was not what made those geometry edits fail; their content was. 440 episodes (240 probe + 200 confirmation), 0 LLM calls."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 0.0,
+    "delta": 0.0,
+    "matched": false
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.85,
+      "reasoning": "Trainable minus clamped-standoff child is +0.000 [0, 0], 0/0/50; both arms score 1.00 under both fit seeds. The upper bound is below the predicted +0.05, refuting the claim that the advantage depends on fitting the added parameter. The child's win over its parent comes from its changed forward geometry with approach_standoff fixed at its declared 0.02.",
+      "cited_artifacts": [
+        "logs/research/added_parameter_ablation_s3010/summary.json"
+      ],
+      "next_experiment": "Treat the geometry child's gain as a fixed-geometry design fact; a hand-written variant of simple_damped_push with a fixed 0.02 standoff would reproduce it without an LLM. R-016 (adaptive search) is approved and next.",
+      "recorded_at": "2026-10-22T05:18:36",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "The named control was measured: trainable and clamped versions both achieved 1.00 success under both fitting seeds [logs/research/added_parameter_ablation_s3010/summary.json]. The paired_success_difference was 0.000 with a 95% interval of [0.000, 0.000], placing its upper bound below the predicted +0.05 threshold [logs/research/added_parameter_ablation_s3010/summary.json]. This meets the declared refutation criterion; tied success provides no evidence of improvement [logs/research/added_parameter_ablation_s3010/summary.json]. The result does not establish why earlier geometry edits failed, because this experiment compared only the trainable and clamped versions of this child [logs/research/added_parameter_ablation_s3010/run.json].",
+      "cited_artifacts": [
+        "logs/research/added_parameter_ablation_s3010/summary.json",
+        "logs/research/added_parameter_ablation_s3010/run.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T05:18:56",
+      "call_id": "call_00022"
+    }
+  ],
+  "decision_id": "D-011",
+  "history": [
+    {
+      "at": "2026-10-22T05:16:30",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00021: no parent arm; two arms x two fit seeds; at most 440 episodes; manifests in the out dir; GPU left running per the user"
+    },
+    {
+      "at": "2026-10-22T05:16:30",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00021, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T05:17:19",
+      "from": "approved",
+      "to": "running",
+      "note": "git 99be396f59 (dirty)"
+    },
+    {
+      "at": "2026-10-22T05:18:35",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=False"
+    },
+    {
+      "at": "2026-10-22T05:19:03",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-011: refuted"
+    }
+  ],
+  "created_at": "2026-10-22T05:14:40"
+}

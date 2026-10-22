@@ -419,6 +419,17 @@ def nested_screen_analysis(child_screen, parent_screen, child_conf, parent_conf,
     }
 
 
+def with_ranges(policy, overrides: dict):
+    """Install changed ranges on one instance: ``clip_params`` and every reader see them; code is untouched.
+
+    A zero-width range ``(v, v)`` clamps a parameter at ``v`` for the whole fit.
+    """
+    base = dict(policy.get_param_ranges())
+    base.update({k: (float(lo), float(hi)) for k, (lo, hi) in overrides.items()})
+    policy.get_param_ranges = lambda _ranges=base: dict(_ranges)
+    return policy
+
+
 def nested_job(job) -> dict:
     """Refit one controller on the shared demonstrations, select on the fresh probe, and score it on every manifest
     in ``job["evaluate"]`` (name -> path). With ``fit: False`` the controller is scored at its declared values."""
@@ -438,6 +449,9 @@ def nested_job(job) -> dict:
     with open(job["source_path"], encoding="utf-8") as f:
         policy = instantiate_source(f.read(), 39, 4, get_obs_schema(job["env_name"]))
     policy.fixed_action_scale = float(fit_cfg["fixed_action_scale"])
+    if job.get("clamp"):
+        values = {n: float(p.detach().reshape(-1)[0]) for n, p in policy.named_parameters()}
+        with_ranges(policy, {n: (values[n], values[n]) for n in job["clamp"]})
     if job.get("check_state"):
         if state_parameters_sha256(torch.load(job["check_state"], weights_only=True)) != \
                 state_parameters_sha256(policy.state_dict()):
@@ -497,7 +511,7 @@ def _refit(job, policy, counters) -> dict:
         policy, data, fit_cfg["objective"], budget=int(fit_cfg["budget_gradient_steps"]),
         batch_size=min(int(fit_cfg["batch_size"]), int(data.train_obs.shape[0])), lr=float(fit_cfg["lr"]),
         clip_grad_norm=float(fit_cfg["clip_grad_norm"]), seed=int(job["fit_seed"]), sampling=fit_cfg["sampling"],
-        rollout_probe=score, checkpoint_steps=[int(s) for s in fit_cfg["checkpoint_steps"]],
+        rollout_probe=score, checkpoint_steps=[int(s) for s in job.get("checkpoint_steps") or fit_cfg["checkpoint_steps"]],
         structure_id=job["policy_id"],
     )
     policy.load_state_dict(fit.selected_state)
@@ -769,13 +783,106 @@ def run_promotion_check(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  R-014: do the geometry child's added parameters need to be fitted?
+# ---------------------------------------------------------------------------
+
+ABLATION_CHECKPOINTS = (0, 125, 250, 500, 750, 1000)
+
+
+def child_only_parameters(child_policy, parent_policy) -> list:
+    from lares.search.lanes import scale_parameter_names
+
+    parent = {n for n, _ in parent_policy.named_parameters()}
+    scale = set(scale_parameter_names(child_policy))
+    return sorted(n for n, _ in child_policy.named_parameters() if n not in parent and n not in scale)
+
+
+def ablation_analysis(trainable, clamped) -> dict:
+    """``{fit seed: {case: success}}`` per arm. Placement level (mean over seeds) and seed level, both t intervals."""
+    seeds = sorted(trainable)
+    if sorted(clamped) != seeds:
+        raise ValueError("both arms must be fitted under the same seeds")
+    cases = sorted(trainable[seeds[0]])
+    per_case = [float(np.mean([trainable[k][c] - clamped[k][c] for k in seeds])) for c in cases]
+    rate = lambda d: float(np.mean(list(d.values())))  # noqa: E731
+    per_seed = {int(k): rate(trainable[k]) - rate(clamped[k]) for k in seeds}
+    return {"paired_success_difference": float(np.mean(per_case)),
+            "placement_level": {"n": len(cases), **t_interval(per_case), **win_loss_tie(per_case)},
+            "seed_level": {"by_seed": per_seed, **t_interval(list(per_seed.values()))},
+            "success_by_seed": {"trainable": {int(k): rate(trainable[k]) for k in seeds},
+                                "clamped": {int(k): rate(clamped[k]) for k in seeds}}}
+
+
+def run_added_parameter_ablation(args) -> int:
+    import multiprocessing as mp
+
+    from lares.core.obs_schema import get_obs_schema
+    from lares.fitting.structure_bank import instantiate_source
+
+    pairs = {q["child_id"]: q for q in discover_pairs(args.run)}
+    pair, fitting = pairs[args.child], common_fitting(list(pairs.values()))
+    schema = get_obs_schema(args.env_name)
+    with open(pair["child_source_path"], encoding="utf-8") as f:
+        child = instantiate_source(f.read(), 39, 4, schema)
+    with open(pair["parent_source_path"], encoding="utf-8") as f:
+        parent = instantiate_source(f.read(), 39, 4, schema)
+    added = child_only_parameters(child, parent)
+    if not added:
+        raise SystemExit(f"{args.child} adds no parameter to {pair['parent_id']}; nothing to clamp")
+    os.makedirs(args.out_dir, exist_ok=True)
+    status = ensure_entries_reserved(
+        [(k, "fitting", "R-014 added-parameter ablation: fit seed") for k in args.fit_seeds]
+        + [(args.probe_seed, "mt1_pool", "R-014: 10-case checkpoint probe")]
+        + [(x, "mt1_pool", "R-014: 50-case confirmation manifest") for x in args.heldout_seed], args.out_dir)
+    print(f"  {pair['child_id']}: clamping {added}; seeds: {status}")
+    if args.reserve_only:
+        return 0
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    probe, probe_path = fresh_manifest(args.env_name, args.probe_seed, 10, args.horizon, args.out_dir, role="probe")
+    conf, conf_path = fresh_manifest(args.env_name, args.heldout_seed, 50 * len(args.heldout_seed), args.horizon,
+                                     args.out_dir, role="confirmation", also_disjoint_from=[probe])
+    common = {"env_name": args.env_name, "horizon": args.horizon, "fitting": fitting, "role": "child",
+              "policy_id": pair["child_id"], "source_path": pair["child_source_path"],
+              "check_state": pair["child_initial_state"], "checkpoint_steps": list(ABLATION_CHECKPOINTS),
+              "out_dir": os.path.abspath(args.out_dir), "demo_buffer": os.path.join(_PROJECT_ROOT, args.demo_buffer),
+              "probe_manifest": os.path.abspath(probe_path), "evaluate": {"confirmation": os.path.abspath(conf_path)}}
+    jobs = [{**common, "fit_seed": k, "label": f"trainable_fit{k}"} for k in args.fit_seeds]
+    jobs += [{**common, "fit_seed": k, "clamp": added, "label": f"clamped_fit{k}"} for k in args.fit_seeds]
+    with open(os.path.join(args.out_dir, "run.json"), "w", encoding="utf-8") as f:
+        json.dump({"started_at": now(), "argv": sys.argv, "child": pair["child_id"], "clamped": added,
+                   "checkpoints": ABLATION_CHECKPOINTS, "fitting": fitting,
+                   "manifests": {"probe": probe.manifest_id, "confirmation": conf.manifest_id}}, f, indent=2, default=str)
+    with mp.get_context("spawn").Pool(processes=len(jobs)) as pool:
+        results = pool.map(nested_job, jobs)
+    conf_of = lambda r: {c: v[0] for c, v in r["confirmation"]["per_case"].items()}  # noqa: E731
+    arms = {"trainable": {}, "clamped": {}}
+    for job, r in zip(jobs, results):
+        arms["clamped" if job.get("clamp") else "trainable"][job["fit_seed"]] = conf_of(r)
+    summary = ablation_analysis(arms["trainable"], arms["clamped"])
+    summary.update(child=pair["child_id"], clamped=added,
+                   selected_steps={j["label"]: r["selected_step"] for j, r in zip(jobs, results)},
+                   resources={k: int(sum(r["resources"].get(k, 0) for r in results))
+                              for k in ("probe_episodes", "confirmation_episodes")})
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2, default=str)
+    pl, sl = summary["placement_level"], summary["seed_level"]
+    print(f"  success {summary['success_by_seed']}; steps {summary['selected_steps']}")
+    print(f"  trainable - clamped: placement {pl['mean']:+.3f} [{pl['low']}, {pl['high']}] w/l/t "
+          f"{pl['wins']}/{pl['losses']}/{pl['ties']}; seed {sl['by_seed']}; resources {summary['resources']}")
+    return 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--run", required=True, help="two-lane run directory")
     p.add_argument("--baseline", default="", help="zero-shot baseline run directory (R-001 secondary)")
     p.add_argument("--pool-seed", type=int, help="fresh evaluation pool (R-005 mode)")
     p.add_argument("--fit-seed", type=int)
-    p.add_argument("--research-protocol", choices=["nested-screen", "seed-robustness", "promotion-check"], default="")
+    p.add_argument("--research-protocol", choices=["nested-screen", "seed-robustness", "promotion-check",
+                                                   "added-parameter-ablation"], default="")
     p.add_argument("--from-run", default="", help="promotion-check: the run whose fit records name the pair")
     p.add_argument("--eval-seed", type=int)
     p.add_argument("--fit-seeds", type=int, nargs="+", help="seed-robustness: fitting seeds")
@@ -799,6 +906,10 @@ def main(argv=None) -> int:
         if missing:
             raise SystemExit(f"nested-screen needs --{', --'.join(m.replace('_', '-') for m in missing)}")
         return run_nested_screen(args)
+    if args.research_protocol == "added-parameter-ablation":
+        if not (args.child and args.fit_seeds and args.probe_seed is not None and args.heldout_seed):
+            raise SystemExit("added-parameter-ablation needs --child, --fit-seeds, --probe-seed and --heldout-seed")
+        return run_added_parameter_ablation(args)
     if args.research_protocol == "promotion-check":
         if not (args.child and args.fit_seed is not None and args.from_run and args.eval_seed is not None):
             raise SystemExit("promotion-check needs --child, --fit-seed, --from-run and --eval-seed")

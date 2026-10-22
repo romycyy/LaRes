@@ -1,0 +1,77 @@
+{
+  "id": "R-016",
+  "title": "Adapt parameter proposals using progress before success appears",
+  "hypothesis": "Sequential parameter proposals guided by task progress can exploit weak structures more efficiently than independent local and global draws.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.08,
+    "against": "budget-matched independent parameter search on baseline61_gen0_cand1_a0 and baseline61_gen0_cand2_a1",
+    "rationale": "This tests adaptive proposal generation, not the search-versus-imitation comparison of D-005 or candidate pooling of D-007; eight points would justify a larger exploration-lane replacement pilot."
+  },
+  "protocol": {
+    "script": "scripts/benchmark_fitting.py",
+    "config": "config/two_lane_search.yaml",
+    "command": "gpu run -- python scripts/benchmark_fitting.py --config config/two_lane_search.yaml --research-mode adaptive-progress-search --structures baseline61_gen0_cand1_a0 baseline61_gen0_cand2_a1 --search-seeds 3030 3031 --probe-seed 3032 --probe-cases 5 --confirmation-seed 3033 --confirmation-cases 50 --candidates-per-arm 24 --adaptive-batches 8 8 8 --bc-steps 0 --no-promotion --require-approval --stop-gpu-on-exit",
+    "seeds": [
+      3030,
+      3031,
+      3032,
+      3033
+    ],
+    "manifests": [
+      "config/manifests/push-v2_development_probe_s3032.yaml",
+      "config/manifests/push-v2_development_confirmation_s3033.yaml"
+    ],
+    "episodes": 1200,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/benchmark_fitting.py: add the declared research-mode flags, approval gate, and remote shutdown handling; load frozen structures and parameter ranges rather than regenerate them.",
+      "scripts/benchmark_fitting.py: compare original plus 23 independent draws against 24 sequential candidates including the original; adaptive batches update a diagonal proposal from the top quarter ranked by success, then signed goal progress, retaining 20% global exploration.",
+      "scripts/benchmark_fitting.py: use identical success-then-progress finalist selection in both arms, count invalid candidates against budget, and keep imitation disabled.",
+      "scripts/benchmark_fitting.py: generate disjoint development-only manifests and report paired confirmation intervals by placement and structure-search-seed cell."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "The upper 95% paired interval is below +0.08; an interval containing zero is inconclusive about improvement. A positive estimate on these two structures alone does not establish general lane replacement.",
+  "cost_estimate": {
+    "episodes": 1360,
+    "llm_calls": 0,
+    "wall_time_minutes": 150
+  },
+  "open_question_refs": [
+    0,
+    4
+  ],
+  "briefing_sha256": "04f6fbc36feb356de5411c48a44dc190ee4235866976fc366e1d8bc09ad21cb0",
+  "proposal_call_id": "call_00020",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T05:16:30",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00021, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
+    "consultation": "research/consultations/2026-10-22T051609_call_00021.json"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-22T05:16:30",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00021: shared first batch of 8 (original + 7 independent draws) cached; control's remaining 16 independent; treatment adapts two batches of 8; predeclared update rule; 1200 episodes max"
+    },
+    {
+      "at": "2026-10-22T05:16:30",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00021, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    }
+  ],
+  "created_at": "2026-10-22T05:14:40"
+}
