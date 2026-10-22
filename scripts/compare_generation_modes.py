@@ -837,6 +837,150 @@ def run_assembly_handoff(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  R-026: rollout-selected imitation of the assembly expert vs matched numerical proposals, on the D-020 structures
+# ---------------------------------------------------------------------------
+
+FIT_CHECKPOINTS_026 = (0, 100, 300, 600, 1000)
+NUMERICAL_CANDIDATES_026 = 5
+
+
+def collect_demos(task, manifest, env, schema):
+    """Expert rollouts on ``manifest``: a DemoBuffer with one episode id per case, and each episode's success."""
+    from lares.core.training_pipeline import DemoBuffer
+    from lares.eval import ExpertActor
+    from lares.eval.runner import run_episode
+
+    buffer, successes, expert = DemoBuffer(), {}, ExpertActor(task)
+    for case in manifest.episodes:
+        steps = []
+        ep = run_episode(expert, env, case, max_steps=150, schema=schema,
+                         observer=lambda st: steps.append(st) if st.get("action") is not None else None)
+        for st in steps:
+            buffer.add(np.asarray(st["obs"]), np.asarray(st["action"]), 0.0, np.asarray(st["obs"]), False,
+                       episode_id=case.case_id)
+        successes[case.case_id] = float(ep.success)
+    return buffer, successes
+
+
+def fitting_preserves_semantics(policy, data) -> dict:
+    """The fitter runs the policy's own code; check that its gradient reaches at least one non-scale parameter."""
+    import torch
+
+    from lares.search.lanes import scale_parameter_names
+
+    scale = set(scale_parameter_names(policy))
+    policy.zero_grad()
+    mean, _ = policy(data.train_obs[:256])
+    torch.nn.functional.mse_loss(torch.tanh(mean), data.train_actions[:256]).backward()
+    moving = sorted(n for n, p in policy.named_parameters()
+                    if n not in scale and p.grad is not None and float(p.grad.abs().sum()) > 0)
+    policy.zero_grad()
+    return {"ok": bool(moving), "parameters_with_gradient": moving, "scale_parameters_frozen": sorted(scale)}
+
+
+def run_assembly_fit_vs_numerical(args) -> int:
+    import copy
+
+    sys.path.insert(0, _SCRIPT_DIR)
+    import compare_child_vs_parent as cvp
+    from lares.core.obs_schema import get_obs_schema
+    from lares.eval import make_manifest_env
+    from lares.eval.runner import PolicyActor, evaluate_manifest
+    from lares.eval.stats import t_interval, win_loss_tie
+    from lares.fitting.objectives import DETERMINISTIC_MSE
+    from lares.fitting.optimizers import fit_policy_with_objective, prepare_data, state_parameters_sha256
+    from lares.search import rollout_search
+
+    os.makedirs(args.out_dir, exist_ok=True)
+    print(f"  seeds: {cvp.ensure_entries_reserved([(args.pool_seed, 'mt1_pool', 'R-026: 50-case development manifest'), (args.pool_seed, 'fitting', 'R-026: fit and numerical-search seed')], args.out_dir)}")
+    if args.reserve_only:
+        return 0
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    task, schema = "assembly-v2", get_obs_schema("assembly-v2")
+    full, _ = cvp.fresh_manifest(task, args.pool_seed, 50, 150, os.path.join(args.out_dir, "manifests"), role="fit")
+    probe, screen, demo_cases = full.slice(0, 5), full.slice(10, 40), full.slice(40, 50)
+    env = make_manifest_env(full, full.resolve_pool(), 200)
+    buffer, demo_success = collect_demos(task, demo_cases, env, schema)
+    audit = {"demo_successes": int(sum(demo_success.values())), "demos": len(demo_success)}
+    print(f"  demonstration audit: {audit}", flush=True)
+    result = {"audit": audit, "manifest_id": full.manifest_id}
+    if audit["demo_successes"] < 9:
+        result["outcome"] = "inconclusive: fewer than 9 of 10 expert demonstrations succeeded"
+        with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+            json.dump(result, f, indent=2)
+        print(f"  {result['outcome']}")
+        return 0
+    data = prepare_data(buffer, val_fraction=0.2, split_seed=int(args.pool_seed))
+    episodes = {"demo": len(demo_cases), "probe": 0, "screen": 0}
+
+    def probe_score(pol):
+        r = evaluate_manifest(PolicyActor(pol, name="probe"), probe, env, max_steps=150)
+        episodes["probe"] += len(r.episodes)
+        progress = [e.signed_goal_progress for e in r.episodes if e.signed_goal_progress is not None]
+        from lares.fitting.checkpoints import RolloutScore
+
+        return RolloutScore(r.success_rate, float(np.mean(progress)) if progress else 0.0)
+
+    per_structure = {}
+    for label in D020_POLICIES:
+        start, meta = frozen_d020_policy(label)
+        check = fitting_preserves_semantics(copy.deepcopy(start), data)
+        if not check["ok"]:
+            per_structure[label] = {"meta": meta, "feasibility": check, "skipped": "no gradient reaches the policy"}
+            continue
+        fitted_trace, snapshots = [], {}
+        steps = iter(FIT_CHECKPOINTS_026)
+
+        def fit_probe(pol):
+            step = next(steps)
+            snapshots[step] = copy.deepcopy(pol.state_dict())
+            sc = probe_score(pol)
+            fitted_trace.append({"step": step, **sc.to_dict()})
+            return sc
+
+        fitted = copy.deepcopy(start)
+        fit = fit_policy_with_objective(fitted, data, DETERMINISTIC_MSE, budget=FIT_CHECKPOINTS_026[-1],
+                                        seed=int(args.pool_seed), rollout_probe=fit_probe,
+                                        checkpoint_steps=FIT_CHECKPOINTS_026, structure_id=label)
+        fitted.load_state_dict(fit.selected_state)
+        numerical = rollout_search.independent_candidates(start, int(args.pool_seed))[:NUMERICAL_CANDIDATES_026]
+        num_trace = []
+        for i, (kind, pol) in enumerate(numerical):
+            sc = probe_score(pol)
+            num_trace.append({"index": i, "kind": kind, **sc.to_dict()})
+        num_pick = min(range(len(num_trace)), key=lambda i: (-num_trace[i]["success"], -num_trace[i]["progress"], i))
+        outcomes = {}
+        for arm, pol in (("fitted", fitted), ("numerical", numerical[num_pick][1])):
+            r = evaluate_manifest(PolicyActor(pol, name=arm), screen, env, max_steps=150)
+            episodes["screen"] += len(r.episodes)
+            outcomes[arm] = {e.case_id: float(e.success) for e in r.episodes}
+        diffs = [outcomes["fitted"][c] - outcomes["numerical"][c] for c in sorted(outcomes["fitted"])]
+        per_structure[label] = {"meta": meta, "feasibility": check, "fitted_selected_step": int(fit.selected_step),
+                                "fitted_trace": fitted_trace, "numerical_trace": num_trace, "numerical_pick": num_pick,
+                                "fitted_parameters_sha256": state_parameters_sha256(fitted.state_dict()),
+                                "success": {k: float(np.mean(list(v.values()))) for k, v in outcomes.items()},
+                                "paired": {**t_interval(diffs), **win_loss_tie(diffs)}, "outcomes": outcomes}
+        print(f"  {label}: fitted step {fit.selected_step} -> {per_structure[label]['success']['fitted']:.2f}; numerical "
+              f"#{num_pick} -> {per_structure[label]['success']['numerical']:.2f}", flush=True)
+    done = [l for l in per_structure if "outcomes" in per_structure[l]]
+    if done:
+        cases = sorted(per_structure[done[0]]["outcomes"]["fitted"])
+        avg = [float(np.mean([per_structure[l]["outcomes"]["fitted"][c] - per_structure[l]["outcomes"]["numerical"][c]
+                              for l in done])) for c in cases]
+        result["fixed_structure_average"] = {"structures": done, **t_interval(avg), **win_loss_tie(avg)}
+        result["paired_success_difference"] = result["fixed_structure_average"]["mean"]
+    result.update(per_structure=per_structure, episodes=episodes)
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=2, default=str)
+    if done:
+        a = result["fixed_structure_average"]
+        print(f"  fitted - numerical (fixed two-structure average): {a['mean']:+.3f} [{a['low']}, {a['high']}]; episodes {episodes}")
+    return 0
+
+
 def run_task_scan(args) -> int:
     import multiprocessing as mp
 
@@ -935,7 +1079,7 @@ def parse_args():
     )
     p.add_argument("--research-mode", choices=sorted(RESEARCH_ARMS) + ["pick-place-suite", "task-scan"], default="")
     p.add_argument("--scan-set", choices=["default", "hard"], default="default")
-    p.add_argument("--assembly-study", choices=["reciprocal-handoff"], default="")
+    p.add_argument("--assembly-study", choices=["reciprocal-handoff", "expert-fit-vs-numerical"], default="")
     p.add_argument("--pool-seed", type=int)
     p.add_argument("--generation-seeds", type=int, nargs="+", default=[])
     p.add_argument("--search-seeds", type=int, nargs="+", default=[])
@@ -953,6 +1097,8 @@ def main():
     args = parse_args()
     if args.assembly_study == "reciprocal-handoff":
         return run_assembly_handoff(args)
+    if args.assembly_study == "expert-fit-vs-numerical":
+        return run_assembly_fit_vs_numerical(args)
     if args.research_mode == "task-scan":
         return run_hard_scan(args) if args.scan_set == "hard" else run_task_scan(args)
     if args.research_mode == "pick-place-suite":

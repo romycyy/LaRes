@@ -190,3 +190,5 @@
 {"seed": 3320, "namespace": "generation_block", "use": "R-024 repeat: generation and search seed", "artifact": "logs/research/hard_task_scan_s3300", "recorded_at": "2026-10-22T08:15:49", "backfilled": false}
 {"seed": 3321, "namespace": "mt1_pool", "use": "R-024 repeat: probe and confirmation pool", "artifact": "logs/research/hard_task_scan_s3300", "recorded_at": "2026-10-22T08:15:49", "backfilled": false}
 {"seed": 3400, "namespace": "mt1_pool", "use": "R-025 assembly handoff: development manifest", "artifact": "logs/assembly_handoff_s3400", "recorded_at": "2026-10-22T08:29:59", "backfilled": false}
+{"seed": 3410, "namespace": "mt1_pool", "use": "R-026: 50-case development manifest", "artifact": "logs/assembly_fitting_s3410", "recorded_at": "2026-10-22T08:33:08", "backfilled": false}
+{"seed": 3410, "namespace": "fitting", "use": "R-026: fit and numerical-search seed", "artifact": "logs/assembly_fitting_s3410", "recorded_at": "2026-10-22T08:33:08", "backfilled": false}

@@ -1,21 +1,21 @@
 # Research state
 
-_Generated 2026-10-22T08:32:09 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T08:33:07 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 0 |
-| approved | 1 |
+| running | 1 |
+| approved | 0 |
 | proposed | 1 |
 | decided | 21 |
 | rejected | 4 |
 
 ## Needs attention
 
-- **R-026** [approved] Test expert gradients against matched numerical proposals
-  - `python scripts/research.py start R-026` then run its command
+- **R-026** [running] Test expert gradients against matched numerical proposals
+  - run the protocol, then `python scripts/research.py record R-026 --results <json>`
 - **R-027** [proposed] Trade half the search depth for a second assembly structure
   - USER decides: `python scripts/research.py approve R-027` or `reject R-027 --reason ...`
 
