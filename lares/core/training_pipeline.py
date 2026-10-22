@@ -85,6 +85,7 @@ EXPERT_POLICY_MAP = {
     "sweep-v2": "SawyerSweepV3Policy",
     "soccer-v2": "SawyerSoccerV3Policy",
     "shelf-place-v2": "SawyerShelfPlaceV3Policy",
+    "peg-insert-side-v2": "SawyerPegInsertionSideV3Policy",   # R-030 expert calibration
 }
 
 TASK_DESCRIPTIONS = {
