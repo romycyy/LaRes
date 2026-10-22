@@ -1084,10 +1084,13 @@ def record_episode_gif(
     episode_reward = 0.0
     success = False
 
+    # MetaWorld's offscreen render is upside down; the vision recorder declares the flip once.
+    from lares.vision.media import FLIP_RENDER_VERTICALLY
+
     for _ in range(max_steps):
         frame = _grab_frame_from_env(env)
         if frame is not None:
-            frames.append(frame)
+            frames.append(np.ascontiguousarray(frame[::-1]) if FLIP_RENDER_VERTICALLY else frame)
 
         obs_t = torch.tensor(obs, dtype=torch.float32).unsqueeze(0)
         with torch.no_grad():

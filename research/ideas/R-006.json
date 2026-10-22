@@ -42,7 +42,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "running",
+  "status": "decided",
   "source": "implementer",
   "falsified_by": "Upper 95% bound of vision-minus-numeric paired success below 0.05 refutes the target magnitude; at or below zero refutes positive added value; an interval including zero is inconclusive about direction. Frame-citation and geometry-consistency audits are made without consulting held-out outcomes; rejected or empty packets stay in the assigned-arm analysis. If most packets carry no valid visual evidence, the localisation mechanism is inconclusive. Vision vs no_repair is reported separately. No expansion after seeing results; an inconclusive pilot needs a separately specified confirmation sized from its paired variance.",
   "cost_estimate": {
@@ -70,12 +70,130 @@
     "started_at": "2026-10-22T03:14:54",
     "git_sha": "a76cc5464c9b00ea4d79728492291aae9e8abc77",
     "dirty_worktree": true,
-    "log_dir": "logs/stage_f_vision"
+    "log_dir": "logs/stage_f_vision",
+    "finished_at": "2026-10-22T04:12:52"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.0,
+      "paired_success_difference_t95": [
+        0.0,
+        0.0
+      ],
+      "wins_losses_ties": [
+        0,
+        0,
+        9
+      ],
+      "held_out_case_bootstrap": [
+        0.0,
+        0.0
+      ],
+      "vision_minus_no_repair": 0.0,
+      "held_out_success": {
+        "no_repair": 0.44000000000000006,
+        "llm_numeric": 0.44000000000000006,
+        "llm_numeric_vision": 0.44000000000000006
+      },
+      "outcomes": {
+        "no_repair": {
+          "kept_parent": 9
+        },
+        "llm_numeric": {
+          "kept_parent": 9
+        },
+        "llm_numeric_vision": {
+          "kept_parent": 9
+        }
+      },
+      "mean_cost": {
+        "no_repair": {
+          "repair_episodes": 0.0,
+          "probe_episodes": 0.0,
+          "expert_assisted_episodes": 0.0,
+          "bc_gradient_steps": 0.0,
+          "llm_calls": 0.0,
+          "llm_total_tokens": 0.0
+        },
+        "llm_numeric": {
+          "repair_episodes": 10.0,
+          "probe_episodes": 30.0,
+          "expert_assisted_episodes": 0.0,
+          "bc_gradient_steps": 1000.0,
+          "llm_calls": 2.0,
+          "llm_total_tokens": 13279.111111111111
+        },
+        "llm_numeric_vision": {
+          "repair_episodes": 12.555555555555555,
+          "probe_episodes": 30.0,
+          "expert_assisted_episodes": 0.0,
+          "bc_gradient_steps": 1000.0,
+          "llm_calls": 2.0,
+          "llm_total_tokens": 13992.666666666666
+        }
+      },
+      "vision_packets": {
+        "cells": 9,
+        "with_valid_analysis": 9,
+        "analyses_returned": 23,
+        "analyses_rejected": 0,
+        "conflicts": 3,
+        "episodes_rerun": 23
+      },
+      "child_screen_success_mean": {
+        "llm_numeric": 0.3111,
+        "llm_numeric_vision": 0.3222
+      },
+      "child_screen_success_paired_vision_minus_numeric": 0.0111
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "control is arm llm_numeric in the same cell; the metric is already vision minus numeric"
+    },
+    "artifacts": [
+      "logs/stage_f_vision/20261022_072119/summary.json",
+      "logs/stage_f_vision/20261022_072119/run.json",
+      "logs/stage_f_vision/20261022_072119",
+      "logs/stage_f_vision.run.log",
+      "logs/stage_f_vision_smoke/smoke.json",
+      "config/stage_f_vision/stage_f_vision.yaml"
+    ],
+    "notes": "Nine cells (3 Stage F structures x independent bundles 2620-2628), held-out pool 2629, frozen at 53b36f5 with a clean worktree on the GPU box. All 18 LLM repairs (9 numeric, 9 vision) were rejected by the acceptance rule: every child scored below or equal to its preprocessed parent on the screen, so all three arms are identical on held-out success (0.440) and the primary difference is exactly 0 [0, 0], 0/0/9; case resampling [0, 0]. The vision mechanism was exercised: all 9 packets carried valid analyses (23 returned, 0 rejected, 3 stage conflicts with the geometry). Descriptive only: vision children's screen success averaged 0.322 vs 0.311 for numeric children (paired +0.011; 7 ties, 2 wins, 1 loss at the 10-case screen). Cost per vision arm: 43 repair-evaluation episodes (3 more than numeric, the media reruns) and ~14.0k LLM tokens vs 13.3k; 2 correction-LLM calls per arm. VLM: Qwen2.5-VL-7B-Instruct@cc59489, NF4 language weights, fp16 compute, 7.55 GiB peak on the T4, ~13 s per analysis. Fixes made before the freeze (all in the frozen commit): prompt v2 lists the shown frame ids; non-JSON replies are rejected not raised; MetaWorld offscreen frames are flipped upright. Limitation: at camera 2 the puck occupies few pixels; the smoke analysis misread the stage, so the visual evidence may be weak rather than absent."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 0.0,
+    "delta": 0.0,
+    "matched": false
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.8,
+      "reasoning": "Vision minus numeric held-out success over 9 independent cells is +0.000 [+0.000, +0.000], 0/0/9; held-out case resampling [0, 0]. Upper bound <= 0 refutes positive added value by the predeclared rule. The mechanism was exercised (9/9 packets with valid analyses, 23 returned, 0 rejected), so this is not a null from empty packets. The reason both arms tie no_repair is that all 18 LLM children, after the identical refit, scored at or below their parent on the screen and were rejected; vision children were only marginally better on the screen (+0.011 paired, descriptive). The bottleneck is the quality of the correction LLM's structural edit, not the evidence it is shown; this matches Stage F and R-005.",
+      "cited_artifacts": [
+        "logs/stage_f_vision/20261022_072119/summary.json"
+      ],
+      "next_experiment": "Stop adding evidence to the correction LLM. Either test whether any LLM edit survives refit (e.g. accept on a larger screen, or let the LLM propose only parameter-range/initial-value changes), or redirect effort to parameter search, which led Stage F at no LLM cost.",
+      "recorded_at": "2026-10-22T04:13:02",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "The named numeric-only control was measured: paired_success_difference was 0.000, with paired t95 and held-out-case bootstrap intervals both [0.000, 0.000] [logs/stage_f_vision/20261022_072119/summary.json]. The upper bound is below the predicted 0.05 improvement, refuting the target magnitude; the tie is not evidence of a directional advantage [logs/stage_f_vision/20261022_072119/summary.json]. All three arms achieved 0.440 held-out success, with every cell retaining its parent rather than accepting a repair [logs/stage_f_vision/20261022_072119/summary.json]. All nine vision packets contained valid analyses, but validity alone does not establish improved localisation, so that mechanism remains inconclusive [logs/stage_f_vision/20261022_072119/summary.json].",
+      "cited_artifacts": [
+        "logs/stage_f_vision/20261022_072119/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T04:13:23",
+      "call_id": "call_00005"
+    }
+  ],
+  "decision_id": "D-003",
   "history": [
     {
       "at": "2026-10-22T02:53:44",
@@ -100,6 +218,18 @@
       "from": "approved",
       "to": "running",
       "note": "git a76cc5464c (dirty)"
+    },
+    {
+      "at": "2026-10-22T04:12:52",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=False"
+    },
+    {
+      "at": "2026-10-22T04:13:30",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-003: refuted"
     }
   ],
   "created_at": "2026-10-22T02:53:44"

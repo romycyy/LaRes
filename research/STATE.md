@@ -1,26 +1,27 @@
 # Research state
 
-_Generated 2026-10-22T03:14:54 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T04:13:30 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 1 |
+| running | 0 |
 | approved | 0 |
 | proposed | 1 |
-| decided | 2 |
+| decided | 3 |
 | rejected | 2 |
 
 ## Needs attention
 
-- **R-006** [running] Vision evidence from a local Qwen VLM makes correction-LLM repair beat numeric-only repair (development-only E10 pilot)
-  - run the protocol, then `python scripts/research.py record R-006 --results <json>`
 - **R-003** [proposed] Rotating the development screen removes selection on fixed cases
   - USER decides: `python scripts/research.py approve R-003` or `reject R-003 --reason ...`
 
 ## Last 5 decisions
 
+- D-003 · R-006 · **refuted** · 2026-10-22
+  R-006 added a local VLM evidence arm to correction-LLM repair: Qwen2.5-VL-7B-Instruct (pinned cc59489, NF4 language weights, fp16 compute, 7.55 GiB on the T4) analysed the parent's worst failed screen episodes (five rule-selected, upright frames each) and its validated, geometry-merged analysis was appended to the Stage F numeric packet. Nine independent cells (three frozen Stage F structures x bundles 2620-2628), held-out pool 2629, arms no_repair / llm_numeric / llm_numeric_vision at matched repair-episode caps. Vision minus numeric held-out success: +0.000 [+0.000, +0.000], 0/0/9; all arms 0.440. Every packet carried valid analyses (23 returned, 0 rejected, 3 stage conflicts), but all 18 LLM children scored at or below their refitted parent on the screen and were rejected, so neither evidence level changed any outcome. Predicted +0.05 refuted; localisation benefit untested because no edit survived refit. With Stage F and R-005, the correction LLM's structural edits, not its evidence, are the bottleneck.
+  Next: Do not add more evidence to correction-LLM repair; test whether any LLM edit can survive refit, or redirect effort to parameter search.
 - D-002 · R-004 · **refuted** · 2026-10-22
   R-004 fitted the five seed-bank structures under five data-varying bundles (own demo sample, trajectory split, probe manifest and fitting seed; seeds 2400-2404, 2410-2414) and under a matched minibatch-only control (fixed sample/split 2700, probe 2710, fitting seeds 2701-2705), replicate r of both arms scored on the same qualification manifest (pool seed 2420+r). Between-replicate SE of bank-mean success: 0.0075 vs 0.0056, difference +0.0019, paired bootstrap 95% [-0.0034, +0.0054]; the predicted +0.01 is refuted and the direction is inconclusive. Bank-mean success 0.896 vs 0.911. Minibatch-only qualification did not materially understate bank-level uncertainty. One exception: simple_reach_push_shared_gain rejected fitting (step 0 selected) under 2 of 5 data draws, so its fitted success is data-sensitive (sd 0.088 vs 0.037).
   Next: Keep the seed bank as is; treat simple_reach_push_shared_gain as data-sensitive when reading single-run results.
@@ -42,7 +43,7 @@ _Generated 2026-10-22T03:14:54 by `python scripts/research.py state` from `resea
 - The final-test split (config/manifests/push-v2_final_test.yaml) is locked until Phase 7, which needs the user's approval and a FreezeRecord. Qwen/E10 is also blocked. _(lares/eval/freeze.py; CLAUDE.md)_
 - Seeds 2400-2424 are held for config/fittable_bank/qualification_v2.yaml (predeclared, not run). New protocols pick seeds from 2600 upward. _(config/experiment_seed_ledger.jsonl; CLAUDE.md)_
 - Every protocol runs on the remote GPU box via `gpu run`, which bills by the hour; the implementer stops it afterwards. Live LLM or GPU spend needs the user's per-idea approval. _(CLAUDE.md, 'Remote GPU server')_
-- Spent seeds: [0, 1, 2, 1000, 1001, 1002, 2000, 2100, 2200, 2201, 2202, 2203, 2204, 2300, 2301, 2302, 2303, 2304, 2400, 2401, 2402, 2403, 2404, 2410, 2411, 2412, 2413, 2414, 2420, 2421, 2422, 2423, 2424, 2500, 2501, 2502, 2610, 2611, 2700, 2701, 2702, 2703, 2704, 2705, 2710, 3000, 3001]
+- Spent seeds: [0, 1, 2, 1000, 1001, 1002, 2000, 2100, 2200, 2201, 2202, 2203, 2204, 2300, 2301, 2302, 2303, 2304, 2400, 2401, 2402, 2403, 2404, 2410, 2411, 2412, 2413, 2414, 2420, 2421, 2422, 2423, 2424, 2500, 2501, 2502, 2610, 2611, 2620, 2621, 2622, 2623, 2624, 2625, 2626, 2627, 2628, 2629, 2700, 2701, 2702, 2703, 2704, 2705, 2710, 3000, 3001]
 
 ## Pointers
 
