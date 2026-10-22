@@ -1429,6 +1429,116 @@ def run_assembly_trace_edits(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  R-030: expert-calibrated contact-regime contrast (impact tasks vs insertion)
+# ---------------------------------------------------------------------------
+
+CONTACT_TASKS = {"peg-insert-side-v2": 3540, "hammer-v2": 3541, "soccer-v2": 3544}   # task -> root seed
+CONTACT_IMPACT, CONTACT_INSERTION = ("hammer-v2", "soccer-v2"), "peg-insert-side-v2"
+EXPERT_CALIBRATION_MIN = 0.90
+
+
+def welch_contrast(impact_rates_cases, insertion_cases, level=0.95) -> dict:
+    """mean of the impact tasks' success minus the insertion task's success, unpaired across tasks (Welch).
+
+    ``impact_rates_cases`` is a list of per-case success lists (one per impact task); ``insertion_cases`` one list.
+    """
+    from scipy import stats
+
+    groups = [np.asarray(g, dtype=float) for g in impact_rates_cases]
+    ins = np.asarray(insertion_cases, dtype=float)
+    w = 1.0 / len(groups)
+    diff = float(sum(w * g.mean() for g in groups) - ins.mean())
+    terms = [w * w * g.var(ddof=1) / g.size for g in groups] + [ins.var(ddof=1) / ins.size]
+    se = float(np.sqrt(sum(terms)))
+    if se == 0.0:
+        return {"mean": diff, "se": 0.0, "low": diff, "high": diff, "df": None}
+    df = sum(terms) ** 2 / sum(t ** 2 / (n - 1) for t, n in zip(terms, [g.size for g in groups] + [ins.size]) if t > 0)
+    half = float(stats.t.ppf(0.5 + level / 2, df) * se)
+    return {"mean": diff, "se": se, "low": diff - half, "high": diff + half, "df": float(df)}
+
+
+def run_contact_regime_scan(args) -> int:
+    sys.path.insert(0, _SCRIPT_DIR)
+    import compare_child_vs_parent as cvp
+    from lares.core.obs_schema import get_obs_schema
+    from lares.core.training_pipeline import load_policy_prompt_assets as assets
+    from lares.eval import ExpertActor, make_manifest_env
+    from lares.eval.runner import evaluate_manifest
+
+    os.makedirs(args.out_dir, exist_ok=True)
+    entries = []
+    for task, root in CONTACT_TASKS.items():
+        entries += [(root, "mt1_pool", f"R-030 {task}: probe and screen pool"),
+                    (root, "generation_block", f"R-030 {task}: generation and search root")]
+    print(f"  seeds: {cvp.ensure_entries_reserved(entries, args.out_dir)}")
+    if args.reserve_only:
+        return 0
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    mdir = os.path.join(args.out_dir, "manifests")
+    plan = {}
+    for task, root in CONTACT_TASKS.items():      # frozen before any rollout
+        full, _ = cvp.fresh_manifest(task, root, SCAN_PROBE + SCAN_CONFIRMATION, 150, mdir, role="contact")
+        paths = {}
+        for role, part in (("probe", full.head(SCAN_PROBE)), ("screen", full.slice(SCAN_PROBE, SCAN_PROBE + SCAN_CONFIRMATION))):
+            paths[role] = os.path.join(mdir, f"{task}_{role}_s{root}.yaml")
+            if not os.path.exists(paths[role]):
+                part.save(paths[role])
+        plan[task] = {"root": root, "manifest": full, "paths": paths, "screen": full.slice(SCAN_PROBE, SCAN_PROBE + SCAN_CONFIRMATION)}
+    calibration, episodes = {}, {"expert": 0, "probe": 0, "screen": 0}
+    for task, p in plan.items():
+        env = make_manifest_env(p["manifest"], p["manifest"].resolve_pool(), 200)
+        r = evaluate_manifest(ExpertActor(task), p["screen"], env, max_steps=150)
+        episodes["expert"] += len(r.episodes)
+        calibration[task] = r.success_rate
+        print(f"  expert on {task}: {r.success_rate:.2f}", flush=True)
+    summary = {"expert_calibration": calibration, "episodes": episodes}
+    low = {t: v for t, v in calibration.items() if v < EXPERT_CALIBRATION_MIN}
+    if low:
+        summary["outcome"] = f"inconclusive: expert below {EXPERT_CALIBRATION_MIN} on {low}; no generation call made"
+        with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+            json.dump(summary, f, indent=2)
+        print(f"  {summary['outcome']}")
+        return 0
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise SystemExit("R-030 needs OPENAI_API_KEY")
+    learner = {}
+    for task, p in plan.items():
+        task_args = SimpleNamespace(**{**vars(args), "env_name": task})
+        final, n = generate_one(assets(task), "", os.path.join(args.out_dir, "generation", task), task_args, max_repair=0)
+        row = {"valid": bool(final.valid), "attempts": n, "errors": (final.validation or {}).get("errors")}
+        if final.valid:
+            path = os.path.join(args.out_dir, "structures", f"{task}.py")
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(final.code)
+            r = suite_job({"slot": task, "source": final.code, "search_seed": p["root"], "env_name": task,
+                           "selectors": ["original"], "probe_manifest": os.path.abspath(p["paths"]["probe"]),
+                           "confirmation_manifest": os.path.abspath(p["paths"]["screen"])})
+            episodes["probe"] += r["episodes"]["probe"]
+            episodes["screen"] += r["episodes"]["confirmation"]
+            cases = r["confirmed"][str(r["picks"]["original"])]
+            row.update(screen_cases=cases, screen_success_rate=float(np.mean(list(cases.values()))),
+                       untrained_probe_success=r["trace"][0]["success"],
+                       best_probe_success=max(t["success"] for t in r["trace"]), source_path=path)
+        else:
+            row.update(screen_cases={c.case_id: 0.0 for c in p["screen"].episodes}, screen_success_rate=0.0)
+        learner[task] = row
+        print(f"  {task}: valid={row['valid']} learner screen {row['screen_success_rate']:.2f}", flush=True)
+    contrast = welch_contrast([list(learner[t]["screen_cases"].values()) for t in CONTACT_IMPACT],
+                              list(learner[CONTACT_INSERTION]["screen_cases"].values()))
+    summary.update(learner={t: {k: v for k, v in r.items() if k != "screen_cases"} for t, r in learner.items()},
+                   impact_minus_insertion=contrast, screen_success_rate=float(np.mean([learner[t]["screen_success_rate"] for t in CONTACT_IMPACT])),
+                   insertion_screen_success_rate=learner[CONTACT_INSERTION]["screen_success_rate"],
+                   llm_attempts=int(sum(r["attempts"] for r in learner.values())))
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2)
+    print(f"  impact - insertion: {contrast['mean']:+.3f} [{contrast['low']}, {contrast['high']}]; episodes {episodes}", flush=True)
+    return 0
+
+
 def run_task_scan(args) -> int:
     import multiprocessing as mp
 
@@ -1525,7 +1635,8 @@ def parse_args():
     p.add_argument(
         "--out-dir", default=os.path.join(_PROJECT_ROOT, "logs", "generation_modes")
     )
-    p.add_argument("--research-mode", choices=sorted(RESEARCH_ARMS) + ["pick-place-suite", "task-scan"], default="")
+    p.add_argument("--research-mode", choices=sorted(RESEARCH_ARMS) + ["pick-place-suite", "task-scan", "contact-regime-scan"],
+                   default="")
     p.add_argument("--scan-set", choices=["default", "hard"], default="default")
     p.add_argument("--assembly-study", choices=["reciprocal-handoff", "expert-fit-vs-numerical", "targeted-placement-edit",
                                                 "breadth-vs-depth", "trace-edit-suite"],
@@ -1558,6 +1669,8 @@ def main():
         return run_assembly_breadth_depth(args)
     if args.assembly_study == "trace-edit-suite":
         return run_assembly_trace_edits(args)
+    if args.research_mode == "contact-regime-scan":
+        return run_contact_regime_scan(args)
     if args.research_mode == "task-scan":
         return run_hard_scan(args) if args.scan_set == "hard" else run_task_scan(args)
     if args.research_mode == "pick-place-suite":

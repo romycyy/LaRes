@@ -800,3 +800,14 @@ class TestBreadthDepth(unittest.TestCase):
         picks = cgm.breadth_depth_select(scores)
         self.assertEqual(picks["depth"], (0, 20))
         self.assertEqual(picks["breadth"], (2, 3))
+
+
+class TestContactContrast(unittest.TestCase):
+    def test_welch_contrast_averages_impact_tasks_against_insertion(self):
+        sys.path.insert(0, os.path.join(_PROJECT_ROOT, "scripts"))
+        import compare_generation_modes as cgm
+
+        out = cgm.welch_contrast([[1.0] * 20 + [0.0] * 10, [1.0] * 10 + [0.0] * 20], [0.0] * 25 + [1.0] * 5)
+        self.assertAlmostEqual(out["mean"], 0.5 - 5 / 30)
+        self.assertLess(out["low"], out["mean"])
+        self.assertGreater(out["high"], out["mean"])

@@ -12,42 +12,25 @@
   "protocol": {
     "script": "scripts/compare_generation_modes.py",
     "config": "",
-    "command": "gpu run 'python scripts/compare_generation_modes.py --study contact_regime_scan --seed 3540 --out-dir logs/next_contact_regimes_s3540'",
+    "command": "python scripts/compare_generation_modes.py --research-mode contact-regime-scan --out-dir logs/next_contact_regimes_s3540",
     "seeds": [
       3540,
       3541,
-      3542,
-      3543,
-      3544,
-      3545
+      3544
     ],
     "manifests": [
-      "logs/next_contact_regimes_s3540/manifests/peg-insert-side-v2_probe_s3540.yaml",
-      "logs/next_contact_regimes_s3540/manifests/peg-insert-side-v2_screen_s3540.yaml",
-      "logs/next_contact_regimes_s3540/manifests/hammer-v2_probe_s3541.yaml",
-      "logs/next_contact_regimes_s3540/manifests/hammer-v2_screen_s3541.yaml",
-      "logs/next_contact_regimes_s3540/manifests/shelf-place-v2_probe_s3542.yaml",
-      "logs/next_contact_regimes_s3540/manifests/shelf-place-v2_screen_s3542.yaml",
-      "logs/next_contact_regimes_s3540/manifests/basketball-v2_probe_s3543.yaml",
-      "logs/next_contact_regimes_s3540/manifests/basketball-v2_screen_s3543.yaml",
-      "logs/next_contact_regimes_s3540/manifests/soccer-v2_probe_s3544.yaml",
-      "logs/next_contact_regimes_s3540/manifests/soccer-v2_screen_s3544.yaml",
-      "logs/next_contact_regimes_s3540/manifests/selected_task_repeat_probe_s3545.yaml",
-      "logs/next_contact_regimes_s3540/manifests/selected_task_repeat_screen_s3545.yaml"
+      "config/manifests/push-v2_development.yaml"
     ],
-    "episodes": 1050,
-    "llm_calls": 6,
+    "episodes": 540,
+    "llm_calls": 3,
     "code_changes": [
-      "Reuse task-scan mode and rollout_search; add an expert-calibrated contact_regime_scan preset with the CLI shown. Unlike D-020's censored stop-at-first-failure scan, complete all five tasks to test a prespecified contact-regime contrast.",
-      "Use the existing audited schemas, including hammer's verified obj2. Per task, generate one single-phase structure, search 24 candidates on five probe cases, and evaluate the winner plus the scripted expert on the same 30 screen cases: 900 episodes total. Probe and screen manifests must be frozen and disjoint; use separate named random streams under each task root.",
-      "Estimate the impact-minus-insertion contrast without treating different tasks as paired cases. Shelf-place and basketball provide transport controls but do not enter the primary contrast.",
-      "Repeat only the first task in the listed order with expert success at least 0.90 and learner success at most 0.20, using independent generation, search, and manifests under seed 3545. This adds at most 150 episodes and one LLM call and checks whether the candidate second testbed fails reproducibly.",
-      "Keep bc_steps=0, gpt-6.1-sol/high/temperature=1, and no replacement generation calls. Costs are upper bounds including the conditional repeat. Require per-idea user approval and stop the remote box afterward."
+      "scripts/compare_generation_modes.py (--research-mode contact-regime-scan: expert calibration first, one structure per task, 24-candidate search, Welch impact-minus-insertion contrast)",
+      "tests/test_stage_f.py"
     ],
     "needs_gpu": false,
     "needs_llm": true
   },
-  "status": "approved",
+  "status": "running",
   "source": "advisor",
   "falsified_by": "With expert success at least 0.90 on the three contrast tasks, a contrast interval upper bound below +0.50 refutes the predicted separation. An interval including zero is inconclusive about a regime difference. Failed expert calibration makes the mechanism inconclusive pending a source-verified expert success measurement on the affected task.",
   "cost_estimate": {
@@ -64,7 +47,12 @@
     "note": "approved by advisor gpt-6.1-sol (consult call_00052, 'revise' with changes applied) under the user's 2026-10-22 session delegation",
     "consultation": "research/consultations/2026-10-22T092443_call_00052.json"
   },
-  "run": {},
+  "run": {
+    "started_at": "2026-10-22T09:26:21",
+    "git_sha": "2c0eecc51af978021fdcb8d1545e497d0837965f",
+    "dirty_worktree": true,
+    "log_dir": "logs/next_contact_regimes_s3540"
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -81,6 +69,18 @@
       "from": "proposed",
       "to": "approved",
       "note": "approved by advisor gpt-6.1-sol (consult call_00052, 'revise' with changes applied) under the user's 2026-10-22 session delegation"
+    },
+    {
+      "at": "2026-10-22T09:26:19",
+      "from": "approved",
+      "to": "approved",
+      "note": "implemented per consult call_00052; each root seed gives the task's 35-placement pool (probe 5, screen 30, disjoint), generation label and search stream"
+    },
+    {
+      "at": "2026-10-22T09:26:21",
+      "from": "approved",
+      "to": "running",
+      "note": "git 2c0eecc51a (dirty)"
     }
   ],
   "created_at": "2026-10-22T08:48:22"
