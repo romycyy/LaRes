@@ -1,24 +1,26 @@
 # Research state
 
-_Generated 2026-10-22T11:12:40 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T11:28:42 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 1 |
+| running | 0 |
 | approved | 0 |
 | proposed | 0 |
-| decided | 31 |
+| decided | 32 |
 | rejected | 4 |
 
 ## Needs attention
 
-- **R-036** [running] Plateau-triggered trace repair versus exploration restart
-  - run the protocol, then `python scripts/research.py record R-036 --results <json>`
+- Nothing open. Run `python scripts/research.py propose` to ask the advisor for ideas.
 
 ## Last 5 decisions
 
+- D-032 · R-036 · **supported** · 2026-10-22
+  R-036 piloted plateau-triggered trace repair inside the pipeline's selection and promotion on assembly-v2 (one block). The exploration lane plateaued (0/24 probe successes) and no prefix candidate passed promotion, so the incumbent stayed at 0.00. Forking at that checkpoint, the trace-repair branch (whole-controller edit with two expert-only traces) produced a controller at 1.00 that passed the strict paired promotion rule; the fresh no-trace generation stayed at 0.00. Final incumbents: +1.000 [1.0, 1.0], supported as a pilot. The pipeline steps were reproduced in a study mode, not run_full_evolution.py.
+  Next: Build trace repair into the orchestrator with a plateau trigger and expert-demonstration source, generalise run_full_evolution.py beyond push-v2, and confirm with an independent block.
 - D-031 · R-035 · **refuted** · 2026-10-22
   R-035 scanned shelf-place, basketball and soccer for a second recoverable plateau. All three experts qualified (1.00, 1.00, 0.90), and one single-phase structure plus 24-candidate search already succeeded on every task's probe (22, 20 and 23 of 24 candidates), so no task is a plateau: refuted. Across all scans, assembly-v2 is the only MetaWorld task where single-phase generation plus search plateaus, and expert-trace editing solves it (D-027, D-028, D-030).
   Next: Integrate trace-guided repair into the two-lane pipeline (R-036).
@@ -31,9 +33,6 @@ _Generated 2026-10-22T11:12:40 by `python scripts/research.py state` from `resea
 - D-028 · R-032 · **supported** · 2026-10-22
   R-032 replaced D-027's learner handoff traces with expert-only demonstrations (10/10 successful; rows from when the nut first rose 3 cm). Edits of the recoverable assembly-v2 parent that saw two such traces scored 1.00 on 30 fresh cases at their declared values (no search) in both blocks; summary-only edits scored 0.00: +1.000 [1.0, 1.0], supported. Learner-state alignment is not needed: plain expert demonstrations carry the placement geometry the edit lacks.
   Next: Test transfer to hammer (R-033) and from a fresh generated parent; integrate trace-conditioned editing as a repair step.
-- D-027 · R-031 · **supported** · 2026-10-22
-  R-031 repeated R-029 with the pipeline's standard single validity correction and ten learner-to-expert handoff demonstrations (6/10 successful continuations). In both blocks the edit of the recoverable D-020 assembly-v2 parent that saw two successful expert placement traces scored 1.00 on 30 fresh promotion cases, while the summary-only edit scored 0.00: +1.000 [1.0, 1.0], 30/0/0, supported. The trace edits already succeed untrained (probe 1.0 at step 0). Three of four edits needed their one correction, which is why R-029 never tested the traces. The code reads observations through the schema; constants are centimetre-scale offsets. Narrow: one parent, one demonstration set, two blocks.
-  Next: Generalise trace-conditioned editing: another parent or fresh structure, another failing task, and as a repair step in the two-lane pipeline where an expert exists.
 
 ## Standing constraints
 
@@ -49,7 +48,7 @@ _Generated 2026-10-22T11:12:40 by `python scripts/research.py state` from `resea
 - The final-test split (config/manifests/push-v2_final_test.yaml) is locked until Phase 7, which needs the user's approval and a FreezeRecord. Qwen/E10 is also blocked. _(lares/eval/freeze.py; CLAUDE.md)_
 - Seeds 2400-2424 are held for config/fittable_bank/qualification_v2.yaml (predeclared, not run). New protocols pick seeds from 2600 upward. _(config/experiment_seed_ledger.jsonl; CLAUDE.md)_
 - Every protocol runs on the remote GPU box via `gpu run`, which bills by the hour; the implementer stops it afterwards. Live LLM or GPU spend needs the user's per-idea approval. _(CLAUDE.md, 'Remote GPU server')_
-- Spent seeds: [0, 1, 2, 1000, 1001, 1002, 2000, 2100, 2200, 2201, 2202, 2203, 2204, 2300, 2301, 2302, 2303, 2304, 2400, 2401, 2402, 2403, 2404, 2410, 2411, 2412, 2413, 2414, 2420, 2421, 2422, 2423, 2424, 2500, 2501, 2502, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2607, 2610, 2611, 2612, 2613, 2614, 2615, 2616, 2617, 2618, 2619, 2620, 2621, 2622, 2623, 2624, 2625, 2626, 2627, 2628, 2629, 2700, 2701, 2702, 2703, 2704, 2705, 2710, 2800, 2801, 2802, 2803, 2804, 2805, 2810, 2811, 2812, 2813, 2820, 2822, 2823, 2824, 2825, 2900, 2901, 2902, 2903, 2904, 2905, 2906, 2910, 2911, 2912, 2913, 2920, 2921, 2922, 2923, 2940, 3000, 3001, 3010, 3011, 3012, 3013, 3020, 3021, 3022, 3023, 3024, 3025, 3026, 3030, 3031, 3032, 3033, 3040, 3041, 3042, 3043, 3044, 3045, 3046, 3047, 3100, 3101, 3102, 3103, 3104, 3105, 3106, 3107, 3108, 3109, 3110, 3111, 3130, 3131, 3132, 3133, 3134, 3135, 3200, 3201, 3202, 3205, 3210, 3211, 3212, 3213, 3214, 3215, 3220, 3221, 3222, 3223, 3300, 3301, 3302, 3303, 3304, 3305, 3310, 3311, 3312, 3313, 3314, 3315, 3320, 3321, 3330, 3331, 3332, 3333, 3334, 3335, 3400, 3410, 3420, 3421, 3422, 3500, 3501, 3502, 3503, 3505, 3506, 3507, 3520, 3521, 3522, 3523, 3524, 3525, 3526, 3527, 3528, 3529, 3540, 3541, 3544, 3600, 3601, 3602, 3603, 3604, 3605, 3606, 3607, 3608, 3609, 3710, 3711, 3712, 3713, 3720, 3721, 3722, 3723, 3724, 3725, 3726, 3800, 3801, 3802, 3803, 3804, 3805, 3806, 3807, 3810, 3811, 3812, 3813, 3814, 3815, 3816, 3817, 3818]
+- Spent seeds: [0, 1, 2, 1000, 1001, 1002, 2000, 2100, 2200, 2201, 2202, 2203, 2204, 2300, 2301, 2302, 2303, 2304, 2400, 2401, 2402, 2403, 2404, 2410, 2411, 2412, 2413, 2414, 2420, 2421, 2422, 2423, 2424, 2500, 2501, 2502, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2607, 2610, 2611, 2612, 2613, 2614, 2615, 2616, 2617, 2618, 2619, 2620, 2621, 2622, 2623, 2624, 2625, 2626, 2627, 2628, 2629, 2700, 2701, 2702, 2703, 2704, 2705, 2710, 2800, 2801, 2802, 2803, 2804, 2805, 2810, 2811, 2812, 2813, 2820, 2822, 2823, 2824, 2825, 2900, 2901, 2902, 2903, 2904, 2905, 2906, 2910, 2911, 2912, 2913, 2920, 2921, 2922, 2923, 2940, 3000, 3001, 3010, 3011, 3012, 3013, 3020, 3021, 3022, 3023, 3024, 3025, 3026, 3030, 3031, 3032, 3033, 3040, 3041, 3042, 3043, 3044, 3045, 3046, 3047, 3100, 3101, 3102, 3103, 3104, 3105, 3106, 3107, 3108, 3109, 3110, 3111, 3130, 3131, 3132, 3133, 3134, 3135, 3200, 3201, 3202, 3205, 3210, 3211, 3212, 3213, 3214, 3215, 3220, 3221, 3222, 3223, 3300, 3301, 3302, 3303, 3304, 3305, 3310, 3311, 3312, 3313, 3314, 3315, 3320, 3321, 3330, 3331, 3332, 3333, 3334, 3335, 3400, 3410, 3420, 3421, 3422, 3500, 3501, 3502, 3503, 3505, 3506, 3507, 3520, 3521, 3522, 3523, 3524, 3525, 3526, 3527, 3528, 3529, 3540, 3541, 3544, 3600, 3601, 3602, 3603, 3604, 3605, 3606, 3607, 3608, 3609, 3710, 3711, 3712, 3713, 3720, 3721, 3722, 3723, 3724, 3725, 3726, 3800, 3801, 3802, 3803, 3804, 3805, 3806, 3807, 3810, 3811, 3812, 3813, 3814, 3815, 3816, 3817, 3818, 3820, 3821, 3822, 3823, 3824, 3825]
 
 ## Pointers
 

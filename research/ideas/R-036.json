@@ -32,7 +32,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "A paired upper bound below +0.30 refutes the effect-size prediction; an interval containing zero is inconclusive about a benefit. No trigger leaves the integration question inconclusive.",
   "cost_estimate": {
@@ -57,12 +57,160 @@
     "started_at": "2026-10-22T11:12:40",
     "git_sha": "b50af881bd09c227d92dae16352f9ac0b17a94ee",
     "dirty_worktree": true,
-    "log_dir": "logs/research/two_lane_plateau_repair/block_0"
+    "log_dir": "logs/research/two_lane_plateau_repair/block_0",
+    "finished_at": "2026-10-22T11:27:57"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": 1.0,
+      "t95": [
+        1.0,
+        1.0
+      ],
+      "wlt": [
+        30,
+        0,
+        0
+      ],
+      "final_incumbent_success": {
+        "trace_repair": 1.0,
+        "fresh_generation": 0.0
+      },
+      "finals": {
+        "trace_repair": {
+          "incumbent": "trace_repair",
+          "promotion": {
+            "promoted": true,
+            "mean_difference": 1.0,
+            "low": 1.0,
+            "high": 1.0
+          },
+          "declared_value_probe": {
+            "success": 1.0,
+            "progress": 0.08253241136780043
+          },
+          "selected_probe": {
+            "success": 1.0,
+            "progress": 0.09226703115400925
+          },
+          "finalist_promotion_success": 1.0
+        },
+        "fresh_generation": {
+          "incumbent": "null_incumbent",
+          "promotion": {
+            "promoted": false,
+            "mean_difference": 0.0,
+            "low": 0.0,
+            "high": 0.0
+          },
+          "declared_value_probe": {
+            "success": 0.0,
+            "progress": 0.22121548515214995
+          },
+          "selected_probe": {
+            "success": 0.0,
+            "progress": 0.222914983416111
+          },
+          "finalist_promotion_success": 0.0
+        }
+      },
+      "prefix": {
+        "challenger": "exploration",
+        "promotion": {
+          "promoted": false,
+          "mean_difference": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "incumbent": "null_incumbent"
+      },
+      "exploration_probe_successes": 0,
+      "screen": {
+        "bank:simple_damped_push": {
+          "success": 0.0,
+          "progress": 0.03990953532338189
+        },
+        "bank:simple_reach_push": {
+          "success": 0.0,
+          "progress": -0.06194647986836192
+        },
+        "bank:simple_reach_push_damped": {
+          "success": 0.0,
+          "progress": -0.11410919578280854
+        },
+        "bank:simple_reach_push_shared_gain": {
+          "success": 0.0,
+          "progress": -0.09840057396764475
+        },
+        "bank:simple_reach_push_sharp_gate": {
+          "success": 0.0,
+          "progress": -0.07570856604671901
+        },
+        "exploration": {
+          "success": 0.0,
+          "progress": 0.22303692036055806
+        }
+      },
+      "demo_successes": 10,
+      "episodes": {
+        "bank_probe": 25,
+        "exploration_probe": 120,
+        "incumbent": 30,
+        "demo": 10,
+        "branch_probe": 240,
+        "finalist": 60
+      },
+      "llm_calls": 3
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "control is the fresh no-trace generation continuation from the same checkpoint; the metric is already the trace-repair final incumbent minus the fresh-branch final incumbent"
+    },
+    "artifacts": [
+      "logs/research/two_lane_plateau_repair/block_0/summary.json",
+      "logs/research/two_lane_plateau_repair/block_0/manifests",
+      "logs/research/two_lane_plateau_repair/block_0/exploration",
+      "logs/research/two_lane_plateau_repair/block_0/branch_trace_repair",
+      "logs/research/two_lane_plateau_repair/block_0/branch_fresh",
+      "logs/plateau_repair.run.log"
+    ],
+    "notes": "assembly-v2, development pool 3820 (probe 0-4, promotion 10-39). Prefix: five fittable-bank parents at declared values and one single-phase exploration structure with 24-candidate search; the exploration lane plateaued (0 probe successes), the prefix challenger did not pass the strict promotion rule, so the incumbent stayed the null 0.00 baseline. Fork at that checkpoint: trace repair (whole-controller edit of the exploration structure with two expert-only traces from 10 demonstrations) vs a fresh no-trace single-phase generation, each with 24-candidate search. Trace repair: declared-value probe 1.00, selected 1.00, finalist 1.00 on 30 promotion cases, promoted under the strict paired rule. Fresh generation: 0.00 throughout, not promoted. Final incumbents: {'trace_repair': 1.0, 'fresh_generation': 0.0}; +1.000 [1.0, 1.0], 30/0/0. One triggered block (a pilot, as approved); the steps reproduce the pipeline's lanes and promotion rule in compare_generation_modes.py rather than running run_full_evolution.py, whose orchestrator is bound to push-v2 manifests, demonstrations and seed bank. 485 episodes."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 1.0,
+    "delta": 1.0,
+    "matched": true
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "supported",
+      "confidence": 0.75,
+      "reasoning": "In one triggered block, plateau-triggered trace repair produced a controller that passed the pipeline's strict promotion rule and became the final incumbent at 1.00, while the budget-matched fresh no-trace continuation stayed at 0.00: final-incumbent difference +1.000 [1.0, 1.0], above the predicted +0.30. The repair survived selection and promotion, not only standalone evaluation. Caveats: one block (a pilot), and the pipeline is emulated in a study mode with the same lanes and promotion rule rather than run through run_full_evolution.py.",
+      "cited_artifacts": [
+        "logs/research/two_lane_plateau_repair/block_0/summary.json"
+      ],
+      "next_experiment": "Build trace-guided repair into the orchestrator itself (a plateau trigger in the exploration lane, an expert-demonstration source and the code-derived lineage records), generalise run_full_evolution.py beyond push-v2 manifests/seed bank, and confirm with an independent second block.",
+      "recorded_at": "2026-10-22T11:27:58",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "supported",
+      "confidence": 0.99,
+      "reasoning": "The plateau triggered, and the named fresh-generation control was measured from the same checkpoint [logs/research/two_lane_plateau_repair/block_0/summary.json]. The final-incumbent paired_success_difference was +1.00 with paired t95 interval [1.00, 1.00], exceeding the predicted +0.30 threshold and excluding zero [logs/research/two_lane_plateau_repair/block_0/summary.json]. Trace repair passed promotion and finished at 1.00 success, while fresh generation did not promote and retained the 0.00 incumbent [logs/research/two_lane_plateau_repair/block_0/summary.json]. This supports the specified pilot prediction, but does not establish the proposed geometry mechanism or integration through the full production orchestrator rather than the comparison harness [logs/research/two_lane_plateau_repair/block_0/summary.json; logs/plateau_repair.run.log].",
+      "cited_artifacts": [
+        "logs/research/two_lane_plateau_repair/block_0/summary.json",
+        "logs/plateau_repair.run.log"
+      ],
+      "next_experiment": "Subject to approval, replicate scripts/compare_generation_modes.py --assembly-study plateau-repair-pipeline with unchanged configuration on unused seeds 3830–3835 to test independent-block repeatability rather than this block again (approximately 485 episodes, up to 6 LLM calls; prediction: paired_success_difference increase of at least 0.30 against the budget-matched no-trace fresh-generation continuation; falsified_by: paired upper bound below +0.30, with an interval containing zero inconclusive about benefit).",
+      "recorded_at": "2026-10-22T11:28:34",
+      "call_id": "call_00064"
+    }
+  ],
+  "decision_id": "D-032",
   "history": [
     {
       "at": "2026-10-22T11:12:00",
@@ -81,6 +229,18 @@
       "from": "approved",
       "to": "running",
       "note": "git b50af881bd (dirty)"
+    },
+    {
+      "at": "2026-10-22T11:27:57",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=True"
+    },
+    {
+      "at": "2026-10-22T11:28:42",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-032: supported"
     }
   ],
   "created_at": "2026-10-22T10:19:43"
