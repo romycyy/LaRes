@@ -1,0 +1,90 @@
+{
+  "id": "R-037",
+  "title": "Trace repair inside the real orchestrator: an end-to-end assembly-v2 run of run_full_evolution.py",
+  "hypothesis": "Building plateau-triggered expert-trace repair into EvolutionOrchestrator (with task-generic manifests and an expert-demonstration source) makes run_full_evolution.py itself solve assembly-v2, reproducing D-032 without the study-mode emulation.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.3,
+    "against": "the same orchestrator run with the trace-repair step disabled (exploration lane v2 only), same seeds and manifests; final incumbents on fresh development cases",
+    "rationale": "D-032 emulated the pipeline; this checks the real orchestrator, records and lineage. Two paired runs (repair on/off) per block, two blocks."
+  },
+  "protocol": {
+    "script": "scripts/run_full_evolution.py",
+    "config": "config/two_lane_search_v2.yaml",
+    "command": "python scripts/run_full_evolution.py --config config/assembly_two_lane_repair.yaml --seed <s> --log-dir <dir> (repair on/off configs, two seeds each)",
+    "seeds": [
+      3900,
+      3901,
+      3902,
+      3903,
+      3904,
+      3910,
+      3911,
+      3912,
+      3913,
+      3914
+    ],
+    "manifests": [
+      "config/manifests/push-v2_development.yaml"
+    ],
+    "episodes": 1660,
+    "llm_calls": 40,
+    "code_changes": [
+      "lares/core/training_pipeline.py (EvolutionOrchestrator: plateau trigger for the exploration lane, trace-repair slot with code-derived lineage)",
+      "scripts/run_full_evolution.py (task-generic manifests built from config pool seeds; expert demonstrations for any task in EXPERT_POLICY_MAP)",
+      "lares/search/schemas.py, lanes.py (a repair-lane label and its record rules)",
+      "config/assembly_two_lane_repair.yaml (new)",
+      "tests (mocked end-to-end run)"
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "approved",
+  "source": "implementer",
+  "falsified_by": "An upper paired bound below +0.30 between repair-on and repair-off final incumbents refutes the integrated effect; no plateau trigger in a block leaves it inconclusive for that block.",
+  "cost_estimate": {
+    "episodes": 3000,
+    "llm_calls": 40,
+    "wall_time_minutes": 120
+  },
+  "open_question_refs": [
+    "D-032 (R-036)",
+    "D-030 (R-034)",
+    "D-015 (R-018)"
+  ],
+  "briefing_sha256": "",
+  "proposal_call_id": "",
+  "approval": {
+    "by": "advisor (delegated by user 2026-10-22)",
+    "at": "2026-10-22T11:31:38",
+    "note": "approved by advisor gpt-6.1-sol (consult call_00065, 'revise' with changes applied) under the user's 2026-10-22 session delegation; the advisor reserves the live launch for the user after the mocked gate passes",
+    "consultation": "research/consultations/2026-10-22T113112_call_00065.json"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-22T11:29:05",
+      "from": "",
+      "to": "proposed",
+      "note": "proposed by the implementer after D-032: integrate trace repair into the orchestrator and generalise the run script beyond push-v2"
+    },
+    {
+      "at": "2026-10-22T11:31:38",
+      "from": "proposed",
+      "to": "proposed",
+      "note": "revised per consult call_00065: fittable lane disabled; two structure slots per run (prefix + one continuation); trigger after the prefix's 24-candidate search if no probe success and no promotion, at most once; repair slot = one expert-trace whole-controller edit with one linked correction and full lineage; demos via EXPERT_POLICY_MAP (>= 9/10); mocked end-to-end gate through run_full_evolution.py before any spend; blocks A (3900-3904) and B (3910-3914); <= 1660 episodes and 40 calls; launch only on the user's decision"
+    },
+    {
+      "at": "2026-10-22T11:31:38",
+      "from": "proposed",
+      "to": "approved",
+      "note": "approved by advisor gpt-6.1-sol (consult call_00065, 'revise' with changes applied) under the user's 2026-10-22 session delegation; the advisor reserves the live launch for the user after the mocked gate passes"
+    }
+  ],
+  "created_at": "2026-10-22T11:29:05"
+}
