@@ -30,7 +30,7 @@
     "needs_gpu": false,
     "needs_llm": true
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "With expert success at least 0.90 on the three contrast tasks, a contrast interval upper bound below +0.50 refutes the predicted separation. An interval including zero is inconclusive about a regime difference. Failed expert calibration makes the mechanism inconclusive pending a source-verified expert success measurement on the affected task.",
   "cost_estimate": {
@@ -51,12 +51,67 @@
     "started_at": "2026-10-22T09:26:21",
     "git_sha": "2c0eecc51af978021fdcb8d1545e497d0837965f",
     "dirty_worktree": true,
-    "log_dir": "logs/next_contact_regimes_s3540"
+    "log_dir": "logs/next_contact_regimes_s3540",
+    "finished_at": "2026-10-22T09:28:55"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "expert_calibration": {
+        "peg-insert-side-v2": 0.6333333333333333,
+        "hammer-v2": 1.0,
+        "soccer-v2": 0.9
+      },
+      "episodes": {
+        "expert": 90,
+        "probe": 0,
+        "screen": 0
+      },
+      "llm_calls": 0,
+      "outcome": "inconclusive: expert below 0.9 on {'peg-insert-side-v2': 0.6333333333333333}; no generation call made"
+    },
+    "controls": {
+      "note": "no learner arm was run; the predeclared calibration gate (expert >= 0.90 on every contrast task) failed"
+    },
+    "artifacts": [
+      "logs/next_contact_regimes_s3540/summary.json",
+      "logs/next_contact_regimes_s3540/manifests",
+      "logs/contact_regimes.run.log"
+    ],
+    "notes": "Expert calibration on each task's 30 frozen screen cases (pools 3540, 3541, 3544): hammer-v2 1.00, soccer-v2 0.90, peg-insert-side-v2 0.63. The gate requires >= 0.90 on all three, so per the protocol no structure was generated and the contact-regime contrast is inconclusive. The first launch stopped before any rollout because EXPERT_POLICY_MAP lacked peg-insert-side-v2 (added: SawyerPegInsertionSideV3Policy); the relaunch reused the frozen manifests. Missing measurement: a source-verified expert success measurement for peg-insert-side-v2 (MetaWorld's scripted expert reaches only 0.63 on these placements). 90 episodes, 0 LLM calls."
+  },
+  "prediction_outcome": {
+    "metric": "screen_success_rate",
+    "before": null,
+    "after": null,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.9,
+      "reasoning": "The predeclared calibration gate failed: MetaWorld's scripted expert solved only 0.63 of peg-insert-side-v2's 30 screen cases (hammer 1.00, soccer 0.90), so the protocol stopped before generation. No learner data exist; the contact-regime contrast is untested.",
+      "cited_artifacts": [
+        "logs/next_contact_regimes_s3540/summary.json"
+      ],
+      "next_experiment": "Either drop peg-insert-side as the insertion control (use a task whose expert is reliable) or accept a lower calibration bar; hammer (1.00) and soccer (0.90) are calibrated and could be scanned as further testbeds.",
+      "recorded_at": "2026-10-22T09:28:56",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 1.0,
+      "reasoning": "Peg-insert-side expert success was 0.6333, below the required 0.90 calibration gate [logs/next_contact_regimes_s3540/summary.json]. Hammer and soccer passed at 1.00 and 0.90, respectively, but calibration required every contrast task to pass [logs/next_contact_regimes_s3540/summary.json]. No learner arm ran, so the prediction's peg-insert-side control and impact-minus-insertion screen_success_rate contrast were not measured [logs/next_contact_regimes_s3540/summary.json]. The prediction is therefore neither supported nor refuted; these expert measurements do not establish a learner contact-regime difference [logs/next_contact_regimes_s3540/summary.json].",
+      "cited_artifacts": [
+        "logs/next_contact_regimes_s3540/summary.json"
+      ],
+      "next_experiment": "Source-verify the peg-insert-side expert, then reuse the calibration stage of scripts/compare_generation_modes.py with config/environment.yaml on 30 fresh development cases using unused seed 3550, without learner generation (30 simulator episodes, 0 LLM calls).",
+      "recorded_at": "2026-10-22T09:29:25",
+      "call_id": "call_00053"
+    }
+  ],
+  "decision_id": "D-026",
   "history": [
     {
       "at": "2026-10-22T09:25:06",
@@ -81,6 +136,18 @@
       "from": "approved",
       "to": "running",
       "note": "git 2c0eecc51a (dirty)"
+    },
+    {
+      "at": "2026-10-22T09:28:55",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-10-22T09:29:32",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-026: inconclusive"
     }
   ],
   "created_at": "2026-10-22T08:48:22"
