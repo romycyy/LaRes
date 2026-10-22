@@ -1,24 +1,26 @@
 # Research state
 
-_Generated 2026-10-22T09:29:32 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T09:49:16 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 1 |
+| running | 0 |
 | approved | 0 |
 | proposed | 0 |
-| decided | 26 |
+| decided | 27 |
 | rejected | 4 |
 
 ## Needs attention
 
-- **R-031** [running] Trace-conditioned assembly edits with one validity correction
-  - run the protocol, then `python scripts/research.py record R-031 --results <json>`
+- Nothing open. Run `python scripts/research.py propose` to ask the advisor for ideas.
 
 ## Last 5 decisions
 
+- D-027 · R-031 · **supported** · 2026-10-22
+  R-031 repeated R-029 with the pipeline's standard single validity correction and ten learner-to-expert handoff demonstrations (6/10 successful continuations). In both blocks the edit of the recoverable D-020 assembly-v2 parent that saw two successful expert placement traces scored 1.00 on 30 fresh promotion cases, while the summary-only edit scored 0.00: +1.000 [1.0, 1.0], 30/0/0, supported. The trace edits already succeed untrained (probe 1.0 at step 0). Three of four edits needed their one correction, which is why R-029 never tested the traces. The code reads observations through the schema; constants are centimetre-scale offsets. Narrow: one parent, one demonstration set, two blocks.
+  Next: Generalise trace-conditioned editing: another parent or fresh structure, another failing task, and as a repair step in the two-lane pipeline where an expert exists.
 - D-026 · R-030 · **inconclusive** · 2026-10-22
   R-030 planned an expert-calibrated contrast of learner success on impact tasks (hammer, soccer) against insertion (peg-insert-side). MetaWorld's scripted expert scored 1.00 on hammer, 0.90 on soccer and only 0.63 on peg-insert-side on the frozen screen cases, failing the predeclared >= 0.90 gate, so no structure was generated: inconclusive, 90 episodes, 0 LLM calls.
   Next: Replace the insertion control with a task whose expert is reliable, or scan hammer and soccer as further testbeds.
@@ -31,9 +33,6 @@ _Generated 2026-10-22T09:29:32 by `python scripts/research.py state` from `resea
 - D-023 · R-027 · **refuted** · 2026-10-22
   R-027 asked gpt-6.1-sol for one structural edit of the recoverable D-020 assembly-v2 parent, given the D-021 handoff evidence (expert completes 0.67 of its lifted grasps), keeping pre-lift logic and rewriting post-lift placement. The edit was valid first time, but under identical 24-candidate search neither the edit nor the parent ever succeeded: +0.000 [0, 0] on 30 promotion cases, refuted. Goal progress barely moved (0.220 to 0.225).
   Next: Assembly placement is not produced by parameter methods (D-022) or one targeted edit (D-023); consider breadth of independent edits, expert placement traces in the prompt, or the five hard tasks left unscanned.
-- D-022 · R-026 · **refuted** · 2026-10-22
-  R-026 fitted the two frozen D-020 assembly-v2 structures to ten successful expert demonstrations (deterministic MSE, checkpoints 0-1000 selected by rollout on 5 probe cases) and compared the winner with a five-candidate numerical search from the same starting vector, on 30 screen cases. Both arms scored 0.00: +0.000 [0, 0], refuted. Imitation never produced a probe success and lowered goal progress at every checkpoint (0.23 to 0.13-0.18), so step 0 was kept; gradients did reach the placement parameters.
-  Next: Parameter-level methods cannot seat the nut with these structures; try structural changes aimed at placement, or more independent structures (R-027).
 
 ## Standing constraints
 

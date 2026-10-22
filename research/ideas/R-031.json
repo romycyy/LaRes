@@ -36,7 +36,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "running",
+  "status": "decided",
   "source": "implementer",
   "falsified_by": "Zero success in both trace blocks among valid edits, or a fixed-pair interval upper bound below +0.20; an interval containing zero is inconclusive about an advantage. Invalid edits after the correction still score zero (intention to treat).",
   "cost_estimate": {
@@ -60,12 +60,168 @@
     "started_at": "2026-10-22T09:25:16",
     "git_sha": "d4e32d0dea4c9a68fc01b5a8d39d48ec232cd040",
     "dirty_worktree": true,
-    "log_dir": "logs/next_assembly_traces_s3600"
+    "log_dir": "logs/next_assembly_traces_s3600",
+    "finished_at": "2026-10-22T09:48:46"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": 1.0,
+      "t95": [
+        1.0,
+        1.0
+      ],
+      "wlt": [
+        30,
+        0,
+        0
+      ],
+      "per_block": {
+        "0": {
+          "n": 30,
+          "mean": 1.0,
+          "se": 0.0,
+          "low": 1.0,
+          "high": 1.0,
+          "p_value": 0.0,
+          "median": 1.0,
+          "level": 0.95,
+          "wins": 30,
+          "losses": 0,
+          "ties": 0
+        },
+        "1": {
+          "n": 30,
+          "mean": 1.0,
+          "se": 0.0,
+          "low": 1.0,
+          "high": 1.0,
+          "p_value": 0.0,
+          "median": 1.0,
+          "level": 0.95,
+          "wins": 30,
+          "losses": 0,
+          "ties": 0
+        }
+      },
+      "success": {
+        "b0_summary_only": 0.0,
+        "b0_trace": 1.0,
+        "b1_summary_only": 0.0,
+        "b1_trace": 1.0
+      },
+      "untrained_probe": {
+        "b0_summary_only": {
+          "index": 0,
+          "kind": "original",
+          "success": 0.0,
+          "progress": 0.23443630674964747
+        },
+        "b0_trace": {
+          "index": 0,
+          "kind": "original",
+          "success": 1.0,
+          "progress": 0.10174682827477448
+        },
+        "b1_summary_only": {
+          "index": 0,
+          "kind": "original",
+          "success": 0.0,
+          "progress": 0.234686413473227
+        },
+        "b1_trace": {
+          "index": 0,
+          "kind": "original",
+          "success": 1.0,
+          "progress": 0.10204343822059543
+        }
+      },
+      "probe_candidates_succeeding": {
+        "b0_summary_only": 0,
+        "b0_trace": 13,
+        "b1_summary_only": 0,
+        "b1_trace": 10
+      },
+      "edits": {
+        "b0_summary_only": {
+          "valid": true,
+          "corrected": true,
+          "first_attempt_passed": false,
+          "llm_calls": 2
+        },
+        "b0_trace": {
+          "valid": true,
+          "corrected": true,
+          "first_attempt_passed": false,
+          "llm_calls": 2
+        },
+        "b1_summary_only": {
+          "valid": true,
+          "corrected": false,
+          "first_attempt_passed": true,
+          "llm_calls": 1
+        },
+        "b1_trace": {
+          "valid": true,
+          "corrected": true,
+          "first_attempt_passed": false,
+          "llm_calls": 2
+        }
+      },
+      "handoff_demo_successes": 6,
+      "episodes": {
+        "demo": 10,
+        "probe": 480,
+        "promotion": 120
+      },
+      "llm_calls": 7
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "note": "control is the summary-only edit in the same block with the same correction allowance and search; the metric is already trace minus summary-only"
+    },
+    "artifacts": [
+      "logs/next_assembly_traces_s3600/summary.json",
+      "logs/next_assembly_traces_s3600/traces.json",
+      "logs/next_assembly_traces_s3600/edits",
+      "logs/next_assembly_traces_s3600/manifests",
+      "logs/trace_edits_v2.run.log"
+    ],
+    "notes": "Ten learner-to-expert handoffs of the frozen recoverable D-020 parent on demonstration pool 3600: 6/10 successful continuations (gate >= 2 passed); the trace arm saw two of them, every 4th post-handoff step. Two blocks (manifests 3605-3608, search root 3609). Both trace-conditioned edits seat the nut: 1.00 on 30 fresh promotion cases in each block, and they already succeed untrained (step-0 probe 1.0; 10 and 13 of 24 search candidates succeed). Both summary-only edits score 0.00 (probe 0.00, progress stuck at ~0.23 as in D-020..D-024). Trace minus summary-only: +1.000 [1.0, 1.0], 30/0/0 in both blocks. Three of four edits needed their one validation-only correction (both trace edits: gate_not_a_lever-type defects as in D-025), so R-029's no-correction rule is what hid this effect. The winning code reads tcp, obj, goal and gripper through the schema; its numeric constants are centimetre-scale offsets and thresholds, not absolute coordinates. Two blocks share one parent and one demonstration set, so this is a strong but narrow result. 610 episodes, 7 LLM calls."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 1.0,
+    "delta": 1.0,
+    "matched": true
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "supported",
+      "confidence": 0.85,
+      "reasoning": "Trace-conditioned edits of the recoverable assembly parent score 1.00 on 30 fresh promotion cases in both blocks versus 0.00 for summary-only edits: +1.000 [1.0, 1.0], 30/0/0, far above the predicted +0.20. The effect is the edit itself (step-0 probe success 1.0 before any search), it replicates across two independently generated edit pairs on separate manifests, and the code uses observations rather than copied coordinates. With D-025, the one-correction allowance was what let the traces be tested. Caveat: one parent, one demonstration set, two blocks.",
+      "cited_artifacts": [
+        "logs/next_assembly_traces_s3600/summary.json"
+      ],
+      "next_experiment": "Make trace-conditioned editing a pipeline repair step for tasks where the generator plateaus: (1) test it from a different parent or freshly generated structure, (2) on another failing task (e.g. hammer or soccer once scanned), and (3) as a lane in the two-lane search where an expert exists.",
+      "recorded_at": "2026-10-22T09:48:47",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "supported",
+      "confidence": 0.99,
+      "reasoning": "The named summary-only control was measured under the same correction allowance and search budget [logs/next_assembly_traces_s3600/summary.json]. The paired_success_difference was +1.00 with a 95% interval of [1.00, 1.00], exceeding the predicted +0.20 and excluding zero [logs/next_assembly_traces_s3600/summary.json]. Each block achieved trace success of 1.00 versus summary-only success of 0.00 on 30 promotion cases [logs/next_assembly_traces_s3600/summary.json]. All edits were valid after the allowed correction process; both trace edits required correction, but this comparison does not isolate correction's causal contribution [logs/next_assembly_traces_s3600/summary.json]. The result supports the specified comparison narrowly because the blocks shared their parent and demonstration set [logs/next_assembly_traces_s3600/summary.json].",
+      "cited_artifacts": [
+        "logs/next_assembly_traces_s3600/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-22T09:49:07",
+      "call_id": "call_00054"
+    }
+  ],
+  "decision_id": "D-027",
   "history": [
     {
       "at": "2026-10-22T09:23:35",
@@ -90,6 +246,18 @@
       "from": "approved",
       "to": "running",
       "note": "git d4e32d0dea (dirty)"
+    },
+    {
+      "at": "2026-10-22T09:48:46",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=True"
+    },
+    {
+      "at": "2026-10-22T09:49:16",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-027: supported"
     }
   ],
   "created_at": "2026-10-22T09:23:35"
