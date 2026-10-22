@@ -47,7 +47,7 @@
     "needs_gpu": false,
     "needs_llm": true
   },
-  "status": "proposed",
+  "status": "rejected",
   "source": "advisor",
   "falsified_by": "A paired interval upper bound below 0.15 refutes the predicted gain; an upper bound at or below zero also refutes the directional mechanism. An interval containing zero is inconclusive; the resolving measurement is the paired success difference over additional independent generation blocks on fresh development manifests. Skip execution if the scan has no task below 0.80.",
   "cost_estimate": {
@@ -67,6 +67,13 @@
   "prediction_outcome": {},
   "verdicts": [],
   "decision_id": "",
-  "history": [],
+  "history": [
+    {
+      "at": "2026-10-22T08:12:09",
+      "from": "proposed",
+      "to": "rejected",
+      "note": "Dropped by the advisor (gpt-6.1-sol, consult call) under the user's 2026-10-22 session delegation: its predeclared skip rule applies, since R-022 (D-019) found no task below 0.80; the mechanism is untested, not refuted."
+    }
+  ],
   "created_at": "2026-10-22T07:55:56"
 }
