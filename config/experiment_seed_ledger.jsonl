@@ -256,3 +256,9 @@
 {"seed": 3816, "namespace": "mt1_pool", "use": "R-035 soccer-v2: probe and confirmation pool", "artifact": "logs/research/recoverable_plateau_scan", "recorded_at": "2026-10-22T10:59:58", "backfilled": false}
 {"seed": 3817, "namespace": "generation_block", "use": "R-035 soccer-v2: generation", "artifact": "logs/research/recoverable_plateau_scan", "recorded_at": "2026-10-22T10:59:58", "backfilled": false}
 {"seed": 3818, "namespace": "fitting", "use": "R-035 soccer-v2: search", "artifact": "logs/research/recoverable_plateau_scan", "recorded_at": "2026-10-22T10:59:58", "backfilled": false}
+{"seed": 3820, "namespace": "mt1_pool", "use": "R-036: development manifest (probe 0-4, promotion 10-39)", "artifact": "logs/research/two_lane_plateau_repair/block_0", "recorded_at": "2026-10-22T11:12:42", "backfilled": false}
+{"seed": 3821, "namespace": "generation_block", "use": "R-036: exploration generation and search", "artifact": "logs/research/two_lane_plateau_repair/block_0", "recorded_at": "2026-10-22T11:12:42", "backfilled": false}
+{"seed": 3822, "namespace": "mt1_pool", "use": "R-036: expert demonstrations", "artifact": "logs/research/two_lane_plateau_repair/block_0", "recorded_at": "2026-10-22T11:12:42", "backfilled": false}
+{"seed": 3823, "namespace": "generation_block", "use": "R-036: trace-repair branch", "artifact": "logs/research/two_lane_plateau_repair/block_0", "recorded_at": "2026-10-22T11:12:42", "backfilled": false}
+{"seed": 3824, "namespace": "generation_block", "use": "R-036: fresh branch", "artifact": "logs/research/two_lane_plateau_repair/block_0", "recorded_at": "2026-10-22T11:12:42", "backfilled": false}
+{"seed": 3825, "namespace": "fitting", "use": "R-036: reserved spare stream", "artifact": "logs/research/two_lane_plateau_repair/block_0", "recorded_at": "2026-10-22T11:12:42", "backfilled": false}

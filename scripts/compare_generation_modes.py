@@ -2040,6 +2040,157 @@ def run_recoverable_plateau_scan(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+#  R-036: does plateau-triggered trace repair change the pipeline's final incumbent?
+# ---------------------------------------------------------------------------
+
+
+def strict_promotion(challenger: dict, incumbent: dict) -> dict:
+    """The pipeline's rule (lares/eval/promotion.py): replace only if the paired success difference is strictly positive
+    and the paired t interval's lower bound is above zero; ties keep the incumbent."""
+    from lares.eval.stats import t_interval
+
+    ids = sorted(challenger)
+    d = [challenger[c] - incumbent[c] for c in ids]
+    t = t_interval(d)
+    promoted = t["mean"] > 0 and t["low"] is not None and t["low"] > 0
+    return {"promoted": bool(promoted), "mean_difference": t["mean"], "low": t["low"], "high": t["high"]}
+
+
+def run_plateau_repair_pipeline(args) -> int:
+    sys.path.insert(0, _SCRIPT_DIR)
+    import compare_child_vs_parent as cvp
+    from lares.core.obs_schema import get_obs_schema
+    from lares.core.training_pipeline import load_policy_prompt_assets as assets
+    from lares.eval import make_manifest_env
+    from lares.eval.runner import PolicyActor, evaluate_manifest
+    from lares.eval.stats import t_interval, win_loss_tie
+    from lares.fitting.structure_bank import instantiate_source
+    from lares.search import rollout_search
+
+    base, task = int(args.pool_seed), "assembly-v2"   # 3820 dev pool, 3821 exploration, 3822 demos, 3823 repair, 3824 fresh
+    os.makedirs(args.out_dir, exist_ok=True)
+    entries = [(base, "mt1_pool", "R-036: development manifest (probe 0-4, promotion 10-39)"),
+               (base + 1, "generation_block", "R-036: exploration generation and search"),
+               (base + 2, "mt1_pool", "R-036: expert demonstrations"),
+               (base + 3, "generation_block", "R-036: trace-repair branch"), (base + 4, "generation_block", "R-036: fresh branch"),
+               (base + 5, "fitting", "R-036: reserved spare stream")]
+    print(f"  seeds: {cvp.ensure_entries_reserved(entries, args.out_dir)}")
+    if args.reserve_only:
+        return 0
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise SystemExit("R-036 needs OPENAI_API_KEY")
+    from lares.core.training_pipeline import ensure_mujoco_headless_gl
+
+    ensure_mujoco_headless_gl()
+    schema, mdir = get_obs_schema(task), os.path.join(args.out_dir, "manifests")
+    full, _ = cvp.fresh_manifest(task, base, 50, 150, mdir, role="dev")
+    demo, _ = cvp.fresh_manifest(task, base + 2, 10, 150, mdir, role="demo", also_disjoint_from=[full])
+    probe, promotion = full.head(5), full.slice(10, 40)
+    env = make_manifest_env(full, full.resolve_pool(), 200)
+    episodes, calls, log = {"bank_probe": 0, "exploration_probe": 0, "incumbent": 0, "demo": 0, "branch_probe": 0,
+                            "finalist": 0}, 0, {}
+
+    def probe_score(pol, key):
+        r = evaluate_manifest(PolicyActor(pol, name="probe"), probe, env, max_steps=150)
+        episodes[key] += len(r.episodes)
+        prog = [e.signed_goal_progress for e in r.episodes if e.signed_goal_progress is not None]
+        return {"success": r.success_rate, "progress": float(np.mean(prog)) if prog else 0.0}
+
+    def on_promotion(pol, key):
+        r = evaluate_manifest(PolicyActor(pol, name="promotion"), promotion, env, max_steps=150)
+        episodes[key] += len(r.episodes)
+        return {e.case_id: float(e.success) for e in r.episodes}
+
+    def searched(source, seed, key):
+        original = instantiate_source(source, 39, 4, schema=schema)
+        original.fixed_action_scale = 0.1
+        cands = rollout_search.independent_candidates(original, seed)
+        trace = [probe_score(pol, key) for _, pol in cands]
+        pick = min(range(len(trace)), key=lambda i: (-trace[i]["success"], -trace[i]["progress"], i))
+        return cands, trace, pick
+
+    # Prefix: the five fittable-bank parents at declared values (bc_steps = 0) and one single-phase exploration.
+    with open(os.path.join(_PROJECT_ROOT, "config", "fittable_bank", "seed_bank.json"), encoding="utf-8") as f:
+        members = json.load(f)["members"]
+    screened = {}
+    for sid, m in members.items():
+        with open(os.path.join(_PROJECT_ROOT, m["source_path"]), encoding="utf-8") as f:
+            pol = instantiate_source(f.read(), 39, 4, schema=schema)
+        pol.fixed_action_scale = 0.1
+        screened[f"bank:{sid}"] = (pol, probe_score(pol, "bank_probe"))
+    final, n = generate_one(assets(task), "", os.path.join(args.out_dir, "exploration"),
+                            SimpleNamespace(**{**vars(args), "env_name": task}), max_repair=1)
+    calls += n
+    log["exploration_valid"] = bool(final.valid)
+    if not final.valid:
+        log["outcome"] = "inconclusive: the exploration structure failed validation"
+    else:
+        exploration_source = final.code
+        cands, trace, pick = searched(exploration_source, base + 1, "exploration_probe")
+        screened["exploration"] = (cands[pick][1], trace[pick])
+        log["exploration_probe_successes"] = sum(t["success"] > 0 for t in trace)
+    challenger = max(screened, key=lambda k: (screened[k][1]["success"], screened[k][1]["progress"]))
+    null = {c.case_id: 0.0 for c in promotion.episodes}
+    challenger_outcome = on_promotion(screened[challenger][0], "incumbent")
+    first = strict_promotion(challenger_outcome, null)
+    incumbent = {"id": challenger if first["promoted"] else "null_incumbent", "outcomes": challenger_outcome if first["promoted"] else null}
+    log.update(screen={k: v[1] for k, v in screened.items()}, prefix_challenger=challenger, prefix_promotion=first,
+               prefix_incumbent=incumbent["id"])
+    if "outcome" not in log and log["exploration_probe_successes"] > 0:
+        log["outcome"] = "inconclusive: no trigger (the exploration lane did not plateau)"
+    if "outcome" in log:
+        log.update(episodes=episodes, llm_attempts=calls)
+        with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+            json.dump(log, f, indent=2, default=str)
+        print(f"  {log['outcome']}; episodes {episodes}", flush=True)
+        return 0
+    # Fork at the identical checkpoint: trace repair of the exploration structure vs a fresh no-trace generation.
+    traces = collect_expert_traces(task, demo, make_manifest_env(demo, demo.resolve_pool(), 200), schema)
+    episodes["demo"] += len(demo)
+    log["demo_successes"] = traces["successes"]
+    block = trace_block(traces).replace("Successful expert continuations after your lift",
+                                        "Successful expert episodes after the expert lifted the nut")
+    request = WHOLE_CONTROLLER_REQUEST.replace("{successes}", str(traces["successes"])).replace(
+        "{episodes}", str(len(demo))).replace("{parent}", exploration_source.strip()) + "\n" + block
+    branches = {}
+    code, rec = make_edit(request, os.path.join(args.out_dir, "branch_trace_repair"), args, allow_correction=True)
+    calls += rec.get("llm_calls", 0)
+    branches["trace_repair"] = {"valid": rec["valid"], "source": code, "seed": base + 3}
+    fresh, n = generate_one(assets(task), "", os.path.join(args.out_dir, "branch_fresh"),
+                            SimpleNamespace(**{**vars(args), "env_name": task}), max_repair=1)
+    calls += n
+    branches["fresh_generation"] = {"valid": bool(fresh.valid), "source": fresh.code if fresh.valid else None, "seed": base + 4}
+    finals = {}
+    for name, br in branches.items():
+        if not br["source"]:
+            finals[name] = {"incumbent": incumbent["id"], "outcomes": incumbent["outcomes"], "promotion": None,
+                            "declared_value_probe": None, "selected_probe": None}
+            continue
+        cands, trace, pick = searched(br["source"], br["seed"], "branch_probe")
+        outcome = on_promotion(cands[pick][1], "finalist")
+        decision = strict_promotion(outcome, incumbent["outcomes"])
+        finals[name] = {"incumbent": name if decision["promoted"] else incumbent["id"],
+                        "outcomes": outcome if decision["promoted"] else incumbent["outcomes"], "promotion": decision,
+                        "declared_value_probe": trace[0], "selected_probe": trace[pick],
+                        "finalist_promotion_success": float(np.mean(list(outcome.values())))}
+        print(f"  {name}: valid={br['valid']} declared {trace[0]['success']:.2f} selected {trace[pick]['success']:.2f} "
+              f"finalist {finals[name]['finalist_promotion_success']:.2f} promoted={decision['promoted']}", flush=True)
+    ids = sorted(null)
+    d = [finals["trace_repair"]["outcomes"][c] - finals["fresh_generation"]["outcomes"][c] for c in ids]
+    log.update(branches={k: {x: v for x, v in b.items() if x != "source"} for k, b in branches.items()},
+               finals={k: {x: v for x, v in f.items() if x != "outcomes"} for k, f in finals.items()},
+               final_incumbent_success={k: float(np.mean(list(f["outcomes"].values()))) for k, f in finals.items()},
+               paired_success_difference=float(np.mean(d)), paired={**t_interval(d), **win_loss_tie(d)},
+               episodes=episodes, llm_attempts=calls, outcome="triggered")
+    with open(os.path.join(args.out_dir, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(log, f, indent=2, default=str)
+    p = log["paired"]
+    print(f"  final incumbents trace-repair minus fresh: {p['mean']:+.3f} [{p['low']}, {p['high']}]; "
+          f"{log['final_incumbent_success']}; episodes {episodes}; LLM attempts {calls}", flush=True)
+    return 0
+
+
 def run_task_scan(args) -> int:
     import multiprocessing as mp
 
@@ -2142,7 +2293,7 @@ def parse_args():
     p.add_argument("--scan-set", choices=["default", "hard"], default="default")
     p.add_argument("--assembly-study", choices=["reciprocal-handoff", "expert-fit-vs-numerical", "targeted-placement-edit",
                                                 "breadth-vs-depth", "trace-edit-suite", "expert-only-traces",
-                                                "hammer-transfer", "parent-transfer"],
+                                                "hammer-transfer", "parent-transfer", "plateau-repair-pipeline"],
                    default="")
     p.add_argument("--pool-seed", type=int)
     p.add_argument("--demo-cases", type=int, default=5, help="trace-edit-suite: learner-to-expert handoff demonstrations")
@@ -2178,6 +2329,8 @@ def main():
         return run_hammer_transfer(args)
     if args.assembly_study == "parent-transfer":
         return run_assembly_parent_transfer(args)
+    if args.assembly_study == "plateau-repair-pipeline":
+        return run_plateau_repair_pipeline(args)
     if args.research_mode == "recoverable-plateau-scan":
         return run_recoverable_plateau_scan(args)
     if args.research_mode == "contact-regime-scan":

@@ -1,21 +1,21 @@
 # Research state
 
-_Generated 2026-10-22T11:10:37 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
+_Generated 2026-10-22T11:12:40 by `python scripts/research.py state` from `research/ideas/` and `research/decisions.jsonl`. Do not edit by hand._
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 0 |
+| running | 1 |
 | approved | 0 |
-| proposed | 1 |
+| proposed | 0 |
 | decided | 31 |
 | rejected | 4 |
 
 ## Needs attention
 
-- **R-036** [proposed] Plateau-triggered trace repair versus exploration restart
-  - USER decides: `python scripts/research.py approve R-036` or `reject R-036 --reason ...`
+- **R-036** [running] Plateau-triggered trace repair versus exploration restart
+  - run the protocol, then `python scripts/research.py record R-036 --results <json>`
 
 ## Last 5 decisions
 

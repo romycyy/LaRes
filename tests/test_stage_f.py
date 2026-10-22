@@ -811,3 +811,14 @@ class TestContactContrast(unittest.TestCase):
         self.assertAlmostEqual(out["mean"], 0.5 - 5 / 30)
         self.assertLess(out["low"], out["mean"])
         self.assertGreater(out["high"], out["mean"])
+
+
+class TestStrictPromotion(unittest.TestCase):
+    def test_ties_keep_the_incumbent_and_a_clear_win_promotes(self):
+        sys.path.insert(0, os.path.join(_PROJECT_ROOT, "scripts"))
+        import compare_generation_modes as cgm
+
+        zero = {f"c{i}": 0.0 for i in range(10)}
+        self.assertFalse(cgm.strict_promotion(dict(zero), zero)["promoted"])
+        self.assertTrue(cgm.strict_promotion({k: 1.0 for k in zero}, zero)["promoted"])
+        self.assertFalse(cgm.strict_promotion({**zero, "c0": 1.0}, zero)["promoted"])   # positive mean, interval spans 0
