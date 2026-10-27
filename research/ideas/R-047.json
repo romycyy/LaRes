@@ -27,7 +27,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "running",
   "source": "advisor",
   "falsified_by": "With verified delay injection and passing reproducibility controls, a paired interval entirely above -0.25 refutes the predicted decrease; an interval crossing -0.25 is inconclusive.",
   "cost_estimate": {
@@ -45,7 +45,12 @@
     "round": 1,
     "note": "This tests feedback timing rather than repeating D-040's constant-clamp intervention, with independent repeats and hand-delay controls. At 160 simulator episodes and zero LLM calls, it is the cheapest informative next experiment. Its weakest point is temporal distribution shift: the result character"
   },
-  "run": {},
+  "run": {
+    "started_at": "2026-10-27T17:06:22",
+    "git_sha": "08cfe506aaf9365fcebe67e962521a20b359f1ac",
+    "dirty_worktree": false,
+    "log_dir": ""
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -62,6 +67,12 @@
       "from": "approved",
       "to": "approved",
       "note": "seed 4200 recorded in config/experiment_seed_ledger.jsonl with the frozen manifest; cleared from protocol.seeds so start does not read its own manifest as spent"
+    },
+    {
+      "at": "2026-10-27T17:06:22",
+      "from": "approved",
+      "to": "running",
+      "note": "git 08cfe506aa"
     }
   ],
   "created_at": "2026-10-27T16:59:50",
