@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-10-27T14:27:39 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-10-27T15:20:43 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -10,17 +10,15 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 1 |
+| running | 0 |
 | approved | 2 |
 | proposed | 0 |
 | deferred | 1 |
-| decided | 38 |
+| decided | 39 |
 | rejected | 4 |
 
 ## Needs attention
 
-- **R-045** [running] Fit dense expert labels into the R-042 prefix controllers, selecting only by rollouts
-  - run the protocol, then `python scripts/research.py record R-045 --results <json>`
 - **R-044** [approved] 1. Identify which state feedback the qualified expert needs
   - `python scripts/research.py start R-044` then run its command
 - **R-046** [approved] 3. Preserve the scripted gait while repairing retention feedback
@@ -32,6 +30,9 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 
 ## Last 5 decisions
 
+- D-039 · R-045 · **refuted** · 2026-10-27
+  Primary dense_fit minus rollout_search final-incumbent fresh success is 0.000 [0,0] over four blocks (neither arm promoted anywhere); the interval lies below the predicted +0.15, so the prediction is refuted under this protocol. As predeclared, an all-zero result cannot separate insufficient structure from ineffective fitting, so this does not show dense labels are useless in general. Mechanistic evidence: fitting succeeded as optimisation (MSE 2-4x lower, about 0.33 floor per action dimension) and rollouts chose fitted checkpoints in 3/4 blocks, yet no fitted setting scored a single probe success, and in block 2 every fitted checkpoint collapsed tail-hit (0.336 to 0.03-0.06). Lower imitation loss did not track rollout quality, matching the MetaWorld Stage E finding. The only success came from rollout search (block 3 local draw: 3/30 promotion, 3/30 fresh, not promoted). Expert 48/48 and parity 0 flips rule out integration faults. Secondary selected-setting contrast -0.025 [-0.105,+0.055].
+  Next: Stage 3 symbolic controllers sit at the floor under prompting, sparse traces and dense fitting alike; measure base rates on Stage 1/2 (R-044's lesion study can tell which feedback a structure must contain) before another Stage-3 repair comparison.
 - D-038 · R-042 · **refuted** · 2026-10-27
   The predeclared primary, event minus uniform fresh sustained success paired over four blocks, is exactly 0.000 with a degenerate [0,0] interval; the protocol's conclusiveness rule (>=3 eligible blocks) is met with 4/4 triggers fired, and the interval excludes the predicted +0.20, so the prediction as stated is refuted. The caveat is a floor: all twelve continuation arms ended with the null incumbent, so the study cannot rank keyframe rules at any effect size it could detect and does not show trace repair is useless in general. Development evidence agrees there is no trace benefit: promotion-set successes no_trace 2/120, uniform 0/120, event 1/120; exploratory tail-hit contrasts event-uniform -0.047 [-0.195,+0.102], uniform-no_trace +0.079 [-0.088,+0.245]. Trace-arm candidates in blocks 0-1 spin while held (highest tail-hit 0.40, 0.335) but drop the pen in 28-30 of 30 promotion cases, consistent with D-037: the expert's competence is its feedback map, which 32 sparse state-action keyframes from 2 episodes do not convey to a 6-10 parameter controller. Demonstrations 10/10 and parity 0 flips, so the null is not an integration fault.
   Next: Stage 3 is at the floor for single-step symbolic exploration; next test a dense, fitted use of the expert (e.g. parameter fitting of the edited controller to expert state-action pairs, rollout-selected) or move the repair study to Stage 1/2 where generated controllers have non-zero base rates, so a trace effect is measurable.
@@ -44,9 +45,6 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 - D-035 · R-039 · **supported** · 2026-10-27
   R-039 tested whether a scripted feedback finger gait could qualify as the pen-spin expert. Tuned on a debug seed only and frozen before the development cases, the gait regulates roll rate through the long fingers' flexion (the fingers act as a variable slope), which turns the open-loop oscillator's rocking into fast one-directional spin (21-26 rad/s mean). On 90 pooled promotion pairs it beat the frozen R-038 oscillator by +0.411 [0.307, 0.515] sustained success, promoting on every stage: supported. It does not qualify as an expert on any stage: 14/30, 16/30 and 7/30 sustained successes against the 27/30 rule, with failures from drops and tail dips, not speed (stage 3's 0.08 m tolerance costs most); it also tumbles the pen end over end (3.5-4.8 rad/s). The frozen bit-identity reproducibility control failed (GPU PhysX at batch 40 is not bit-deterministic across processes: 1-2/40 environments diverge after step 78) and was amended before any development case ran to zero outcome flips and at most 4/40 diverged environments, which passed (0 flips in 240 pairs). The user's fallback, a PPO expert, now applies to all three stages.
   Next: Re-triage R-040 (PPO expert) for all three stages, recalibrated as argued in its round-1 triage: budget in env steps with many parallel envs, success and roll logged separately from return, a check that the reward (centring 3.0 vs spin 0.15 at stage 1) does not teach holding still, and the D-034 reducer for qualification. Separate idea: should the frozen gait's 47-53% sustained success seed the policy-search pipeline as a non-expert prior, or the tail-fraction near-misses inform a less brittle reducer?
-- D-034 · R-038 · **supported** · 2026-10-27
-  R-038 built the first manifest-driven evaluation path for the Shadow Hand pen-spin task (frozen reset placements written into the simulator, a named 157-d observation layout, per-step traces) and audited the episode success rule the env leaves undefined. On 60 identical trajectories (3 stages x 10 probe cases x neutral hand and open-loop finger oscillator), any-hit success was 0.983 and sustained success (time-out without a fall, predicate true on all of the final 60 steps) 0.000: paired -0.983 [-1.017, -0.950], supported. Any-hit is degenerate: a neutral hand scores 1.0 because the dropped pen rolls on landing at steps 5-8, while it drops the pen in 29/30 episodes. The oscillator keeps the pen in hand to time-out in 29/30 episodes and passes 84/56/39% of tail steps (stage 1/2/3) at about 4 rad/s of roll, but never all 60, so whether 'all steps' is too strict for a periodic gait is open. Two infrastructure findings: the previous run's action leaked into the next run's observation, and a second rollout in one Isaac process is not reproducible (the first is bit-identical across processes), so protocols run one process per cell. The task rewards roll about the pen's own axis; end-over-end rotation stays below 0.8 rad/s.
-  Next: Re-triage R-039 (scripted feedback gait) with the sustained rule frozen as the qualification reducer, and report tail-hit fraction beside it so a periodic gait's near-misses are visible. Open question to propose: is 'all 60 steps' too strict for any periodic gait, i.e. should the rule be a tail-fraction or mean-rate criterion? Decide it before any expert is qualified, not after.
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 

@@ -518,6 +518,9 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
 - **R-042 result (D-038, refuted).** Stage 3 is a floor for this pipeline: the trigger fired in 4/4 blocks and all twelve
   continuation arms (no_trace, uniform, event) kept the null incumbent, so every contrast is exactly 0. Trace-arm
   candidates spin while held but mostly drop the pen. A trace study here needs a non-zero base rate first.
+- **R-045 result (D-039, refuted).** Dense fitting of the R-042 prefix controllers to 4308 expert state-action pairs
+  (`dense_fit.py`, `--study dense_feedback_fit`) cut MSE 2-4x but never scored a probe success, and can collapse
+  rollouts (block 2). Imitation loss does not track pen-spin success, as in MetaWorld. Both arms stayed null.
 - **Code extraction.** Generated code keeps only the class, so module-level constants in a reply are dropped.
 
 **Isaac Lab ShadowHandSpin.** A second, parallel stack merged in from the Isaac branch:

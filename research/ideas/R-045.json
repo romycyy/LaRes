@@ -36,7 +36,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The paired interval of block-level fresh incumbent differences (dense_fit minus rollout_search) lies entirely below +0.15. An interval containing zero is no evidence of improvement; an all-zero result cannot distinguish insufficient controller capacity from ineffective fitting.",
   "cost_estimate": {
@@ -61,12 +61,465 @@
     "started_at": "2026-10-27T14:24:11",
     "git_sha": "d5200616ef55c5b294cf7b6132e07217f2a7947a",
     "dirty_worktree": true,
-    "log_dir": ""
+    "log_dir": "",
+    "finished_at": "2026-10-27T15:20:00"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.0,
+      "paired_success_difference_ci95": [
+        0.0,
+        0.0
+      ],
+      "blocks": 4,
+      "dense_fit_minus_rollout_search_fresh_incumbent": {
+        "per_block": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "n": 4,
+        "mean": 0.0,
+        "se": 0.0,
+        "low": 0.0,
+        "high": 0.0,
+        "p_value": 1.0
+      },
+      "dense_fit_minus_rollout_search_fresh_selected": {
+        "per_block": [
+          0.0,
+          0.0,
+          0.0,
+          -0.1
+        ],
+        "n": 4,
+        "mean": -0.025,
+        "se": 0.025,
+        "low": -0.10456115763210658,
+        "high": 0.05456115763210658,
+        "p_value": 0.39100221895577053
+      },
+      "promoted": {
+        "rollout_search": 0,
+        "dense_fit": 0
+      },
+      "dense_fit_selected_steps": [
+        "fit_step250",
+        "fit_step500",
+        "fit_step0",
+        "fit_step1000"
+      ],
+      "per_arm": {
+        "rollout_search": [
+          {
+            "block": 0,
+            "selected": "search0_original",
+            "probe": [
+              {
+                "label": "search0_original",
+                "success": 0.0,
+                "tail_hit": 0.252
+              },
+              {
+                "label": "search1_local",
+                "success": 0.0,
+                "tail_hit": 0.249
+              },
+              {
+                "label": "search2_global",
+                "success": 0.0,
+                "tail_hit": 0.051
+              },
+              {
+                "label": "search3_local",
+                "success": 0.0,
+                "tail_hit": 0.179
+              }
+            ],
+            "screen_success": 0.0,
+            "promotion_success": 0.0,
+            "promoted": false,
+            "promotion_p_value": 1.0,
+            "fresh_selected_success": 0.0,
+            "fresh_selected_tail_hit": 0.254,
+            "fresh_failure_labels": {
+              "dropped": 22,
+              "slow_spin": 6,
+              "off_centre": 2
+            }
+          },
+          {
+            "block": 1,
+            "selected": "search3_local",
+            "probe": [
+              {
+                "label": "search0_original",
+                "success": 0.0,
+                "tail_hit": 0.06
+              },
+              {
+                "label": "search1_local",
+                "success": 0.0,
+                "tail_hit": 0.053
+              },
+              {
+                "label": "search2_global",
+                "success": 0.0,
+                "tail_hit": 0.0
+              },
+              {
+                "label": "search3_local",
+                "success": 0.0,
+                "tail_hit": 0.062
+              }
+            ],
+            "screen_success": 0.0,
+            "promotion_success": 0.0,
+            "promoted": false,
+            "promotion_p_value": 1.0,
+            "fresh_selected_success": 0.0,
+            "fresh_selected_tail_hit": 0.068,
+            "fresh_failure_labels": {
+              "off_centre": 10,
+              "slow_spin": 12,
+              "dropped": 8
+            }
+          },
+          {
+            "block": 2,
+            "selected": "search0_original",
+            "probe": [
+              {
+                "label": "search0_original",
+                "success": 0.0,
+                "tail_hit": 0.336
+              },
+              {
+                "label": "search1_local",
+                "success": 0.0,
+                "tail_hit": 0.281
+              },
+              {
+                "label": "search2_global",
+                "success": 0.0,
+                "tail_hit": 0.092
+              },
+              {
+                "label": "search3_local",
+                "success": 0.0,
+                "tail_hit": 0.131
+              }
+            ],
+            "screen_success": 0.0,
+            "promotion_success": 0.0,
+            "promoted": false,
+            "promotion_p_value": 1.0,
+            "fresh_selected_success": 0.0,
+            "fresh_selected_tail_hit": 0.15,
+            "fresh_failure_labels": {
+              "dropped": 13,
+              "slow_spin": 13,
+              "off_centre": 4
+            }
+          },
+          {
+            "block": 3,
+            "selected": "search3_local",
+            "probe": [
+              {
+                "label": "search0_original",
+                "success": 0.0,
+                "tail_hit": 0.08
+              },
+              {
+                "label": "search1_local",
+                "success": 0.0,
+                "tail_hit": 0.077
+              },
+              {
+                "label": "search2_global",
+                "success": 0.0,
+                "tail_hit": 0.0
+              },
+              {
+                "label": "search3_local",
+                "success": 0.2,
+                "tail_hit": 0.2
+              }
+            ],
+            "screen_success": 0.0,
+            "promotion_success": 0.1,
+            "promoted": false,
+            "promotion_p_value": 0.08307466551442909,
+            "fresh_selected_success": 0.1,
+            "fresh_selected_tail_hit": 0.149,
+            "fresh_failure_labels": {
+              "slow_spin": 16,
+              "dropped": 2,
+              "off_centre": 9,
+              "None": 3
+            }
+          }
+        ],
+        "dense_fit": [
+          {
+            "block": 0,
+            "selected": "fit_step250",
+            "probe": [
+              {
+                "label": "fit_step0",
+                "success": 0.0,
+                "tail_hit": 0.252
+              },
+              {
+                "label": "fit_step250",
+                "success": 0.0,
+                "tail_hit": 0.256
+              },
+              {
+                "label": "fit_step500",
+                "success": 0.0,
+                "tail_hit": 0.23
+              },
+              {
+                "label": "fit_step1000",
+                "success": 0.0,
+                "tail_hit": 0.138
+              }
+            ],
+            "screen_success": 0.0,
+            "promotion_success": 0.0,
+            "promoted": false,
+            "promotion_p_value": 1.0,
+            "fresh_selected_success": 0.0,
+            "fresh_selected_tail_hit": 0.246,
+            "fresh_failure_labels": {
+              "dropped": 23,
+              "slow_spin": 3,
+              "off_centre": 4
+            },
+            "fit_mse": [
+              0.9178,
+              0.3482,
+              0.3376,
+              0.336
+            ]
+          },
+          {
+            "block": 1,
+            "selected": "fit_step500",
+            "probe": [
+              {
+                "label": "fit_step0",
+                "success": 0.0,
+                "tail_hit": 0.06
+              },
+              {
+                "label": "fit_step250",
+                "success": 0.0,
+                "tail_hit": 0.062
+              },
+              {
+                "label": "fit_step500",
+                "success": 0.0,
+                "tail_hit": 0.101
+              },
+              {
+                "label": "fit_step1000",
+                "success": 0.0,
+                "tail_hit": 0.097
+              }
+            ],
+            "screen_success": 0.0,
+            "promotion_success": 0.0,
+            "promoted": false,
+            "promotion_p_value": 1.0,
+            "fresh_selected_success": 0.0,
+            "fresh_selected_tail_hit": 0.065,
+            "fresh_failure_labels": {
+              "slow_spin": 12,
+              "off_centre": 13,
+              "dropped": 5
+            },
+            "fit_mse": [
+              0.683,
+              0.3305,
+              0.3281,
+              0.328
+            ]
+          },
+          {
+            "block": 2,
+            "selected": "fit_step0",
+            "probe": [
+              {
+                "label": "fit_step0",
+                "success": 0.0,
+                "tail_hit": 0.336
+              },
+              {
+                "label": "fit_step250",
+                "success": 0.0,
+                "tail_hit": 0.035
+              },
+              {
+                "label": "fit_step500",
+                "success": 0.0,
+                "tail_hit": 0.058
+              },
+              {
+                "label": "fit_step1000",
+                "success": 0.0,
+                "tail_hit": 0.028
+              }
+            ],
+            "screen_success": 0.0,
+            "promotion_success": 0.0,
+            "promoted": false,
+            "promotion_p_value": 1.0,
+            "fresh_selected_success": 0.0,
+            "fresh_selected_tail_hit": 0.15,
+            "fresh_failure_labels": {
+              "dropped": 13,
+              "slow_spin": 13,
+              "off_centre": 4
+            },
+            "fit_mse": [
+              1.2953,
+              0.3484,
+              0.3306,
+              0.3292
+            ]
+          },
+          {
+            "block": 3,
+            "selected": "fit_step1000",
+            "probe": [
+              {
+                "label": "fit_step0",
+                "success": 0.0,
+                "tail_hit": 0.08
+              },
+              {
+                "label": "fit_step250",
+                "success": 0.0,
+                "tail_hit": 0.075
+              },
+              {
+                "label": "fit_step500",
+                "success": 0.0,
+                "tail_hit": 0.027
+              },
+              {
+                "label": "fit_step1000",
+                "success": 0.0,
+                "tail_hit": 0.153
+              }
+            ],
+            "screen_success": 0.0,
+            "promotion_success": 0.0,
+            "promoted": false,
+            "promotion_p_value": 1.0,
+            "fresh_selected_success": 0.0,
+            "fresh_selected_tail_hit": 0.214,
+            "fresh_failure_labels": {
+              "off_centre": 12,
+              "dropped": 17,
+              "slow_spin": 1
+            },
+            "fit_mse": [
+              1.3736,
+              0.4164,
+              0.3959,
+              0.3643
+            ]
+          }
+        ]
+      },
+      "expert": {
+        "successes": 48,
+        "episodes": 48,
+        "pairs_per_block": 4308
+      },
+      "parity": {
+        "batch": 40,
+        "sustained_outcome_flips": 0,
+        "diverged_envs": 0,
+        "max_diverged_envs": 4,
+        "passes": true,
+        "successes": [
+          40,
+          40
+        ],
+        "episodes": 80
+      },
+      "episodes_total": 1008,
+      "llm_calls": 0
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "baseline": "rollout_search arm: the same frozen R-042 prefix controller per block, its selected parameters plus three predeclared draws (local, global, local) on the same 10 probe cases; fresh 30-case sustained success of its final incumbent",
+      "parity_gate": {
+        "passes": true,
+        "sustained_outcome_flips": 0,
+        "diverged_envs": 0
+      }
+    },
+    "artifacts": [
+      "logs/pen_spin/r045_dense_fit/summary.json",
+      "logs/pen_spin/r045_dense_fit/parity.json",
+      "logs/pen_spin/r045_dense_fit/block0/rollout_search/arm.json",
+      "logs/pen_spin/r045_dense_fit/block0/dense_fit/arm.json",
+      "logs/pen_spin/r045_dense_fit/block1/rollout_search/arm.json",
+      "logs/pen_spin/r045_dense_fit/block1/dense_fit/arm.json",
+      "logs/pen_spin/r045_dense_fit/block2/rollout_search/arm.json",
+      "logs/pen_spin/r045_dense_fit/block2/dense_fit/arm.json",
+      "logs/pen_spin/r045_dense_fit/block3/rollout_search/arm.json",
+      "logs/pen_spin/r045_dense_fit/block3/dense_fit/arm.json",
+      "logs/pen_spin/r045_dense_fit/block0/expert.json",
+      "logs/pen_spin/r045_dense_fit/block1/expert.json",
+      "logs/pen_spin/r045_dense_fit/block2/expert.json",
+      "logs/pen_spin/r045_dense_fit/block3/expert.json"
+    ],
+    "notes": "Floor again. Neither arm promoted in any block, so the primary (final-incumbent fresh success, dense_fit minus rollout_search) is 0.000 [0,0] in all four blocks; the prediction (+0.15) is not met and the capacity caveat stated before the run applies: an all-zero result cannot separate insufficient controller structure from ineffective fitting. Secondary (selected settings on fresh cases, no extra episodes): -0.025 [-0.105,+0.055]; the only non-zero cell is rollout_search block 3, whose local draw scored 2/10 probe, 3/30 promotion (not promoted; interval includes 0) and 3/30 fresh. Fitting worked as an optimiser: full-batch MSE to 4308 expert pairs fell 2-4x in every block (e.g. 1.295 -> 0.329), and rollouts selected a fitted checkpoint in 3/4 blocks (250, 500, 1000), but none scored a probe success, and in block 2 every fitted checkpoint collapsed the tail-hit fraction (0.336 at step 0 to 0.035/0.058/0.028), so the rule kept step 0. Imitation loss and rollout quality are decoupled here as in MetaWorld (CLAUDE.md: loss correlates with success at +0.19, wrong sign; Stage E). The residual MSE floor of about 0.33 per action dimension says these 14-18-parameter structures cannot represent the expert's feedback map. Expert 48/48 on the label episodes; parity 0 flips. Total episodes 1008, 0 LLM calls."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 0.0,
+    "delta": 0.0,
+    "matched": false
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.7,
+      "reasoning": "Primary dense_fit minus rollout_search final-incumbent fresh success is 0.000 [0,0] over four blocks (neither arm promoted anywhere); the interval lies below the predicted +0.15, so the prediction is refuted under this protocol. As predeclared, an all-zero result cannot separate insufficient structure from ineffective fitting, so this does not show dense labels are useless in general. Mechanistic evidence: fitting succeeded as optimisation (MSE 2-4x lower, about 0.33 floor per action dimension) and rollouts chose fitted checkpoints in 3/4 blocks, yet no fitted setting scored a single probe success, and in block 2 every fitted checkpoint collapsed tail-hit (0.336 to 0.03-0.06). Lower imitation loss did not track rollout quality, matching the MetaWorld Stage E finding. The only success came from rollout search (block 3 local draw: 3/30 promotion, 3/30 fresh, not promoted). Expert 48/48 and parity 0 flips rule out integration faults. Secondary selected-setting contrast -0.025 [-0.105,+0.055].",
+      "cited_artifacts": [
+        "D-038",
+        "D-037"
+      ],
+      "next_experiment": "Stage 3 symbolic controllers sit at the floor under prompting, sparse traces and dense fitting alike; measure base rates on Stage 1/2 (R-044's lesion study can tell which feedback a structure must contain) before another Stage-3 repair comparison.",
+      "recorded_at": "2026-10-27T15:20:11",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "Against the measured rollout_search control, paired_success_difference was 0.000 with a reported 95% interval [0,0], entirely below the predicted +0.15 gain [logs/pen_spin/r045_dense_fit/summary.json]. Neither arm promoted in any of the four blocks, so the primary outcome is a tie between unchanged null incumbents, not an improvement [logs/pen_spin/r045_dense_fit/summary.json]. The secondary selected-setting difference was -0.025 with interval [-0.105,+0.055]; because it includes zero, it establishes neither arm's superiority [logs/pen_spin/r045_dense_fit/summary.json]. Expert labels came from 48/48 successful episodes, and parity passed with zero outcome flips and zero diverged environments [logs/pen_spin/r045_dense_fit/summary.json; logs/pen_spin/r045_dense_fit/parity.json]. The reduced imitation loss does not establish a representational limit: insufficient controller capacity versus ineffective fitting remains unresolved by these results [logs/pen_spin/r045_dense_fit/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r045_dense_fit/summary.json",
+        "logs/pen_spin/r045_dense_fit/parity.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-27T15:20:34",
+      "call_id": "call_00092"
+    }
+  ],
+  "decision_id": "D-039",
   "history": [
     {
       "at": "2026-10-27T14:14:22",
@@ -83,6 +536,18 @@
       "from": "approved",
       "to": "running",
       "note": "git d5200616ef (dirty)"
+    },
+    {
+      "at": "2026-10-27T15:20:00",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=False"
+    },
+    {
+      "at": "2026-10-27T15:20:43",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-039: refuted"
     }
   ],
   "created_at": "2026-10-27T14:09:20",
