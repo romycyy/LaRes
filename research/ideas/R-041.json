@@ -30,7 +30,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The paired interval's upper bound is below +0.20; an interval spanning zero is inconclusive, and tied success is not an improvement.",
   "cost_estimate": {
@@ -52,12 +52,117 @@
     "started_at": "2026-10-27T09:44:49",
     "git_sha": "1eea3e5e06446404900ab25acd46d784d4266462",
     "dirty_worktree": false,
-    "log_dir": ""
+    "log_dir": "",
+    "finished_at": "2026-10-27T09:46:49"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": 1.0,
+      "paired_success_difference_ci95": [
+        1.0,
+        1.0
+      ],
+      "pairs": 40,
+      "closed_loop": {
+        "n": 40,
+        "successes": 40,
+        "success": 1.0,
+        "completed": 1.0,
+        "tail_hit_fraction": 1.0,
+        "hit_fraction": 0.9793175487465181,
+        "mean_length": 359.0,
+        "mean_abs_spin": 16.93339321613312,
+        "mean_transverse": 2.769303226470947
+      },
+      "action_tape": {
+        "n": 40,
+        "successes": 0,
+        "success": 0.0,
+        "completed": 0.25,
+        "tail_hit_fraction": 0.34536343610883524,
+        "hit_fraction": 0.4023492391946445,
+        "mean_length": 159.475,
+        "mean_abs_spin": 11.570241242647171,
+        "mean_transverse": 4.274598932266235
+      },
+      "demonstration": {
+        "n": 40,
+        "successes": 40,
+        "success": 1.0,
+        "completed": 1.0,
+        "tail_hit_fraction": 1.0,
+        "hit_fraction": 0.9743036211699163,
+        "mean_length": 359.0,
+        "mean_abs_spin": 16.866925525665284,
+        "mean_transverse": 2.7512913644313812
+      },
+      "action_tape_falls": 30,
+      "action_tape_fall_step_median": 49,
+      "action_tape_fall_step_range": [
+        17,
+        355
+      ],
+      "episodes": {
+        "demonstration": 40,
+        "closed_loop": 80,
+        "action_tape": 40,
+        "total": 160
+      },
+      "llm_calls": 0
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "baseline": "clock-only replay of the first sustained-success PPO demonstration (demo-0000 of seed 4100), 359 actions, on the same 40 diagnostic cases (seed 4101)",
+      "reproducibility_control": {
+        "union_diverged_envs": 0,
+        "sustained_outcome_flips": 0,
+        "max_diverged_envs": 4,
+        "passes": true
+      }
+    },
+    "artifacts": [
+      "logs/pen_spin/r041_feedback_ablation/demonstration_ppo_expert.json",
+      "logs/pen_spin/r041_feedback_ablation/diagnostic_action_tape.json",
+      "logs/pen_spin/r041_feedback_ablation/diagnostic_ppo_expert_a.json",
+      "logs/pen_spin/r041_feedback_ablation/diagnostic_ppo_expert_b.json",
+      "logs/pen_spin/r041_feedback_ablation/summary.json",
+      "logs/pen_spin/r041_feedback_ablation/tape.json",
+      "logs/pen_spin/r041_feedback_ablation/tape.npy"
+    ],
+    "notes": "Closed loop 40/40 sustained, replay 0/40: paired +1.000 (degenerate interval, every pair differs). The replay drops the pen in 30/40 episodes (completed 0.25, mean length 159) and its surviving episodes pass only 35% of tail steps; transverse rate rises from 2.8 to 4.3 rad/s. The demonstration manifest was 40/40 too, so the tape was demo-0000. Reproducibility gate: 0 diverged envs, 0 flips. Smoke test before launch (debug seed 4097, 4 cases, demonstration and diagnostic manifests identical, /tmp): replaying the tape on its own placement matched the recording bit for bit through step 16, diverged at step 17 by 0.07 rad/s because the rest of the batch now ran different actions (batch composition, D-035), and fell to 0 tail hits: even the demonstrated placement is not reproducible open loop. Limitation: one tape; this shows that this replay fails, not that every clock-only controller does."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 1.0,
+    "delta": 1.0,
+    "matched": true
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "supported",
+      "confidence": 0.9,
+      "reasoning": "Predeclared: paired_success_difference >= +0.20 for closed-loop PPO over a clock-only replay of one frozen successful demonstration, Stage 3, with the interval above zero; falsified by an upper bound below +0.20. Observed 40/40 vs 0/40, paired +1.000 on 40 pairs (every pair differs; interval degenerate at 1.0, so its bound is far above +0.20). Reproducibility gate passed (0 diverged envs, 0 flips). The replay drops the pen in 30/40 episodes (steps 17-355) and the 10 survivors pass 35% of tail steps, so the failure is loss of grasp and of centring, not slower spin alone. A pre-launch smoke test on debug seed 4097 showed that even on its own placement the tape matches the recording only through step 16 and then drifts to failure, so open-loop error growth, not placement mismatch, is sufficient to break it. Limitation, as the advisor noted at triage: one tape; this establishes that the expert's success depends on state feedback, not that no clock-only controller exists. Implication for trace repair: traces must convey state-to-action relationships (corrections), not a time-indexed action sequence.",
+      "cited_artifacts": [],
+      "next_experiment": "R-042 (revised): build the Isaac backend for run_full_evolution and test plateau-triggered trace repair on pen spinning with a no-trace arm, uniform keyframes and event-selected keyframes.",
+      "recorded_at": "2026-10-27T09:46:59",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "supported",
+      "confidence": 0.99,
+      "reasoning": "Closed-loop PPO achieved 40/40 sustained successes versus 0/40 for the named frozen-demonstration replay control [logs/pen_spin/r041_feedback_ablation/summary.json]. The paired_success_difference was +1.00 with a 95% interval of [1.00, 1.00], exceeding the predicted +0.20 threshold and excluding zero [logs/pen_spin/r041_feedback_ablation/summary.json]. The reproducibility gate passed with zero diverged environments and zero outcome flips [logs/pen_spin/r041_feedback_ablation/summary.json]. The experiment consumed 160 simulator episodes and zero LLM calls [logs/pen_spin/r041_feedback_ablation/summary.json]. This supports superiority over the executed 359-action tape, but neither establishes that every clock-only controller fails nor identifies the expert's corrective mechanism [logs/pen_spin/r041_feedback_ablation/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r041_feedback_ablation/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-27T09:47:28",
+      "call_id": "call_00082"
+    }
+  ],
+  "decision_id": "D-037",
   "history": [
     {
       "at": "2026-10-27T09:38:04",
@@ -76,6 +181,18 @@
       "from": "approved",
       "to": "running",
       "note": "git 1eea3e5e06"
+    },
+    {
+      "at": "2026-10-27T09:46:49",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=True"
+    },
+    {
+      "at": "2026-10-27T09:47:38",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-037: supported"
     }
   ],
   "created_at": "2026-10-27T09:34:57",

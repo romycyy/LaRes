@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-10-27T09:44:49 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-10-27T09:47:38 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -10,17 +10,15 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 1 |
+| running | 0 |
 | approved | 0 |
 | proposed | 1 |
 | deferred | 1 |
-| decided | 36 |
+| decided | 37 |
 | rejected | 4 |
 
 ## Needs attention
 
-- **R-041** [running] Does the qualified expert need feedback, or only a replayed gait?
-  - run the protocol, then `python scripts/research.py record R-041 --results <json>`
 - **R-042** [proposed] Event-selected expert keyframes for plateau-triggered trace repair
   - round 1 closed without a final agreement; next round: `python scripts/research.py triage R-042`
 
@@ -30,6 +28,9 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 
 ## Last 5 decisions
 
+- D-037 · R-041 · **supported** · 2026-10-27
+  R-041 asked whether the qualified PPO pen-spin expert (D-036) needs state feedback or only a replayable gait. On 40 fresh Stage-3 cases the closed-loop expert succeeded 40/40 while a clock-only replay of its first successful demonstration (359 actions) succeeded 0/40: paired +1.000, supported. The replay dropped the pen in 30/40 episodes (steps 17-355) and the survivors passed 35% of tail steps; end-over-end rate rose from 2.8 to 4.3 rad/s. A pre-launch smoke test showed that even on its own placement the tape tracks the recording only through step 16, then drifts to failure once the batch's other environments differ. The expert's success depends on corrections; a single tape is not a sufficient demonstration. Limitation: one tape; the corrective mechanism is not identified. A smoke test also caught and fixed a tape-slicing bug (the runner stores actions case-major).
+  Next: Revise R-042: Isaac backend for run_full_evolution and plateau-triggered trace repair on pen spinning, with a no-trace arm beside uniform and event-selected keyframe arms; traces must expose state-action corrections, not only action timelines.
 - D-036 · R-040 · **inconclusive** · 2026-10-27
   PPO expert (one Stage-3 policy, seed 4020, 1.08e9 transitions, final checkpoint only) qualifies on every stage: 29/30, 30/30, 30/30 sustained vs the frozen gait's 21/13/9 on fresh 30-case manifests (seeds 4030-4032). Paired gains +0.267 [0.099, 0.435], +0.567 [0.378, 0.755], +0.700 [0.526, 0.874]; the predeclared >= +0.10 per-stage prediction is established on stages 2-3 but not stage 1 (interval contains +0.10), so the prediction is inconclusive while the expert qualifies and promotes everywhere. Reproducibility control: zero diverged envs. The only failure is a completed, centred episode missing 1 of 60 tail steps. Spin is axial roll ~17 rad/s, transverse ~2.8 rad/s.
   Next: Use model_8239 as the pen-spin trace-repair expert: export traces on a disjoint demonstration manifest and build the pen-spin plateau-repair pipeline.
@@ -42,9 +43,6 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 - D-033 · R-037 · **supported** · 2026-10-22
   R-037 integrated plateau-triggered expert-trace repair into EvolutionOrchestrator and made run_full_evolution.py task-generic (manifests from pool seeds, expert demonstrations via EXPERT_POLICY_MAP), passing a 21-test mocked gate before any spend. Live on assembly-v2, two blocks of paired repair-on/repair-off production runs: all four runs hit the plateau trigger; with repair on, demonstrations qualified 10/10 and the trace repair became the final incumbent through the unchanged strict promotion rule (30/30 on promotion cases), scoring 30/30 on frozen fresh cases in both blocks, while every repair-off candidate scored 0/30 there (the repair-off incumbent stayed null). Paired fresh difference +1.000 in each block (n=2 blocks, degenerate interval), 1560 episodes and 8 calls, every record traceable. The real pipeline reproduces D-032 without the study-mode emulation.
   Next: Make plateau-triggered trace repair a standard pipeline option; check the trigger stays silent and costless on non-plateau tasks; look for a second plateau task.
-- D-032 · R-036 · **supported** · 2026-10-22
-  R-036 piloted plateau-triggered trace repair inside the pipeline's selection and promotion on assembly-v2 (one block). The exploration lane plateaued (0/24 probe successes) and no prefix candidate passed promotion, so the incumbent stayed at 0.00. Forking at that checkpoint, the trace-repair branch (whole-controller edit with two expert-only traces) produced a controller at 1.00 that passed the strict paired promotion rule; the fresh no-trace generation stayed at 0.00. Final incumbents: +1.000 [1.0, 1.0], supported as a pilot. The pipeline steps were reproduced in a study mode, not run_full_evolution.py.
-  Next: Build trace repair into the orchestrator with a plateau trigger and expert-demonstration source, generalise run_full_evolution.py beyond push-v2, and confirm with an independent block.
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
