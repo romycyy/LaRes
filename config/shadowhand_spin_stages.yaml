@@ -79,3 +79,13 @@ research_protocols:
     pool_seeds: {demo: 4100, diagnostic: 4101}
     demonstration_manifest: "config/manifests/pen_spin_stage3_demo_s4100.yaml"
     diagnostic_manifest: "config/manifests/pen_spin_stage3_diagnostic_s4101.yaml"
+  # R-044 (approved 2026-10-27, advisor call_00091): observation-clamping lesions of the D-036 expert, 160 episodes.
+  #   python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study feedback_lesions
+  feedback_lesions:
+    log_dir: "logs/pen_spin/r044_feedback_lesions"
+    checkpoint: "logs/pen_spin/r040_ppo_expert/train/model_8239.pt"
+    checkpoint_sha256: "f81be523a51cc5bb8bd095d5ed208ba8dd227a37ca05d5dc78283a24d89985d7"
+    training_seed: 4020
+    cases: 40
+    pool_seed: 4140
+    manifest: "config/manifests/pen_spin_stage3_lesion_s4140.yaml"

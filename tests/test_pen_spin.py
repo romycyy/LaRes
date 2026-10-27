@@ -249,5 +249,78 @@ class TestFeedbackAblation(unittest.TestCase):
                 self.assertEqual(EvaluationManifest.load(path).to_dict(), m.to_dict())
 
 
+class TestFeedbackLesions(unittest.TestCase):
+    def _row(self, h, ok, completed=True, length=359):
+        return {"task_hash": h, "case_id": h, "sustained": ok, "completed": completed,
+                "tail_hit_fraction": 1.0 if ok else 0.5, "hit_steps": length, "length": length,
+                "mean_abs_spin": 10.0, "mean_transverse": 1.0}
+
+    def test_lesion_columns_cover_exactly_the_named_slices(self):
+        from lares.envs.isaac_pen_spin.feedback_lesions import LESIONS, lesion_index
+
+        sl = cases.obs_slices()
+        pen, hand = lesion_index(LESIONS["pen_state_clamped"]), lesion_index(LESIONS["hand_state_clamped"])
+        self.assertEqual(len(pen), 3 + 4 + 3 + 3 + 4)
+        self.assertEqual(len(hand), 24 + 24 + 15 + 20 + 30)
+        self.assertFalse(set(pen) & set(hand))
+        live = set(range(sl["last_action"].start, sl["last_action"].stop))
+        self.assertFalse(live & (set(pen) | set(hand)))  # action history stays live in both lesions
+
+    def test_wrapper_holds_first_step_values_and_passes_the_rest(self):
+        import torch
+
+        from lares.envs.isaac_pen_spin.feedback_lesions import LesionedController, lesion_index, LESIONS
+
+        seen = []
+
+        class Inner:
+            params = {"checkpoint": "x"}
+
+            def reset(self, ctx):
+                pass
+
+            def __call__(self, obs, t, ctx):
+                seen.append(obs.clone())
+                return torch.zeros(obs.shape[0], 20)
+
+        ctrl = LesionedController(Inner(), "pen_state_clamped")
+        ctrl.reset(None)
+        o0, o1 = torch.rand(3, 157), torch.rand(3, 157)
+        ctrl(o0, 0, None)
+        ctrl(o1, 1, None)
+        cols = lesion_index(LESIONS["pen_state_clamped"])
+        other = np.setdiff1d(np.arange(157), cols)
+        np.testing.assert_array_equal(seen[1][:, cols].numpy(), o0[:, cols].numpy())
+        np.testing.assert_array_equal(seen[1][:, other].numpy(), o1[:, other].numpy())
+        ctrl.reset(None)  # a new episode holds its own first observation
+        ctrl(o1, 0, None)
+        np.testing.assert_array_equal(seen[2].numpy(), o1.numpy())
+        with self.assertRaises(ValueError):
+            LesionedController(Inner(), "goal_clamped")
+
+    def test_aggregate_pairs_and_splits_failures(self):
+        from lares.envs.isaac_pen_spin.feedback_lesions import aggregate
+
+        expert = [self._row(h, True) for h in "abcd"]
+        pen = [self._row("a", True), self._row("b", False, completed=False, length=40),
+               self._row("c", False, completed=False, length=60), self._row("d", False)]
+        s = aggregate({"expert": expert, "pen_state_clamped": pen, "hand_state_clamped": expert})
+        self.assertAlmostEqual(s["paired_success_difference"], -0.75)
+        self.assertEqual(s["arms"]["pen_state_clamped"]["drops"], 2)
+        self.assertEqual(s["arms"]["pen_state_clamped"]["tail_spin_failures"], 1)
+        self.assertEqual(s["arms"]["pen_state_clamped"]["median_fall_step"], 50.0)
+        self.assertAlmostEqual(s["hand_state_clamped_minus_expert"]["mean"], 0.0)
+        with self.assertRaises(ValueError):
+            aggregate({"expert": expert, "pen_state_clamped": list(reversed(pen))})
+
+    def test_manifest_matches_config(self):
+        import yaml
+
+        cfg = yaml.safe_load(open("config/shadowhand_spin_stages.yaml"))["research_protocols"]["feedback_lesions"]
+        m = cases.build_manifest(3, int(cfg["pool_seed"]), int(cfg["cases"]), label="lesion")
+        self.assertEqual(EvaluationManifest.load(cfg["manifest"]).to_dict(), m.to_dict())
+        self.assertEqual(cfg["pool_seed"], 4140)
+
+
 if __name__ == "__main__":
     unittest.main()
