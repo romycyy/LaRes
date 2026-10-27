@@ -13,13 +13,7 @@
     "script": "scripts/run_full_evolution.py",
     "config": "config/pen_spin_plateau_repair.yaml",
     "command": "gpu run 'source ~/.profile >/dev/null 2>&1; nohup .venv-metaworld/bin/python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study gait_preserving_repair > logs_r046.log 2>&1 &'",
-    "seeds": [
-      4180,
-      4181,
-      4182,
-      4183,
-      4184
-    ],
+    "seeds": [],
     "manifests": [
       "config/manifests/pen_spin_stage3_gait_s4180.yaml",
       "config/manifests/pen_spin_stage3_gait_s4181.yaml",
@@ -27,7 +21,7 @@
       "config/manifests/pen_spin_stage3_gait_s4183.yaml",
       "config/manifests/pen_spin_stage3_parity_s4184.yaml"
     ],
-    "episodes": 1968,
+    "episodes": 1936,
     "llm_calls": 24,
     "code_changes": [
       "Extend scripts/run_full_evolution.py with the displayed study arguments and a hash-checked resolver for the frozen R-039 gait; fail rather than substitute or retune a controller.",
@@ -38,7 +32,8 @@
       "Freeze disjoint screen, promotion, prefix-probe, expert and fresh roles before running; retain promotion cases 10-39 and the existing sustained-success reducer. Qualify the expert on ten cases before exporting two demonstrations.",
       "Budget at most 472 episodes per block: 150 prefix, 12 expert, 120 per continuation arm and 70 for the unchanged-gait control (screen 10, promotion 30, fresh 30); add two separate 40-case parity controls (1968 in all). Permit at most one linked correction per LLM slot and run each Isaac cell in a separate process.",
       "Unlike R-042's trace-selection comparison and deferred R-043's anatomical coordinates, this changes which existing contact dynamics an edit is allowed to destroy. Document residual saturation and any restriction-induced failures without changing the primary metric.",
-      "Study configuration lives in a gait_preserving_repair block of config/pen_spin_plateau_repair.yaml (block seeds 4180-4183, parity seed 4184); manifests frozen and seeds recorded in the seed ledger before start."
+      "Study configuration lives in a gait_preserving_repair block of config/pen_spin_plateau_repair.yaml (block seeds 4180-4183, parity seed 4184); manifests frozen and seeds recorded in the seed ledger before start.",
+      "Reconciled with advisor consult call_00094 before start: the gait is stateful (clock, integral), so both LLM arms output a correction delta on a 177-d schema (157 + gait_action): bounded_residual executes clamp(g + clamp(delta, -0.15, 0.15), -1, 1), whole_edit clamp(g + delta, -1, 1) (delta = 0 keeps the gait, delta = target - g replaces it); unchanged_gait executes g. Gait clock/integral per environment, reset per process (one manifest per process), hash-pinned FROZEN_R039 (lares/envs/isaac_pen_spin/gait_scaffold.py). Expert keyframes carry the gait's shadow action computed along the expert's own trajectory in the same process. Continuations do not inherit the prefix candidate; the prefix incumbent (null when the trigger fires) is the comparator and fallback for every arm. Search: the policy plus five rollout_search.perturb draws on an 8-case arm probe. Budget 1936 episodes: 80 parity + 4 x (146 prefix + 12 expert + 70 unchanged + 2 x 118). The orchestrator stays in .venv-metaworld (it needs openai, which Isaac's Python lacks); every simulator cell runs under Isaac Lab's environment in its own process, as in R-042."
     ],
     "needs_gpu": true,
     "needs_llm": true
@@ -72,6 +67,10 @@
       "from": "proposed",
       "to": "approved",
       "note": "triage round 2: both say approve"
+    },
+    {
+      "at": "2026-10-27T15:39:36",
+      "note": "seeds 4180-4184 recorded in the seed ledger with the frozen manifests; cleared from protocol.seeds. Implementation reconciled with consult call_00094 (see last code_changes entry); episodes 1936 <= approved 1968."
     }
   ],
   "created_at": "2026-10-27T14:09:20",

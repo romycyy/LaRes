@@ -24,3 +24,8 @@ STAGE_TASK_IDS = {
     2: "Isaac-ShadowHandSpin-Stage2-Direct-v0",
     3: "Isaac-ShadowHandSpin-Stage3-Direct-v0",
 }
+
+#: R-046: the gait-scaffold continuation's schema id. Its observation is the 157-d layout plus the frozen R-039 gait's
+#: action for this step (20, normalised [-1, 1], action order), appended by the child before the policy is called.
+GAIT_SCAFFOLD_TASK_ID = "Isaac-ShadowHandSpin-Stage3-GaitScaffold-v0"
+GAIT_FIELD = ("gait_action", 20, "the frozen R-039 gait's action this step (normalised [-1, 1], action order)")

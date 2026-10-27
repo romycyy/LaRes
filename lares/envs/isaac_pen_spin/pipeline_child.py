@@ -44,19 +44,34 @@ class SymbolicController:
         if callable(reset):
             reset()
 
-    def __call__(self, obs, t, ctx):
+    def mean(self, obs):
+        """The policy mean, unclamped (NaN read as 0)."""
         # The policy runs on the CPU, as every MetaWorld evaluation does: generated code builds constants with
         # torch.tensor(...) inside forward, which would otherwise sit on another device than the observation.
         import torch
 
         with torch.no_grad():
             mean, _ = self.policy(obs.detach().float().cpu())
-        return torch.nan_to_num(mean, nan=0.0).clamp(-1.0, 1.0).to(obs.device)
+        return torch.nan_to_num(mean, nan=0.0)
+
+    def __call__(self, obs, t, ctx):
+        return self.mean(obs).clamp(-1.0, 1.0).to(obs.device)
 
 
 def build_controller(spec: dict, env_id: str):
+    """The request's actor. ``schema_env_id`` (R-046) names the schema a policy reads when it is not the stage's."""
+    from lares.envs.isaac_pen_spin import gait_scaffold
+
+    if spec.get("shadow_gait"):
+        return gait_scaffold.ShadowGait(build_controller({k: v for k, v in spec.items() if k != "shadow_gait"}, env_id))
+    if spec["kind"] == "gait":
+        return gait_scaffold.ScaffoldController("unchanged", gait_sha256=spec["gait_sha256"])
+    if spec["kind"] == "symbolic" and spec.get("scaffold"):
+        sc = spec["scaffold"]
+        policy = SymbolicController(spec, spec.get("schema_env_id", env_id))
+        return gait_scaffold.ScaffoldController(sc["mode"], policy.mean, float(sc["bound"]), sc["gait_sha256"])
     if spec["kind"] == "symbolic":
-        return SymbolicController(spec, env_id)
+        return SymbolicController(spec, spec.get("schema_env_id", env_id))
     if spec["kind"] == "ppo":
         from lares.envs.isaac_pen_spin.ppo_expert import PPOController
         from lares.utils.hashing import sha256_file
@@ -122,9 +137,10 @@ def main(request_path: str) -> None:
                                f"{cases.SUSTAIN_WINDOW} steps (D-034)"}
         if req.get("record"):
             path = req["response_path"].replace(".response.json", ".trace.npz")
+            extra = {"gait_actions": ctrl.gait_actions()} if hasattr(ctrl, "gait_actions") else {}
             np.savez_compressed(path, obs=trace["obs"], actions=trace["actions"], length=trace["length"],
                                 completed=trace["completed"], pred=trace["pred"], spin_rate=trace["spin_rate"],
-                                center_dist=trace["center_dist"])
+                                center_dist=trace["center_dist"], **extra)
             response["trace_path"] = path
             response["trace_sha256"] = sha256_file(path)
         with open(req["response_path"], "w", encoding="utf-8") as f:

@@ -42,6 +42,9 @@ TASK_NOTES = {
         "0.30 m from in_hand_pos. An episode succeeds only if it runs to the end and every one of its final 60 steps\n"
         "succeeds."
     ),
+    # R-046: the same task with the frozen R-039 gait as a scaffold. The execution rule differs by arm and is stated in
+    # the request, so these notes replace only the sentence about how the output is executed.
+    "Isaac-ShadowHandSpin-Stage3-GaitScaffold-v0": None,
     "push-v2": (
         "Actions are 4-dimensional: (dx, dy, dz, gripper).\n"
         "The task requires reaching the puck and pushing it along the table to the goal.\n"
@@ -85,6 +88,16 @@ TASK_NOTES = {
         "'obj' is the drawer handle. Push the drawer closed."
     ),
 }
+
+TASK_NOTES["Isaac-ShadowHandSpin-Stage3-GaitScaffold-v0"] = (
+    TASK_NOTES["Isaac-ShadowHandSpin-Stage3-Direct-v0"].replace(
+        "the executed action is the\n"
+        "policy mean clamped to [-1, 1] (no tanh).",
+        "the controller's output (the\n"
+        "policy mean) is a correction added to gait_action, executed as stated in the request (no tanh).")
+    + "\ngait_action is the frozen R-039 scripted gait's own action for this step (normalised, action order), computed\n"
+    "from the same observation with its own clock and integral state. last_action is the action actually executed."
+)
 
 # Legacy index-based layout text. Superseded by ObsSchema.describe(); kept because
 # older artefacts and tests reference it, and it documents what the LLM used to see.

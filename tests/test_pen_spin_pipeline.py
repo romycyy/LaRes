@@ -36,7 +36,7 @@ from lares.core.obs_schema import get_obs_schema  # noqa: E402
 from lares.envs.isaac_pen_spin import cases  # noqa: E402
 from lares.envs.isaac_pen_spin import pipeline_backend as pb  # noqa: E402
 from lares.envs.isaac_pen_spin import study  # noqa: E402
-from lares.envs.isaac_pen_spin.pipeline_child import SymbolicController  # noqa: E402
+from lares.envs.isaac_pen_spin.pipeline_child import SymbolicController, build_controller  # noqa: E402
 from lares.eval.manifest import EvaluationManifest  # noqa: E402
 from lares.repair import pen_spin_traces as pst  # noqa: E402
 from lares.search import load_records  # noqa: E402
@@ -134,7 +134,8 @@ def toy_rollout(manifest, controller, device="cpu"):
     n, T = len(vecs), cases.HORIZON
     w, offset = 2.0 * vecs[:, 0], 0.01 * vecs[:, 1:4]
     act = np.zeros((n, 20), dtype=np.float32)
-    ctx = SimpleNamespace(device=device, num_envs=n, control_dt=1 / 60)
+    ctx = SimpleNamespace(device=device, num_envs=n, control_dt=1 / 60,
+                          neutral_action=torch.tensor(NEUTRAL, dtype=torch.float32).expand(n, -1).clone())
     controller.reset(ctx)
     alive, completed = np.ones(n, bool), np.zeros(n, bool)
     length = np.zeros(n, int)
@@ -178,13 +179,22 @@ class FakeChild:
             obs = toy_obs(2.0 * vecs[:, 0], 0.01 * vecs[:, 1:4], np.zeros((len(m), 20)))
             json.dump({"observations": obs.tolist(), "episodes": []}, open(req["response_path"], "w"))
             return
-        ctrl = ToyExpert() if req["actor"]["kind"] == "ppo" else SymbolicController(req["actor"], ENV_ID)
+        spec = req["actor"]
+        if spec["kind"] == "ppo":
+            ctrl = ToyExpert()
+            if spec.get("shadow_gait"):
+                from lares.envs.isaac_pen_spin.gait_scaffold import ShadowGait
+
+                ctrl = ShadowGait(ctrl)
+        else:
+            ctrl = build_controller(spec, ENV_ID)
         trace = toy_rollout(m, ctrl)
         resp = {"request_path": request_path, "episodes": pb.rows_from_trace(trace)}
         if req["record"]:
             path = req["response_path"].replace(".response.json", ".trace.npz")
+            extra = {"gait_actions": ctrl.gait_actions()} if hasattr(ctrl, "gait_actions") else {}
             np.savez_compressed(path, **{k: trace[k] for k in ("obs", "actions", "length", "completed", "pred",
-                                                              "spin_rate", "center_dist")})
+                                                              "spin_rate", "center_dist")}, **extra)
             resp["trace_path"] = path
         json.dump(resp, open(req["response_path"], "w"), default=float)
 
@@ -634,6 +644,250 @@ class TestDenseFit(unittest.TestCase):
         self.assertEqual(len(d["students"]), 4)
         for s in d["students"]:
             self.assertEqual(len(s["source_sha256"]), 64)
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+#  R-046: gait-scaffold continuation
+# ---------------------------------------------------------------------------------------------------------------------
+
+#: A correction that reads gait_action and splits the two knuckles apart (rolls the toy pen).
+POLICY_CORRECTION = f"""
+class GeneratedPolicy(SymbolicPolicy):
+    def __init__(self, obs_dim, action_dim):
+        super().__init__(obs_dim, action_dim)
+        self.k_split = nn.Parameter(torch.tensor(0.3))
+        self.k_follow = nn.Parameter(torch.tensor(0.0))
+
+    def forward(self, obs):
+{_FIELDS}
+        g = self.obs_field(obs, "gait_action")
+        delta = torch.zeros_like(g)
+        delta[:, 1] = sense
+        delta[:, 7] = self.k_split + self.k_follow * g[:, 7]
+        delta[:, 8] = -self.k_split
+        return delta, self.fixed_std(delta)
+
+    def get_param_ranges(self):
+        return {{"k_split": (0.0, 0.6), "k_follow": (-0.5, 0.5)}}
+""".strip()
+
+
+def toy_ctx(n):
+    return SimpleNamespace(device="cpu", num_envs=n, control_dt=1 / 60,
+                           neutral_action=torch.tensor(NEUTRAL, dtype=torch.float32).expand(n, -1).clone())
+
+
+class TestGaitScaffold(unittest.TestCase):
+    def setUp(self):
+        from lares.envs.isaac_pen_spin import gait_scaffold as gs
+
+        self.gs = gs
+        rng = np.random.default_rng(0)
+        self.obs = [torch.as_tensor(toy_obs(rng.normal(size=3), 0.01 * rng.normal(size=(3, 3)),
+                                            np.zeros((3, 20))), dtype=torch.float32) for _ in range(5)]
+
+    def run_ctrl(self, ctrl):
+        ctx = toy_ctx(3)
+        ctrl.reset(ctx)
+        return [ctrl(o, t, ctx) for t, o in enumerate(self.obs)]
+
+    def test_zero_correction_reproduces_the_unchanged_gait(self):
+        gait = self.run_ctrl(self.gs.ScaffoldController("unchanged"))
+        for mode in ("residual", "whole"):
+            out = self.run_ctrl(self.gs.ScaffoldController(mode, lambda x: torch.zeros(x.shape[0], 20)))
+            for a, b in zip(out, gait):
+                torch.testing.assert_close(a, b)
+
+    def test_residual_correction_is_clipped_to_its_bound(self):
+        gait = self.run_ctrl(self.gs.ScaffoldController("unchanged"))
+        out = self.run_ctrl(self.gs.ScaffoldController("residual", lambda x: torch.full((x.shape[0], 20), 5.0)))
+        for a, g in zip(out, gait):
+            torch.testing.assert_close(a, (g + 0.15).clamp(-1, 1))
+
+    def test_whole_edit_can_cancel_the_gait_and_reach_any_action(self):
+        target = torch.linspace(-0.9, 0.9, 20).expand(3, -1)
+
+        def cancel(x):  # delta = target - gait_action, read from the augmented observation
+            return target - x[:, 157:177]
+
+        for a in self.run_ctrl(self.gs.ScaffoldController("whole", cancel)):
+            torch.testing.assert_close(a, target)
+        out = self.run_ctrl(self.gs.ScaffoldController("residual", cancel))
+        self.assertFalse(all(torch.allclose(a, target) for a in out))  # the residual arm cannot
+
+    def test_the_policy_sees_the_gait_action_it_is_corrected_from(self):
+        seen = []
+        gait = self.run_ctrl(self.gs.ScaffoldController("unchanged"))
+        self.run_ctrl(self.gs.ScaffoldController("whole", lambda x: seen.append(x) or torch.zeros(x.shape[0], 20)))
+        for x, g, o in zip(seen, gait, self.obs):
+            self.assertEqual(x.shape[1], 177)
+            torch.testing.assert_close(x[:, 157:], g)
+            torch.testing.assert_close(x[:, :157], o)
+
+    def test_gait_state_resets_with_every_run(self):
+        ctrl = self.gs.ScaffoldController("unchanged")
+        torch.testing.assert_close(torch.stack(self.run_ctrl(ctrl)), torch.stack(self.run_ctrl(ctrl)))
+
+    def test_the_shadow_gait_logs_the_gait_without_executing_it(self):
+        inner = ToyExpert()
+        shadow = self.gs.ShadowGait(inner)
+        out = self.run_ctrl(shadow)
+        ctx = toy_ctx(3)
+        for a, o, t in zip(out, self.obs, range(5)):
+            torch.testing.assert_close(a, inner(o, t, ctx))
+        gait = torch.stack(self.run_ctrl(self.gs.ScaffoldController("unchanged")), dim=1).numpy()
+        np.testing.assert_allclose(shadow.gait_actions(), gait, rtol=0, atol=1e-6)
+
+    def test_the_gait_is_pinned(self):
+        cfg = yaml.safe_load(open(CONFIG))["gait_preserving_repair"]
+        self.gs.check_gait(cfg["gait_sha256"])
+        with self.assertRaises(ValueError):
+            self.gs.check_gait("0" * 64)
+        self.assertEqual(cfg["block_seeds"], [4180, 4181, 4182, 4183])
+
+    def test_the_scaffold_schema_extends_the_stage3_layout(self):
+        from lares.envs.isaac_pen_spin.layout import GAIT_SCAFFOLD_TASK_ID
+
+        base, aug = get_obs_schema(ENV_ID), get_obs_schema(GAIT_SCAFFOLD_TASK_ID)
+        self.assertEqual(aug.obs_dim, 177)
+        self.assertEqual([f.name for f in aug.fields][:-1], [f.name for f in base.fields])
+        self.assertFalse(aug.fields[-1].required)
+
+
+class GaitRun:
+    def __init__(self, blocks=2):
+        from lares.envs.isaac_pen_spin import gait_repair
+
+        self.gr = gait_repair
+        self.tmp = tempfile.TemporaryDirectory()
+        root = self.tmp.name
+        cfg = yaml.safe_load(open(CONFIG))
+        g = cfg["gait_preserving_repair"]
+        g["study_dir"] = os.path.join(root, "study")
+        g["block_seeds"] = g["block_seeds"][:blocks]
+        self.config_path = os.path.join(root, "config.yaml")
+        yaml.safe_dump(cfg, open(self.config_path, "w"))
+        self.study_dir = g["study_dir"]
+        self.child = FakeChild()
+        self.mdir = os.path.join(root, "manifests")
+        self.llm = ScriptedLLM({"policy_generation": [fence(POLICY_FLAT)] * blocks,
+                                "trace_repair": [fence(POLICY_CORRECTION)] * (2 * blocks)})
+        self.run()
+        self.summary = json.load(open(os.path.join(self.study_dir, "summary.json")))
+
+    def run(self):
+        import run_full_evolution as rfe
+
+        from lares.envs.isaac_pen_spin.scripted_expert import frozen_gait
+
+        def stream(cfg_, name, work):
+            return pb.IsaacPenSpinStream(3, work, name, runner=self.child)
+
+        def run_cell_gait(gcfg, manifest_path, out, config_path):
+            m = EvaluationManifest.load(manifest_path)
+            tr = toy_rollout(m, frozen_gait())
+            return {"rows": pb.rows_from_trace(tr), "spin_rate": tr["spin_rate"], "center_dist": tr["center_dist"]}
+
+        def run(cmd, check=True, **kw):
+            block = int(cmd[cmd.index("--gait-block") + 1])
+            rfe.run_gait_prefix(rfe.load_config(self.config_path), block)
+            return SimpleNamespace(returncode=0)
+
+        argv = ["run_full_evolution.py", "--config", self.config_path, "--study", "gait_preserving_repair"]
+        with patch.object(sys, "argv", argv), patch.dict(os.environ, {"OPENAI_API_KEY": "sk-mock-not-a-key"}), \
+                patch.object(pg, "_call_llm", side_effect=self.llm), \
+                patch.object(pg, "_run_policy_validation_subprocess", return_value=(True, "Success!", "full")), \
+                patch.object(self.gr, "manifest_file", lambda label, seed: cases.manifest_path(3, label, seed, self.mdir)), \
+                patch.object(self.gr, "run_cell_gait", run_cell_gait), \
+                patch.object(rfe, "pen_spin_stream", stream), \
+                patch("subprocess.run", side_effect=run):
+            rfe.main()
+
+    def close(self):
+        self.tmp.cleanup()
+
+
+class TestGaitStudy(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.gr = GaitRun(blocks=2)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.gr.close()
+
+    def test_parity_compares_the_gait_with_its_wrapped_implementation(self):
+        p = self.gr.summary["parity"]
+        self.assertTrue(p["passes"])
+        self.assertEqual(p["episodes"], 80)
+        gait_reqs = [r for r in self.gr.child.requests if r["actor"]["kind"] == "gait"]
+        self.assertTrue(gait_reqs)
+
+    def test_every_eligible_block_runs_three_arms_against_a_null_prefix_incumbent(self):
+        for blk in self.gr.summary["blocks"]:
+            self.assertTrue(blk["eligible"])
+            self.assertIsNone(blk["prefix_incumbent"])
+            self.assertEqual(set(blk["arms"]), set(self.gr.gr.ARMS))
+            for arm in self.gr.gr.LLM_ARMS:
+                a = blk["arms"][arm]
+                self.assertTrue(a["valid"])
+                self.assertEqual([p["label"] for p in a["probe"]][0], "search0_original")
+                self.assertEqual(len(a["probe"]), 6)
+            self.assertEqual(blk["arms"]["unchanged_gait"]["probe"], [])
+
+    def test_the_two_requests_differ_only_in_the_execution_rule(self):
+        for b in range(2):
+            texts = {arm: open(os.path.join(self.gr.study_dir, f"block{b}", arm, "request.txt")).read()
+                     for arm in self.gr.gr.LLM_ARMS}
+            r, w = texts["bounded_residual"], texts["whole_edit"]
+            rule_r = self.gr.gr.EXECUTION_RULE["residual"].format(bound=0.15)
+            rule_w = self.gr.gr.EXECUTION_RULE["whole"].format(bound=0.15)
+            self.assertEqual(r.replace(rule_r, "RULE"), w.replace(rule_w, "RULE"))
+            self.assertIn("GAIT=", r)
+            self.assertIn("class FeedbackGait", r)
+
+    def test_expert_traces_carry_the_shadow_gait_on_the_expert_trajectory(self):
+        ex = json.load(open(os.path.join(self.gr.study_dir, "block0", "expert.json")))
+        self.assertTrue(ex["qualified"])
+        self.assertEqual(len(ex["traced"]), 2)
+        self.assertEqual(ex["traced_case_ids"][0], "gait-0062")  # expert slice case 10 (index 52 + 10)
+        row = ex["traced"][0]["rows"][5]
+        self.assertEqual(len(row["gait_action"]), 20)
+        self.assertNotEqual(row["gait_action"], row["action"])
+
+    def test_scaffold_actors_reach_the_child_with_mode_and_schema(self):
+        modes = {r["actor"]["scaffold"]["mode"] for r in self.gr.child.requests if r["actor"].get("scaffold")}
+        self.assertEqual(modes, {"residual", "whole"})
+        for r in self.gr.child.requests:
+            if r["actor"].get("scaffold"):
+                self.assertEqual(r["actor"]["schema_env_id"], "Isaac-ShadowHandSpin-Stage3-GaitScaffold-v0")
+                self.assertEqual(r["actor"]["obs_dim"], 177)
+
+    def test_episode_budget(self):
+        arm_eps, other = 0, 0
+        for r in self.gr.child.episodes():
+            n = len(EvaluationManifest.load(r["manifest_path"]))
+            arm_eps += n if any(f"/{a}/" in r["manifest_path"] for a in self.gr.gr.ARMS) else 0
+        blocks = len(self.gr.summary["blocks"])
+        self.assertEqual(arm_eps, blocks * (70 + 2 * (6 * 8 + 70)))
+        expert = [r for r in self.gr.child.requests if r["actor"].get("shadow_gait")]
+        self.assertEqual(len(expert), blocks)
+
+    def test_role_slices_are_disjoint_and_promotion_never_sees_screen_or_probe_evidence(self):
+        for blk in self.gr.summary["blocks"]:
+            for arm in self.gr.gr.ARMS:
+                a = blk["arms"][arm]
+                ids = {a["screen"]["manifest_id"], a["promotion"]["manifest_id"], a["fresh_selected"]["manifest_id"]}
+                self.assertEqual(len(ids), 3)
+                excluded = a["promotion_decision"]["excluded_manifest_ids"]
+                self.assertIn(a["screen"]["manifest_id"], excluded)
+                self.assertNotIn(a["promotion"]["manifest_id"], excluded)
+
+    def test_a_rerun_resumes_without_a_new_episode_or_call(self):
+        before, calls = len(self.gr.child.requests), len(self.gr.llm.labels)
+        self.gr.run()
+        self.assertEqual(len(self.gr.child.requests), before)
+        self.assertEqual(len(self.gr.llm.labels), calls)
 
 
 if __name__ == "__main__":

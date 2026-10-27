@@ -115,5 +115,19 @@ dense_feedback_fit:
       state: "logs/pen_spin/r042_keyframe_repair/block3/prefix/gen_0/candidates/gen0_cand0_a0/selected_state.pt"
       state_sha256: "9bb57a28fb93b8d0b8de7c4be4e45aa287fe012c51206911133335ca34ff411f"
 
+# ---------- R-046: plateau-triggered gait-scaffold continuation (approved call_00091; wrappers call_00094) ----------
+#  python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study gait_preserving_repair
+#  Per block seed: one 94-case manifest split into roles (lares/envs/isaac_pen_spin/gait_repair.py ROLES); a cold prefix
+#  (the R-042 prefix, plain 157-d schema), then unchanged_gait, bounded_residual (|delta| <= 0.15) and whole_edit
+#  (unbounded delta) on the 177-d gait-scaffold schema. The gait is FROZEN_R039, pinned by its parameter hash.
+gait_preserving_repair:
+  study_dir: "logs/pen_spin/r046_gait_scaffold"
+  block_seeds: [4180, 4181, 4182, 4183]
+  parity_seed: 4184
+  parity_cases: 40
+  residual_bound: 0.15
+  gait_sha256: "97e4065f61960eaf064c8d6a4533522c809fbe6c1b335f7a9ba8b556992b1cac"
+  gait_protocol_config: "config/shadowhand_spin_stages.yaml"   # R-039's evaluator, parity only
+
 log_dir: "logs/pen_spin/r042_keyframe_repair"
 record_demo_gif: false

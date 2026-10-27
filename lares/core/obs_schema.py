@@ -224,10 +224,21 @@ def _pen_spin_schema(stage: int) -> ObsSchema:
     return ObsSchema(STAGE_TASK_IDS[stage], start, tuple(fields))
 
 
+def _gait_scaffold_schema() -> ObsSchema:
+    """R-046: the Stage-3 layout plus ``gait_action`` (177-d); ``gait_action`` is readable but not required."""
+    from lares.envs.isaac_pen_spin.layout import GAIT_FIELD, GAIT_SCAFFOLD_TASK_ID
+
+    base = _pen_spin_schema(3)
+    name, size, description = GAIT_FIELD
+    fields = tuple(base.fields) + (ObsField(name, base.obs_dim, base.obs_dim + size, description, required=False),)
+    return ObsSchema(GAIT_SCAFFOLD_TASK_ID, base.obs_dim + size, fields)
+
+
 for _stage in (1, 2, 3):
     _s = _pen_spin_schema(_stage)
     OBS_SCHEMAS[_s.env_id] = _s
 del _stage, _s
+OBS_SCHEMAS[_gait_scaffold_schema().env_id] = _gait_scaffold_schema()
 
 
 def get_obs_schema(env_id: str) -> ObsSchema:

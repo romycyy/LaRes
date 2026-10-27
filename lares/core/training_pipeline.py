@@ -91,6 +91,8 @@ EXPERT_POLICY_MAP = {
 
 TASK_DESCRIPTIONS = {
     "Isaac-ShadowHandSpin-Stage3-Direct-v0": "Control a Shadow Hand to keep a pen in the palm and roll it continuously about its long axis",
+    "Isaac-ShadowHandSpin-Stage3-GaitScaffold-v0": ("Correct a frozen scripted finger gait so that a Shadow Hand keeps a pen "
+                                                    "in the palm and rolls it continuously about its long axis"),
     "window-close-v2": "Control the robotic arm to close the window",
     "window-open-v2": "Control the robotic arm to open the window",
     "button-press-v2": "Control the robotic arm to press the button",

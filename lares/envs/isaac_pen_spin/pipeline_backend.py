@@ -40,15 +40,38 @@ class IsaacExpertActor:
 
     action_mode = "deterministic"
 
-    def __init__(self, checkpoint: str, checkpoint_sha256: str, training_seed: int):
+    def __init__(self, checkpoint: str, checkpoint_sha256: str, training_seed: int, shadow_gait: bool = False):
         self.checkpoint = checkpoint
         self.checkpoint_sha256 = checkpoint_sha256
         self.training_seed = int(training_seed)
+        self.shadow_gait = bool(shadow_gait)
         self.name = "ppo_expert"
 
     def spec(self) -> dict:
-        return {"kind": "ppo", "checkpoint": self.checkpoint, "checkpoint_sha256": self.checkpoint_sha256,
+        spec = {"kind": "ppo", "checkpoint": self.checkpoint, "checkpoint_sha256": self.checkpoint_sha256,
                 "training_seed": self.training_seed}
+        if self.shadow_gait:
+            spec["shadow_gait"] = True
+        return spec
+
+
+class GaitActor:
+    """R-046: the frozen R-039 gait alone, as a pipeline actor (it only runs inside a child process)."""
+
+    action_mode = "deterministic"
+    name = "unchanged_gait"
+
+    def __init__(self, gait_sha256: str):
+        self.gait_sha256 = gait_sha256
+
+    def spec(self) -> dict:
+        return {"kind": "gait", "gait_sha256": self.gait_sha256}
+
+    def reset(self, case):  # pragma: no cover - the child drives the gait
+        pass
+
+    def act(self, obs):  # pragma: no cover - never stepped in this process
+        raise RuntimeError("the gait scaffold runs only inside a pen-spin child process")
 
     def reset(self, case):  # pragma: no cover - the child drives the expert
         pass
@@ -59,7 +82,7 @@ class IsaacExpertActor:
 
 def actor_spec(actor) -> tuple[dict, bytes | None]:
     """``(spec, state bytes)`` for a request: a symbolic policy by source and state, or the PPO expert."""
-    if isinstance(actor, IsaacExpertActor):
+    if callable(getattr(actor, "spec", None)):  # the PPO expert, the unchanged gait (R-046): no state to ship
         return actor.spec(), None
     policy = getattr(actor, "policy", None)
     if policy is None:
@@ -75,6 +98,10 @@ def actor_spec(actor) -> tuple[dict, bytes | None]:
     torch.save({k: v.detach().cpu() for k, v in policy.state_dict().items()}, buf)
     spec = {"kind": "symbolic", "source": source, "obs_dim": int(policy.obs_dim), "action_dim": int(policy.action_dim),
             "fixed_action_scale": float(getattr(policy, "fixed_action_scale", 0.1)), "execution": EXECUTION}
+    scaffold = getattr(policy, "_scaffold", None)  # R-046: the policy's mean is a correction to the frozen gait
+    if scaffold:
+        spec.update(scaffold=dict(scaffold), schema_env_id=scaffold["schema_env_id"],
+                    execution=f"gait scaffold, mode {scaffold['mode']}")
     return spec, buf.getvalue()
 
 
@@ -178,11 +205,17 @@ class IsaacPenSpinStream:
         return result
 
     def collect_traces(self, actor, manifest) -> dict:
-        """Rows plus per-step observation and action traces (cases, T, dim), for expert demonstrations."""
+        """Rows plus per-step observation and action traces (cases, T, dim), for expert demonstrations.
+
+        An actor with ``shadow_gait`` set also returns the frozen gait's action along the same trajectory (R-046).
+        """
         response = self._call(actor, manifest, record=True)
         data = np.load(response["trace_path"])
-        return {"episodes": response["episodes"], "obs": data["obs"], "actions": data["actions"],
-                "trace_path": response["trace_path"]}
+        out = {"episodes": response["episodes"], "obs": data["obs"], "actions": data["actions"],
+               "trace_path": response["trace_path"]}
+        if "gait_actions" in data:
+            out["gait_actions"] = data["gait_actions"]
+        return out
 
     def reset_observations(self, manifest) -> np.ndarray:
         """Every case's observation right after its placement is written (no step, no episode), ``(cases, 157)``."""
@@ -217,5 +250,5 @@ def rows_from_trace(trace: dict) -> list[dict]:
     return rows
 
 
-__all__ = ["EXECUTION", "IsaacExpertActor", "IsaacPenSpinStream", "actor_spec", "failure_label", "make_temp_stream",
+__all__ = ["EXECUTION", "GaitActor", "IsaacExpertActor", "IsaacPenSpinStream", "actor_spec", "failure_label", "make_temp_stream",
            "rows_from_trace"]

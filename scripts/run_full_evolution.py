@@ -276,9 +276,11 @@ def parse_args() -> tuple:
     p.add_argument("--freeze-manifests", action="store_true",
                    help="R-037: build (or verify) the task manifests, print their ids and hashes, and exit; no LLM call "
                         "and no episode")
-    p.add_argument("--study", choices=("keyframe_repair", "dense_feedback_fit"), default=None,
+    p.add_argument("--study", choices=("keyframe_repair", "dense_feedback_fit", "gait_preserving_repair"), default=None,
                    help="R-042: run the whole pen-spin keyframe-repair study (parity gate, blocks, arms, fresh cases); "
-                        "R-045: dense_feedback_fit (expert-label fitting vs rollout search, no LLM call)")
+                        "R-045: dense_feedback_fit (expert-label fitting vs rollout search, no LLM call); "
+                        "R-046: gait_preserving_repair (scaffold continuation on the frozen R-039 gait)")
+    p.add_argument("--gait-block", type=int, default=None, help="R-046 child: run one block's cold prefix")
     p.add_argument("--block", type=int, default=None, help="R-042 child: the block to run (with --phase or --arm)")
     p.add_argument("--phase", choices=("prefix",), default=None, help="R-042 child: run the block's prefix only")
     p.add_argument("--arm", choices=("no_trace", "uniform", "event"), default=None,
@@ -290,7 +292,7 @@ def parse_args() -> tuple:
     overrides = {"repair": ns.repair, "development_pool_seed": ns.dev_pool_seed,
                  "demonstration_pool_seed": ns.demo_pool_seed, "fresh_evaluation_pool_seed": ns.fresh_pool_seed,
                  "freeze_manifests": ns.freeze_manifests or None, "study": ns.study, "block": ns.block,
-                 "phase": ns.phase, "arm": ns.arm}
+                 "phase": ns.phase, "arm": ns.arm, "gait_block": ns.gait_block}
     return cfg_path, ns.seed, ns.log_dir, {k: v for k, v in overrides.items() if v is not None}
 
 
@@ -387,7 +389,6 @@ def run_pen_spin_block(cfg, cfg_path: str, block: int, phase: str | None, arm: s
     """One orchestrator run of a block: its prefix (slot 0 and the trigger) or one continuation arm."""
     from lares.core.training_pipeline import PREFIX_STATE
     from lares.envs.isaac_pen_spin import study
-    from lares.search.lanes import load_plateau_repair_plan
 
     ps = cfg.pen_spin
     blk = ps["blocks"][block]
@@ -395,12 +396,23 @@ def run_pen_spin_block(cfg, cfg_path: str, block: int, phase: str | None, arm: s
     log_dir = os.path.join(bdir, "prefix" if phase == "prefix" else arm)
     if phase != "prefix" and not os.path.isfile(os.path.join(log_dir, PREFIX_STATE)):
         raise SystemExit(f"{log_dir} holds no prefix state; the driver copies the prefix run first")
-    seed = int(blk["generation_seed"])
-    np.random.seed(seed)
-    torch.manual_seed(seed)
     dev = study.load("development", int(blk["development_seed"]))
     probe = study.load("probe", int(blk["probe_seed"]))
     demo = study.load("demo", int(ps["demonstration_seed"]))
+    fork = {"phase": "prefix"} if phase == "prefix" else {
+        "phase": "continuation", "arm": arm, "demonstrations": os.path.join(ps["study_dir"], "demonstrations.json")}
+    pen_spin_orchestrator_run(cfg, log_dir, int(blk["generation_seed"]), dev, probe, demo, fork,
+                              "final_incumbent.json" if phase != "prefix" else "prefix_incumbent.json",
+                              {"phase": phase or "continuation", "arm": arm})
+
+
+def pen_spin_orchestrator_run(cfg, log_dir: str, seed: int, dev, probe, demo, fork: dict, incumbent_file: str,
+                              tags: dict) -> None:
+    """One plateau-repair orchestrator run on Isaac streams (R-042's prefix or continuation; R-046's prefix)."""
+    from lares.search.lanes import load_plateau_repair_plan
+
+    np.random.seed(seed)
+    torch.manual_seed(seed)
     if len(dev) != cfg.screen_episodes + cfg.expanded_episodes or len(probe) != cfg.probe_episodes:
         raise ValueError("pen-spin development/probe manifests do not match screen + promotion and probe sizes")
     isaac = os.path.join(log_dir, "isaac")
@@ -413,8 +425,6 @@ def run_pen_spin_block(cfg, cfg_path: str, block: int, phase: str | None, arm: s
 
     llm_args = SimpleNamespace(model=cfg.model, reasoning_effort=cfg.reasoning_effort, policy_gen_two_phase=True,
                                policy_impl_mode=cfg.policy_impl_mode)
-    fork = {"phase": "prefix"} if phase == "prefix" else {
-        "phase": "continuation", "arm": arm, "demonstrations": os.path.join(ps["study_dir"], "demonstrations.json")}
     orchestrator = EvolutionOrchestrator(
         env_name=cfg.env_name, obs_dim=157, action_dim=20, num_generations=1, pop_size=2, elite_num=1, bc_steps=0,
         rl_iterations=0, rl_episodes_per_iter=0, log_dir=log_dir, record_demo_gif=False, dev_manifest=dev,
@@ -430,8 +440,7 @@ def run_pen_spin_block(cfg, cfg_path: str, block: int, phase: str | None, arm: s
     )
     best = orchestrator.run(client=OpenAI(api_key=api_key), envs=envs, demo_buffer=None, args=llm_args,
                             logger=TrainingLogger(log_dir=log_dir, task_name=cfg.env_name))
-    inc = {"candidate_id": orchestrator._incumbent_id, "phase": phase or "continuation", "arm": arm,
-           "fixed_action_scale": cfg.fixed_action_scale,
+    inc = {"candidate_id": orchestrator._incumbent_id, **tags, "fixed_action_scale": cfg.fixed_action_scale,
            "isaac_processes": sum(e.calls for e in (envs.development, envs.gif, envs.probe)),
            "isaac_episodes": sum(e.episodes for e in (envs.development, envs.gif, envs.probe))}
     if best is not None and best.get("policy") is not None:
@@ -439,7 +448,7 @@ def run_pen_spin_block(cfg, cfg_path: str, block: int, phase: str | None, arm: s
             f.write(best["code"])
         torch.save(best["policy"].state_dict(), os.path.join(log_dir, "best_policy.pt"))
         inc.update(code_path="best_policy_code.py", state_path="best_policy.pt")
-    with open(os.path.join(log_dir, "final_incumbent.json" if phase != "prefix" else "prefix_incumbent.json"), "w") as f:
+    with open(os.path.join(log_dir, incumbent_file), "w") as f:
         json.dump(inc, f, indent=2)
 
 
@@ -514,6 +523,51 @@ def run_pen_spin_dense_fit(cfg) -> None:
     print(json.dumps({k: v for k, v in summary.items() if k != "blocks"}, indent=2))
 
 
+def run_gait_prefix(cfg, block: int) -> None:
+    """R-046 child: block ``block``'s cold prefix (the R-042 prefix on the plain 157-d schema)."""
+    from lares.envs.isaac_pen_spin import gait_repair
+
+    gcfg = cfg.gait_preserving_repair
+    roles = gait_repair.block_roles(int(gcfg["block_seeds"][block]))
+    log_dir = os.path.join(gcfg["study_dir"], f"block{block}", "prefix")
+    pen_spin_orchestrator_run(cfg, log_dir, int(gcfg["block_seeds"][block]), roles["development"],
+                              roles["prefix_probe"], roles["expert"], {"phase": "prefix"}, "prefix_incumbent.json",
+                              {"phase": "prefix", "arm": None, "study": "gait_preserving_repair"})
+
+
+def run_pen_spin_gait_study(cfg, cfg_path: str) -> None:
+    """R-046: parity, then per block the cold prefix (own process), expert traces and the three scaffold arms."""
+    import subprocess
+
+    from lares.core.training_pipeline import PREFIX_STATE
+    from lares.envs.isaac_pen_spin import gait_repair
+    from lares.envs.isaac_pen_spin.pipeline_backend import IsaacExpertActor
+
+    gcfg = dict(getattr(cfg, "gait_preserving_repair", None) or {})
+    if not gcfg:
+        raise SystemExit("--study gait_preserving_repair needs a gait_preserving_repair block in the config")
+    gcfg.update(model=cfg.model, reasoning_effort=cfg.reasoning_effort, isaac_env=cfg.pen_spin["isaac_env"])
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    if len(api_key) < 10:
+        raise SystemExit("OPENAI_API_KEY is not set")
+    from openai import OpenAI
+
+    me = [sys.executable, "-u", os.path.abspath(__file__), "--config", cfg_path]
+
+    def run_prefix(block, roles, log_dir):
+        if not os.path.isfile(os.path.join(log_dir, PREFIX_STATE)):
+            if os.path.exists(log_dir):
+                raise SystemExit(f"{log_dir} exists without a prefix state: an interrupted prefix is not rerun")
+            subprocess.run(me + ["--gait-block", str(block)], check=True)
+        return json.load(open(os.path.join(log_dir, PREFIX_STATE)))
+
+    e = cfg.pen_spin["expert"]
+    expert = IsaacExpertActor(e["checkpoint"], e["checkpoint_sha256"], int(e["training_seed"]), shadow_gait=True)
+    factory = lambda name, work: pen_spin_stream(cfg, name, work)  # noqa: E731
+    summary = gait_repair.run_study(gcfg, factory, expert, run_prefix, OpenAI(api_key=api_key))
+    print(json.dumps({k: v for k, v in summary.items() if k != "blocks"}, indent=2, default=str))
+
+
 def main() -> None:
     cfg_path, seed_override, log_dir_override, overrides = parse_args()
     cfg = apply_overrides(load_config(cfg_path), overrides)
@@ -526,8 +580,16 @@ def main() -> None:
                 from lares.envs.isaac_pen_spin import dense_fit
 
                 print(json.dumps(dense_fit.freeze_manifests(cfg.dense_feedback_fit), indent=2))
+            if getattr(cfg, "gait_preserving_repair", None) is not None:
+                from lares.envs.isaac_pen_spin import gait_repair
+
+                print(json.dumps(gait_repair.freeze_manifests(cfg.gait_preserving_repair), indent=2))
         elif overrides.get("study") == "dense_feedback_fit":
             run_pen_spin_dense_fit(cfg)
+        elif overrides.get("study") == "gait_preserving_repair":
+            run_pen_spin_gait_study(cfg, cfg_path)
+        elif overrides.get("gait_block") is not None:
+            run_gait_prefix(cfg, int(overrides["gait_block"]))
         elif overrides.get("study"):
             run_pen_spin_study(cfg, cfg_path)
         elif overrides.get("block") is not None:
