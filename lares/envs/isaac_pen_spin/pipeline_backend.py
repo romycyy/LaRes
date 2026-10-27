@@ -160,7 +160,7 @@ class IsaacPenSpinStream:
             tail = open(log, encoding="utf-8", errors="replace").read()[-3000:]
             raise RuntimeError(f"pen-spin child failed (exit {proc.returncode}); log {log}:\n{tail}")
 
-    def _call(self, actor, manifest, record: bool, mode: str = "evaluate") -> dict:
+    def _call(self, actor, manifest, record: bool, mode: str = "evaluate", extra: dict | None = None) -> dict:
         if cases.stage_of(manifest) != self.stage:
             raise ValueError(f"{manifest.manifest_id} is not a stage-{self.stage} manifest")
         os.makedirs(self.work_dir, exist_ok=True)
@@ -175,14 +175,14 @@ class IsaacPenSpinStream:
         manifest.save(manifest_path)
         request = {"stage": self.stage, "mode": mode, "manifest_path": manifest_path, "manifest_id": manifest.manifest_id,
                    "actor": spec, "record": bool(record), "device": self.device,
-                   "response_path": stem + ".response.json"}
+                   "response_path": stem + ".response.json", **(extra or {})}
         request_path = stem + ".request.json"
         with open(request_path, "w", encoding="utf-8") as f:
             json.dump(request, f, indent=1)
         self._runner(request_path)
         with open(request["response_path"], encoding="utf-8") as f:
             response = json.load(f)
-        if mode == "reset_obs":
+        if mode in ("reset_obs", "query"):
             return response
         if [r["case_id"] for r in response["episodes"]] != [c.case_id for c in manifest.episodes]:
             raise ValueError(f"{request['response_path']}: rows do not follow the manifest's cases")
@@ -224,6 +224,18 @@ class IsaacPenSpinStream:
         if obs.shape != (len(manifest), self.observation_space.shape[0]):
             raise ValueError(f"reset observations have shape {obs.shape}")
         return obs
+
+    def query_actions(self, actor, obs: np.ndarray, manifest) -> np.ndarray:
+        """The actor's raw (unclamped) output at each row of ``obs`` ``(N, 157)``, in a fresh Isaac process with no
+        episode (R-048). ``manifest`` only names the stage."""
+        os.makedirs(self.work_dir, exist_ok=True)
+        qpath = os.path.join(self.work_dir, f"{self.name}_{self.calls + 1:04d}.query.npz")
+        np.savez_compressed(qpath, obs=np.asarray(obs, dtype=np.float32))
+        response = self._call(actor, manifest, record=False, mode="query", extra={"query_path": qpath})
+        acts = np.load(response["actions_path"])["actions"]
+        if acts.shape != (len(obs), cases.NUM_ACTIONS):
+            raise ValueError(f"queried actions have shape {acts.shape}")
+        return acts
 
     def reset(self, case=None):
         raise RuntimeError("a pen-spin stream scores whole manifests; it has no single-episode reset")

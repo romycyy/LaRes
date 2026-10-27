@@ -100,6 +100,36 @@ def write_reset_observations(req: dict, manifest, stage: int) -> None:
                    "observations": obs.tolist(), "episodes": []}, f)
 
 
+def write_queried_actions(req: dict, stage: int) -> None:
+    """The actor's raw output at given observations (R-048): no placement, no step, no episode."""
+    import numpy as np
+    import torch
+
+    from lares.envs.isaac_pen_spin import cases
+    from lares.envs.isaac_pen_spin.runner import make_env
+    from lares.utils.hashing import sha256_file
+
+    obs = np.load(req["query_path"])["obs"].astype(np.float32)
+    device = req.get("device", "cuda:0")
+    ctrl = build_controller(req["actor"], cases.STAGES[stage].task_id)
+    env = make_env(stage, 1, device)
+    try:
+        env.reset()
+        if hasattr(ctrl, "attach"):
+            ctrl.attach(env)
+        out = []
+        for a in range(0, len(obs), 256):
+            o = torch.as_tensor(obs[a:a + 256], device=device)
+            out.append(ctrl(o, 0, None).detach().cpu().numpy())
+    finally:
+        env.close()
+    path = req["response_path"].replace(".response.json", ".actions.npz")
+    np.savez_compressed(path, actions=np.concatenate(out, axis=0))
+    with open(req["response_path"], "w", encoding="utf-8") as f:
+        json.dump({"request_path": req["manifest_path"], "actions_path": path, "actions_sha256": sha256_file(path),
+                   "queries": int(len(obs)), "episodes": []}, f)
+
+
 def main(request_path: str) -> None:
     from lares.envs.isaac_lab_adapter import close_isaac_app, launch_isaac_app
 
@@ -121,6 +151,9 @@ def main(request_path: str) -> None:
             raise SystemExit(f"request stage {req['stage']} != manifest stage {stage}")
         if req.get("mode") == "reset_obs":
             write_reset_observations(req, manifest, stage)
+            return
+        if req.get("mode") == "query":
+            write_queried_actions(req, stage)
             return
         ctrl = build_controller(req["actor"], cases.STAGES[stage].task_id)
         runner = PenSpinBatchRunner(stage, len(manifest), device=req.get("device", "cuda:0"))

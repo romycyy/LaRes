@@ -179,6 +179,14 @@ class FakeChild:
             obs = toy_obs(2.0 * vecs[:, 0], 0.01 * vecs[:, 1:4], np.zeros((len(m), 20)))
             json.dump({"observations": obs.tolist(), "episodes": []}, open(req["response_path"], "w"))
             return
+        if req["mode"] == "query":
+            assert req["actor"]["kind"] == "ppo"
+            obs = np.load(req["query_path"])["obs"]
+            acts = ToyExpert()(torch.as_tensor(obs), 0, None).numpy()
+            path = req["response_path"].replace(".response.json", ".actions.npz")
+            np.savez(path, actions=acts)
+            json.dump({"actions_path": path, "queries": len(obs), "episodes": []}, open(req["response_path"], "w"))
+            return
         spec = req["actor"]
         if spec["kind"] == "ppo":
             ctrl = ToyExpert()
@@ -199,7 +207,7 @@ class FakeChild:
         json.dump(resp, open(req["response_path"], "w"), default=float)
 
     def episodes(self, kind=None):
-        return [r for r in self.requests if r["mode"] != "reset_obs" and (kind is None or r["actor"]["kind"] == kind)]
+        return [r for r in self.requests if r["mode"] not in ("reset_obs", "query") and (kind is None or r["actor"]["kind"] == kind)]
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -923,6 +931,165 @@ class TestWrapperGateV2(unittest.TestCase):
             b[100:, 3] += 1.0
             self.write(d, a, b, [True] * 5, [True] * 5)
             self.assertFalse(wrapper_gate_v2(d, 150, 4)["passes"])
+
+
+class TestLocalFeedbackUnits(unittest.TestCase):
+    def setUp(self):
+        from lares.envs.isaac_pen_spin import local_feedback as lf
+
+        self.lf = lf
+        rng = np.random.default_rng(0)
+        self.obs = toy_obs(rng.normal(10, 3, 6), rng.normal(0, 1, (6, 3)), rng.uniform(-1, 1, (6, 20)))
+        self.obs[:, SL["hand_dof_pos"]] = rng.uniform(-1, 1, (6, 24))
+
+    def test_perturb_moves_only_its_coordinate(self):
+        c0 = self.lf.coordinates(self.obs)
+        for k in range(len(self.lf.COORDS)):
+            c1 = self.lf.coordinates(self.lf.perturb(self.obs, k, 0.05))
+            d = c1 - c0
+            np.testing.assert_allclose(d[:, k], 0.05, atol=1e-5)
+            np.testing.assert_allclose(np.delete(d, k, axis=1), 0.0, atol=1e-5)
+        changed = np.any(self.lf.perturb(self.obs, 4, 0.05) != self.obs, axis=0)
+        sl = SL["hand_dof_pos"]
+        self.assertEqual(sorted(np.where(changed)[0] - sl.start), [7, 12, 17])  # FFJ2, FFJ1, FFJ0
+
+    def test_sensitivities_recover_a_linear_response_and_report_saturation(self):
+        h = np.full(len(self.lf.COORDS), 0.01)
+        batch = self.lf.query_batch(self.obs, h)
+        slope = np.zeros((len(self.lf.COORDS), 20))
+        slope[3, 7] = 2.0   # axial rate -> FFJ2
+        slope[0, 1] = -5.0  # offset_x -> WRJ0
+        base = np.tile(self.lf.coordinates(self.obs), (1 + 2 * len(self.lf.COORDS), 1))
+        raw = (self.lf.coordinates(batch) - base) @ slope  # centred, so nothing reaches the clamp
+        raw[0, 0] = 3.0  # one saturated base output
+        s = self.lf.sensitivities(raw, len(self.obs))
+        np.testing.assert_allclose(s["sens"][:, 3, 7], 2.0 * 0.01, rtol=1e-3)
+        np.testing.assert_allclose(s["sens"][:, 0, 1], -5.0 * 0.01, rtol=1e-3, atol=1e-6)
+        self.assertAlmostEqual(s["base_saturated_fraction"], 1 / (6 * 20))
+        with self.assertRaises(ValueError):
+            self.lf.sensitivities(raw[:-1], len(self.obs))
+
+    def test_states_come_from_failures_first(self):
+        rows = [{"sustained": True, "case_id": "a", "length": 359}, {"sustained": False, "case_id": "b", "length": 90},
+                {"sustained": True, "case_id": "c", "length": 359}]
+        sel = self.lf.select_states({"episodes": rows})
+        self.assertEqual([e["case"] for e in sel], ["b", "a"])
+        self.assertEqual(len(sel[0]["evidence_steps"]), self.lf.STATES_PER_EPISODE)
+        self.assertEqual(sel[0]["evidence_steps"][-1], 89)
+        self.assertFalse(set(sel[0]["evidence_steps"]) & set(sel[0]["extra_steps"]))
+
+
+class LocalRun:
+    def __init__(self, blocks=2):
+        from lares.envs.isaac_pen_spin import local_feedback
+
+        self.lf = local_feedback
+        self.tmp = tempfile.TemporaryDirectory()
+        root = self.tmp.name
+        cfg = yaml.safe_load(open(CONFIG))
+        c = cfg["local_feedback_evidence"]
+        c["study_dir"] = os.path.join(root, "study")
+        c["block_seeds"] = c["block_seeds"][:blocks]
+        demo = os.path.join(root, "demo.trace.npz")
+        m = cases.build_manifest(3, 999, 4, label="demo")
+        tr = toy_rollout(m, ToyExpert())
+        obs = tr["obs"] + np.random.default_rng(1).normal(0, 0.05, tr["obs"].shape).astype(np.float32)
+        np.savez(demo, obs=obs, length=tr["length"])
+        from lares.utils.hashing import sha256_file
+
+        c["demo_trace"], c["demo_trace_sha256"] = demo, sha256_file(demo)
+        self.seeds = c["block_seeds"]
+        self.config_path = os.path.join(root, "config.yaml")
+        yaml.safe_dump(cfg, open(self.config_path, "w"))
+        self.study_dir = c["study_dir"]
+        self.child = FakeChild()
+        self.mdir = os.path.join(root, "manifests")
+        self.llm = ScriptedLLM({"trace_repair": [fence(POLICY_CORRECTION)] * (4 * blocks)})
+        self.run()
+        self.summary = json.load(open(os.path.join(self.study_dir, "summary.json")))
+
+    def run(self):
+        import run_full_evolution as rfe
+
+        def stream(cfg_, name, work):
+            return pb.IsaacPenSpinStream(3, work, name, runner=self.child)
+
+        argv = ["run_full_evolution.py", "--config", self.config_path, "--study", "local_feedback_evidence",
+                "--block-seeds", ",".join(str(s) for s in self.seeds), "--output-dir", self.study_dir]
+        with patch.object(sys, "argv", argv), patch.dict(os.environ, {"OPENAI_API_KEY": "sk-mock-not-a-key"}), \
+                patch.object(pg, "_call_llm", side_effect=self.llm), \
+                patch.object(pg, "_run_policy_validation_subprocess", return_value=(True, "Success!", "full")), \
+                patch.object(self.lf, "manifest_file", lambda seed: cases.manifest_path(3, "local_feedback", seed,
+                                                                                        self.mdir)), \
+                patch.object(rfe, "pen_spin_stream", stream):
+            rfe.main()
+
+    def close(self):
+        self.tmp.cleanup()
+
+
+class TestLocalFeedbackStudy(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.r = LocalRun(blocks=2)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.r.close()
+
+    def test_episode_budget_and_one_query_process_per_block(self):
+        eps = sum(len(EvaluationManifest.load(r["manifest_path"])) for r in self.r.child.episodes())
+        self.assertEqual(eps, 2 * (80 + 2 * 90))
+        queries = [r for r in self.r.child.requests if r["mode"] == "query"]
+        self.assertEqual(len(queries), 2)
+        self.assertEqual(len(self.r.llm.labels), 2 * 2 * 2)
+
+    def test_requests_differ_only_in_the_evidence_block(self):
+        for b in range(2):
+            d = os.path.join(self.r.study_dir, f"block{b}")
+            raw = open(os.path.join(d, "raw_labels", "request.txt")).read()
+            sens = open(os.path.join(d, "sensitivity", "request.txt")).read()
+            head_r, head_s = raw.split("Evidence: ")[0], sens.split("Evidence: ")[0]
+            self.assertEqual(head_r, head_s)
+            self.assertIn("SENS", sens)
+            self.assertIn("AVERAGE SENS", sens)
+            self.assertNotIn("SENS", raw)
+            self.assertIn("EXPERT=", raw)
+            self.assertGreaterEqual(len(raw), len(sens) - 200)
+            blk = self.r.summary["blocks"][b]
+            self.assertGreater(blk["packets"]["raw_extra_states"], 0)
+
+    def test_arms_promote_against_the_parent_on_the_promotion_slice_only(self):
+        for blk in self.r.summary["blocks"]:
+            self.assertEqual(blk["parent"]["fresh"]["manifest_id"].split(":")[-1], "fresh")
+            for arm in self.r.lf.ARMS:
+                a = blk["arms"][arm]
+                self.assertTrue(a["valid"])
+                dec = a["promotion_decision"]
+                self.assertEqual(dec["incumbent_id"], "frozen_gait")
+                self.assertIn(blk["parent"]["screen"]["manifest_id"], dec["excluded_manifest_ids"])
+                self.assertEqual(len(a["screens"]), 2)
+                fi = a["fresh_incumbent"]
+                self.assertEqual(fi["success"], a["fresh_selected"]["success"] if a["promoted"]
+                                 else blk["parent"]["fresh"]["success"])
+
+    def test_scaffold_is_a_bounded_residual_and_the_expert_query_is_unshadowed(self):
+        modes = {r["actor"]["scaffold"]["mode"] for r in self.r.child.requests if r["actor"].get("scaffold")}
+        self.assertEqual(modes, {"residual"})
+        q = [r for r in self.r.child.requests if r["mode"] == "query"]
+        self.assertFalse(any(r["actor"].get("shadow_gait") for r in q))
+
+    def test_summary_pairs_sensitivity_against_raw_labels(self):
+        s = self.r.summary
+        self.assertEqual(s["n_blocks"], 2)
+        self.assertEqual(len(s["sensitivity_minus_raw_labels_fresh_incumbent"]["per_block"]), 2)
+        self.assertIn("sensitivity_minus_parent_fresh_incumbent", s)
+
+    def test_a_rerun_resumes_without_a_new_episode_or_call(self):
+        before, calls = len(self.r.child.requests), len(self.r.llm.labels)
+        self.r.run()
+        self.assertEqual(len(self.r.child.requests), before)
+        self.assertEqual(len(self.r.llm.labels), calls)
 
 
 if __name__ == "__main__":

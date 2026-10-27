@@ -276,10 +276,15 @@ def parse_args() -> tuple:
     p.add_argument("--freeze-manifests", action="store_true",
                    help="R-037: build (or verify) the task manifests, print their ids and hashes, and exit; no LLM call "
                         "and no episode")
-    p.add_argument("--study", choices=("keyframe_repair", "dense_feedback_fit", "gait_preserving_repair"), default=None,
+    p.add_argument("--study", choices=("keyframe_repair", "dense_feedback_fit", "gait_preserving_repair",
+                                       "local_feedback_evidence"), default=None,
                    help="R-042: run the whole pen-spin keyframe-repair study (parity gate, blocks, arms, fresh cases); "
                         "R-045: dense_feedback_fit (expert-label fitting vs rollout search, no LLM call); "
-                        "R-046: gait_preserving_repair (scaffold continuation on the frozen R-039 gait)")
+                        "R-046: gait_preserving_repair (scaffold continuation on the frozen R-039 gait); "
+                        "R-048: local_feedback_evidence (expert sensitivities vs raw labels for a gait residual)")
+    p.add_argument("--block-seeds", default=None,
+                   help="R-048: comma-separated block seeds the command expects; refused if the config declares others")
+    p.add_argument("--output-dir", default=None, help="R-048: the study directory; refused if the config names another")
     p.add_argument("--gait-block", type=int, default=None, help="R-046 child: run one block's cold prefix")
     p.add_argument("--block", type=int, default=None, help="R-042 child: the block to run (with --phase or --arm)")
     p.add_argument("--phase", choices=("prefix",), default=None, help="R-042 child: run the block's prefix only")
@@ -292,7 +297,8 @@ def parse_args() -> tuple:
     overrides = {"repair": ns.repair, "development_pool_seed": ns.dev_pool_seed,
                  "demonstration_pool_seed": ns.demo_pool_seed, "fresh_evaluation_pool_seed": ns.fresh_pool_seed,
                  "freeze_manifests": ns.freeze_manifests or None, "study": ns.study, "block": ns.block,
-                 "phase": ns.phase, "arm": ns.arm, "gait_block": ns.gait_block}
+                 "phase": ns.phase, "arm": ns.arm, "gait_block": ns.gait_block, "block_seeds": ns.block_seeds,
+                 "output_dir": ns.output_dir}
     return cfg_path, ns.seed, ns.log_dir, {k: v for k, v in overrides.items() if v is not None}
 
 
@@ -568,6 +574,34 @@ def run_pen_spin_gait_study(cfg, cfg_path: str) -> None:
     print(json.dumps({k: v for k, v in summary.items() if k != "blocks"}, indent=2, default=str))
 
 
+def run_pen_spin_local_feedback(cfg, overrides: dict) -> None:
+    """R-048: per block the gait parent, expert queries at its states, and the raw-label and sensitivity arms."""
+    from lares.envs.isaac_pen_spin import local_feedback
+    from lares.envs.isaac_pen_spin.pipeline_backend import IsaacExpertActor
+
+    lcfg = dict(getattr(cfg, "local_feedback_evidence", None) or {})
+    if not lcfg:
+        raise SystemExit("--study local_feedback_evidence needs a local_feedback_evidence block in the config")
+    if overrides.get("block_seeds") is not None:
+        want = [int(x) for x in str(overrides["block_seeds"]).split(",")]
+        if want != [int(x) for x in lcfg["block_seeds"]]:
+            raise SystemExit(f"--block-seeds {want} != the config's {lcfg['block_seeds']}")
+    if overrides.get("output_dir") is not None and os.path.normpath(overrides["output_dir"]) != os.path.normpath(
+            lcfg["study_dir"]):
+        raise SystemExit(f"--output-dir {overrides['output_dir']} != the config's study_dir {lcfg['study_dir']}")
+    lcfg.update(model=cfg.model, reasoning_effort=cfg.reasoning_effort)
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    if len(api_key) < 10:
+        raise SystemExit("OPENAI_API_KEY is not set")
+    from openai import OpenAI
+
+    e = cfg.pen_spin["expert"]
+    expert = IsaacExpertActor(e["checkpoint"], e["checkpoint_sha256"], int(e["training_seed"]))
+    factory = lambda name, work: pen_spin_stream(cfg, name, work)  # noqa: E731
+    summary = local_feedback.run_study(lcfg, factory, expert, OpenAI(api_key=api_key))
+    print(json.dumps({k: v for k, v in summary.items() if k != "blocks"}, indent=2, default=str))
+
+
 def main() -> None:
     cfg_path, seed_override, log_dir_override, overrides = parse_args()
     cfg = apply_overrides(load_config(cfg_path), overrides)
@@ -584,10 +618,16 @@ def main() -> None:
                 from lares.envs.isaac_pen_spin import gait_repair
 
                 print(json.dumps(gait_repair.freeze_manifests(cfg.gait_preserving_repair), indent=2))
+            if getattr(cfg, "local_feedback_evidence", None) is not None:
+                from lares.envs.isaac_pen_spin import local_feedback
+
+                print(json.dumps(local_feedback.freeze_manifests(cfg.local_feedback_evidence), indent=2))
         elif overrides.get("study") == "dense_feedback_fit":
             run_pen_spin_dense_fit(cfg)
         elif overrides.get("study") == "gait_preserving_repair":
             run_pen_spin_gait_study(cfg, cfg_path)
+        elif overrides.get("study") == "local_feedback_evidence":
+            run_pen_spin_local_feedback(cfg, overrides)
         elif overrides.get("gait_block") is not None:
             run_gait_prefix(cfg, int(overrides["gait_block"]))
         elif overrides.get("study"):
