@@ -206,6 +206,30 @@ OBS_SCHEMAS: dict[str, ObsSchema] = {
 OBS_SCHEMAS["hammer-v2"] = ObsSchema("hammer-v2", 39, _HAMMER_V3)
 
 
+def _pen_spin_schema(stage: int) -> ObsSchema:
+    """R-042: the Shadow Hand pen-spin task's 157-d "full" observation, from ``cases.OBS_LAYOUT``.
+
+    Not checked by :meth:`ObsSchema.check_against_env` (that reads MetaWorld accessors); the layout is the env's
+    own ``compute_full_observations`` order, and ``tests/test_pen_spin_pipeline`` checks these slices against it.
+    The required fields are the ones a spinning controller cannot do without: the pen's position, orientation and
+    angular velocity, and the hand's joint positions.
+    """
+    from lares.envs.isaac_pen_spin.layout import OBS_LAYOUT, STAGE_TASK_IDS
+
+    required = {"obj_pos", "obj_rot", "obj_angvel", "hand_dof_pos"}
+    fields, start = [], 0
+    for name, size, description in OBS_LAYOUT:
+        fields.append(ObsField(name, start, start + size, description, required=name in required))
+        start += size
+    return ObsSchema(STAGE_TASK_IDS[stage], start, tuple(fields))
+
+
+for _stage in (1, 2, 3):
+    _s = _pen_spin_schema(_stage)
+    OBS_SCHEMAS[_s.env_id] = _s
+del _stage, _s
+
+
 def get_obs_schema(env_id: str) -> ObsSchema:
     """Schema for ``env_id``, or a clear failure naming what is missing.
 

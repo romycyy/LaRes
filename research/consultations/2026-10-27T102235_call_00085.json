@@ -1,0 +1,22 @@
+{
+  "ideas": [
+    {
+      "id": "R-042",
+      "recommendation": "revise",
+      "reasoning": "All four changes are reasonable implementation reconciliations: they preserve the primary test of whether event-focused keyframes expose corrective feedback better than uniform sampling, without requiring another scientific revision round. Reusing scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml provides two useful contrasts for at most 2794 episodes and 32 LLM calls, although four blocks sharing two demonstrations limit generalization. The remaining launch blocker is the contradictory seed accounting: the briefing labels 4120–4137 spent, while the question identifies them as reserved and unused; clearing protocol.seeds alone does not resolve that discrepancy.",
+      "suggested_changes": [
+        "Reconcile the ledger and briefing before launch: establish that 4120–4137 were reserved but never executed, retain their manifest assignments and reservation history, and correct the spent classification only if that provenance supports it; if any were actually used, stop rather than reuse them.",
+        "Record the four reconciliations in the protocol history: pipeline-venv orchestration with fresh Isaac children; hand_dof_pos explicitly labeled normalized [-1, 1], not radians; the selected parent parameter values; and D-037 phrased precisely as one recorded tape achieving 0/40 successes versus 40/40 closed-loop successes, not proof that every replay must fail. Keep both repair requests otherwise matched and interpret their no-trace contrasts as repair-package effects.",
+        "Retain the prediction: metric paired_success_difference, direction increase, threshold 0.20, against uniform-keyframe repair, with a paired interval above zero required for improvement. Retain falsified_by: with at least three eligible blocks, the interval upper bound is below +0.20; failed gates or fewer than three eligible blocks are inconclusive, and an interval including zero does not establish improvement."
+      ],
+      "depends_on": []
+    }
+  ],
+  "order": [
+    "R-042"
+  ],
+  "next_step": "Reconcile the reserved-versus-spent status of seeds 4120–4137 against execution provenance before any live parity or study rollout.",
+  "call_id": "call_00085",
+  "briefing_sha256": "b78f1270935552f00b10e02e88f29a8fadcc098342512c0f8ce896e31aad0da4",
+  "question": "Pre-launch reconciliation of R-042 (approved, not started; no protocol rollout or LLM call has run). Implementation is done and passes a mocked end-to-end gate (21 tests: fork, parity, demonstrations, both keyframe rules, records traceable) and a live backend smoke on spent debug seed 4097 (4 cases; reset obs, a hand-written symbolic policy, the PPO expert 4/4; ~16 s per Isaac process). Four details differ from the approved text; each applies identically to the uniform and event arms (and none touches the no-trace arm, scoring, promotion, seeds or manifests). (1) Interpreter: the Isaac python env lacks openai and installing it would modify the box's ~/IsaacLab, so the orchestrator runs in the pipeline venv and every rollout is a child that sources Isaac's env; the command becomes gpu run 'source ~/.profile && .venv-metaworld/bin/python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study keyframe_repair'. (2) Trace rows show the 24 hand joint positions as hand_dof_pos exactly as the policy observes it (scaled to [-1, 1], 3 dp) instead of radians, because the generated controller reads that field and the 4 coupled distal joints have no actuated limits to convert with; everything else in the row is as approved. (3) The repair request also lists the parameter values the prefix's rollout search selected for the edited candidate (the protocol names the selected setting as the edited candidate, but the source code carries only initial values). (4) The request says the expert is closed-loop and that replaying its recorded actions without feedback failed 0/40 (D-037), the approved 'states that the expert is closed-loop' made concrete. Seeds 4120-4137 are reserved in the ledger and all 14 manifests frozen; protocol.seeds will be emptied with a history note per the R-037/R-040 precedent. Do you accept these four as implementation reconciliations that leave the approved comparison unchanged, or does any require a revision round?"
+}

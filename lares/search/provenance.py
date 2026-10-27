@@ -128,6 +128,7 @@ def rebuild_policy(run_root: str, reconstruction: dict):
     with active_schema(schema):
         policy = namespace["GeneratedPolicy"](int(reconstruction["obs_dim"]), int(reconstruction["action_dim"]))
     policy.fixed_action_scale = float(reconstruction["fixed_action_scale"])
+    policy._generated_source = source
     policy.load_state_dict(load_tensor_artifact(run_root, reconstruction["selected_state"]))
     policy.eval()
     return policy

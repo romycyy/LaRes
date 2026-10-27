@@ -11,6 +11,7 @@ Each stage is usable independently or orchestrated via
 """
 
 import inspect
+import io
 import json
 import os
 import copy
@@ -23,7 +24,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from lares.utils.hashing import sha256_file, sha256_text
+from lares.utils.hashing import sha256_bytes, sha256_file, sha256_text
 
 from lares.core.training_logger import (
     BC_GRAD_NORM_POST_CLIP,
@@ -89,6 +90,7 @@ EXPERT_POLICY_MAP = {
 }
 
 TASK_DESCRIPTIONS = {
+    "Isaac-ShadowHandSpin-Stage3-Direct-v0": "Control a Shadow Hand to keep a pen in the palm and roll it continuously about its long axis",
     "window-close-v2": "Control the robotic arm to close the window",
     "window-open-v2": "Control the robotic arm to open the window",
     "button-press-v2": "Control the robotic arm to press the button",
@@ -1363,6 +1365,21 @@ def two_lane_generation(
 # ===========================================================================
 
 
+def parameter_values(policy) -> dict:
+    """Every declared parameter's value: a float for a scalar, a list otherwise."""
+    out = {}
+    for name, p in policy.named_parameters():
+        v = p.detach().cpu().reshape(-1).tolist()
+        out[name] = float(v[0]) if len(v) == 1 else [float(x) for x in v]
+    return out
+
+
+#: R-042 continuation arms: another searched exploration, or a trace repair with uniform or event-selected keyframes.
+ARM_NO_TRACE, ARM_UNIFORM, ARM_EVENT = "no_trace", "uniform", "event"
+PLATEAU_ARMS = (ARM_NO_TRACE, ARM_UNIFORM, ARM_EVENT)
+PREFIX_STATE = os.path.join("gen_0", "prefix_state.json")
+
+
 class EvolutionOrchestrator:
     """Full LLM evolution loop: generation → fit → evaluate → feedback → repeat.
 
@@ -1425,6 +1442,7 @@ class EvolutionOrchestrator:
         demonstration_manifest=None,
         demonstration_env=None,
         demonstration_actor=None,
+        plateau_fork=None,
     ):
         from lares.core.symbolic_policy import SymbolicPolicy
         from lares.eval.promotion import PromotionPolicy
@@ -1497,7 +1515,20 @@ class EvolutionOrchestrator:
         self.demonstration_env = demonstration_env
         self.demonstration_actor = demonstration_actor
         self.plateau_log: dict = {}
-        if self.plateau and lane_plan.repair and (demonstration_manifest is None or demonstration_env is None):
+        #: R-042: ``None`` runs the whole plateau generation; otherwise ``{"phase": "prefix"}`` stops after slot 0 and
+        #: writes ``gen_0/prefix_state.json``, and ``{"phase": "continuation", "arm": ..., "demonstrations": path}``
+        #: runs slot 1 alone in a copy of a prefix run (see :meth:`_plateau_generation`).
+        self.plateau_fork = dict(plateau_fork) if plateau_fork else None
+        if self.plateau_fork is not None:
+            phase, arm = self.plateau_fork.get("phase"), self.plateau_fork.get("arm")
+            if not self.plateau or phase not in ("prefix", "continuation"):
+                raise ValueError(f"plateau_fork needs a plateau plan and a phase prefix|continuation, got {phase!r}")
+            if phase == "continuation" and arm not in PLATEAU_ARMS:
+                raise ValueError(f"a continuation arm must be one of {PLATEAU_ARMS}, got {arm!r}")
+            if phase == "continuation" and arm != ARM_NO_TRACE and not self.plateau_fork.get("demonstrations"):
+                raise ValueError("a trace arm needs the study's shared demonstrations file")
+        needs_demos = self.plateau and lane_plan.repair and self.plateau_fork is None
+        if needs_demos and (demonstration_manifest is None or demonstration_env is None):
             raise ValueError("a repair-enabled plateau plan needs demonstration_manifest and demonstration_env")
         if lane_plan is not None:
             if int(num_generations) != 1:
@@ -1640,11 +1671,16 @@ class EvolutionOrchestrator:
 
     def _write_probe_batch_from_resets(self, env, n=32):
         """The reconstruction batch without demonstrations: reset observations of the screen cases plus seeded jitter."""
-        obs = []
-        for case in self.screen_manifest.episodes:
-            o, _ = env.reset(case)
-            obs.append(np.asarray(o, dtype=np.float32).reshape(-1))
-        base = np.stack(obs)
+        reset_observations = getattr(env, "reset_observations", None)
+        if callable(reset_observations):
+            # R-042: a batched backend (Isaac pen spin) reads every case's reset observation in one process.
+            base = np.asarray(reset_observations(self.screen_manifest), dtype=np.float32)
+        else:
+            obs = []
+            for case in self.screen_manifest.episodes:
+                o, _ = env.reset(case)
+                obs.append(np.asarray(o, dtype=np.float32).reshape(-1))
+            base = np.stack(obs)
         rng = np.random.default_rng(0)
         rows = [base[i % len(base)] + (0.0 if i < len(base) else rng.normal(0.0, 0.01, base.shape[1]))
                 for i in range(n)]
@@ -2493,12 +2529,34 @@ class EvolutionOrchestrator:
             self.run_resources.add_wall_time("generation", time.time() - started)
             return (attempts, *self._process_attempts(attempts, 0, envs, probe_env, args, None, parent_sources))
 
+        fork = self.plateau_fork or {}
+        if fork.get("phase") == "continuation":
+            return self._plateau_continuation(generator, log, run_slot, fork)
+
         print("\n  Plateau repair: prefix slot (searched single-phase exploration)")
         c0, r0, d0, f0 = run_slot(lambda: generator.exploration(0))
         prefix_promoted = any((d.get("incumbent_comparison") or {}).get("promoted") for d in d0)
         trigger = lanes.plateau_trigger(r0[0] if r0 else None, prefix_promoted)
         log["trigger"] = trigger
         print(f"  Plateau trigger: {'FIRED' if trigger['fired'] else 'not fired'} ({trigger['reason']})")
+        if fork.get("phase") == "prefix":
+            state = {"trigger": trigger, "prefix_promoted": bool(prefix_promoted), "incumbent_id": self._incumbent_id,
+                     "slot_ids": dict(generator.ids), "edited_candidate": None, "parent_code": None,
+                     "selected_parameters": None, "llm_calls": len(self.ledger),
+                     "prefix_records": [r["candidate_id"] for r in r0]}
+            if trigger["fired"]:
+                edited = lanes.edited_candidate(r0)
+                best = next(r for r in r0 if r["candidate_id"] == edited["candidate_id"])
+                state.update(edited_candidate=edited, parent_code=best["code"],
+                             selected_parameters=parameter_values(best["policy"]))
+            log["prefix_state"] = state
+            log["outcome"] = "prefix only (R-042 fork point)"
+            log["final_incumbent"] = self._incumbent_id
+            log["accounting"] = self._plateau_accounting(log)
+            self.plateau_log = log
+            self._artifact(PREFIX_STATE, json.dumps(state, indent=2, default=str))
+            self._artifact(os.path.join("gen_0", "plateau_repair.json"), json.dumps(log, indent=2, default=str))
+            return c0, r0, d0, f0
 
         produce, continuation = (lambda: generator.exploration(1)), lanes.CONTINUATION_EXPLORATION
         if trigger["fired"] and plan.repair:
@@ -2530,6 +2588,47 @@ class EvolutionOrchestrator:
         self.plateau_log = log
         self._artifact(os.path.join("gen_0", "plateau_repair.json"), json.dumps(log, indent=2, default=str))
         return c0 + c1, r0 + r1, d0 + d1, f0 + f1
+
+    def _plateau_continuation(self, generator, log, run_slot, fork):
+        """R-042: slot 1 alone, in a copy of a prefix run whose trigger fired and whose incumbent is still null."""
+        from lares.repair import pen_spin_traces as pst
+        from lares.search import lanes
+
+        path = os.path.join(self.log_dir, PREFIX_STATE)
+        with open(path, encoding="utf-8") as f:
+            state = json.load(f)
+        if not state["trigger"]["fired"] or state["incumbent_id"] is not None:
+            raise ValueError(f"{path}: a continuation needs a fired trigger and a null pre-fork incumbent")
+        if {str(k): v for k, v in generator.ids.items()} != {str(k): v for k, v in state["slot_ids"].items()}:
+            raise ValueError(f"slot ids {generator.ids} differ from the prefix's {state['slot_ids']}")
+        arm = fork["arm"]
+        log.update(trigger=state["trigger"], prefix_state=state, arm=arm, edited_candidate=state["edited_candidate"])
+        if arm == ARM_NO_TRACE:
+            continuation, produce = lanes.CONTINUATION_EXPLORATION, (lambda: generator.exploration(1))
+        else:
+            with open(fork["demonstrations"], encoding="utf-8") as f:
+                demos = json.load(f)
+            if not demos["qualified"]:
+                raise ValueError(f"{fork['demonstrations']}: the demonstrations did not qualify; no trace arm may run")
+            request, packet = pst.repair_request(state["parent_code"], demos["successes"], demos["episodes"],
+                                                 demos["selected"], arm, parameters=state["selected_parameters"])
+            log["demonstrations"] = {k: v for k, v in demos.items() if k not in ("selected", "all_episodes")}
+            meta = self.lane_plan.repair_metadata(state["edited_candidate"], state["trigger"], log["demonstrations"],
+                                                  {"extraction": "pen_spin_keyframes", **packet})
+            meta["request_sha256"] = sha256_text(request)
+            log["packet"] = packet
+            self._artifact(os.path.join("gen_0", f"repair_request_{arm}.txt"), request)
+            continuation = lanes.CONTINUATION_TRACE_REPAIR
+            produce = lambda: generator.trace_repair(1, state["edited_candidate"], request, meta)  # noqa: E731
+        log["continuation"] = continuation
+        print(f"\n  Plateau repair: continuation slot ({continuation}, arm {arm}) from {path}")
+        c1, r1, d1, f1 = run_slot(produce)
+        log["outcome"] = f"continuation arm {arm}"
+        log["final_incumbent"] = self._incumbent_id
+        log["accounting"] = self._plateau_accounting(log)
+        self.plateau_log = log
+        self._artifact(os.path.join("gen_0", f"plateau_repair_{arm}.json"), json.dumps(log, indent=2, default=str))
+        return c1, r1, d1, f1
 
     def _collect_demonstrations(self) -> dict:
         """Expert-only episodes on the demonstration manifest, the qualification gate and the two traces shown."""
@@ -2752,7 +2851,15 @@ class EvolutionOrchestrator:
             # screen cases' reset observations on the GIF stream, which every later episode resets anyway.
             if int(self.bc_steps) or (self.lane_plan is not None and self.lane_plan.fittable_slots):
                 raise ValueError("demo_buffer=None is allowed only when no candidate can be fitted (bc_steps 0, no fittable lane)")
-            self._write_probe_batch_from_resets(envs.gif)
+            existing = os.path.join(self.log_dir, "reconstruction_probe_batch.pt")
+            if (self.plateau_fork or {}).get("phase") == "continuation" and os.path.isfile(existing):
+                # R-042: a continuation runs in a copy of its prefix run; the prefix records reference this batch.
+                with open(existing, "rb") as f:
+                    payload = f.read()
+                self.probe_batch = torch.load(io.BytesIO(payload), weights_only=True)
+                self.probe_batch_ref = {"path": "reconstruction_probe_batch.pt", "sha256": sha256_bytes(payload)}
+            else:
+                self._write_probe_batch_from_resets(envs.gif)
         else:
             self.data = prepare_data(demo_buffer, val_fraction=self.val_fraction, split_seed=self.split_seed)
             self._write_probe_batch(demo_buffer)

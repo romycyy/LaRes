@@ -22,6 +22,26 @@ from datetime import datetime
 # task is, and what the manipulation actually requires. The layout itself comes from
 # ``lares.core.obs_schema``, which is verified against the simulator.
 TASK_NOTES = {
+    # R-042: Shadow Hand pen spinning, Stage 3 (lares.envs.isaac_pen_spin). Facts only, no control strategy.
+    "Isaac-ShadowHandSpin-Stage3-Direct-v0": (
+        "A 24-joint Shadow Hand (palm up) holds a pen lying across the palm; the pen's long axis is its local x axis.\n"
+        "Actions are 20-dimensional normalised joint-position targets in [-1, 1], one per actuated joint, in this order:\n"
+        "  WRJ1, WRJ0, FFJ3, MFJ3, RFJ3, LFJ4, THJ4, FFJ2, MFJ2, RFJ2, LFJ3, THJ3, FFJ1, MFJ1, RFJ1, LFJ2, THJ2, LFJ1,\n"
+        "  THJ1, THJ0 (FF/MF/RF/LF = first/middle/ring/little finger, TH = thumb, WR = wrist; J3 = knuckle side-to-side\n"
+        "  for FF/MF/RF, J2 = knuckle flexion, J1 = middle-joint flexion; LFJ4 = little-finger palm cup; the distal J0\n"
+        "  joints of the four fingers are coupled to J1 and not actuated).\n"
+        "Action a maps to target = lower + (a + 1) / 2 * (upper - lower) for that joint; the executed action is the\n"
+        "policy mean clamped to [-1, 1] (no tanh). The action holding every joint at its default pose is\n"
+        "  [0.555, 0.176, 0, 0, 0, -1, 0, -1, -1, -1, 0, -1, -1, -1, -1, -1, 0, -1, 0, 1].\n"
+        "Control runs at 60 Hz; an episode is 360 steps (6 s). Observation velocities are multiplied by 0.2.\n"
+        "hand_dof_pos (24) follows the hand's joint order: WRJ1, WRJ0, FFJ3, MFJ3, RFJ3, LFJ4, THJ4, FFJ2, MFJ2, RFJ2,\n"
+        "  LFJ3, THJ3, FFJ1, MFJ1, RFJ1, LFJ2, THJ2, FFJ0, MFJ0, RFJ0, LFJ1, THJ1, LFJ0, THJ0, each scaled to [-1, 1].\n"
+        "The task is to roll the pen about its own long axis while keeping it in the hand: the spin rate is the pen's\n"
+        "angular velocity projected on its long axis. A step succeeds when the pen centre is within 0.08 m of\n"
+        "in_hand_pos and |spin rate| > 4 rad/s. The episode ends early (a failure) if the pen centre moves more than\n"
+        "0.30 m from in_hand_pos. An episode succeeds only if it runs to the end and every one of its final 60 steps\n"
+        "succeeds."
+    ),
     "push-v2": (
         "Actions are 4-dimensional: (dx, dy, dz, gripper).\n"
         "The task requires reaching the puck and pushing it along the table to the goal.\n"
@@ -491,6 +511,8 @@ def instantiate_generated_policy(
         raise ValueError("source defines no class named GeneratedPolicy")
     with active_schema(schema):
         policy = namespace["GeneratedPolicy"](obs_dim, action_dim)
+    # R-042: a stream that rebuilds the policy in another process (the Isaac pen-spin backend) needs its source.
+    policy._generated_source = code_str
     report = validate_policy(
         policy,
         obs_dim,

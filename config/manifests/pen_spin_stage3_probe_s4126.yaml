@@ -1,0 +1,62 @@
+manifest_id: pen-spin-stage3:probe:s4126:n4
+environment:
+  package: isaaclab
+  version_or_commit: isaaclab d94504b + lares.envs.isaac_pen_spin
+  env_id: Isaac-ShadowHandSpin-Stage3-Direct-v0
+  env_id_v3: Isaac-ShadowHandSpin-Stage3-Direct-v0
+  reward_version: lares.envs.isaac_pen_spin.shadow_hand_spin_env.ShadowHandSpinEnv._get_rewards
+  wrappers:
+  - lares.envs.isaac_pen_spin.runner.PenSpinBatchRunner
+  horizon: 360
+  action_scale:
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  success_rule: 'per step: center_dist < 0.08 and |spin_rate about pen long axis|
+    > 4.0 rad/s; episode: declared reducer (any_hit or sustained over the final 60
+    steps, early termination = failure)'
+pool:
+  benchmark: IsaacPenSpin
+  env_id_v3: Isaac-ShadowHandSpin-Stage3-Direct-v0
+  seeds:
+  - 4126
+  tasks_per_seed: 4
+split: development
+episodes:
+- case_id: probe-0000
+  task_id: IsaacPenSpin:stage3:s4126:000
+  task_hash: f64250aa4812f978
+  reset_seed: 1000000
+  policy_seed: 9000000
+- case_id: probe-0001
+  task_id: IsaacPenSpin:stage3:s4126:001
+  task_hash: 198c98483deaf091
+  reset_seed: 1000001
+  policy_seed: 9000001
+- case_id: probe-0002
+  task_id: IsaacPenSpin:stage3:s4126:002
+  task_hash: 254ecb293f219707
+  reset_seed: 1000002
+  policy_seed: 9000002
+- case_id: probe-0003
+  task_id: IsaacPenSpin:stage3:s4126:003
+  task_hash: 16aaad8392dce8ff
+  reset_seed: 1000003
+  policy_seed: 9000003

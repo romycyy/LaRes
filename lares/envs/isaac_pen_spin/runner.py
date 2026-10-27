@@ -188,27 +188,5 @@ class PenSpinBatchRunner:
         return out
 
 
-def reduce_episodes(trace: dict) -> list[dict]:
-    """Per-episode rows: both reducers plus the geometry a reader needs to check them."""
-    rows = []
-    for i, cid in enumerate(trace["case_ids"]):
-        L = int(trace["length"][i])
-        p = trace["pred"][:L, i]
-        spin = np.abs(trace["spin_rate"][:L, i])
-        rows.append({
-            "case_id": cid,
-            "task_hash": trace["task_hashes"][i],
-            "length": L,
-            "completed": bool(trace["completed"][i]),
-            "any_hit": cases.any_hit(p, L),
-            "sustained": cases.sustained(p, L, bool(trace["completed"][i])),
-            "hit_steps": int(p.sum()),
-            "first_hit_step": int(np.argmax(p)) if p.any() else None,
-            "tail_hit_fraction": float(p[-cases.SUSTAIN_WINDOW:].mean()) if L else 0.0,
-            "mean_abs_spin": float(spin.mean()) if L else None,
-            "max_abs_spin": float(spin.max()) if L else None,
-            "mean_transverse": float(np.mean(trace["transverse_rate"][:L, i])) if L else None,
-            "final_center_dist": float(trace["center_dist"][L - 1, i]) if L else None,
-            "return": float(np.nansum(trace["reward"][:L, i])),
-        })
-    return rows
+# Moved to ``cases`` (numpy only) so the pipeline backend can reduce rows without Isaac; re-exported here.
+reduce_episodes = cases.reduce_episodes

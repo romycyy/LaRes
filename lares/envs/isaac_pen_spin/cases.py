@@ -165,23 +165,7 @@ def manifest_path(stage: int, label: str, pool_seed: int, root: str = "config/ma
 #  Observation layout ("full", 157 dims; InHandManipulationEnv.compute_full_observations)
 # ---------------------------------------------------------------------------
 
-#: (name, size, description). Velocities in the observation are multiplied by vel_obs_scale = 0.2.
-OBS_LAYOUT = (
-    ("hand_dof_pos", 24, "hand joint positions, unscaled to [-1, 1] by joint limits"),
-    ("hand_dof_vel", 24, "hand joint velocities x 0.2"),
-    ("obj_pos", 3, "pen centre position in the env frame (m)"),
-    ("obj_rot", 4, "pen orientation quaternion (w, x, y, z); the long axis is local x"),
-    ("obj_linvel", 3, "pen linear velocity (m/s)"),
-    ("obj_angvel", 3, "pen angular velocity x 0.2 (world frame)"),
-    ("in_hand_pos", 3, "nominal in-hand pen position (success centre)"),
-    ("goal_rot", 4, "goal quaternion, fixed to identity in the spin task"),
-    ("rel_rot", 4, "obj_rot * conj(goal_rot)"),
-    ("fingertip_pos", 15, "five fingertip positions (ff, mf, rf, lf, th)"),
-    ("fingertip_rot", 20, "five fingertip quaternions"),
-    ("fingertip_vel", 30, "five fingertip linear+angular velocities"),
-    ("last_action", 20, "previous action"),
-)
-VEL_OBS_SCALE = 0.2
+from lares.envs.isaac_pen_spin.layout import OBS_LAYOUT, VEL_OBS_SCALE  # noqa: E402,F401  (no-import module)
 
 
 def obs_slices() -> dict:
@@ -244,3 +228,29 @@ def sustained(pred, length: int, completed: bool, window: int = SUSTAIN_WINDOW) 
 
 
 REDUCERS = {"any_hit": any_hit, "sustained": sustained}
+
+
+def reduce_episodes(trace: dict) -> list[dict]:
+    """Per-episode rows: both reducers plus the geometry a reader needs to check them."""
+    rows = []
+    for i, cid in enumerate(trace["case_ids"]):
+        L = int(trace["length"][i])
+        p = trace["pred"][:L, i]
+        spin = np.abs(trace["spin_rate"][:L, i])
+        rows.append({
+            "case_id": cid,
+            "task_hash": trace["task_hashes"][i],
+            "length": L,
+            "completed": bool(trace["completed"][i]),
+            "any_hit": any_hit(p, L),
+            "sustained": sustained(p, L, bool(trace["completed"][i])),
+            "hit_steps": int(p.sum()),
+            "first_hit_step": int(np.argmax(p)) if p.any() else None,
+            "tail_hit_fraction": float(p[-SUSTAIN_WINDOW:].mean()) if L else 0.0,
+            "mean_abs_spin": float(spin.mean()) if L else None,
+            "max_abs_spin": float(spin.max()) if L else None,
+            "mean_transverse": float(np.mean(trace["transverse_rate"][:L, i])) if L else None,
+            "final_center_dist": float(trace["center_dist"][L - 1, i]) if L else None,
+            "return": float(np.nansum(trace["reward"][:L, i])),
+        })
+    return rows

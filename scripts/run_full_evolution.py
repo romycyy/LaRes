@@ -22,6 +22,7 @@ Usage (from the project root)::
     python scripts/run_full_evolution.py --config path/to/custom.yaml
 """
 
+import json
 import os
 import sys
 import time
@@ -157,8 +158,9 @@ def load_config(path: str) -> SimpleNamespace:
             problems.append("a plateau-repair run is one generation of two structure slots (num_generations 1, pop_size 2)")
         if int(raw["bc_steps"]) != 0:
             problems.append("bc_steps must be 0: nothing is fitted in a plateau-repair run")
-        if raw["task_manifests"] is None:
-            problems.append("a plateau-repair run needs task_manifests (development and demonstration pool seeds)")
+        if raw["task_manifests"] is None and raw.get("pen_spin") is None:
+            problems.append("a plateau-repair run needs task_manifests (development and demonstration pool seeds) "
+                            "or a pen_spin block (R-042)")
         if problems:
             raise ValueError(f"{path}: " + "; ".join(problems))
     block = raw["two_lane_search"]
@@ -274,13 +276,20 @@ def parse_args() -> tuple:
     p.add_argument("--freeze-manifests", action="store_true",
                    help="R-037: build (or verify) the task manifests, print their ids and hashes, and exit; no LLM call "
                         "and no episode")
+    p.add_argument("--study", choices=("keyframe_repair",), default=None,
+                   help="R-042: run the whole pen-spin keyframe-repair study (parity gate, blocks, arms, fresh cases)")
+    p.add_argument("--block", type=int, default=None, help="R-042 child: the block to run (with --phase or --arm)")
+    p.add_argument("--phase", choices=("prefix",), default=None, help="R-042 child: run the block's prefix only")
+    p.add_argument("--arm", choices=("no_trace", "uniform", "event"), default=None,
+                   help="R-042 child: run one continuation arm in a copy of the block's prefix run")
     ns = p.parse_args()
     cfg_path = os.path.abspath(ns.config)
     if not os.path.isfile(cfg_path):
         p.error(f"Config file not found: {cfg_path}")
     overrides = {"repair": ns.repair, "development_pool_seed": ns.dev_pool_seed,
                  "demonstration_pool_seed": ns.demo_pool_seed, "fresh_evaluation_pool_seed": ns.fresh_pool_seed,
-                 "freeze_manifests": ns.freeze_manifests or None}
+                 "freeze_manifests": ns.freeze_manifests or None, "study": ns.study, "block": ns.block,
+                 "phase": ns.phase, "arm": ns.arm}
     return cfg_path, ns.seed, ns.log_dir, {k: v for k, v in overrides.items() if v is not None}
 
 
@@ -361,9 +370,150 @@ def evaluate_expert_policy(env, env_name: str, manifest, max_steps: int = 150):
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+#  R-042: Shadow Hand pen spinning through the same orchestrator
+# ---------------------------------------------------------------------------
+
+
+def pen_spin_stream(cfg, name: str, work_dir: str):
+    from lares.envs.isaac_pen_spin.pipeline_backend import IsaacPenSpinStream
+
+    ps = cfg.pen_spin
+    return IsaacPenSpinStream(int(ps["stage"]), work_dir, name, isaac_env=ps["isaac_env"])
+
+
+def run_pen_spin_block(cfg, cfg_path: str, block: int, phase: str | None, arm: str | None) -> None:
+    """One orchestrator run of a block: its prefix (slot 0 and the trigger) or one continuation arm."""
+    from lares.core.training_pipeline import PREFIX_STATE
+    from lares.envs.isaac_pen_spin import study
+    from lares.search.lanes import load_plateau_repair_plan
+
+    ps = cfg.pen_spin
+    blk = ps["blocks"][block]
+    bdir = os.path.join(ps["study_dir"], f"block{block}")
+    log_dir = os.path.join(bdir, "prefix" if phase == "prefix" else arm)
+    if phase != "prefix" and not os.path.isfile(os.path.join(log_dir, PREFIX_STATE)):
+        raise SystemExit(f"{log_dir} holds no prefix state; the driver copies the prefix run first")
+    seed = int(blk["generation_seed"])
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    dev = study.load("development", int(blk["development_seed"]))
+    probe = study.load("probe", int(blk["probe_seed"]))
+    demo = study.load("demo", int(ps["demonstration_seed"]))
+    if len(dev) != cfg.screen_episodes + cfg.expanded_episodes or len(probe) != cfg.probe_episodes:
+        raise ValueError("pen-spin development/probe manifests do not match screen + promotion and probe sizes")
+    isaac = os.path.join(log_dir, "isaac")
+    envs = PipelineEnvs(development=pen_spin_stream(cfg, "development", isaac), rl=None,
+                        gif=pen_spin_stream(cfg, "reset", isaac), probe=pen_spin_stream(cfg, "probe", isaac))
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    if len(api_key) < 10:
+        raise SystemExit("OPENAI_API_KEY is not set")
+    from openai import OpenAI
+
+    llm_args = SimpleNamespace(model=cfg.model, reasoning_effort=cfg.reasoning_effort, policy_gen_two_phase=True,
+                               policy_impl_mode=cfg.policy_impl_mode)
+    fork = {"phase": "prefix"} if phase == "prefix" else {
+        "phase": "continuation", "arm": arm, "demonstrations": os.path.join(ps["study_dir"], "demonstrations.json")}
+    orchestrator = EvolutionOrchestrator(
+        env_name=cfg.env_name, obs_dim=157, action_dim=20, num_generations=1, pop_size=2, elite_num=1, bc_steps=0,
+        rl_iterations=0, rl_episodes_per_iter=0, log_dir=log_dir, record_demo_gif=False, dev_manifest=dev,
+        train_cases=(), eval_max_steps=cfg.eval_max_steps,
+        promotion_policy=PromotionPolicy(screen_episodes=cfg.screen_episodes, expanded_episodes=cfg.expanded_episodes),
+        rollout_checkpoint_probes=0, objective=cfg.objective, checkpoint_steps=[],
+        fixed_action_scale=cfg.fixed_action_scale, probe_manifest=probe,
+        max_repair_per_candidate=cfg.max_repair_per_candidate,
+        max_llm_calls_per_generation=cfg.max_llm_calls_per_generation, param_budget=tuple(cfg.param_budget),
+        max_llm_tokens_per_generation=cfg.max_llm_tokens_per_generation, promotion_challengers=1,
+        lane_plan=load_plateau_repair_plan(cfg.plateau_repair), fit_seed=seed, demonstration_manifest=demo,
+        demonstration_env=None, plateau_fork=fork,
+    )
+    best = orchestrator.run(client=OpenAI(api_key=api_key), envs=envs, demo_buffer=None, args=llm_args,
+                            logger=TrainingLogger(log_dir=log_dir, task_name=cfg.env_name))
+    inc = {"candidate_id": orchestrator._incumbent_id, "phase": phase or "continuation", "arm": arm,
+           "fixed_action_scale": cfg.fixed_action_scale,
+           "isaac_processes": sum(e.calls for e in (envs.development, envs.gif, envs.probe)),
+           "isaac_episodes": sum(e.episodes for e in (envs.development, envs.gif, envs.probe))}
+    if best is not None and best.get("policy") is not None:
+        with open(os.path.join(log_dir, "best_policy_code.py"), "w", encoding="utf-8") as f:
+            f.write(best["code"])
+        torch.save(best["policy"].state_dict(), os.path.join(log_dir, "best_policy.pt"))
+        inc.update(code_path="best_policy_code.py", state_path="best_policy.pt")
+    with open(os.path.join(log_dir, "final_incumbent.json" if phase != "prefix" else "prefix_incumbent.json"), "w") as f:
+        json.dump(inc, f, indent=2)
+
+
+def run_pen_spin_study(cfg, cfg_path: str) -> None:
+    """The R-042 driver: parity gate, then per block the prefix, demonstrations (once), three arms, fresh cases."""
+    import shutil
+    import subprocess
+
+    from lares.core.training_pipeline import PREFIX_STATE
+    from lares.envs.isaac_pen_spin import study
+    from lares.search.lanes import load_plateau_repair_plan
+
+    ps = cfg.pen_spin
+    sdir = ps["study_dir"]
+    os.makedirs(sdir, exist_ok=True)
+    study.freeze_manifests(ps)
+    factory = lambda name, work: pen_spin_stream(cfg, name, work)  # noqa: E731
+    parity = study.parity_gate(ps, sdir, factory, ps["expert"]["protocol_config"])
+    print("parity gate:", json.dumps(parity))
+    if not parity["passes"]:
+        raise SystemExit(f"R-042 parity gate failed; no LLM call is made: {parity}")
+    plan = load_plateau_repair_plan(cfg.plateau_repair)
+    me = [sys.executable, "-u", os.path.abspath(__file__), "--config", cfg_path]
+    blocks = []
+    for b, blk in enumerate(ps["blocks"]):
+        bdir = os.path.join(sdir, f"block{b}")
+        prefix = os.path.join(bdir, "prefix")
+        if not os.path.isfile(os.path.join(prefix, PREFIX_STATE)):
+            subprocess.run(me + ["--block", str(b), "--phase", "prefix"], check=True)
+        state = json.load(open(os.path.join(prefix, PREFIX_STATE)))
+        row = {"block": b, "trigger": state["trigger"], "eligible": bool(state["trigger"]["fired"])}
+        if not row["eligible"]:
+            print(f"block {b}: no plateau parent ({state['trigger']['reason']}); reported as missing")
+            blocks.append(row)
+            continue
+        demos = study.demonstrations(ps, sdir, factory, plan.min_demo_successes, plan.trace_episodes)
+        if not demos["qualified"]:
+            summary = {"inconclusive": f"demonstrations {demos['successes']}/{demos['episodes']} < "
+                                       f"{plan.min_demo_successes}", "parity": parity, "blocks": blocks}
+            json.dump(summary, open(os.path.join(sdir, "summary.json"), "w"), indent=2)
+            raise SystemExit(summary["inconclusive"])
+        fresh_m = study.load("fresh", int(blk["fresh_seed"]))
+        row["fresh"] = {}
+        for arm in study.ARMS:
+            adir = os.path.join(bdir, arm)
+            if not os.path.isfile(os.path.join(adir, "final_incumbent.json")):
+                if os.path.exists(adir):
+                    raise SystemExit(f"{adir} exists without a final incumbent: an interrupted arm is not rerun")
+                shutil.copytree(prefix, adir)
+                subprocess.run(me + ["--block", str(b), "--arm", arm], check=True)
+            row["fresh"][arm] = study.fresh_evaluation(adir, fresh_m, factory, cfg.env_name)
+        blocks.append(row)
+        json.dump(study.summarise(blocks), open(os.path.join(sdir, "summary.partial.json"), "w"), indent=2)
+    summary = study.summarise(blocks)
+    summary["parity"] = parity
+    with open(os.path.join(sdir, "summary.json"), "w") as f:
+        json.dump(summary, f, indent=2)
+    print(json.dumps({k: v for k, v in summary.items() if k != "blocks"}, indent=2))
+
+
 def main() -> None:
     cfg_path, seed_override, log_dir_override, overrides = parse_args()
     cfg = apply_overrides(load_config(cfg_path), overrides)
+    if getattr(cfg, "pen_spin", None) is not None:
+        from lares.envs.isaac_pen_spin import study
+
+        if overrides.get("freeze_manifests"):
+            print(json.dumps(study.freeze_manifests(cfg.pen_spin), indent=2))
+        elif overrides.get("study"):
+            run_pen_spin_study(cfg, cfg_path)
+        elif overrides.get("block") is not None:
+            run_pen_spin_block(cfg, cfg_path, int(overrides["block"]), overrides.get("phase"), overrides.get("arm"))
+        else:
+            raise SystemExit("a pen_spin config runs with --freeze-manifests, --study or --block")
+        return
     if overrides.get("freeze_manifests"):
         if cfg.task_manifests is None:
             raise SystemExit("--freeze-manifests needs a task_manifests block")

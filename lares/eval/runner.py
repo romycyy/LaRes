@@ -450,6 +450,13 @@ def evaluate_manifest(
         from lares.eval.freeze import assert_final_test_allowed
 
         assert_final_test_allowed(manifest.manifest_id)
+    batch = getattr(env, "evaluate_manifest_batch", None)
+    if callable(batch):
+        # R-042: a backend that scores a whole manifest at once (the Isaac pen-spin stream, one process per call).
+        result = batch(actor, manifest, max_steps=max_steps, schema=schema)
+        if progress is not None:
+            progress(len(result.episodes), len(manifest.episodes))
+        return result
     if schema is None:
         from lares.core.obs_schema import OBS_SCHEMAS
 

@@ -1,0 +1,92 @@
+# ============================================================
+#  R-042: plateau-triggered trace repair on Shadow Hand pen spinning (Stage 3), event-selected vs uniform
+#  keyframes, with a no-trace arm. Approved 2026-10-27 (advisor call_00084).
+#
+#  Four blocks. Each block: one prefix run (slot 0: a searched single-phase exploration, 24 rollout-search settings on
+#  the block's 4-case probe manifest; the plateau trigger), then, only if the trigger fired, three continuation arms
+#  from a copy of that prefix run: no_trace (another searched exploration), uniform and event (one whole-controller
+#  edit of the prefix candidate shown the same two expert traces at 16 keyframes per trace). Screen = development
+#  cases 0-9, promotion = 10-39 under the unchanged strict paired rule; each arm's final incumbent is scored on the
+#  block's 30 fresh cases. The expert is the D-036 PPO policy, frozen by hash. Every evaluation is its own Isaac
+#  process (lares/envs/isaac_pen_spin/pipeline_backend.py).
+#
+#  python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --freeze-manifests
+#  python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study keyframe_repair
+# ============================================================
+
+env_name: "Isaac-ShadowHandSpin-Stage3-Direct-v0"
+seed: 4120
+
+pen_spin:
+  stage: 3
+  isaac_env: "~/IsaacLab/source_env.sh"
+  study_dir: "logs/pen_spin/r042_keyframe_repair"
+  expert:
+    checkpoint: "logs/pen_spin/r040_ppo_expert/train/model_8239.pt"
+    checkpoint_sha256: "f81be523a51cc5bb8bd095d5ed208ba8dd227a37ca05d5dc78283a24d89985d7"
+    training_seed: 4020
+    protocol_config: "config/shadowhand_spin_stages.yaml"   # R-040's evaluator (protocols.run_cell), parity only
+  demonstration_seed: 4124
+  demonstration_cases: 10
+  parity_seed: 4137
+  parity_cases: 30
+  probe_cases: 4
+  development_cases: 40
+  fresh_cases: 30
+  blocks:
+    - {generation_seed: 4120, probe_seed: 4125, development_seed: 4129, fresh_seed: 4133}
+    - {generation_seed: 4121, probe_seed: 4126, development_seed: 4130, fresh_seed: 4134}
+    - {generation_seed: 4122, probe_seed: 4127, development_seed: 4131, fresh_seed: 4135}
+    - {generation_seed: 4123, probe_seed: 4128, development_seed: 4132, fresh_seed: 4136}
+
+eval_max_steps: 360
+expert_baseline: false
+
+# ---------- No imitation fitting ----------
+dataset_episodes: 0
+bc_steps: 0
+rl_iterations: 0
+rl_episodes: 0
+objective: deterministic_mse
+fixed_action_scale: 0.1
+checkpoint_steps: []
+rollout_checkpoint_probes: 0
+probe_episodes: 4
+max_repair_per_candidate: 1   # one linked validity correction per slot
+max_llm_calls_per_generation: 2   # per orchestrator run: one slot, one generation call + one correction
+max_llm_tokens_per_generation: null
+param_budget: [6, 10]
+
+# ---------- Screening and promotion (unchanged) ----------
+screen_episodes: 10
+expanded_episodes: 30
+promotion_challengers: 1
+eval_episodes: 30
+
+# ---------- LLM ----------
+model: "gpt-6.1-sol"
+reasoning_effort: high
+policy_gen_two_phase: true
+policy_impl_mode: per_idea
+num_generations: 1
+pop_size: 2
+elite_num: 1
+
+# ---------- Plateau-triggered trace repair ----------
+plateau_repair:
+  structure_slots: 2
+  repair: enabled
+  fittable_lane: disabled
+  exploration_lane:
+    generator: single_phase
+    treatment: rollout_search
+    search_candidates: 24
+  operation: whole_controller_edit
+  max_triggers: 1
+  demonstrations:
+    episodes: 10
+    min_successes: 9
+    traces_shown: 2
+
+log_dir: "logs/pen_spin/r042_keyframe_repair"
+record_demo_gif: false

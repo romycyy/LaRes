@@ -12,27 +12,8 @@
   "protocol": {
     "script": "scripts/run_full_evolution.py",
     "config": "config/pen_spin_plateau_repair.yaml",
-    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study keyframe_repair\"'",
-    "seeds": [
-      4120,
-      4121,
-      4122,
-      4123,
-      4124,
-      4125,
-      4126,
-      4127,
-      4128,
-      4129,
-      4130,
-      4131,
-      4132,
-      4133,
-      4134,
-      4135,
-      4136,
-      4137
-    ],
+    "command": "gpu run 'source ~/.profile && .venv-metaworld/bin/python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study keyframe_repair'",
+    "seeds": [],
     "manifests": [
       "config/manifests/pen_spin_stage3_demo_s4124.yaml",
       "config/manifests/pen_spin_stage3_probe_s4125.yaml",
@@ -98,6 +79,12 @@
       "from": "proposed",
       "to": "approved",
       "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-10-27T10:23:04",
+      "from": "approved",
+      "to": "approved",
+      "note": "pre-launch reconciliation (advisor consult call_00085 accepted all four as implementation reconciliations): (1) the orchestrator runs in the pipeline venv (.venv-metaworld, which has openai; installing it into the box's ~/IsaacLab env would modify that checkout) and every rollout is a fresh child that sources Isaac's env; command updated accordingly. (2) trace rows show hand_dof_pos as the policy observes it, labelled normalised [-1, 1], not radians. (3) the repair request lists the parameter values the prefix's rollout search selected for the edited candidate. (4) the request states D-037 precisely: one recorded tape replayed open loop succeeded 0/40 vs 40/40 closed loop. All four apply identically to the uniform and event arms; no-trace contrasts are read as repair-package effects. Seeds 4120-4137 were reserved in the ledger on 2026-10-27 before any rollout; only their manifests were built (pure numpy), no episode or LLM call has used them, so protocol.seeds is empty and protocol.manifests names the 13 frozen files plus the parity manifest (R-037/R-040 precedent). Validation before launch: 21-test mocked end-to-end gate (tests/test_pen_spin_pipeline.py), full suite on the box (866+41+116), and a live backend smoke on spent debug seed 4097 only."
     }
   ],
   "created_at": "2026-10-27T09:34:57",
