@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-10-27T15:20:53 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-10-27T15:27:43 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -10,17 +10,15 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 1 |
+| running | 0 |
 | approved | 1 |
 | proposed | 0 |
 | deferred | 1 |
-| decided | 39 |
+| decided | 40 |
 | rejected | 4 |
 
 ## Needs attention
 
-- **R-044** [running] 1. Identify which state feedback the qualified expert needs
-  - run the protocol, then `python scripts/research.py record R-044 --results <json>`
 - **R-046** [approved] 3. Preserve the scripted gait while repairing retention feedback
   - `python scripts/research.py start R-046` then run its command
 
@@ -30,6 +28,9 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 
 ## Last 5 decisions
 
+- D-040 · R-044 · **supported** · 2026-10-27
+  Pen-state clamped minus the unmodified expert is -0.975 [-1.026,-0.924] over 40 paired cases, below the predicted -0.30 with the interval far from it; the reproducibility control is exact (0 flips, 0 diverged). Within the narrowed hypothesis (this checkpoint, under clamping, with hand proprioception and action history live) the prediction is supported. Two limits: the hand-state clamp is nearly as destructive (-0.950 [-1.021,-0.879]), so pen state is not uniquely required; and clamping shifts the input distribution, so this is dependence, not necessity. The failure split is informative: pen clamps produce early drops (39/40, median step 49, matching D-037's replay falls), hand clamps split into drops (22) and completed-but-slow spins (17).
+  Next: A symbolic controller needs both pen-state retention feedback and proprioceptive spin feedback; next, measure whether generated controllers on Stage 1/2 (non-zero base rate) improve when the prompt states this two-channel requirement.
 - D-039 · R-045 · **refuted** · 2026-10-27
   Primary dense_fit minus rollout_search final-incumbent fresh success is 0.000 [0,0] over four blocks (neither arm promoted anywhere); the interval lies below the predicted +0.15, so the prediction is refuted under this protocol. As predeclared, an all-zero result cannot separate insufficient structure from ineffective fitting, so this does not show dense labels are useless in general. Mechanistic evidence: fitting succeeded as optimisation (MSE 2-4x lower, about 0.33 floor per action dimension) and rollouts chose fitted checkpoints in 3/4 blocks, yet no fitted setting scored a single probe success, and in block 2 every fitted checkpoint collapsed tail-hit (0.336 to 0.03-0.06). Lower imitation loss did not track rollout quality, matching the MetaWorld Stage E finding. The only success came from rollout search (block 3 local draw: 3/30 promotion, 3/30 fresh, not promoted). Expert 48/48 and parity 0 flips rule out integration faults. Secondary selected-setting contrast -0.025 [-0.105,+0.055].
   Next: Stage 3 symbolic controllers sit at the floor under prompting, sparse traces and dense fitting alike; measure base rates on Stage 1/2 (R-044's lesion study can tell which feedback a structure must contain) before another Stage-3 repair comparison.
@@ -42,9 +43,6 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 - D-036 · R-040 · **inconclusive** · 2026-10-27
   PPO expert (one Stage-3 policy, seed 4020, 1.08e9 transitions, final checkpoint only) qualifies on every stage: 29/30, 30/30, 30/30 sustained vs the frozen gait's 21/13/9 on fresh 30-case manifests (seeds 4030-4032). Paired gains +0.267 [0.099, 0.435], +0.567 [0.378, 0.755], +0.700 [0.526, 0.874]; the predeclared >= +0.10 per-stage prediction is established on stages 2-3 but not stage 1 (interval contains +0.10), so the prediction is inconclusive while the expert qualifies and promotes everywhere. Reproducibility control: zero diverged envs. The only failure is a completed, centred episode missing 1 of 60 tail steps. Spin is axial roll ~17 rad/s, transverse ~2.8 rad/s.
   Next: Use model_8239 as the pen-spin trace-repair expert: export traces on a disjoint demonstration manifest and build the pen-spin plateau-repair pipeline.
-- D-035 · R-039 · **supported** · 2026-10-27
-  R-039 tested whether a scripted feedback finger gait could qualify as the pen-spin expert. Tuned on a debug seed only and frozen before the development cases, the gait regulates roll rate through the long fingers' flexion (the fingers act as a variable slope), which turns the open-loop oscillator's rocking into fast one-directional spin (21-26 rad/s mean). On 90 pooled promotion pairs it beat the frozen R-038 oscillator by +0.411 [0.307, 0.515] sustained success, promoting on every stage: supported. It does not qualify as an expert on any stage: 14/30, 16/30 and 7/30 sustained successes against the 27/30 rule, with failures from drops and tail dips, not speed (stage 3's 0.08 m tolerance costs most); it also tumbles the pen end over end (3.5-4.8 rad/s). The frozen bit-identity reproducibility control failed (GPU PhysX at batch 40 is not bit-deterministic across processes: 1-2/40 environments diverge after step 78) and was amended before any development case ran to zero outcome flips and at most 4/40 diverged environments, which passed (0 flips in 240 pairs). The user's fallback, a PPO expert, now applies to all three stages.
-  Next: Re-triage R-040 (PPO expert) for all three stages, recalibrated as argued in its round-1 triage: budget in env steps with many parallel envs, success and roll logged separately from return, a check that the reward (centring 3.0 vs spin 0.15 at stage 1) does not teach holding still, and the D-034 reducer for qualification. Separate idea: should the frozen gait's 47-53% sustained success seed the policy-search pipeline as a non-expert prior, or the tail-fraction near-misses inform a less brittle reducer?
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 

@@ -29,7 +29,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The paired interval of pen_state_clamped minus expert success lies entirely above -0.30. An interval including zero establishes no difference.",
   "cost_estimate": {
@@ -51,12 +51,163 @@
     "started_at": "2026-10-27T15:20:53",
     "git_sha": "a9f4c20d836f3d148840e93fa1fe68ca572b46a1",
     "dirty_worktree": false,
-    "log_dir": ""
+    "log_dir": "",
+    "finished_at": "2026-10-27T15:27:12"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": -0.975,
+      "paired_success_difference_ci95": [
+        -1.0255672730009189,
+        -0.924432726999081
+      ],
+      "pen_state_clamped_minus_expert": {
+        "n": 40,
+        "mean": -0.975,
+        "se": 0.024999999999999998,
+        "low": -1.0255672730009189,
+        "high": -0.924432726999081,
+        "p_value": 7.390618436886587e-33
+      },
+      "hand_state_clamped_minus_expert": {
+        "n": 40,
+        "mean": -0.95,
+        "se": 0.03489912202260564,
+        "low": -1.0205901372323793,
+        "high": -0.8794098627676206,
+        "p_value": 5.547810049097881e-27
+      },
+      "arms": {
+        "expert": {
+          "n": 40,
+          "successes": 39,
+          "success": 0.975,
+          "completed": 1.0,
+          "tail_hit_fraction": 0.9995833333333334,
+          "hit_fraction": 0.9814066852367688,
+          "mean_length": 359.0,
+          "mean_abs_spin": 17.0460946559906,
+          "mean_transverse": 2.774606728553772,
+          "drops": 0,
+          "tail_spin_failures": 1,
+          "median_fall_step": null
+        },
+        "pen_state_clamped": {
+          "n": 40,
+          "successes": 0,
+          "success": 0.0,
+          "completed": 0.025,
+          "tail_hit_fraction": 0.43459674885493416,
+          "hit_fraction": 0.4428737996084623,
+          "mean_length": 68.025,
+          "mean_abs_spin": 8.189444118738175,
+          "mean_transverse": 4.572741687297821,
+          "drops": 39,
+          "tail_spin_failures": 1,
+          "median_fall_step": 49.0
+        },
+        "hand_state_clamped": {
+          "n": 40,
+          "successes": 1,
+          "success": 0.025,
+          "completed": 0.45,
+          "tail_hit_fraction": 0.19392903161876593,
+          "hit_fraction": 0.24812765805158726,
+          "mean_length": 204.35,
+          "mean_abs_spin": 9.096962953358888,
+          "mean_transverse": 3.362861725315452,
+          "drops": 22,
+          "tail_spin_failures": 17,
+          "median_fall_step": 52.5
+        },
+        "expert_repeat": {
+          "n": 40,
+          "successes": 39,
+          "success": 0.975,
+          "completed": 1.0,
+          "tail_hit_fraction": 0.9995833333333334,
+          "hit_fraction": 0.9814066852367688,
+          "mean_length": 359.0,
+          "mean_abs_spin": 17.0460946559906,
+          "mean_transverse": 2.774606728553772,
+          "drops": 0,
+          "tail_spin_failures": 1,
+          "median_fall_step": null
+        }
+      },
+      "lesions": {
+        "pen_state_clamped": [
+          "obj_pos",
+          "obj_rot",
+          "obj_linvel",
+          "obj_angvel",
+          "rel_rot"
+        ],
+        "hand_state_clamped": [
+          "hand_dof_pos",
+          "hand_dof_vel",
+          "fingertip_pos",
+          "fingertip_rot",
+          "fingertip_vel"
+        ]
+      },
+      "episodes": 160,
+      "llm_calls": 0
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "baseline": "unmodified D-036 PPO expert on the same 40 cases (seed 4140), own process; expert_repeat reproduces it exactly",
+      "reproducibility_control": {
+        "union_diverged_envs": 0,
+        "sustained_outcome_flips": 0,
+        "max_diverged_envs": 4,
+        "passes": true
+      }
+    },
+    "artifacts": [
+      "logs/pen_spin/r044_feedback_lesions/summary.json",
+      "logs/pen_spin/r044_feedback_lesions/expert.json",
+      "logs/pen_spin/r044_feedback_lesions/expert_repeat.json",
+      "logs/pen_spin/r044_feedback_lesions/pen_state_clamped.json",
+      "logs/pen_spin/r044_feedback_lesions/hand_state_clamped.json"
+    ],
+    "notes": "Pen-state clamp: 39/40 -> 0/40, paired -0.975 [-1.026,-0.924]; 39 drops (median fall step 49, mean length 68) and 1 tail-spin failure, roll rate halves (17.0 -> 8.2 rad/s) and transverse rate rises (2.8 -> 4.6). The prediction (decrease >= 0.30) holds. Hand-state clamp (joint positions/velocities and fingertip poses/velocities) is almost as destructive: 1/40, paired -0.950 [-1.021,-0.879], but with a different failure mix: 22 drops (median step 52.5) and 17 tail-spin failures (completed but the tail predicate failed), so hand proprioception carries most of what keeps the spin rate up while pen state carries what keeps the pen in the hand. Because both lesions destroy success, this does not single out pen state; and clamping is a distribution-shift intervention, so the result is this checkpoint's dependence, not information-theoretic necessity. Reproducibility: expert vs expert_repeat identical (0 flips, 0 diverged). Pen-state failures by step ~50 match D-037's replay falls (median 49)."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": -0.975,
+    "delta": -0.975,
+    "matched": true
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "supported",
+      "confidence": 0.85,
+      "reasoning": "Pen-state clamped minus the unmodified expert is -0.975 [-1.026,-0.924] over 40 paired cases, below the predicted -0.30 with the interval far from it; the reproducibility control is exact (0 flips, 0 diverged). Within the narrowed hypothesis (this checkpoint, under clamping, with hand proprioception and action history live) the prediction is supported. Two limits: the hand-state clamp is nearly as destructive (-0.950 [-1.021,-0.879]), so pen state is not uniquely required; and clamping shifts the input distribution, so this is dependence, not necessity. The failure split is informative: pen clamps produce early drops (39/40, median step 49, matching D-037's replay falls), hand clamps split into drops (22) and completed-but-slow spins (17).",
+      "cited_artifacts": [
+        "D-037"
+      ],
+      "next_experiment": "A symbolic controller needs both pen-state retention feedback and proprioceptive spin feedback; next, measure whether generated controllers on Stage 1/2 (non-zero base rate) improve when the prompt states this two-channel requirement.",
+      "recorded_at": "2026-10-27T15:27:15",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "supported",
+      "confidence": 0.99,
+      "reasoning": "The named expert control was measured, and the reproducibility gate passed with zero outcome flips and zero diverged trajectories [logs/pen_spin/r044_feedback_lesions/summary.json]. Pen-state clamping reduced sustained success from 39/40 to 0/40; paired_success_difference was -0.975 with a 95% interval of [-1.026, -0.924], entirely below both zero and the predicted -0.30 threshold [logs/pen_spin/r044_feedback_lesions/summary.json]. Failures under pen-state clamping comprised 39 drops and one completed tail-spin failure, with median fall step 49 [logs/pen_spin/r044_feedback_lesions/pen_state_clamped.json]. Hand-state clamping also sharply reduced success, but the differing failure mixes do not establish distinct retention-versus-spin roles for the observation channels [logs/pen_spin/r044_feedback_lesions/summary.json]. The supported conclusion is this checkpoint's dependence on changing pen-state observations under reset-value clamping, not information-theoretic necessity or pen-state feedback sufficiency [logs/pen_spin/r044_feedback_lesions/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r044_feedback_lesions/summary.json",
+        "logs/pen_spin/r044_feedback_lesions/pen_state_clamped.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-27T15:27:33",
+      "call_id": "call_00093"
+    }
+  ],
+  "decision_id": "D-040",
   "history": [
     {
       "at": "2026-10-27T14:25:56",
@@ -73,6 +224,18 @@
       "from": "approved",
       "to": "running",
       "note": "git a9f4c20d83"
+    },
+    {
+      "at": "2026-10-27T15:27:12",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=True"
+    },
+    {
+      "at": "2026-10-27T15:27:43",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-040: supported"
     }
   ],
   "created_at": "2026-10-27T14:09:20",

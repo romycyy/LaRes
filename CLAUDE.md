@@ -521,6 +521,9 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
 - **R-045 result (D-039, refuted).** Dense fitting of the R-042 prefix controllers to 4308 expert state-action pairs
   (`dense_fit.py`, `--study dense_feedback_fit`) cut MSE 2-4x but never scored a probe success, and can collapse
   rollouts (block 2). Imitation loss does not track pen-spin success, as in MetaWorld. Both arms stayed null.
+- **R-044 result (D-040, supported).** Clamping the expert's pen-state observations to their reset values drops it
+  from 39/40 to 0/40 (early drops, median step 49); clamping hand state is nearly as bad (1/40). The expert depends
+  on both channels (`feedback_lesions.py`, `run_shadowhand_spin_stages.py --study feedback_lesions`).
 - **Code extraction.** Generated code keeps only the class, so module-level constants in a reply are dropped.
 
 **Isaac Lab ShadowHandSpin.** A second, parallel stack merged in from the Isaac branch:
