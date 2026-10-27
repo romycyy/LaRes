@@ -1,0 +1,102 @@
+{
+  "id": "R-048",
+  "title": "Expose the expert's local feedback map instead of isolated labels",
+  "hypothesis": "Local expert action sensitivities reveal corrective feedback that isolated state-action labels obscure, allowing gait-preserving symbolic residuals to improve retention.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.15,
+    "against": "baseline",
+    "rationale": "Baseline receives raw expert labels at the same learner-visited states; treatment additionally represents local feedback sensitivities within the same evidence-token budget. Compare final promoted incumbents on fresh sustained success, using a paired t interval over six block means. Unlike R-046, both arms preserve the gait, so the contrast tests feedback-map information rather than preservation."
+  },
+  "protocol": {
+    "script": "scripts/run_full_evolution.py",
+    "config": "config/pen_spin_plateau_repair.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study local_feedback_evidence --block-seeds 4210,4211,4212,4213,4214,4215 --output-dir logs/pen_spin_local_feedback_evidence\"'",
+    "seeds": [
+      4210,
+      4211,
+      4212,
+      4213,
+      4214,
+      4215
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_local_feedback_development_s4210_s4215.yaml",
+      "config/manifests/pen_spin_stage3_local_feedback_probe_s4210_s4215.yaml",
+      "config/manifests/pen_spin_stage3_local_feedback_fresh_s4210_s4215.yaml"
+    ],
+    "episodes": 1560,
+    "llm_calls": 72,
+    "code_changes": [
+      "scripts/run_full_evolution.py: add the declared local_feedback_evidence study CLI and freeze six disjoint block manifest suites before generation; use the frozen scripted gait as the common parent, bc_steps=0, and identical bounded-residual enforcement in both arms.",
+      "scripts/run_full_evolution.py: obtain 32 states from two parent screen trajectories selected by a fixed failure-first rule; query the qualified expert at those states and use symmetric finite differences in pen-centre, axial-rate, and finger-flexion coordinates to summarize local action sensitivities without extra simulator rollouts.",
+      "scripts/run_full_evolution.py: bound perturbations using frozen expert-demonstration ranges, log query distances and saturation, and describe sensitivities as model responses rather than verified recovery actions.",
+      "config/pen_spin_plateau_repair.yaml: define raw-label and sensitivity-evidence arms with equal token budgets and two candidate slots each; use gpt-6.1-sol, reasoning_effort high, temperature 1, and at most one linked correction per slot.",
+      "config/pen_spin_plateau_repair.yaml: allocate per block 80 parent episodes and 90 episodes per arm: two candidates screened on 10 cases each, one selected candidate on 10 disjoint probe cases, 30 promotion cases, and 30 untouched fresh cases; promote only against the parent under the existing strict paired rule.",
+      "scripts/run_full_evolution.py: run this content diagnostic ungated in every block because D-041 lacked enough eligible plateaus; retain the production plateau trigger unchanged and make no claim about its efficacy."
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "An upper paired interval bound below +0.15 refutes the predicted gain; an interval spanning +0.15 is inconclusive, and tied success is not improvement.",
+  "cost_estimate": {
+    "episodes": 1560,
+    "llm_calls": 72,
+    "wall_time_minutes": 240
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "9b912810773a5d9eb9509c36bdbb6276fde14c15c04b5c48e353bfcf2709e0b3",
+  "proposal_call_id": "call_00097",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-10-27T17:01:48",
+    "advisor_call_id": "call_00098",
+    "round": 1,
+    "note": "This isolates feedback-map evidence while holding gait preservation fixed, addressing a question D-041 did not settle. Running ungated avoids repeating D-041's insufficient-eligibility failure without changing the production plateau trigger. The 1560 simulator episodes and at most 72 LLM calls are j"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-27T17:01:48",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 1: both say approve"
+    }
+  ],
+  "created_at": "2026-10-27T16:59:50",
+  "direction": "Continue researching the single-step exploration pipeline with plateau-triggered trace repair, extended to pen spinning on the Shadow Hand (Isaac Lab Isaac-ShadowHandSpin-Stage{1,2,3}-Direct-v0, vendored in lares/envs/isaac_pen_spin; 157-d full obs, 20-d action, 60 Hz, 360-step episodes). Expert demonstrations: first try a hand-written scripted spinning controller; also search online for an existing trained pen-spinning policy; if neither qualifies, train an RL expert (rsl_rl PPO on the box). No budget ceiling on GPU hours or LLM calls. Known gaps to turn into questions: the env's spin_rate is roll about the pen's own long axis (not end-over-end twirl), success is per step with no episode rule, and the pipeline (manifests, obs schema, runner, records) is MetaWorld-only today. Debug issues, improve the pipeline, and turn unexpected findings into concrete research questions; document results and limitations.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This isolates feedback-map evidence while holding gait preservation fixed, addressing a question D-041 did not settle. Running ungated avoids repeating D-041's insufficient-eligibility failure without changing the production plateau trigger. The 1560 simulator episodes and at most 72 LLM calls are justified by the paired content comparison; the main limitation is that finite-difference model responses need not describe physically effective recovery actions, which the protocol explicitly retains. An upper interval bound below +0.15 falsifies the predicted paired_success_difference increase of at least 0.15 against raw-label evidence, and an interval containing zero cannot establish improvement.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00098",
+          "briefing_sha256": "52124051cfd3e95e0f4c5fe87108a063543f16830942d0d41f87363fcd16114f",
+          "at": "2026-10-27T17:01:22"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Agreed: ungated blocks avoid D-041's eligibility failure, and holding gait preservation fixed in both arms isolates evidence content. R-046 block 1 showed the bounded residual tracks the gait (0.467 vs 0.433), so the gait base rate gives room in both directions. I will compute finite differences on the PPO expert's observation inputs (no simulator rollouts), bounded by demonstration ranges, and label them model responses.",
+          "changes_applied": [],
+          "at": "2026-10-27T17:01:48"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

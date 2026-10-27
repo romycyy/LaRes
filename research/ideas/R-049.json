@@ -1,0 +1,104 @@
+{
+  "id": "R-049",
+  "title": "Require separate retention and spin feedback in cold exploration",
+  "hypothesis": "Explicitly separating pen-state retention feedback from proprioceptive spin feedback prevents generated controllers from omitting a necessary control channel.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.15,
+    "against": "baseline",
+    "rationale": "Baseline is a contemporaneous cold-search arm using the existing prompt; treatment changes only the structural requirement, not observations or action coordinates. Stage 1/2 provide a less floor-prone test than R-042's Stage 3. Require the paired interval over eight equally weighted stage-block means to establish the 0.15 fresh-success gain."
+  },
+  "protocol": {
+    "script": "scripts/run_full_evolution.py",
+    "config": "config/pen_spin_plateau_repair.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study two_channel_cold --block-seeds 4220,4221,4222,4223,4224,4225,4226,4227 --output-dir logs/pen_spin_two_channel_cold\"'",
+    "seeds": [
+      4220,
+      4221,
+      4222,
+      4223,
+      4224,
+      4225,
+      4226,
+      4227
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_two_channel_cold_development_s4220_s4227.yaml",
+      "config/manifests/pen_spin_two_channel_cold_probe_s4220_s4227.yaml",
+      "config/manifests/pen_spin_two_channel_cold_fresh_s4220_s4227.yaml"
+    ],
+    "episodes": 2400,
+    "llm_calls": 192,
+    "code_changes": [
+      "scripts/run_full_evolution.py: add the declared two_channel_cold study CLI; freeze four Stage-1 and four Stage-2 blocks with disjoint screen, probe, promotion, and fresh placements before any LLM call.",
+      "config/pen_spin_plateau_repair.yaml: define baseline and two-channel prompts with identical observation schema, direct 20-dimensional actions, parameter-count allowance, candidate budget, and no demonstrations or fitting; treatment requires named retention and spin-feedback components but supplies no controller implementation.",
+      "config/pen_spin_plateau_repair.yaml: use four single-step candidates per arm, 10 screening cases per candidate, 10 disjoint probe cases for the screen-selected candidate, development cases 10-39 for promotion, and 30 fresh cases for the final incumbent.",
+      "config/pen_spin_plateau_repair.yaml: use gpt-6.1-sol with reasoning_effort high and temperature 1; budget at most three calls per slot including the single permitted correction, totaling 192 calls for 64 slots.",
+      "scripts/run_full_evolution.py: evaluate the null incumbent on each block's 80 placements, retain it when strict promotion fails, and report stage-stratified cold-search success and plateau eligibility alongside the preregistered final-incumbent contrast.",
+      "scripts/run_full_evolution.py: run each evaluation cell in a separate Isaac process with existing parity checks; defer any subsequent plateau-repair comparison until these cold-search results are recorded."
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "An upper paired interval bound below +0.15 refutes the predicted gain; an interval spanning +0.15 is inconclusive. All-zero incumbents refute the predicted gain without identifying why the structures failed.",
+  "cost_estimate": {
+    "episodes": 2400,
+    "llm_calls": 192,
+    "wall_time_minutes": 480
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "9b912810773a5d9eb9509c36bdbb6276fde14c15c04b5c48e353bfcf2709e0b3",
+  "proposal_call_id": "call_00097",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-10-27T17:01:53",
+    "advisor_call_id": "call_00098",
+    "round": 1,
+    "note": "This tests whether D-040's feedback-dependence finding can improve cold exploration through prompt structure, rather than assuming an expert lesion result transfers to generated controllers. The contemporaneous controls, stage-stratified reporting, and unchanged action interface make the 2400 simula"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-27T17:01:53",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 1: both say approve"
+    }
+  ],
+  "created_at": "2026-10-27T16:59:50",
+  "direction": "Continue researching the single-step exploration pipeline with plateau-triggered trace repair, extended to pen spinning on the Shadow Hand (Isaac Lab Isaac-ShadowHandSpin-Stage{1,2,3}-Direct-v0, vendored in lares/envs/isaac_pen_spin; 157-d full obs, 20-d action, 60 Hz, 360-step episodes). Expert demonstrations: first try a hand-written scripted spinning controller; also search online for an existing trained pen-spinning policy; if neither qualifies, train an RL expert (rsl_rl PPO on the box). No budget ceiling on GPU hours or LLM calls. Known gaps to turn into questions: the env's spin_rate is roll about the pen's own long axis (not end-over-end twirl), success is per step with no episode rule, and the pipeline (manifests, obs schema, runner, records) is MetaWorld-only today. Debug issues, improve the pipeline, and turn unexpected findings into concrete research questions; document results and limitations.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This tests whether D-040's feedback-dependence finding can improve cold exploration through prompt structure, rather than assuming an expert lesion result transfers to generated controllers. The contemporaneous controls, stage-stratified reporting, and unchanged action interface make the 2400 simulator episodes and at most 192 LLM calls an interpretable spend. Its weakest point is that easier stages do not guarantee a nonzero cold-search base rate, so another floor would refute the specified gain without explaining the failure. An upper interval bound below +0.15 falsifies the predicted paired_success_difference increase of at least 0.15 against the existing prompt; tied incumbents are not improvement.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00098",
+          "briefing_sha256": "52124051cfd3e95e0f4c5fe87108a063543f16830942d0d41f87363fcd16114f",
+          "at": "2026-10-27T17:01:22"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Agreed. R-046's cold prefixes scored probe successes in 3/4 Stage-3 blocks, so cold search is not a strict floor, and Stage 1/2 should have higher base rates; the baseline arm doubles as the stage-stratified base-rate measurement the plateau-gated studies lacked. The prompt change is structural only (named retention and spin components), with identical schema and actions.",
+          "changes_applied": [],
+          "at": "2026-10-27T17:01:53"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}
