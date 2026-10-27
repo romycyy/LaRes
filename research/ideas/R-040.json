@@ -7,54 +7,55 @@
     "direction": "increase",
     "threshold": 0.1,
     "against": "baseline",
-    "rationale": "Baseline is the best scripted controller selected by idea 2's screening results and rerun on fresh cases. A 0.10 sustained-success gain tests whether reward optimization helps, while expert qualification still requires at least 0.90 success rather than merely higher return."
+    "rationale": "Comparator is the frozen R-039 feedback gait (D-035: 14/30, 16/30, 7/30 sustained on its promotion cases). Reported separately per stage on 30 fresh paired cases (seeds 4030-4032); one Stage-3-trained policy is scored on all three stages because the predicates nest."
   },
   "protocol": {
     "script": "scripts/isaac/train_pen_spin_expert.py",
     "config": "config/shadowhand_spin_stages.yaml",
-    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/isaac/train_pen_spin_expert.py --config config/shadowhand_spin_stages.yaml --research-protocol conditional_ppo_expert'",
+    "command": "gpu run 'source ~/IsaacLab/source_env.sh && python scripts/isaac/train_pen_spin_expert.py --config config/shadowhand_spin_stages.yaml --research-protocol ppo_expert'",
     "seeds": [
       4020,
-      4021,
-      4022,
       4030,
       4031,
-      4032
+      4032,
+      4097
     ],
     "manifests": [
-      "config/manifests/pen_spin_stage1_training_s4020.yaml",
-      "config/manifests/pen_spin_stage2_training_s4021.yaml",
-      "config/manifests/pen_spin_stage3_training_s4022.yaml",
       "config/manifests/pen_spin_stage1_promotion_s4030.yaml",
       "config/manifests/pen_spin_stage2_promotion_s4031.yaml",
       "config/manifests/pen_spin_stage3_promotion_s4032.yaml"
     ],
-    "episodes": 90180,
+    "episodes": 3008536,
     "llm_calls": 0,
     "code_changes": [
-      "Gate execution on idea 2: spend nothing if a scripted expert qualifies for every stage; evaluate PPO only for unresolved stages. The public-checkpoint route is already excluded by the briefing's search.",
-      "Add this training entrypoint because none of the inventoried scripts trains rsl_rl PPO; instantiate the vendored ShadowHandSpinPPORunnerCfg and reuse the existing stage configuration.",
-      "Predeclare an initial cap of 30000 completed training episodes per stage, with Stage1-to-Stage2-to-Stage3 weight transfer where required; count resets explicitly. This is an initial measurement budget, not a GPU ceiling.",
-      "Freeze training reset schedules before execution; use the final scheduled checkpoint, never imitation loss or promotion results, for this first qualification attempt.",
-      "Reuse the existing rollout script and idea 1's adapter for paired PPO-versus-script evaluation on 30 fresh frozen cases per unresolved stage; worst-case evaluation cost is 180 episodes.",
-      "Require at least 0.90 sustained success for demonstration qualification and a paired interval lower bound above zero for an improvement claim; report reward-success disagreement explicitly.",
-      "Export qualified expert checkpoints and demonstration traces with provenance for subsequent plateau-triggered trace repair. If qualification fails, document the failure before proposing additional training or changing rewards."
+      "Add scripts/isaac/train_pen_spin_expert.py: rsl_rl OnPolicyRunner on the vendored Stage-3 env (lares.envs.isaac_pen_spin) with the vendored ShadowHandSpinPPORunnerCfg, training seed 4020, the existing Stage-3 reward unchanged. One policy for all stages: the stages share physics and their per-step predicates nest (Stage-3 success implies Stage-1/2 success on the same trajectory).",
+      "Schedule predeclared: up to 1.08e9 environment transitions; target 8192 parallel envs; a throughput/memory gate in the first segment freezes the largest feasible env count before continuing; fixed checkpoints every 10% of the schedule; the final scheduled checkpoint is the only one evaluated. No checkpoint selection, extension or reward change from promotion outcomes.",
+      "Diagnostics at each checkpoint from training rollouts, logged separately from return: reward components (spin, centre, axis, action), axial roll rate, end-over-end rate, fall frequency, per-step predicate rate; and at each checkpoint a fixed 40-case debug-seed (4097) evaluation of tail-predicate fraction and sustained success under the D-034 reducer. Report whether rising return accompanies stationary holding.",
+      "Evaluation: the final PPO policy and the frozen R-039 gait on fresh 30-case promotion manifests per stage (seeds 4030-4032), one evaluator process per (stage, controller), identical placements, frozen D-034 reducer; the R-039 amended reproducibility gate (zero outcome flips, <= 4/40 diverged envs) applied to the PPO cell on debug seed 4097 (3 stages x 40 cases x 2 processes).",
+      "Prediction per stage: paired_success_difference >= +0.10 vs the gait on 30 pairs; falsified by an upper paired bound below +0.10. Qualification >= 27/30 sustained per stage, independent of the comparison. Qualified checkpoints are exported with observation/action traces and provenance for trace repair.",
+      "Episode accounting: 1.08e9 transitions ~ 3.0e6 full-horizon episodes (actual completed episodes counted from resets, including early terminations), + 180 evaluation + 240 control + up to 10 x 40 checkpoint diagnostics on seed 4097; 0 LLM calls; wall time replaced by measured throughput after the gate."
     ],
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "deferred",
+  "status": "approved",
   "source": "advisor",
-  "falsified_by": "An upper paired interval bound below +0.10 rules out the predicted gain; PPO remains unusable as an expert if sustained success is below 0.90 even when mean return rises.",
+  "falsified_by": "Per stage: an upper paired interval bound below +0.10 rules out the predicted gain; an interval containing +0.10 is uncertainty, not improvement. Expert qualification fails at a stage below 27/30 sustained successes regardless of return.",
   "cost_estimate": {
-    "episodes": 90180,
+    "episodes": 3008536,
     "llm_calls": 0,
-    "wall_time_minutes": 720
+    "wall_time_minutes": 2400
   },
   "open_question_refs": [],
   "briefing_sha256": "61ac1d4977c0af1f900cb606bf63246a49f0fc828830ccf78ba85d1d2e0066d2",
   "proposal_call_id": "call_00069",
-  "approval": {},
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-10-27T01:18:24",
+    "advisor_call_id": "call_00078",
+    "round": 3,
+    "note": "I accept the implementer's single-Stage-3-policy argument: shared physics and nested predicates make evaluation across all three stages informative at one third of the proposed training cost, without an arbitrary transfer schedule. The scripted and public-policy routes are exhausted, so the roughly "
+  },
   "run": {},
   "result": {},
   "prediction_outcome": {},
@@ -66,6 +67,18 @@
       "from": "proposed",
       "to": "deferred",
       "note": "triage round 1: both say defer"
+    },
+    {
+      "at": "2026-10-27T01:17:05",
+      "from": "deferred",
+      "to": "proposed",
+      "note": "re-triaged"
+    },
+    {
+      "at": "2026-10-27T01:18:24",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
     }
   ],
   "created_at": "2026-10-27T00:34:23",
@@ -90,11 +103,106 @@
           "at": "2026-10-27T00:35:54"
         },
         "outcome": "agreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "R-039 failed expert qualification on all three stages, so the prerequisite that justified deferral is now resolved and PPO is the prescribed next route. I accept the implementer's objection that 10.8 million transitions per stage is an inadequately calibrated dexterous-control budget, and that return must be separated from roll and sustained success. The reward coefficients motivate a diagnostic, but do not alone establish that holding still is optimal; the revised experiment should test the existing reward before changing it.",
+          "suggested_changes": [
+            "Replace the unresolved-stage gate with execution on all three stages, using the frozen R-039 feedback gait as the comparator rather than the earlier oscillator. Keep training seeds 4020–4022 and fresh promotion seeds 4030–4032, which remain unspent.",
+            "Replace the 30,000-episode training cap with a predeclared schedule of up to 1.08 billion environment transitions per stage. Target 8192 parallel environments; validate memory and throughput during the initial training segment, then freeze the largest feasible batch size before continuing. Retain the declared stage-to-stage transfer and final-scheduled-checkpoint selection; do not use promotion outcomes to select checkpoints or extend training.",
+            "Update estimated cost to 3.24 billion training transitions plus at most 180 evaluation episodes, approximately 9,000,180 full-horizon-equivalent episodes and zero LLM calls. Estimate actual completed episodes from observed episode lengths, count every reset including setup and early terminations, and replace the unsupported 720-minute estimate with measured throughput.",
+            "Log return components, axial spin rate, end-over-end angular rate, fall frequency, tail-predicate fraction and sustained success separately at fixed training checkpoints. Record whether increasing return accompanies stationary holding; reward changes require a separately frozen follow-up rather than adaptation within this comparison.",
+            "Retain the prediction: paired_success_difference increases by at least 0.10 against the frozen R-039 gait, reported separately by stage on 30 fresh paired cases. State falsified_by as an upper paired interval bound below +0.10; otherwise report uncertainty rather than treating an interval containing zero as evidence of improvement. Expert qualification remains at least 27/30 sustained successes per stage, independently of whether the comparative prediction holds.",
+            "Reuse config/shadowhand_spin_stages.yaml, the vendored ShadowHandSpinPPORunnerCfg and the manifest-driven evaluator built in R-038/R-039. Add only the missing PPO training entrypoint; preserve the frozen no-fall, all-final-60-steps reducer, identical reset placements, one evaluator process per cell and the amended reproducibility gate established in R-039."
+          ],
+          "priority": 1,
+          "call_id": "call_00077",
+          "briefing_sha256": "fdbe7acc7678a788bc772c4bffb4480a50730b75133e3c955596e0f304294715",
+          "at": "2026-10-27T01:17:05"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree with revise and with changes 1, 4, 5 and 6: frozen R-039 gait as comparator, diagnostics logged separately from return, prediction +0.10 per stage with the stated falsifier, qualification at 27/30 under the frozen reducer, one new entrypoint reusing the vendored runner config and the R-039 evaluator and control gate. Amend changes 2-3: train ONE policy on Stage 3, not three. The three stages are one physics (the configs differ only in reward weights and success thresholds), and the per-step predicates nest: center_dist < 0.08 and |roll| > 4 implies < 0.10 and > 3 and > 1, so any Stage-3 sustained success is a sustained success at Stages 1 and 2 on the same trajectory (verified in R-039's offline multi-stage scoring). Evaluating the Stage-3 policy on all three stages' fresh promotion manifests answers the per-stage question at one third of the 3.24e9-transition cost, about 30+ T4 hours saved. It also removes the transfer-schedule choice, which is an uncalibrated free parameter. Schedule: up to 1.08e9 transitions, a throughput and memory gate in the first segment (8192 envs targeted; freeze the largest feasible batch before continuing), final scheduled checkpoint only, and fixed checkpoints every 10% for the diagnostics. If the Stage-3 policy fails a stage that a Stage-1 policy might pass, that is a follow-up with its own seeds, not an adaptation. Seeds: training 4020 (one run), promotion 4030-4032; 4021-4022 are released unused.",
+          "changes_applied": [],
+          "at": "2026-10-27T01:17:26"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the implementer's single-Stage-3-policy argument: shared physics and nested predicates make evaluation across all three stages informative at one third of the proposed training cost, without an arbitrary transfer schedule. The scripted and public-policy routes are exhausted, so the roughly 3.01 million episode-equivalent budget and zero LLM calls are justified; reuse the existing config, vendored runner and manifest evaluator, adding only the missing PPO entrypoint. Its weakest point is one training seed on the hardest reward: failure would establish failure of this schedule, not that stage-specific PPO cannot qualify. Retain the per-stage prediction that paired_success_difference increases by at least 0.10 against the frozen R-039 gait; falsified_by is an upper paired interval bound below +0.10, while qualification independently requires 27/30 sustained successes and promotion requires a paired interval lower bound above zero.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00078",
+          "briefing_sha256": "66f5f320b043d5bc4004929adc46b7bd6d0b0a56a4ba92e722660a2bfe3867f0",
+          "at": "2026-10-27T01:18:17"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Agreed protocol: one Stage-3 PPO policy (seed 4020), up to 1.08e9 transitions with a first-segment throughput/memory gate, fixed 10% checkpoints for diagnostics only, final scheduled checkpoint evaluated on fresh per-stage promotion manifests (4030-4032) against the frozen R-039 gait, D-034 reducer, R-039 amended reproducibility gate on debug seed 4097. The advisor's caveat stands and will be in the record: one seed on the hardest reward tests this schedule, not PPO in general.",
+          "changes_applied": [],
+          "at": "2026-10-27T01:18:24"
+        },
+        "outcome": "agreed"
       }
     ],
-    "outcome": "defer",
-    "agreed_round": 1
+    "outcome": "approve",
+    "agreed_round": 3
   },
   "escalation": {},
-  "revisions": []
+  "revisions": [
+    {
+      "at": "2026-10-27T01:17:49",
+      "round": 2,
+      "patch": {
+        "protocol": {
+          "script": "scripts/isaac/train_pen_spin_expert.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "gpu run 'source ~/IsaacLab/source_env.sh && python scripts/isaac/train_pen_spin_expert.py --config config/shadowhand_spin_stages.yaml --research-protocol ppo_expert'",
+          "seeds": [
+            4020,
+            4030,
+            4031,
+            4032,
+            4097
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage1_promotion_s4030.yaml",
+            "config/manifests/pen_spin_stage2_promotion_s4031.yaml",
+            "config/manifests/pen_spin_stage3_promotion_s4032.yaml"
+          ],
+          "episodes": 3008536,
+          "llm_calls": 0,
+          "code_changes": [
+            "Add scripts/isaac/train_pen_spin_expert.py: rsl_rl OnPolicyRunner on the vendored Stage-3 env (lares.envs.isaac_pen_spin) with the vendored ShadowHandSpinPPORunnerCfg, training seed 4020, the existing Stage-3 reward unchanged. One policy for all stages: the stages share physics and their per-step predicates nest (Stage-3 success implies Stage-1/2 success on the same trajectory).",
+            "Schedule predeclared: up to 1.08e9 environment transitions; target 8192 parallel envs; a throughput/memory gate in the first segment freezes the largest feasible env count before continuing; fixed checkpoints every 10% of the schedule; the final scheduled checkpoint is the only one evaluated. No checkpoint selection, extension or reward change from promotion outcomes.",
+            "Diagnostics at each checkpoint from training rollouts, logged separately from return: reward components (spin, centre, axis, action), axial roll rate, end-over-end rate, fall frequency, per-step predicate rate; and at each checkpoint a fixed 40-case debug-seed (4097) evaluation of tail-predicate fraction and sustained success under the D-034 reducer. Report whether rising return accompanies stationary holding.",
+            "Evaluation: the final PPO policy and the frozen R-039 gait on fresh 30-case promotion manifests per stage (seeds 4030-4032), one evaluator process per (stage, controller), identical placements, frozen D-034 reducer; the R-039 amended reproducibility gate (zero outcome flips, <= 4/40 diverged envs) applied to the PPO cell on debug seed 4097 (3 stages x 40 cases x 2 processes).",
+            "Prediction per stage: paired_success_difference >= +0.10 vs the gait on 30 pairs; falsified by an upper paired bound below +0.10. Qualification >= 27/30 sustained per stage, independent of the comparison. Qualified checkpoints are exported with observation/action traces and provenance for trace repair.",
+            "Episode accounting: 1.08e9 transitions ~ 3.0e6 full-horizon episodes (actual completed episodes counted from resets, including early terminations), + 180 evaluation + 240 control + up to 10 x 40 checkpoint diagnostics on seed 4097; 0 LLM calls; wall time replaced by measured throughput after the gate."
+          ],
+          "needs_gpu": true,
+          "needs_llm": false
+        },
+        "prediction": {
+          "metric": "paired_success_difference",
+          "direction": "increase",
+          "threshold": 0.1,
+          "against": "baseline",
+          "rationale": "Comparator is the frozen R-039 feedback gait (D-035: 14/30, 16/30, 7/30 sustained on its promotion cases). Reported separately per stage on 30 fresh paired cases (seeds 4030-4032); one Stage-3-trained policy is scored on all three stages because the predicates nest."
+        },
+        "falsified_by": "Per stage: an upper paired interval bound below +0.10 rules out the predicted gain; an interval containing +0.10 is uncertainty, not improvement. Expert qualification fails at a stage below 27/30 sustained successes regardless of return.",
+        "cost_estimate": {
+          "episodes": 3008536,
+          "llm_calls": 0,
+          "wall_time_minutes": 2400
+        }
+      },
+      "note": "round-2 revise: all stages, frozen R-039 gait comparator, up to 1.08e9 transitions with a throughput gate, diagnostics separate from return, per-stage +0.10 prediction, 27/30 qualification; implementer amendment: one Stage-3-trained policy evaluated on all three stages (nested predicates), training seed 4020 only (4021-4022 released), debug seed 4097 for checkpoint diagnostics and the reproducibility gate"
+    }
+  ]
 }

@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-10-27T01:16:23 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-10-27T01:18:25 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -11,19 +11,16 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 0 |
+| approved | 1 |
 | proposed | 0 |
-| deferred | 1 |
+| deferred | 0 |
 | decided | 35 |
 | rejected | 4 |
 
 ## Needs attention
 
-- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
-
-## Deferred (right idea, not now; `triage R-xxx` re-opens one)
-
-- R-040 3. Conditional PPO fallback: does reward optimization yield a usable expert?: PPO is the appropriate fallback because the public-policy search is already negative, but R-039 must first identify unresolved stages and freeze the scripted co
+- **R-040** [approved] 3. Conditional PPO fallback: does reward optimization yield a usable expert?
+  - `python scripts/research.py start R-040` then run its command
 
 ## Last 5 decisions
 
@@ -45,11 +42,11 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
+- R-040 round 3 · advisor approve / implementer approve → agreed (approved)
+- R-040 round 2 · advisor revise / implementer revise → agreed (proposed)
 - R-039 round 4 · advisor approve / implementer approve → agreed (approved)
 - R-039 round 3 · advisor revise / implementer revise → agreed (proposed)
 - R-039 round 2 · advisor revise / implementer revise → agreed (proposed)
-- R-040 round 1 · advisor defer / implementer defer → agreed (deferred)
-- R-039 round 1 · advisor defer / implementer defer → agreed (deferred)
 
 ## Standing constraints
 
