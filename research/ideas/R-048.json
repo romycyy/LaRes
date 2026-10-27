@@ -35,7 +35,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "approved",
+  "status": "running",
   "source": "advisor",
   "falsified_by": "An upper paired interval bound below +0.15 refutes the predicted gain; an interval spanning +0.15 is inconclusive, and tied success is not improvement.",
   "cost_estimate": {
@@ -53,7 +53,12 @@
     "round": 1,
     "note": "This isolates feedback-map evidence while holding gait preservation fixed, addressing a question D-041 did not settle. Running ungated avoids repeating D-041's insufficient-eligibility failure without changing the production plateau trigger. The 1560 simulator episodes and at most 72 LLM calls are j"
   },
-  "run": {},
+  "run": {
+    "started_at": "2026-10-27T17:24:47",
+    "git_sha": "b222600a99f9fcfd843c66b1f1bbeb55f556c0f8",
+    "dirty_worktree": false,
+    "log_dir": ""
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -70,6 +75,12 @@
       "from": "approved",
       "to": "approved",
       "note": "implementation amendments before start: manifests ['config/manifests/pen_spin_stage3_local_feedback_development_s4210_s4215.yaml', 'config/manifests/pen_spin_stage3_local_feedback_probe_s4210_s4215.yaml', 'config/manifests/pen_spin_stage3_local_feedback_fresh_s4210_s4215.yaml'] -> one 80-case file per block seed (a pen-spin manifest holds exactly one pool seed, so a multi-seed role file cannot exist; same cases, roles by index: screen 0-9, promotion 10-39, probe 40-49, fresh 50-79). Command 'gpu run \\'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study local_feedback_evidence --block-seeds 4210,4211,4212,4213,4214,4215 --output-dir logs/pen_spin_local_feedback_evidence\"\\'' -> the orchestrator venv with ~/.profile (Isaac's Python has no openai; Isaac children are started per evaluation, as in R-042..R-046), backgrounded. Seeds 4210-4215 recorded in config/experiment_seed_ledger.jsonl with the frozen manifests and cleared from protocol.seeds so start does not read its own manifests as spent."
+    },
+    {
+      "at": "2026-10-27T17:24:47",
+      "from": "approved",
+      "to": "running",
+      "note": "git b222600a99"
     }
   ],
   "created_at": "2026-10-27T16:59:50",
