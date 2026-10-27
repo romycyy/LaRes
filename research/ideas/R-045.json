@@ -1,0 +1,208 @@
+{
+  "id": "R-045",
+  "title": "Fit dense expert labels into the R-042 prefix controllers, selecting only by rollouts",
+  "hypothesis": "Dense expert state-action labels move a frozen symbolic pen-spin controller's bounded parameters toward sustained success more effectively than an equally budgeted rollout-only parameter search over the same structure, bounds and probe cases.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.15,
+    "against": "rollout_search arm: the same frozen R-042 prefix controller per block, its selected parameters plus three predeclared bounded draws (rollout_search.perturb: local, global, local) scored on the same 10 probe cases",
+    "rationale": "dense_fit minus rollout_search, fresh 30-case sustained success of each arm's final incumbent (promoted candidate, else the null incumbent at 0), paired by block over four blocks; mean >= +0.15 with a paired t interval above zero. Secondary, reported but not the prediction: each arm's selected setting scored on the same fresh cases whether or not it promoted (no extra episodes), and the per-arm drop / slow_spin / off_centre counts. Caveat stated before the run: an all-zero result refutes the prediction but cannot distinguish insufficient controller capacity from ineffective fitting."
+  },
+  "protocol": {
+    "script": "scripts/run_full_evolution.py",
+    "config": "config/pen_spin_plateau_repair.yaml",
+    "command": "gpu run 'source ~/.profile >/dev/null 2>&1; nohup .venv-metaworld/bin/python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study dense_feedback_fit > logs_r045.log 2>&1 &'",
+    "seeds": [
+      4170,
+      4171,
+      4172,
+      4173,
+      4174
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_dense_s4170.yaml",
+      "config/manifests/pen_spin_stage3_dense_s4171.yaml",
+      "config/manifests/pen_spin_stage3_dense_s4172.yaml",
+      "config/manifests/pen_spin_stage3_dense_s4173.yaml",
+      "config/manifests/pen_spin_stage3_parity_s4174.yaml"
+    ],
+    "episodes": 1008,
+    "llm_calls": 0,
+    "code_changes": [
+      "Add a dense_feedback_fit block to config/pen_spin_plateau_repair.yaml and a --study dense_feedback_fit path to scripts/run_full_evolution.py reusing the R-042 Isaac stream (one fresh Isaac process per manifest), the frozen D-036 PPO expert and the strict paired promotion rule (lares/eval/promotion.compare_to_incumbent).",
+      "Students: block b uses R-042 block b's prefix candidate gen0_cand0 (policy_source.py + selected_state.pt under logs/pen_spin/r042_keyframe_repair/block<b>/prefix/gen_0/candidates/gen0_cand0_a0), pinned by sha256 in the config before running, together with its parameter ranges and selected values. No LLM edit; not added to any fittable-parent bank; no spent R-042 case is rerun.",
+      "Per block seed S (4170-4173), one 92-case Stage-3 manifest frozen before any episode, role-disjoint by index: screen 0-9, promotion 10-39, probe 40-49, expert 50-61, fresh 62-91. Parity seed 4174: 40 cases, two separate expert processes, the R-042 gate (0 sustained flips, diverged envs <= batch//10).",
+      "Expert: 12 episodes on the expert slice in one process with traces recorded (reported as a qualification count, not gated); its (obs, clamp(action)) pairs over every step are the dense labels.",
+      "dense_fit: Adam on deterministic MSE between the policy mean and the expert's executed action over all expert pairs (full batch), lr 0.01, clip_params after every step, fit seed S; checkpoints 0/250/500/1000 each scored on the 10 probe cases in its own process. Imitation loss is logged as a diagnostic only.",
+      "rollout_search: the selected parameters plus three draws from rollout_search.perturb in the order local, global, local from SeedSequence(S), each scored on the same 10 probe cases in its own process.",
+      "Common selection rule, frozen: lares.fitting.checkpoints.is_better_checkpoint (probe success, then tail-hit fraction, ties to the earlier candidate; step 0 / the original is first and wins ties). Selected setting: screen on 10, then promotion on 30 against the null incumbent under the strict paired rule; then the selected setting on the 30 fresh cases (final incumbent = it if promoted, else null at 0).",
+      "Episodes: 80 parity + 4 x (12 expert + 2 arms x (40 probe + 10 screen + 30 promotion + 30 fresh)) = 1008. Summary in logs/pen_spin/r045_dense_fit/summary.json; mocked test in tests/test_pen_spin_pipeline.py."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "The paired interval of block-level fresh incumbent differences (dense_fit minus rollout_search) lies entirely below +0.15. An interval containing zero is no evidence of improvement; an all-zero result cannot distinguish insufficient controller capacity from ineffective fitting.",
+  "cost_estimate": {
+    "episodes": 1008,
+    "llm_calls": 0,
+    "wall_time_minutes": 120
+  },
+  "open_question_refs": [
+    4,
+    -1
+  ],
+  "briefing_sha256": "44b81f8cafe80679d18fc2226e3d94d98afd7d841ada0e4ab4d708994deacabd",
+  "proposal_call_id": "call_00087",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-10-27T14:14:22",
+    "advisor_call_id": "call_00090",
+    "round": 3,
+    "note": "I accept the implementer's seed-collision and matched-arm arguments; the revised protocol incorporates both, freezes the R-042 students and correctly removes new LLM calls. Reusing scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml, 1008 simulator episodes and 0 LLM calls test den"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-27T14:14:22",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    }
+  ],
+  "created_at": "2026-10-27T14:09:20",
+  "direction": "Continue researching the single-step exploration pipeline with plateau-triggered trace repair, extended to pen spinning on the Shadow Hand (Isaac Lab Isaac-ShadowHandSpin-Stage{1,2,3}-Direct-v0, vendored in lares/envs/isaac_pen_spin; 157-d full obs, 20-d action, 60 Hz, 360-step episodes). Expert demonstrations: first try a hand-written scripted spinning controller; also search online for an existing trained pen-spinning policy; if neither qualifies, train an RL expert (rsl_rl PPO on the box). No budget ceiling on GPU hours or LLM calls. Known gaps to turn into questions: the env's spin_rate is roll about the pen's own long axis (not end-over-end twirl), success is per step with no episode rule, and the pipeline (manifests, obs schema, runner, records) is MetaWorld-only today. Debug issues, improve the pipeline, and turn unexpected findings into concrete research questions; document results and limitations.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "Unlike D-038's sparse prompting, this tests whether dense expert labels can guide feedback-parameter updates under matched rollout-selection budgets. Reusing scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml, the 1008 episodes and at most eight LLM calls buy a direct comparison while respecting rollout-selected fitting and strict promotion. The prediction is paired_success_difference increasing by at least 0.15 against rollout-only search, falsified by an interval entirely below +0.15. Its weakest point remains controller capacity: another all-zero result refutes that prediction but cannot distinguish ineffective fitting from an inadequate symbolic structure.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00088",
+          "briefing_sha256": "27ffc7e4a7313226b02998c992b310ab699c2b093d1ec3e3d9e07a33891b65af",
+          "at": "2026-10-27T14:11:32"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree on the design and its priority, but the protocol cannot pass check_idea as written: seeds 4150-4154 are already declared by deferred R-043, and estimated episodes and calls are missing. Revise to seeds 4170-4173 (blocks) and 4174 (parity), estimated_episodes 1008 and estimated_llm_calls 8 as your reasoning states. Also pin the arms so they are matched: both arms start from the same block's prefix candidate (the plateau-triggered best failed prefix structure, no LLM edit, so the comparison isolates the parameter-update rule); dense_fit fits its parameters by deterministic MSE to clamp(expert action) on the 12 expert episodes' states, checkpoints 0/250/500/1000 each scored on the 10 probe cases, selected by the tie rule (step 0 eligible); rollout_search draws 3 non-initial settings plus the initial values, scored on the same 10 probe cases, so both arms spend 40 probe episodes and select by the same rule. Screen/promotion/fresh unchanged. Keep the prediction (+0.15, falsified by an interval entirely below +0.15) and record the capacity caveat in the rationale.",
+          "changes_applied": [],
+          "at": "2026-10-27T14:11:58"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "This isolates whether dense expert labels improve feedback-parameter search, which D-038's sparse prompting did not test. I accept the implementer's seed-collision objection and matched-arm specification: the written protocol cannot run unchanged. Controller capacity remains the weakest point, so another all-zero result would refute the predicted gain without identifying why fitting failed. Reusing the four recorded R-042 failed-prefix controllers also avoids an unbudgeted prefix search and removes the need for new LLM calls.",
+          "suggested_changes": [
+            "Replace seeds 4150-4154 everywhere, including command and manifest paths, with block seeds 4170-4173 and parity seed 4174.",
+            "Reuse the four recorded R-042 plateau-prefix controllers, one per block, as standalone experimental students; pin artifact paths, hashes, parameter bounds and initial values before running. Make no LLM edits, do not add them to the fittable-parent bank, and do not rerun spent prefix cases. Reuse scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml with only the necessary study and Isaac-fitter extensions.",
+            "Start both arms from the identical frozen controller in each block. Fit dense_fit deterministically by MSE against clamped expert actions from all 12 role-disjoint expert episodes; score checkpoints 0/250/500/1000 on the same ten probe cases. Score the initial setting plus three predeclared bounded parameter-search candidates for rollout_search on those same cases. Freeze the common rollout-selection tie rule before evaluation; imitation loss is diagnostic only.",
+            "Retain role-disjoint screen, promotion, probe, expert and fresh manifests, the parity gate, one Isaac process per cell, strict paired promotion and unchanged-incumbent fallback. Set estimated_episodes to 1008: 80 parity episodes plus four blocks of 12 expert and 220 arm-evaluation episodes. Set estimated_llm_calls and other LLM-cost fields to 0 and needs_llm to false because the prefixes are reused.",
+            "Name rollout_search explicitly as the prediction's control: paired_success_difference increases by at least 0.15 on fresh sustained success, paired across four blocks. Retain falsified_by as an interval entirely below +0.15; an interval containing zero is not evidence of improvement, and an all-zero result cannot distinguish insufficient controller capacity from ineffective fitting."
+          ],
+          "priority": 1,
+          "call_id": "call_00089",
+          "briefing_sha256": "aeffbc6dbe484e17115239d20ab05b1af20cdadd1769f7162689620cc043bcba",
+          "at": "2026-10-27T14:12:47"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree with all five changes: seeds 4170-4174, the four R-042 prefix controllers as frozen students (no LLM call), matched 40-episode probe budgets with a frozen common tie rule, 1008 episodes, rollout_search as the named control, and the capacity caveat.",
+          "changes_applied": [],
+          "at": "2026-10-27T14:12:56"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the implementer's seed-collision and matched-arm arguments; the revised protocol incorporates both, freezes the R-042 students and correctly removes new LLM calls. Reusing scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml, 1008 simulator episodes and 0 LLM calls test dense-label parameter updates rather than repeating D-038's sparse-keyframe prompting. The prediction is a paired_success_difference increase of at least 0.15 against rollout_search, with an interval above zero; it is falsified by an interval entirely below +0.15. The weakest point remains controller capacity: all-zero outcomes refute the predicted gain without distinguishing insufficient structure from ineffective fitting, and an interval containing zero provides no evidence of improvement.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00090",
+          "briefing_sha256": "bb5df0c2f50aed7b1243a778e979313740ca506ab4ebc3308046ac99b1af36a3",
+          "at": "2026-10-27T14:14:15"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Agree: the revised protocol is what both rounds settled, with 0 LLM calls, matched 40-episode probe budgets, frozen students and the capacity caveat stated before the run.",
+          "changes_applied": [],
+          "at": "2026-10-27T14:14:22"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 3
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-10-27T14:13:48",
+      "round": 2,
+      "patch": {
+        "title": "Fit dense expert labels into the R-042 prefix controllers, selecting only by rollouts",
+        "hypothesis": "Dense expert state-action labels move a frozen symbolic pen-spin controller's bounded parameters toward sustained success more effectively than an equally budgeted rollout-only parameter search over the same structure, bounds and probe cases.",
+        "prediction": {
+          "metric": "paired_success_difference",
+          "direction": "increase",
+          "threshold": 0.15,
+          "against": "rollout_search arm: the same frozen R-042 prefix controller per block, its selected parameters plus three predeclared bounded draws (rollout_search.perturb: local, global, local) scored on the same 10 probe cases",
+          "rationale": "dense_fit minus rollout_search, fresh 30-case sustained success of each arm's final incumbent (promoted candidate, else the null incumbent at 0), paired by block over four blocks; mean >= +0.15 with a paired t interval above zero. Secondary, reported but not the prediction: each arm's selected setting scored on the same fresh cases whether or not it promoted (no extra episodes), and the per-arm drop / slow_spin / off_centre counts. Caveat stated before the run: an all-zero result refutes the prediction but cannot distinguish insufficient controller capacity from ineffective fitting."
+        },
+        "falsified_by": "The paired interval of block-level fresh incumbent differences (dense_fit minus rollout_search) lies entirely below +0.15. An interval containing zero is no evidence of improvement; an all-zero result cannot distinguish insufficient controller capacity from ineffective fitting.",
+        "protocol": {
+          "script": "scripts/run_full_evolution.py",
+          "config": "config/pen_spin_plateau_repair.yaml",
+          "command": "gpu run 'source ~/.profile >/dev/null 2>&1; nohup .venv-metaworld/bin/python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study dense_feedback_fit > logs_r045.log 2>&1 &'",
+          "seeds": [
+            4170,
+            4171,
+            4172,
+            4173,
+            4174
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_dense_s4170.yaml",
+            "config/manifests/pen_spin_stage3_dense_s4171.yaml",
+            "config/manifests/pen_spin_stage3_dense_s4172.yaml",
+            "config/manifests/pen_spin_stage3_dense_s4173.yaml",
+            "config/manifests/pen_spin_stage3_parity_s4174.yaml"
+          ],
+          "episodes": 1008,
+          "llm_calls": 0,
+          "code_changes": [
+            "Add a dense_feedback_fit block to config/pen_spin_plateau_repair.yaml and a --study dense_feedback_fit path to scripts/run_full_evolution.py reusing the R-042 Isaac stream (one fresh Isaac process per manifest), the frozen D-036 PPO expert and the strict paired promotion rule (lares/eval/promotion.compare_to_incumbent).",
+            "Students: block b uses R-042 block b's prefix candidate gen0_cand0 (policy_source.py + selected_state.pt under logs/pen_spin/r042_keyframe_repair/block<b>/prefix/gen_0/candidates/gen0_cand0_a0), pinned by sha256 in the config before running, together with its parameter ranges and selected values. No LLM edit; not added to any fittable-parent bank; no spent R-042 case is rerun.",
+            "Per block seed S (4170-4173), one 92-case Stage-3 manifest frozen before any episode, role-disjoint by index: screen 0-9, promotion 10-39, probe 40-49, expert 50-61, fresh 62-91. Parity seed 4174: 40 cases, two separate expert processes, the R-042 gate (0 sustained flips, diverged envs <= batch//10).",
+            "Expert: 12 episodes on the expert slice in one process with traces recorded (reported as a qualification count, not gated); its (obs, clamp(action)) pairs over every step are the dense labels.",
+            "dense_fit: Adam on deterministic MSE between the policy mean and the expert's executed action over all expert pairs (full batch), lr 0.01, clip_params after every step, fit seed S; checkpoints 0/250/500/1000 each scored on the 10 probe cases in its own process. Imitation loss is logged as a diagnostic only.",
+            "rollout_search: the selected parameters plus three draws from rollout_search.perturb in the order local, global, local from SeedSequence(S), each scored on the same 10 probe cases in its own process.",
+            "Common selection rule, frozen: lares.fitting.checkpoints.is_better_checkpoint (probe success, then tail-hit fraction, ties to the earlier candidate; step 0 / the original is first and wins ties). Selected setting: screen on 10, then promotion on 30 against the null incumbent under the strict paired rule; then the selected setting on the 30 fresh cases (final incumbent = it if promoted, else null at 0).",
+            "Episodes: 80 parity + 4 x (12 expert + 2 arms x (40 probe + 10 screen + 30 promotion + 30 fresh)) = 1008. Summary in logs/pen_spin/r045_dense_fit/summary.json; mocked test in tests/test_pen_spin_pipeline.py."
+          ],
+          "needs_gpu": true,
+          "needs_llm": false
+        },
+        "cost_estimate": {
+          "episodes": 1008,
+          "llm_calls": 0,
+          "wall_time_minutes": 120
+        }
+      },
+      "note": "round-2 agreed revisions (call_00089): seeds 4170-4174, R-042 prefix students, matched probe budgets, 0 LLM calls, 1008 episodes"
+    }
+  ]
+}

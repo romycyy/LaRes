@@ -1,0 +1,95 @@
+{
+  "id": "R-046",
+  "title": "3. Preserve the scripted gait while repairing retention feedback",
+  "hypothesis": "An immutable scripted gait preserves contact coordination while a bounded symbolic residual repairs retention failures that whole-controller trace edits otherwise introduce.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.2,
+    "against": "baseline",
+    "rationale": "Baseline is a contemporaneous unrestricted whole-controller edit given the same frozen gait and expert keyframes; a 0.20 fresh sustained-success gain would show that preserving the contact scaffold makes trace repair more effective."
+  },
+  "protocol": {
+    "script": "scripts/run_full_evolution.py",
+    "config": "config/pen_spin_plateau_repair.yaml",
+    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study gait_preserving_repair --stage 3 --block-seeds 4160 4161 4162 4163 --parity-seed 4164 --arms whole_edit,bounded_residual --repair-parent frozen_r039_gait --max-prefix-screen-episodes 120 --repair-variants 6 --screen-cases 10 --promotion-cases 30 --fresh-cases 30 --expert-cases 12 --model gpt-6.1-sol --reasoning-effort high --temperature 1'",
+    "seeds": [
+      4160,
+      4161,
+      4162,
+      4163,
+      4164
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_gait_repair_s4160.yaml",
+      "config/manifests/pen_spin_gait_repair_s4161.yaml",
+      "config/manifests/pen_spin_gait_repair_s4162.yaml",
+      "config/manifests/pen_spin_gait_repair_s4163.yaml",
+      "config/manifests/pen_spin_gait_repair_parity_s4164.yaml"
+    ],
+    "episodes": 1688,
+    "llm_calls": 24,
+    "code_changes": [
+      "Extend scripts/run_full_evolution.py with the displayed study arguments and a hash-checked resolver for the frozen R-039 gait; fail rather than substitute or retune a controller.",
+      "Share a cold exploration prefix between arms and fork only when the existing plateau trigger fires; cap prefix spending at 120 screen episodes plus one 30-case promotion evaluation per block. Do not weaken the trigger to obtain eligibility.",
+      "Give both arms the same gait source and 32 uniformly selected state-action keyframes from two expert demonstrations. Whole-edit may replace the controller; residual must retain the gait unchanged and add a componentwise bounded correction, capped at 0.15 of the normalized action range.",
+      "Keep both repairs within the existing 6-10 parameter interface, with six parameter-search variants and identical selection budgets. Keep bc_steps at zero and treat the gait as a non-fittable control scaffold, not a fittable-lane parent.",
+      "Freeze disjoint screen, promotion, prefix-probe, expert and fresh roles before running; retain promotion cases 10-39 and the existing sustained-success reducer. Qualify the expert on ten cases before exporting two demonstrations.",
+      "Budget at most 402 episodes per block: 150 prefix, 12 expert and 120 per continuation arm; add two separate 40-case parity controls. Permit at most one linked correction per LLM slot and run each Isaac cell in a separate process.",
+      "Unlike R-042's trace-selection comparison and deferred R-043's anatomical coordinates, this changes which existing contact dynamics an edit is allowed to destroy. Document residual saturation and any restriction-induced failures without changing the primary metric."
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "proposed",
+  "source": "advisor",
+  "falsified_by": "With at least three eligible plateau blocks, the paired interval for residual minus whole-edit fresh incumbent success lies entirely below +0.20. An interval containing zero is not evidence of improvement; fewer than three triggered blocks make the repair comparison inconclusive.",
+  "cost_estimate": {
+    "episodes": 1688,
+    "llm_calls": 24,
+    "wall_time_minutes": 360
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "44b81f8cafe80679d18fc2226e3d94d98afd7d841ada0e4ab4d708994deacabd",
+  "proposal_call_id": "call_00087",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [],
+  "created_at": "2026-10-27T14:09:20",
+  "direction": "Continue researching the single-step exploration pipeline with plateau-triggered trace repair, extended to pen spinning on the Shadow Hand (Isaac Lab Isaac-ShadowHandSpin-Stage{1,2,3}-Direct-v0, vendored in lares/envs/isaac_pen_spin; 157-d full obs, 20-d action, 60 Hz, 360-step episodes). Expert demonstrations: first try a hand-written scripted spinning controller; also search online for an existing trained pen-spinning policy; if neither qualifies, train an RL expert (rsl_rl PPO on the box). No budget ceiling on GPU hours or LLM calls. Known gaps to turn into questions: the env's spin_rate is roll about the pen's own long axis (not end-over-end twirl), success is per step with no episode rule, and the pipeline (manifests, obs schema, runner, records) is MetaWorld-only today. Debug issues, improve the pipeline, and turn unexpected findings into concrete research questions; document results and limitations.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "Protecting an existing contact scaffold tests a different mechanism from D-038's keyframe selection and directly addresses destructive whole-controller edits. However, without an unchanged-gait continuation, superiority over whole-edit could mean only that the residual preserves the supplied prior, not that trace repair fixes retention. Add that inexpensive control before spending the proposed 1688 episodes and at most 24 LLM calls; retain the primary prediction and its falsifier, an eligible-block interval entirely below +0.20.",
+          "suggested_changes": [
+            "Add an unchanged frozen-R-039-gait continuation after each eligible shared prefix, using scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml; do not generate, fit or tune this control.",
+            "Evaluate the unchanged-gait continuation on the same screen, promotion and fresh cases, applying the same strict promotion rule against the shared prefix incumbent and evaluating that incumbent if the gait does not promote.",
+            "Keep the primary prediction as paired_success_difference increasing by at least 0.20 for bounded_residual against whole_edit, with at least three eligible blocks. Report the paired residual-minus-unchanged-gait difference separately; without a strictly positive interval, describe any primary advantage as preservation rather than demonstrated improvement of the gait.",
+            "Increase the maximum budget by 70 episodes per block to 1968 episodes, retaining at most 24 LLM calls, seeds 4160-4164, the existing parity gate and the unchanged plateau trigger."
+          ],
+          "priority": 3,
+          "call_id": "call_00088",
+          "briefing_sha256": "27ffc7e4a7313226b02998c992b310ab699c2b093d1ec3e3d9e07a33891b65af",
+          "at": "2026-10-27T14:11:32"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree with the unchanged-gait control and the budget increase. Additionally, seeds 4160-4164 are already declared by deferred R-043; move to 4180-4184. Also note D-035: the scripted FeedbackGait did not qualify as an expert, so its base rate on Stage 3 must be measured on the screen before the residual arm can be read; the unchanged-gait control does this.",
+          "changes_applied": [],
+          "at": "2026-10-27T14:12:00"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": null
+  },
+  "escalation": {},
+  "revisions": []
+}

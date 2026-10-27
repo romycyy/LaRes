@@ -1,0 +1,84 @@
+{
+  "id": "R-044",
+  "title": "1. Identify which state feedback the qualified expert needs",
+  "hypothesis": "Instantaneous pen-state feedback is necessary for the PPO expert to retain the pen, even when hand proprioception and action history remain available.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "decrease",
+    "threshold": 0.3,
+    "against": "baseline",
+    "rationale": "Baseline is the unmodified qualified Stage-3 PPO expert; clamping pen-state observations should reduce sustained success by at least 0.30, identifying feedback information that symbolic repair must preserve."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study feedback_lesions --stage 3 --seed 4140 --cases 40 --arms expert,expert_repeat,pen_state_clamped,hand_state_clamped --manifest config/manifests/pen_spin_feedback_lesions_s4140.yaml'",
+    "seeds": [
+      4140
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_feedback_lesions_s4140.yaml"
+    ],
+    "episodes": 160,
+    "llm_calls": 0,
+    "code_changes": [
+      "Extend scripts/run_shadowhand_spin_stages.py with the displayed study arguments; resolve the frozen D-036 qualified PPO checkpoint and record its hash.",
+      "Clamp selected named observation fields to their episode-initial values before policy inference, including redundant encodings of the selected state; leave the simulator unmodified and retain valid quaternion representations.",
+      "Run full expert, repeated full expert, pen-state clamp and hand-proprioception clamp in separate Isaac processes on identical placements; use the frozen sustained-success reducer.",
+      "Freeze the new 40-case diagnostic manifest before rollout. Gate interpretation on zero repeated-control outcome flips and at most 4/40 diverged trajectories.",
+      "Document that D-037 removed all feedback through action replay, whereas this intervention retains the policy and other feedback channels; necessity does not establish sufficiency."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "proposed",
+  "source": "advisor",
+  "falsified_by": "The paired interval for pen-clamped minus baseline success lies entirely above -0.30. An interval containing zero is not evidence that pen feedback matters.",
+  "cost_estimate": {
+    "episodes": 160,
+    "llm_calls": 0,
+    "wall_time_minutes": 90
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "44b81f8cafe80679d18fc2226e3d94d98afd7d841ada0e4ab4d708994deacabd",
+  "proposal_call_id": "call_00087",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [],
+  "created_at": "2026-10-27T14:09:20",
+  "direction": "Continue researching the single-step exploration pipeline with plateau-triggered trace repair, extended to pen spinning on the Shadow Hand (Isaac Lab Isaac-ShadowHandSpin-Stage{1,2,3}-Direct-v0, vendored in lares/envs/isaac_pen_spin; 157-d full obs, 20-d action, 60 Hz, 360-step episodes). Expert demonstrations: first try a hand-written scripted spinning controller; also search online for an existing trained pen-spinning policy; if neither qualifies, train an RL expert (rsl_rl PPO on the box). No budget ceiling on GPU hours or LLM calls. Known gaps to turn into questions: the env's spin_rate is roll about the pen's own long axis (not end-over-end twirl), success is per step with no episode rule, and the pipeline (manifests, obs schema, runner, records) is MetaWorld-only today. Debug issues, improve the pipeline, and turn unexpected findings into concrete research questions; document results and limitations.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "This cheaply localizes the qualified checkpoint's dependence on feedback channels, unlike D-037's removal of all feedback. However, clamping creates distribution shift, and sustained-success loss does not distinguish dropping the pen from failing the spin threshold. Narrow the hypothesis rather than interpreting this intervention as proof that pen-state information is necessary for retention; the budget remains 160 episodes and zero LLM calls.",
+          "suggested_changes": [
+            "Replace the hypothesis with: 'The qualified PPO checkpoint relies on changing pen-state observations to maintain sustained axial-roll success when hand proprioception and action history remain available.'",
+            "Keep the prediction as paired_success_difference, decrease by at least 0.30 against the unmodified qualified expert, using the frozen sustained-success reducer. Keep falsified_by as an interval entirely above -0.30; an interval including zero establishes no difference.",
+            "Reuse scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml on seed 4140. Use existing per-step traces to separate drops from tail-spin failures, and explicitly limit conclusions to this checkpoint's dependence under clamping—not information-theoretic necessity or feedback sufficiency."
+          ],
+          "priority": 2,
+          "call_id": "call_00088",
+          "briefing_sha256": "27ffc7e4a7313226b02998c992b310ab699c2b093d1ec3e3d9e07a33891b65af",
+          "at": "2026-10-27T14:11:32"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree with all three changes. Clamping is a distribution-shift intervention, so the conclusion must be limited to this checkpoint's dependence under clamping; reporting drops versus tail-spin failures from the existing per-step traces is what makes the result useful to a repair packet. Implementation note: clamp = hold the named observation slice at its value from the case's reset observation for the whole episode, each arm one fresh Isaac process (D-034/D-035), cases from seed 4140 (unused).",
+          "changes_applied": [],
+          "at": "2026-10-27T14:11:56"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": null
+  },
+  "escalation": {},
+  "revisions": []
+}
