@@ -13,11 +13,7 @@
     "script": "scripts/run_shadowhand_spin_stages.py",
     "config": "config/shadowhand_spin_stages.yaml",
     "command": "gpu run 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --research-protocol scripted_expert_qualification'",
-    "seeds": [
-      4010,
-      4011,
-      4012
-    ],
+    "seeds": [],
     "manifests": [
       "config/manifests/pen_spin_stage1_development_s4010.yaml",
       "config/manifests/pen_spin_stage2_development_s4011.yaml",
@@ -78,6 +74,12 @@
       "from": "proposed",
       "to": "approved",
       "note": "triage round 4: both say approve"
+    },
+    {
+      "at": "2026-10-27T01:06:30",
+      "from": "approved",
+      "to": "approved",
+      "note": "pre-launch reconciliation (R-037 precedent, call_00066 option A): seeds 4010-4012 were reserved in the ledger and the three development manifests frozen and committed (commit 'R-039: pen-spin manifests, batched runner...') before any development-case rollout (control seed 4098 stays debug-only), so protocol.seeds is empty and protocol.manifests names the frozen files. Tuning used 1720 of the 2400 allowed debug episodes."
     }
   ],
   "created_at": "2026-10-27T00:34:23",
