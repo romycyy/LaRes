@@ -182,6 +182,7 @@ class PenSpinBatchRunner:
             **{k: v.cpu().numpy() for k, v in rec.items()},
         }
         if record_obs:
+            # (cases, T, dim): case-major, unlike the (T, cases) per-step arrays above.
             out["obs"] = np.stack(obs_trace, axis=1)
             out["actions"] = np.stack(act_trace, axis=1)
         return out

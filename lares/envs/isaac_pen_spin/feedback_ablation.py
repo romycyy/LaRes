@@ -48,10 +48,17 @@ class ActionTape:
 
 
 def select_demonstration(episodes: list[dict], actions: np.ndarray) -> tuple[int, np.ndarray]:
-    """First sustained success in manifest order and its executed actions, ``actions`` being (T, n, 20)."""
+    """First sustained success in manifest order and its executed actions.
+
+    ``actions`` is the runner's recorded trace, shaped (cases, T, 20): ``PenSpinBatchRunner.run`` stacks the
+    per-step (cases, 20) arrays on axis 1.
+    """
+    actions = np.asarray(actions)
+    if actions.ndim != 3 or actions.shape[0] != len(episodes):
+        raise ValueError(f"actions must be (cases={len(episodes)}, T, {cases.NUM_ACTIONS}), got {actions.shape}")
     for i, e in enumerate(episodes):
         if e["sustained"]:
-            return i, np.asarray(actions[: int(e["length"]), i])
+            return i, actions[i, : int(e["length"])]
     raise ValueError("no sustained-success demonstration on the demonstration manifest")
 
 

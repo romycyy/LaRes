@@ -206,13 +206,15 @@ class TestFeedbackAblation(unittest.TestCase):
         from lares.envs.isaac_pen_spin.feedback_ablation import select_demonstration
 
         rows = [self._row("a", False), self._row("b", True, 300), self._row("c", True)]
-        acts = np.arange(359 * 3 * 20, dtype=np.float32).reshape(359, 3, 20)
+        acts = np.arange(3 * 359 * 20, dtype=np.float32).reshape(3, 359, 20)  # (cases, T, 20), as the runner stores it
         idx, tape = select_demonstration(rows, acts)
         self.assertEqual(idx, 1)
         self.assertEqual(tape.shape, (300, 20))
-        np.testing.assert_array_equal(tape, acts[:300, 1])
+        np.testing.assert_array_equal(tape, acts[1, :300])
         with self.assertRaises(ValueError):
-            select_demonstration([self._row("a", False)], acts[:, :1])
+            select_demonstration([self._row("a", False)], acts[:1])
+        with self.assertRaises(ValueError):  # the (T, cases, 20) layout is refused, not silently mis-sliced
+            select_demonstration(rows, acts.transpose(1, 0, 2))
 
     def test_tape_shape_checked(self):
         from lares.envs.isaac_pen_spin.feedback_ablation import ActionTape
