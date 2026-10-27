@@ -50,7 +50,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "approved",
+  "status": "running",
   "source": "advisor",
   "falsified_by": "Across the eligible plateau blocks (at least 3 of 4), the paired interval of event minus uniform fresh success has an upper bound below +0.20. Fewer than 3 eligible blocks, a failed parity gate, or an unqualified demonstration manifest makes it inconclusive.",
   "cost_estimate": {
@@ -68,7 +68,12 @@
     "round": 3,
     "note": "This tests whether corrective-event keyframes improve Stage-3 plateau repair beyond uniform sampling, with the no-trace arm checking whether repair transfers beyond MetaWorld. I accept the implementer's fresh parity seed 4137, removal of demonstration reruns, and corrected maximum cost of 2794 simul"
   },
-  "run": {},
+  "run": {
+    "started_at": "2026-10-27T10:23:31",
+    "git_sha": "d3eac64808927da0998dcdd4416804732b458b33",
+    "dirty_worktree": false,
+    "log_dir": ""
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -85,6 +90,12 @@
       "from": "approved",
       "to": "approved",
       "note": "pre-launch reconciliation (advisor consult call_00085 accepted all four as implementation reconciliations): (1) the orchestrator runs in the pipeline venv (.venv-metaworld, which has openai; installing it into the box's ~/IsaacLab env would modify that checkout) and every rollout is a fresh child that sources Isaac's env; command updated accordingly. (2) trace rows show hand_dof_pos as the policy observes it, labelled normalised [-1, 1], not radians. (3) the repair request lists the parameter values the prefix's rollout search selected for the edited candidate. (4) the request states D-037 precisely: one recorded tape replayed open loop succeeded 0/40 vs 40/40 closed loop. All four apply identically to the uniform and event arms; no-trace contrasts are read as repair-package effects. Seeds 4120-4137 were reserved in the ledger on 2026-10-27 before any rollout; only their manifests were built (pure numpy), no episode or LLM call has used them, so protocol.seeds is empty and protocol.manifests names the 13 frozen files plus the parity manifest (R-037/R-040 precedent). Validation before launch: 21-test mocked end-to-end gate (tests/test_pen_spin_pipeline.py), full suite on the box (866+41+116), and a live backend smoke on spent debug seed 4097 only."
+    },
+    {
+      "at": "2026-10-27T10:23:31",
+      "from": "approved",
+      "to": "running",
+      "note": "git d3eac64808"
     }
   ],
   "created_at": "2026-10-27T09:34:57",
