@@ -38,3 +38,16 @@ research_protocols:
       1: "config/manifests/pen_spin_stage1_probe_s4000.yaml"
       2: "config/manifests/pen_spin_stage2_probe_s4001.yaml"
       3: "config/manifests/pen_spin_stage3_probe_s4002.yaml"
+  # R-039: frozen feedback gait (scripted_expert.FROZEN_R039) vs the frozen R-038 oscillator; D-034 reducer.
+  scripted_expert_qualification:
+    log_dir: "logs/pen_spin/r039_scripted_expert"
+    cases_per_stage: 40        # screen 0-9, promotion 10-39
+    pool_seeds: {1: 4010, 2: 4011, 3: 4012}
+    control_seed: 4098         # debug-only: reproducibility control batches
+    manifests:
+      1: "config/manifests/pen_spin_stage1_development_s4010.yaml"
+      2: "config/manifests/pen_spin_stage2_development_s4011.yaml"
+      3: "config/manifests/pen_spin_stage3_development_s4012.yaml"
+    baseline: "open_loop_digit_oscillation"
+    candidate: "feedback_gait"
+    controllers: ["open_loop_digit_oscillation", "feedback_gait"]

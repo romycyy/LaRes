@@ -152,5 +152,50 @@ class TestAggregate(unittest.TestCase):
         self.assertAlmostEqual(out["paired_difference_sustained_minus_any_hit"]["mean"], -0.5)
 
 
+class TestQualification(unittest.TestCase):
+    def _cfg(self, d):
+        return {"log_dir": d, "cases_per_stage": 40, "pool_seeds": {1: 4010, 2: 4011}, "control_seed": 4098,
+                "manifests": {1: os.path.join(d, "m1.yaml"), 2: os.path.join(d, "m2.yaml")},
+                "baseline": "osc", "candidate": "gait", "controllers": ["osc", "gait"]}
+
+    def test_manifests_built_once_and_refuse_drift(self):
+        from lares.envs.isaac_pen_spin.protocols import build_qualification_manifests
+
+        with tempfile.TemporaryDirectory() as d:
+            cfg = self._cfg(d)
+            self.assertEqual(len(build_qualification_manifests(cfg)), 4)  # 2 development + 2 control
+            self.assertEqual(build_qualification_manifests(cfg), [])
+            m = EvaluationManifest.load(cfg["manifests"][1])
+            self.assertEqual(len(m), 40)
+            cfg["pool_seeds"][1] = 4013
+            with self.assertRaises(ValueError):
+                build_qualification_manifests(cfg)
+
+    def test_aggregate(self):
+        import json
+
+        from lares.envs.isaac_pen_spin.protocols import aggregate_qualification
+
+        def eps(successes):
+            return [{"sustained": bool(x), "tail_hit_fraction": 0.5, "completed": True, "mean_abs_spin": 2.0,
+                     "mean_transverse": 0.1} for x in successes]
+
+        with tempfile.TemporaryDirectory() as d:
+            cfg = self._cfg(d)
+            for st in (1, 2):
+                gait = [1] * 40 if st == 1 else [1] * 20 + [0] * 20
+                for ctrl, succ in (("osc", [0] * 40), ("gait", gait)):
+                    with open(os.path.join(d, f"stage{st}_{ctrl}.json"), "w") as f:
+                        json.dump({"episodes": eps(succ)}, f)
+            out = aggregate_qualification(cfg, d)
+        s1, s2 = out["per_stage"]["stage1"], out["per_stage"]["stage2"]
+        self.assertTrue(s1["qualifies"]["gait"])
+        self.assertFalse(s2["qualifies"]["gait"])  # promotion cases 10-39 hold 10 successes
+        self.assertEqual(s2["promotion"]["gait_successes"], 10)
+        self.assertEqual(out["pooled_promotion_pairs"], 60)
+        self.assertAlmostEqual(out["paired_success_difference"], 40 / 60)
+        self.assertTrue(s1["promotes"])
+
+
 if __name__ == "__main__":
     unittest.main()

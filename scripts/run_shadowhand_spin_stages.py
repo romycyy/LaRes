@@ -349,6 +349,23 @@ def run_research_protocol(args, cfg: SimpleNamespace) -> None:
     protocol_cfg = (getattr(cfg, "research_protocols", None) or {}).get(args.research_protocol)
     if protocol_cfg is None:
         raise SystemExit(f"{args.config} declares no research protocol {args.research_protocol!r}")
+    if args.research_protocol == protocols.SCRIPTED_EXPERT_QUALIFICATION:
+        if args.build_manifests:
+            print("wrote", protocols.build_qualification_manifests(protocol_cfg) or "nothing (all present and identical)")
+            return
+        if args.cell_manifest:
+            _ensure_isaaclab_on_path(str(cfg.isaaclab_root))
+            launch_isaac_app(headless=True, device=str(cfg.device))
+            try:
+                print("wrote", protocols.run_cell(args.cell_manifest, args.controller, args.cell_out,
+                                                  str(cfg.device), record_obs=args.record_obs))
+            finally:
+                close_isaac_app()
+            return
+        out_dir = args.log_dir or str(protocol_cfg["log_dir"])
+        summary = protocols.run_scripted_expert_qualification(protocol_cfg, args.config, out_dir)
+        print(json.dumps({k: v for k, v in summary.items() if k != "per_stage"}, indent=2))
+        return
     if args.research_protocol != protocols.EPISODE_RULE_AUDIT:
         raise SystemExit(f"unknown research protocol {args.research_protocol!r}")
     if args.build_manifests:
@@ -377,6 +394,9 @@ def main() -> None:
                         help="with --research-protocol: write the protocol's frozen manifests and exit (no Isaac)")
     parser.add_argument("--stage", type=int, default=None, help=argparse.SUPPRESS)  # protocol child process
     parser.add_argument("--controller", default=None, help=argparse.SUPPRESS)  # protocol child process
+    parser.add_argument("--cell-manifest", default=None, help=argparse.SUPPRESS)  # protocol child process
+    parser.add_argument("--cell-out", default=None, help=argparse.SUPPRESS)
+    parser.add_argument("--record-obs", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--log-dir", default=None, help="protocol output directory (default: the protocol's log_dir)")
     args = parser.parse_args()
 
