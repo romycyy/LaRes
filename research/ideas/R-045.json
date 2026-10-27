@@ -13,13 +13,7 @@
     "script": "scripts/run_full_evolution.py",
     "config": "config/pen_spin_plateau_repair.yaml",
     "command": "gpu run 'source ~/.profile >/dev/null 2>&1; nohup .venv-metaworld/bin/python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study dense_feedback_fit > logs_r045.log 2>&1 &'",
-    "seeds": [
-      4170,
-      4171,
-      4172,
-      4173,
-      4174
-    ],
+    "seeds": [],
     "manifests": [
       "config/manifests/pen_spin_stage3_dense_s4170.yaml",
       "config/manifests/pen_spin_stage3_dense_s4171.yaml",
@@ -42,7 +36,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "running",
   "source": "advisor",
   "falsified_by": "The paired interval of block-level fresh incumbent differences (dense_fit minus rollout_search) lies entirely below +0.15. An interval containing zero is no evidence of improvement; an all-zero result cannot distinguish insufficient controller capacity from ineffective fitting.",
   "cost_estimate": {
@@ -63,7 +57,12 @@
     "round": 3,
     "note": "I accept the implementer's seed-collision and matched-arm arguments; the revised protocol incorporates both, freezes the R-042 students and correctly removes new LLM calls. Reusing scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml, 1008 simulator episodes and 0 LLM calls test den"
   },
-  "run": {},
+  "run": {
+    "started_at": "2026-10-27T14:24:11",
+    "git_sha": "d5200616ef55c5b294cf7b6132e07217f2a7947a",
+    "dirty_worktree": true,
+    "log_dir": ""
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -74,6 +73,16 @@
       "from": "proposed",
       "to": "approved",
       "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-10-27T14:24:09",
+      "note": "seeds 4170-4174 recorded in config/experiment_seed_ledger.jsonl with the frozen manifests (as R-042); cleared from protocol.seeds so start does not read its own manifests as spent"
+    },
+    {
+      "at": "2026-10-27T14:24:11",
+      "from": "approved",
+      "to": "running",
+      "note": "git d5200616ef (dirty)"
     }
   ],
   "created_at": "2026-10-27T14:09:20",
