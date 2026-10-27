@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-10-27T00:51:31 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-10-27T00:54:19 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -11,19 +11,19 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 0 |
+| approved | 1 |
 | proposed | 0 |
-| deferred | 2 |
+| deferred | 1 |
 | decided | 34 |
 | rejected | 4 |
 
 ## Needs attention
 
-- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
+- **R-039** [approved] 2. Can feedback-controlled finger gaiting qualify a scripted expert?
+  - `python scripts/research.py start R-039` then run its command
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
-- R-039 2. Can feedback-controlled finger gaiting qualify a scripted expert?: This directly follows the user's scripted-expert-first instruction and separates absolute demonstration qualification from strict paired promotion. Its 240 simu
 - R-040 3. Conditional PPO fallback: does reward optimization yield a usable expert?: PPO is the appropriate fallback because the public-policy search is already negative, but R-039 must first identify unresolved stages and freeze the scripted co
 
 ## Last 5 decisions
@@ -46,9 +46,11 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
+- R-039 round 4 · advisor approve / implementer approve → agreed (approved)
+- R-039 round 3 · advisor revise / implementer revise → agreed (proposed)
+- R-039 round 2 · advisor revise / implementer revise → agreed (proposed)
 - R-040 round 1 · advisor defer / implementer defer → agreed (deferred)
 - R-039 round 1 · advisor defer / implementer defer → agreed (deferred)
-- R-038 round 1 · advisor approve / implementer approve → agreed (approved)
 
 ## Standing constraints
 

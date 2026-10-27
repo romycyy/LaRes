@@ -7,12 +7,12 @@
     "direction": "increase",
     "threshold": 0.2,
     "against": "baseline",
-    "rationale": "Baseline is the frozen open-loop oscillator from idea 1, rerun on fresh cases. A 0.20 sustained-success gain would justify contact feedback, but qualification additionally requires at least 0.90 success on each stage's 30 promotion cases."
+    "rationale": "Baseline is the frozen open-loop oscillator from R-038 (D-034), rerun on the same fresh cases in its own process per stage. Evaluated on the 90 pooled promotion pairs (cases 10-39 of each stage, equal weight) under D-034's sustained reducer; a 0.20 gain would justify contact feedback. Qualification is separate: >= 27/30 sustained successes on a stage's promotion cases."
   },
   "protocol": {
     "script": "scripts/run_shadowhand_spin_stages.py",
     "config": "config/shadowhand_spin_stages.yaml",
-    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --research-protocol scripted_expert_qualification'",
+    "command": "gpu run 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --research-protocol scripted_expert_qualification'",
     "seeds": [
       4010,
       4011,
@@ -26,28 +26,35 @@
     "episodes": 240,
     "llm_calls": 0,
     "code_changes": [
-      "Add lares/envs/isaac_pen_spin/scripted_expert.py with bounded joint-target finger gaiting, long-axis angular-velocity feedback, and pen-centre correction using audited named observation fields rather than guessed offsets.",
-      "Extend the existing script/config with scripted_expert_qualification; depend on idea 1's tested adapter and episode reducer.",
-      "Freeze controller code and constants before opening these manifests; evaluate both controllers on cases 0-9 for screening and 10-39 for promotion in each stage, with no tuning on these cases.",
-      "Use the unchanged strictly positive paired t-interval rule for any promotion claim; tied success is not improvement. Separately report whether either scripted controller qualifies as a demonstration source.",
-      "Save full observation/action traces from qualifying episodes with manifest, controller, schema, and reducer hashes; document that these demonstrate axial roll, not end-over-end twirling.",
-      "Reference the briefing's completed negative pretrained-policy search; do not repeat it or silently substitute an Allegro end-over-end policy."
+      "Add lares/envs/isaac_pen_spin/scripted_expert.py: a feedback finger gait reading named observation fields only (cases.obs_slices): roll-rate error about the pen's long axis drives gait amplitude and phase advance, and pen-centre offset from in_hand_pos drives a corrective bias on the wrist and the supporting fingers. All constants frozen and committed before any development case runs; tuning only on debug seed 4098.",
+      "Extend scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml with research protocol scripted_expert_qualification: one fresh Isaac process per (stage, controller), each batching that stage's whole 40-case manifest, action history zeroed before the first observation; the runner refuses a second rollout per process (D-034).",
+      "Reproducibility control before the reported run: the same (stage, controller) batch on debug seed 4098 in two fresh processes must be bit-identical in spin_rate and center_dist, else the run stops.",
+      "Freeze D-034's qualification reducer: time-out without a fall and the per-step predicate true on every one of the final 60 steps. Screening cases 0-9, promotion cases 10-39 per stage; a controller qualifies for a stage only with >= 27/30 promotion successes; tail-hit fraction reported diagnostically, never used to relax qualification.",
+      "Prediction is evaluated on the 90 pooled promotion pairs (equal weight per stage); each stage is reported separately, and any per-stage promotion claim needs its own strictly positive paired t lower bound. Tied success is not improvement.",
+      "Save full observation/action traces of qualifying episodes with manifest, controller, schema and reducer hashes; document that they demonstrate roll about the long axis, not end-over-end twirling. Do not repeat the pretrained-policy search or substitute an Allegro policy.",
+      "Episode accounting: 240 evaluation (seeds 4010-4012) + 480 reproducibility control (6 stage-controller cells x 40-case debug batch x 2 fresh processes, seed 4098) + a tuning allowance of at most 2400 debug-seed episodes (seed 4098 only), total <= 3120; constants frozen and committed before any evaluation case runs."
     ],
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "deferred",
+  "status": "approved",
   "source": "advisor",
   "falsified_by": "An upper paired interval bound below +0.20 rules out the predicted gain; failure to reach 0.90 sustained success means the controller does not qualify for that stage regardless of return.",
   "cost_estimate": {
-    "episodes": 240,
+    "episodes": 3120,
     "llm_calls": 0,
-    "wall_time_minutes": 100
+    "wall_time_minutes": 180
   },
   "open_question_refs": [],
   "briefing_sha256": "61ac1d4977c0af1f900cb606bf63246a49f0fc828830ccf78ba85d1d2e0066d2",
   "proposal_call_id": "call_00069",
-  "approval": {},
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-10-27T00:54:19",
+    "advisor_call_id": "call_00074",
+    "round": 4,
+    "note": "Drift-correcting finger gaiting tests whether feedback can qualify the scripted expert that D-034's open-loop oscillator did not provide, before considering PPO. I accept Claude Code's process-per-stage-controller argument and corrected budget: reuse scripts/run_shadowhand_spin_stages.py and config/"
+  },
   "run": {},
   "result": {},
   "prediction_outcome": {},
@@ -59,6 +66,18 @@
       "from": "proposed",
       "to": "deferred",
       "note": "triage round 1: both say defer"
+    },
+    {
+      "at": "2026-10-27T00:52:15",
+      "from": "deferred",
+      "to": "proposed",
+      "note": "re-triaged"
+    },
+    {
+      "at": "2026-10-27T00:54:19",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 4: both say approve"
     }
   ],
   "created_at": "2026-10-27T00:34:23",
@@ -83,11 +102,164 @@
           "at": "2026-10-27T00:35:52"
         },
         "outcome": "agreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "I accept Claude Code's argument that interface uncertainty justified waiting; D-034 now clears that dependency, making feedback gaiting the next scripted-expert test. The proposed 240 episodes and zero LLM calls are justified, but the protocol omits D-034's newly discovered process-isolation requirement and could confound feedback with simulator history. The prediction remains an increase of at least 0.20 in paired_success_difference versus the frozen open-loop oscillator, falsified by an upper paired interval bound below +0.20.",
+          "suggested_changes": [
+            "Extend scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml to launch a fresh Isaac process for each controller-stage-case rollout, using the audited adapter and clearing action history before the initial observation.",
+            "Explicitly freeze D-034's qualification reducer before evaluation: time-out without a fall and the success predicate true on every final-60 step. Require at least 27/30 promotion successes separately for each stage; report tail-hit fraction diagnostically without relaxing qualification after seeing results.",
+            "Specify whether the +0.20 prediction applies to pooled promotion pairs or separately by stage; keep any stage-specific promotion subject to its own strictly positive paired t-interval lower bound.",
+            "Retain fresh seeds 4010-4012 and the 240-episode, zero-LLM-call budget; update the wall-time estimate to include fresh-process startup overhead."
+          ],
+          "priority": 1,
+          "call_id": "call_00072",
+          "briefing_sha256": "24bf19ad4aae08ab5df2c114d68f82a6182a3ab843ef04baef2db0e42099dbb8",
+          "at": "2026-10-27T00:52:15"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree on revise and on changes 2-4: freeze D-034's sustained reducer (time-out without a fall, predicate on all final-60 steps), qualification at >= 27/30 promotion successes per stage, tail-hit fraction reported only as a diagnostic, never used to relax qualification after seeing results; the +0.20 prediction applies to the pooled promotion pairs (90 = 3 stages x 30, equal weight), with each stage reported separately and any per-stage promotion claim held to its own strictly positive paired t lower bound; seeds 4010-4012, 240 episodes, 0 calls. Amend change 1: isolate per (stage, controller) process, not per case. What D-034 measured is that the first batched rollout in a fresh process is bit-identical across processes; the irreproducibility came from a second rollout in the same process. One process per (stage, controller), with the whole manifest batched and action history zeroed (already in the runner, which refuses a second run), satisfies that. Per-case processes would cost 240 Isaac startups (~40 s each, about 2.7 h of overhead) and change batch composition, which is itself an untested variable. I will add a reproducibility control on the debug seed (4099, never a reported case): the same (stage, controller) batch in two fresh processes must be bit-identical, or the run stops.",
+          "changes_applied": [],
+          "at": "2026-10-27T00:52:33"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "Feedback gaiting is the right next scripted-expert test: paired_success_difference should increase by at least 0.20 versus the frozen D-034 oscillator, falsified by an upper paired interval bound below +0.20. I accept the implementer's process-isolation argument: one fresh process per stage-controller batch matches D-034's reproducibility finding, whereas per-case isolation adds startup cost and changes batch composition. However, debug seed 4099 is now explicitly spent, so the protocol cannot run as written. Its 240-episode estimate also excludes the mandatory reproducibility controls.",
+          "suggested_changes": [
+            "Replace every use of spent debug seed 4099 with fresh seed 4098, reserved for this protocol's debugging and reproducibility controls only; retain evaluation seeds 4010-4012.",
+            "Correct the cost estimate to 720 simulator episodes before tuning: 240 evaluation episodes plus 480 reproducibility-control episodes for six stage-controller cells, each running its 40-case debug batch in two fresh processes. Declare a finite additional tuning allowance, include it in the total episode estimate, retain zero LLM calls, and update wall time accordingly.",
+            "Retain the revised per-stage-controller process isolation, existing runner and config, frozen sustained reducer, pooled prediction, and separate per-stage qualification and promotion rules unchanged."
+          ],
+          "priority": 1,
+          "call_id": "call_00073",
+          "briefing_sha256": "e8426ed23cada910b7d1d5df8b34bd3ae4ee041f3839f3898354e391d15b6144",
+          "at": "2026-10-27T00:53:32"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree with all three changes. Seed 4099 was spent on runner development, so this protocol's tuning and reproducibility controls use fresh seed 4098 (40-case debug batches per stage, matching the evaluation batch size so batch composition is the same). Episodes: 240 evaluation + 480 reproducibility control (6 cells x 40 cases x 2 fresh processes) + a declared tuning allowance of 2400 debug-seed episodes (60 batched 40-case runs, enough to iterate the gait across three stages), total 3120, 0 LLM calls, wall time about 180 min including ~40 s Isaac startup per process. Tuning touches only seed 4098; constants are frozen and committed before seeds 4010-4012 are opened.",
+          "changes_applied": [],
+          "at": "2026-10-27T00:53:48"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 4,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "Drift-correcting finger gaiting tests whether feedback can qualify the scripted expert that D-034's open-loop oscillator did not provide, before considering PPO. I accept Claude Code's process-per-stage-controller argument and corrected budget: reuse scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml for at most 3120 episodes and zero LLM calls, using evaluation seeds 4010-4012 and debug-only seed 4098. The prediction is an increase of at least 0.20 in paired_success_difference versus the frozen D-034 oscillator on 90 pooled promotion pairs, falsified by an upper paired interval bound below +0.20; an interval including zero establishes no improvement. The weakest point remains the potentially overstrict final-60-step reducer, but freezing it, reporting tail-hit fractions diagnostically, and requiring at least 27/30 sustained successes separately per stage keeps qualification interpretable without moving the goalposts.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00074",
+          "briefing_sha256": "1c5eb8ae91648d3f8b5e2891de5359a60295ec3f65fe3c158b059c8659bba5dd",
+          "at": "2026-10-27T00:54:11"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "The revised protocol is what I argued for: per-(stage, controller) process isolation with a bit-identity control, D-034's reducer frozen before any evaluation case, qualification at >= 27/30 per stage kept separate from the pooled +0.20 paired prediction, tuning confined to seed 4098 within a declared 2400-episode allowance, and 0 LLM calls. It is the user's first-choice expert source and the gate R-040 depends on.",
+          "changes_applied": [],
+          "at": "2026-10-27T00:54:19"
+        },
+        "outcome": "agreed"
       }
     ],
-    "outcome": "defer",
-    "agreed_round": 1
+    "outcome": "approve",
+    "agreed_round": 4
   },
   "escalation": {},
-  "revisions": []
+  "revisions": [
+    {
+      "at": "2026-10-27T00:52:54",
+      "round": 2,
+      "patch": {
+        "protocol": {
+          "script": "scripts/run_shadowhand_spin_stages.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "gpu run 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --research-protocol scripted_expert_qualification'",
+          "seeds": [
+            4010,
+            4011,
+            4012
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage1_development_s4010.yaml",
+            "config/manifests/pen_spin_stage2_development_s4011.yaml",
+            "config/manifests/pen_spin_stage3_development_s4012.yaml"
+          ],
+          "episodes": 240,
+          "llm_calls": 0,
+          "code_changes": [
+            "Add lares/envs/isaac_pen_spin/scripted_expert.py: a feedback finger gait reading named observation fields only (cases.obs_slices): roll-rate error about the pen's long axis drives gait amplitude and phase advance, and pen-centre offset from in_hand_pos drives a corrective bias on the wrist and the supporting fingers. All constants frozen and committed before any development case runs; tuning only on debug seed 4099.",
+            "Extend scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml with research protocol scripted_expert_qualification: one fresh Isaac process per (stage, controller), each batching that stage's whole 40-case manifest, action history zeroed before the first observation; the runner refuses a second rollout per process (D-034).",
+            "Reproducibility control before the reported run: the same (stage, controller) batch on debug seed 4099 in two fresh processes must be bit-identical in spin_rate and center_dist, else the run stops.",
+            "Freeze D-034's qualification reducer: time-out without a fall and the per-step predicate true on every one of the final 60 steps. Screening cases 0-9, promotion cases 10-39 per stage; a controller qualifies for a stage only with >= 27/30 promotion successes; tail-hit fraction reported diagnostically, never used to relax qualification.",
+            "Prediction is evaluated on the 90 pooled promotion pairs (equal weight per stage); each stage is reported separately, and any per-stage promotion claim needs its own strictly positive paired t lower bound. Tied success is not improvement.",
+            "Save full observation/action traces of qualifying episodes with manifest, controller, schema and reducer hashes; document that they demonstrate roll about the long axis, not end-over-end twirling. Do not repeat the pretrained-policy search or substitute an Allegro policy."
+          ],
+          "needs_gpu": true,
+          "needs_llm": false
+        },
+        "prediction": {
+          "metric": "paired_success_difference",
+          "direction": "increase",
+          "threshold": 0.2,
+          "against": "baseline",
+          "rationale": "Baseline is the frozen open-loop oscillator from R-038 (D-034), rerun on the same fresh cases in its own process per stage. Evaluated on the 90 pooled promotion pairs (cases 10-39 of each stage, equal weight) under D-034's sustained reducer; a 0.20 gain would justify contact feedback. Qualification is separate: >= 27/30 sustained successes on a stage's promotion cases."
+        },
+        "cost_estimate": {
+          "episodes": 240,
+          "llm_calls": 0,
+          "wall_time_minutes": 60
+        }
+      },
+      "note": "round-2 revise: D-034 reducer frozen, 27/30 per-stage qualification, pooled 90-pair prediction with per-stage reporting, process isolation per (stage, controller) with a bit-identity control on debug seed 4099 (amended from per-case; see implementer reasoning), 40-case development manifests per stage (screen 0-9, promotion 10-39), wall time 60 min"
+    },
+    {
+      "at": "2026-10-27T00:53:50",
+      "round": 3,
+      "patch": {
+        "protocol": {
+          "script": "scripts/run_shadowhand_spin_stages.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "gpu run 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --research-protocol scripted_expert_qualification'",
+          "seeds": [
+            4010,
+            4011,
+            4012
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage1_development_s4010.yaml",
+            "config/manifests/pen_spin_stage2_development_s4011.yaml",
+            "config/manifests/pen_spin_stage3_development_s4012.yaml"
+          ],
+          "episodes": 240,
+          "llm_calls": 0,
+          "code_changes": [
+            "Add lares/envs/isaac_pen_spin/scripted_expert.py: a feedback finger gait reading named observation fields only (cases.obs_slices): roll-rate error about the pen's long axis drives gait amplitude and phase advance, and pen-centre offset from in_hand_pos drives a corrective bias on the wrist and the supporting fingers. All constants frozen and committed before any development case runs; tuning only on debug seed 4098.",
+            "Extend scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml with research protocol scripted_expert_qualification: one fresh Isaac process per (stage, controller), each batching that stage's whole 40-case manifest, action history zeroed before the first observation; the runner refuses a second rollout per process (D-034).",
+            "Reproducibility control before the reported run: the same (stage, controller) batch on debug seed 4098 in two fresh processes must be bit-identical in spin_rate and center_dist, else the run stops.",
+            "Freeze D-034's qualification reducer: time-out without a fall and the per-step predicate true on every one of the final 60 steps. Screening cases 0-9, promotion cases 10-39 per stage; a controller qualifies for a stage only with >= 27/30 promotion successes; tail-hit fraction reported diagnostically, never used to relax qualification.",
+            "Prediction is evaluated on the 90 pooled promotion pairs (equal weight per stage); each stage is reported separately, and any per-stage promotion claim needs its own strictly positive paired t lower bound. Tied success is not improvement.",
+            "Save full observation/action traces of qualifying episodes with manifest, controller, schema and reducer hashes; document that they demonstrate roll about the long axis, not end-over-end twirling. Do not repeat the pretrained-policy search or substitute an Allegro policy.",
+            "Episode accounting: 240 evaluation (seeds 4010-4012) + 480 reproducibility control (6 stage-controller cells x 40-case debug batch x 2 fresh processes, seed 4098) + a tuning allowance of at most 2400 debug-seed episodes (seed 4098 only), total <= 3120; constants frozen and committed before any evaluation case runs."
+          ],
+          "needs_gpu": true,
+          "needs_llm": false
+        },
+        "cost_estimate": {
+          "episodes": 3120,
+          "llm_calls": 0,
+          "wall_time_minutes": 180
+        }
+      },
+      "note": "round-3 revise: debug/control seed 4098 (4099 spent), episode accounting 240 eval + 480 control + <=2400 tuning = 3120, 180 min"
+    }
+  ]
 }
