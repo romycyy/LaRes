@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-10-27T10:23:31 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-10-27T14:06:32 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -10,17 +10,16 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 1 |
+| running | 0 |
 | approved | 0 |
 | proposed | 0 |
 | deferred | 1 |
-| decided | 37 |
+| decided | 38 |
 | rejected | 4 |
 
 ## Needs attention
 
-- **R-042** [running] Plateau-triggered trace repair on pen spinning: event-selected vs uniform keyframes, with a no-trace arm
-  - run the protocol, then `python scripts/research.py record R-042 --results <json>`
+- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
@@ -28,6 +27,9 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 
 ## Last 5 decisions
 
+- D-038 · R-042 · **refuted** · 2026-10-27
+  The predeclared primary, event minus uniform fresh sustained success paired over four blocks, is exactly 0.000 with a degenerate [0,0] interval; the protocol's conclusiveness rule (>=3 eligible blocks) is met with 4/4 triggers fired, and the interval excludes the predicted +0.20, so the prediction as stated is refuted. The caveat is a floor: all twelve continuation arms ended with the null incumbent, so the study cannot rank keyframe rules at any effect size it could detect and does not show trace repair is useless in general. Development evidence agrees there is no trace benefit: promotion-set successes no_trace 2/120, uniform 0/120, event 1/120; exploratory tail-hit contrasts event-uniform -0.047 [-0.195,+0.102], uniform-no_trace +0.079 [-0.088,+0.245]. Trace-arm candidates in blocks 0-1 spin while held (highest tail-hit 0.40, 0.335) but drop the pen in 28-30 of 30 promotion cases, consistent with D-037: the expert's competence is its feedback map, which 32 sparse state-action keyframes from 2 episodes do not convey to a 6-10 parameter controller. Demonstrations 10/10 and parity 0 flips, so the null is not an integration fault.
+  Next: Stage 3 is at the floor for single-step symbolic exploration; next test a dense, fitted use of the expert (e.g. parameter fitting of the edited controller to expert state-action pairs, rollout-selected) or move the repair study to Stage 1/2 where generated controllers have non-zero base rates, so a trace effect is measurable.
 - D-037 · R-041 · **supported** · 2026-10-27
   R-041 asked whether the qualified PPO pen-spin expert (D-036) needs state feedback or only a replayable gait. On 40 fresh Stage-3 cases the closed-loop expert succeeded 40/40 while a clock-only replay of its first successful demonstration (359 actions) succeeded 0/40: paired +1.000, supported. The replay dropped the pen in 30/40 episodes (steps 17-355) and the survivors passed 35% of tail steps; end-over-end rate rose from 2.8 to 4.3 rad/s. A pre-launch smoke test showed that even on its own placement the tape tracks the recording only through step 16, then drifts to failure once the batch's other environments differ. The expert's success depends on corrections; a single tape is not a sufficient demonstration. Limitation: one tape; the corrective mechanism is not identified. A smoke test also caught and fixed a tape-slicing bug (the runner stores actions case-major).
   Next: Revise R-042: Isaac backend for run_full_evolution and plateau-triggered trace repair on pen spinning, with a no-trace arm beside uniform and event-selected keyframe arms; traces must expose state-action corrections, not only action timelines.
@@ -40,9 +42,6 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 - D-034 · R-038 · **supported** · 2026-10-27
   R-038 built the first manifest-driven evaluation path for the Shadow Hand pen-spin task (frozen reset placements written into the simulator, a named 157-d observation layout, per-step traces) and audited the episode success rule the env leaves undefined. On 60 identical trajectories (3 stages x 10 probe cases x neutral hand and open-loop finger oscillator), any-hit success was 0.983 and sustained success (time-out without a fall, predicate true on all of the final 60 steps) 0.000: paired -0.983 [-1.017, -0.950], supported. Any-hit is degenerate: a neutral hand scores 1.0 because the dropped pen rolls on landing at steps 5-8, while it drops the pen in 29/30 episodes. The oscillator keeps the pen in hand to time-out in 29/30 episodes and passes 84/56/39% of tail steps (stage 1/2/3) at about 4 rad/s of roll, but never all 60, so whether 'all steps' is too strict for a periodic gait is open. Two infrastructure findings: the previous run's action leaked into the next run's observation, and a second rollout in one Isaac process is not reproducible (the first is bit-identical across processes), so protocols run one process per cell. The task rewards roll about the pen's own axis; end-over-end rotation stays below 0.8 rad/s.
   Next: Re-triage R-039 (scripted feedback gait) with the sustained rule frozen as the qualification reducer, and report tail-hit fraction beside it so a periodic gait's near-misses are visible. Open question to propose: is 'all 60 steps' too strict for any periodic gait, i.e. should the rule be a tail-fraction or mean-rate criterion? Decide it before any expert is qualified, not after.
-- D-033 · R-037 · **supported** · 2026-10-22
-  R-037 integrated plateau-triggered expert-trace repair into EvolutionOrchestrator and made run_full_evolution.py task-generic (manifests from pool seeds, expert demonstrations via EXPERT_POLICY_MAP), passing a 21-test mocked gate before any spend. Live on assembly-v2, two blocks of paired repair-on/repair-off production runs: all four runs hit the plateau trigger; with repair on, demonstrations qualified 10/10 and the trace repair became the final incumbent through the unchanged strict promotion rule (30/30 on promotion cases), scoring 30/30 on frozen fresh cases in both blocks, while every repair-off candidate scored 0/30 there (the repair-off incumbent stayed null). Paired fresh difference +1.000 in each block (n=2 blocks, degenerate interval), 1560 episodes and 8 calls, every record traceable. The real pipeline reproduces D-032 without the study-mode emulation.
-  Next: Make plateau-triggered trace repair a standard pipeline option; check the trigger stays silent and costless on non-plateau tasks; look for a second plateau task.
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 

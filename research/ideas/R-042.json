@@ -50,7 +50,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "Across the eligible plateau blocks (at least 3 of 4), the paired interval of event minus uniform fresh success has an upper bound below +0.20. Fewer than 3 eligible blocks, a failed parity gate, or an unqualified demonstration manifest makes it inconclusive.",
   "cost_estimate": {
@@ -72,12 +72,412 @@
     "started_at": "2026-10-27T10:23:31",
     "git_sha": "d3eac64808927da0998dcdd4416804732b458b33",
     "dirty_worktree": false,
-    "log_dir": ""
+    "log_dir": "",
+    "finished_at": "2026-10-27T14:05:47"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.0,
+      "paired_success_difference_ci95": [
+        0.0,
+        0.0
+      ],
+      "blocks": 4,
+      "eligible_blocks": 4,
+      "triggers_fired": 4,
+      "event_minus_uniform": {
+        "per_block": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "n": 4,
+        "mean": 0.0,
+        "se": 0.0,
+        "low": 0.0,
+        "high": 0.0,
+        "p_value": 1.0
+      },
+      "uniform_minus_no_trace": {
+        "per_block": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "n": 4,
+        "mean": 0.0,
+        "se": 0.0,
+        "low": 0.0,
+        "high": 0.0,
+        "p_value": 1.0
+      },
+      "event_minus_no_trace": {
+        "per_block": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "n": 4,
+        "mean": 0.0,
+        "se": 0.0,
+        "low": 0.0,
+        "high": 0.0,
+        "p_value": 1.0
+      },
+      "fresh_success": {
+        "no_trace": {
+          "successes": 0,
+          "cases": 120,
+          "episodes_run": 0,
+          "final_incumbents": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "uniform": {
+          "successes": 0,
+          "cases": 120,
+          "episodes_run": 0,
+          "final_incumbents": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        "event": {
+          "successes": 0,
+          "cases": 120,
+          "episodes_run": 0,
+          "final_incumbents": [
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      },
+      "per_arm_development": {
+        "no_trace": {
+          "promotion_successes": 2,
+          "promotion_cases": 120,
+          "screen_successes": 1,
+          "screen_cases": 40,
+          "promotion_tail_hit_mean_per_block": [
+            0.214,
+            0.194,
+            0.182,
+            0.191
+          ],
+          "promotion_tail_hit_mean": 0.195,
+          "promotion_failure_labels": {
+            "dropped": 66,
+            "null": 2,
+            "off_centre": 32,
+            "slow_spin": 20
+          },
+          "promoted_blocks": 0,
+          "llm_calls_per_block": [
+            2,
+            2,
+            3,
+            3
+          ],
+          "llm_tokens_per_block": [
+            28342,
+            22196,
+            40280,
+            43149
+          ]
+        },
+        "uniform": {
+          "promotion_successes": 0,
+          "promotion_cases": 120,
+          "screen_successes": 0,
+          "screen_cases": 40,
+          "promotion_tail_hit_mean_per_block": [
+            0.4,
+            0.335,
+            0.137,
+            0.223
+          ],
+          "promotion_tail_hit_mean": 0.274,
+          "promotion_failure_labels": {
+            "dropped": 92,
+            "slow_spin": 9,
+            "off_centre": 19
+          },
+          "promoted_blocks": 0,
+          "llm_calls_per_block": [
+            2,
+            2,
+            2,
+            3
+          ],
+          "llm_tokens_per_block": [
+            47553,
+            38649,
+            50509,
+            82787
+          ]
+        },
+        "event": {
+          "promotion_successes": 1,
+          "promotion_cases": 120,
+          "screen_successes": 1,
+          "screen_cases": 40,
+          "promotion_tail_hit_mean_per_block": [
+            0.376,
+            0.217,
+            0.213,
+            0.102
+          ],
+          "promotion_tail_hit_mean": 0.227,
+          "promotion_failure_labels": {
+            "dropped": 69,
+            "off_centre": 26,
+            "slow_spin": 24,
+            "null": 1
+          },
+          "promoted_blocks": 0,
+          "llm_calls_per_block": [
+            2,
+            2,
+            3,
+            2
+          ],
+          "llm_tokens_per_block": [
+            51377,
+            41155,
+            74630,
+            45004
+          ]
+        },
+        "prefix": {
+          "promotion_successes": 0,
+          "promotion_cases": 120,
+          "screen_successes": 0,
+          "screen_cases": 40,
+          "promotion_tail_hit_mean_per_block": [
+            0.293,
+            0.095,
+            0.29,
+            0.107
+          ],
+          "promotion_tail_hit_mean": 0.196,
+          "promotion_failure_labels": {
+            "dropped": 65,
+            "off_centre": 32,
+            "slow_spin": 23
+          },
+          "promoted_blocks": 0,
+          "llm_calls_per_block": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "llm_tokens_per_block": [
+            17774,
+            11041,
+            11612,
+            14043
+          ]
+        }
+      },
+      "exploratory_tail_hit_contrasts_promotion_set": {
+        "event_minus_uniform": {
+          "per_block": [
+            -0.024,
+            -0.118,
+            0.076,
+            -0.121
+          ],
+          "mean": -0.0468,
+          "se": 0.0467,
+          "ci95": [
+            -0.1954,
+            0.1019
+          ]
+        },
+        "uniform_minus_no_trace": {
+          "per_block": [
+            0.186,
+            0.141,
+            -0.045,
+            0.032
+          ],
+          "mean": 0.0785,
+          "se": 0.0523,
+          "ci95": [
+            -0.0881,
+            0.2451
+          ]
+        },
+        "event_minus_no_trace": {
+          "per_block": [
+            0.162,
+            0.023,
+            0.031,
+            -0.089
+          ],
+          "mean": 0.0318,
+          "se": 0.0513,
+          "ci95": [
+            -0.1316,
+            0.1951
+          ]
+        }
+      },
+      "demonstrations": {
+        "successes": 10,
+        "episodes": 10,
+        "qualified": true,
+        "traces_case_ids": [
+          "demo-0000",
+          "demo-0001"
+        ]
+      },
+      "parity": {
+        "batch4": {
+          "batch": 4,
+          "sustained_outcome_flips": 0,
+          "diverged_envs": 0,
+          "max_diverged_envs": 0,
+          "passes": true,
+          "successes": [
+            4,
+            4
+          ]
+        },
+        "batch10": {
+          "batch": 10,
+          "sustained_outcome_flips": 0,
+          "diverged_envs": 0,
+          "max_diverged_envs": 1,
+          "passes": true,
+          "successes": [
+            10,
+            10
+          ]
+        },
+        "batch30": {
+          "batch": 30,
+          "sustained_outcome_flips": 0,
+          "diverged_envs": 0,
+          "max_diverged_envs": 3,
+          "passes": true,
+          "successes": [
+            30,
+            30
+          ]
+        },
+        "passes": true,
+        "episodes": 88
+      },
+      "accounting": {
+        "llm_calls": 20,
+        "llm_tokens": 456691,
+        "note": "unique calls/tokens: the four prefix calls (tokens 17774, 11041, 11612, 14043) are copied into each arm's ledger and counted once here; per-arm lists in per_arm_development include the copied prefix call",
+        "episodes_per_arm_block": {
+          "no_trace": 146,
+          "uniform": 156,
+          "event": 156
+        },
+        "parity_episodes": 88,
+        "demonstration_episodes": 10,
+        "fresh_episodes": 0
+      }
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "baseline": "uniform-keyframe plateau-triggered repair arm (same prefix copy, same two expert traces demo-0000/demo-0001, same fields and 16 keyframes per trace), fresh 30-case sustained success per block; secondary control the no-trace arm (one more searched single-phase exploration)",
+      "parity_gate": {
+        "passes": true,
+        "sustained_outcome_flips": 0,
+        "diverged_envs": 0
+      }
+    },
+    "artifacts": [
+      "logs/pen_spin/r042_keyframe_repair/summary.json",
+      "logs/pen_spin/r042_keyframe_repair/parity.json",
+      "logs/pen_spin/r042_keyframe_repair/demonstrations.json",
+      "logs/pen_spin/r042_keyframe_repair/block0/no_trace/gen_0/plateau_repair_no_trace.json",
+      "logs/pen_spin/r042_keyframe_repair/block0/uniform/gen_0/plateau_repair_uniform.json",
+      "logs/pen_spin/r042_keyframe_repair/block0/event/gen_0/plateau_repair_event.json",
+      "logs/pen_spin/r042_keyframe_repair/block1/no_trace/gen_0/plateau_repair_no_trace.json",
+      "logs/pen_spin/r042_keyframe_repair/block1/uniform/gen_0/plateau_repair_uniform.json",
+      "logs/pen_spin/r042_keyframe_repair/block1/event/gen_0/plateau_repair_event.json",
+      "logs/pen_spin/r042_keyframe_repair/block2/no_trace/gen_0/plateau_repair_no_trace.json",
+      "logs/pen_spin/r042_keyframe_repair/block2/uniform/gen_0/plateau_repair_uniform.json",
+      "logs/pen_spin/r042_keyframe_repair/block2/event/gen_0/plateau_repair_event.json",
+      "logs/pen_spin/r042_keyframe_repair/block3/no_trace/gen_0/plateau_repair_no_trace.json",
+      "logs/pen_spin/r042_keyframe_repair/block3/uniform/gen_0/plateau_repair_uniform.json",
+      "logs/pen_spin/r042_keyframe_repair/block3/event/gen_0/plateau_repair_event.json",
+      "logs/pen_spin/r042_keyframe_repair/block0/uniform/gen_0/repair_request_uniform.txt",
+      "logs/pen_spin/r042_keyframe_repair/block0/event/gen_0/repair_request_event.txt",
+      "logs/pen_spin/r042_keyframe_repair/block1/uniform/gen_0/repair_request_uniform.txt",
+      "logs/pen_spin/r042_keyframe_repair/block1/event/gen_0/repair_request_event.txt",
+      "logs/pen_spin/r042_keyframe_repair/block2/uniform/gen_0/repair_request_uniform.txt",
+      "logs/pen_spin/r042_keyframe_repair/block2/event/gen_0/repair_request_event.txt",
+      "logs/pen_spin/r042_keyframe_repair/block3/uniform/gen_0/repair_request_uniform.txt",
+      "logs/pen_spin/r042_keyframe_repair/block3/event/gen_0/repair_request_event.txt",
+      "logs/pen_spin/r042_keyframe_repair/block0/no_trace/fresh_evaluation.json",
+      "logs/pen_spin/r042_keyframe_repair/block0/uniform/fresh_evaluation.json",
+      "logs/pen_spin/r042_keyframe_repair/block0/event/fresh_evaluation.json",
+      "logs/pen_spin/r042_keyframe_repair/block1/no_trace/fresh_evaluation.json",
+      "logs/pen_spin/r042_keyframe_repair/block1/uniform/fresh_evaluation.json",
+      "logs/pen_spin/r042_keyframe_repair/block1/event/fresh_evaluation.json",
+      "logs/pen_spin/r042_keyframe_repair/block2/no_trace/fresh_evaluation.json",
+      "logs/pen_spin/r042_keyframe_repair/block2/uniform/fresh_evaluation.json",
+      "logs/pen_spin/r042_keyframe_repair/block2/event/fresh_evaluation.json",
+      "logs/pen_spin/r042_keyframe_repair/block3/no_trace/fresh_evaluation.json",
+      "logs/pen_spin/r042_keyframe_repair/block3/uniform/fresh_evaluation.json",
+      "logs/pen_spin/r042_keyframe_repair/block3/event/fresh_evaluation.json"
+    ],
+    "notes": "Floor result. All four blocks fired the plateau trigger (0/4 probe successes on all 24 prefix search settings, no promotion) and all twelve continuation arms ended with the null incumbent, so every fresh score is 0 by definition (no fresh episode run) and every contrast, primary event-uniform and both secondary, is exactly 0.000 [0,0]. The prediction (event-uniform >= +0.20) is not met; with all arms at the floor the experiment cannot rank the keyframe rules. Development evidence: promotion-set sustained successes no_trace 2/120 (block 0, 0.067), uniform 0/120, event 1/120 (block 3); screen successes no_trace 1/40, uniform 0/40, event 1/40. Dropping the pen dominates trace-arm failures in blocks 0-1 (uniform 30/30 and 28/30 dropped) while those candidates have the highest tail-hit fractions (0.40, 0.335): they spin while they hold, then lose the pen. Exploratory promotion-set tail-hit contrasts are not significant. Demonstrations 10/10; parity 0 flips at batches 4/10/30. Trace arms cost about 2.5-3x the tokens of the no-trace arm for one call (the 31k-char request). The two expert traces carry 20-d joint targets at 16 keyframes, which a symbolic controller of 6-10 parameters cannot reproduce; the expert's success is in its feedback map (D-037), which keyframes sample sparsely."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 0.0,
+    "delta": 0.0,
+    "matched": false
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.7,
+      "reasoning": "The predeclared primary, event minus uniform fresh sustained success paired over four blocks, is exactly 0.000 with a degenerate [0,0] interval; the protocol's conclusiveness rule (>=3 eligible blocks) is met with 4/4 triggers fired, and the interval excludes the predicted +0.20, so the prediction as stated is refuted. The caveat is a floor: all twelve continuation arms ended with the null incumbent, so the study cannot rank keyframe rules at any effect size it could detect and does not show trace repair is useless in general. Development evidence agrees there is no trace benefit: promotion-set successes no_trace 2/120, uniform 0/120, event 1/120; exploratory tail-hit contrasts event-uniform -0.047 [-0.195,+0.102], uniform-no_trace +0.079 [-0.088,+0.245]. Trace-arm candidates in blocks 0-1 spin while held (highest tail-hit 0.40, 0.335) but drop the pen in 28-30 of 30 promotion cases, consistent with D-037: the expert's competence is its feedback map, which 32 sparse state-action keyframes from 2 episodes do not convey to a 6-10 parameter controller. Demonstrations 10/10 and parity 0 flips, so the null is not an integration fault.",
+      "cited_artifacts": [
+        "D-033",
+        "D-036",
+        "D-037"
+      ],
+      "next_experiment": "Stage 3 is at the floor for single-step symbolic exploration; next test a dense, fitted use of the expert (e.g. parameter fitting of the edited controller to expert state-action pairs, rollout-selected) or move the repair study to Stage 1/2 where generated controllers have non-zero base rates, so a trace effect is measurable.",
+      "recorded_at": "2026-10-27T14:06:03",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "All four blocks were eligible, the parity gate passed, and demonstrations qualified at 10/10 sustained successes [logs/pen_spin/r042_keyframe_repair/summary.json]. The primary event-minus-uniform paired_success_difference was 0.000 with reported 95% interval [0.000, 0.000], whose upper bound is below the predeclared +0.20 falsification threshold [logs/pen_spin/r042_keyframe_repair/summary.json]. Every arm retained a null incumbent, so fresh success was assigned zero under the approved null-incumbent convention, with no fresh simulator episodes; the named uniform control was therefore accounted for rather than missing [logs/pen_spin/r042_keyframe_repair/summary.json]. This refutes the predicted final-incumbent improvement under this protocol, but the shared floor does not establish equivalence of the keyframe rules or distinguish their mechanisms [logs/pen_spin/r042_keyframe_repair/summary.json]. Secondary success contrasts also tied, and every exploratory tail-hit contrast interval included zero, providing no evidence of a trace-repair advantage [logs/pen_spin/r042_keyframe_repair/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r042_keyframe_repair/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-27T14:06:26",
+      "call_id": "call_00086"
+    }
+  ],
+  "decision_id": "D-038",
   "history": [
     {
       "at": "2026-10-27T09:51:20",
@@ -96,6 +496,18 @@
       "from": "approved",
       "to": "running",
       "note": "git d3eac64808"
+    },
+    {
+      "at": "2026-10-27T14:05:47",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=False"
+    },
+    {
+      "at": "2026-10-27T14:06:32",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-038: refuted"
     }
   ],
   "created_at": "2026-10-27T09:34:57",

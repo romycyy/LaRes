@@ -515,6 +515,9 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   then per block a prefix run that stops at the plateau trigger (`plateau_fork={"phase": "prefix"}`). Three
   continuation arms then run in copies of it (`no_trace`, `uniform`, `event`; keyframes in
   `lares/repair/pen_spin_traces.py`), followed by fresh evaluation. Mocked gate: `tests/test_pen_spin_pipeline.py`.
+- **R-042 result (D-038, refuted).** Stage 3 is a floor for this pipeline: the trigger fired in 4/4 blocks and all twelve
+  continuation arms (no_trace, uniform, event) kept the null incumbent, so every contrast is exactly 0. Trace-arm
+  candidates spin while held but mostly drop the pen. A trace study here needs a non-zero base rate first.
 - **Code extraction.** Generated code keeps only the class, so module-level constants in a reply are dropped.
 
 **Isaac Lab ShadowHandSpin.** A second, parallel stack merged in from the Isaac branch:
