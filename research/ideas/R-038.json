@@ -31,7 +31,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "A paired interval entirely above a sustained-minus-any-hit difference of -0.20 rules out the predicted reduction on these diagnostic controllers; an interval containing zero is inconclusive about a directional difference.",
   "cost_estimate": {
@@ -49,11 +49,150 @@
     "round": 1,
     "note": "This establishes a reproducible Isaac evaluation path and measures how much episode qualification changes when transient hits no longer suffice. Reusing identical trajectories for both reducers gives high information value for 60 simulator episodes and zero LLM calls. Its weakest point is that neutr"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-10-27T00:47:37",
+    "git_sha": "d8cbfa35d4f2f6b985ee7cf5a02175d11d46272e",
+    "dirty_worktree": false,
+    "log_dir": "logs/pen_spin/r038_episode_rule_audit",
+    "finished_at": "2026-10-27T00:50:24"
+  },
+  "result": {
+    "metrics": {
+      "success_rate": 0.0,
+      "success_rate_any_hit": 0.9833333333333333,
+      "success_rate_sustained": 0.0,
+      "paired_difference_sustained_minus_any_hit": -0.9833333333333333,
+      "paired_difference_ci95": [
+        -1.0166832563014712,
+        -0.9499834103651955
+      ],
+      "episodes": 60,
+      "llm_calls": 0,
+      "per_stage_controller": {
+        "stage1/neutral_pose": {
+          "any_hit_rate": 1.0,
+          "sustained_rate": 0.0,
+          "completed_rate": 0.0,
+          "mean_length": 67.1,
+          "mean_tail_hit_fraction": 0.6078331328679392,
+          "mean_abs_spin": 11.339570045471191,
+          "mean_transverse": 1.7387796968221665
+        },
+        "stage1/open_loop_digit_oscillation": {
+          "any_hit_rate": 1.0,
+          "sustained_rate": 0.0,
+          "completed_rate": 1.0,
+          "mean_length": 359.0,
+          "mean_tail_hit_fraction": 0.8400000000000001,
+          "mean_abs_spin": 3.872316098213196,
+          "mean_transverse": 0.44259398579597475
+        },
+        "stage2/neutral_pose": {
+          "any_hit_rate": 1.0,
+          "sustained_rate": 0.0,
+          "completed_rate": 0.0,
+          "mean_length": 87.2,
+          "mean_tail_hit_fraction": 0.6109787798408488,
+          "mean_abs_spin": 10.12760033607483,
+          "mean_transverse": 1.6471677124500275
+        },
+        "stage2/open_loop_digit_oscillation": {
+          "any_hit_rate": 1.0,
+          "sustained_rate": 0.0,
+          "completed_rate": 1.0,
+          "mean_length": 359.0,
+          "mean_tail_hit_fraction": 0.5633333333333334,
+          "mean_abs_spin": 4.306938505172729,
+          "mean_transverse": 0.3596875831484795
+        },
+        "stage3/neutral_pose": {
+          "any_hit_rate": 0.9,
+          "sustained_rate": 0.0,
+          "completed_rate": 0.1,
+          "mean_length": 108.9,
+          "mean_tail_hit_fraction": 0.39016822560379727,
+          "mean_abs_spin": 9.136602059006691,
+          "mean_transverse": 1.1046076148748398
+        },
+        "stage3/open_loop_digit_oscillation": {
+          "any_hit_rate": 1.0,
+          "sustained_rate": 0.0,
+          "completed_rate": 0.9,
+          "mean_length": 328.1,
+          "mean_tail_hit_fraction": 0.38666666666666666,
+          "mean_abs_spin": 4.160055983066559,
+          "mean_transverse": 0.7201119571924209
+        }
+      },
+      "neutral_pose_first_hit_step_median": 7
+    },
+    "controls": {
+      "baseline": "any_hit reducer on identical trajectories (same 60 episodes, offline)",
+      "controllers": "neutral_pose (default joint targets) and open_loop_digit_oscillation (amp 0.35, 1.5 Hz, staggered phases), frozen in lares/envs/isaac_pen_spin/controllers.py before the probe cases ran",
+      "manifests": [
+        "config/manifests/pen_spin_stage1_probe_s4000.yaml",
+        "config/manifests/pen_spin_stage2_probe_s4001.yaml",
+        "config/manifests/pen_spin_stage3_probe_s4002.yaml"
+      ],
+      "reproducibility": "one rollout per process; a first rollout is bit-identical across fresh processes (debug seed 4099), a second rollout in the same process is not",
+      "success_rate": 0.9833333333333333
+    },
+    "artifacts": [
+      "logs/pen_spin/r038_episode_rule_audit/stage1_neutral_pose.json",
+      "logs/pen_spin/r038_episode_rule_audit/stage1_open_loop_digit_oscillation.json",
+      "logs/pen_spin/r038_episode_rule_audit/stage2_neutral_pose.json",
+      "logs/pen_spin/r038_episode_rule_audit/stage2_open_loop_digit_oscillation.json",
+      "logs/pen_spin/r038_episode_rule_audit/stage3_neutral_pose.json",
+      "logs/pen_spin/r038_episode_rule_audit/stage3_open_loop_digit_oscillation.json",
+      "logs/pen_spin/r038_episode_rule_audit/summary.json",
+      "logs/pen_spin/r038_episode_rule_audit/trace_stage1_neutral_pose.npz",
+      "logs/pen_spin/r038_episode_rule_audit/trace_stage1_open_loop_digit_oscillation.npz",
+      "logs/pen_spin/r038_episode_rule_audit/trace_stage2_neutral_pose.npz",
+      "logs/pen_spin/r038_episode_rule_audit/trace_stage2_open_loop_digit_oscillation.npz",
+      "logs/pen_spin/r038_episode_rule_audit/trace_stage3_neutral_pose.npz",
+      "logs/pen_spin/r038_episode_rule_audit/trace_stage3_open_loop_digit_oscillation.npz",
+      "logs/pen_spin/r038_episode_rule_audit/run.log"
+    ],
+    "notes": [
+      "Prediction (sustained lowers success by >= 0.20 vs any-hit) holds: -0.983, t interval [-1.017, -0.950], n=60 pooled with equal weight per stage (20 episodes each).",
+      "Any-hit is degenerate: the neutral hand that holds nothing scores 1.0/1.0/0.9 per stage, its first hit at steps 5-8 as the dropped pen lands and rolls (max |spin| up to 75 rad/s), and it drops the pen in 29/30 episodes (completed 0.0/0.0/0.1).",
+      "The open-loop oscillator keeps the pen in hand to time-out in 10/10, 10/10 and 9/10 episodes and satisfies the per-step predicate on 84%/56%/39% of the final 60 steps (stage 1/2/3) with mean |roll| about 4 rad/s, but never on all 60, so sustained success is 0 everywhere. A rolling pen driven by a sinusoid passes through low spin twice per cycle; whether 'all 60 steps' is too strict for a periodic gait is an open design question for R-039 (a tail-fraction rule would score this oscillator very differently).",
+      "Transverse (end-over-end) angular speed stays small (0.36-0.72 rad/s mean under the oscillator): the task measures and rewards roll about the long axis only.",
+      "Excursions from protocol.code_changes: the smoke script gained --research-protocol/--build-manifests/--stage/--controller; a runner bug (previous run's action leaking into last_action) and in-process non-reproducibility were found and fixed before the probe run; both on debug seed 4099."
+    ]
+  },
+  "prediction_outcome": {
+    "metric": "success_rate",
+    "before": 0.9833333333333333,
+    "after": 0.0,
+    "delta": -0.9833333333333333,
+    "matched": true
+  },
+  "verdicts": [
+    {
+      "source": "advisor",
+      "verdict": "supported",
+      "confidence": 0.99,
+      "reasoning": "The named any-hit baseline was measured on identical trajectories: success fell from 0.9833 to 0.0000 under sustained scoring across 60 episodes [logs/pen_spin/r038_episode_rule_audit/summary.json]. The paired sustained-minus-any-hit difference was -0.9833, with reported 95% interval [-1.0167, -0.9500], entirely below the predicted -0.20 threshold [logs/pen_spin/r038_episode_rule_audit/summary.json]. Although the interval extends below the feasible difference bound, its upper endpoint strongly supports the preregistered reduction [logs/pen_spin/r038_episode_rule_audit/summary.json]. This establishes sensitivity to the episode reducer on these diagnostic controllers, not that the sustained rule is a validated definition of expert-quality rotation [logs/pen_spin/r038_episode_rule_audit/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r038_episode_rule_audit/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-27T00:51:16",
+      "call_id": "call_00071"
+    },
+    {
+      "source": "implementer",
+      "verdict": "supported",
+      "confidence": 0.95,
+      "reasoning": "On the identical 60 trajectories, sustained success is 0.000 against any-hit 0.983: paired difference -0.983, t interval [-1.017, -0.950], far beyond the predicted 0.20 drop. The mechanism is visible directly: a neutral hand that holds nothing scores any-hit 1.0/1.0/0.9 per stage, with first hits at steps 5-8 as the dropped pen lands and rolls, while dropping the pen in 29/30 episodes. Any-hit cannot serve as the qualification rule. Caveat agreed in triage: this validates that any-hit is degenerate, not that 'all of the final 60 steps' is the right rule. The open-loop oscillator holds the pen to time-out in 29/30 episodes with 84/56/39% of tail steps passing, yet scores 0 under sustained because a sinusoidal gait dips below threshold twice per cycle. (Recorded after the advisor's analyse call because my first verdict call failed on a non-numeric confidence; the reasoning was written before reading it.)",
+      "cited_artifacts": [],
+      "next_experiment": "Re-triage R-039 (scripted feedback gait) with the sustained rule frozen as the qualification reducer, and report tail-hit fraction beside it so a periodic gait's near-misses are visible. Open question to propose: is 'all 60 steps' too strict for any periodic gait, i.e. should the rule be a tail-fraction or mean-rate criterion? Decide it before any expert is qualified, not after.",
+      "recorded_at": "2026-10-27T00:51:30",
+      "call_id": ""
+    }
+  ],
+  "decision_id": "D-034",
   "history": [
     {
       "at": "2026-10-27T00:35:50",
@@ -66,6 +205,30 @@
       "from": "approved",
       "to": "approved",
       "note": "pre-launch reconciliation (R-037 precedent, call_00066 option A): seeds 4000-4002 were reserved in the ledger and the three probe manifests frozen and committed (commit 'R-038: pen-spin manifests, batched runner...') before any probe-case rollout, so protocol.seeds is empty and protocol.manifests names the frozen files; command quoting fixed for gpu run. Implementation: the driver runs one child process per (stage, controller) because a second rollout in one Isaac process is not reproducible (measured on debug seed 4099 only)."
+    },
+    {
+      "at": "2026-10-27T00:47:37",
+      "from": "approved",
+      "to": "running",
+      "note": "git d8cbfa35d4"
+    },
+    {
+      "at": "2026-10-27T00:50:24",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-10-27T00:50:47",
+      "from": "analysed",
+      "to": "analysed",
+      "note": "result re-recorded with controls.success_rate = any-hit rate on the identical trajectories (the baseline the prediction names); first record omitted it, leaving matched=None"
+    },
+    {
+      "at": "2026-10-27T00:51:31",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-034: supported"
     }
   ],
   "created_at": "2026-10-27T00:34:23",
