@@ -176,8 +176,10 @@ def run_cell(manifest_path: str, controller: str, out_path: str, device: str, re
     from lares.utils.hashing import sha256_file
 
     manifest = EvaluationManifest.load(manifest_path)
-    ctrl = controller_factory(controller)
+    ctrl = controller_factory(controller) if isinstance(controller, str) else controller
     runner = PenSpinBatchRunner(cases.stage_of(manifest), len(manifest), device=device)
+    if hasattr(ctrl, "attach"):  # a learned policy built against the live env's spaces
+        ctrl.attach(runner.env)
     try:
         trace = runner.run(manifest, ctrl, record_obs=record_obs)
     finally:
@@ -187,7 +189,7 @@ def run_cell(manifest_path: str, controller: str, out_path: str, device: str, re
         keys += ["obs", "actions"]
     np.savez_compressed(out_path.replace(".json", ".npz"), **{k: trace[k] for k in keys})
     result = {
-        "stage": cases.stage_of(manifest), "controller": controller, "manifest_id": manifest.manifest_id,
+        "stage": cases.stage_of(manifest), "controller": ctrl.name, "manifest_id": manifest.manifest_id,
         "manifest_path": manifest_path, "manifest_sha256": sha256_file(manifest_path),
         "controller_params": getattr(ctrl, "params", None),
         "reducer": "sustained: time-out without a fall and the per-step predicate on all final "

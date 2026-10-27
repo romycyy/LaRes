@@ -13,13 +13,7 @@
     "script": "scripts/isaac/train_pen_spin_expert.py",
     "config": "config/shadowhand_spin_stages.yaml",
     "command": "gpu run 'source ~/IsaacLab/source_env.sh && python scripts/isaac/train_pen_spin_expert.py --config config/shadowhand_spin_stages.yaml --research-protocol ppo_expert'",
-    "seeds": [
-      4020,
-      4030,
-      4031,
-      4032,
-      4097
-    ],
+    "seeds": [],
     "manifests": [
       "config/manifests/pen_spin_stage1_promotion_s4030.yaml",
       "config/manifests/pen_spin_stage2_promotion_s4031.yaml",
@@ -79,6 +73,12 @@
       "from": "proposed",
       "to": "approved",
       "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-10-27T01:28:18",
+      "from": "approved",
+      "to": "approved",
+      "note": "pre-launch reconciliation (R-037 precedent): seeds 4020 (training), 4030-4032 (promotion manifests, frozen and committed) and 4097 (debug-only diagnostics/gate) reserved in the ledger before any promotion-case rollout, so protocol.seeds is empty and protocol.manifests names the frozen files. A smoke test of the full chain ran at 256 envs, 6 iterations, with 'promotion' manifests rebuilt from debug seed 4097 in /tmp, so no promotion case was opened. Runner setting: clip_actions = 1.0 so the observed last_action matches the evaluator's clamped action."
     }
   ],
   "created_at": "2026-10-27T00:34:23",

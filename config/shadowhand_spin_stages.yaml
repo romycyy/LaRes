@@ -51,3 +51,19 @@ research_protocols:
     baseline: "open_loop_digit_oscillation"
     candidate: "feedback_gait"
     controllers: ["open_loop_digit_oscillation", "feedback_gait"]
+  # R-040: one PPO expert trained on Stage 3 (predicates nest), scored on all stages vs the frozen R-039 gait.
+  ppo_expert:
+    log_dir: "logs/pen_spin/r040_ppo_expert"
+    training_seed: 4020
+    max_transitions: 1080000000
+    num_steps_per_env: 16      # ShadowHandSpinPPORunnerCfg
+    gate_env_counts: [2048, 4096, 8192]
+    gate_iterations: 20
+    debug_seed: 4097           # checkpoint diagnostics and the reproducibility gate only
+    debug_cases: 40
+    promotion_cases: 30
+    promotion_seeds: {1: 4030, 2: 4031, 3: 4032}
+    manifests:
+      1: "config/manifests/pen_spin_stage1_promotion_s4030.yaml"
+      2: "config/manifests/pen_spin_stage2_promotion_s4031.yaml"
+      3: "config/manifests/pen_spin_stage3_promotion_s4032.yaml"
