@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-10-27T09:47:38 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-10-27T09:51:21 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -11,16 +11,16 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 0 |
-| proposed | 1 |
+| approved | 1 |
+| proposed | 0 |
 | deferred | 1 |
 | decided | 37 |
 | rejected | 4 |
 
 ## Needs attention
 
-- **R-042** [proposed] Event-selected expert keyframes for plateau-triggered trace repair
-  - round 1 closed without a final agreement; next round: `python scripts/research.py triage R-042`
+- **R-042** [approved] Plateau-triggered trace repair on pen spinning: event-selected vs uniform keyframes, with a no-trace arm
+  - `python scripts/research.py start R-042` then run its command
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
@@ -46,11 +46,11 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
+- R-042 round 3 · advisor approve / implementer approve → agreed (approved)
+- R-042 round 2 · advisor revise / implementer revise → agreed (proposed)
 - R-042 round 1 · advisor revise / implementer revise → agreed (proposed)
 - R-043 round 1 · advisor defer / implementer defer → agreed (deferred)
 - R-041 round 1 · advisor approve / implementer approve → agreed (approved)
-- R-040 round 3 · advisor approve / implementer approve → agreed (approved)
-- R-040 round 2 · advisor revise / implementer revise → agreed (proposed)
 
 ## Standing constraints
 

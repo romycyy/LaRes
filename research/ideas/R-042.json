@@ -1,18 +1,18 @@
 {
   "id": "R-042",
-  "title": "Event-selected expert keyframes for plateau-triggered trace repair",
-  "hypothesis": "At a fixed trace-token budget, keyframes concentrated around changes in expert actions and pen motion teach corrective feedback better than uniformly spaced samples of continuous spinning.",
+  "title": "Plateau-triggered trace repair on pen spinning: event-selected vs uniform keyframes, with a no-trace arm",
+  "hypothesis": "On Stage-3 pen spinning, where the expert succeeds only through state feedback (D-037), keyframes concentrated around changes in expert actions and pen angular velocity teach a whole-controller edit corrective structure better than uniformly spaced keyframes of the same traces at equal context; both trace arms are also scored against a no-trace continuation so the keyframe contrast is interpretable.",
   "prediction": {
     "metric": "paired_success_difference",
     "direction": "increase",
     "threshold": 0.2,
-    "against": "uniform-keyframe plateau-triggered repair",
-    "rationale": "Require a mean fresh-manifest gain of at least 0.20 and a paired t interval above zero across four parent blocks; this tests trace selection, not the already-established trace-versus-summary effect."
+    "against": "uniform-keyframe plateau-triggered repair (same prefix, traces, fields and keyframe count)",
+    "rationale": "Primary: event arm minus uniform arm, fresh 30-case sustained success of each arm's final incumbent, paired by block over four blocks; mean >= +0.20 with a paired t interval above zero. Secondary, reported but not the prediction: each trace arm minus the no-trace arm, the pen-spin transfer of D-033."
   },
   "protocol": {
     "script": "scripts/run_full_evolution.py",
-    "config": "config/shadowhand_spin_stages.yaml",
-    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_full_evolution.py --config config/shadowhand_spin_stages.yaml --study event_keyframe_repair\"'",
+    "config": "config/pen_spin_plateau_repair.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study keyframe_repair\"'",
     "seeds": [
       4120,
       4121,
@@ -30,7 +30,8 @@
       4133,
       4134,
       4135,
-      4136
+      4136,
+      4137
     ],
     "manifests": [
       "config/manifests/pen_spin_stage3_demo_s4124.yaml",
@@ -45,42 +46,60 @@
       "config/manifests/pen_spin_stage3_fresh_s4133.yaml",
       "config/manifests/pen_spin_stage3_fresh_s4134.yaml",
       "config/manifests/pen_spin_stage3_fresh_s4135.yaml",
-      "config/manifests/pen_spin_stage3_fresh_s4136.yaml"
+      "config/manifests/pen_spin_stage3_fresh_s4136.yaml",
+      "config/manifests/pen_spin_stage3_parity_s4137.yaml"
     ],
-    "episodes": 1162,
-    "llm_calls": 24,
+    "episodes": 2794,
+    "llm_calls": 32,
     "code_changes": [
-      "scripts/run_full_evolution.py: add the paired study selector, Isaac task dispatch, expert-checkpoint loading, and immutable trace-packet provenance; keep bc_steps=0.",
-      "lares/isaac_pipeline_adapter.py: add the missing Isaac backend for manifests, named 157-d observations, normalized 20-d actions, episode records, and the frozen sustained reducer; reuse the existing smoke evaluator's task semantics.",
-      "config/shadowhand_spin_stages.yaml: freeze four generation seeds, four 4-case probe manifests, four 40-case development manifests with promotion cases 10-39, four 30-case fresh manifests, and ten demonstration cases.",
-      "Before spending LLM calls, compare smoke and pipeline expert outcomes in separate processes at batch sizes 4, 10, and 30: zero outcome flips and at most floor(batch_size/10) diverged environments; abort on failure. This costs 88 episodes.",
-      "For each block, generate one direct-action parent and search 24 parameter settings on its four probe cases. Fork only if every setting has zero probe successes; do not substitute easier parents or claim a repair effect if the gate fails.",
-      "Use the same first two successful expert demonstrations, observation fields, endpoints, 16 keyframes per trace, and token ceiling in both arms. The event arm ranks interior frames by predeclared normalized action-change and angular-velocity-change magnitudes, with six-step minimum spacing; the control samples uniformly.",
-      "Allow one whole-controller edit and at most one validity correction per arm using gpt-6.1-sol, reasoning_effort high, temperature 1. Screen each child on ten cases, retain strict paired promotion, and score resulting incumbents on fresh cases.",
-      "Estimate 384 prefix episodes, 680 child-screen/promotion/fresh episodes, ten demonstration episodes, and 88 backend-check episodes. Analyse paired block differences, not pooled episodes as independent search replicates.",
-      "Unlike D-030 through D-033, the intervention is keyframe selection under equal context, not introducing expert traces or merely transferring the same repair comparison to another task."
+      "Isaac backend (lares/envs/isaac_pen_spin/pipeline_backend.py): an evaluator that evaluate_manifest dispatches to when the env is an Isaac pen-spin backend. Every evaluation of one policy on one manifest (each search setting's probe, each screen, promotion, fresh evaluation, the demonstration collection and every parity cell) runs in its own fresh Isaac process (D-034): the orchestrator, in its usual Python, writes the policy source, state dict and manifest path to a request file and runs the Isaac child, which builds the policy, runs PenSpinBatchRunner with batch = manifest size, and returns per-episode rows. Episodes are judged by the frozen D-034 sustained reducer at Stage 3; success_rate, per-episode success and a continuous progress term (tail-hit fraction, used only where the pipeline ranks by progress) go into the ordinary ManifestResult, so screening, records and strict promotion are unchanged.",
+      "Observation schema 'IsaacPenSpin-stage3' in lares/core/obs_schema.py from cases.OBS_LAYOUT (157-d, named fields: hand_dof_pos, hand_dof_vel, obj_pos, obj_rot, obj_linvel, obj_angvel (x0.2), in_hand_pos, goal_rot, rel_rot, fingertip_pos/rot/vel, last_action; required fields obj_pos, obj_rot, obj_angvel, hand_dof_pos). Generated policies are SymbolicPolicy with action_dim 20; the executed action is the policy mean clamped to [-1, 1], the env's normalised joint-target interface (no action_space.high scaling). A task prompt block names the actuated joint order and the neutral action, and states the per-step success predicate and the sustained episode rule.",
+      "Config config/pen_spin_plateau_repair.yaml (run_full_evolution's own schema; config/shadowhand_spin_stages.yaml stays the env/evaluator protocol file and is referenced, not reused, because run_full_evolution reads a different top-level schema). Plateau plan as R-037: two structure slots, slot 0 a searched single-phase exploration (24 rollout-search settings on the block's 4-case probe manifest), screen = development cases 0-9, promotion = development cases 10-39 under the unchanged strict paired rule, no fitting (bc_steps 0), gpt-6.1-sol, reasoning_effort high, temperature 1, one linked validity correction per slot.",
+      "Fork point: the orchestrator writes the full state after slot 0 (records, incumbent, trigger, prefix candidate, search results, ledger) to gen_0/prefix_state.json, and --continue-from <prefix dir> --arm <no_trace|uniform|event> runs slot 1 only from that state, so the three arms of a block share one prefix and one pre-fork incumbent. Arms run in order no_trace, uniform, event; their order cannot affect outcomes because each arm's rollouts are separate processes and its generation call sees only the prefix and its own packet.",
+      "Pre-fork incumbent and gate: the shared incumbent is the null 0.00 baseline unless the prefix passes strict promotion, in which case it is the prefix and the block has no plateau (inconclusive for that block; no fork). The trigger fires only if all 24 search settings score zero probe successes and the prefix was not promoted. The edited candidate is the prefix candidate's selected setting (search selected_index; with all-zero probe success the rollout_search tie rule picks by progress, then the earlier index), deterministic. No easier parent is substituted; a block without a plateau parent counts as missing.",
+      "Arms: no_trace = slot 1 is another searched single-phase exploration (as the R-037 repair-off runs). uniform and event = one whole-controller edit of the edited candidate with the same request text, the same two traces (first two sustained-success expert episodes in manifest order on the shared 10-case demonstration manifest, seed 4124; qualification gate >= 9/10 sustained or the study stops inconclusive before any trace arm), the same fields per row, the same rounding and exactly 16 keyframes per trace; then searched like an exploration (24 settings on the probe), screened, and challenged under strict promotion. An invalid or rejected edit leaves the shared incumbent in place.",
+      "Keyframe rule, frozen before any outcome: L = trace length; endpoints t=0 and t=L-1 are always kept. Uniform: t_k = round(k (L-1) / 15), k = 0..15. Event: for interior t in [1, L-2], s_t = ||a_t - a_{t-1}||_2 / m_a + ||w_t - w_{t-1}||_2 / m_w, where a is the executed 20-d action, w the pen's world angular velocity in rad/s (obs obj_angvel / 0.2), and m_a, m_w the medians over t = 1..L-1 of the same trace's step-to-step norms (weights 1:1; a zero median is replaced by 1). Frames are taken greedily in descending s_t, ties to the earlier t, skipping any frame within 6 steps of one already kept (endpoints included), until 16 are kept; selected frames are listed in time order.",
+      "Row rendering (identical in both arms): t, pen centre offset from in_hand_pos (3, m, 4 dp), pen long axis in world (3, 3 dp), pen angular velocity (3, rad/s, 2 dp), signed roll rate about the pen axis (rad/s, 2 dp), the 24 hand joint positions (rad, 3 dp) and the 20 executed actions (3 dp). The request states which fields are state and which are actions, and that the expert is closed-loop (D-037). Character and token counts of both packets are recorded; both arms carry 32 rows of identical fields.",
+      "Live parity gate before any LLM call (88 episodes on fresh seed 4137, reserved for the parity gate only; 30 cases, batches are its first 4, first 10 and all 30 cases): the D-036 expert through the new backend vs through protocols.run_cell, separate processes, at batch sizes 4, 10 and 30 (44 episodes per backend): zero sustained-outcome flips and at most floor(batch/10) diverged environments per size; abort on failure.",
+      "Mocked integration tests (no Isaac, no API key) before any live spend: request/response round trip of the backend with a fake child; reset and previous-action isolation (the child zeroes last_action, D-034); schema slices equal cases.OBS_LAYOUT; executed-action clamp and joint order; the sustained reducer on the returned rows; records validate; strict promotion and the null incumbent; the fork state round-trips; both keyframe rules on synthetic traces (counts, endpoints, spacing, tie rule).",
+      "Fresh evaluation: after a block's three arms finish, each arm's final incumbent is scored on the block's 30-case fresh manifest (seeds 4133-4136) in its own process. A null incumbent has no policy and scores 0/30 by the pipeline's NULL_INCUMBENT_ID definition (no episodes run); any promoted policy is evaluated, never assumed.",
+      "Episode ledger per block: prefix slot 146 (zero-shot screen 10 + 24 x 4 probe + selected screen 10 + promotion 30), three continuation slots 146 each (438), fresh 3 x 30 = 90: 674. Four blocks 2696, demonstrations 10 (once), parity 88: 2794. An interrupted demonstration collection stops the study as inconclusive; it is never rerun on the same cases. LLM calls: at most 2 per slot (one generation + one linked correction), 4 slots per block, 4 blocks = 32. About 450 Isaac processes; wall time measured, about 6-8 h on the T4.",
+      "Analysis: block-paired differences of fresh incumbent success (event - uniform primary; uniform - no_trace and event - no_trace secondary), Student t over the eligible blocks; blocks without a plateau parent are reported and excluded; fewer than 3 eligible blocks makes the comparison inconclusive. Episodes are never pooled as independent search replicates."
     ],
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "proposed",
+  "status": "approved",
   "source": "advisor",
-  "falsified_by": "Across four eligible plateau parents, the paired interval's upper bound is below +0.20. Missing plateau parents or an interval spanning zero makes the comparison inconclusive.",
+  "falsified_by": "Across the eligible plateau blocks (at least 3 of 4), the paired interval of event minus uniform fresh success has an upper bound below +0.20. Fewer than 3 eligible blocks, a failed parity gate, or an unqualified demonstration manifest makes it inconclusive.",
   "cost_estimate": {
-    "episodes": 1162,
-    "llm_calls": 24,
-    "wall_time_minutes": 240
+    "episodes": 2794,
+    "llm_calls": 32,
+    "wall_time_minutes": 480
   },
   "open_question_refs": [],
   "briefing_sha256": "3d7f4ef6e4bb2b78d072b2773f76ee526150f97e4c5ccb0a4fd567cc6699ac8d",
   "proposal_call_id": "call_00080",
-  "approval": {},
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-10-27T09:51:20",
+    "advisor_call_id": "call_00084",
+    "round": 3,
+    "note": "This tests whether corrective-event keyframes improve Stage-3 plateau repair beyond uniform sampling, with the no-trace arm checking whether repair transfers beyond MetaWorld. I accept the implementer's fresh parity seed 4137, removal of demonstration reruns, and corrected maximum cost of 2794 simul"
+  },
   "run": {},
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
   "decision_id": "",
-  "history": [],
+  "history": [
+    {
+      "at": "2026-10-27T09:51:20",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    }
+  ],
   "created_at": "2026-10-27T09:34:57",
   "direction": "Continue researching the single-step exploration pipeline with plateau-triggered trace repair, extended to pen spinning on the Shadow Hand (Isaac Lab Isaac-ShadowHandSpin-Stage{1,2,3}-Direct-v0, vendored in lares/envs/isaac_pen_spin; 157-d full obs, 20-d action, 60 Hz, 360-step episodes). Expert demonstrations: first try a hand-written scripted spinning controller; also search online for an existing trained pen-spinning policy; if neither qualifies, train an RL expert (rsl_rl PPO on the box). No budget ceiling on GPU hours or LLM calls. Known gaps to turn into questions: the env's spin_rate is roll about the pen's own long axis (not end-over-end twirl), success is per step with no episode rule, and the pipeline (manifests, obs schema, runner, records) is MetaWorld-only today. Debug issues, improve the pipeline, and turn unexpected findings into concrete research questions; document results and limitations.",
   "triage": {
@@ -109,10 +128,207 @@
           "at": "2026-10-27T09:38:07"
         },
         "outcome": "agreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "This would test whether correction-focused keyframes improve plateau repair on a feedback-dependent dexterous task. I accept the implementer's no-trace arm as a valuable transfer baseline, and the separate orchestration config is justified by its different schema. The revised isolation, fork and promotion accounting address the earlier concerns, but the parity gate explicitly reuses spent seed 4097, and the demonstration crash allowance risks another prohibited reuse. Those seed violations prevent approval as written.",
+          "suggested_changes": [
+            "Replace parity seed 4097 with fresh seed 4137, absent from the briefing's spent list; reserve it in the ledger and add it to the protocol. Preserve the paired backend comparison and the existing 88-episode gate.",
+            "Remove the partial demonstration-manifest crash rerun. An interrupted collection must stop this run as inconclusive rather than replay spent cases; any subsequent collection needs a separately agreed fresh-seed protocol.",
+            "Update the maximum episode ledger to 2794 (2696 study + 10 demonstrations + 88 parity), retaining at most 32 LLM calls and the existing script/config reuse.",
+            "Retain the primary prediction: paired_success_difference increases by at least 0.20 against uniform-keyframe repair, with a paired interval above zero required for evidence of improvement. Retain its falsified_by observation: the eligible-block interval's upper bound is below +0.20; fewer than three eligible blocks or failed qualification/parity gates remain inconclusive."
+          ],
+          "priority": 1,
+          "call_id": "call_00083",
+          "briefing_sha256": "a522a8d874fc6eb846aa57700df9221d2a82402f8b817b7bc4f5f7a61fd4900d",
+          "at": "2026-10-27T09:50:30"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree with all four changes: parity on a fresh seed 4137 (reserved, added to the protocol), no crash rerun (an interrupted demonstration collection stops the study inconclusive), 2794 episodes, 32 calls, primary prediction and falsifier unchanged.",
+          "changes_applied": [],
+          "at": "2026-10-27T09:50:43"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This tests whether corrective-event keyframes improve Stage-3 plateau repair beyond uniform sampling, with the no-trace arm checking whether repair transfers beyond MetaWorld. I accept the implementer's fresh parity seed 4137, removal of demonstration reruns, and corrected maximum cost of 2794 simulator episodes and 32 LLM calls; reuse scripts/run_full_evolution.py and config/shadowhand_spin_stages.yaml through the justified schema-specific config/pen_spin_plateau_repair.yaml. The weakest point is inference from only four blocks sharing two demonstrations, so conclusions must remain conditional on eligible plateau blocks and this trace packet. Retain the prediction that paired_success_difference increases by at least 0.20 against uniform-keyframe repair, requiring a paired interval above zero for improvement; falsified_by is an eligible-block interval with upper bound below +0.20, while failed gates or fewer than three eligible blocks are inconclusive and ties or zero-crossing intervals do not establish improvement.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00084",
+          "briefing_sha256": "a2f9b52dd45ac1a42806a749fd2fa7d0163b736db380d0ae44db8fc4303bf3e7",
+          "at": "2026-10-27T09:51:13"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Agree. Implementation order: schema and backend with mocked tests, keyframe rules, fork state, config and frozen manifests (seeds reserved before any rollout), parity gate on 4137, then the four blocks. Conclusions conditional on eligible plateau blocks and this two-trace packet.",
+          "changes_applied": [],
+          "at": "2026-10-27T09:51:20"
+        },
+        "outcome": "agreed"
       }
     ],
-    "outcome": null
+    "outcome": "approve",
+    "agreed_round": 3
   },
   "escalation": {},
-  "revisions": []
+  "revisions": [
+    {
+      "at": "2026-10-27T09:49:44",
+      "round": 1,
+      "patch": {
+        "title": "Plateau-triggered trace repair on pen spinning: event-selected vs uniform keyframes, with a no-trace arm",
+        "hypothesis": "On Stage-3 pen spinning, where the expert succeeds only through state feedback (D-037), keyframes concentrated around changes in expert actions and pen angular velocity teach a whole-controller edit corrective structure better than uniformly spaced keyframes of the same traces at equal context; both trace arms are also scored against a no-trace continuation so the keyframe contrast is interpretable.",
+        "prediction": {
+          "metric": "paired_success_difference",
+          "direction": "increase",
+          "threshold": 0.2,
+          "against": "uniform-keyframe plateau-triggered repair (same prefix, traces, fields and keyframe count)",
+          "rationale": "Primary: event arm minus uniform arm, fresh 30-case sustained success of each arm's final incumbent, paired by block over four blocks; mean >= +0.20 with a paired t interval above zero. Secondary, reported but not the prediction: each trace arm minus the no-trace arm, the pen-spin transfer of D-033."
+        },
+        "protocol": {
+          "script": "scripts/run_full_evolution.py",
+          "config": "config/pen_spin_plateau_repair.yaml",
+          "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study keyframe_repair\"'",
+          "seeds": [
+            4120,
+            4121,
+            4122,
+            4123,
+            4124,
+            4125,
+            4126,
+            4127,
+            4128,
+            4129,
+            4130,
+            4131,
+            4132,
+            4133,
+            4134,
+            4135,
+            4136
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_demo_s4124.yaml",
+            "config/manifests/pen_spin_stage3_probe_s4125.yaml",
+            "config/manifests/pen_spin_stage3_probe_s4126.yaml",
+            "config/manifests/pen_spin_stage3_probe_s4127.yaml",
+            "config/manifests/pen_spin_stage3_probe_s4128.yaml",
+            "config/manifests/pen_spin_stage3_development_s4129.yaml",
+            "config/manifests/pen_spin_stage3_development_s4130.yaml",
+            "config/manifests/pen_spin_stage3_development_s4131.yaml",
+            "config/manifests/pen_spin_stage3_development_s4132.yaml",
+            "config/manifests/pen_spin_stage3_fresh_s4133.yaml",
+            "config/manifests/pen_spin_stage3_fresh_s4134.yaml",
+            "config/manifests/pen_spin_stage3_fresh_s4135.yaml",
+            "config/manifests/pen_spin_stage3_fresh_s4136.yaml"
+          ],
+          "episodes": 2802,
+          "llm_calls": 32,
+          "code_changes": [
+            "Isaac backend (lares/envs/isaac_pen_spin/pipeline_backend.py): an evaluator that evaluate_manifest dispatches to when the env is an Isaac pen-spin backend. Every evaluation of one policy on one manifest (each search setting's probe, each screen, promotion, fresh evaluation, the demonstration collection and every parity cell) runs in its own fresh Isaac process (D-034): the orchestrator, in its usual Python, writes the policy source, state dict and manifest path to a request file and runs the Isaac child, which builds the policy, runs PenSpinBatchRunner with batch = manifest size, and returns per-episode rows. Episodes are judged by the frozen D-034 sustained reducer at Stage 3; success_rate, per-episode success and a continuous progress term (tail-hit fraction, used only where the pipeline ranks by progress) go into the ordinary ManifestResult, so screening, records and strict promotion are unchanged.",
+            "Observation schema 'IsaacPenSpin-stage3' in lares/core/obs_schema.py from cases.OBS_LAYOUT (157-d, named fields: hand_dof_pos, hand_dof_vel, obj_pos, obj_rot, obj_linvel, obj_angvel (x0.2), in_hand_pos, goal_rot, rel_rot, fingertip_pos/rot/vel, last_action; required fields obj_pos, obj_rot, obj_angvel, hand_dof_pos). Generated policies are SymbolicPolicy with action_dim 20; the executed action is the policy mean clamped to [-1, 1], the env's normalised joint-target interface (no action_space.high scaling). A task prompt block names the actuated joint order and the neutral action, and states the per-step success predicate and the sustained episode rule.",
+            "Config config/pen_spin_plateau_repair.yaml (run_full_evolution's own schema; config/shadowhand_spin_stages.yaml stays the env/evaluator protocol file and is referenced, not reused, because run_full_evolution reads a different top-level schema). Plateau plan as R-037: two structure slots, slot 0 a searched single-phase exploration (24 rollout-search settings on the block's 4-case probe manifest), screen = development cases 0-9, promotion = development cases 10-39 under the unchanged strict paired rule, no fitting (bc_steps 0), gpt-6.1-sol, reasoning_effort high, temperature 1, one linked validity correction per slot.",
+            "Fork point: the orchestrator writes the full state after slot 0 (records, incumbent, trigger, prefix candidate, search results, ledger) to gen_0/prefix_state.json, and --continue-from <prefix dir> --arm <no_trace|uniform|event> runs slot 1 only from that state, so the three arms of a block share one prefix and one pre-fork incumbent. Arms run in order no_trace, uniform, event; their order cannot affect outcomes because each arm's rollouts are separate processes and its generation call sees only the prefix and its own packet.",
+            "Pre-fork incumbent and gate: the shared incumbent is the null 0.00 baseline unless the prefix passes strict promotion, in which case it is the prefix and the block has no plateau (inconclusive for that block; no fork). The trigger fires only if all 24 search settings score zero probe successes and the prefix was not promoted. The edited candidate is the prefix candidate's selected setting (search selected_index; with all-zero probe success the rollout_search tie rule picks by progress, then the earlier index), deterministic. No easier parent is substituted; a block without a plateau parent counts as missing.",
+            "Arms: no_trace = slot 1 is another searched single-phase exploration (as the R-037 repair-off runs). uniform and event = one whole-controller edit of the edited candidate with the same request text, the same two traces (first two sustained-success expert episodes in manifest order on the shared 10-case demonstration manifest, seed 4124; qualification gate >= 9/10 sustained or the study stops inconclusive before any trace arm), the same fields per row, the same rounding and exactly 16 keyframes per trace; then searched like an exploration (24 settings on the probe), screened, and challenged under strict promotion. An invalid or rejected edit leaves the shared incumbent in place.",
+            "Keyframe rule, frozen before any outcome: L = trace length; endpoints t=0 and t=L-1 are always kept. Uniform: t_k = round(k (L-1) / 15), k = 0..15. Event: for interior t in [1, L-2], s_t = ||a_t - a_{t-1}||_2 / m_a + ||w_t - w_{t-1}||_2 / m_w, where a is the executed 20-d action, w the pen's world angular velocity in rad/s (obs obj_angvel / 0.2), and m_a, m_w the medians over t = 1..L-1 of the same trace's step-to-step norms (weights 1:1; a zero median is replaced by 1). Frames are taken greedily in descending s_t, ties to the earlier t, skipping any frame within 6 steps of one already kept (endpoints included), until 16 are kept; selected frames are listed in time order.",
+            "Row rendering (identical in both arms): t, pen centre offset from in_hand_pos (3, m, 4 dp), pen long axis in world (3, 3 dp), pen angular velocity (3, rad/s, 2 dp), signed roll rate about the pen axis (rad/s, 2 dp), the 24 hand joint positions (rad, 3 dp) and the 20 executed actions (3 dp). The request states which fields are state and which are actions, and that the expert is closed-loop (D-037). Character and token counts of both packets are recorded; both arms carry 32 rows of identical fields.",
+            "Live parity gate before any LLM call (88 episodes, debug seed 4097, spent for debugging only): the D-036 expert through the new backend vs through protocols.run_cell, separate processes, at batch sizes 4, 10 and 30 (44 episodes per backend): zero sustained-outcome flips and at most floor(batch/10) diverged environments per size; abort on failure.",
+            "Mocked integration tests (no Isaac, no API key) before any live spend: request/response round trip of the backend with a fake child; reset and previous-action isolation (the child zeroes last_action, D-034); schema slices equal cases.OBS_LAYOUT; executed-action clamp and joint order; the sustained reducer on the returned rows; records validate; strict promotion and the null incumbent; the fork state round-trips; both keyframe rules on synthetic traces (counts, endpoints, spacing, tie rule).",
+            "Fresh evaluation: after a block's three arms finish, each arm's final incumbent is scored on the block's 30-case fresh manifest (seeds 4133-4136) in its own process. A null incumbent has no policy and scores 0/30 by the pipeline's NULL_INCUMBENT_ID definition (no episodes run); any promoted policy is evaluated, never assumed.",
+            "Episode ledger per block: prefix slot 146 (zero-shot screen 10 + 24 x 4 probe + selected screen 10 + promotion 30), three continuation slots 146 each (438), fresh 3 x 30 = 90: 674. Four blocks 2696, demonstrations 10 (once), parity 88, plus up to 8 for the demonstration manifest's gate re-run if the first collection crashes: 2802. LLM calls: at most 2 per slot (one generation + one linked correction), 4 slots per block, 4 blocks = 32. About 450 Isaac processes; wall time measured, about 6-8 h on the T4.",
+            "Analysis: block-paired differences of fresh incumbent success (event - uniform primary; uniform - no_trace and event - no_trace secondary), Student t over the eligible blocks; blocks without a plateau parent are reported and excluded; fewer than 3 eligible blocks makes the comparison inconclusive. Episodes are never pooled as independent search replicates."
+          ],
+          "needs_gpu": true,
+          "needs_llm": true
+        },
+        "falsified_by": "Across the eligible plateau blocks (at least 3 of 4), the paired interval of event minus uniform fresh success has an upper bound below +0.20. Fewer than 3 eligible blocks, a failed parity gate, or an unqualified demonstration manifest makes it inconclusive.",
+        "cost_estimate": {
+          "episodes": 2802,
+          "llm_calls": 32,
+          "wall_time_minutes": 480
+        }
+      },
+      "note": "Round-1 revise applied: process per rollout batch, frozen event score and rendering, explicit fork/incumbent/parent selection, mocked checks plus the 88-episode parity gate, reconciled costs; added the no-trace arm (secondary) and a dedicated run_full_evolution config."
+    },
+    {
+      "at": "2026-10-27T09:50:44",
+      "round": 2,
+      "patch": {
+        "protocol": {
+          "script": "scripts/run_full_evolution.py",
+          "config": "config/pen_spin_plateau_repair.yaml",
+          "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study keyframe_repair\"'",
+          "seeds": [
+            4120,
+            4121,
+            4122,
+            4123,
+            4124,
+            4125,
+            4126,
+            4127,
+            4128,
+            4129,
+            4130,
+            4131,
+            4132,
+            4133,
+            4134,
+            4135,
+            4136,
+            4137
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_demo_s4124.yaml",
+            "config/manifests/pen_spin_stage3_probe_s4125.yaml",
+            "config/manifests/pen_spin_stage3_probe_s4126.yaml",
+            "config/manifests/pen_spin_stage3_probe_s4127.yaml",
+            "config/manifests/pen_spin_stage3_probe_s4128.yaml",
+            "config/manifests/pen_spin_stage3_development_s4129.yaml",
+            "config/manifests/pen_spin_stage3_development_s4130.yaml",
+            "config/manifests/pen_spin_stage3_development_s4131.yaml",
+            "config/manifests/pen_spin_stage3_development_s4132.yaml",
+            "config/manifests/pen_spin_stage3_fresh_s4133.yaml",
+            "config/manifests/pen_spin_stage3_fresh_s4134.yaml",
+            "config/manifests/pen_spin_stage3_fresh_s4135.yaml",
+            "config/manifests/pen_spin_stage3_fresh_s4136.yaml",
+            "config/manifests/pen_spin_stage3_parity_s4137.yaml"
+          ],
+          "episodes": 2794,
+          "llm_calls": 32,
+          "code_changes": [
+            "Isaac backend (lares/envs/isaac_pen_spin/pipeline_backend.py): an evaluator that evaluate_manifest dispatches to when the env is an Isaac pen-spin backend. Every evaluation of one policy on one manifest (each search setting's probe, each screen, promotion, fresh evaluation, the demonstration collection and every parity cell) runs in its own fresh Isaac process (D-034): the orchestrator, in its usual Python, writes the policy source, state dict and manifest path to a request file and runs the Isaac child, which builds the policy, runs PenSpinBatchRunner with batch = manifest size, and returns per-episode rows. Episodes are judged by the frozen D-034 sustained reducer at Stage 3; success_rate, per-episode success and a continuous progress term (tail-hit fraction, used only where the pipeline ranks by progress) go into the ordinary ManifestResult, so screening, records and strict promotion are unchanged.",
+            "Observation schema 'IsaacPenSpin-stage3' in lares/core/obs_schema.py from cases.OBS_LAYOUT (157-d, named fields: hand_dof_pos, hand_dof_vel, obj_pos, obj_rot, obj_linvel, obj_angvel (x0.2), in_hand_pos, goal_rot, rel_rot, fingertip_pos/rot/vel, last_action; required fields obj_pos, obj_rot, obj_angvel, hand_dof_pos). Generated policies are SymbolicPolicy with action_dim 20; the executed action is the policy mean clamped to [-1, 1], the env's normalised joint-target interface (no action_space.high scaling). A task prompt block names the actuated joint order and the neutral action, and states the per-step success predicate and the sustained episode rule.",
+            "Config config/pen_spin_plateau_repair.yaml (run_full_evolution's own schema; config/shadowhand_spin_stages.yaml stays the env/evaluator protocol file and is referenced, not reused, because run_full_evolution reads a different top-level schema). Plateau plan as R-037: two structure slots, slot 0 a searched single-phase exploration (24 rollout-search settings on the block's 4-case probe manifest), screen = development cases 0-9, promotion = development cases 10-39 under the unchanged strict paired rule, no fitting (bc_steps 0), gpt-6.1-sol, reasoning_effort high, temperature 1, one linked validity correction per slot.",
+            "Fork point: the orchestrator writes the full state after slot 0 (records, incumbent, trigger, prefix candidate, search results, ledger) to gen_0/prefix_state.json, and --continue-from <prefix dir> --arm <no_trace|uniform|event> runs slot 1 only from that state, so the three arms of a block share one prefix and one pre-fork incumbent. Arms run in order no_trace, uniform, event; their order cannot affect outcomes because each arm's rollouts are separate processes and its generation call sees only the prefix and its own packet.",
+            "Pre-fork incumbent and gate: the shared incumbent is the null 0.00 baseline unless the prefix passes strict promotion, in which case it is the prefix and the block has no plateau (inconclusive for that block; no fork). The trigger fires only if all 24 search settings score zero probe successes and the prefix was not promoted. The edited candidate is the prefix candidate's selected setting (search selected_index; with all-zero probe success the rollout_search tie rule picks by progress, then the earlier index), deterministic. No easier parent is substituted; a block without a plateau parent counts as missing.",
+            "Arms: no_trace = slot 1 is another searched single-phase exploration (as the R-037 repair-off runs). uniform and event = one whole-controller edit of the edited candidate with the same request text, the same two traces (first two sustained-success expert episodes in manifest order on the shared 10-case demonstration manifest, seed 4124; qualification gate >= 9/10 sustained or the study stops inconclusive before any trace arm), the same fields per row, the same rounding and exactly 16 keyframes per trace; then searched like an exploration (24 settings on the probe), screened, and challenged under strict promotion. An invalid or rejected edit leaves the shared incumbent in place.",
+            "Keyframe rule, frozen before any outcome: L = trace length; endpoints t=0 and t=L-1 are always kept. Uniform: t_k = round(k (L-1) / 15), k = 0..15. Event: for interior t in [1, L-2], s_t = ||a_t - a_{t-1}||_2 / m_a + ||w_t - w_{t-1}||_2 / m_w, where a is the executed 20-d action, w the pen's world angular velocity in rad/s (obs obj_angvel / 0.2), and m_a, m_w the medians over t = 1..L-1 of the same trace's step-to-step norms (weights 1:1; a zero median is replaced by 1). Frames are taken greedily in descending s_t, ties to the earlier t, skipping any frame within 6 steps of one already kept (endpoints included), until 16 are kept; selected frames are listed in time order.",
+            "Row rendering (identical in both arms): t, pen centre offset from in_hand_pos (3, m, 4 dp), pen long axis in world (3, 3 dp), pen angular velocity (3, rad/s, 2 dp), signed roll rate about the pen axis (rad/s, 2 dp), the 24 hand joint positions (rad, 3 dp) and the 20 executed actions (3 dp). The request states which fields are state and which are actions, and that the expert is closed-loop (D-037). Character and token counts of both packets are recorded; both arms carry 32 rows of identical fields.",
+            "Live parity gate before any LLM call (88 episodes on fresh seed 4137, reserved for the parity gate only; 30 cases, batches are its first 4, first 10 and all 30 cases): the D-036 expert through the new backend vs through protocols.run_cell, separate processes, at batch sizes 4, 10 and 30 (44 episodes per backend): zero sustained-outcome flips and at most floor(batch/10) diverged environments per size; abort on failure.",
+            "Mocked integration tests (no Isaac, no API key) before any live spend: request/response round trip of the backend with a fake child; reset and previous-action isolation (the child zeroes last_action, D-034); schema slices equal cases.OBS_LAYOUT; executed-action clamp and joint order; the sustained reducer on the returned rows; records validate; strict promotion and the null incumbent; the fork state round-trips; both keyframe rules on synthetic traces (counts, endpoints, spacing, tie rule).",
+            "Fresh evaluation: after a block's three arms finish, each arm's final incumbent is scored on the block's 30-case fresh manifest (seeds 4133-4136) in its own process. A null incumbent has no policy and scores 0/30 by the pipeline's NULL_INCUMBENT_ID definition (no episodes run); any promoted policy is evaluated, never assumed.",
+            "Episode ledger per block: prefix slot 146 (zero-shot screen 10 + 24 x 4 probe + selected screen 10 + promotion 30), three continuation slots 146 each (438), fresh 3 x 30 = 90: 674. Four blocks 2696, demonstrations 10 (once), parity 88: 2794. An interrupted demonstration collection stops the study as inconclusive; it is never rerun on the same cases. LLM calls: at most 2 per slot (one generation + one linked correction), 4 slots per block, 4 blocks = 32. About 450 Isaac processes; wall time measured, about 6-8 h on the T4.",
+            "Analysis: block-paired differences of fresh incumbent success (event - uniform primary; uniform - no_trace and event - no_trace secondary), Student t over the eligible blocks; blocks without a plateau parent are reported and excluded; fewer than 3 eligible blocks makes the comparison inconclusive. Episodes are never pooled as independent search replicates."
+          ],
+          "needs_gpu": true,
+          "needs_llm": true
+        },
+        "cost_estimate": {
+          "episodes": 2794,
+          "llm_calls": 32,
+          "wall_time_minutes": 480
+        }
+      },
+      "note": "Round-2 revise: parity seed 4137, no demonstration rerun, 2794 episodes."
+    }
+  ]
 }
