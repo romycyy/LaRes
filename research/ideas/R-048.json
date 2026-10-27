@@ -35,7 +35,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "An upper paired interval bound below +0.15 refutes the predicted gain; an interval spanning +0.15 is inconclusive, and tied success is not improvement.",
   "cost_estimate": {
@@ -57,12 +57,120 @@
     "started_at": "2026-10-27T17:24:47",
     "git_sha": "b222600a99f9fcfd843c66b1f1bbeb55f556c0f8",
     "dirty_worktree": false,
-    "log_dir": ""
+    "log_dir": "",
+    "finished_at": "2026-10-27T17:31:27"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": null,
+      "conclusive": false,
+      "closure_reason": "insufficient executed-action switch coverage within the searched coordinate grid (advisor call_00101)",
+      "expert_saturation": {
+        "demo_executed_at_plus_minus_1": 0.9998,
+        "raw_beyond_1_at_gait_states": 0.996875,
+        "raw_beyond_1_all_queries": 0.9967830882352942
+      },
+      "query_states_demo_distance_h_units": {
+        "median": 82.12324505810719,
+        "max": 128.58593040646448
+      },
+      "switch_audit": {
+        "coverage": 0.028125,
+        "coverage_by_coordinate": {
+          "offset_x": 0.034375,
+          "offset_y": 0.028125,
+          "offset_z": 0.0359375,
+          "axial_rate": 0.0234375,
+          "ff_flex": 0.021875,
+          "mf_flex": 0.0296875,
+          "rf_flex": 0.021875,
+          "lf_flex": 0.0296875
+        },
+        "states_with_any_switch": 0.6875,
+        "multiple_crossings": 0.0001953125,
+        "median_abs_distance": 0.7,
+        "radius_ranges": 1.0,
+        "states": 32,
+        "queries": 5152,
+        "episodes": 0,
+        "llm_calls": 0,
+        "demo_ranges": {
+          "offset_x": 0.009569996595382688,
+          "offset_y": 0.007310938835144037,
+          "offset_z": 0.031898716092109675,
+          "axial_rate": 8.646951880831624,
+          "ff_flex": 0.4534321452180544,
+          "mf_flex": 0.45176070195933177,
+          "rf_flex": 0.22962127228577922,
+          "lf_flex": 0.3945484248300393
+        }
+      },
+      "block0_parent_gait": {
+        "screen": 0.6,
+        "probe": 0.4,
+        "promotion": 0.43333333333333335,
+        "fresh": 0.5666666666666667
+      },
+      "block0_parent_promotion_vs_null_ci95": [
+        0.24513405158484583,
+        0.6215326150818209
+      ]
+    },
+    "controls": {
+      "query_path_check": "scripts/isaac/check_expert_query.py: the expert queried at 10 demonstration states reproduced its executed (clamped) actions exactly (max error 0), 0 episodes"
+    },
+    "artifacts": [
+      "logs/pen_spin_local_feedback_evidence/block0/parent.json",
+      "logs/pen_spin_local_feedback_evidence/block0/evidence.json",
+      "logs/pen_spin_local_feedback_evidence/block0/switch_audit/switch_audit.json",
+      "logs/pen_spin_local_feedback_evidence/run.log",
+      "research/consultations/2026-10-27T172850_call_00100.json",
+      "research/consultations/2026-10-27T173056_call_00101.json"
+    ],
+    "notes": [
+      "No paired outcome comparison was run; the prediction (sensitivity minus raw_labels >= +0.15, falsified by an upper bound below +0.15) was not evaluated.",
+      "The PPO expert is bang-bang: 99.98% of its executed action components on its own 12 demonstration episodes are exactly +/-1 (all 20 joints), and 99.7% of its raw outputs at the gait's states exceed +/-1. Clamped finite differences (the first implementation, h = 10% of the demonstration range) were zero almost everywhere, so the run was stopped after block 0's parent and queries, before any arm episode (consult call_00100).",
+      "Executed-switch audit (frozen grid of +-k/10 demonstration ranges, k=1..10, 8 coordinates, 32 learner states, 5152 queries, 0 episodes, 0 LLM calls): 2.8% of state-coordinate-action triples switch within one demonstration range (2.2-3.6% per coordinate); 22/32 states have some switch; multiple crossings 0.02%; median switch distance 0.7 ranges. Read as insufficient demonstrated local signal on the sampled grid, not as constancy throughout the continuous neighbourhood or as falsification of the feedback-map hypothesis. All responses are the expert model's extrapolations at off-distribution learner states (median distance 82 step units from the demonstration).",
+      "Block 0's frozen gait (parent, seed 4210): screen 0.60, probe 0.40, promotion 0.433, fresh 0.567: the third independent estimate of the gait's Stage-3 base rate (R-046 block 1: 0.50 promotion, 0.43 fresh).",
+      "Sunk cost: 80 simulator episodes (block 0 parent, seed 4210), 5824 expert forward queries (672 + 5152), and one interrupted LLM attempt (raw_labels slot 0, killed in flight, never ledgered; possibly billed, completion unknown). Seeds 4210-4215 are recorded as spent; 4211-4215 were never evaluated. Seeds 4230-4235 were not used."
+    ]
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": null,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.9,
+      "reasoning": "No paired comparison ran, so the +0.15 prediction was not evaluated. The PPO expert is bang-bang (99.98% of executed components at +/-1), which made clamped finite differences zero almost everywhere; the executed-switch audit found switches in only 2.8% of state-coordinate-action triples within one demonstration range (median distance 0.7 ranges), so the evidence representation would be impoverished and the comparison would test it rather than the feedback-map hypothesis. Closed on the advisor's recommendation (call_00101) as insufficient demonstrated local signal on the sampled grid, not falsification.",
+      "cited_artifacts": [
+        "logs/pen_spin_local_feedback_evidence/research_result.json",
+        "logs/pen_spin_local_feedback_evidence/block0/switch_audit/switch_audit.json"
+      ],
+      "next_experiment": "Run R-049 (two-channel cold exploration on Stages 1/2). A future feedback-map idea needs a smooth expert (e.g. pre-saturation logits from a policy trained with an action penalty) or switch maps at on-distribution states.",
+      "recorded_at": "2026-10-27T17:31:38",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 1.0,
+      "reasoning": "Neither treatment nor the named raw-label baseline control received outcome evaluation, leaving paired_success_difference and its interval unavailable [logs/pen_spin_local_feedback_evidence/run.log]. The switch audit measured 2.8125% executed-action switch coverage within the searched grid, which is a query diagnostic rather than a success comparison [logs/pen_spin_local_feedback_evidence/block0/switch_audit/switch_audit.json]. The run was closed for insufficient sampled switch coverage, not because the predicted success gain was measured and found absent [research/consultations/2026-10-27T173056_call_00101.json]. These observations neither support nor refute the feedback-map success prediction [logs/pen_spin_local_feedback_evidence/run.log].",
+      "cited_artifacts": [
+        "logs/pen_spin_local_feedback_evidence/run.log",
+        "logs/pen_spin_local_feedback_evidence/block0/switch_audit/switch_audit.json",
+        "research/consultations/2026-10-27T173056_call_00101.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-27T17:32:00",
+      "call_id": "call_00102"
+    }
+  ],
+  "decision_id": "D-043",
   "history": [
     {
       "at": "2026-10-27T17:01:48",
@@ -81,6 +189,18 @@
       "from": "approved",
       "to": "running",
       "note": "git b222600a99"
+    },
+    {
+      "at": "2026-10-27T17:31:27",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-10-27T17:32:04",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-043: inconclusive"
     }
   ],
   "created_at": "2026-10-27T16:59:50",

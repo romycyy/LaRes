@@ -532,6 +532,11 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
 - **R-047 result (D-042, supported).** Feeding either group (pen state or hand state) four steps late (67 ms) drops the
   expert from 40/40 to 0/40 (`feedback_delay.py`, `--study feedback_delay`); pen-delay falls come later (median step
   116) than R-044's clamps (49). One delay only, so the latency threshold is unmeasured; this checkpoint only.
+- **R-048 result (D-043, inconclusive, closed before any arm ran).** The PPO expert is **bang-bang**: 99.98% of its
+  executed action components are exactly +/-1, so clamped finite differences of it are zero almost everywhere, and
+  its executed action switches sign in only 2.8% of state-coordinate-action triples within one demonstration range
+  at the gait's states (`local_feedback.py`, `scripts/isaac/audit_expert_switches.py`). Expert-label evidence shows
+  only saturated values. `IsaacPenSpinStream.query_actions` queries an actor at given observations with no episode.
 - **Code extraction.** Generated code keeps only the class, so module-level constants in a reply are dropped.
 
 **Isaac Lab ShadowHandSpin.** A second, parallel stack merged in from the Isaac branch:
