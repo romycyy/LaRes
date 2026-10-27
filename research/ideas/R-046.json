@@ -38,7 +38,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "approved",
+  "status": "running",
   "source": "advisor",
   "falsified_by": "With at least three eligible plateau blocks, the paired interval for residual minus whole-edit fresh incumbent success lies entirely below +0.20. An interval containing zero is not evidence of improvement; fewer than three triggered blocks make the repair comparison inconclusive.",
   "cost_estimate": {
@@ -56,7 +56,12 @@
     "round": 2,
     "note": "I accept the implementer's seed-collision correction to free seeds 4180-4184 and its argument that the unchanged-gait control measures the non-qualified scaffold's base rate while separating preservation from improvement. Approve scripts/run_full_evolution.py with config/pen_spin_plateau_repair.yaml"
   },
-  "run": {},
+  "run": {
+    "started_at": "2026-10-27T15:39:41",
+    "git_sha": "9bec48419376a7a35e26e4aedfe3f14ecfcd75e7",
+    "dirty_worktree": false,
+    "log_dir": ""
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -71,6 +76,12 @@
     {
       "at": "2026-10-27T15:39:36",
       "note": "seeds 4180-4184 recorded in the seed ledger with the frozen manifests; cleared from protocol.seeds. Implementation reconciled with consult call_00094 (see last code_changes entry); episodes 1936 <= approved 1968."
+    },
+    {
+      "at": "2026-10-27T15:39:41",
+      "from": "approved",
+      "to": "running",
+      "note": "git 9bec484193"
     }
   ],
   "created_at": "2026-10-27T14:09:20",

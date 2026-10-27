@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-10-27T15:39:37 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-10-27T15:39:41 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -10,8 +10,8 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 0 |
-| approved | 1 |
+| running | 1 |
+| approved | 0 |
 | proposed | 0 |
 | deferred | 1 |
 | decided | 40 |
@@ -19,8 +19,8 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 
 ## Needs attention
 
-- **R-046** [approved] 3. Preserve the scripted gait while repairing retention feedback
-  - `python scripts/research.py start R-046` then run its command
+- **R-046** [running] 3. Preserve the scripted gait while repairing retention feedback
+  - run the protocol, then `python scripts/research.py record R-046 --results <json>`
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
