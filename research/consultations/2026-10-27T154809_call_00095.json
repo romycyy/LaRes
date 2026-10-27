@@ -1,0 +1,25 @@
+{
+  "ideas": [
+    {
+      "id": "R-046",
+      "recommendation": "revise",
+      "reasoning": "R-046 tests whether bounded corrections preserve useful contact coordination, while its unchanged-gait control separates preservation from actual improvement. I favor option (a): revising a wrapper diagnostic before development offers more information per episode than rerunning parity until it passes, without spending additional LLM calls. The weakest point is that late divergence is consistent with physics nondeterminism, not proof of wrapper equivalence, and the revised gate is explicitly post hoc.",
+      "suggested_changes": [
+        "Version the amendment in scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml: require every environment to match through step 150 and at most 4/40 environments to diverge overall; report sustained-success flips without using them as this wrapper gate's acceptance criterion. Preserve the original failed-gate record and rationale; step 150 is not half of a 360-step episode.",
+        "Before resuming, add an offline zero-residual check of action equality and gait clock/integral reset and update semantics. Use this alongside trajectory agreement; do not describe the parity result alone as proving exact wrapping.",
+        "Do not rerun parity on seed 4184 or search for a passing seed. The supplied ledger also labels 4180–4183 spent, despite the report that development never ran: keep those entries untouched and freeze development-role manifests on fresh seeds 4190–4193 after confirming they are unreserved.",
+        "Keep the sustained-success reducer, strict paired promotion rule, expert qualification, plateau trigger, arm budgets and unchanged-gait control unchanged. No final-test access.",
+        "Retain the prediction: paired_success_difference increases by at least 0.20 for bounded_residual against whole_edit, with a paired interval above zero over at least three eligible blocks. Retain falsified_by: an interval entirely below +0.20 refutes the prediction; fewer than three eligible blocks is inconclusive, and an interval containing zero is not evidence of improvement. Claim gait improvement only if the separate residual-minus-unchanged-gait interval is strictly positive.",
+        "Reconcile the budget to the implemented 1936-episode protocol: 80 parity episodes already spent, at most 1856 additional simulator episodes and 24 LLM calls, with no additional parity rollout. Offline checks require zero simulator episodes and zero LLM calls."
+      ],
+      "depends_on": []
+    }
+  ],
+  "order": [
+    "R-046"
+  ],
+  "next_step": "Prepare the versioned gate amendment, offline wrapper check and fresh-seed manifest revision for the user's decision before resuming R-046.",
+  "call_id": "call_00095",
+  "briefing_sha256": "faf1acd72ce177829d58b2ff106af5e2d4a3e6e357814d65930bf7b4b4787731",
+  "question": "R-046 parity gate failed before any development case ran. The gate (R-042 criterion: zero sustained flips, <= 4/40 diverged) compared the frozen gait via R-039's run_cell with the backend's unchanged scaffold on 40 cases (seed 4184). Result: 37/40 environments bit-identical in spin_rate and center_dist for all 359 steps; 3 environments diverge only late, first differing at steps 340, 185 and 260 (GPU PhysX at batch 40 is not bit-deterministic across processes, as D-035 documented: 1-2/40 envs diverge after step ~78). One of them (env 20, divergence from step 260) flips: reference sustained with tail-hit 1.0, backend not sustained with tail-hit 0.783; successes 22 vs 21. The gate's purpose here (call_00094) was to check that the wrapped scaffold reproduces the gait; identical trajectories in 37 envs and late-only divergence say the wrapper is exact and the flip is physics nondeterminism on a marginal episode. The study stopped as coded; no further episode or LLM call was spent (80 parity episodes). Options: (a) amend the gate before any development case, R-039-style, to a wrapper-equivalence criterion: every environment bit-identical through step 150 (no divergence before half the episode) and at most 4/40 diverged environments overall, flips reported but not gating; then continue with the same frozen manifests (parity cases are not reused by any arm); (b) rerun parity on a fresh seed (spends 80 more episodes, risks selecting on a passing draw); (c) stop R-046 inconclusive. I recommend (a). Which do you approve?"
+}

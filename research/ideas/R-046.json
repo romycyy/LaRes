@@ -15,10 +15,10 @@
     "command": "gpu run 'source ~/.profile >/dev/null 2>&1; nohup .venv-metaworld/bin/python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study gait_preserving_repair > logs_r046.log 2>&1 &'",
     "seeds": [],
     "manifests": [
-      "config/manifests/pen_spin_stage3_gait_s4180.yaml",
-      "config/manifests/pen_spin_stage3_gait_s4181.yaml",
-      "config/manifests/pen_spin_stage3_gait_s4182.yaml",
-      "config/manifests/pen_spin_stage3_gait_s4183.yaml",
+      "config/manifests/pen_spin_stage3_gait_s4190.yaml",
+      "config/manifests/pen_spin_stage3_gait_s4191.yaml",
+      "config/manifests/pen_spin_stage3_gait_s4192.yaml",
+      "config/manifests/pen_spin_stage3_gait_s4193.yaml",
       "config/manifests/pen_spin_stage3_parity_s4184.yaml"
     ],
     "episodes": 1936,
@@ -33,7 +33,8 @@
       "Budget at most 472 episodes per block: 150 prefix, 12 expert, 120 per continuation arm and 70 for the unchanged-gait control (screen 10, promotion 30, fresh 30); add two separate 40-case parity controls (1968 in all). Permit at most one linked correction per LLM slot and run each Isaac cell in a separate process.",
       "Unlike R-042's trace-selection comparison and deferred R-043's anatomical coordinates, this changes which existing contact dynamics an edit is allowed to destroy. Document residual saturation and any restriction-induced failures without changing the primary metric.",
       "Study configuration lives in a gait_preserving_repair block of config/pen_spin_plateau_repair.yaml (block seeds 4180-4183, parity seed 4184); manifests frozen and seeds recorded in the seed ledger before start.",
-      "Reconciled with advisor consult call_00094 before start: the gait is stateful (clock, integral), so both LLM arms output a correction delta on a 177-d schema (157 + gait_action): bounded_residual executes clamp(g + clamp(delta, -0.15, 0.15), -1, 1), whole_edit clamp(g + delta, -1, 1) (delta = 0 keeps the gait, delta = target - g replaces it); unchanged_gait executes g. Gait clock/integral per environment, reset per process (one manifest per process), hash-pinned FROZEN_R039 (lares/envs/isaac_pen_spin/gait_scaffold.py). Expert keyframes carry the gait's shadow action computed along the expert's own trajectory in the same process. Continuations do not inherit the prefix candidate; the prefix incumbent (null when the trigger fires) is the comparator and fallback for every arm. Search: the policy plus five rollout_search.perturb draws on an 8-case arm probe. Budget 1936 episodes: 80 parity + 4 x (146 prefix + 12 expert + 70 unchanged + 2 x 118). The orchestrator stays in .venv-metaworld (it needs openai, which Isaac's Python lacks); every simulator cell runs under Isaac Lab's environment in its own process, as in R-042."
+      "Reconciled with advisor consult call_00094 before start: the gait is stateful (clock, integral), so both LLM arms output a correction delta on a 177-d schema (157 + gait_action): bounded_residual executes clamp(g + clamp(delta, -0.15, 0.15), -1, 1), whole_edit clamp(g + delta, -1, 1) (delta = 0 keeps the gait, delta = target - g replaces it); unchanged_gait executes g. Gait clock/integral per environment, reset per process (one manifest per process), hash-pinned FROZEN_R039 (lares/envs/isaac_pen_spin/gait_scaffold.py). Expert keyframes carry the gait's shadow action computed along the expert's own trajectory in the same process. Continuations do not inherit the prefix candidate; the prefix incumbent (null when the trigger fires) is the comparator and fallback for every arm. Search: the policy plus five rollout_search.perturb draws on an 8-case arm probe. Budget 1936 episodes: 80 parity + 4 x (146 prefix + 12 expert + 70 unchanged + 2 x 118). The orchestrator stays in .venv-metaworld (it needs openai, which Isaac's Python lacks); every simulator cell runs under Isaac Lab's environment in its own process, as in R-042.",
+      "Parity gate amended with advisor consult call_00095 after v1 (zero flips, <= 4/40 diverged) failed on one late flip with 37/40 environments bit-identical (divergence first at steps 185, 260, 340), before any development case ran: v2 requires every environment identical through step 150 and at most 4/40 diverged, flips reported but not gating; recomputed from the saved parity traces (no rerun; v2 passes: 3 diverged, none before step 150, 1 flip). The v1 record is kept in summary.json. Block seeds moved to fresh 4190-4193; 4180-4183 stay recorded and unused. Offline wrapper checks (zero-correction identity, clipping, cancellation, gait reset, shadow equality) are in tests/test_pen_spin_pipeline.TestGaitScaffold and scripts/isaac/check_gait_scaffold.py (CUDA, no episode). Budget: 80 parity episodes spent, at most 1856 more, 24 LLM calls."
     ],
     "needs_gpu": true,
     "needs_llm": true
@@ -82,6 +83,10 @@
       "from": "approved",
       "to": "running",
       "note": "git 9bec484193"
+    },
+    {
+      "at": "2026-10-27T15:49:56",
+      "note": "v1 parity gate failed (1 late flip, 37/40 identical); amended to v2 and block seeds moved to 4190-4193 per consult call_00095; no development case had run."
     }
   ],
   "created_at": "2026-10-27T14:09:20",

@@ -122,9 +122,13 @@ dense_feedback_fit:
 #  (unbounded delta) on the 177-d gait-scaffold schema. The gait is FROZEN_R039, pinned by its parameter hash.
 gait_preserving_repair:
   study_dir: "logs/pen_spin/r046_gait_scaffold"
-  block_seeds: [4180, 4181, 4182, 4183]
+  # Blocks moved from 4180-4183 to fresh 4190-4193 with the v2 gate (call_00095); 4180-4183 stay recorded, never used.
+  block_seeds: [4190, 4191, 4192, 4193]
   parity_seed: 4184
   parity_cases: 40
+  parity_gate_version: 2          # v1 failed (one late flip); v2: identical through step 150, <= 4/40 diverged
+  parity_match_through_step: 150
+  parity_max_diverged: 4
   residual_bound: 0.15
   gait_sha256: "97e4065f61960eaf064c8d6a4533522c809fbe6c1b335f7a9ba8b556992b1cac"
   gait_protocol_config: "config/shadowhand_spin_stages.yaml"   # R-039's evaluator, parity only

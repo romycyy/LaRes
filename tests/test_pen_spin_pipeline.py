@@ -743,7 +743,8 @@ class TestGaitScaffold(unittest.TestCase):
         self.gs.check_gait(cfg["gait_sha256"])
         with self.assertRaises(ValueError):
             self.gs.check_gait("0" * 64)
-        self.assertEqual(cfg["block_seeds"], [4180, 4181, 4182, 4183])
+        self.assertEqual(cfg["block_seeds"], [4190, 4191, 4192, 4193])
+        self.assertEqual(cfg["parity_gate_version"], 2)
 
     def test_the_scaffold_schema_extends_the_stage3_layout(self):
         from lares.envs.isaac_pen_spin.layout import GAIT_SCAFFOLD_TASK_ID
@@ -786,7 +787,10 @@ class GaitRun:
         def run_cell_gait(gcfg, manifest_path, out, config_path):
             m = EvaluationManifest.load(manifest_path)
             tr = toy_rollout(m, frozen_gait())
-            return {"rows": pb.rows_from_trace(tr), "spin_rate": tr["spin_rate"], "center_dist": tr["center_dist"]}
+            rows = pb.rows_from_trace(tr)
+            json.dump({"episodes": rows}, open(out, "w"), default=float)
+            np.savez(out.replace(".json", ".npz"), spin_rate=tr["spin_rate"], center_dist=tr["center_dist"])
+            return {"rows": rows, "spin_rate": tr["spin_rate"], "center_dist": tr["center_dist"]}
 
         def run(cmd, check=True, **kw):
             block = int(cmd[cmd.index("--gait-block") + 1])
@@ -819,7 +823,9 @@ class TestGaitStudy(unittest.TestCase):
     def test_parity_compares_the_gait_with_its_wrapped_implementation(self):
         p = self.gr.summary["parity"]
         self.assertTrue(p["passes"])
-        self.assertEqual(p["episodes"], 80)
+        self.assertEqual(p["version"], 2)
+        self.assertEqual(p["v1"]["episodes"], 80)
+        self.assertEqual(p["diverged_envs"], 0)
         gait_reqs = [r for r in self.gr.child.requests if r["actor"]["kind"] == "gait"]
         self.assertTrue(gait_reqs)
 
@@ -888,6 +894,35 @@ class TestGaitStudy(unittest.TestCase):
         self.gr.run()
         self.assertEqual(len(self.gr.child.requests), before)
         self.assertEqual(len(self.gr.llm.labels), calls)
+
+
+class TestWrapperGateV2(unittest.TestCase):
+    def write(self, d, spin_a, spin_b, sus_a, sus_b):
+        from lares.envs.isaac_pen_spin import gait_repair  # noqa: F401
+
+        T, n = spin_a.shape
+        rows = lambda sus: [{"sustained": s, "length": T} for s in sus]  # noqa: E731
+        np.savez(os.path.join(d, "run_cell_gait.npz"), spin_rate=spin_b, center_dist=np.zeros((T, n)))
+        json.dump({"episodes": rows(sus_b)}, open(os.path.join(d, "run_cell_gait.json"), "w"))
+        np.savez(os.path.join(d, "parity_0001.trace.npz"), spin_rate=spin_a, center_dist=np.zeros((T, n)))
+        json.dump({"episodes": rows(sus_a), "trace_path": os.path.join(d, "parity_0001.trace.npz")},
+                  open(os.path.join(d, "parity_0001.response.json"), "w"))
+
+    def test_late_divergence_passes_and_early_divergence_fails(self):
+        from lares.envs.isaac_pen_spin.gait_repair import wrapper_gate_v2
+
+        with tempfile.TemporaryDirectory() as d:
+            a = np.ones((359, 5))
+            b = a.copy()
+            b[260:, 2] += 1.0
+            self.write(d, a, b, [True] * 5, [True, True, False, True, True])
+            g = wrapper_gate_v2(d, 150, 4)
+            self.assertTrue(g["passes"])
+            self.assertEqual(g["first_divergence_step"], {"2": 260})
+            self.assertEqual(g["sustained_outcome_flips"], 1)
+            b[100:, 3] += 1.0
+            self.write(d, a, b, [True] * 5, [True] * 5)
+            self.assertFalse(wrapper_gate_v2(d, 150, 4)["passes"])
 
 
 if __name__ == "__main__":

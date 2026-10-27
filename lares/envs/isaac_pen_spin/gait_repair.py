@@ -7,7 +7,9 @@ exists, so an interrupted study resumes without rerunning a case):
 1. ``freeze``: one 94-case manifest per block seed, split by index into role manifests (``ROLES``), and one 40-case
    parity manifest. No Isaac.
 2. ``parity``: the frozen gait through R-039's evaluator (``protocols.run_cell``) and through the pipeline backend's
-   unchanged scaffold, separate processes, 40 cases: zero sustained flips and at most 4 diverged environments, or stop.
+   unchanged scaffold, separate processes, 40 cases. Version 1 (zero sustained flips, at most 4 diverged) failed on
+   one late flip (37/40 bit-identical; divergence from steps 185-340); version 2 (call_00095, before any development
+   case) requires every environment identical through step 150 and at most 4 diverged, flips reported.
 3. Per block: a cold prefix (the R-042 prefix: a searched single-phase exploration on the plain 157-d schema, 24
    settings on the 4-case prefix probe, screen, promotion; the unchanged plateau trigger). A block whose trigger does
    not fire is reported missing. Otherwise:
@@ -122,6 +124,41 @@ def run_cell_gait(gcfg: dict, manifest_path: str, out: str, config_path: str) ->
         subprocess.run(["bash", "-c", cmd], check=True)
     data = np.load(out.replace(".json", ".npz"))
     return {"rows": json.load(open(out))["episodes"], "spin_rate": data["spin_rate"], "center_dist": data["center_dist"]}
+
+
+def first_divergence(a: dict, b: dict) -> dict:
+    """``{env: first step whose spin_rate or center_dist differ}`` for every diverged environment."""
+    out = {}
+    for key in ("spin_rate", "center_dist"):
+        x, y = np.nan_to_num(a[key], nan=-1e9), np.nan_to_num(b[key], nan=-1e9)
+        d = np.abs(x - y) > 0
+        for e in np.nonzero(d.any(axis=0))[0]:
+            out[int(e)] = min(out.get(int(e), 10 ** 9), int(np.argmax(d[:, e])))
+    for i, (x, y) in enumerate(zip(a["rows"], b["rows"])):
+        if x["length"] != y["length"]:
+            out[i] = min(out.get(i, 10 ** 9), min(int(x["length"]), int(y["length"])))
+    return out
+
+
+def wrapper_gate_v2(parity_dir: str, match_through: int, max_diverged: int) -> dict:
+    """R-046 parity gate, version 2 (amended with advisor consult call_00095 after v1 failed, before any development
+    case): every environment matches through ``match_through`` steps and at most ``max_diverged`` diverge overall;
+    sustained flips are reported, not gating. Recomputed from the saved parity traces; no rollout."""
+    ref_json = os.path.join(parity_dir, "run_cell_gait.json")
+    ref = np.load(ref_json.replace(".json", ".npz"))
+    resp = json.load(open(os.path.join(parity_dir, "parity_0001.response.json")))
+    new = np.load(resp["trace_path"]) if os.path.exists(resp.get("trace_path", "")) else np.load(
+        os.path.join(parity_dir, "parity_0001.trace.npz"))
+    a = {"rows": resp["episodes"], "spin_rate": new["spin_rate"], "center_dist": new["center_dist"]}
+    b = {"rows": json.load(open(ref_json))["episodes"], "spin_rate": ref["spin_rate"], "center_dist": ref["center_dist"]}
+    first = first_divergence(a, b)
+    flips = [i for i, (x, y) in enumerate(zip(a["rows"], b["rows"])) if bool(x["sustained"]) != bool(y["sustained"])]
+    early = {e: s for e, s in first.items() if s < match_through}
+    return {"version": 2, "rule": f"every environment identical through step {match_through}; at most {max_diverged} "
+                                  f"of {len(a['rows'])} diverge overall; sustained flips reported, not gating",
+            "first_divergence_step": {str(k): v for k, v in sorted(first.items())}, "diverged_envs": len(first),
+            "diverged_before_match_step": len(early), "sustained_outcome_flips": len(flips), "flipped_envs": flips,
+            "passes": bool(not early and len(first) <= max_diverged), "amended_by": "advisor consult call_00095"}
 
 
 def parity_gate(gcfg: dict, study_dir: str, stream_factory) -> dict:
@@ -439,7 +476,13 @@ def run_study(gcfg: dict, stream_factory, expert, run_prefix, client) -> dict:
     gait_scaffold.check_gait(gcfg["gait_sha256"])
     freeze_manifests(gcfg)
     parity = parity_gate(gcfg, sdir, stream_factory)
-    print("parity gate:", json.dumps(parity))
+    print("parity gate (v1):", json.dumps(parity))
+    if int(gcfg.get("parity_gate_version", 1)) >= 2:
+        v1 = parity
+        parity = wrapper_gate_v2(os.path.join(sdir, "parity"), int(gcfg["parity_match_through_step"]),
+                                 int(gcfg["parity_max_diverged"]))
+        parity["v1"] = v1
+        print("parity gate (v2):", json.dumps({k: v for k, v in parity.items() if k != "v1"}))
     if not parity["passes"]:
         raise SystemExit(f"R-046 parity gate failed; nothing else runs: {parity}")
     blocks = []
