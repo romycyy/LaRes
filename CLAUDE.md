@@ -524,6 +524,11 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
 - **R-044 result (D-040, supported).** Clamping the expert's pen-state observations to their reset values drops it
   from 39/40 to 0/40 (early drops, median step 49); clamping hand state is nearly as bad (1/40). The expert depends
   on both channels (`feedback_lesions.py`, `run_shadowhand_spin_stages.py --study feedback_lesions`).
+- **R-046 result (D-041, inconclusive).** Gait-scaffold continuation (`gait_scaffold.py`, `gait_repair.py`, 177-d
+  `Isaac-ShadowHandSpin-Stage3-GaitScaffold-v0`, `--study gait_preserving_repair`). The plateau trigger fired in only
+  1/4 blocks: the cold 157-d prefix had probe successes in 3/4 and promoted in block 3 (+0.333 [0.15, 0.51]), so
+  R-042's "floor" is seed-dependent. In block 1, whole_edit replaced the gait and dropped the pen (0/30); bounded
+  residual matched the unchanged gait (0.467 vs 0.433), which alone promoted at 0.500.
 - **Code extraction.** Generated code keeps only the class, so module-level constants in a reply are dropped.
 
 **Isaac Lab ShadowHandSpin.** A second, parallel stack merged in from the Isaac branch:

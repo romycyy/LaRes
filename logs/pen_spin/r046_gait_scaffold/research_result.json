@@ -1,0 +1,287 @@
+{
+ "metrics": {
+  "paired_success_difference": null,
+  "conclusive": false,
+  "eligible_blocks": 1,
+  "min_eligible_blocks": 3,
+  "bounded_residual_minus_whole_edit_fresh_incumbent": {
+   "per_block": [
+    0.4667
+   ],
+   "n": 1,
+   "block": 1,
+   "wins": 14,
+   "losses": 0,
+   "ties": 16
+  },
+  "bounded_residual_minus_unchanged_gait_fresh_incumbent": {
+   "per_block": [
+    0.0333
+   ],
+   "n": 1,
+   "block": 1,
+   "wins": 9,
+   "losses": 8,
+   "ties": 13
+  },
+  "fresh_success_block1": {
+   "unchanged_gait": 0.43333333333333335,
+   "bounded_residual": 0.4666666666666667,
+   "whole_edit": 0.0
+  },
+  "unchanged_gait_promotion_success_block1": 0.5,
+  "prefix_blocks": [
+   {
+    "block": 0,
+    "seed": 4190,
+    "trigger_fired": false,
+    "reason": "1 candidate(s) succeeded on the probe",
+    "probe_successes_of_96": 1,
+    "prefix_promoted": false,
+    "challenger_screen_success": 0.0,
+    "promotion_mean_difference": 0.03333333333333333,
+    "promotion_ci95": [
+     -0.0348409880710901,
+     0.10150765473775678
+    ],
+    "episodes": 146,
+    "llm_calls": 1,
+    "llm_tokens": 11905
+   },
+   {
+    "block": 1,
+    "seed": 4191,
+    "trigger_fired": true,
+    "reason": "plateau: no probe success and no promotion",
+    "probe_successes_of_96": 0,
+    "prefix_promoted": false,
+    "challenger_screen_success": 0.0,
+    "promotion_mean_difference": 0.0,
+    "promotion_ci95": [
+     0.0,
+     0.0
+    ],
+    "episodes": 146,
+    "llm_calls": 2,
+    "llm_tokens": 28032
+   },
+   {
+    "block": 2,
+    "seed": 4192,
+    "trigger_fired": false,
+    "reason": "1 candidate(s) succeeded on the probe",
+    "probe_successes_of_96": 1,
+    "prefix_promoted": false,
+    "challenger_screen_success": 0.0,
+    "promotion_mean_difference": 0.0,
+    "promotion_ci95": [
+     0.0,
+     0.0
+    ],
+    "episodes": 146,
+    "llm_calls": 2,
+    "llm_tokens": 30127
+   },
+   {
+    "block": 3,
+    "seed": 4193,
+    "trigger_fired": false,
+    "reason": "a prefix candidate was promoted",
+    "probe_successes_of_96": 2,
+    "prefix_promoted": true,
+    "challenger_screen_success": 0.2,
+    "promotion_mean_difference": 0.3333333333333333,
+    "promotion_ci95": [
+     0.15429879420839188,
+     0.5123678724582748
+    ],
+    "episodes": 146,
+    "llm_calls": 1,
+    "llm_tokens": 14374
+   }
+  ],
+  "prefix_probe_success_blocks": 3,
+  "prefix_promoted_blocks": 1,
+  "per_arm_block1": {
+   "unchanged_gait": {
+    "selected": "frozen_gait",
+    "probe": [],
+    "screen_success": 0.2,
+    "promotion_success": 0.5,
+    "promoted": true,
+    "promotion_ci95": [
+     0.31010519497721845,
+     0.6898948050227816
+    ],
+    "fresh_incumbent_success": 0.43333333333333335,
+    "fresh_selected_success": 0.43333333333333335,
+    "fresh_failure_labels": {
+     "None": 13,
+     "slow_spin": 12,
+     "off_centre": 2,
+     "dropped": 3
+    },
+    "isaac_episodes": 70,
+    "llm_calls": 0,
+    "llm_tokens": 0
+   },
+   "bounded_residual": {
+    "selected": "search4_global",
+    "probe": [
+     {
+      "label": "search0_original",
+      "success": 0.125
+     },
+     {
+      "label": "search1_local",
+      "success": 0.625
+     },
+     {
+      "label": "search2_global",
+      "success": 0.625
+     },
+     {
+      "label": "search3_local",
+      "success": 0.5
+     },
+     {
+      "label": "search4_global",
+      "success": 0.625
+     },
+     {
+      "label": "search5_local",
+      "success": 0.625
+     }
+    ],
+    "screen_success": 0.1,
+    "promotion_success": 0.4,
+    "promoted": true,
+    "promotion_ci95": [
+     0.21394184915555403,
+     0.586058150844446
+    ],
+    "fresh_incumbent_success": 0.4666666666666667,
+    "fresh_selected_success": 0.4666666666666667,
+    "fresh_failure_labels": {
+     "None": 14,
+     "off_centre": 5,
+     "slow_spin": 11
+    },
+    "isaac_episodes": 118,
+    "llm_calls": 1,
+    "llm_tokens": 24319
+   },
+   "whole_edit": {
+    "selected": "search2_global",
+    "probe": [
+     {
+      "label": "search0_original",
+      "success": 0.0
+     },
+     {
+      "label": "search1_local",
+      "success": 0.0
+     },
+     {
+      "label": "search2_global",
+      "success": 0.0
+     },
+     {
+      "label": "search3_local",
+      "success": 0.0
+     },
+     {
+      "label": "search4_global",
+      "success": 0.0
+     },
+     {
+      "label": "search5_local",
+      "success": 0.0
+     }
+    ],
+    "screen_success": 0.0,
+    "promotion_success": 0.0,
+    "promoted": false,
+    "promotion_ci95": [
+     0.0,
+     0.0
+    ],
+    "fresh_incumbent_success": 0.0,
+    "fresh_selected_success": 0.0,
+    "fresh_failure_labels": {
+     "off_centre": 6,
+     "dropped": 24
+    },
+    "isaac_episodes": 118,
+    "llm_calls": 1,
+    "llm_tokens": 37722
+   }
+  },
+  "expert_block1": {
+   "successes": 12,
+   "episodes": 12,
+   "qualify_successes": 10,
+   "qualify_cases": 10,
+   "qualified": true,
+   "traced_case_ids": [
+    "gait-0062",
+    "gait-0063"
+   ]
+  }
+ },
+ "controls": {
+  "parity": {
+   "version": 2,
+   "rule": "every environment identical through step 150; at most 4 of 40 diverge overall; sustained flips reported, not gating",
+   "first_divergence_step": {
+    "2": 340,
+    "6": 185,
+    "20": 260
+   },
+   "diverged_envs": 3,
+   "diverged_before_match_step": 0,
+   "sustained_outcome_flips": 1,
+   "flipped_envs": [
+    20
+   ],
+   "passes": true,
+   "amended_by": "advisor consult call_00095",
+   "v1": {
+    "batch": 40,
+    "sustained_outcome_flips": 1,
+    "diverged_envs": 3,
+    "max_diverged_envs": 4,
+    "passes": false,
+    "successes": [
+     21,
+     22
+    ],
+    "episodes": 80
+   }
+  }
+ },
+ "artifacts": [
+  "logs/pen_spin/r046_gait_scaffold/summary.json",
+  "logs/pen_spin/r046_gait_scaffold/parity.json",
+  "logs/pen_spin/r046_gait_scaffold/block1/expert.json",
+  "logs/pen_spin/r046_gait_scaffold/block0/prefix/gen_0/plateau_repair.json",
+  "logs/pen_spin/r046_gait_scaffold/block1/prefix/gen_0/plateau_repair.json",
+  "logs/pen_spin/r046_gait_scaffold/block2/prefix/gen_0/plateau_repair.json",
+  "logs/pen_spin/r046_gait_scaffold/block3/prefix/gen_0/plateau_repair.json",
+  "logs/pen_spin/r046_gait_scaffold/block0/prefix/gen_0/screening.json",
+  "logs/pen_spin/r046_gait_scaffold/block1/prefix/gen_0/screening.json",
+  "logs/pen_spin/r046_gait_scaffold/block2/prefix/gen_0/screening.json",
+  "logs/pen_spin/r046_gait_scaffold/block3/prefix/gen_0/screening.json",
+  "logs/pen_spin/r046_gait_scaffold/block1/unchanged_gait/arm.json",
+  "logs/pen_spin/r046_gait_scaffold/block1/bounded_residual/arm.json",
+  "logs/pen_spin/r046_gait_scaffold/block1/whole_edit/arm.json"
+ ],
+ "notes": [
+  "Inconclusive by the predeclared rule: the plateau trigger fired in 1 of 4 blocks (>=3 eligible needed). The trigger was not weakened.",
+  "The cold 157-d prefix scored probe successes in 3/4 blocks (1, 0, 1, 2 of 96) and promoted in block 3 (+0.333 [0.154, 0.512] on 30 promotion cases), whereas the four R-042 prefixes (generation seeds 4120-4123, other manifests) scored zero probe successes and no promotion in 4/4 blocks under the same cold search. Stage 3 is not a strict floor for cold search; R-042's 'floor' reading is seed-dependent.",
+  "Block 1 (the only eligible block): whole_edit rewrote the controller as delta = desired - gait and dropped the pen in 24/30 fresh cases (0/30 success, every probe setting 0/8). bounded_residual stayed within 0.15 of the gait and matched it: 0.467 vs 0.433 fresh (+0.033; 9 wins, 8 losses, 13 ties case by case). The single-block difference is preservation of the gait, not improvement.",
+  "The unchanged frozen R-039 gait promoted against the null incumbent in block 1 (0.500 on promotion, CI [0.31, 0.69]) and scored 0.433 on fresh cases, above the 23-30% measured in R-039.",
+  "Accounting: 982 episodes (parity 80, prefixes 584, expert 12, block-1 arms 306); 8 LLM calls, 146479 tokens. Budget was 1936 episodes and 24 calls.",
+  "Parity: v1 failed on one late flip (3/40 diverged at steps 185-340); the v2 gate from consult call_00095 (identical through step 150, <=4/40 diverged) passed on the same saved traces without a rerun; v1 record kept."
+ ]
+}
