@@ -1,0 +1,118 @@
+{
+  "id": "R-042",
+  "title": "Event-selected expert keyframes for plateau-triggered trace repair",
+  "hypothesis": "At a fixed trace-token budget, keyframes concentrated around changes in expert actions and pen motion teach corrective feedback better than uniformly spaced samples of continuous spinning.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.2,
+    "against": "uniform-keyframe plateau-triggered repair",
+    "rationale": "Require a mean fresh-manifest gain of at least 0.20 and a paired t interval above zero across four parent blocks; this tests trace selection, not the already-established trace-versus-summary effect."
+  },
+  "protocol": {
+    "script": "scripts/run_full_evolution.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_full_evolution.py --config config/shadowhand_spin_stages.yaml --study event_keyframe_repair\"'",
+    "seeds": [
+      4120,
+      4121,
+      4122,
+      4123,
+      4124,
+      4125,
+      4126,
+      4127,
+      4128,
+      4129,
+      4130,
+      4131,
+      4132,
+      4133,
+      4134,
+      4135,
+      4136
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_demo_s4124.yaml",
+      "config/manifests/pen_spin_stage3_probe_s4125.yaml",
+      "config/manifests/pen_spin_stage3_probe_s4126.yaml",
+      "config/manifests/pen_spin_stage3_probe_s4127.yaml",
+      "config/manifests/pen_spin_stage3_probe_s4128.yaml",
+      "config/manifests/pen_spin_stage3_development_s4129.yaml",
+      "config/manifests/pen_spin_stage3_development_s4130.yaml",
+      "config/manifests/pen_spin_stage3_development_s4131.yaml",
+      "config/manifests/pen_spin_stage3_development_s4132.yaml",
+      "config/manifests/pen_spin_stage3_fresh_s4133.yaml",
+      "config/manifests/pen_spin_stage3_fresh_s4134.yaml",
+      "config/manifests/pen_spin_stage3_fresh_s4135.yaml",
+      "config/manifests/pen_spin_stage3_fresh_s4136.yaml"
+    ],
+    "episodes": 1162,
+    "llm_calls": 24,
+    "code_changes": [
+      "scripts/run_full_evolution.py: add the paired study selector, Isaac task dispatch, expert-checkpoint loading, and immutable trace-packet provenance; keep bc_steps=0.",
+      "lares/isaac_pipeline_adapter.py: add the missing Isaac backend for manifests, named 157-d observations, normalized 20-d actions, episode records, and the frozen sustained reducer; reuse the existing smoke evaluator's task semantics.",
+      "config/shadowhand_spin_stages.yaml: freeze four generation seeds, four 4-case probe manifests, four 40-case development manifests with promotion cases 10-39, four 30-case fresh manifests, and ten demonstration cases.",
+      "Before spending LLM calls, compare smoke and pipeline expert outcomes in separate processes at batch sizes 4, 10, and 30: zero outcome flips and at most floor(batch_size/10) diverged environments; abort on failure. This costs 88 episodes.",
+      "For each block, generate one direct-action parent and search 24 parameter settings on its four probe cases. Fork only if every setting has zero probe successes; do not substitute easier parents or claim a repair effect if the gate fails.",
+      "Use the same first two successful expert demonstrations, observation fields, endpoints, 16 keyframes per trace, and token ceiling in both arms. The event arm ranks interior frames by predeclared normalized action-change and angular-velocity-change magnitudes, with six-step minimum spacing; the control samples uniformly.",
+      "Allow one whole-controller edit and at most one validity correction per arm using gpt-6.1-sol, reasoning_effort high, temperature 1. Screen each child on ten cases, retain strict paired promotion, and score resulting incumbents on fresh cases.",
+      "Estimate 384 prefix episodes, 680 child-screen/promotion/fresh episodes, ten demonstration episodes, and 88 backend-check episodes. Analyse paired block differences, not pooled episodes as independent search replicates.",
+      "Unlike D-030 through D-033, the intervention is keyframe selection under equal context, not introducing expert traces or merely transferring the same repair comparison to another task."
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "proposed",
+  "source": "advisor",
+  "falsified_by": "Across four eligible plateau parents, the paired interval's upper bound is below +0.20. Missing plateau parents or an interval spanning zero makes the comparison inconclusive.",
+  "cost_estimate": {
+    "episodes": 1162,
+    "llm_calls": 24,
+    "wall_time_minutes": 240
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "3d7f4ef6e4bb2b78d072b2773f76ee526150f97e4c5ccb0a4fd567cc6699ac8d",
+  "proposal_call_id": "call_00080",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [],
+  "created_at": "2026-10-27T09:34:57",
+  "direction": "Continue researching the single-step exploration pipeline with plateau-triggered trace repair, extended to pen spinning on the Shadow Hand (Isaac Lab Isaac-ShadowHandSpin-Stage{1,2,3}-Direct-v0, vendored in lares/envs/isaac_pen_spin; 157-d full obs, 20-d action, 60 Hz, 360-step episodes). Expert demonstrations: first try a hand-written scripted spinning controller; also search online for an existing trained pen-spinning policy; if neither qualifies, train an RL expert (rsl_rl PPO on the box). No budget ceiling on GPU hours or LLM calls. Known gaps to turn into questions: the env's spin_rate is roll about the pen's own long axis (not end-over-end twirl), success is per step with no episode rule, and the pipeline (manifests, obs schema, runner, records) is MetaWorld-only today. Debug issues, improve the pipeline, and turn unexpected findings into concrete research questions; document results and limitations.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "This tests a genuinely new mechanism—trace selection under matched context—not the already-decided trace-versus-summary comparison, and directly advances the requested pipeline extension. The proposed 1162 episodes and at most 24 LLM calls are worthwhile only after production rollouts obey the known process-isolation requirement; currently that requirement is explicit only for backend checks. Event scoring and pre-fork incumbent accounting also need executable definitions before spending. Retain paired_success_difference increasing by at least 0.20 against uniform-keyframe repair, with the declared upper-bound-below-0.20 falsifier and missing plateau parents or zero-crossing intervals inconclusive.",
+          "suggested_changes": [
+            "Require a fresh Isaac process for every rollout batch, including each parameter setting, demonstration collection, screen, promotion evaluation and fresh evaluation—not just parity checks.",
+            "Freeze the event score's normalization reference, norms, weights, tie-breaking and frame-selection procedure before outcome inspection; specify how endpoints, six-step spacing and exactly 16 frames are reconciled. Freeze rendering so both arms retain the same fields and complete-frame count under the common token ceiling.",
+            "Specify the shared pre-fork incumbent, deterministic selection among zero-success parameter settings, and promotion sequence. Evaluate the incumbent rather than assuming zero success, never install a generated parent without strict promotion, and retain the shared incumbent when an edit is invalid or rejected.",
+            "Reuse scripts/run_full_evolution.py and config/shadowhand_spin_stages.yaml, adding only the missing Isaac adapter. Before live spend, add mocked integration checks for reset/previous-action isolation, observation/action conventions, the frozen reducer, records and strict promotion; retain the 88-episode live parity gate before LLM calls.",
+            "Reconcile the episode ledger with the explicit incumbent and prefix-selection protocol; retain 1162 episodes and 24 calls only if all required evaluations and validity corrections fit those caps, otherwise submit corrected costs."
+          ],
+          "priority": 2,
+          "call_id": "call_00081",
+          "briefing_sha256": "62c13280a728b9df0ff56394ee457489df980c20700c54078df0d7409950e16b",
+          "at": "2026-10-27T09:37:49"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree with revise and every listed change (process per rollout batch, frozen event score, explicit incumbent accounting, mocked integration checks, reconciled costs). One addition I will put in the revision: a third, no-trace arm (slot 1 = another searched exploration, as in the R-037 repair-off runs) in the same blocks. The user's direction is to evaluate plateau-triggered trace repair on pen spinning; D-030 to D-033 established trace-vs-no-trace on MetaWorld only, never on a 20-d dexterous task with a learned expert, so the keyframe comparison is uninterpretable if neither repair arm beats no repair. The no-trace arm reuses the same prefix and incumbent, so it adds one generation call and its screen/promotion/fresh episodes per block, not a new prefix.",
+          "changes_applied": [],
+          "at": "2026-10-27T09:38:07"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": null
+  },
+  "escalation": {},
+  "revisions": []
+}

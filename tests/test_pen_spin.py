@@ -197,5 +197,55 @@ class TestQualification(unittest.TestCase):
         self.assertTrue(s1["promotes"])
 
 
+class TestFeedbackAblation(unittest.TestCase):
+    def _row(self, h, ok, length=359):
+        return {"task_hash": h, "case_id": h, "sustained": ok, "completed": True, "tail_hit_fraction": 1.0 if ok else 0.5,
+                "hit_steps": length, "length": length, "mean_abs_spin": 10.0, "mean_transverse": 1.0}
+
+    def test_select_first_sustained_in_manifest_order(self):
+        from lares.envs.isaac_pen_spin.feedback_ablation import select_demonstration
+
+        rows = [self._row("a", False), self._row("b", True, 300), self._row("c", True)]
+        acts = np.arange(359 * 3 * 20, dtype=np.float32).reshape(359, 3, 20)
+        idx, tape = select_demonstration(rows, acts)
+        self.assertEqual(idx, 1)
+        self.assertEqual(tape.shape, (300, 20))
+        np.testing.assert_array_equal(tape, acts[:300, 1])
+        with self.assertRaises(ValueError):
+            select_demonstration([self._row("a", False)], acts[:, :1])
+
+    def test_tape_shape_checked(self):
+        from lares.envs.isaac_pen_spin.feedback_ablation import ActionTape
+
+        with self.assertRaises(ValueError):
+            ActionTape(np.zeros((10, 19)), {})
+        self.assertEqual(ActionTape(np.zeros((10, 20)), {}).params["steps"], 10)
+
+    def test_aggregate_paired(self):
+        from lares.envs.isaac_pen_spin.feedback_ablation import aggregate
+
+        closed = [self._row(h, True) for h in "abcd"]
+        tape = [self._row("a", True)] + [self._row(h, False) for h in "bcd"]
+        s = aggregate(closed, tape)
+        self.assertAlmostEqual(s["paired_success_difference"], 0.75)
+        self.assertEqual(s["closed_loop"]["successes"], 4)
+        self.assertEqual(s["action_tape"]["successes"], 1)
+        with self.assertRaises(ValueError):
+            aggregate(closed, list(reversed(tape)))
+
+    def test_manifests_match_config(self):
+        import yaml
+
+        from lares.envs.isaac_pen_spin import cases
+        from lares.envs.isaac_pen_spin.feedback_ablation import manifest_paths
+        from lares.eval.manifest import EvaluationManifest
+
+        cfg = yaml.safe_load(open("config/shadowhand_spin_stages.yaml"))["research_protocols"]["feedback_ablation"]
+        for label, path in manifest_paths(cfg).items():
+            if os.path.exists(path):
+                m = cases.build_manifest(3, int(cfg["pool_seeds"][label]), int(cfg["cases"]), label=label)
+                self.assertEqual(EvaluationManifest.load(path).to_dict(), m.to_dict())
+
+
 if __name__ == "__main__":
     unittest.main()

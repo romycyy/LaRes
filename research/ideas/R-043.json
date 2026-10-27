@@ -1,0 +1,116 @@
+{
+  "id": "R-043",
+  "title": "Do anatomical action coordinates improve single-step exploration?",
+  "hypothesis": "A fixed anatomical synergy action interface reduces uncoordinated joint commands and lets single-step symbolic search discover sustained spinning more readily than unrestricted joint-by-joint actions.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.15,
+    "against": "direct 20-joint action single-step exploration",
+    "rationale": "Require at least +0.15 fresh sustained success and a paired t interval above zero across four search blocks; validity or smoother actions alone would not establish useful exploration."
+  },
+  "protocol": {
+    "script": "scripts/run_full_evolution.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_full_evolution.py --config config/shadowhand_spin_stages.yaml --study anatomical_action_coordinates\"'",
+    "seeds": [
+      4150,
+      4151,
+      4152,
+      4153,
+      4154,
+      4155,
+      4156,
+      4157,
+      4158,
+      4159,
+      4160,
+      4161,
+      4162,
+      4163,
+      4164,
+      4165
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_probe_s4154.yaml",
+      "config/manifests/pen_spin_stage3_probe_s4155.yaml",
+      "config/manifests/pen_spin_stage3_probe_s4156.yaml",
+      "config/manifests/pen_spin_stage3_probe_s4157.yaml",
+      "config/manifests/pen_spin_stage3_development_s4158.yaml",
+      "config/manifests/pen_spin_stage3_development_s4159.yaml",
+      "config/manifests/pen_spin_stage3_development_s4160.yaml",
+      "config/manifests/pen_spin_stage3_development_s4161.yaml",
+      "config/manifests/pen_spin_stage3_fresh_s4162.yaml",
+      "config/manifests/pen_spin_stage3_fresh_s4163.yaml",
+      "config/manifests/pen_spin_stage3_fresh_s4164.yaml",
+      "config/manifests/pen_spin_stage3_fresh_s4165.yaml"
+    ],
+    "episodes": 1536,
+    "llm_calls": 16,
+    "code_changes": [
+      "scripts/run_full_evolution.py: add the paired action-interface study using the Isaac backend; disable fitting and trace repair in both arms to isolate exploration.",
+      "config/shadowhand_spin_stages.yaml: freeze a neutral pose and eight anatomical action coordinates—one flexion coordinate for each digit, thumb opposition, shared long-finger spread, and shared distal curl—mapped to the existing normalized 20-joint target interface.",
+      "Freeze the mapping from joint names and limits before simulator tuning; do not derive it from PPO demonstrations or embed the previously tuned scripted gait. Give both arms identical anatomical information and action conventions.",
+      "Use four matched blocks, one generated structure per interface per block, identical symbolic-parameter limits, 24 rollout-search settings, and four probe cases. Permit one validity correction per generated structure using gpt-6.1-sol, reasoning_effort high, temperature 1.",
+      "Use ten-case screens, unchanged strict promotion on development cases 10-39, and 30 fresh cases per block; evaluate the existing baseline rather than assuming its success is zero.",
+      "Reuse the Isaac adapter and its separate-process parity guard at batch sizes 4, 10, and 30. Budget 88 guard episodes, 768 search episodes, 80 screening episodes, 360 promotion episodes, and 240 fresh episodes.",
+      "Record action saturation and variation as diagnostics only; judge the prediction on paired fresh incumbent success across blocks. This changes the executable action space, unlike prior MetaWorld bank seeding or parameter-depth comparisons."
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The paired interval's upper bound is below +0.15; tied success does not support the hypothesis, and an interval spanning zero is inconclusive.",
+  "cost_estimate": {
+    "episodes": 1536,
+    "llm_calls": 16,
+    "wall_time_minutes": 300
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "3d7f4ef6e4bb2b78d072b2773f76ee526150f97e4c5ccb0a4fd567cc6699ac8d",
+  "proposal_call_id": "call_00080",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-27T09:38:06",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-10-27T09:34:57",
+  "direction": "Continue researching the single-step exploration pipeline with plateau-triggered trace repair, extended to pen spinning on the Shadow Hand (Isaac Lab Isaac-ShadowHandSpin-Stage{1,2,3}-Direct-v0, vendored in lares/envs/isaac_pen_spin; 157-d full obs, 20-d action, 60 Hz, 360-step episodes). Expert demonstrations: first try a hand-written scripted spinning controller; also search online for an existing trained pen-spinning policy; if neither qualifies, train an RL expert (rsl_rl PPO on the box). No budget ceiling on GPU hours or LLM calls. Known gaps to turn into questions: the env's spin_rate is roll about the pen's own long axis (not end-over-end twirl), success is per step with no episode rule, and the pipeline (manifests, obs schema, runner, records) is MetaWorld-only today. Debug issues, improve the pipeline, and turn unexpected findings into concrete research questions; document results and limitations.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "This is a useful action-representation experiment, but its 1536 episodes and at most 16 LLM calls should follow R-042's validated Isaac integration and direct-action exploration results. Its weakest point is that eight fixed coordinates can exclude essential spinning motions as well as reduce coordination difficulty; the comparison therefore establishes interface utility, not dimensionality reduction alone. Retain paired_success_difference increasing by at least 0.15 against direct 20-joint exploration, with the declared upper-bound-below-0.15 falsifier; ties are not improvements and zero-crossing intervals are inconclusive.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00081",
+          "briefing_sha256": "62c13280a728b9df0ff56394ee457489df980c20700c54078df0d7409950e16b",
+          "at": "2026-10-27T09:37:49"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree: needs the Isaac pipeline backend R-042 builds and a direct-action exploration result to compare against; and eight fixed coordinates may exclude the flexion-slope roll mechanism found in R-039, so it measures interface utility, not dimensionality.",
+          "changes_applied": [],
+          "at": "2026-10-27T09:38:06"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

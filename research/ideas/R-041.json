@@ -1,0 +1,99 @@
+{
+  "id": "R-041",
+  "title": "Does the qualified expert need feedback, or only a replayed gait?",
+  "hypothesis": "The PPO expert maintains sustained axial roll through state-dependent corrections that a clock-only replay of its successful actions cannot reproduce across reset placements.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.2,
+    "against": "clock-only replay of one frozen successful PPO demonstration",
+    "rationale": "On Stage 3, a gain of at least 0.20 with a paired t interval above zero would justify teaching trace repair feedback relationships rather than an action sequence."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study feedback_ablation\"'",
+    "seeds": [],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_demo_s4100.yaml",
+      "config/manifests/pen_spin_stage3_diagnostic_s4101.yaml"
+    ],
+    "episodes": 160,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py: add the declared study selector and a clock-only action-tape controller; reuse the manifest-driven evaluator.",
+      "config/shadowhand_spin_stages.yaml: freeze two 40-case manifests, Stage 3, and the qualified D-036 seed-4020 model_8239 checkpoint by resolved path and hash.",
+      "Select the first sustained-success demonstration by manifest order, not evaluation performance; replay its complete 360-action sequence without observation feedback or retiming.",
+      "Run demonstration collection once, closed-loop PPO twice, and replay once, each in a separate Isaac process at batch size 40. Abort if PPO repeats have any outcome flips or more than 4/40 diverged environments.",
+      "Record the unchanged D-034 sustained reducer, tail-hit fraction, axial/transverse angular velocity, and action traces; do not promote or change the reducer."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "The paired interval's upper bound is below +0.20; an interval spanning zero is inconclusive, and tied success is not an improvement.",
+  "cost_estimate": {
+    "episodes": 160,
+    "llm_calls": 0,
+    "wall_time_minutes": 30
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "3d7f4ef6e4bb2b78d072b2773f76ee526150f97e4c5ccb0a4fd567cc6699ac8d",
+  "proposal_call_id": "call_00080",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-10-27T09:38:04",
+    "advisor_call_id": "call_00081",
+    "round": 1,
+    "note": "Run this first: 160 simulator episodes and zero LLM calls provide a cheap comparison of the qualified expert against a frozen action tape, with separate-process reproducibility checks and the sustained reducer unchanged. Its main limitation is inferential: failure of this tape would not establish th"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-27T09:38:04",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 1: both say approve"
+    },
+    {
+      "at": "2026-10-27T09:40:39",
+      "from": "approved",
+      "to": "approved",
+      "note": "pre-launch reconciliation (R-037/R-040 precedent): seeds 4100 (demonstration manifest) and 4101 (diagnostic manifest) reserved in the ledger and both 40-case Stage-3 manifests frozen and committed before any rollout, so protocol.seeds is empty and protocol.manifests names the frozen files. Checkpoint frozen by path and SHA-256 (f81be523...85d7) in config research_protocols.feedback_ablation. PPOController moved to lares/envs/isaac_pen_spin/ppo_expert.py (no behaviour change) so the study reuses it."
+    }
+  ],
+  "created_at": "2026-10-27T09:34:57",
+  "direction": "Continue researching the single-step exploration pipeline with plateau-triggered trace repair, extended to pen spinning on the Shadow Hand (Isaac Lab Isaac-ShadowHandSpin-Stage{1,2,3}-Direct-v0, vendored in lares/envs/isaac_pen_spin; 157-d full obs, 20-d action, 60 Hz, 360-step episodes). Expert demonstrations: first try a hand-written scripted spinning controller; also search online for an existing trained pen-spinning policy; if neither qualifies, train an RL expert (rsl_rl PPO on the box). No budget ceiling on GPU hours or LLM calls. Known gaps to turn into questions: the env's spin_rate is roll about the pen's own long axis (not end-over-end twirl), success is per step with no episode rule, and the pipeline (manifests, obs schema, runner, records) is MetaWorld-only today. Debug issues, improve the pipeline, and turn unexpected findings into concrete research questions; document results and limitations.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "Run this first: 160 simulator episodes and zero LLM calls provide a cheap comparison of the qualified expert against a frozen action tape, with separate-process reproducibility checks and the sustained reducer unchanged. Its main limitation is inferential: failure of this tape would not establish that every clock-only controller needs feedback. Retain the prediction of paired_success_difference increasing by at least 0.20 against the frozen replay and its upper-bound-below-0.20 falsifier; intervals including zero remain inconclusive.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00081",
+          "briefing_sha256": "62c13280a728b9df0ff56394ee457489df980c20700c54078df0d7409950e16b",
+          "at": "2026-10-27T09:37:49"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Agree: cheap (160 episodes, 0 calls), one process per cell, unchanged D-034 reducer, and it answers a question trace repair depends on: whether the expert's traces carry feedback relationships or only a tape. Will add the tape controller to the existing evaluator rather than a new rollout loop, and abort on a failed reproducibility gate.",
+          "changes_applied": [],
+          "at": "2026-10-27T09:38:04"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

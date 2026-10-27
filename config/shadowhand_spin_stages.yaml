@@ -67,3 +67,15 @@ research_protocols:
       1: "config/manifests/pen_spin_stage1_promotion_s4030.yaml"
       2: "config/manifests/pen_spin_stage2_promotion_s4031.yaml"
       3: "config/manifests/pen_spin_stage3_promotion_s4032.yaml"
+  # R-041: does the qualified expert need feedback? Closed-loop D-036 expert vs a clock-only replay of one
+  # of its sustained-success action sequences, Stage 3, one process per rollout.
+  #   python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study feedback_ablation
+  feedback_ablation:
+    log_dir: "logs/pen_spin/r041_feedback_ablation"
+    checkpoint: "logs/pen_spin/r040_ppo_expert/train/model_8239.pt"
+    checkpoint_sha256: "f81be523a51cc5bb8bd095d5ed208ba8dd227a37ca05d5dc78283a24d89985d7"
+    training_seed: 4020
+    cases: 40
+    pool_seeds: {demo: 4100, diagnostic: 4101}
+    demonstration_manifest: "config/manifests/pen_spin_stage3_demo_s4100.yaml"
+    diagnostic_manifest: "config/manifests/pen_spin_stage3_diagnostic_s4101.yaml"
