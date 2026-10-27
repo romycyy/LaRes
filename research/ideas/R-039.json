@@ -33,7 +33,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "An upper paired interval bound below +0.20 rules out the predicted gain; failure to reach 0.90 sustained success means the controller does not qualify for that stage regardless of return.",
   "cost_estimate": {
@@ -55,12 +55,245 @@
     "started_at": "2026-10-27T01:06:32",
     "git_sha": "627ea272e183b838a5e7cfa75fe6877dc22ec868",
     "dirty_worktree": false,
-    "log_dir": "logs/pen_spin/r039_scripted_expert"
+    "log_dir": "logs/pen_spin/r039_scripted_expert",
+    "finished_at": "2026-10-27T01:15:38"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.4111111111111111,
+      "paired_success_difference_ci95": [
+        0.30747896415779924,
+        0.5147432580644229
+      ],
+      "pooled_promotion_pairs": 90,
+      "feedback_gait_promotion_success_pooled": 0.41111111111111115,
+      "oscillator_promotion_success_pooled": 0.0,
+      "per_stage_promotion": {
+        "stage1": {
+          "feedback_gait_successes_of_30": 14,
+          "feedback_gait_success": 0.4666666666666667,
+          "oscillator_success": 0.0,
+          "paired_difference": 0.4666666666666667,
+          "paired_ci95": [
+            0.27719432002040323,
+            0.6561390133129301
+          ],
+          "feedback_gait_tail_hit_fraction": 0.8283333333333334,
+          "oscillator_tail_hit_fraction": 0.8038888888888888,
+          "feedback_gait_completed": 0.8666666666666667,
+          "feedback_gait_mean_abs_spin": 24.115314372380574,
+          "feedback_gait_mean_transverse": 3.560781545440356
+        },
+        "stage2": {
+          "feedback_gait_successes_of_30": 16,
+          "feedback_gait_success": 0.5333333333333333,
+          "oscillator_success": 0.0,
+          "paired_difference": 0.5333333333333333,
+          "paired_ci95": [
+            0.3438609866870699,
+            0.7228056799795968
+          ],
+          "feedback_gait_tail_hit_fraction": 0.84,
+          "oscillator_tail_hit_fraction": 0.5011111111111112,
+          "feedback_gait_completed": 0.9333333333333333,
+          "feedback_gait_mean_abs_spin": 25.83052158355713,
+          "feedback_gait_mean_transverse": 4.759572259585062
+        },
+        "stage3": {
+          "feedback_gait_successes_of_30": 7,
+          "feedback_gait_success": 0.23333333333333334,
+          "oscillator_success": 0.0,
+          "paired_difference": 0.23333333333333334,
+          "paired_ci95": [
+            0.07270033612932628,
+            0.3939663305373404
+          ],
+          "feedback_gait_tail_hit_fraction": 0.5072222222222221,
+          "oscillator_tail_hit_fraction": 0.3753046594982079,
+          "feedback_gait_completed": 0.8666666666666667,
+          "feedback_gait_mean_abs_spin": 21.40856667757034,
+          "feedback_gait_mean_transverse": 3.486862709124883
+        }
+      },
+      "per_stage_screen_feedback_gait_success": {
+        "stage1": 0.4,
+        "stage2": 0.4,
+        "stage3": 0.5
+      },
+      "qualifies": {
+        "stage1": {
+          "open_loop_digit_oscillation": false,
+          "feedback_gait": false
+        },
+        "stage2": {
+          "open_loop_digit_oscillation": false,
+          "feedback_gait": false
+        },
+        "stage3": {
+          "open_loop_digit_oscillation": false,
+          "feedback_gait": false
+        }
+      },
+      "promotes_per_stage": {
+        "stage1": true,
+        "stage2": true,
+        "stage3": true
+      },
+      "episodes": {
+        "evaluation": 240,
+        "reproducibility_control": 480,
+        "tuning_debug": 1720
+      },
+      "llm_calls": 0
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "baseline": "frozen R-038 open-loop oscillator (D-034) on the same 40-case development manifests, own process per stage",
+      "reproducibility_control": {
+        "stage1/open_loop_digit_oscillation": {
+          "bit_identical": false,
+          "spin_rate_diverged_envs": 1,
+          "center_dist_diverged_envs": 1,
+          "union_diverged_envs": 1,
+          "sustained_outcome_flips": 0,
+          "passes": true
+        },
+        "stage1/feedback_gait": {
+          "bit_identical": false,
+          "spin_rate_diverged_envs": 1,
+          "center_dist_diverged_envs": 1,
+          "union_diverged_envs": 1,
+          "sustained_outcome_flips": 0,
+          "passes": true
+        },
+        "stage2/open_loop_digit_oscillation": {
+          "bit_identical": false,
+          "spin_rate_diverged_envs": 2,
+          "center_dist_diverged_envs": 2,
+          "union_diverged_envs": 2,
+          "sustained_outcome_flips": 0,
+          "passes": true
+        },
+        "stage2/feedback_gait": {
+          "bit_identical": true,
+          "spin_rate_diverged_envs": 0,
+          "center_dist_diverged_envs": 0,
+          "union_diverged_envs": 0,
+          "sustained_outcome_flips": 0,
+          "passes": true
+        },
+        "stage3/open_loop_digit_oscillation": {
+          "bit_identical": false,
+          "spin_rate_diverged_envs": 2,
+          "center_dist_diverged_envs": 2,
+          "union_diverged_envs": 2,
+          "sustained_outcome_flips": 0,
+          "passes": true
+        },
+        "stage3/feedback_gait": {
+          "bit_identical": false,
+          "spin_rate_diverged_envs": 1,
+          "center_dist_diverged_envs": 1,
+          "union_diverged_envs": 1,
+          "sustained_outcome_flips": 0,
+          "passes": true
+        }
+      }
+    },
+    "artifacts": [
+      "logs/pen_spin/r039_scripted_expert/control/report.json",
+      "logs/pen_spin/r039_scripted_expert/control/report_bit_identity_failed.json",
+      "logs/pen_spin/r039_scripted_expert/control/stage1_feedback_gait_a.json",
+      "logs/pen_spin/r039_scripted_expert/control/stage1_feedback_gait_b.json",
+      "logs/pen_spin/r039_scripted_expert/control/stage1_open_loop_digit_oscillation_a.json",
+      "logs/pen_spin/r039_scripted_expert/control/stage1_open_loop_digit_oscillation_b.json",
+      "logs/pen_spin/r039_scripted_expert/control/stage2_feedback_gait_a.json",
+      "logs/pen_spin/r039_scripted_expert/control/stage2_feedback_gait_b.json",
+      "logs/pen_spin/r039_scripted_expert/control/stage2_open_loop_digit_oscillation_a.json",
+      "logs/pen_spin/r039_scripted_expert/control/stage2_open_loop_digit_oscillation_b.json",
+      "logs/pen_spin/r039_scripted_expert/control/stage3_feedback_gait_a.json",
+      "logs/pen_spin/r039_scripted_expert/control/stage3_feedback_gait_b.json",
+      "logs/pen_spin/r039_scripted_expert/control/stage3_open_loop_digit_oscillation_a.json",
+      "logs/pen_spin/r039_scripted_expert/control/stage3_open_loop_digit_oscillation_b.json",
+      "logs/pen_spin/r039_scripted_expert/control_run.log",
+      "logs/pen_spin/r039_scripted_expert/run.log",
+      "logs/pen_spin/r039_scripted_expert/stage1_feedback_gait.json",
+      "logs/pen_spin/r039_scripted_expert/stage1_feedback_gait.npz",
+      "logs/pen_spin/r039_scripted_expert/stage1_open_loop_digit_oscillation.json",
+      "logs/pen_spin/r039_scripted_expert/stage1_open_loop_digit_oscillation.npz",
+      "logs/pen_spin/r039_scripted_expert/stage2_feedback_gait.json",
+      "logs/pen_spin/r039_scripted_expert/stage2_feedback_gait.npz",
+      "logs/pen_spin/r039_scripted_expert/stage2_open_loop_digit_oscillation.json",
+      "logs/pen_spin/r039_scripted_expert/stage2_open_loop_digit_oscillation.npz",
+      "logs/pen_spin/r039_scripted_expert/stage3_feedback_gait.json",
+      "logs/pen_spin/r039_scripted_expert/stage3_feedback_gait.npz",
+      "logs/pen_spin/r039_scripted_expert/stage3_open_loop_digit_oscillation.json",
+      "logs/pen_spin/r039_scripted_expert/stage3_open_loop_digit_oscillation.npz",
+      "logs/pen_spin/r039_scripted_expert/summary.json",
+      "logs/pen_spin/r039_scripted_expert/sweeps/s1_a.json",
+      "logs/pen_spin/r039_scripted_expert/sweeps/s1_a_out.json",
+      "logs/pen_spin/r039_scripted_expert/sweeps/s1_b.json",
+      "logs/pen_spin/r039_scripted_expert/sweeps/s1_b_out.json",
+      "logs/pen_spin/r039_scripted_expert/sweeps/s1_c.json",
+      "logs/pen_spin/r039_scripted_expert/sweeps/s1_c_out.json",
+      "logs/pen_spin/r039_scripted_expert/sweeps/s1_d.json",
+      "logs/pen_spin/r039_scripted_expert/sweeps/s1_d_out.json",
+      "logs/pen_spin/r039_scripted_expert/sweeps/s1_e.json",
+      "logs/pen_spin/r039_scripted_expert/sweeps/s1_e_out.json",
+      "logs/pen_spin/r039_scripted_expert/sweeps/s1_f.json",
+      "logs/pen_spin/r039_scripted_expert/sweeps/s1_f_out.json",
+      "logs/pen_spin/r039_scripted_expert/sweeps/s1_g.json",
+      "logs/pen_spin/r039_scripted_expert/sweeps/s1_g_out.json",
+      "logs/pen_spin/r039_scripted_expert/sweeps/s1_h.json",
+      "logs/pen_spin/r039_scripted_expert/sweeps/s1_h_out.json",
+      "logs/pen_spin/r039_scripted_expert/sweeps/s1_select.json",
+      "logs/pen_spin/r039_scripted_expert/sweeps/s1_select_out.json",
+      "logs/pen_spin/r039_scripted_expert/tuning_budget.jsonl"
+    ],
+    "notes": [
+      "Prediction (paired_success_difference >= +0.20 vs the frozen oscillator, 90 pooled promotion pairs) holds: +0.411, t interval [0.307, 0.515]; each stage promotes on its own interval (stage 1 +0.467 [0.277, 0.656], stage 2 +0.533 [0.344, 0.723], stage 3 +0.233 [0.073, 0.394]).",
+      "Qualification fails on every stage: 14/30, 16/30, 7/30 sustained successes against the >= 27/30 rule. The scripted gait is not a demonstration source; R-040's PPO fallback is needed for all three stages.",
+      "Failure anatomy: the gait keeps the pen spinning fast (mean |roll| 21-26 rad/s, far above the 1/3/4 rad/s thresholds), so stage 2 (16/30) scores above stage 1 (14/30); failures are drops (completed 0.87/0.93/0.87) and tail dips (tail-hit fraction 0.83/0.84/0.51), and stage 3's tighter 0.08 m centre tolerance costs most.",
+      "The gait also tumbles the pen: mean transverse (end-over-end) rate 3.5-4.8 rad/s against about 0.4 for the oscillator in R-038. The task neither requires nor penalises it.",
+      "Reproducibility: the frozen bit-identity control failed (5/6 cells not bit-identical across fresh processes at batch 40; 1-2/40 envs diverge, earliest step 78). Amended before any development case ran (advisor consult call_00075): zero sustained-outcome flips and <= 4/40 diverged envs per cell; passed (max 2/40, 0 flips). GPU PhysX at batch 40 is near- but not bit-deterministic across processes, and tuning showed outcomes also depend on batch composition (same setting and cases scored 0.75 vs 0.60 in two sweeps).",
+      "Correction found during implementation: Isaac Lab sorts the actuated joints, so R-038's oscillator blocks were index ranges, not fingers; its behaviour (and so this baseline) is unchanged, its description is corrected in controllers.py.",
+      "Mechanism actually found by tuning (debug seed 4098 only, 1720 of 2400 allowed episodes): open-loop finger gaits rock the pen (5-14 roll-direction flips per final second); a palm-tilt rate loop rolls one way but too slowly; a PI loop from roll rate to finger flexion bias (the fingers as a variable slope) produced fast one-directional spin. The frozen constants are scripted_expert.FROZEN_R039."
+    ]
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 0.4111111111111111,
+    "delta": 0.4111111111111111,
+    "matched": true
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "supported",
+      "confidence": 0.85,
+      "reasoning": "The preregistered prediction is a paired gain of at least +0.20 over the frozen oscillator on 90 pooled promotion pairs: measured +0.411, t interval [0.307, 0.515], lower bound above the threshold, and each stage promotes on its own strictly positive interval. Feedback does sustain axial roll better than open-loop oscillation, and the mechanism is identified: roll-rate PI on finger flexion turns rocking (5-14 direction flips per second) into fast one-directional spin. Two limits keep this from being more: (1) qualification fails on every stage (14/30, 16/30, 7/30 vs 27), so the scripted controller is not an expert and the user's fallback (PPO, R-040) now applies to all three stages; (2) the reproducibility control was amended mid-run (before any development case ran, advisor-agreed) because GPU PhysX is not bit-deterministic across processes at batch 40; outcome-level agreement was perfect on 240 control pairs. Confidence 0.85 rather than higher because the baseline is an oscillator that never succeeds, so the gain partly measures 'any success at all'.",
+      "cited_artifacts": [],
+      "next_experiment": "Re-triage R-040 (PPO expert) for all three stages, recalibrated as argued in its round-1 triage: budget in env steps with many parallel envs, success and roll logged separately from return, a check that the reward (centring 3.0 vs spin 0.15 at stage 1) does not teach holding still, and the D-034 reducer for qualification. Separate idea: should the frozen gait's 47-53% sustained success seed the policy-search pipeline as a non-expert prior, or the tail-fraction near-misses inform a less brittle reducer?",
+      "recorded_at": "2026-10-27T01:15:50",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "supported",
+      "confidence": 0.94,
+      "reasoning": "The predicted increase of at least +0.20 in paired_success_difference versus the measured frozen oscillator held: the pooled difference was +0.411, with a 95% paired interval of [0.307, 0.515] across 90 promotion pairs [logs/pen_spin/r039_scripted_expert/summary.json]. Each stage also had a strictly positive paired interval lower bound, supporting relative promotion separately [logs/pen_spin/r039_scripted_expert/summary.json]. Expert qualification nevertheless failed everywhere: sustained successes were 14/30, 16/30 and 7/30, all below the required 27/30 [logs/pen_spin/r039_scripted_expert/summary.json]. Reproducibility remains a caveat: the original bit-identity gate failed in five of six cells, although no sustained-outcome flips occurred; support is therefore conditional on the reported pre-evaluation amendment, not compliance with the original gate [logs/pen_spin/r039_scripted_expert/control/report_bit_identity_failed.json] [logs/pen_spin/r039_scripted_expert/control/report.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r039_scripted_expert/summary.json",
+        "logs/pen_spin/r039_scripted_expert/control/report_bit_identity_failed.json",
+        "logs/pen_spin/r039_scripted_expert/control/report.json"
+      ],
+      "next_experiment": "Re-triage deferred R-040 for PPO expert qualification, now that the scripted comparator is frozen and no stage qualified [logs/pen_spin/r039_scripted_expert/summary.json].",
+      "recorded_at": "2026-10-27T01:16:13",
+      "call_id": "call_00076"
+    }
+  ],
+  "decision_id": "D-035",
   "history": [
     {
       "at": "2026-10-27T00:35:52",
@@ -97,6 +330,18 @@
       "from": "running",
       "to": "running",
       "note": "control amendment (advisor consult call_00075, option A, decided before any development case ran): the frozen bit-identity control FAILED on 5/6 cells (GPU PhysX at batch 40 is not bit-deterministic across processes; 1-2/40 envs diverge, earliest step 78) and the run stopped before evaluation. Amended gate: per cell zero paired sustained-outcome flips and <= 4/40 envs diverging in spin_rate or center_dist (union); it passes on the saved 480 control episodes (max union 2/40, 0 flips) without rerunning seed 4098. Seeds 4010-4012: no development-cell output exists on the box, so no development episode had run; they stay with this idea. Gait, reducer, manifests, prediction and qualification unchanged."
+    },
+    {
+      "at": "2026-10-27T01:15:38",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=True"
+    },
+    {
+      "at": "2026-10-27T01:16:23",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-035: supported"
     }
   ],
   "created_at": "2026-10-27T00:34:23",

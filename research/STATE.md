@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-10-27T01:12:12 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-10-27T01:16:23 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -10,17 +10,16 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 1 |
+| running | 0 |
 | approved | 0 |
 | proposed | 0 |
 | deferred | 1 |
-| decided | 34 |
+| decided | 35 |
 | rejected | 4 |
 
 ## Needs attention
 
-- **R-039** [running] 2. Can feedback-controlled finger gaiting qualify a scripted expert?
-  - run the protocol, then `python scripts/research.py record R-039 --results <json>`
+- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
@@ -28,6 +27,9 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 
 ## Last 5 decisions
 
+- D-035 · R-039 · **supported** · 2026-10-27
+  R-039 tested whether a scripted feedback finger gait could qualify as the pen-spin expert. Tuned on a debug seed only and frozen before the development cases, the gait regulates roll rate through the long fingers' flexion (the fingers act as a variable slope), which turns the open-loop oscillator's rocking into fast one-directional spin (21-26 rad/s mean). On 90 pooled promotion pairs it beat the frozen R-038 oscillator by +0.411 [0.307, 0.515] sustained success, promoting on every stage: supported. It does not qualify as an expert on any stage: 14/30, 16/30 and 7/30 sustained successes against the 27/30 rule, with failures from drops and tail dips, not speed (stage 3's 0.08 m tolerance costs most); it also tumbles the pen end over end (3.5-4.8 rad/s). The frozen bit-identity reproducibility control failed (GPU PhysX at batch 40 is not bit-deterministic across processes: 1-2/40 environments diverge after step 78) and was amended before any development case ran to zero outcome flips and at most 4/40 diverged environments, which passed (0 flips in 240 pairs). The user's fallback, a PPO expert, now applies to all three stages.
+  Next: Re-triage R-040 (PPO expert) for all three stages, recalibrated as argued in its round-1 triage: budget in env steps with many parallel envs, success and roll logged separately from return, a check that the reward (centring 3.0 vs spin 0.15 at stage 1) does not teach holding still, and the D-034 reducer for qualification. Separate idea: should the frozen gait's 47-53% sustained success seed the policy-search pipeline as a non-expert prior, or the tail-fraction near-misses inform a less brittle reducer?
 - D-034 · R-038 · **supported** · 2026-10-27
   R-038 built the first manifest-driven evaluation path for the Shadow Hand pen-spin task (frozen reset placements written into the simulator, a named 157-d observation layout, per-step traces) and audited the episode success rule the env leaves undefined. On 60 identical trajectories (3 stages x 10 probe cases x neutral hand and open-loop finger oscillator), any-hit success was 0.983 and sustained success (time-out without a fall, predicate true on all of the final 60 steps) 0.000: paired -0.983 [-1.017, -0.950], supported. Any-hit is degenerate: a neutral hand scores 1.0 because the dropped pen rolls on landing at steps 5-8, while it drops the pen in 29/30 episodes. The oscillator keeps the pen in hand to time-out in 29/30 episodes and passes 84/56/39% of tail steps (stage 1/2/3) at about 4 rad/s of roll, but never all 60, so whether 'all steps' is too strict for a periodic gait is open. Two infrastructure findings: the previous run's action leaked into the next run's observation, and a second rollout in one Isaac process is not reproducible (the first is bit-identical across processes), so protocols run one process per cell. The task rewards roll about the pen's own axis; end-over-end rotation stays below 0.8 rad/s.
   Next: Re-triage R-039 (scripted feedback gait) with the sustained rule frozen as the qualification reducer, and report tail-hit fraction beside it so a periodic gait's near-misses are visible. Open question to propose: is 'all 60 steps' too strict for any periodic gait, i.e. should the rule be a tail-fraction or mean-rate criterion? Decide it before any expert is qualified, not after.
@@ -40,9 +42,6 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 - D-031 · R-035 · **refuted** · 2026-10-22
   R-035 scanned shelf-place, basketball and soccer for a second recoverable plateau. All three experts qualified (1.00, 1.00, 0.90), and one single-phase structure plus 24-candidate search already succeeded on every task's probe (22, 20 and 23 of 24 candidates), so no task is a plateau: refuted. Across all scans, assembly-v2 is the only MetaWorld task where single-phase generation plus search plateaus, and expert-trace editing solves it (D-027, D-028, D-030).
   Next: Integrate trace-guided repair into the two-lane pipeline (R-036).
-- D-030 · R-034 · **supported** · 2026-10-22
-  R-034 applied expert-trace whole-controller editing (ten expert-only demonstrations, two traces, one validity correction) to three assembly-v2 parents that all score 0.00: the D-020 structure whose grasps the expert could not recover, and two fresh generations. All three trace edits scored 1.00 and all three summary-only edits 0.00 on 30 fresh cases: +1.000 per parent, supported. The trace effect does not need a recoverable parent; edits rewrite grasping as well as placement when shown the expert trajectory.
-  Next: Integrate trace-guided repair into the two-lane pipeline (R-036) and look for a second plateau task (R-035).
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
