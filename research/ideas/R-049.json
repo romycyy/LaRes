@@ -37,7 +37,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "approved",
+  "status": "running",
   "source": "advisor",
   "falsified_by": "An upper paired interval bound below +0.15 refutes the predicted gain; an interval spanning +0.15 is inconclusive. All-zero incumbents refute the predicted gain without identifying why the structures failed.",
   "cost_estimate": {
@@ -55,7 +55,12 @@
     "round": 1,
     "note": "This tests whether D-040's feedback-dependence finding can improve cold exploration through prompt structure, rather than assuming an expert lesion result transfers to generated controllers. The contemporaneous controls, stage-stratified reporting, and unchanged action interface make the 2400 simula"
   },
-  "run": {},
+  "run": {
+    "started_at": "2026-10-27T17:49:34",
+    "git_sha": "d6241fe50b20e84f934ffffccfb4a648303adf69",
+    "dirty_worktree": false,
+    "log_dir": ""
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -72,6 +77,12 @@
       "from": "approved",
       "to": "approved",
       "note": "implementation amendments before start: manifests ['config/manifests/pen_spin_two_channel_cold_development_s4220_s4227.yaml', 'config/manifests/pen_spin_two_channel_cold_probe_s4220_s4227.yaml', 'config/manifests/pen_spin_two_channel_cold_fresh_s4220_s4227.yaml'] -> one 80-case file per block seed (a pen-spin manifest holds exactly one pool seed and one stage, so a multi-seed, two-stage role file cannot exist; same cases, roles by index: screen 0-9, promotion 10-39, probe 40-49, fresh 50-79). The null incumbent is scored as the neutral pose (every joint at its default) on each block's 80 placements, as the protocol's 'evaluate the null incumbent' requires. Calls: one per slot plus at most one correction (<=8 per arm, <=128 total, within 192). Command 'gpu run \\'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study two_channel_cold --block-seeds 4220,4221,4222,4223,4224,4225,4226,4227 --output-dir logs/pen_spin_two_channel_cold\"\\'' -> the orchestrator venv with ~/.profile (Isaac's Python has no openai; Isaac children are started per evaluation, as in R-042..R-048), backgrounded. Seeds 4220-4227 recorded in config/experiment_seed_ledger.jsonl with the frozen manifests and cleared from protocol.seeds so start does not read its own manifests as spent."
+    },
+    {
+      "at": "2026-10-27T17:49:34",
+      "from": "approved",
+      "to": "running",
+      "note": "git d6241fe50b"
     }
   ],
   "created_at": "2026-10-27T16:59:50",
