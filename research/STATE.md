@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-10-27T17:06:22 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-10-27T17:10:41 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -10,17 +10,15 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 1 |
+| running | 0 |
 | approved | 2 |
 | proposed | 0 |
 | deferred | 1 |
-| decided | 41 |
+| decided | 42 |
 | rejected | 4 |
 
 ## Needs attention
 
-- **R-047** [running] Measure the expert's retention-feedback latency budget
-  - run the protocol, then `python scripts/research.py record R-047 --results <json>`
 - **R-048** [approved] Expose the expert's local feedback map instead of isolated labels
   - `python scripts/research.py start R-048` then run its command
 - **R-049** [approved] Require separate retention and spin feedback in cold exploration
@@ -32,6 +30,9 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 
 ## Last 5 decisions
 
+- D-042 · R-047 · **supported** · 2026-10-27
+  Predicted a paired decrease of at least 0.25; observed -1.000 (40/40 -> 0/40) for a four-step pen-state delay, with the reproducibility control bit-identical (0 diverged, 0 flips). The hand-state delay is equally fatal (0/40, 39 drops). The claim is limited to this checkpoint under a temporal joint-distribution shift; with one delay value there is no dose-response, so the failure threshold lies at or below 67 ms but is otherwise unmeasured.
+  Next: If latency matters for the pipeline, a dose-response (1, 2 steps) would locate the threshold; for generated controllers, the implication is that retention needs current-step pen and hand feedback, which R-049's two-channel requirement tests directly.
 - D-041 · R-046 · **inconclusive** · 2026-10-27
   The predeclared rule needs >=3 eligible blocks; the plateau trigger fired in only 1 of 4 (blocks 0 and 2 had a probe success, block 3 promoted a cold prefix candidate at +0.333 [0.154, 0.512]), so the primary contrast is undefined and the trigger was not weakened. Block 1 is suggestive only: whole_edit replaced the gait (delta = desired - gait) and dropped the pen in 24/30 fresh cases (0/30), while bounded_residual matched the unchanged gait (0.467 vs 0.433; 9 wins 8 losses 13 ties), i.e. preservation, not improvement. The unexpected finding is the cold prefix's non-zero base rate on Stage 3 (3/4 blocks with probe successes, 1 promotion) after R-042 found 0/4 under the same search; whether Stage 3 is a floor depends on seeds, which a base-rate study should measure before any further plateau-gated comparison.
   Next: Measure the cold single-step search's Stage 3 base rate (probe-success and promotion rates) over many prefix blocks, and run the gait-residual comparison ungated (every block) instead of behind the plateau trigger.
@@ -44,9 +45,6 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 - D-038 · R-042 · **refuted** · 2026-10-27
   The predeclared primary, event minus uniform fresh sustained success paired over four blocks, is exactly 0.000 with a degenerate [0,0] interval; the protocol's conclusiveness rule (>=3 eligible blocks) is met with 4/4 triggers fired, and the interval excludes the predicted +0.20, so the prediction as stated is refuted. The caveat is a floor: all twelve continuation arms ended with the null incumbent, so the study cannot rank keyframe rules at any effect size it could detect and does not show trace repair is useless in general. Development evidence agrees there is no trace benefit: promotion-set successes no_trace 2/120, uniform 0/120, event 1/120; exploratory tail-hit contrasts event-uniform -0.047 [-0.195,+0.102], uniform-no_trace +0.079 [-0.088,+0.245]. Trace-arm candidates in blocks 0-1 spin while held (highest tail-hit 0.40, 0.335) but drop the pen in 28-30 of 30 promotion cases, consistent with D-037: the expert's competence is its feedback map, which 32 sparse state-action keyframes from 2 episodes do not convey to a 6-10 parameter controller. Demonstrations 10/10 and parity 0 flips, so the null is not an integration fault.
   Next: Stage 3 is at the floor for single-step symbolic exploration; next test a dense, fitted use of the expert (e.g. parameter fitting of the edited controller to expert state-action pairs, rollout-selected) or move the repair study to Stage 1/2 where generated controllers have non-zero base rates, so a trace effect is measurable.
-- D-037 · R-041 · **supported** · 2026-10-27
-  R-041 asked whether the qualified PPO pen-spin expert (D-036) needs state feedback or only a replayable gait. On 40 fresh Stage-3 cases the closed-loop expert succeeded 40/40 while a clock-only replay of its first successful demonstration (359 actions) succeeded 0/40: paired +1.000, supported. The replay dropped the pen in 30/40 episodes (steps 17-355) and the survivors passed 35% of tail steps; end-over-end rate rose from 2.8 to 4.3 rad/s. A pre-launch smoke test showed that even on its own placement the tape tracks the recording only through step 16, then drifts to failure once the batch's other environments differ. The expert's success depends on corrections; a single tape is not a sufficient demonstration. Limitation: one tape; the corrective mechanism is not identified. A smoke test also caught and fixed a tape-slicing bug (the runner stores actions case-major).
-  Next: Revise R-042: Isaac backend for run_full_evolution and plateau-triggered trace repair on pen spinning, with a no-trace arm beside uniform and event-selected keyframe arms; traces must expose state-action corrections, not only action timelines.
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 

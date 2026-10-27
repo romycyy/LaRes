@@ -1,0 +1,135 @@
+{
+ "metrics": {
+  "paired_success_difference": -1.0,
+  "paired_success_difference_ci95": [
+   -1.0,
+   -1.0
+  ],
+  "pen_state_delayed4_minus_expert": {
+   "n": 40,
+   "mean": -1.0,
+   "se": 0.0,
+   "low": -1.0,
+   "high": -1.0,
+   "p_value": 0.0
+  },
+  "hand_state_delayed4_minus_expert": {
+   "n": 40,
+   "mean": -1.0,
+   "se": 0.0,
+   "low": -1.0,
+   "high": -1.0,
+   "p_value": 0.0
+  },
+  "delay_steps": 4,
+  "delay_seconds": 0.0667,
+  "arms": {
+   "expert": {
+    "n": 40,
+    "successes": 40,
+    "success": 1.0,
+    "completed": 1.0,
+    "tail_hit_fraction": 1.0,
+    "hit_fraction": 0.9806406685236769,
+    "mean_length": 359.0,
+    "mean_abs_spin": 17.015426921844483,
+    "mean_transverse": 2.7613835632801056,
+    "drops": 0,
+    "tail_spin_failures": 0,
+    "median_fall_step": null
+   },
+   "pen_state_delayed4": {
+    "n": 40,
+    "successes": 0,
+    "success": 0.0,
+    "completed": 0.175,
+    "tail_hit_fraction": 0.45469632768361573,
+    "hit_fraction": 0.5358633198655072,
+    "mean_length": 176.9,
+    "mean_abs_spin": 11.14821549654007,
+    "mean_transverse": 3.999337711930275,
+    "drops": 33,
+    "tail_spin_failures": 7,
+    "median_fall_step": 116.0
+   },
+   "hand_state_delayed4": {
+    "n": 40,
+    "successes": 0,
+    "success": 0.0,
+    "completed": 0.025,
+    "tail_hit_fraction": 0.37356608092615884,
+    "hit_fraction": 0.44487004809531017,
+    "mean_length": 113.825,
+    "mean_abs_spin": 14.558973002433778,
+    "mean_transverse": 5.673943960666657,
+    "drops": 39,
+    "tail_spin_failures": 1,
+    "median_fall_step": 83.0
+   },
+   "expert_repeat": {
+    "n": 40,
+    "successes": 40,
+    "success": 1.0,
+    "completed": 1.0,
+    "tail_hit_fraction": 1.0,
+    "hit_fraction": 0.9806406685236769,
+    "mean_length": 359.0,
+    "mean_abs_spin": 17.015426921844483,
+    "mean_transverse": 2.7613835632801056,
+    "drops": 0,
+    "tail_spin_failures": 0,
+    "median_fall_step": null
+   }
+  },
+  "fall_step_quartiles": {
+   "pen_state_delayed4": [
+    80.0,
+    116.0,
+    183.0
+   ],
+   "hand_state_delayed4": [
+    53.0,
+    83.0,
+    122.5
+   ]
+  },
+  "r044_comparison": {
+   "pen_state_clamped": {
+    "successes": 0,
+    "n": 40,
+    "drops": 39,
+    "median_fall_step": 49
+   },
+   "hand_state_clamped": {
+    "successes": 1,
+    "n": 40,
+    "drops": 22,
+    "tail_spin_failures": 17
+   }
+  }
+ },
+ "controls": {
+  "reproducibility": {
+   "union_diverged_envs": 0,
+   "sustained_outcome_flips": 0,
+   "max_diverged_envs": 4,
+   "passes": true
+  },
+  "expert": "40/40 twice, bit-identical traces (0 diverged environments, 0 flips)"
+ },
+ "artifacts": [
+  "logs/pen_spin_feedback_delay_s4200/summary.json",
+  "logs/pen_spin_feedback_delay_s4200/expert.json",
+  "logs/pen_spin_feedback_delay_s4200/expert_repeat.json",
+  "logs/pen_spin_feedback_delay_s4200/pen_state_delayed4.json",
+  "logs/pen_spin_feedback_delay_s4200/hand_state_delayed4.json",
+  "logs/pen_spin_feedback_delay_s4200/run.log"
+ ],
+ "notes": [
+  "Delaying either observation group by 4 control steps (67 ms at 60 Hz) drops the expert from 40/40 to 0/40 (-1.000, every case lost; the t interval degenerates to a point). Pen-state delay: 33 drops (median fall step 116) and 7 tail-spin failures; hand-state delay: 39 drops (median 83) and 1 tail-spin failure.",
+  "Compared with R-044's constant clamps (pen: median fall step 49), a pen-state delay keeps the pen about twice as long but still loses every case; delaying hand state is worse than clamping it (0/40 vs 1/40, 39 vs 22 drops), plausibly because delayed joint positions beside a live last_action give a self-inconsistent proprioceptive state.",
+  "Only one delay (4 steps) was run, so there is no dose-response: the latency at which the expert starts failing lies at or below 67 ms and is unmeasured.",
+  "Limitation kept from the protocol: a delayed group beside live groups is a temporal joint-distribution shift the expert never trained on; this characterizes this PPO checkpoint's sensitivity, not a feedback-bandwidth requirement for symbolic controllers.",
+  "Accounting: 160 episodes (4 processes x 40), 0 LLM calls; about 2 minutes of GPU time."
+ ]
+}

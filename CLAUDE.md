@@ -529,6 +529,9 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   1/4 blocks: the cold 157-d prefix had probe successes in 3/4 and promoted in block 3 (+0.333 [0.15, 0.51]), so
   R-042's "floor" is seed-dependent. In block 1, whole_edit replaced the gait and dropped the pen (0/30); bounded
   residual matched the unchanged gait (0.467 vs 0.433), which alone promoted at 0.500.
+- **R-047 result (D-042, supported).** Feeding either group (pen state or hand state) four steps late (67 ms) drops the
+  expert from 40/40 to 0/40 (`feedback_delay.py`, `--study feedback_delay`); pen-delay falls come later (median step
+  116) than R-044's clamps (49). One delay only, so the latency threshold is unmeasured; this checkpoint only.
 - **Code extraction.** Generated code keeps only the class, so module-level constants in a reply are dropped.
 
 **Isaac Lab ShadowHandSpin.** A second, parallel stack merged in from the Isaac branch:
