@@ -33,6 +33,9 @@ class NeutralPose:
 
     name = "neutral_pose"
 
+    def reset(self, ctx):
+        pass
+
     def __call__(self, obs, t, ctx):
         return ctx.neutral_action.clone()
 

@@ -55,6 +55,22 @@ class IsaacExpertActor:
         return spec
 
 
+class NeutralActor:
+    """R-049: every joint held at its default pose, the scored stand-in for the null incumbent."""
+
+    action_mode = "deterministic"
+    name = "neutral_pose"
+
+    def spec(self) -> dict:
+        return {"kind": "neutral"}
+
+    def reset(self, case):  # pragma: no cover - the child drives it
+        pass
+
+    def act(self, obs):  # pragma: no cover - never stepped in this process
+        raise RuntimeError("the neutral pose runs only inside a pen-spin child process")
+
+
 class GaitActor:
     """R-046: the frozen R-039 gait alone, as a pipeline actor (it only runs inside a child process)."""
 

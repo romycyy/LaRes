@@ -158,7 +158,7 @@ def toy_rollout(manifest, controller, device="cpu"):
         done = fall | (t == T - 2)
         completed = np.where(alive & done, ~fall, completed)
         alive = alive & ~done
-    return {"stage": 3, "manifest_id": manifest.manifest_id, "case_ids": [c.case_id for c in manifest.episodes],
+    return {"stage": cases.stage_of(manifest), "manifest_id": manifest.manifest_id, "case_ids": [c.case_id for c in manifest.episodes],
             "task_hashes": [c.task_hash for c in manifest.episodes], "max_episode_length": T, "length": length,
             "completed": completed, "pred": pred, **rec, "obs": np.stack(obs_tr, axis=1),
             "actions": np.stack(act_tr, axis=1)}
@@ -195,7 +195,7 @@ class FakeChild:
 
                 ctrl = ShadowGait(ctrl)
         else:
-            ctrl = build_controller(spec, ENV_ID)
+            ctrl = build_controller(spec, cases.STAGES[cases.stage_of(m)].task_id)
         trace = toy_rollout(m, ctrl)
         resp = {"request_path": request_path, "episodes": pb.rows_from_trace(trace)}
         if req["record"]:
@@ -1101,6 +1101,105 @@ class TestLocalFeedbackStudy(unittest.TestCase):
         self.assertEqual(s["n_blocks"], 2)
         self.assertEqual(len(s["sensitivity_minus_raw_labels_fresh_incumbent"]["per_block"]), 2)
         self.assertIn("sensitivity_minus_parent_fresh_incumbent", s)
+
+    def test_a_rerun_resumes_without_a_new_episode_or_call(self):
+        before, calls = len(self.r.child.requests), len(self.r.llm.labels)
+        self.r.run()
+        self.assertEqual(len(self.r.child.requests), before)
+        self.assertEqual(len(self.r.llm.labels), calls)
+
+
+class TwoChannelRun:
+    def __init__(self, per_stage=1):
+        from lares.envs.isaac_pen_spin import two_channel
+
+        self.tc = two_channel
+        self.tmp = tempfile.TemporaryDirectory()
+        root = self.tmp.name
+        cfg = yaml.safe_load(open(CONFIG))
+        c = cfg["two_channel_cold"]
+        c["study_dir"] = os.path.join(root, "study")
+        c["stage1_seeds"], c["stage2_seeds"] = c["stage1_seeds"][:per_stage], c["stage2_seeds"][:per_stage]
+        c["block_seeds"] = c["stage1_seeds"] + c["stage2_seeds"]
+        self.seeds = c["block_seeds"]
+        self.config_path = os.path.join(root, "config.yaml")
+        yaml.safe_dump(cfg, open(self.config_path, "w"))
+        self.study_dir = c["study_dir"]
+        self.child = FakeChild()
+        self.mdir = os.path.join(root, "manifests")
+        n = 2 * per_stage
+        self.llm = ScriptedLLM({"policy_generation": [fence(POLICY_FLAT)] * (2 * SLOTS_TC * n)})
+        self.run()
+        self.summary = json.load(open(os.path.join(self.study_dir, "summary.json")))
+
+    def run(self):
+        import run_full_evolution as rfe
+
+        argv = ["run_full_evolution.py", "--config", self.config_path, "--study", "two_channel_cold",
+                "--block-seeds", ",".join(str(s) for s in self.seeds), "--output-dir", self.study_dir]
+        child = self.child
+
+        class Stream(pb.IsaacPenSpinStream):
+            def __init__(self, stage, work, name, isaac_env=None):
+                super().__init__(stage, work, name, runner=child)
+
+        with patch.object(sys, "argv", argv), patch.dict(os.environ, {"OPENAI_API_KEY": "sk-mock-not-a-key"}), \
+                patch.object(pg, "_call_llm", side_effect=self.llm), \
+                patch.object(pg, "_run_policy_validation_subprocess", return_value=(True, "Success!", "full")), \
+                patch.object(self.tc, "manifest_file", lambda stage, seed: cases.manifest_path(stage, "two_channel_cold",
+                                                                                               seed, self.mdir)), \
+                patch.object(pb, "IsaacPenSpinStream", Stream):
+            rfe.main()
+
+    def close(self):
+        self.tmp.cleanup()
+
+
+SLOTS_TC = 4
+
+
+class TestTwoChannelStudy(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.r = TwoChannelRun(per_stage=1)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.r.close()
+
+    def test_blocks_run_on_their_own_stage(self):
+        stages = [b["stage"] for b in self.r.summary["blocks"]]
+        self.assertEqual(stages, [1, 2])
+        for b in self.r.summary["blocks"]:
+            self.assertIn(f"pen-spin-stage{b['stage']}:", b["null"]["fresh"]["manifest_id"])
+        self.assertEqual(set(self.r.summary["by_stage"]), {"stage1", "stage2"})
+
+    def test_episode_budget_and_calls(self):
+        eps = sum(len(EvaluationManifest.load(r["manifest_path"])) for r in self.r.child.episodes())
+        self.assertEqual(eps, 2 * (80 + 2 * (4 * 10 + 10 + 30 + 30)))
+        self.assertEqual(len(self.r.llm.labels), 2 * 2 * 4)
+        neutral = [r for r in self.r.child.requests if r["actor"]["kind"] == "neutral"]
+        self.assertEqual(len(neutral), 2 * 4)
+
+    def test_prompts_differ_only_in_the_requirement(self):
+        for b in range(2):
+            d = os.path.join(self.r.study_dir, f"block{b}")
+            base = open(os.path.join(d, "baseline", "user_prompt.txt")).read()
+            treat = open(os.path.join(d, "two_channel", "user_prompt.txt")).read()
+            self.assertNotEqual(base, treat)
+            self.assertEqual(treat.replace("\n" + self.r.tc.TWO_CHANNEL_REQUIREMENT, ""), base)
+            rate = "1 rad/s" if b == 0 else "3 rad/s"
+            self.assertIn(rate, base)
+
+    def test_promotion_is_against_the_scored_null_incumbent(self):
+        for blk in self.r.summary["blocks"]:
+            for arm in self.r.tc.ARMS:
+                a = blk["arms"][arm]
+                self.assertEqual(a["promotion_decision"]["incumbent_id"], "neutral_pose")
+                self.assertEqual(len(a["screens"]), 4)
+                fi = a["fresh_incumbent"]
+                want = a["fresh_selected"]["success"] if a["promoted"] else blk["null"]["fresh"]["success"]
+                self.assertEqual(fi["success"], want)
 
     def test_a_rerun_resumes_without_a_new_episode_or_call(self):
         before, calls = len(self.r.child.requests), len(self.r.llm.labels)

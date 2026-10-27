@@ -64,6 +64,10 @@ def build_controller(spec: dict, env_id: str):
 
     if spec.get("shadow_gait"):
         return gait_scaffold.ShadowGait(build_controller({k: v for k, v in spec.items() if k != "shadow_gait"}, env_id))
+    if spec["kind"] == "neutral":
+        from lares.envs.isaac_pen_spin.controllers import NeutralPose
+
+        return NeutralPose()
     if spec["kind"] == "gait":
         return gait_scaffold.ScaffoldController("unchanged", gait_sha256=spec["gait_sha256"])
     if spec["kind"] == "symbolic" and spec.get("scaffold"):

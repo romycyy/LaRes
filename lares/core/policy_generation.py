@@ -89,6 +89,15 @@ TASK_NOTES = {
     ),
 }
 
+# R-049: Stages 1 and 2 differ from Stage 3 only in the success thresholds (lares.envs.isaac_pen_spin.cases.STAGES).
+for _stage, _rate, _tol in ((1, 1.0, 0.10), (2, 3.0, 0.10)):
+    TASK_NOTES[f"Isaac-ShadowHandSpin-Stage{_stage}-Direct-v0"] = TASK_NOTES["Isaac-ShadowHandSpin-Stage3-Direct-v0"].replace(
+        "A step succeeds when the pen centre is within 0.08 m of\n"
+        "in_hand_pos and |spin rate| > 4 rad/s.",
+        f"A step succeeds when the pen centre is within {_tol:.2f} m of\n"
+        f"in_hand_pos and |spin rate| > {_rate:g} rad/s.")
+    assert TASK_NOTES[f"Isaac-ShadowHandSpin-Stage{_stage}-Direct-v0"] != TASK_NOTES["Isaac-ShadowHandSpin-Stage3-Direct-v0"]
+
 TASK_NOTES["Isaac-ShadowHandSpin-Stage3-GaitScaffold-v0"] = (
     TASK_NOTES["Isaac-ShadowHandSpin-Stage3-Direct-v0"].replace(
         "the executed action is the\n"

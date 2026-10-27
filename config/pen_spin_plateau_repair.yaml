@@ -147,5 +147,16 @@ local_feedback_evidence:
   demo_trace: "logs/pen_spin/r046_gait_scaffold/block1/expert/expert_0001.trace.npz"
   demo_trace_sha256: "4915844983d1c5d9a8a1b21fc7a3d7ded4e8ea159820850fe7e0efca7eb345e3"
 
+# R-049 (approved 2026-10-27, advisor call_00098): a two-channel structural requirement in cold single-step search on
+# Stages 1 and 2, eight blocks, ungated; lares/envs/isaac_pen_spin/two_channel.py.
+#   python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study two_channel_cold
+#     --block-seeds 4220,4221,4222,4223,4224,4225,4226,4227 --output-dir logs/pen_spin_two_channel_cold
+two_channel_cold:
+  study_dir: "logs/pen_spin_two_channel_cold"
+  block_seeds: [4220, 4221, 4222, 4223, 4224, 4225, 4226, 4227]
+  stage1_seeds: [4220, 4221, 4222, 4223]   # one 80-case manifest each: screen, promotion, probe, fresh
+  stage2_seeds: [4224, 4225, 4226, 4227]
+  max_calls_per_slot: 2           # one call plus at most one linked correction; four slots per arm
+
 log_dir: "logs/pen_spin/r042_keyframe_repair"
 record_demo_gif: false
