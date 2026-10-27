@@ -175,6 +175,65 @@ def demo_distance(states: np.ndarray, demo_obs: np.ndarray, h: np.ndarray) -> np
 
 
 # ---------------------------------------------------------------------------------------------------------------------
+#  Executed-switch audit (call_00100): the expert is bang-bang, so map where its executed action flips sign
+# ---------------------------------------------------------------------------------------------------------------------
+
+#: The frozen grid: displacements of +-k/SWITCH_GRID_STEPS demonstration ranges, k = 1..SWITCH_GRID_STEPS, per coordinate.
+SWITCH_GRID_STEPS = 10
+SWITCH_RADIUS = 1.0  # in demonstration ranges (5-95 percentile spread)
+
+
+def switch_grid() -> np.ndarray:
+    """Signed displacements in demonstration-range units, ``-R..-R/K, R/K..R`` (``2K`` values, no zero)."""
+    k = np.arange(1, SWITCH_GRID_STEPS + 1) * SWITCH_RADIUS / SWITCH_GRID_STEPS
+    return np.concatenate([-k[::-1], k])
+
+
+def switch_batch(states: np.ndarray, ranges: np.ndarray) -> np.ndarray:
+    """The states, then for each coordinate each grid displacement (coordinate-major, grid order)."""
+    rows = [states]
+    for c in range(len(COORDS)):
+        rows += [perturb(states, c, float(d * ranges[c])) for d in switch_grid()]
+    return np.concatenate(rows, axis=0)
+
+
+def switch_audit(raw: np.ndarray, n: int) -> dict:
+    """Per state, coordinate and action: the nearest grid displacement (each direction) where the executed action's
+    sign differs from the state's own, the number of sign changes along each direction, and coverage summaries.
+
+    ``None`` means no switch within the searched range, never zero sensitivity or an extrapolated boundary.
+    """
+    grid = switch_grid()
+    G = len(grid)
+    raw = np.asarray(raw, dtype=np.float64)
+    if raw.shape[0] != n * (1 + G * len(COORDS)):
+        raise ValueError(f"{raw.shape[0]} queried actions do not match {n} states on the frozen grid")
+    sign0 = np.sign(np.clip(raw[:n], -1.0, 1.0))
+    half = G // 2
+    nearest = np.full((n, len(COORDS), raw.shape[1], 2), np.nan)  # [..., 0] = negative side, [..., 1] = positive
+    changes = np.zeros((n, len(COORDS), raw.shape[1], 2), dtype=int)
+    for c in range(len(COORDS)):
+        block = np.sign(np.clip(raw[n * (1 + G * c): n * (1 + G * (c + 1))], -1.0, 1.0)).reshape(G, n, -1)
+        for side, order in ((0, list(range(half - 1, -1, -1))), (1, list(range(half, G)))):
+            seq = np.concatenate([sign0[None], block[order]], axis=0)  # base, then outward
+            flips = seq[1:] != seq[:-1]
+            changes[:, c, :, side] = flips.sum(axis=0)
+            differs = seq[1:] != sign0[None]
+            first = np.where(differs.any(axis=0), differs.argmax(axis=0), -1)
+            d = np.abs(grid[order])
+            nearest[:, c, :, side] = np.where(first >= 0, d[np.maximum(first, 0)] * (1 if side else -1), np.nan)
+    found = ~np.isnan(nearest)
+    any_side = found.any(axis=-1)
+    return {"grid_ranges": grid.tolist(), "radius_ranges": SWITCH_RADIUS, "nearest": nearest, "changes": changes,
+            "coverage": float(any_side.mean()),
+            "coverage_by_coordinate": {name: float(any_side[:, c].mean()) for c, name in enumerate(COORDS)},
+            "states_with_any_switch": float(any_side.any(axis=(1, 2)).mean()),
+            "multiple_crossings": float((changes > 1).any(axis=-1).mean()),
+            "median_abs_distance": float(np.nanmedian(np.abs(nearest))) if found.any() else None,
+            "base_zero_fraction": float((sign0 == 0).mean())}
+
+
+# ---------------------------------------------------------------------------------------------------------------------
 #  States from the parent's screen traces
 # ---------------------------------------------------------------------------------------------------------------------
 

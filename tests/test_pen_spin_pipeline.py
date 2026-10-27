@@ -969,6 +969,23 @@ class TestLocalFeedbackUnits(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.lf.sensitivities(raw[:-1], len(self.obs))
 
+    def test_switch_audit_finds_the_nearest_executed_sign_flip_per_direction(self):
+        lf = self.lf
+        ranges = np.full(len(lf.COORDS), 0.1)
+        batch = lf.switch_batch(self.obs, ranges)
+        n, G = len(self.obs), len(lf.switch_grid())
+        self.assertEqual(len(batch), n * (1 + G * len(lf.COORDS)))
+        disp = (lf.coordinates(batch) - np.tile(lf.coordinates(self.obs), (1 + G * len(lf.COORDS), 1))) / ranges
+        raw = np.full((len(batch), 20), 5.0)  # saturated positive everywhere
+        raw[:, 3] = np.where(disp[:, 0] > 0.25, -5.0, 5.0)  # offset_x beyond +0.25 ranges flips WRJ... index 3
+        a = lf.switch_audit(raw, n)
+        np.testing.assert_allclose(a["nearest"][:, 0, 3, 1], 0.3)  # first grid point past 0.25
+        self.assertTrue(np.isnan(a["nearest"][:, 0, 3, 0]).all())  # nothing on the negative side
+        self.assertTrue(np.isnan(a["nearest"][:, 1:, :, :]).all())
+        self.assertAlmostEqual(a["coverage"], 1 / (len(lf.COORDS) * 20))
+        self.assertEqual(a["coverage_by_coordinate"]["offset_x"], 1 / 20)
+        self.assertEqual(a["multiple_crossings"], 0.0)
+
     def test_states_come_from_failures_first(self):
         rows = [{"sustained": True, "case_id": "a", "length": 359}, {"sustained": False, "case_id": "b", "length": 90},
                 {"sustained": True, "case_id": "c", "length": 359}]
