@@ -493,5 +493,148 @@ class TestFreeze(unittest.TestCase):
         self.assertEqual(sorted(seeds), list(range(4124, 4138)))
 
 
+# ---------------------------------------------------------------------------------------------------------------------
+#  R-045: dense expert-label fitting vs rollout search
+# ---------------------------------------------------------------------------------------------------------------------
+
+#: Two independent knuckle commands, both at 0: no roll until they move apart. The toy expert holds them near +0.3 / -0.3,
+#: so fitting to its labels can reach a spinning setting.
+POLICY_SPLIT = f"""
+class GeneratedPolicy(SymbolicPolicy):
+    def __init__(self, obs_dim, action_dim):
+        super().__init__(obs_dim, action_dim)
+        self.k_ff = nn.Parameter(torch.tensor(0.0))
+        self.k_mf = nn.Parameter(torch.tensor(0.0))
+
+    def forward(self, obs):
+{_FIELDS}
+        base[:, 7] = base[:, 7] * 0 + self.k_ff
+        base[:, 8] = base[:, 8] * 0 + self.k_mf
+        return base, self.fixed_std(base)
+
+    def get_param_ranges(self):
+        return {{"k_ff": (-0.6, 0.6), "k_mf": (-0.6, 0.6)}}
+""".strip()
+
+
+class DenseRun:
+    def __init__(self, blocks=2):
+        from lares.envs.isaac_pen_spin import dense_fit
+        from lares.utils.hashing import sha256_file
+
+        self.dense_fit = dense_fit
+        self.tmp = tempfile.TemporaryDirectory()
+        root = self.tmp.name
+        cfg = yaml.safe_load(open(CONFIG))
+        d = cfg["dense_feedback_fit"]
+        d["study_dir"] = os.path.join(root, "study")
+        d["block_seeds"] = d["block_seeds"][:blocks]
+        students = []
+        for b in range(blocks):
+            src, st = os.path.join(root, f"student{b}.py"), os.path.join(root, f"student{b}.pt")
+            open(src, "w").write(POLICY_SPLIT)
+            torch.save(make_policy(POLICY_SPLIT).state_dict(), st)
+            students.append({"source": src, "source_sha256": sha256_file(src), "state": st,
+                             "state_sha256": sha256_file(st)})
+        d["students"] = students
+        self.cfg = d
+        self.config_path = os.path.join(root, "config.yaml")
+        yaml.safe_dump(cfg, open(self.config_path, "w"))
+        self.study_dir = d["study_dir"]
+        self.child = FakeChild()
+        self.mdir = os.path.join(root, "manifests")
+        self.run()
+        self.summary = json.load(open(os.path.join(self.study_dir, "summary.json")))
+
+    def run(self):
+        import run_full_evolution as rfe
+
+        def stream(cfg_, name, work):
+            return pb.IsaacPenSpinStream(3, work, name, runner=self.child)
+
+        argv = ["run_full_evolution.py", "--config", self.config_path, "--study", "dense_feedback_fit"]
+        with patch.object(sys, "argv", argv), \
+                patch.object(pg, "_call_llm", side_effect=AssertionError("R-045 makes no LLM call")), \
+                patch.object(self.dense_fit, "manifest_file",
+                             lambda label, seed: cases.manifest_path(3, label, seed, self.mdir)), \
+                patch.object(rfe, "pen_spin_stream", stream):
+            rfe.main()
+
+    def close(self):
+        self.tmp.cleanup()
+
+
+class TestDenseFit(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.dr = DenseRun(blocks=2)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.dr.close()
+
+    def test_parity_ran_twice_on_forty_cases_and_passed(self):
+        p = self.dr.summary["parity"]
+        self.assertTrue(p["passes"])
+        self.assertEqual(p["episodes"], 80)
+
+    def test_both_arms_probe_four_settings_on_the_same_cases(self):
+        for blk in self.dr.summary["blocks"]:
+            probes = {a: blk["arms"][a]["probe"] for a in self.dr.dense_fit.ARMS}
+            self.assertEqual([p["label"] for p in probes["dense_fit"]],
+                             ["fit_step0", "fit_step250", "fit_step500", "fit_step1000"])
+            self.assertEqual([p["label"] for p in probes["rollout_search"]],
+                             ["search0_original", "search1_local", "search2_global", "search3_local"])
+            ids = {p["manifest_id"] for a in probes for p in probes[a]}
+            self.assertEqual(len(ids), 1)
+            # Step 0 and the original are the same student, so they score the same.
+            self.assertEqual(probes["dense_fit"][0]["per_case"], probes["rollout_search"][0]["per_case"])
+            self.assertEqual(probes["dense_fit"][0]["parameters"], probes["rollout_search"][0]["parameters"])
+
+    def test_fitting_moves_toward_the_expert_and_wins_by_rollouts(self):
+        for blk in self.dr.summary["blocks"]:
+            fit = blk["arms"]["dense_fit"]
+            loss = [r["mse"] for r in fit["fit"]["loss"]]
+            self.assertLess(loss[-1], loss[0])
+            self.assertNotEqual(fit["selected_label"], "fit_step0")
+            self.assertTrue(fit["promoted"])
+            self.assertGreater(blk["dense_fit"]["fresh_incumbent"], 0.5)
+        self.assertGreater(self.dr.summary["paired_success_difference"], -1.0)
+
+    def test_slices_are_disjoint_and_unpromoted_arms_score_the_null_incumbent(self):
+        for blk in self.dr.summary["blocks"]:
+            for a in self.dr.dense_fit.ARMS:
+                arm = blk["arms"][a]
+                ids = [arm["screen"]["manifest_id"], arm["promotion"]["manifest_id"], arm["fresh_selected"]["manifest_id"],
+                       arm["probe"][0]["manifest_id"]]
+                self.assertEqual(len(set(ids)), 4)
+                if not arm["promoted"]:
+                    self.assertEqual(arm["fresh_incumbent"]["success"], 0.0)
+
+    def test_episode_budget_and_one_process_per_manifest(self):
+        n = sum(len(EvaluationManifest.load(r["manifest_path"])) for r in self.dr.child.episodes())
+        blocks = len(self.dr.summary["blocks"])
+        self.assertEqual(n, 80 + blocks * (12 + 2 * (40 + 10 + 30 + 30)))
+        self.assertEqual(len(self.dr.child.episodes()), 2 + blocks * (1 + 2 * (4 + 3)))
+
+    def test_a_rerun_resumes_without_a_new_episode(self):
+        before = len(self.dr.child.requests)
+        self.dr.run()
+        self.assertEqual(len(self.dr.child.requests), before)
+
+    def test_a_changed_student_is_refused(self):
+        s = dict(self.dr.cfg["students"][0], source_sha256="0" * 64)
+        with self.assertRaises(ValueError):
+            self.dr.dense_fit.check_student(s)
+
+    def test_the_committed_config_pins_four_students_and_unused_seeds(self):
+        d = yaml.safe_load(open(CONFIG))["dense_feedback_fit"]
+        self.assertEqual(d["block_seeds"], [4170, 4171, 4172, 4173])
+        self.assertEqual(d["parity_seed"], 4174)
+        self.assertEqual(len(d["students"]), 4)
+        for s in d["students"]:
+            self.assertEqual(len(s["source_sha256"]), 64)
+
+
 if __name__ == "__main__":
     unittest.main()

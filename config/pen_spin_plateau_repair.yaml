@@ -88,5 +88,32 @@ plateau_repair:
     min_successes: 9
     traces_shown: 2
 
+# ---------- R-045: dense expert-label fitting vs rollout search (approved 2026-10-27, advisor call_00090) ----------
+#  python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study dense_feedback_fit
+#  No LLM call. Students are the R-042 prefix candidates (gen0_cand0 of each block, selected state), pinned by hash.
+#  See lares/envs/isaac_pen_spin/dense_fit.py for the arms, slices and selection rule.
+dense_feedback_fit:
+  study_dir: "logs/pen_spin/r045_dense_fit"
+  block_seeds: [4170, 4171, 4172, 4173]
+  parity_seed: 4174
+  parity_cases: 40
+  students:
+    - source: "logs/pen_spin/r042_keyframe_repair/block0/prefix/gen_0/candidates/gen0_cand0_a0/policy_source.py"
+      source_sha256: "3c2fdc151a75717b8dac6e96919ba1be9f6d178e111fbcb773284c8483d6b4dd"
+      state: "logs/pen_spin/r042_keyframe_repair/block0/prefix/gen_0/candidates/gen0_cand0_a0/selected_state.pt"
+      state_sha256: "a8ff723bd7681c8824cd9d4c21c9b04f0314d35dafecc2ce031ccda74ba4a6f3"
+    - source: "logs/pen_spin/r042_keyframe_repair/block1/prefix/gen_0/candidates/gen0_cand0_a0/policy_source.py"
+      source_sha256: "dd89acaa755045f398c893796ad8c3e6cbce447a9d44a8ff5a332576268725cd"
+      state: "logs/pen_spin/r042_keyframe_repair/block1/prefix/gen_0/candidates/gen0_cand0_a0/selected_state.pt"
+      state_sha256: "95ede6df39dd936769726482605692233eb0cc5c0b01a4aa164f499883dd208a"
+    - source: "logs/pen_spin/r042_keyframe_repair/block2/prefix/gen_0/candidates/gen0_cand0_a0/policy_source.py"
+      source_sha256: "e588c36b250755d3dd7df1a7704db39e6a850a45470b0ce48f715ceaffd0493c"
+      state: "logs/pen_spin/r042_keyframe_repair/block2/prefix/gen_0/candidates/gen0_cand0_a0/selected_state.pt"
+      state_sha256: "3a278ead963cd248fc11d1fc9c0bbdc6bd9961612333d8781329c6868798cda6"
+    - source: "logs/pen_spin/r042_keyframe_repair/block3/prefix/gen_0/candidates/gen0_cand0_a0/policy_source.py"
+      source_sha256: "d03a485d43001f30c556da5598f0d43869502a3f6d4bdb5d68e5e6ada1ef0938"
+      state: "logs/pen_spin/r042_keyframe_repair/block3/prefix/gen_0/candidates/gen0_cand0_a0/selected_state.pt"
+      state_sha256: "9bb57a28fb93b8d0b8de7c4be4e45aa287fe012c51206911133335ca34ff411f"
+
 log_dir: "logs/pen_spin/r042_keyframe_repair"
 record_demo_gif: false

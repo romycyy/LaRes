@@ -276,8 +276,9 @@ def parse_args() -> tuple:
     p.add_argument("--freeze-manifests", action="store_true",
                    help="R-037: build (or verify) the task manifests, print their ids and hashes, and exit; no LLM call "
                         "and no episode")
-    p.add_argument("--study", choices=("keyframe_repair",), default=None,
-                   help="R-042: run the whole pen-spin keyframe-repair study (parity gate, blocks, arms, fresh cases)")
+    p.add_argument("--study", choices=("keyframe_repair", "dense_feedback_fit"), default=None,
+                   help="R-042: run the whole pen-spin keyframe-repair study (parity gate, blocks, arms, fresh cases); "
+                        "R-045: dense_feedback_fit (expert-label fitting vs rollout search, no LLM call)")
     p.add_argument("--block", type=int, default=None, help="R-042 child: the block to run (with --phase or --arm)")
     p.add_argument("--phase", choices=("prefix",), default=None, help="R-042 child: run the block's prefix only")
     p.add_argument("--arm", choices=("no_trace", "uniform", "event"), default=None,
@@ -499,6 +500,20 @@ def run_pen_spin_study(cfg, cfg_path: str) -> None:
     print(json.dumps({k: v for k, v in summary.items() if k != "blocks"}, indent=2))
 
 
+def run_pen_spin_dense_fit(cfg) -> None:
+    """R-045: dense expert-label fitting vs rollout search on the frozen R-042 prefix controllers."""
+    from lares.envs.isaac_pen_spin import dense_fit, study
+
+    dcfg = getattr(cfg, "dense_feedback_fit", None)
+    if dcfg is None:
+        raise SystemExit("--study dense_feedback_fit needs a dense_feedback_fit block in the config")
+    torch.manual_seed(int(dcfg["block_seeds"][0]))
+    factory = lambda name, work: pen_spin_stream(cfg, name, work)  # noqa: E731
+    summary = dense_fit.run_study(dcfg, factory, study.expert_actor(cfg.pen_spin), cfg.env_name,
+                                  cfg.fixed_action_scale)
+    print(json.dumps({k: v for k, v in summary.items() if k != "blocks"}, indent=2))
+
+
 def main() -> None:
     cfg_path, seed_override, log_dir_override, overrides = parse_args()
     cfg = apply_overrides(load_config(cfg_path), overrides)
@@ -507,6 +522,12 @@ def main() -> None:
 
         if overrides.get("freeze_manifests"):
             print(json.dumps(study.freeze_manifests(cfg.pen_spin), indent=2))
+            if getattr(cfg, "dense_feedback_fit", None) is not None:
+                from lares.envs.isaac_pen_spin import dense_fit
+
+                print(json.dumps(dense_fit.freeze_manifests(cfg.dense_feedback_fit), indent=2))
+        elif overrides.get("study") == "dense_feedback_fit":
+            run_pen_spin_dense_fit(cfg)
         elif overrides.get("study"):
             run_pen_spin_study(cfg, cfg_path)
         elif overrides.get("block") is not None:
