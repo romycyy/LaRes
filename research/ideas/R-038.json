@@ -12,12 +12,8 @@
   "protocol": {
     "script": "scripts/run_shadowhand_spin_stages.py",
     "config": "config/shadowhand_spin_stages.yaml",
-    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --research-protocol episode_rule_audit'",
-    "seeds": [
-      4000,
-      4001,
-      4002
-    ],
+    "command": "gpu run 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --research-protocol episode_rule_audit'",
+    "seeds": [],
     "manifests": [
       "config/manifests/pen_spin_stage1_probe_s4000.yaml",
       "config/manifests/pen_spin_stage2_probe_s4001.yaml",
@@ -64,6 +60,12 @@
       "from": "proposed",
       "to": "approved",
       "note": "triage round 1: both say approve"
+    },
+    {
+      "at": "2026-10-27T00:47:35",
+      "from": "approved",
+      "to": "approved",
+      "note": "pre-launch reconciliation (R-037 precedent, call_00066 option A): seeds 4000-4002 were reserved in the ledger and the three probe manifests frozen and committed (commit 'R-038: pen-spin manifests, batched runner...') before any probe-case rollout, so protocol.seeds is empty and protocol.manifests names the frozen files; command quoting fixed for gpu run. Implementation: the driver runs one child process per (stage, controller) because a second rollout in one Isaac process is not reproducible (measured on debug seed 4099 only)."
     }
   ],
   "created_at": "2026-10-27T00:34:23",
