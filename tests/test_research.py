@@ -18,26 +18,39 @@ from lares.research import advisor as adv  # noqa: E402
 from lares.research import protocol as proto  # noqa: E402
 from lares.research.briefing import build_briefing  # noqa: E402
 from lares.research.schemas import (  # noqa: E402
+    PROPOSALS_LOG,
     RESEARCH_METRICS,
     SOURCE_ADVISOR,
     SOURCE_IMPLEMENTER,
+    STAGE_TRIAGE,
+    STAGE_VERDICT,
     STATUS_ANALYSED,
     STATUS_APPROVED,
     STATUS_DECIDED,
+    STATUS_DEFERRED,
     STATUS_ESCALATED,
     STATUS_PROPOSED,
+    STATUS_REJECTED,
     STATUS_RUNNING,
+    TRIAGE_LOG,
     Prediction,
     Protocol,
     ResearchIdea,
     ResearchSchemaError,
     Verdict,
+    apply_revision,
     decide,
     load_decisions,
+    load_direction,
     load_ideas,
+    load_jsonl,
     next_idea_id,
+    record_triage_advice,
+    record_triage_position,
+    rule_triage,
+    set_direction,
 )
-from lares.research.state import render_state  # noqa: E402
+from lares.research.state import loop_guard, render_state  # noqa: E402
 import research as cli  # noqa: E402
 
 METRICS = set(RESEARCH_METRICS)
@@ -98,11 +111,13 @@ class TestSchemas(unittest.TestCase):
         idea = make_idea()
         with self.assertRaises(ResearchSchemaError):
             idea.transition(STATUS_RUNNING)        # nothing runs before approval
+        idea.transition(STATUS_DEFERRED)
+        idea.transition(STATUS_PROPOSED)
         idea.transition(STATUS_APPROVED)
         idea.transition(STATUS_RUNNING)
         with self.assertRaises(ResearchSchemaError):
             idea.transition(STATUS_PROPOSED)
-        self.assertEqual([h["to"] for h in idea.history], [STATUS_APPROVED, STATUS_RUNNING])
+        self.assertEqual([h["to"] for h in idea.history], [STATUS_DEFERRED, STATUS_PROPOSED, STATUS_APPROVED, STATUS_RUNNING])
 
     def test_prediction_check_direction(self):
         p = Prediction(metric="promotion_success_rate", direction="increase", threshold=0.1)
@@ -229,8 +244,14 @@ class TestAdvisorAndDecisions(unittest.TestCase):
             idea = self._root_with_results(root)
             idea.add_verdict(Verdict(SOURCE_ADVISOR, "supported", 0.8, cited_artifacts=["logs/x/screening.json"]))
             idea.add_verdict(Verdict(SOURCE_IMPLEMENTER, "inconclusive", 0.6, reasoning="interval lower bound 0.05 on 30 cases"))
-            self.assertIsNone(decide(idea, root))
+            # One advisor verdict so far: below the round cap the idea stays analysed for another exchange.
+            self.assertIsNone(decide(idea, root, max_rounds=2))
+            self.assertEqual(idea.status, STATUS_ANALYSED)
+            idea.add_verdict(Verdict(SOURCE_ADVISOR, "supported", 0.8, reasoning="[revised after review] holds",
+                                     cited_artifacts=["logs/x/screening.json"]))
+            self.assertIsNone(decide(idea, root, max_rounds=2))
             self.assertEqual(idea.status, STATUS_ESCALATED)
+            self.assertEqual(idea.escalation["stage"], STAGE_VERDICT)
             self.assertEqual(load_decisions(root), [])
             # The user rules; the disagreement is kept in the entry.
             d = decide(idea, root, user_ruling={"outcome": "inconclusive", "note": "rerun at 50 cases"}, summary="User ruled.")
@@ -263,6 +284,131 @@ class TestAdvisorAndDecisions(unittest.TestCase):
             self.assertIsNotNone(decide(idea, root))
 
 
+class TestTriage(unittest.TestCase):
+    def _proposed(self, root, idea_id="R-001", seeds=(97001,)):
+        idea = make_idea(idea_id, seeds=seeds)
+        idea.validate(METRICS)
+        idea.save(root)
+        return idea
+
+    def test_agreement_approves_with_both_parties_recorded(self):
+        with tempfile.TemporaryDirectory() as root:
+            idea = self._proposed(root)
+            record_triage_advice(idea, {"decision": "approve", "reasoning": "r", "priority": 1}, "call_00001", "abc")
+            res = record_triage_position(idea, "approve", "agree", root=root)
+            self.assertEqual(res["outcome"], "agreed")
+            self.assertEqual(idea.status, STATUS_APPROVED)
+            self.assertEqual(idea.approval["by"], "advisor+implementer")
+            self.assertEqual(idea.approval["advisor_call_id"], "call_00001")
+            self.assertEqual(idea.triage["agreed_round"], 1)
+            log = load_jsonl(root, TRIAGE_LOG)
+            self.assertEqual((log[0]["advisor"]["decision"], log[0]["implementer"]["position"]), ("approve", "approve"))
+
+    def test_disagreement_runs_another_round_then_escalates(self):
+        with tempfile.TemporaryDirectory() as root:
+            idea = self._proposed(root)
+            record_triage_advice(idea, {"decision": "reject", "reasoning": "dup"}, "call_1")
+            with self.assertRaises(ResearchSchemaError):
+                record_triage_advice(idea, {"decision": "reject", "reasoning": "dup"}, "call_2")   # round still open
+            res = record_triage_position(idea, "approve", "not a duplicate: D-003 used 10 cases", root=root, max_rounds=2)
+            self.assertEqual(res["outcome"], "disagreed")
+            self.assertEqual(idea.status, STATUS_PROPOSED)
+            record_triage_advice(idea, {"decision": "reject", "reasoning": "still a dup"}, "call_2")
+            res = record_triage_position(idea, "approve", "still disagree", root=root, max_rounds=2)
+            self.assertEqual(res["outcome"], "escalated")
+            self.assertEqual(idea.status, STATUS_ESCALATED)
+            self.assertEqual(idea.escalation["stage"], STAGE_TRIAGE)
+            self.assertEqual(len(load_jsonl(root, TRIAGE_LOG)), 2)
+            # Only the user moves it on.
+            rule_triage(idea, "approve", "run it, the control differs", root=root)
+            self.assertEqual(idea.status, STATUS_APPROVED)
+            self.assertEqual(idea.approval["by"], "user")
+            self.assertIn("user ruling", render_state(root))
+
+    def test_advisor_changing_its_mind_in_round_two_agrees(self):
+        with tempfile.TemporaryDirectory() as root:
+            idea = self._proposed(root)
+            record_triage_advice(idea, {"decision": "defer", "reasoning": "wait"}, "call_1")
+            record_triage_position(idea, "approve", "it blocks everything else", root=root)
+            record_triage_advice(idea, {"decision": "approve", "reasoning": "accepted: it blocks R-002"}, "call_2")
+            res = record_triage_position(idea, "approve", "agreed", root=root)
+            self.assertEqual((res["outcome"], idea.status, idea.triage["agreed_round"]), ("agreed", STATUS_APPROVED, 2))
+
+    def test_both_revise_then_revision_then_approve(self):
+        with tempfile.TemporaryDirectory() as root:
+            idea = self._proposed(root)
+            record_triage_advice(idea, {"decision": "revise", "reasoning": "threshold too low",
+                                        "suggested_changes": ["threshold 0.2"]}, "call_1")
+            res = record_triage_position(idea, "revise", "fair", root=root)
+            self.assertEqual((res["outcome"], idea.status), ("agreed", STATUS_PROPOSED))
+            apply_revision(idea, {"prediction": {"threshold": 0.2}}, note="advisor round 1", root=root, metrics=METRICS)
+            self.assertEqual(load_ideas(root)[0].prediction.threshold, 0.2)
+            self.assertEqual(idea.revisions[0]["round"], 1)
+            with self.assertRaises(ResearchSchemaError):
+                apply_revision(idea, {"status": "approved"}, root=root, metrics=METRICS)
+            record_triage_advice(idea, {"decision": "approve", "reasoning": "ok now"}, "call_2")
+            record_triage_position(idea, "approve", "ok", root=root, changes_applied=["threshold 0.2"])
+            self.assertEqual(idea.status, STATUS_APPROVED)
+
+    def test_defer_and_reject_outcomes(self):
+        with tempfile.TemporaryDirectory() as root:
+            a = self._proposed(root, "R-001", seeds=(97001,))
+            b = self._proposed(root, "R-002", seeds=(97002,))
+            record_triage_advice(a, {"decision": "defer", "reasoning": "after R-002"}, "c1")
+            record_triage_position(a, "defer", "yes", root=root)
+            record_triage_advice(b, {"decision": "reject", "reasoning": "duplicate of D-001"}, "c1")
+            record_triage_position(b, "reject", "yes", root=root)
+            self.assertEqual([i.status for i in load_ideas(root)], [STATUS_DEFERRED, STATUS_REJECTED])
+            # A deferred idea can be re-triaged; it returns to proposed first.
+            record_triage_advice(a, {"decision": "approve", "reasoning": "now"}, "c2")
+            self.assertEqual(a.status, STATUS_PROPOSED)
+            with self.assertRaises(ResearchSchemaError):
+                record_triage_advice(b, {"decision": "approve", "reasoning": "x"}, "c3")   # rejected is final
+            self.assertIn("R-002", build_briefing(root, "propose")["text"])   # recently rejected is shown to the advisor
+
+    def test_advisor_triage_call_is_strict_and_sees_history(self):
+        with tempfile.TemporaryDirectory() as root:
+            idea = self._proposed(root)
+            record_triage_advice(idea, {"decision": "reject", "reasoning": "dup"}, "c1")
+            record_triage_position(idea, "approve", "the control differs", root=root)
+            good = {"ideas": [{"id": "R-001", "decision": "approve", "reasoning": "accepted the control argument", "priority": 1}],
+                    "order": ["R-001"], "next_step": "start"}
+            call = ScriptedCall([json.dumps(good)])
+            advisor = adv.Advisor(call, root)
+            out = advisor.triage([idea], build_briefing(root, "triage"), direction="finish the fittable lane")
+            self.assertEqual(out["ideas"]["R-001"]["decision"], "approve")
+            self.assertEqual(advisor.ledger.records()[0].label, "research_triage")
+            prompt = call.messages[0][1]["content"]
+            self.assertIn("the control differs", prompt)            # the implementer's objection reaches the advisor
+            self.assertIn("finish the fittable lane", prompt)
+            for bad in ({"ideas": [], "order": []},
+                        {"ideas": [{"id": "R-001", "decision": "maybe", "reasoning": "x"}]},
+                        {"ideas": [{"id": "R-001", "decision": "revise", "reasoning": "x", "suggested_changes": []}]},
+                        {"ideas": [{"id": "R-001", "decision": "approve", "reasoning": ""}]},
+                        {"ideas": [{"id": "R-001", "decision": "approve", "reasoning": "x"}], "order": ["R-009"]}):
+                with self.assertRaises(ResearchSchemaError):
+                    adv.Advisor(ScriptedCall([json.dumps(bad)]), root).triage([idea], build_briefing(root, "t"))
+
+    def test_direction_history_and_loop_guard(self):
+        with tempfile.TemporaryDirectory() as root:
+            set_direction("first", root)
+            set_direction("second", root)
+            d = load_direction(root)
+            self.assertEqual((d["text"], d["history"][0]["text"]), ("second", "first"))
+            self.assertIn("second", build_briefing(root, "propose")["text"])
+            # Two propose calls whose every idea was rejected trip the guard.
+            from lares.research.schemas import log_proposal
+            for call_id, idea_id, seed in (("call_1", "R-001", 97001), ("call_2", "R-002", 97002)):
+                idea = self._proposed(root, idea_id, seeds=(seed,))
+                log_proposal(root, call_id, "sha", "second", -1, idea.to_dict(), idea_id=idea_id)
+                record_triage_advice(idea, {"decision": "reject", "reasoning": "off direction"}, call_id)
+                record_triage_position(idea, "reject", "agree", root=root)
+            self.assertEqual(loop_guard(root)["consecutive_all_rejected"], 2)
+            with self.assertRaises(SystemExit):
+                cli.main(["--root", root, "propose", "--dry-run"])
+            self.assertEqual(len(load_jsonl(root, PROPOSALS_LOG)), 2)
+
+
 class TestCli(unittest.TestCase):
     def test_full_cycle_without_llm(self):
         with tempfile.TemporaryDirectory() as root:
@@ -271,7 +417,21 @@ class TestCli(unittest.TestCase):
             idea = make_idea(seeds=(97001,))
             idea.validate(METRICS)
             idea.save(root)
-            cli.main(["--root", root, "approve", "R-001", "--note", "ok"])
+            cli.main(["--root", root, "direct", "test the fixed allocation"])
+            self.assertEqual(load_direction(root)["text"], "test the fixed allocation")
+            reply = {"ideas": [{"id": "R-001", "decision": "approve", "reasoning": "cheap and decisive", "priority": 1}],
+                     "order": ["R-001"], "next_step": "start it"}
+            cli.ADVISOR_FACTORY = lambda args: adv.Advisor(ScriptedCall([json.dumps(reply)]), root)
+            try:
+                cli.main(["--root", root, "triage"])
+            finally:
+                cli.ADVISOR_FACTORY = None
+            self.assertEqual(load_ideas(root)[0].status, STATUS_PROPOSED)   # awaits the implementer
+            cli.main(["--root", root, "position", "R-001", "--position", "approve", "--reasoning", "agree: 150 episodes, no LLM"])
+            approved = load_ideas(root)[0]
+            self.assertEqual(approved.status, STATUS_APPROVED)
+            self.assertEqual(approved.approval["by"], "advisor+implementer")
+            self.assertEqual(load_jsonl(root, TRIAGE_LOG)[0]["outcome"], "agreed")
             cli.main(["--root", root, "start", "R-001"])
             results = os.path.join(root, "r.json")
             with open(results, "w") as f:

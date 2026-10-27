@@ -15,12 +15,14 @@ import os
 from lares.research.schemas import (
     BRIEFINGS_DIR,
     STATUS_DECIDED,
+    STATUS_DEFERRED,
     STATUS_REJECTED,
     RESEARCH_METRICS,
     ResearchIdea,
     allowed_metrics,
     load_constraints,
     load_decisions,
+    load_direction,
     load_ideas,
     now,
     sha256_text,
@@ -70,12 +72,51 @@ def idea_summary(idea: ResearchIdea, with_result: bool = False) -> str:
     return "\n".join(lines)
 
 
-def ledger_block(root, recent_decisions: int = 8) -> str:
+def direction_block(root) -> str:
+    d = load_direction(root)
+    lines = ["## User's research direction"]
+    if d.get("text"):
+        lines.append(f"{d['text']}  _(set {d.get('set_at', '')[:10]})_")
+    else:
+        lines.append("(none set; the ledger's open questions and last decisions stand in for it)")
+    for h in d.get("history", [])[-3:]:
+        lines.append(f"- earlier direction ({h.get('set_at', '')[:10]} to {h.get('replaced_at', '')[:10]}): {h['text']}")
+    return "\n".join(lines)
+
+
+def triage_line(idea: ResearchIdea) -> str:
+    rounds = idea.triage.get("rounds", [])
+    if not rounds:
+        return ""
+    last = rounds[-1]
+    imp = last.get("implementer") or {}
+    return (f"Triage so far: {len(rounds)} round(s); last advisor {last['advisor']['decision']}, "
+            f"implementer {imp.get('position', 'pending')}; {last['advisor']['reasoning'][:200]}")
+
+
+def ledger_block(root, recent_decisions: int = 8, recent_rejected: int = 6) -> str:
     ideas = load_ideas(root)
-    open_ideas = [i for i in ideas if i.status not in (STATUS_DECIDED, STATUS_REJECTED)]
+    open_ideas = [i for i in ideas if i.status not in (STATUS_DECIDED, STATUS_REJECTED, STATUS_DEFERRED)]
+    deferred = [i for i in ideas if i.status == STATUS_DEFERRED]
+    rejected = [i for i in ideas if i.status == STATUS_REJECTED][-recent_rejected:]
     decided = [i for i in ideas if i.status == STATUS_DECIDED]
     parts = ["## Open ideas (already proposed; do not duplicate)"]
-    parts += [idea_summary(i) for i in open_ideas] or ["(none)"]
+    for i in open_ideas:
+        parts.append(idea_summary(i))
+        t = triage_line(i)
+        if t:
+            parts.append(t)
+    if not open_ideas:
+        parts.append("(none)")
+    parts.append("\n## Deferred ideas (judged right but not now; re-triaged when the direction fits)")
+    parts += [f"- {i.id} {i.title}: {(i.triage.get('rounds') or [{}])[-1].get('advisor', {}).get('reasoning', '')[:200]}"
+              for i in deferred] or ["(none)"]
+    parts.append("\n## Recently rejected at triage (do not re-propose without saying what changed)")
+    for i in rejected:
+        why = (i.triage.get("rounds") or [{}])[-1].get("advisor", {}).get("reasoning", "") or (i.history[-1]["note"] if i.history else "")
+        parts.append(f"- {i.id} {i.title}: {why[:200]}")
+    if not rejected:
+        parts.append("(none)")
     parts.append("\n## Decided ideas (most recent first)")
     by_id = {i.id: i for i in decided}
     for d in list(reversed(load_decisions(root)))[:recent_decisions]:
@@ -126,6 +167,7 @@ def build_briefing(root, purpose: str, extra: str = "", char_budget: int = DEFAU
     """Assemble, bound, save and hash the packet. Returns ``{text, sha256, path}``."""
     sections = [
         f"# Research briefing ({purpose}) — generated {now()}",
+        direction_block(root),
         constraints_block(root),
         ledger_block(root),
         inventory_block(project_root),

@@ -44,7 +44,7 @@
     "source": "config/experiment_seed_ledger.jsonl; CLAUDE.md"
   },
   {
-    "fact": "Every protocol runs on the remote GPU box via `gpu run`, which bills by the hour; the implementer stops it afterwards. Live LLM or GPU spend needs the user's per-idea approval.",
-    "source": "CLAUDE.md, 'Remote GPU server'"
+    "fact": "Every protocol runs on the remote GPU box via `gpu run`, which bills by the hour; the box stays up across a session's steps and is stopped at the end. Since 2026-10-26 an idea is approved when the advisor and the implementer state the same triage position (approve); the user sets the research direction and rules only on ideas that exhaust their negotiation rounds.",
+    "source": "CLAUDE.md 'Development Workflow'; research/triage.jsonl"
   }
 ]

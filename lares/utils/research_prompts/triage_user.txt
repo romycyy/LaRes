@@ -1,0 +1,32 @@
+Triage the proposed ideas below. Approval is no longer the user's: an idea runs when you and the implementer (Claude Code) state the same position. The user has given only a research direction. Decide, for each idea, whether it is the right next spend of simulator episodes and LLM calls under that direction.
+
+User's research direction: {direction}
+
+For each idea you see the proposal and, if this is not its first round, every earlier round: your previous decision, the implementer's position and reasoning, and any revision the implementer applied since. Read the implementer's objection as a peer's argument. Change your decision when the argument is better than yours; hold it, and say exactly why, when it is not. Do not split the difference: "defer" is a judgement that the idea is right but not now, never a compromise between approve and reject.
+
+Ideas (full records with history):
+
+{ideas}
+
+Return one JSON object with exactly this shape:
+
+{{
+  "ideas": [
+    {{
+      "id": "<one of the idea ids above; every id exactly once>",
+      "decision": "approve" | "revise" | "defer" | "reject",
+      "reasoning": "two to four sentences: what the idea would settle under the direction, its weakest point, and (after round 1) which of the implementer's arguments you accept or dispute",
+      "suggested_changes": ["concrete edits to hypothesis, prediction, protocol or cost; required for revise, empty otherwise"],
+      "priority": <1 = run first among those approved>,
+      "depends_on": ["idea ids whose result should come first; empty if none"]
+    }}
+  ],
+  "order": ["approved idea ids in run order"],
+  "next_step": "one sentence: what the implementer should do right after this round"
+}}
+
+Rules: "approve" means the protocol as written may spend its budget now. "revise" means the idea is worth running after the listed changes and nothing else. "reject" means it should not run under this direction and says what would make it worth proposing again. Respect the standing constraints and the spent seeds in the briefing. An idea whose mechanism duplicates a decided idea is rejected unless it says what the earlier result left open.
+
+Briefing follows.
+
+{briefing}

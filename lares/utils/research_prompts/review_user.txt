@@ -1,4 +1,4 @@
-You and the implementer reached different verdicts on the same result. Read both, then say whether you change your mind.
+You and the implementer reached different verdicts on the same result. This is review round {round}. Read the latest two verdicts and the whole exchange, then say whether you change your mind. Engage with the implementer's specific argument: accept it, or name the number or rule that defeats it. Do not restate an earlier reply.
 
 Idea:
 {idea}
@@ -9,8 +9,11 @@ Recorded result:
 Your earlier verdict:
 {advisor}
 
-The implementer's verdict:
+The implementer's latest verdict:
 {implementer}
+
+The whole exchange so far (oldest first):
+{history}
 
 Return one JSON object:
 

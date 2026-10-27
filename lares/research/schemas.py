@@ -10,11 +10,17 @@ rules mirror the candidate layer:
 - a protocol is declared before any result exists and names its script, config,
   seeds and manifests; a protocol that touches the final-test split is refused;
 - every idea passes through ``proposed -> approved -> running -> analysed ->
-  decided`` (or ``rejected``), and nothing runs before the user approves it;
+  decided`` (or ``rejected`` / ``deferred``), and nothing runs before it is
+  approved. Since 2026-10-26 approval is *triage*: the advisor model and the
+  implementer must reach the same position (approve / reject / defer) over one or
+  more recorded rounds; the user sets the research direction instead of ruling
+  on each idea, and only a negotiation that exhausts its rounds is ``escalated``;
 - a decision is written only when the advisor's verdict and the implementer's
-  verdict agree; otherwise both are kept and the idea is ``escalated``.
+  verdict agree, again over recorded rounds; otherwise the idea is ``escalated``.
 
-Files are JSON under ``research/ideas/<id>.json`` and ``research/decisions.jsonl``.
+Files are JSON under ``research/ideas/<id>.json`` and ``research/decisions.jsonl``;
+every triage round is also appended to ``research/triage.jsonl`` and every raw
+proposal (parsed or not) to ``research/proposals.jsonl`` for later inspection.
 """
 
 from __future__ import annotations
@@ -24,7 +30,7 @@ import os
 import re
 import time
 from dataclasses import asdict, dataclass, field
-from typing import Any
+from typing import Any, Sequence
 
 from lares.utils.hashing import sha256_text  # noqa: F401  (re-exported)
 
@@ -35,6 +41,10 @@ DECISIONS_FILE = "decisions.jsonl"
 STATE_FILE = "STATE.md"
 BRIEFINGS_DIR = "briefings"
 CONSTRAINTS_FILE = "constraints.json"
+DIRECTION_FILE = "direction.json"
+TRIAGE_LOG = "triage.jsonl"
+PROPOSALS_LOG = "proposals.jsonl"
+DEFAULT_MAX_ROUNDS = 5
 
 STATUS_PROPOSED = "proposed"
 STATUS_APPROVED = "approved"
@@ -43,6 +53,7 @@ STATUS_ANALYSED = "analysed"
 STATUS_DECIDED = "decided"
 STATUS_ESCALATED = "escalated"
 STATUS_REJECTED = "rejected"
+STATUS_DEFERRED = "deferred"
 STATUSES = (
     STATUS_PROPOSED,
     STATUS_APPROVED,
@@ -51,17 +62,30 @@ STATUSES = (
     STATUS_DECIDED,
     STATUS_ESCALATED,
     STATUS_REJECTED,
+    STATUS_DEFERRED,
 )
-# Legal transitions. ``escalated`` returns to ``analysed`` when the user rules, so decide() can run again.
+# Legal transitions. ``escalated`` is reached from triage (rounds exhausted before approval) or from
+# the verdict stage (rounds exhausted before a decision); the user's ruling moves it on.
 TRANSITIONS = {
-    STATUS_PROPOSED: {STATUS_APPROVED, STATUS_REJECTED},
+    STATUS_PROPOSED: {STATUS_APPROVED, STATUS_REJECTED, STATUS_DEFERRED, STATUS_ESCALATED},
+    STATUS_DEFERRED: {STATUS_PROPOSED, STATUS_APPROVED, STATUS_REJECTED},
     STATUS_APPROVED: {STATUS_RUNNING, STATUS_REJECTED},
     STATUS_RUNNING: {STATUS_ANALYSED, STATUS_REJECTED},
     STATUS_ANALYSED: {STATUS_DECIDED, STATUS_ESCALATED},
-    STATUS_ESCALATED: {STATUS_ANALYSED, STATUS_DECIDED, STATUS_REJECTED},
+    STATUS_ESCALATED: {STATUS_ANALYSED, STATUS_DECIDED, STATUS_REJECTED, STATUS_APPROVED, STATUS_DEFERRED},
     STATUS_DECIDED: set(),
     STATUS_REJECTED: set(),
 }
+
+# Triage: what the advisor and the implementer each say about a proposed idea.
+TRIAGE_APPROVE = "approve"
+TRIAGE_REVISE = "revise"
+TRIAGE_DEFER = "defer"
+TRIAGE_REJECT = "reject"
+TRIAGE_POSITIONS = (TRIAGE_APPROVE, TRIAGE_REVISE, TRIAGE_DEFER, TRIAGE_REJECT)
+TRIAGE_FINAL_STATUS = {TRIAGE_APPROVE: STATUS_APPROVED, TRIAGE_DEFER: STATUS_DEFERRED, TRIAGE_REJECT: STATUS_REJECTED}
+STAGE_TRIAGE = "triage"
+STAGE_VERDICT = "verdict"
 
 VERDICT_SUPPORTED = "supported"
 VERDICT_REFUTED = "refuted"
@@ -213,6 +237,10 @@ class ResearchIdea:
     decision_id: str = ""
     history: list = field(default_factory=list)       # [{at, from, to, note}]
     created_at: str = field(default_factory=now)
+    direction: str = ""                               # the user's research direction when proposed
+    triage: dict = field(default_factory=dict)        # {rounds: [...], outcome, agreed_round, escalated}
+    escalation: dict = field(default_factory=dict)    # {stage: triage|verdict, at, reason}
+    revisions: list = field(default_factory=list)     # [{at, round, patch, note}]
 
     # -- validation ---------------------------------------------------------------
     def validate(self, metrics: set[str] | None = None):
@@ -225,12 +253,26 @@ class ResearchIdea:
         self.protocol.validate()
         for v in self.verdicts:
             Verdict(**v).validate()
-        if self.status in (STATUS_RUNNING, STATUS_ANALYSED, STATUS_DECIDED, STATUS_ESCALATED):
+        if self.status in (STATUS_RUNNING, STATUS_ANALYSED, STATUS_DECIDED):
             _require(self.approval.get("by"), f"{self.id}: is {self.status} but was never approved")
-        if self.status in (STATUS_ANALYSED, STATUS_DECIDED, STATUS_ESCALATED):
+        if self.status in (STATUS_ANALYSED, STATUS_DECIDED):
             _require(self.result.get("metrics"), f"{self.id}: is {self.status} but has no result metrics")
+        if self.status == STATUS_ESCALATED:
+            stage = self.escalation.get("stage")
+            _require(stage in (STAGE_TRIAGE, STAGE_VERDICT), f"{self.id}: escalated without a stage")
+            if stage == STAGE_VERDICT:
+                _require(self.approval.get("by") and self.result.get("metrics"),
+                         f"{self.id}: escalated at the verdict stage needs an approval and a result")
+            else:
+                _require(self.triage.get("rounds"), f"{self.id}: escalated at triage without any triage round")
         if self.status == STATUS_DECIDED:
             _require(self.decision_id, f"{self.id}: decided without a decision id")
+        for r in self.triage.get("rounds", []):
+            adv = r.get("advisor") or {}
+            imp = r.get("implementer") or {}
+            _require(adv.get("decision") in TRIAGE_POSITIONS, f"{self.id}: triage round {r.get('round')} has no advisor decision")
+            if imp:
+                _require(imp.get("position") in TRIAGE_POSITIONS, f"{self.id}: triage round {r.get('round')} bad implementer position")
 
     # -- transitions --------------------------------------------------------------
     def transition(self, to: str, note: str = ""):
@@ -350,12 +392,20 @@ def next_decision_id(root: str = RESEARCH_ROOT) -> str:
     return f"D-{len(load_decisions(root)) + 1:03d}"
 
 
-def decide(idea: ResearchIdea, root: str = RESEARCH_ROOT, user_ruling: dict | None = None,
-           summary: str = "", next_step: str = "") -> Decision | None:
-    """Compare the two verdicts. Agreement writes a decision; disagreement escalates.
+def verdict_rounds(idea: ResearchIdea) -> int:
+    """How many times the advisor has stated a verdict (initial analysis plus reviews)."""
+    return sum(1 for v in idea.verdicts if v.get("source") == SOURCE_ADVISOR)
 
-    With ``user_ruling`` (``{"outcome": ..., "note": ...}``) an escalated idea is decided
-    on the user's word and the disagreement is kept in the entry.
+
+def decide(idea: ResearchIdea, root: str = RESEARCH_ROOT, user_ruling: dict | None = None,
+           summary: str = "", next_step: str = "", max_rounds: int = DEFAULT_MAX_ROUNDS) -> Decision | None:
+    """Compare the latest two verdicts. Agreement writes a decision.
+
+    Disagreement returns ``None`` and leaves the idea ``analysed`` while fewer than
+    ``max_rounds`` advisor verdicts exist, so the implementer can restate (``verdict``)
+    and ask the advisor to reconsider (``decide --review``) again. Once the rounds are
+    exhausted the idea is ``escalated`` and only ``user_ruling``
+    (``{"outcome": ..., "note": ...}``) decides it; the disagreement is kept in the entry.
     """
     advisor = idea.verdict_from(SOURCE_ADVISOR)
     implementer = idea.verdict_from(SOURCE_IMPLEMENTER)
@@ -363,8 +413,12 @@ def decide(idea: ResearchIdea, root: str = RESEARCH_ROOT, user_ruling: dict | No
     _require(implementer is not None, f"{idea.id}: no implementer verdict yet (run verdict)")
     agreed = advisor.verdict == implementer.verdict
     if not agreed and not user_ruling:
-        if idea.status != STATUS_ESCALATED:
-            idea.transition(STATUS_ESCALATED, f"advisor says {advisor.verdict}, implementer says {implementer.verdict}")
+        rounds = verdict_rounds(idea)
+        if rounds >= max_rounds and idea.status != STATUS_ESCALATED:
+            idea.escalation = {"stage": STAGE_VERDICT, "at": now(),
+                               "reason": f"{rounds} advisor verdicts without agreement "
+                                         f"(advisor {advisor.verdict}, implementer {implementer.verdict})"}
+            idea.transition(STATUS_ESCALATED, idea.escalation["reason"])
         idea.save(root)
         return None
     outcome = user_ruling["outcome"] if user_ruling else advisor.verdict
@@ -396,3 +450,200 @@ def load_constraints(root: str = RESEARCH_ROOT) -> list:
     for entry in data:
         _require(entry.get("fact") and entry.get("source"), "every constraint needs a fact and a source")
     return data
+
+
+# ---------------------------------------------------------------------------
+#  Research direction (the user's input to the loop)
+# ---------------------------------------------------------------------------
+
+
+def load_direction(root: str = RESEARCH_ROOT) -> dict:
+    path = os.path.join(root, DIRECTION_FILE)
+    if not os.path.isfile(path):
+        return {"text": "", "set_at": "", "history": []}
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def set_direction(text: str, root: str = RESEARCH_ROOT, by: str = SOURCE_USER) -> dict:
+    """Record the user's current research direction; earlier directions stay in ``history``."""
+    _require(text and text.strip(), "a direction must not be empty")
+    current = load_direction(root)
+    if current.get("text"):
+        current.setdefault("history", []).append(
+            {"text": current["text"], "set_at": current.get("set_at", ""), "replaced_at": now()})
+    current.update({"text": text.strip(), "set_at": now(), "by": by})
+    os.makedirs(root, exist_ok=True)
+    with open(os.path.join(root, DIRECTION_FILE), "w", encoding="utf-8") as f:
+        json.dump(current, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+    return current
+
+
+# ---------------------------------------------------------------------------
+#  Append-only inspection logs
+# ---------------------------------------------------------------------------
+
+
+def _append_jsonl(root: str, name: str, entry: dict) -> str:
+    os.makedirs(root, exist_ok=True)
+    path = os.path.join(root, name)
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    return path
+
+
+def log_proposal(root: str, call_id: str, briefing_sha256: str, direction: str, index: int,
+                 raw: dict, idea_id: str = "", parse_error: str = "") -> str:
+    """Every proposal the advisor made, parsed into an idea or not, with the call that produced it."""
+    return _append_jsonl(root, PROPOSALS_LOG, {
+        "at": now(), "call_id": call_id, "briefing_sha256": briefing_sha256, "direction": direction,
+        "index": index, "idea_id": idea_id, "parse_error": parse_error, "raw": raw,
+    })
+
+
+def load_jsonl(root: str, name: str) -> list:
+    path = os.path.join(root, name)
+    if not os.path.isfile(path):
+        return []
+    with open(path, "r", encoding="utf-8") as f:
+        return [json.loads(line) for line in f if line.strip()]
+
+
+# ---------------------------------------------------------------------------
+#  Triage: advisor and implementer must agree before anything is spent
+# ---------------------------------------------------------------------------
+
+
+def triage_rounds(idea: ResearchIdea) -> list:
+    return idea.triage.setdefault("rounds", [])
+
+
+def open_triage_round(idea: ResearchIdea) -> dict | None:
+    """The latest round if the implementer has not answered it yet."""
+    rounds = triage_rounds(idea)
+    if rounds and not rounds[-1].get("implementer"):
+        return rounds[-1]
+    return None
+
+
+def record_triage_advice(idea: ResearchIdea, advice: dict, call_id: str, briefing_sha256: str = "") -> dict:
+    """Open a new round with the advisor's decision. Refuses while a round awaits the implementer."""
+    _require(idea.status in (STATUS_PROPOSED, STATUS_DEFERRED), f"{idea.id} is {idea.status}; only a proposed or deferred idea is triaged")
+    _require(open_triage_round(idea) is None, f"{idea.id}: round {len(triage_rounds(idea))} still awaits the implementer's position")
+    decision = str(advice.get("decision", "")).strip()
+    _require(decision in TRIAGE_POSITIONS, f"{idea.id}: advisor decision must be one of {TRIAGE_POSITIONS}, got {decision!r}")
+    if idea.status == STATUS_DEFERRED:
+        idea.transition(STATUS_PROPOSED, "re-triaged")
+    rounds = triage_rounds(idea)
+    entry = {
+        "round": len(rounds) + 1,
+        "advisor": {
+            "decision": decision,
+            "reasoning": str(advice.get("reasoning", "")),
+            "suggested_changes": list(advice.get("suggested_changes", []) or []),
+            "priority": advice.get("priority"),
+            "call_id": call_id,
+            "briefing_sha256": briefing_sha256,
+            "at": now(),
+        },
+        "implementer": None,
+        "outcome": None,
+    }
+    rounds.append(entry)
+    return entry
+
+
+def record_triage_position(idea: ResearchIdea, position: str, reasoning: str, root: str = RESEARCH_ROOT,
+                           changes_applied: Sequence[str] = (), max_rounds: int = DEFAULT_MAX_ROUNDS) -> dict:
+    """Close the open round with the implementer's position and resolve it.
+
+    Returns ``{"outcome": agreed|disagreed|escalated, "position": ..., "status": ...}``.
+    Agreement on approve/defer/reject moves the idea to that status (approval is recorded as
+    advisor+implementer with both call ids). Agreement on *revise* keeps the idea proposed:
+    the implementer applies the changes (``revise``) and the next round re-triages the revised
+    idea. Disagreement leaves the idea proposed for another round until ``max_rounds``, then
+    escalates to the user.
+    """
+    _require(position in TRIAGE_POSITIONS, f"position must be one of {TRIAGE_POSITIONS}, got {position!r}")
+    _require(reasoning and reasoning.strip(), "the implementer's position needs its reasoning")
+    rnd = open_triage_round(idea)
+    _require(rnd is not None, f"{idea.id}: no open triage round (run triage first)")
+    rnd["implementer"] = {"position": position, "reasoning": reasoning.strip(),
+                          "changes_applied": list(changes_applied), "at": now()}
+    advisor_decision = rnd["advisor"]["decision"]
+    agreed = advisor_decision == position
+    if agreed:
+        rnd["outcome"] = "agreed"
+        if position in TRIAGE_FINAL_STATUS:
+            idea.triage["outcome"] = position
+            idea.triage["agreed_round"] = rnd["round"]
+            if position == TRIAGE_APPROVE:
+                idea.approval = {"by": f"{SOURCE_ADVISOR}+{SOURCE_IMPLEMENTER}", "at": now(),
+                                 "advisor_call_id": rnd["advisor"]["call_id"], "round": rnd["round"],
+                                 "note": rnd["advisor"]["reasoning"][:300]}
+            idea.transition(TRIAGE_FINAL_STATUS[position], f"triage round {rnd['round']}: both say {position}")
+        else:  # both say revise: stays proposed, awaiting the revision and the next round
+            idea.triage["outcome"] = None
+        outcome = "agreed"
+    elif len(triage_rounds(idea)) >= max_rounds:
+        rnd["outcome"] = "escalated"
+        idea.triage["escalated"] = True
+        idea.escalation = {"stage": STAGE_TRIAGE, "at": now(),
+                           "reason": f"{len(triage_rounds(idea))} rounds without agreement "
+                                     f"(advisor {advisor_decision}, implementer {position})"}
+        idea.transition(STATUS_ESCALATED, idea.escalation["reason"])
+        outcome = "escalated"
+    else:
+        rnd["outcome"] = "disagreed"
+        outcome = "disagreed"
+    idea.save(root)
+    _append_jsonl(root, TRIAGE_LOG, {
+        "at": now(), "idea_id": idea.id, "title": idea.title, "round": rnd["round"], "direction": idea.direction,
+        "advisor": rnd["advisor"], "implementer": rnd["implementer"], "outcome": outcome, "status": idea.status,
+    })
+    return {"outcome": outcome, "position": position, "status": idea.status, "round": rnd["round"]}
+
+
+def apply_revision(idea: ResearchIdea, patch: dict, note: str = "", root: str = RESEARCH_ROOT,
+                   metrics: set[str] | None = None) -> ResearchIdea:
+    """Merge a patch into a proposed idea's hypothesis, prediction, protocol or cost and record it.
+
+    Only the fields an advisor may ask to change are patchable; status, approval, result and the
+    logs are not. The revised idea is validated before it is saved.
+    """
+    _require(idea.status in (STATUS_PROPOSED, STATUS_DEFERRED), f"{idea.id} is {idea.status}; only a proposed idea can be revised")
+    allowed = {"title", "hypothesis", "falsified_by", "prediction", "protocol", "cost_estimate", "open_question_refs"}
+    unknown = set(patch) - allowed
+    _require(not unknown, f"revision touches fields that are not revisable: {sorted(unknown)}")
+    for key, value in patch.items():
+        if key == "prediction":
+            idea.prediction = Prediction(**{**asdict(idea.prediction), **value})
+        elif key == "protocol":
+            idea.protocol = Protocol(**{**asdict(idea.protocol), **value})
+        else:
+            setattr(idea, key, value)
+    idea.validate(metrics)
+    idea.revisions.append({"at": now(), "round": len(triage_rounds(idea)), "patch": patch, "note": note})
+    idea.save(root)
+    return idea
+
+
+def rule_triage(idea: ResearchIdea, outcome: str, note: str, root: str = RESEARCH_ROOT) -> ResearchIdea:
+    """The user's override for an idea stuck in triage (escalated, proposed or deferred)."""
+    _require(outcome in TRIAGE_FINAL_STATUS, f"outcome must be one of {sorted(TRIAGE_FINAL_STATUS)}")
+    _require(note and note.strip(), "a ruling needs a note")
+    _require(idea.status in (STATUS_PROPOSED, STATUS_DEFERRED, STATUS_ESCALATED),
+             f"{idea.id} is {idea.status}; a ruling applies to a proposed, deferred or escalated idea")
+    if idea.status == STATUS_ESCALATED:
+        _require(idea.escalation.get("stage") == STAGE_TRIAGE, f"{idea.id} is escalated at the verdict stage; use decide --ruling")
+    idea.triage["outcome"] = outcome
+    idea.triage["user_ruling"] = {"outcome": outcome, "note": note, "at": now()}
+    if outcome == TRIAGE_APPROVE:
+        idea.approval = {"by": SOURCE_USER, "at": now(), "note": note}
+    idea.transition(TRIAGE_FINAL_STATUS[outcome], f"user ruling: {note}")
+    idea.save(root)
+    _append_jsonl(root, TRIAGE_LOG, {"at": now(), "idea_id": idea.id, "title": idea.title, "round": None,
+                                     "user_ruling": idea.triage["user_ruling"], "outcome": "user_ruling",
+                                     "status": idea.status})
+    return idea

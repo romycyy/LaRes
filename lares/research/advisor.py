@@ -1,4 +1,9 @@
-"""The advisor model's calls: propose ideas, analyse a result, review a disagreement, consult on open ideas.
+"""The advisor model's calls: propose, triage, analyse, review, consult.
+
+``triage`` is how ideas get approved since 2026-10-26: the advisor states approve /
+revise / defer / reject for each proposed idea, the implementer answers with its own
+position, and the idea moves only when the two agree (``schemas.record_triage_position``).
+Each round the advisor sees every earlier round, including the implementer's objection.
 
 The advisor never runs anything and never writes policy code. It receives a
 hashed briefing packet and returns strict JSON, which is parsed against the
@@ -21,6 +26,7 @@ from dataclasses import asdict
 
 from lares.research.schemas import (
     SOURCE_ADVISOR,
+    TRIAGE_POSITIONS,
     Prediction,
     Protocol,
     ResearchIdea,
@@ -34,6 +40,7 @@ from lares.search.generation import (
     LABEL_RESEARCH_CONSULT,
     LABEL_RESEARCH_PROPOSE,
     LABEL_RESEARCH_REVIEW,
+    LABEL_RESEARCH_TRIAGE,
     LLMCallLedger,
 )
 
@@ -96,10 +103,15 @@ class Advisor:
         return text, record.call_id
 
     # -- propose ------------------------------------------------------------------
-    def propose(self, briefing: dict, n: int = 3, focus: str = "") -> dict:
-        """Ask for ``n`` ideas. Returns ``{ideas: [ResearchIdea], rejected: [{index, reason, raw}], call_id}``."""
+    def propose(self, briefing: dict, n: int = 3, focus: str = "", direction: str = "") -> dict:
+        """Ask for ``n`` ideas. Returns ``{ideas: [ResearchIdea], rejected: [{index, reason, raw}], call_id}``.
+
+        ``direction`` is the user's standing research direction; ``focus`` an optional one-off
+        emphasis for this call. Both are recorded on every idea the call produces.
+        """
         system = read_prompt("advisor_system.txt")
-        user = read_prompt("propose_user.txt").format(n=n, briefing=briefing["text"], focus=focus or "(none)")
+        user = read_prompt("propose_user.txt").format(n=n, briefing=briefing["text"], focus=focus or "(none)",
+                                                      direction=direction or "(none set; propose what the ledger most needs)")
         text, call_id = self._ask(LABEL_RESEARCH_PROPOSE, system, user, purpose=f"propose {n} research ideas")
         payload = extract_json(text)
         if isinstance(payload, dict):
@@ -113,6 +125,7 @@ class Advisor:
         for k, raw in enumerate(payload):
             try:
                 idea = self._parse_idea(raw, metrics, briefing["sha256"], call_id, n_existing=len(ideas))
+                idea.direction = direction or ""
                 ideas.append(idea)
             except (ResearchSchemaError, KeyError, TypeError, ValueError) as e:
                 rejected.append({"index": k, "reason": f"{type(e).__name__}: {e}", "raw": raw})
@@ -150,6 +163,45 @@ class Advisor:
         )
         idea.validate(metrics)
         return idea
+
+    # -- triage -------------------------------------------------------------------
+    def triage(self, ideas, briefing: dict, direction: str = "") -> dict:
+        """One advisor round over proposed ideas: approve / revise / defer / reject each.
+
+        The prompt carries every earlier round of each idea (advisor decision, implementer
+        position and reasoning), so a disagreement is argued, not repeated. Returns
+        ``{ideas: {id: entry}, order, next_step, call_id, briefing_sha256}``; refuses a reply
+        that skips an idea, invents one, or uses an unknown decision.
+        """
+        ids = [i.id for i in ideas]
+        if not ids:
+            raise ResearchSchemaError("triage needs at least one idea")
+        system = read_prompt("advisor_system.txt")
+        user = read_prompt("triage_user.txt").format(
+            direction=direction or "(none set)",
+            ideas=json.dumps([_idea_for_triage(i) for i in ideas], indent=2, ensure_ascii=False),
+            briefing=briefing["text"],
+        )
+        text, call_id = self._ask(LABEL_RESEARCH_TRIAGE, system, user, purpose=f"triage {', '.join(ids)}", attempt_ids=ids)
+        raw = extract_json(text)
+        entries = raw.get("ideas") if isinstance(raw, dict) else None
+        if not isinstance(entries, list):
+            raise ResearchSchemaError("triage response must be an object with an 'ideas' list")
+        answered = [str(e.get("id")) for e in entries]
+        if sorted(answered) != sorted(ids):
+            raise ResearchSchemaError(f"triage answered {answered}, asked about {ids}")
+        for e in entries:
+            if e.get("decision") not in TRIAGE_POSITIONS:
+                raise ResearchSchemaError(f"{e.get('id')}: decision must be one of {TRIAGE_POSITIONS}, got {e.get('decision')!r}")
+            if not str(e.get("reasoning", "")).strip():
+                raise ResearchSchemaError(f"{e.get('id')}: a triage decision needs its reasoning")
+            if e["decision"] == "revise" and not e.get("suggested_changes"):
+                raise ResearchSchemaError(f"{e.get('id')}: 'revise' needs suggested_changes")
+        unknown = [i for i in raw.get("order", []) if i not in ids]
+        if unknown:
+            raise ResearchSchemaError(f"triage order names ideas it was not asked about: {unknown}")
+        return {"ideas": {str(e["id"]): e for e in entries}, "order": list(raw.get("order", [])),
+                "next_step": str(raw.get("next_step", "")), "call_id": call_id, "briefing_sha256": briefing["sha256"]}
 
     # -- consult ------------------------------------------------------------------
     def consult(self, ideas, briefing: dict, question: str = "") -> dict:
@@ -226,6 +278,8 @@ class Advisor:
             result=json.dumps(idea.result, indent=2, ensure_ascii=False),
             advisor=json.dumps(asdict(advisor), indent=2, ensure_ascii=False),
             implementer=json.dumps(asdict(implementer), indent=2, ensure_ascii=False),
+            history=json.dumps(idea.verdicts, indent=2, ensure_ascii=False),
+            round=sum(1 for v in idea.verdicts if v.get("source") == SOURCE_ADVISOR) + 1,
         )
         text, call_id = self._ask(LABEL_RESEARCH_REVIEW, system, user, purpose=f"review {idea.id}", attempt_ids=[idea.id])
         raw = extract_json(text)
@@ -244,4 +298,12 @@ def _idea_for_prompt(idea: ResearchIdea) -> dict:
     d = idea.to_dict()
     for key in ("history", "verdicts", "result", "prediction_outcome", "briefing_sha256", "proposal_call_id"):
         d.pop(key, None)
+    return d
+
+
+def _idea_for_triage(idea: ResearchIdea) -> dict:
+    """The idea as the triage prompt sees it: the proposal plus every earlier round and revision."""
+    d = _idea_for_prompt(idea)
+    d["triage_rounds"] = idea.triage.get("rounds", [])
+    d["revisions"] = idea.revisions
     return d

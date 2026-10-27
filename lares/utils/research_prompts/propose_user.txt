@@ -1,6 +1,8 @@
-Propose exactly {n} research ideas to test next. Rank them by expected information per simulator episode (first = best).
+Propose exactly {n} research ideas to test next under the user's research direction. Rank them by expected information per simulator episode (first = best). Ideas outside the direction are rejected at triage unless they are the one measurement the direction depends on.
 
-Focus requested by the user (may be empty): {focus}
+User's research direction: {direction}
+
+One-off focus for this call (may be empty): {focus}
 
 Return a JSON list of exactly {n} objects, each with this shape:
 
