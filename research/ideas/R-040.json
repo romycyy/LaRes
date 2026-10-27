@@ -32,7 +32,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "Per stage: an upper paired interval bound below +0.10 rules out the predicted gain; an interval containing +0.10 is uncertainty, not improvement. Expert qualification fails at a stage below 27/30 sustained successes regardless of return.",
   "cost_estimate": {
@@ -50,11 +50,345 @@
     "round": 3,
     "note": "I accept the implementer's single-Stage-3-policy argument: shared physics and nested predicates make evaluation across all three stages informative at one third of the proposed training cost, without an arbitrary transfer schedule. The scripted and public-policy routes are exhausted, so the roughly "
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-10-27T01:28:20",
+    "git_sha": "2543253760f2f88edbb1a83b1375c3dfbfb24c5d",
+    "dirty_worktree": false,
+    "log_dir": "logs/pen_spin/r040_ppo_expert",
+    "finished_at": "2026-10-27T09:29:41"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.5111111111111111,
+      "paired_success_difference_ci95": [
+        0.4058274562526499,
+        0.6163947659695723
+      ],
+      "pooled_promotion_pairs": 90,
+      "per_stage_promotion": {
+        "stage1": {
+          "ppo_successes_of_30": 29,
+          "gait_successes_of_30": 21,
+          "ppo_success": 0.9666666666666667,
+          "gait_success": 0.7,
+          "paired_difference": 0.26666666666666666,
+          "paired_ci95": [
+            0.0987173818937967,
+            0.43461595143953663
+          ],
+          "qualifies": true,
+          "promotes": true,
+          "ppo_mean_abs_spin": 16.860679259517177,
+          "ppo_mean_transverse": 2.7692530611652737,
+          "ppo_completed": 1.0,
+          "gait_mean_transverse": 3.0936859051386514,
+          "ppo_failures": [
+            {
+              "case_id": "promotion-0021",
+              "completed": true,
+              "hit_steps": 351,
+              "tail_hit_fraction": 0.9833333333333333,
+              "final_center_dist": 0.0066612218506634235
+            }
+          ]
+        },
+        "stage2": {
+          "ppo_successes_of_30": 30,
+          "gait_successes_of_30": 13,
+          "ppo_success": 1.0,
+          "gait_success": 0.43333333333333335,
+          "paired_difference": 0.5666666666666667,
+          "paired_ci95": [
+            0.3784673849181791,
+            0.7548659484151542
+          ],
+          "qualifies": true,
+          "promotes": true,
+          "ppo_mean_abs_spin": 17.013145601207057,
+          "ppo_mean_transverse": 2.7728778580547817,
+          "ppo_completed": 1.0,
+          "gait_mean_transverse": 3.3676134342948596,
+          "ppo_failures": []
+        },
+        "stage3": {
+          "ppo_successes_of_30": 30,
+          "gait_successes_of_30": 9,
+          "ppo_success": 1.0,
+          "gait_success": 0.3,
+          "paired_difference": 0.7,
+          "paired_ci95": [
+            0.5259585363808446,
+            0.8740414636191554
+          ],
+          "qualifies": true,
+          "promotes": true,
+          "ppo_mean_abs_spin": 16.977541782729805,
+          "ppo_mean_transverse": 2.7862051706128135,
+          "ppo_completed": 1.0,
+          "gait_mean_transverse": 3.6596095169583958,
+          "ppo_failures": []
+        }
+      },
+      "qualifies": {
+        "stage1": true,
+        "stage2": true,
+        "stage3": true
+      },
+      "promotes_per_stage": {
+        "stage1": true,
+        "stage2": true,
+        "stage3": true
+      },
+      "checkpoint_diagnostics_debug_s4097_stage3": [
+        {
+          "iteration": 0,
+          "completed": 0.4,
+          "mean_length": 174.85,
+          "sustained_s1": 0.0,
+          "tail_s1": 0.19778239689281335,
+          "sustained_s2": 0.0,
+          "tail_s2": 0.18713750990576045,
+          "sustained_s3": 0.0,
+          "tail_s3": 0.14452317199710601,
+          "mean_abs_spin": 3.8591973924077783,
+          "mean_transverse": 0.8587338952360952
+        },
+        {
+          "iteration": 824,
+          "completed": 0.975,
+          "mean_length": 353.175,
+          "sustained_s1": 0.9,
+          "tail_s1": 0.99375,
+          "sustained_s2": 0.875,
+          "tail_s2": 0.9920833333333334,
+          "sustained_s3": 0.85,
+          "tail_s3": 0.9875,
+          "mean_abs_spin": 17.687590695122815,
+          "mean_transverse": 3.00523211315212
+        },
+        {
+          "iteration": 1648,
+          "completed": 1.0,
+          "mean_length": 359.0,
+          "sustained_s1": 1.0,
+          "tail_s1": 1.0,
+          "sustained_s2": 1.0,
+          "tail_s2": 1.0,
+          "sustained_s3": 1.0,
+          "tail_s3": 1.0,
+          "mean_abs_spin": 16.275774721448467,
+          "mean_transverse": 3.10665694637883
+        },
+        {
+          "iteration": 2472,
+          "completed": 1.0,
+          "mean_length": 359.0,
+          "sustained_s1": 1.0,
+          "tail_s1": 1.0,
+          "sustained_s2": 1.0,
+          "tail_s2": 1.0,
+          "sustained_s3": 1.0,
+          "tail_s3": 1.0,
+          "mean_abs_spin": 16.685099669220055,
+          "mean_transverse": 2.8303947597493035
+        },
+        {
+          "iteration": 3296,
+          "completed": 0.975,
+          "mean_length": 351.325,
+          "sustained_s1": 0.95,
+          "tail_s1": 0.9822435897435898,
+          "sustained_s2": 0.95,
+          "tail_s2": 0.9715705128205128,
+          "sustained_s3": 0.95,
+          "tail_s3": 0.9639423076923077,
+          "mean_abs_spin": 16.504485252259304,
+          "mean_transverse": 2.7464876271970398
+        },
+        {
+          "iteration": 4120,
+          "completed": 1.0,
+          "mean_length": 359.0,
+          "sustained_s1": 1.0,
+          "tail_s1": 1.0,
+          "sustained_s2": 1.0,
+          "tail_s2": 1.0,
+          "sustained_s3": 1.0,
+          "tail_s3": 1.0,
+          "mean_abs_spin": 16.866534644846798,
+          "mean_transverse": 2.751165346448468
+        },
+        {
+          "iteration": 4944,
+          "completed": 1.0,
+          "mean_length": 359.0,
+          "sustained_s1": 1.0,
+          "tail_s1": 1.0,
+          "sustained_s2": 1.0,
+          "tail_s2": 1.0,
+          "sustained_s3": 1.0,
+          "tail_s3": 1.0,
+          "mean_abs_spin": 16.91627567896936,
+          "mean_transverse": 2.748587656685237
+        },
+        {
+          "iteration": 5768,
+          "completed": 1.0,
+          "mean_length": 359.0,
+          "sustained_s1": 1.0,
+          "tail_s1": 1.0,
+          "sustained_s2": 1.0,
+          "tail_s2": 1.0,
+          "sustained_s3": 1.0,
+          "tail_s3": 1.0,
+          "mean_abs_spin": 16.86594054665738,
+          "mean_transverse": 2.745105218488858
+        },
+        {
+          "iteration": 6592,
+          "completed": 1.0,
+          "mean_length": 359.0,
+          "sustained_s1": 1.0,
+          "tail_s1": 1.0,
+          "sustained_s2": 1.0,
+          "tail_s2": 1.0,
+          "sustained_s3": 1.0,
+          "tail_s3": 1.0,
+          "mean_abs_spin": 16.95558844011142,
+          "mean_transverse": 2.7458048615947077
+        },
+        {
+          "iteration": 7416,
+          "completed": 0.975,
+          "mean_length": 351.65,
+          "sustained_s1": 0.975,
+          "tail_s1": 0.99375,
+          "sustained_s2": 0.975,
+          "tail_s2": 0.9904166666666667,
+          "sustained_s3": 0.975,
+          "tail_s3": 0.9854166666666668,
+          "mean_abs_spin": 16.99894581792976,
+          "mean_transverse": 2.7765481146914546
+        },
+        {
+          "iteration": 8239,
+          "completed": 1.0,
+          "mean_length": 359.0,
+          "sustained_s1": 1.0,
+          "tail_s1": 1.0,
+          "sustained_s2": 1.0,
+          "tail_s2": 1.0,
+          "sustained_s3": 1.0,
+          "tail_s3": 1.0,
+          "mean_abs_spin": 16.985603455779945,
+          "mean_transverse": 2.7429886076775767
+        }
+      ],
+      "training": {
+        "num_envs": 8192,
+        "iterations": 8240,
+        "transitions": 1080033280,
+        "steps_per_second_gate": 38874.7,
+        "final_train_mean_episode_length": 359.0
+      },
+      "episodes": {
+        "training_estimate_full_horizon": 3008449,
+        "evaluation": 180,
+        "reproducibility_control": 240,
+        "checkpoint_diagnostics": 440
+      },
+      "llm_calls": 0
+    },
+    "controls": {
+      "paired_success_difference": 0.0,
+      "baseline": "frozen R-039 feedback gait (D-035) on the same fresh 30-case promotion manifests (seeds 4030-4032), own process per (stage, controller)",
+      "reproducibility_control": {
+        "stage1/ppo_expert": {
+          "union_diverged_envs": 0,
+          "sustained_outcome_flips": 0,
+          "passes": true
+        },
+        "stage2/ppo_expert": {
+          "union_diverged_envs": 0,
+          "sustained_outcome_flips": 0,
+          "passes": true
+        },
+        "stage3/ppo_expert": {
+          "union_diverged_envs": 0,
+          "sustained_outcome_flips": 0,
+          "passes": true
+        }
+      }
+    },
+    "artifacts": [
+      "logs/pen_spin/r040_ppo_expert/control/stage1_ppo_expert_a.json",
+      "logs/pen_spin/r040_ppo_expert/control/stage1_ppo_expert_b.json",
+      "logs/pen_spin/r040_ppo_expert/control/stage2_ppo_expert_a.json",
+      "logs/pen_spin/r040_ppo_expert/control/stage2_ppo_expert_b.json",
+      "logs/pen_spin/r040_ppo_expert/control/stage3_ppo_expert_a.json",
+      "logs/pen_spin/r040_ppo_expert/control/stage3_ppo_expert_b.json",
+      "logs/pen_spin/r040_ppo_expert/diagnostics/summary.json",
+      "logs/pen_spin/r040_ppo_expert/gate.json",
+      "logs/pen_spin/r040_ppo_expert/stage1_feedback_gait.json",
+      "logs/pen_spin/r040_ppo_expert/stage1_ppo_expert.json",
+      "logs/pen_spin/r040_ppo_expert/stage2_feedback_gait.json",
+      "logs/pen_spin/r040_ppo_expert/stage2_ppo_expert.json",
+      "logs/pen_spin/r040_ppo_expert/stage3_feedback_gait.json",
+      "logs/pen_spin/r040_ppo_expert/stage3_ppo_expert.json",
+      "logs/pen_spin/r040_ppo_expert/summary.json",
+      "logs/pen_spin/r040_ppo_expert/train/model_8239.pt",
+      "logs/pen_spin/r040_ppo_expert/train_started.json"
+    ],
+    "notes": "Final scheduled checkpoint model_8239 only (no selection). Qualifies on every stage (29/30, 30/30, 30/30 sustained) and beats the gait on every stage with paired lower bounds above +0.10 except stage 1 (low 0.099, mean +0.267). The single stage-1 failure (promotion-0021) completed the episode with the pen centred (0.007 m) and missed the predicate on 1 of the final 60 steps (tail 0.983): the D-034 all-60 rule fails a policy that holds 59/60. Transverse (end-over-end) rate stays ~2.8 rad/s against ~17 rad/s roll: the policy rolls the pen about its long axis, the task's definition, not a twirl. Debug-seed diagnostics: sustained 1.0 from iteration 1648 on, dips to 0.95/0.975 at 3296 and 7416 (single drops); training mean episode length 359 (no time-outs lost to falls) by the end. Reproducibility control passes with zero diverged envs."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": 0.0,
+    "after": 0.5111111111111111,
+    "delta": 0.5111111111111111,
+    "matched": true
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "supported",
+      "confidence": 0.9,
+      "reasoning": "Predeclared per-stage test: paired_success_difference >= +0.10 vs the frozen R-039 gait, falsified only by an upper paired bound below +0.10. Observed +0.267 [0.099, 0.435], +0.567 [0.378, 0.755], +0.700 [0.526, 0.874] on 30 fresh pairs per stage; pooled +0.511 [0.406, 0.616] over 90. No upper bound is near +0.10, so the prediction holds on every stage; stage 1's lower bound sits at 0.099, so the stage-1 margin over +0.10 alone is not established, only the direction. Independently, the final scheduled checkpoint (no selection) qualifies on every stage, 29/30, 30/30, 30/30 >= 27, and the PPO reproducibility control passes with zero diverged envs. The lone failure (stage-1 promotion-0021) completed, centred at 0.007 m, and missed 1 of the final 60 predicate steps: a strictness artefact of the D-034 all-60 rule rather than a drop. Caveats: one training seed (4020); the gait's success on these fresh manifests (21/13/9) is higher than on its R-039 cases (14/16/7) for stage 1, consistent with D-035's batch/case variance; spin is axial roll (~17 rad/s) with ~2.8 rad/s transverse, the task as defined, not a finger-gaiting twirl.",
+      "cited_artifacts": [
+        "D-034",
+        "D-035"
+      ],
+      "next_experiment": "Export qualified PPO traces (obs/actions/provenance) as the trace-repair expert and build the pen-spin plateau-repair pipeline: obs schema for policy generation, manifest-driven Isaac evaluator inside run_full_evolution, demonstration manifest disjoint from development.",
+      "recorded_at": "2026-10-27T09:29:53",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 0.99,
+      "reasoning": "The predeclared per-stage prediction is inconclusive: Stage 1's paired_success_difference against the measured frozen gait was +0.2667, but its 95% interval [0.0987, 0.4346] contains the required +0.10, so that stage's predicted gain is neither established nor refuted [logs/pen_spin/r040_ppo_expert/summary.json]. Stages 2 and 3 support the prediction, with differences +0.5667 [0.3785, 0.7549] and +0.7000 [0.5260, 0.8740], respectively [logs/pen_spin/r040_ppo_expert/summary.json]. The pooled mechanical match cannot substitute for the predeclared per-stage assessment [logs/pen_spin/r040_ppo_expert/summary.json]. Independently, PPO qualifies as an expert on every stage with 29/30, 30/30 and 30/30 sustained successes, and all stages satisfy promotion because their paired intervals exclude zero [logs/pen_spin/r040_ppo_expert/summary.json]. The reproducibility controls also pass, so the recorded limitation is uncertainty about the minimum comparative gain, not failure to qualify the expert [logs/pen_spin/r040_ppo_expert/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r040_ppo_expert/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-27T09:30:36",
+      "call_id": "call_00079"
+    },
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.85,
+      "reasoning": "Revised after the advisor's analysis. The protocol only stated a falsification rule (upper bound below +0.10); not being falsified is not the same as support. On the predeclared per-stage test, stages 2 and 3 establish a gain above +0.10 (+0.567 [0.378, 0.755], +0.700 [0.526, 0.874]), but stage 1's +0.267 [0.099, 0.435] contains +0.10, so the per-stage prediction as a whole is inconclusive, and pooling cannot replace the per-stage assessment. The operational outcome R-040 existed for is unambiguous and separate: the final scheduled checkpoint (model_8239, no selection) qualifies as an expert on every stage (29/30, 30/30, 30/30 >= 27), promotes over the gait on every stage (all paired lower bounds > 0), and passes the reproducibility control with zero diverged envs. The single stage-1 failure is a completed, centred episode missing 1 of the final 60 predicate steps. Caveat: one training seed.",
+      "cited_artifacts": [
+        "D-034",
+        "D-035"
+      ],
+      "next_experiment": "Use model_8239 as the pen-spin trace-repair expert: export obs/action traces with provenance on a disjoint demonstration manifest and build the pen-spin plateau-repair pipeline (obs schema, manifest-driven Isaac evaluator in run_full_evolution).",
+      "recorded_at": "2026-10-27T09:30:52",
+      "call_id": ""
+    }
+  ],
+  "decision_id": "D-036",
   "history": [
     {
       "at": "2026-10-27T00:35:54",
@@ -79,6 +413,24 @@
       "from": "approved",
       "to": "approved",
       "note": "pre-launch reconciliation (R-037 precedent): seeds 4020 (training), 4030-4032 (promotion manifests, frozen and committed) and 4097 (debug-only diagnostics/gate) reserved in the ledger before any promotion-case rollout, so protocol.seeds is empty and protocol.manifests names the frozen files. A smoke test of the full chain ran at 256 envs, 6 iterations, with 'promotion' manifests rebuilt from debug seed 4097 in /tmp, so no promotion case was opened. Runner setting: clip_actions = 1.0 so the observed last_action matches the evaluator's clamped action."
+    },
+    {
+      "at": "2026-10-27T01:28:20",
+      "from": "approved",
+      "to": "running",
+      "note": "git 2543253760"
+    },
+    {
+      "at": "2026-10-27T09:29:41",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=True"
+    },
+    {
+      "at": "2026-10-27T09:31:00",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-036: inconclusive"
     }
   ],
   "created_at": "2026-10-27T00:34:23",
