@@ -344,11 +344,13 @@ def collect_scripted_dataset(env, cfg: SimpleNamespace, logger: TrainingLogger) 
 
 
 def run_study(args, cfg: SimpleNamespace) -> None:
-    """``--study feedback_ablation`` (R-041) or ``feedback_lesions`` (R-044): the driver, or one child cell."""
-    from lares.envs.isaac_pen_spin import feedback_ablation, feedback_lesions
+    """``--study feedback_ablation`` (R-041), ``feedback_lesions`` (R-044) or ``feedback_delay`` (R-047): the driver,
+    or one child cell."""
+    from lares.envs.isaac_pen_spin import feedback_ablation, feedback_delay, feedback_lesions
 
     studies = {feedback_ablation.FEEDBACK_ABLATION: feedback_ablation,
-               feedback_lesions.FEEDBACK_LESIONS: feedback_lesions}
+               feedback_lesions.FEEDBACK_LESIONS: feedback_lesions,
+               feedback_delay.FEEDBACK_DELAY: feedback_delay}
     if args.study not in studies:
         raise SystemExit(f"unknown study {args.study!r}")
     fa = studies[args.study]
@@ -356,6 +358,8 @@ def run_study(args, cfg: SimpleNamespace) -> None:
     if protocol_cfg is None:
         raise SystemExit(f"{args.config} declares no research protocol {args.study!r}")
     out_dir = args.log_dir or str(protocol_cfg["log_dir"])
+    if args.manifest_seed is not None and int(args.manifest_seed) != int(protocol_cfg["pool_seed"]):
+        raise SystemExit(f"--manifest-seed {args.manifest_seed} != the protocol's pool_seed {protocol_cfg['pool_seed']}")
     if args.build_manifests:
         print("wrote", fa.build_manifests(protocol_cfg) or "nothing (all present and identical)")
         return
@@ -374,6 +378,8 @@ def run_study(args, cfg: SimpleNamespace) -> None:
         return
     if fa is feedback_lesions:
         summary = fa.run_feedback_lesions(protocol_cfg, args.config, out_dir)
+    elif fa is feedback_delay:
+        summary = fa.run_feedback_delay(protocol_cfg, args.config, out_dir)
     else:
         summary = fa.run_feedback_ablation(protocol_cfg, args.config, out_dir)
     print(json.dumps({k: v for k, v in summary.items() if k != "tape"}, indent=2))
@@ -427,7 +433,7 @@ def main() -> None:
     parser.add_argument("--research-protocol", default=None,
                         help="run a named protocol from the config's research_protocols block instead of the smoke stages")
     parser.add_argument("--study", default=None,
-                        help="run a named study (feedback_ablation, feedback_lesions) from the config's research_protocols block")
+                        help="run a named study (feedback_ablation, feedback_lesions, feedback_delay) from the config's research_protocols block")
     parser.add_argument("--build-manifests", action="store_true",
                         help="with --research-protocol: write the protocol's frozen manifests and exit (no Isaac)")
     parser.add_argument("--stage", type=int, default=None, help=argparse.SUPPRESS)  # protocol child process
@@ -435,7 +441,10 @@ def main() -> None:
     parser.add_argument("--cell-manifest", default=None, help=argparse.SUPPRESS)  # protocol child process
     parser.add_argument("--cell-out", default=None, help=argparse.SUPPRESS)
     parser.add_argument("--record-obs", action="store_true", help=argparse.SUPPRESS)
-    parser.add_argument("--log-dir", default=None, help="protocol output directory (default: the protocol's log_dir)")
+    parser.add_argument("--log-dir", "--output-dir", dest="log_dir", default=None,
+                        help="protocol output directory (default: the protocol's log_dir)")
+    parser.add_argument("--manifest-seed", type=int, default=None,
+                        help="with --study: the pool seed the command expects; refused if the config declares another")
     args = parser.parse_args()
 
     cfg = load_config(args.config)

@@ -100,11 +100,11 @@ def make_controller(arm: str, protocol_cfg: dict):
     return LesionedController(expert, arm)
 
 
-def _child(config_path: str, manifest: str, arm: str, out_path: str) -> None:
+def _child(config_path: str, manifest: str, arm: str, out_path: str, study: str = FEEDBACK_LESIONS) -> None:
     if os.path.exists(out_path):
         print("exists", out_path, flush=True)
         return
-    cmd = [sys.executable, "-u", sys.argv[0], "--config", config_path, "--study", FEEDBACK_LESIONS,
+    cmd = [sys.executable, "-u", sys.argv[0], "--config", config_path, "--study", study,
            "--cell-manifest", manifest, "--controller", arm, "--cell-out", out_path]
     print("running", " ".join(cmd), flush=True)
     subprocess.run(cmd, check=True)

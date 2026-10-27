@@ -13,9 +13,7 @@
     "script": "scripts/run_shadowhand_spin_stages.py",
     "config": "config/shadowhand_spin_stages.yaml",
     "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study feedback_delay --manifest-seed 4200 --output-dir logs/pen_spin_feedback_delay_s4200\"'",
-    "seeds": [
-      4200
-    ],
+    "seeds": [],
     "manifests": [
       "config/manifests/pen_spin_stage3_feedback_delay_development_s4200.yaml"
     ],
@@ -58,6 +56,12 @@
       "from": "proposed",
       "to": "approved",
       "note": "triage round 1: both say approve"
+    },
+    {
+      "at": "2026-10-27T17:03:48",
+      "from": "approved",
+      "to": "approved",
+      "note": "seed 4200 recorded in config/experiment_seed_ledger.jsonl with the frozen manifest; cleared from protocol.seeds so start does not read its own manifest as spent"
     }
   ],
   "created_at": "2026-10-27T16:59:50",

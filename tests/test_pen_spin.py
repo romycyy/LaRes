@@ -322,5 +322,73 @@ class TestFeedbackLesions(unittest.TestCase):
         self.assertEqual(cfg["pool_seed"], 4140)
 
 
+class TestFeedbackDelay(unittest.TestCase):
+    class Inner:
+        params = {"checkpoint": "x"}
+
+        def __init__(self):
+            self.seen = []
+
+        def reset(self, ctx):
+            pass
+
+        def __call__(self, obs, t, ctx):
+            self.seen.append(obs.clone())
+            return obs[:, :20] * 0
+
+    def test_delay_feeds_the_group_from_k_steps_earlier_and_passes_the_rest(self):
+        import torch
+
+        from lares.envs.isaac_pen_spin.feedback_delay import DELAYS, DelayedController
+        from lares.envs.isaac_pen_spin.feedback_lesions import lesion_index
+
+        inner = self.Inner()
+        ctrl = DelayedController(inner, "pen_state_delayed4", delay=4)
+        cols = lesion_index(DELAYS["pen_state_delayed4"])
+        other = np.setdiff1d(np.arange(157), cols)
+        obs = [torch.rand(3, 157) for _ in range(7)]
+        ctrl.reset(None)
+        for t, o in enumerate(obs):
+            ctrl(o, t, None)
+        for t in range(7):
+            src = obs[max(0, t - 4)]  # the buffer starts filled with the reset observation
+            np.testing.assert_array_equal(inner.seen[t][:, cols].numpy(), src[:, cols].numpy())
+            np.testing.assert_array_equal(inner.seen[t][:, other].numpy(), obs[t][:, other].numpy())
+        ctrl.reset(None)  # a new episode starts its own history
+        ctrl(obs[6], 0, None)
+        np.testing.assert_array_equal(inner.seen[-1].numpy(), obs[6].numpy())
+        with self.assertRaises(ValueError):
+            DelayedController(inner, "pen_state_clamped")
+
+    def test_groups_match_the_r044_lesions_and_leave_action_history_live(self):
+        from lares.envs.isaac_pen_spin.feedback_delay import DELAYS
+        from lares.envs.isaac_pen_spin.feedback_lesions import LESIONS, lesion_index
+
+        self.assertEqual(DELAYS["pen_state_delayed4"], LESIONS["pen_state_clamped"])
+        self.assertEqual(DELAYS["hand_state_delayed4"], LESIONS["hand_state_clamped"])
+        sl = cases.obs_slices()
+        live = set(range(sl["last_action"].start, sl["last_action"].stop))
+        self.assertFalse(live & set(lesion_index(DELAYS["hand_state_delayed4"])))
+
+    def test_aggregate_reports_each_delay_against_the_expert(self):
+        from lares.envs.isaac_pen_spin.feedback_delay import aggregate
+
+        row = TestFeedbackLesions._row
+        expert = [row(None, h, True) for h in "abcd"]
+        pen = [row(None, "a", True), row(None, "b", False, completed=False, length=80)] + expert[2:]
+        s = aggregate({"expert": expert, "pen_state_delayed4": pen, "hand_state_delayed4": expert})
+        self.assertAlmostEqual(s["paired_success_difference"], -0.25)
+        self.assertEqual(s["arms"]["pen_state_delayed4"]["drops"], 1)
+        self.assertAlmostEqual(s["hand_state_delayed4_minus_expert"]["mean"], 0.0)
+
+    def test_manifest_matches_config(self):
+        import yaml
+
+        cfg = yaml.safe_load(open("config/shadowhand_spin_stages.yaml"))["research_protocols"]["feedback_delay"]
+        m = cases.build_manifest(3, int(cfg["pool_seed"]), int(cfg["cases"]), label="delay")
+        self.assertEqual(EvaluationManifest.load(cfg["manifest"]).to_dict(), m.to_dict())
+        self.assertEqual((cfg["pool_seed"], cfg["delay_steps"]), (4200, 4))
+
+
 if __name__ == "__main__":
     unittest.main()

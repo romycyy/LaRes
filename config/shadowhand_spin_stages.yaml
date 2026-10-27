@@ -89,3 +89,17 @@ research_protocols:
     cases: 40
     pool_seed: 4140
     manifest: "config/manifests/pen_spin_stage3_lesion_s4140.yaml"
+  # R-047 (approved 2026-10-27, advisor call_00098): four-step observation-delay lesions of the D-036 expert, 160
+  # episodes. Same expert, sustained reducer (D-034), paired analysis and reproducibility gate as R-044. A delayed group
+  # beside live ones is a temporal joint-distribution shift; the result characterizes this checkpoint only.
+  #   python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study feedback_delay
+  #     --manifest-seed 4200 --output-dir logs/pen_spin_feedback_delay_s4200
+  feedback_delay:
+    log_dir: "logs/pen_spin_feedback_delay_s4200"
+    checkpoint: "logs/pen_spin/r040_ppo_expert/train/model_8239.pt"
+    checkpoint_sha256: "f81be523a51cc5bb8bd095d5ed208ba8dd227a37ca05d5dc78283a24d89985d7"
+    training_seed: 4020
+    cases: 40
+    pool_seed: 4200
+    delay_steps: 4
+    manifest: "config/manifests/pen_spin_stage3_feedback_delay_development_s4200.yaml"
