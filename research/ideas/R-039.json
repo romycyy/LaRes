@@ -33,7 +33,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "running",
   "source": "advisor",
   "falsified_by": "An upper paired interval bound below +0.20 rules out the predicted gain; failure to reach 0.90 sustained success means the controller does not qualify for that stage regardless of return.",
   "cost_estimate": {
@@ -51,7 +51,12 @@
     "round": 4,
     "note": "Drift-correcting finger gaiting tests whether feedback can qualify the scripted expert that D-034's open-loop oscillator did not provide, before considering PPO. I accept Claude Code's process-per-stage-controller argument and corrected budget: reuse scripts/run_shadowhand_spin_stages.py and config/"
   },
-  "run": {},
+  "run": {
+    "started_at": "2026-10-27T01:06:32",
+    "git_sha": "627ea272e183b838a5e7cfa75fe6877dc22ec868",
+    "dirty_worktree": false,
+    "log_dir": "logs/pen_spin/r039_scripted_expert"
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -79,7 +84,13 @@
       "at": "2026-10-27T01:06:30",
       "from": "approved",
       "to": "approved",
-      "note": "pre-launch reconciliation (R-037 precedent, call_00066 option A): seeds 4010-4012 were reserved in the ledger and the three development manifests frozen and committed (commit 'R-039: pen-spin manifests, batched runner...') before any development-case rollout (control seed 4098 stays debug-only), so protocol.seeds is empty and protocol.manifests names the frozen files. Tuning used 1720 of the 2400 allowed debug episodes."
+      "note": "pre-launch reconciliation (R-037 precedent, call_00066 option A): seeds 4010-4012 were reserved in the ledger and the three development manifests frozen and committed (commit 1b03470, with the frozen gait) before any development-case rollout (control seed 4098 stays debug-only), so protocol.seeds is empty and protocol.manifests names the frozen files. Tuning used 1720 of the 2400 allowed debug episodes."
+    },
+    {
+      "at": "2026-10-27T01:06:32",
+      "from": "approved",
+      "to": "running",
+      "note": "git 627ea272e1"
     }
   ],
   "created_at": "2026-10-27T00:34:23",
