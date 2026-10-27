@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-10-27T09:40:40 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-10-27T09:44:49 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -10,8 +10,8 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 0 |
-| approved | 1 |
+| running | 1 |
+| approved | 0 |
 | proposed | 1 |
 | deferred | 1 |
 | decided | 36 |
@@ -19,8 +19,8 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 
 ## Needs attention
 
-- **R-041** [approved] Does the qualified expert need feedback, or only a replayed gait?
-  - `python scripts/research.py start R-041` then run its command
+- **R-041** [running] Does the qualified expert need feedback, or only a replayed gait?
+  - run the protocol, then `python scripts/research.py record R-041 --results <json>`
 - **R-042** [proposed] Event-selected expert keyframes for plateau-triggered trace repair
   - round 1 closed without a final agreement; next round: `python scripts/research.py triage R-042`
 

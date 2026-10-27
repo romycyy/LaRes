@@ -30,7 +30,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "running",
   "source": "advisor",
   "falsified_by": "The paired interval's upper bound is below +0.20; an interval spanning zero is inconclusive, and tied success is not an improvement.",
   "cost_estimate": {
@@ -48,7 +48,12 @@
     "round": 1,
     "note": "Run this first: 160 simulator episodes and zero LLM calls provide a cheap comparison of the qualified expert against a frozen action tape, with separate-process reproducibility checks and the sustained reducer unchanged. Its main limitation is inferential: failure of this tape would not establish th"
   },
-  "run": {},
+  "run": {
+    "started_at": "2026-10-27T09:44:49",
+    "git_sha": "1eea3e5e06446404900ab25acd46d784d4266462",
+    "dirty_worktree": false,
+    "log_dir": ""
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -65,6 +70,12 @@
       "from": "approved",
       "to": "approved",
       "note": "pre-launch reconciliation (R-037/R-040 precedent): seeds 4100 (demonstration manifest) and 4101 (diagnostic manifest) reserved in the ledger and both 40-case Stage-3 manifests frozen and committed before any rollout, so protocol.seeds is empty and protocol.manifests names the frozen files. Checkpoint frozen by path and SHA-256 (f81be523...85d7) in config research_protocols.feedback_ablation. PPOController moved to lares/envs/isaac_pen_spin/ppo_expert.py (no behaviour change) so the study reuses it."
+    },
+    {
+      "at": "2026-10-27T09:44:49",
+      "from": "approved",
+      "to": "running",
+      "note": "git 1eea3e5e06"
     }
   ],
   "created_at": "2026-10-27T09:34:57",
