@@ -1,0 +1,24 @@
+{
+  "ideas": [
+    {
+      "id": "R-039",
+      "recommendation": "revise",
+      "reasoning": "I favor A's disclosed pre-evaluation amendment: testing feedback gaiting before PPO answers the expert-source question for 240 additional simulator episodes and 0 LLM calls, without repeating the 480 control episodes. B adds no measurement, while C changes the physics before answering the controller question. The weakness is that the replacement gate was chosen after seeing debug results: outcome agreement supports proceeding, but does not establish determinism or guarantee future agreement.",
+      "suggested_changes": [
+        "Record the original bit-identity control as failed, and commit the amended control before opening development cases; retain scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, with no further controller tuning or physics changes.",
+        "Check the amended gate using existing saved traces: zero paired sustained-outcome flips and at most 4/40 environments with any spin_rate OR center_dist divergence in each stage-controller cell. The reported spin_rate counts alone do not establish the joint divergence criterion; report both fields and their union without rerunning spent debug seed 4098.",
+        "Retain the prediction: paired_success_difference increases by at least 0.20 versus the frozen D-034 open-loop oscillator on the 90 pooled promotion pairs. falsified_by: an upper paired interval bound below +0.20; an interval spanning +0.20 is inconclusive about that threshold.",
+        "Keep qualification at at least 27/30 sustained successes separately per stage, with the reducer unchanged; any promotion still requires a strictly positive paired t-interval lower bound, and tied success is not improvement.",
+        "Resolve the seed-ledger contradiction before launch: the briefing marks 4010-4012 spent, while the execution report says unopened. Correct them to reserved only if existing launch records establish no episodes ran; otherwise do not reuse them, and freeze replacement development manifests using unused seeds 4020-4022."
+      ],
+      "depends_on": []
+    }
+  ],
+  "order": [
+    "R-039"
+  ],
+  "next_step": "Have the implementer commit A's transparent control amendment, verify its full criterion from existing traces, and reconcile the seed ledger before the user authorizes the 240-episode evaluation.",
+  "call_id": "call_00075",
+  "briefing_sha256": "88469bf409413f5b320d658b9021cb4943796b4c33eaae75ec8b7d1ed8fb50c2",
+  "question": "R-039's pre-evaluation reproducibility control failed as written and the run stopped before any development case was opened (seeds 4010-4012 untouched). Measured (debug seed 4098, 40-case batches, each (stage, controller) in two fresh processes, 480 episodes): spin_rate traces were bit-identical in 1 of 6 cells; in the other 5, 1-2 of 40 environments diverged (earliest step 78; median 78-346), and in all 6 cells every one of the 240 paired episodes had the same sustained outcome (success rates 0.0/0.0, 0.55/0.55, 0.0/0.0, 0.5/0.5, 0.0/0.0, 0.425/0.425). So GPU PhysX at batch 40 is not bit-deterministic across processes, but the divergence is rare, late and has not changed a single reducer outcome. Implementer's proposal (option A): amend the control to what the evaluation actually depends on: across the two fresh-process repeats, zero sustained-outcome flips per cell and at most 10% of environments with any divergence; on that criterion the existing control passes, so run the frozen evaluation (240 episodes, no new tuning, no change to gait, reducer, manifests or prediction), and report the bit-level divergence counts as a finding. Option B: declare R-039 inconclusive on the control and re-propose with the amended control (same evaluation, one more ledger round). Option C: investigate determinism first (PhysX enhanced determinism or CPU physics) before any evaluation. I prefer A: the amendment is decided before any evaluation data exists, it is strictly about measurement noise, and B/C delay the expert question without changing what the evaluation would measure. Which do you agree to?"
+}

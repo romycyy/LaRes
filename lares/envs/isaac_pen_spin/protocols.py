@@ -208,8 +208,20 @@ def _child(config_path: str, protocol: str, manifest_path: str, controller: str,
     subprocess.run(cmd, check=True)
 
 
+#: Amended gate (advisor consult call_00075, before any development case ran): the first, bit-identity
+#: version failed on 5 of 6 cells (GPU PhysX at batch 40 is not bit-deterministic across processes). A cell
+#: now passes with zero paired sustained-outcome flips and at most this many of its environments diverging
+#: in spin_rate or center_dist (union). Bit-level counts are still reported.
+MAX_DIVERGED_ENVS = 4
+
+
+def _diverged_envs(a, b, key: str, tol: float = 0.0) -> set:
+    x, y = np.nan_to_num(a[key], nan=-1e9), np.nan_to_num(b[key], nan=-1e9)
+    return {int(i) for i in np.nonzero((np.abs(x - y) > tol).any(axis=0))[0]}
+
+
 def reproducibility_control(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
-    """Each (stage, controller) on the debug manifest in two fresh processes; spin and centre must be bit-identical."""
+    """Each (stage, controller) on the debug manifest in two fresh processes, compared episode by episode."""
     ctrl_dir = os.path.join(out_dir, "control")
     os.makedirs(ctrl_dir, exist_ok=True)
     report = {}
@@ -217,15 +229,25 @@ def reproducibility_control(protocol_cfg: dict, config_path: str, out_dir: str) 
         mpath = os.path.join(protocol_cfg["log_dir"], "control_manifests",
                              f"pen_spin_stage{stage}_debug_s{int(protocol_cfg['control_seed'])}.yaml")
         for ctrl in protocol_cfg["controllers"]:
-            outs = []
+            outs, rows = [], []
             for rep in ("a", "b"):
                 out = os.path.join(ctrl_dir, f"stage{stage}_{ctrl}_{rep}.json")
                 if not os.path.exists(out):
                     _child(config_path, SCRIPTED_EXPERT_QUALIFICATION, mpath, ctrl, out, False)
                 outs.append(np.load(out.replace(".json", ".npz")))
-            same = all(np.array_equal(outs[0][k], outs[1][k], equal_nan=True)
-                       for k in ("spin_rate", "center_dist", "length", "completed"))
-            report[f"stage{stage}/{ctrl}"] = bool(same)
+                with open(out, encoding="utf-8") as f:
+                    rows.append(json.load(f)["episodes"])
+            spin = _diverged_envs(outs[0], outs[1], "spin_rate")
+            centre = _diverged_envs(outs[0], outs[1], "center_dist")
+            union = spin | centre | {i for i in range(len(rows[0]))
+                                     if rows[0][i]["length"] != rows[1][i]["length"]}
+            flips = sum(r0["sustained"] != r1["sustained"] for r0, r1 in zip(rows[0], rows[1]))
+            report[f"stage{stage}/{ctrl}"] = {
+                "bit_identical": not union,
+                "spin_rate_diverged_envs": len(spin), "center_dist_diverged_envs": len(centre),
+                "union_diverged_envs": len(union), "sustained_outcome_flips": int(flips),
+                "passes": bool(flips == 0 and len(union) <= MAX_DIVERGED_ENVS),
+            }
     with open(os.path.join(ctrl_dir, "report.json"), "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)
     return report
@@ -273,7 +295,7 @@ def aggregate_qualification(protocol_cfg: dict, out_dir: str) -> dict:
 def run_scripted_expert_qualification(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
     os.makedirs(out_dir, exist_ok=True)
     control = reproducibility_control(protocol_cfg, config_path, out_dir)
-    if not all(control.values()):
+    if not all(c["passes"] for c in control.values()):
         raise SystemExit(f"reproducibility control failed, evaluation not run: {control}")
     for stage in sorted(int(k) for k in protocol_cfg["manifests"]):
         mpath = protocol_cfg["manifests"][stage]

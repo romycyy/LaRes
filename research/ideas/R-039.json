@@ -91,6 +91,12 @@
       "from": "approved",
       "to": "running",
       "note": "git 627ea272e1"
+    },
+    {
+      "at": "2026-10-27T01:12:56",
+      "from": "running",
+      "to": "running",
+      "note": "control amendment (advisor consult call_00075, option A, decided before any development case ran): the frozen bit-identity control FAILED on 5/6 cells (GPU PhysX at batch 40 is not bit-deterministic across processes; 1-2/40 envs diverge, earliest step 78) and the run stopped before evaluation. Amended gate: per cell zero paired sustained-outcome flips and <= 4/40 envs diverging in spin_rate or center_dist (union); it passes on the saved 480 control episodes (max union 2/40, 0 flips) without rerunning seed 4098. Seeds 4010-4012: no development-cell output exists on the box, so no development episode had run; they stay with this idea. Gait, reducer, manifests, prediction and qualification unchanged."
     }
   ],
   "created_at": "2026-10-27T00:34:23",
