@@ -26,3 +26,15 @@ gif_dir: "gifs"
 gif_fps: 20
 gif_max_steps: 32
 gif_deterministic: true
+
+# Research protocols (`--research-protocol <name>`); the smoke stages above ignore this block.
+research_protocols:
+  # R-038: any-hit versus sustained episode success on identical trajectories (diagnostic controllers).
+  episode_rule_audit:
+    log_dir: "logs/pen_spin/r038_episode_rule_audit"
+    cases_per_stage: 10
+    pool_seeds: {1: 4000, 2: 4001, 3: 4002}
+    manifests:
+      1: "config/manifests/pen_spin_stage1_probe_s4000.yaml"
+      2: "config/manifests/pen_spin_stage2_probe_s4001.yaml"
+      3: "config/manifests/pen_spin_stage3_probe_s4002.yaml"

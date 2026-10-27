@@ -1,0 +1,93 @@
+{
+  "id": "R-039",
+  "title": "2. Can feedback-controlled finger gaiting qualify a scripted expert?",
+  "hypothesis": "Feedback that alternates finger contacts while correcting pen-centre drift sustains axial rolling better than an open-loop finger oscillator.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.2,
+    "against": "baseline",
+    "rationale": "Baseline is the frozen open-loop oscillator from idea 1, rerun on fresh cases. A 0.20 sustained-success gain would justify contact feedback, but qualification additionally requires at least 0.90 success on each stage's 30 promotion cases."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --research-protocol scripted_expert_qualification'",
+    "seeds": [
+      4010,
+      4011,
+      4012
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage1_development_s4010.yaml",
+      "config/manifests/pen_spin_stage2_development_s4011.yaml",
+      "config/manifests/pen_spin_stage3_development_s4012.yaml"
+    ],
+    "episodes": 240,
+    "llm_calls": 0,
+    "code_changes": [
+      "Add lares/envs/isaac_pen_spin/scripted_expert.py with bounded joint-target finger gaiting, long-axis angular-velocity feedback, and pen-centre correction using audited named observation fields rather than guessed offsets.",
+      "Extend the existing script/config with scripted_expert_qualification; depend on idea 1's tested adapter and episode reducer.",
+      "Freeze controller code and constants before opening these manifests; evaluate both controllers on cases 0-9 for screening and 10-39 for promotion in each stage, with no tuning on these cases.",
+      "Use the unchanged strictly positive paired t-interval rule for any promotion claim; tied success is not improvement. Separately report whether either scripted controller qualifies as a demonstration source.",
+      "Save full observation/action traces from qualifying episodes with manifest, controller, schema, and reducer hashes; document that these demonstrate axial roll, not end-over-end twirling.",
+      "Reference the briefing's completed negative pretrained-policy search; do not repeat it or silently substitute an Allegro end-over-end policy."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "An upper paired interval bound below +0.20 rules out the predicted gain; failure to reach 0.90 sustained success means the controller does not qualify for that stage regardless of return.",
+  "cost_estimate": {
+    "episodes": 240,
+    "llm_calls": 0,
+    "wall_time_minutes": 100
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "61ac1d4977c0af1f900cb606bf63246a49f0fc828830ccf78ba85d1d2e0066d2",
+  "proposal_call_id": "call_00069",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-27T00:35:52",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-10-27T00:34:23",
+  "direction": "Continue researching the single-step exploration pipeline with plateau-triggered trace repair, extended to pen spinning on the Shadow Hand (Isaac Lab Isaac-ShadowHandSpin-Stage{1,2,3}-Direct-v0, vendored in lares/envs/isaac_pen_spin; 157-d full obs, 20-d action, 60 Hz, 360-step episodes). Expert demonstrations: first try a hand-written scripted spinning controller; also search online for an existing trained pen-spinning policy; if neither qualifies, train an RL expert (rsl_rl PPO on the box). No budget ceiling on GPU hours or LLM calls. Known gaps to turn into questions: the env's spin_rate is roll about the pen's own long axis (not end-over-end twirl), success is per step with no episode rule, and the pipeline (manifests, obs schema, runner, records) is MetaWorld-only today. Debug issues, improve the pipeline, and turn unexpected findings into concrete research questions; document results and limitations.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "This directly follows the user's scripted-expert-first instruction and separates absolute demonstration qualification from strict paired promotion. Its 240 simulator episodes and zero LLM calls are justified after R-038 establishes tested observation/action semantics and episode reduction. The weakest point is that interpreting controller failure before those interface checks would confound control quality with integration errors.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00070",
+          "briefing_sha256": "f79842a068f02c9bf44c4bcf618998ab39a78749b20d68102db10a43caaf76ee",
+          "at": "2026-10-27T00:35:31"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree: the scripted controller must read named fields and be scored by the frozen reducer from R-038, otherwise a failure confounds control with integration. Re-triage as soon as R-038 is decided; it is the user's first-choice expert source.",
+          "changes_applied": [],
+          "at": "2026-10-27T00:35:52"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

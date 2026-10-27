@@ -28,7 +28,12 @@ from lares.core.training_logger import (  # noqa: E402
     TrainingLogger,
 )
 from lares.core.training_pipeline import DemoBuffer, behavioral_cloning, rl_finetune  # noqa: E402
-from lares.envs.isaac_lab_adapter import IsaacLabSingleEnvAdapter, close_isaac_app  # noqa: E402
+from lares.envs.isaac_lab_adapter import (  # noqa: E402
+    IsaacLabSingleEnvAdapter,
+    _ensure_isaaclab_on_path,
+    close_isaac_app,
+    launch_isaac_app,
+)
 from lares.eval.manifest import synthetic_cases  # noqa: E402
 
 
@@ -338,12 +343,47 @@ def collect_scripted_dataset(env, cfg: SimpleNamespace, logger: TrainingLogger) 
     return buffer, stats
 
 
+def run_research_protocol(args, cfg: SimpleNamespace) -> None:
+    from lares.envs.isaac_pen_spin import protocols
+
+    protocol_cfg = (getattr(cfg, "research_protocols", None) or {}).get(args.research_protocol)
+    if protocol_cfg is None:
+        raise SystemExit(f"{args.config} declares no research protocol {args.research_protocol!r}")
+    if args.research_protocol != protocols.EPISODE_RULE_AUDIT:
+        raise SystemExit(f"unknown research protocol {args.research_protocol!r}")
+    if args.build_manifests:
+        print("wrote", protocols.build_audit_manifests(protocol_cfg) or "nothing (all present and identical)")
+        return
+    out_dir = args.log_dir or str(protocol_cfg["log_dir"])
+    if args.stage is not None:
+        _ensure_isaaclab_on_path(str(cfg.isaaclab_root))
+        launch_isaac_app(headless=True, device=str(cfg.device))
+        try:
+            os.makedirs(out_dir, exist_ok=True)
+            print("wrote", protocols.run_audit_cell(args.stage, args.controller, protocol_cfg, out_dir, str(cfg.device)))
+        finally:
+            close_isaac_app()
+        return
+    summary = protocols.run_episode_rule_audit(protocol_cfg, args.config, out_dir, str(cfg.device))
+    print(json.dumps({k: v for k, v in summary.items() if k != "per_stage_controller"}, indent=2))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="ShadowHandSpin three-stage smoke pipeline")
     parser.add_argument("--config", default=os.path.join(_PROJECT_ROOT, "config", "shadowhand_spin_stages.yaml"))
+    parser.add_argument("--research-protocol", default=None,
+                        help="run a named protocol from the config's research_protocols block instead of the smoke stages")
+    parser.add_argument("--build-manifests", action="store_true",
+                        help="with --research-protocol: write the protocol's frozen manifests and exit (no Isaac)")
+    parser.add_argument("--stage", type=int, default=None, help=argparse.SUPPRESS)  # protocol child process
+    parser.add_argument("--controller", default=None, help=argparse.SUPPRESS)  # protocol child process
+    parser.add_argument("--log-dir", default=None, help="protocol output directory (default: the protocol's log_dir)")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
+    if args.research_protocol:
+        run_research_protocol(args, cfg)
+        return
     run_id = time.strftime("%Y%m%d_%H%M%S")
     run_dir = os.path.abspath(os.path.join(str(cfg.log_dir), run_id))
     os.makedirs(run_dir, exist_ok=True)

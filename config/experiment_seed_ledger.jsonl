@@ -272,3 +272,7 @@
 {"seed": 3912, "namespace": "mt1_pool", "use": "R-037 block B: development pool (screen 0-9, promotion 10-39, probe 40-44)", "artifact": "logs/r037", "recorded_at": "2026-10-22T13:05:25", "backfilled": false}
 {"seed": 3913, "namespace": "mt1_pool", "use": "R-037 block B: expert demonstration manifest (10 cases)", "artifact": "logs/r037", "recorded_at": "2026-10-22T13:05:25", "backfilled": false}
 {"seed": 3914, "namespace": "mt1_pool", "use": "R-037 block B: fresh evaluation manifest (30 cases)", "artifact": "logs/r037", "recorded_at": "2026-10-22T13:05:25", "backfilled": false}
+{"seed": 4099, "namespace": "isaac_pen_spin_pool", "use": "debug-only pen-spin manifests for runner development (scripts/isaac/debug_pen_spin_runner.py); never a reported result", "artifact": "none", "recorded_at": "2026-10-27T01:10:00", "backfilled": false}
+{"seed": 4000, "namespace": "isaac_pen_spin_pool", "use": "R-038 stage 1 probe manifest (10 cases)", "artifact": "config/manifests/pen_spin_stage1_probe_s4000.yaml", "recorded_at": "2026-10-27T01:40:00", "backfilled": false}
+{"seed": 4001, "namespace": "isaac_pen_spin_pool", "use": "R-038 stage 2 probe manifest (10 cases)", "artifact": "config/manifests/pen_spin_stage2_probe_s4001.yaml", "recorded_at": "2026-10-27T01:40:00", "backfilled": false}
+{"seed": 4002, "namespace": "isaac_pen_spin_pool", "use": "R-038 stage 3 probe manifest (10 cases)", "artifact": "config/manifests/pen_spin_stage3_probe_s4002.yaml", "recorded_at": "2026-10-27T01:40:00", "backfilled": false}

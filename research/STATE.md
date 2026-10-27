@@ -1,25 +1,31 @@
 # Research state
 
-_Generated 2026-10-27T00:18:23 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-10-27T00:35:54 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
-- none set. The user sets one with `python scripts/research.py direct "..."`.
+Continue researching the single-step exploration pipeline with plateau-triggered trace repair, extended to pen spinning on the Shadow Hand (Isaac Lab Isaac-ShadowHandSpin-Stage{1,2,3}-Direct-v0, vendored in lares/envs/isaac_pen_spin; 157-d full obs, 20-d action, 60 Hz, 360-step episodes). Expert demonstrations: first try a hand-written scripted spinning controller; also search online for an existing trained pen-spinning policy; if neither qualifies, train an RL expert (rsl_rl PPO on the box). No budget ceiling on GPU hours or LLM calls. Known gaps to turn into questions: the env's spin_rate is roll about the pen's own long axis (not end-over-end twirl), success is per step with no episode rule, and the pipeline (manifests, obs schema, runner, records) is MetaWorld-only today. Debug issues, improve the pipeline, and turn unexpected findings into concrete research questions; document results and limitations.  _(set 2026-10-27)_
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 0 |
+| approved | 1 |
 | proposed | 0 |
-| deferred | 0 |
+| deferred | 2 |
 | decided | 33 |
 | rejected | 4 |
 
 ## Needs attention
 
-- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
+- **R-038** [approved] 1. Audit transient hits versus sustained axial-roll success
+  - `python scripts/research.py start R-038` then run its command
+
+## Deferred (right idea, not now; `triage R-xxx` re-opens one)
+
+- R-039 2. Can feedback-controlled finger gaiting qualify a scripted expert?: This directly follows the user's scripted-expert-first instruction and separates absolute demonstration qualification from strict paired promotion. Its 240 simu
+- R-040 3. Conditional PPO fallback: does reward optimization yield a usable expert?: PPO is the appropriate fallback because the public-policy search is already negative, but R-039 must first identify unresolved stages and freeze the scripted co
 
 ## Last 5 decisions
 
@@ -39,6 +45,12 @@ _Generated 2026-10-27T00:18:23 by `python scripts/research.py state` from `resea
   R-033 tried to test trace-guided editing on a fresh hammer-v2 plateau parent, but the plateau gate failed: 24-candidate search of the fresh structure already produced probe successes, so no handoff or edit stage ran (inconclusive, 120 episodes, 1 call). Hammer is not a plateau for single-phase generation plus search; assembly-v2 remains the only plateau found.
   Next: Scan shelf-place, basketball and soccer for another plateau, or test from a fresh assembly parent.
 
+## Last 5 triage rounds (full log: `research/triage.jsonl`)
+
+- R-040 round 1 · advisor defer / implementer defer → agreed (deferred)
+- R-039 round 1 · advisor defer / implementer defer → agreed (deferred)
+- R-038 round 1 · advisor approve / implementer approve → agreed (approved)
+
 ## Standing constraints
 
 - LLM model for every pipeline call is gpt-6.1-sol with reasoning_effort high and temperature 1 (the only temperature the model accepts). _(CLAUDE.md, decided 2026-10-13)_
@@ -53,6 +65,9 @@ _Generated 2026-10-27T00:18:23 by `python scripts/research.py state` from `resea
 - The final-test split (config/manifests/push-v2_final_test.yaml) is locked until Phase 7, which needs the user's approval and a FreezeRecord. Qwen/E10 is also blocked. _(lares/eval/freeze.py; CLAUDE.md)_
 - Seeds 2400-2424 are held for config/fittable_bank/qualification_v2.yaml (predeclared, not run). New protocols pick seeds from 2600 upward. _(config/experiment_seed_ledger.jsonl; CLAUDE.md)_
 - Every protocol runs on the remote GPU box via `gpu run`, which bills by the hour; the box stays up across a session's steps and is stopped at the end. Since 2026-10-26 an idea is approved when the advisor and the implementer state the same triage position (approve); the user sets the research direction and rules only on ideas that exhaust their negotiation rounds. _(CLAUDE.md 'Development Workflow'; research/triage.jsonl)_
+- Pen-spin task (vendored lares/envs/isaac_pen_spin): Isaac Lab Shadow Hand, 157-d 'full' observation, 20-d joint-target action, 60 Hz control, 360-step (6 s) episodes, num_envs default 256. Success is evaluated per step (pen centre within 0.10/0.10/0.08 m of the in-hand position and |spin_rate| above 1/3/4 rad/s for Stage 1/2/3); there is no episode-level success rule. spin_rate is the pen's angular velocity about its own long axis (roll), not end-over-end twirl. Isaac Lab runs only under ~/IsaacLab/source_env.sh (its own python 3.11 venv), not .venv-metaworld. _(lares/envs/isaac_pen_spin (2026-10-27, scripts/isaac/probe_pen_spin_cfg.py))_
+- No pretrained pen-spinning policy for this task exists publicly as of 2026-10-27: the closest work (Wang et al., 'Lessons from Learning to Spin Pens', CoRL 2024) uses an Allegro hand in Isaac Gym and end-over-end spinning. The user's order for the expert: scripted controller first; if it cannot qualify, train an RL expert with rsl_rl PPO (ShadowHandSpinPPORunnerCfg) on the box. No budget ceiling on GPU hours or LLM calls. _(user instruction 2026-10-27; web search 2026-10-27)_
+- The policy-search pipeline (manifests, obs schema, run_episode, EXPERT_POLICY_MAP, run_full_evolution.py) is MetaWorld-only. The Isaac path today is the pre-manifest smoke script scripts/run_shadowhand_spin_stages.py with its own rollout copy (no action_space.high scaling, num_envs 1). _(CLAUDE.md 'Things that will bite you'; scripts/run_shadowhand_spin_stages.py)_
 - Spent seeds: [0, 1, 2, 1000, 1001, 1002, 2000, 2100, 2200, 2201, 2202, 2203, 2204, 2300, 2301, 2302, 2303, 2304, 2400, 2401, 2402, 2403, 2404, 2410, 2411, 2412, 2413, 2414, 2420, 2421, 2422, 2423, 2424, 2500, 2501, 2502, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2607, 2610, 2611, 2612, 2613, 2614, 2615, 2616, 2617, 2618, 2619, 2620, 2621, 2622, 2623, 2624, 2625, 2626, 2627, 2628, 2629, 2700, 2701, 2702, 2703, 2704, 2705, 2710, 2800, 2801, 2802, 2803, 2804, 2805, 2810, 2811, 2812, 2813, 2820, 2822, 2823, 2824, 2825, 2900, 2901, 2902, 2903, 2904, 2905, 2906, 2910, 2911, 2912, 2913, 2920, 2921, 2922, 2923, 2940, 3000, 3001, 3010, 3011, 3012, 3013, 3020, 3021, 3022, 3023, 3024, 3025, 3026, 3030, 3031, 3032, 3033, 3040, 3041, 3042, 3043, 3044, 3045, 3046, 3047, 3100, 3101, 3102, 3103, 3104, 3105, 3106, 3107, 3108, 3109, 3110, 3111, 3130, 3131, 3132, 3133, 3134, 3135, 3200, 3201, 3202, 3205, 3210, 3211, 3212, 3213, 3214, 3215, 3220, 3221, 3222, 3223, 3300, 3301, 3302, 3303, 3304, 3305, 3310, 3311, 3312, 3313, 3314, 3315, 3320, 3321, 3330, 3331, 3332, 3333, 3334, 3335, 3400, 3410, 3420, 3421, 3422, 3500, 3501, 3502, 3503, 3505, 3506, 3507, 3520, 3521, 3522, 3523, 3524, 3525, 3526, 3527, 3528, 3529, 3540, 3541, 3544, 3600, 3601, 3602, 3603, 3604, 3605, 3606, 3607, 3608, 3609, 3710, 3711, 3712, 3713, 3720, 3721, 3722, 3723, 3724, 3725, 3726, 3800, 3801, 3802, 3803, 3804, 3805, 3806, 3807, 3810, 3811, 3812, 3813, 3814, 3815, 3816, 3817, 3818, 3820, 3821, 3822, 3823, 3824, 3825, 3900, 3901, 3902, 3903, 3904, 3910, 3911, 3912, 3913, 3914]
 
 ## Pointers

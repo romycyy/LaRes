@@ -1,0 +1,98 @@
+{
+  "id": "R-038",
+  "title": "1. Audit transient hits versus sustained axial-roll success",
+  "hypothesis": "Transient axial-spin bursts inflate any-hit episode success because a pen can briefly satisfy the native predicate before losing stable in-hand rotation.",
+  "prediction": {
+    "metric": "success_rate",
+    "direction": "decrease",
+    "threshold": 0.2,
+    "against": "baseline",
+    "rationale": "Baseline is any native-success step in an episode; the alternative requires native success throughout the final 60 steps, with early termination counted as failure. A 20-percentage-point reduction on identical trajectories would materially change expert qualification."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --research-protocol episode_rule_audit'",
+    "seeds": [
+      4000,
+      4001,
+      4002
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage1_probe_s4000.yaml",
+      "config/manifests/pen_spin_stage2_probe_s4001.yaml",
+      "config/manifests/pen_spin_stage3_probe_s4002.yaml"
+    ],
+    "episodes": 60,
+    "llm_calls": 0,
+    "code_changes": [
+      "Extend the existing smoke script and config with the declared research-protocol CLI and profile; freeze ten probe cases per stage before rollout.",
+      "Add an Isaac manifest/schema adapter under lares/envs/isaac_pen_spin: record reset provenance, named 157-d observation fields, normalized-to-environment action mapping, termination, and all 360 step predicates.",
+      "Evaluate fixed neutral-pose and open-loop digit-oscillation controllers on each case; score both episode reducers offline from the same traces, pooling stages with equal weight.",
+      "Add reducer and quaternion-axis tests that distinguish long-axis roll from end-over-end rotation; retain per-stage results and raw angular velocity.",
+      "Document the sustained rule as the preregistered qualification rule for the following studies, not as an already validated task definition; do not promote a policy in this audit."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "A paired interval entirely above a sustained-minus-any-hit difference of -0.20 rules out the predicted reduction on these diagnostic controllers; an interval containing zero is inconclusive about a directional difference.",
+  "cost_estimate": {
+    "episodes": 60,
+    "llm_calls": 0,
+    "wall_time_minutes": 40
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "61ac1d4977c0af1f900cb606bf63246a49f0fc828830ccf78ba85d1d2e0066d2",
+  "proposal_call_id": "call_00069",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-10-27T00:35:50",
+    "advisor_call_id": "call_00070",
+    "round": 1,
+    "note": "This establishes a reproducible Isaac evaluation path and measures how much episode qualification changes when transient hits no longer suffice. Reusing identical trajectories for both reducers gives high information value for 60 simulator episodes and zero LLM calls. Its weakest point is that neutr"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-27T00:35:50",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 1: both say approve"
+    }
+  ],
+  "created_at": "2026-10-27T00:34:23",
+  "direction": "Continue researching the single-step exploration pipeline with plateau-triggered trace repair, extended to pen spinning on the Shadow Hand (Isaac Lab Isaac-ShadowHandSpin-Stage{1,2,3}-Direct-v0, vendored in lares/envs/isaac_pen_spin; 157-d full obs, 20-d action, 60 Hz, 360-step episodes). Expert demonstrations: first try a hand-written scripted spinning controller; also search online for an existing trained pen-spinning policy; if neither qualifies, train an RL expert (rsl_rl PPO on the box). No budget ceiling on GPU hours or LLM calls. Known gaps to turn into questions: the env's spin_rate is roll about the pen's own long axis (not end-over-end twirl), success is per step with no episode rule, and the pipeline (manifests, obs schema, runner, records) is MetaWorld-only today. Debug issues, improve the pipeline, and turn unexpected findings into concrete research questions; document results and limitations.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This establishes a reproducible Isaac evaluation path and measures how much episode qualification changes when transient hits no longer suffice. Reusing identical trajectories for both reducers gives high information value for 60 simulator episodes and zero LLM calls. Its weakest point is that neutral and open-loop controllers may produce few native-success hits, limiting conclusions about eventual experts; the sustained rule remains provisional, not validated by this comparison.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00070",
+          "briefing_sha256": "f79842a068f02c9bf44c4bcf618998ab39a78749b20d68102db10a43caaf76ee",
+          "at": "2026-10-27T00:35:31"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Every later pen-spin idea needs three things this builds: a manifest-driven Isaac rollout with case-determined resets (Isaac's batched reset draws from the global torch RNG, so the adapter must write each case's pen pose itself rather than reseed), a named 157-d observation schema, and a declared episode success rule. The env only defines per-step success. A free-falling or settling pen can roll faster than 1 rad/s within 0.10 m for a few steps after reset, so any-hit may score a neutral hand as successful. That makes the audit informative even with trivial controllers, at 60 episodes and no calls. Agreed limit: the sustained rule is preregistered, not validated.",
+          "changes_applied": [],
+          "at": "2026-10-27T00:35:50"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

@@ -1,0 +1,92 @@
+manifest_id: pen-spin-stage2:probe:s4001:n10
+environment:
+  package: isaaclab
+  version_or_commit: isaaclab d94504b + lares.envs.isaac_pen_spin
+  env_id: Isaac-ShadowHandSpin-Stage2-Direct-v0
+  env_id_v3: Isaac-ShadowHandSpin-Stage2-Direct-v0
+  reward_version: lares.envs.isaac_pen_spin.shadow_hand_spin_env.ShadowHandSpinEnv._get_rewards
+  wrappers:
+  - lares.envs.isaac_pen_spin.runner.PenSpinBatchRunner
+  horizon: 360
+  action_scale:
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  success_rule: 'per step: center_dist < 0.1 and |spin_rate about pen long axis| >
+    3.0 rad/s; episode: declared reducer (any_hit or sustained over the final 60 steps,
+    early termination = failure)'
+pool:
+  benchmark: IsaacPenSpin
+  env_id_v3: Isaac-ShadowHandSpin-Stage2-Direct-v0
+  seeds:
+  - 4001
+  tasks_per_seed: 10
+split: development
+episodes:
+- case_id: probe-0000
+  task_id: IsaacPenSpin:stage2:s4001:000
+  task_hash: cee2117b9338fe8a
+  reset_seed: 1000000
+  policy_seed: 9000000
+- case_id: probe-0001
+  task_id: IsaacPenSpin:stage2:s4001:001
+  task_hash: 2da2b16ac56567b5
+  reset_seed: 1000001
+  policy_seed: 9000001
+- case_id: probe-0002
+  task_id: IsaacPenSpin:stage2:s4001:002
+  task_hash: 871bf8949c045fd0
+  reset_seed: 1000002
+  policy_seed: 9000002
+- case_id: probe-0003
+  task_id: IsaacPenSpin:stage2:s4001:003
+  task_hash: d4e23f7957e6ec6b
+  reset_seed: 1000003
+  policy_seed: 9000003
+- case_id: probe-0004
+  task_id: IsaacPenSpin:stage2:s4001:004
+  task_hash: f937a228f12b0d15
+  reset_seed: 1000004
+  policy_seed: 9000004
+- case_id: probe-0005
+  task_id: IsaacPenSpin:stage2:s4001:005
+  task_hash: c12b7ea19cf8b2d2
+  reset_seed: 1000005
+  policy_seed: 9000005
+- case_id: probe-0006
+  task_id: IsaacPenSpin:stage2:s4001:006
+  task_hash: fcc0e1621a617932
+  reset_seed: 1000006
+  policy_seed: 9000006
+- case_id: probe-0007
+  task_id: IsaacPenSpin:stage2:s4001:007
+  task_hash: ccf694624b173569
+  reset_seed: 1000007
+  policy_seed: 9000007
+- case_id: probe-0008
+  task_id: IsaacPenSpin:stage2:s4001:008
+  task_hash: 5a26e0c007ce6a42
+  reset_seed: 1000008
+  policy_seed: 9000008
+- case_id: probe-0009
+  task_id: IsaacPenSpin:stage2:s4001:009
+  task_hash: f73ef2f3ad3d58d3
+  reset_seed: 1000009
+  policy_seed: 9000009

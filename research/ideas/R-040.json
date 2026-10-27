@@ -1,0 +1,100 @@
+{
+  "id": "R-040",
+  "title": "3. Conditional PPO fallback: does reward optimization yield a usable expert?",
+  "hypothesis": "On-policy PPO learns state-dependent multi-finger coordination that sustains axial rolling on stages where the frozen scripted controllers cannot qualify.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "baseline",
+    "rationale": "Baseline is the best scripted controller selected by idea 2's screening results and rerun on fresh cases. A 0.10 sustained-success gain tests whether reward optimization helps, while expert qualification still requires at least 0.90 success rather than merely higher return."
+  },
+  "protocol": {
+    "script": "scripts/isaac/train_pen_spin_expert.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/isaac/train_pen_spin_expert.py --config config/shadowhand_spin_stages.yaml --research-protocol conditional_ppo_expert'",
+    "seeds": [
+      4020,
+      4021,
+      4022,
+      4030,
+      4031,
+      4032
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage1_training_s4020.yaml",
+      "config/manifests/pen_spin_stage2_training_s4021.yaml",
+      "config/manifests/pen_spin_stage3_training_s4022.yaml",
+      "config/manifests/pen_spin_stage1_promotion_s4030.yaml",
+      "config/manifests/pen_spin_stage2_promotion_s4031.yaml",
+      "config/manifests/pen_spin_stage3_promotion_s4032.yaml"
+    ],
+    "episodes": 90180,
+    "llm_calls": 0,
+    "code_changes": [
+      "Gate execution on idea 2: spend nothing if a scripted expert qualifies for every stage; evaluate PPO only for unresolved stages. The public-checkpoint route is already excluded by the briefing's search.",
+      "Add this training entrypoint because none of the inventoried scripts trains rsl_rl PPO; instantiate the vendored ShadowHandSpinPPORunnerCfg and reuse the existing stage configuration.",
+      "Predeclare an initial cap of 30000 completed training episodes per stage, with Stage1-to-Stage2-to-Stage3 weight transfer where required; count resets explicitly. This is an initial measurement budget, not a GPU ceiling.",
+      "Freeze training reset schedules before execution; use the final scheduled checkpoint, never imitation loss or promotion results, for this first qualification attempt.",
+      "Reuse the existing rollout script and idea 1's adapter for paired PPO-versus-script evaluation on 30 fresh frozen cases per unresolved stage; worst-case evaluation cost is 180 episodes.",
+      "Require at least 0.90 sustained success for demonstration qualification and a paired interval lower bound above zero for an improvement claim; report reward-success disagreement explicitly.",
+      "Export qualified expert checkpoints and demonstration traces with provenance for subsequent plateau-triggered trace repair. If qualification fails, document the failure before proposing additional training or changing rewards."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "An upper paired interval bound below +0.10 rules out the predicted gain; PPO remains unusable as an expert if sustained success is below 0.90 even when mean return rises.",
+  "cost_estimate": {
+    "episodes": 90180,
+    "llm_calls": 0,
+    "wall_time_minutes": 720
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "61ac1d4977c0af1f900cb606bf63246a49f0fc828830ccf78ba85d1d2e0066d2",
+  "proposal_call_id": "call_00069",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-27T00:35:54",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-10-27T00:34:23",
+  "direction": "Continue researching the single-step exploration pipeline with plateau-triggered trace repair, extended to pen spinning on the Shadow Hand (Isaac Lab Isaac-ShadowHandSpin-Stage{1,2,3}-Direct-v0, vendored in lares/envs/isaac_pen_spin; 157-d full obs, 20-d action, 60 Hz, 360-step episodes). Expert demonstrations: first try a hand-written scripted spinning controller; also search online for an existing trained pen-spinning policy; if neither qualifies, train an RL expert (rsl_rl PPO on the box). No budget ceiling on GPU hours or LLM calls. Known gaps to turn into questions: the env's spin_rate is roll about the pen's own long axis (not end-over-end twirl), success is per step with no episode rule, and the pipeline (manifests, obs schema, runner, records) is MetaWorld-only today. Debug issues, improve the pipeline, and turn unexpected findings into concrete research questions; document results and limitations.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "PPO is the appropriate fallback because the public-policy search is already negative, but R-039 must first identify unresolved stages and freeze the scripted comparator. The maximum 90,180 simulator episodes and zero LLM calls should not be committed before that gate; the new training entrypoint is justified because no inventoried script trains rsl_rl PPO. Its weakest point is that the initial training schedule is uncalibrated, so failure would establish failure of that schedule rather than impossibility of learning an expert.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00070",
+          "briefing_sha256": "f79842a068f02c9bf44c4bcf618998ab39a78749b20d68102db10a43caaf76ee",
+          "at": "2026-10-27T00:35:31"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree on gating behind R-039. For re-triage: the budget is badly calibrated. 30000 episodes is about 10.8M env steps per stage at 256 envs, roughly two orders of magnitude below what Shadow Hand in-hand tasks usually need. Isaac Lab's cube repose defaults to 8192 envs and far longer training. The stage-1 reward also weights centring (3.0) far above spin (0.15), so PPO may learn to hold the pen still. The revision should budget in env steps with many more envs, log spin_rate and success separately from return, and treat a reward-shape check as part of the protocol.",
+          "changes_applied": [],
+          "at": "2026-10-27T00:35:54"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}
