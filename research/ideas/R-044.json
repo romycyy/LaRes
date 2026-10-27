@@ -29,7 +29,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "running",
   "source": "advisor",
   "falsified_by": "The paired interval of pen_state_clamped minus expert success lies entirely above -0.30. An interval including zero establishes no difference.",
   "cost_estimate": {
@@ -47,7 +47,12 @@
     "round": 2,
     "note": "I accept the implementer's reset-value clamping definition and the revised drop-versus-tail-spin reporting, which localizes feedback dependence beyond D-037's removal of all feedback. Approve scripts/run_shadowhand_spin_stages.py with config/shadowhand_spin_stages.yaml for 160 episodes and zero LLM "
   },
-  "run": {},
+  "run": {
+    "started_at": "2026-10-27T15:20:53",
+    "git_sha": "a9f4c20d836f3d148840e93fa1fe68ca572b46a1",
+    "dirty_worktree": false,
+    "log_dir": ""
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -62,6 +67,12 @@
     {
       "at": "2026-10-27T14:27:38",
       "note": "seed 4140 recorded in config/experiment_seed_ledger.jsonl with the frozen manifest; cleared from protocol.seeds so start does not read its own manifest as spent"
+    },
+    {
+      "at": "2026-10-27T15:20:53",
+      "from": "approved",
+      "to": "running",
+      "note": "git a9f4c20d83"
     }
   ],
   "created_at": "2026-10-27T14:09:20",
