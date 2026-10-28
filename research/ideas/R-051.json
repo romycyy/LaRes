@@ -1,0 +1,176 @@
+{
+  "id": "R-051",
+  "title": "2. Can the expert recover from actual symbolic-controller states?",
+  "hypothesis": "The qualified PPO expert can recover retained-but-slow learner states, making its on-policy corrections usable repair evidence rather than unsupported labels.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.25,
+    "against": "baseline",
+    "rationale": "Compare expert takeover with continued execution of the frozen R-046 block-3 promoted controller from identical learner-visited states. A gain of 0.25 with a paired interval above zero would justify collecting corrective traces. D-036's successful demonstrations and D-043's switch audit did not measure this recovery basin."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study learner_recovery --manifest-seed 4310 --output-dir logs/pen_spin_learner_recovery_s4310\"'",
+    "seeds": [],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_recovery_audit_s4310.yaml"
+    ],
+    "episodes": 96,
+    "llm_calls": 0,
+    "code_changes": [
+      "lares/envs/isaac_pen_spin/learner_recovery.py (new), driven by scripts/run_shadowhand_spin_stages.py --study learner_recovery with a learner_recovery block in config/shadowhand_spin_stages.yaml; no R-050 prerequisite and no tape replay.",
+      "Three fresh-process executions of the same frozen 32-case Stage-3 manifest (seed 4310), identical batch composition, lane order, initialization, reset schedule and controller initialization: donor (learner), unchanged-learner repeat, learner-to-expert takeover at a per-case step t.",
+      "Gate 1: the repeat must match every donor observation and frozen-rule outcome bit-identically on all 32 cases, else stop before takeover with branching unqualified. Gate 2: every takeover lane's observations must equal its donor's at every step through the observation used for its first expert action; any mismatch prohibits interpreting the contrast.",
+      "Frozen by hash: the R-046 block-3 promoted controller (gen0_cand0; code sha256 40782dcdf5a95589d0b34062919728fa92d4e5760fce890e3bd98833285e602d, state sha256 c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22, copied into config/pen_spin/r046_block3_incumbent/) and the qualified PPO checkpoint (f81be523...985d7).",
+      "Branch step t per case from the donor trace: the first step in 60-120 at which the pen is retained (not fallen) and the per-step predicate fails by slow spin (|spin_rate| <= 4.0 rad/s) or off-centre (center_dist >= 0.08 m); otherwise t = 120. Cases dropped before t stay failures in both arms (the takeover arm switches nothing after a fall).",
+      "Save actual executed actions (no coercion) and matched learner/expert state-action-next-state transitions from t to t+30, plus time-to-drop diagnostics. Successful takeover qualifies recovery evidence; it does not demonstrate symbolic repair."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "With both gates passing, a paired interval (takeover minus unchanged learner, 32 cases, frozen sustained rule) whose upper bound is below +0.25 refutes the predicted gain; an interval including zero is no evidence of a directional benefit, and an interval crossing +0.25 with lower bound above zero is inconclusive. A failed gate leaves the idea inconclusive.",
+  "cost_estimate": {
+    "episodes": 96,
+    "llm_calls": 0,
+    "wall_time_minutes": 45
+  },
+  "open_question_refs": [
+    6
+  ],
+  "briefing_sha256": "b80877afd2c20c675164a9f7752f9106fe6cf37af36df5d7d39a9e57c1f1b492",
+  "proposal_call_id": "call_00104",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-10-27T22:01:21",
+    "advisor_call_id": "call_00107",
+    "round": 3,
+    "note": "This tests whether expert takeover can recover actual learner-visited states, a prerequisite that successful expert demonstrations do not establish. I accept the implementer's closed-loop prefix reconstruction, full unchanged-learner reproducibility gate, and Isaac-specific implementation; the appli"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-27T22:01:21",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-10-27T22:04:38",
+      "event": "seeds_recorded",
+      "note": "seed 4310 recorded in config/experiment_seed_ledger.jsonl with the frozen manifest; protocol.seeds cleared so the spent-seed check reads the ledger entry (R-046..R-049 precedent)"
+    }
+  ],
+  "created_at": "2026-10-27T21:56:14",
+  "direction": "Continue researching the single-step exploration pipeline with plateau-triggered trace repair, extended to pen spinning on the Shadow Hand (Isaac Lab Isaac-ShadowHandSpin-Stage{1,2,3}-Direct-v0, vendored in lares/envs/isaac_pen_spin; 157-d full obs, 20-d action, 60 Hz, 360-step episodes). Expert demonstrations: first try a hand-written scripted spinning controller; also search online for an existing trained pen-spinning policy; if neither qualifies, train an RL expert (rsl_rl PPO on the box). No budget ceiling on GPU hours or LLM calls. Known gaps to turn into questions: the env's spin_rate is roll about the pen's own long axis (not end-over-end twirl), success is per step with no episode rule, and the pipeline (manifests, obs schema, runner, records) is MetaWorld-only today. Debug issues, improve the pipeline, and turn unexpected findings into concrete research questions; document results and limitations.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "This would establish whether expert competence extends to learner-visited states, which successful demonstrations and the earlier switch audit do not establish. Its weakest point is the unqualified branch reconstruction: matching observations only at takeover cannot establish that the unchanged learner continuation reproduces its donor. The proposed 96 episodes and zero LLM calls should wait for R-050, whose result also determines whether whole-scene reconstruction makes that episode estimate realistic.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00105",
+          "briefing_sha256": "129c1bb85173b3f5adf50c609f63f0d91f6120f92a6f56257d2d190feb3a4cf4",
+          "at": "2026-10-27T21:58:17"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Run it now without R-050: reconstruct branches by closed-loop prefix re-execution in fresh processes (same manifest, same batch, controller switches learner->expert at a per-case step chosen from the donor run), not by tape replay. Gate: the unchanged-learner arm is a full repeat of the donor process and must be bit-identical (observations and outcomes) to the donor on every case; otherwise stop with branching unqualified. The takeover arm's pre-switch observations must match the donor's at every step up to t. Branch rule as proposed (first retained slow_spin/off_centre event in steps 60-120, else 120), frozen R-046 block-3 promoted controller by hash, 32 fresh Stage-3 cases at seed 4310, already-dropped cases count as failures in both arms. Episodes: 32 donor + 32 repeat + 32 takeover = 96, 0 LLM calls. Note that the expert's labels are bang-bang (D-043), so saved transitions will be +/-1 actions.",
+          "changes_applied": [],
+          "at": "2026-10-27T21:58:47"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "I accept the implementer's closed-loop reconstruction argument and full unchanged-learner reproducibility gate; together they remove the dependency on R-050. This measures expert recovery from learner-visited states, which successful demonstrations and off-distribution switch audits did not establish. The posted protocol still requires R-050 and lacks the proposed full-trajectory gates, so incorporate those changes before spending 96 simulator lane-episodes and zero LLM calls; successful takeover would qualify recovery evidence, not demonstrate symbolic repair.",
+          "suggested_changes": [
+            "In scripts/audit_expert_actions.py and config/pen_spin_plateau_repair.yaml, remove the R-050 prerequisite and tape-replay reconstruction. Use three fresh-process executions of the same frozen 32-case manifest: donor learner, unchanged learner repeat, and learner-to-expert takeover. Preserve batch composition, lane order, initialization, reset schedules, timing and controller initialization.",
+            "Require the unchanged-learner repeat to match every donor observation and frozen-rule outcome bit-identically across all 32 cases; stop before takeover if it fails. Require every takeover lane's observations to match its donor at every step through the observation used for its first expert action. Any mismatch leaves branching unqualified and prohibits interpreting the takeover contrast.",
+            "Freeze the R-046 block-3 controller and qualified PPO checkpoint by hash. Retain the first retained slow_spin/off_centre event during steps 60-120, otherwise step 120, with its predicates frozen before execution; retain already-dropped cases as failures in both arms.",
+            "Retain the prediction: paired_success_difference increases by at least 0.25 for expert takeover against unchanged learner continuation on all 32 cases. State falsified_by as a paired interval upper bound below +0.25; an interval including zero is not evidence of a directional benefit, and an unresolved threshold comparison remains inconclusive.",
+            "Use free seed 4310 and freeze config/manifests/pen_spin_stage3_recovery_audit_s4310.yaml before execution, registering the protocol in the seed ledger. Cap cost at 32 donor plus 32 repeat plus 32 takeover lane-episodes, with zero LLM calls, using the existing gpu run command. Save actual executed actions and matched transitions rather than coercing all expert actions to +/-1, and document qualification and recovery limitations in RESEARCH_HANDOFF.md."
+          ],
+          "priority": 1,
+          "call_id": "call_00106",
+          "briefing_sha256": "2be204b5115bd1c3d050c4f5efc507b8644732b0d238f45962adab455c2ad83a",
+          "at": "2026-10-27T21:59:50"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree with all five changes. I will also move the implementation out of scripts/audit_expert_actions.py (a MetaWorld audit) into lares/envs/isaac_pen_spin/learner_recovery.py, driven by run_shadowhand_spin_stages.py --study learner_recovery like R-044/R-047, with a protocol block in config/shadowhand_spin_stages.yaml.",
+          "changes_applied": [],
+          "at": "2026-10-27T22:00:05"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This tests whether expert takeover can recover actual learner-visited states, a prerequisite that successful expert demonstrations do not establish. I accept the implementer's closed-loop prefix reconstruction, full unchanged-learner reproducibility gate, and Isaac-specific implementation; the applied revisions remove the R-050 dependency. The prediction remains paired_success_difference increase of at least 0.25 for takeover versus unchanged R-046 learner continuation: with both gates passing, an interval upper bound below +0.25 refutes it, an interval including zero provides no evidence of benefit, and failed gates leave recovery inconclusive. The 96 simulator lane-episodes and zero LLM calls on free seed 4310 are justified, but the main limitation remains that successful takeover qualifies recovery evidence for this controller/checkpoint pair, not the usefulness of individual corrective labels or symbolic repair.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00107",
+          "briefing_sha256": "9c86655546ce45b53af976670c89c6c869085dfdfd72faf43c70081fd0fdc4d4",
+          "at": "2026-10-27T22:01:13"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Agree; implementing as revised.",
+          "changes_applied": [],
+          "at": "2026-10-27T22:01:21"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 3
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-10-27T22:00:41",
+      "round": 2,
+      "patch": {
+        "protocol": {
+          "script": "scripts/run_shadowhand_spin_stages.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study learner_recovery --manifest-seed 4310 --output-dir logs/pen_spin_learner_recovery_s4310\"'",
+          "seeds": [
+            4310
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_recovery_audit_s4310.yaml"
+          ],
+          "episodes": 96,
+          "llm_calls": 0,
+          "code_changes": [
+            "lares/envs/isaac_pen_spin/learner_recovery.py (new), driven by scripts/run_shadowhand_spin_stages.py --study learner_recovery with a learner_recovery block in config/shadowhand_spin_stages.yaml; no R-050 prerequisite and no tape replay.",
+            "Three fresh-process executions of the same frozen 32-case Stage-3 manifest (seed 4310), identical batch composition, lane order, initialization, reset schedule and controller initialization: donor (learner), unchanged-learner repeat, learner-to-expert takeover at a per-case step t.",
+            "Gate 1: the repeat must match every donor observation and frozen-rule outcome bit-identically on all 32 cases, else stop before takeover with branching unqualified. Gate 2: every takeover lane's observations must equal its donor's at every step through the observation used for its first expert action; any mismatch prohibits interpreting the contrast.",
+            "Frozen by hash: the R-046 block-3 promoted controller (gen0_cand0; code sha256 40782dcdf5a95589d0b34062919728fa92d4e5760fce890e3bd98833285e602d, state sha256 c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22, copied into config/pen_spin/r046_block3_incumbent/) and the qualified PPO checkpoint (f81be523...985d7).",
+            "Branch step t per case from the donor trace: the first step in 60-120 at which the pen is retained (not fallen) and the per-step predicate fails by slow spin (|spin_rate| <= 4.0 rad/s) or off-centre (center_dist >= 0.08 m); otherwise t = 120. Cases dropped before t stay failures in both arms (the takeover arm switches nothing after a fall).",
+            "Save actual executed actions (no coercion) and matched learner/expert state-action-next-state transitions from t to t+30, plus time-to-drop diagnostics. Successful takeover qualifies recovery evidence; it does not demonstrate symbolic repair."
+          ],
+          "needs_gpu": true,
+          "needs_llm": false
+        },
+        "falsified_by": "With both gates passing, a paired interval (takeover minus unchanged learner, 32 cases, frozen sustained rule) whose upper bound is below +0.25 refutes the predicted gain; an interval including zero is no evidence of a directional benefit, and an interval crossing +0.25 with lower bound above zero is inconclusive. A failed gate leaves the idea inconclusive."
+      },
+      "note": "Round 2 agreed revisions: closed-loop prefix re-execution, two gates, frozen hashes, new module under run_shadowhand_spin_stages.py"
+    }
+  ]
+}

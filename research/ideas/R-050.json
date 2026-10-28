@@ -1,0 +1,111 @@
+{
+  "id": "R-050",
+  "title": "1. Resolve same-placement tape divergence before branching traces",
+  "hypothesis": "Reconstructing the complete vectorized reset context prevents the state drift that invalidates same-placement action-tape replay.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.25,
+    "against": "baseline",
+    "rationale": "Compare full-context replay with target-only same-placement replay using the frozen episode-success rule. A 0.25 gain would make scene reconstruction a material prerequisite for counterfactual traces; require a paired interval excluding zero. Unlike D-037, this tests recording fidelity on the recorded cases, not open-loop generalization to new placements."
+  },
+  "protocol": {
+    "script": "scripts/audit_expert_actions.py",
+    "config": "config/pen_spin_plateau_repair.yaml",
+    "command": "gpu run 'source ~/IsaacLab/source_env.sh && python scripts/audit_expert_actions.py --config config/pen_spin_plateau_repair.yaml --protocol scene_context_replay'",
+    "seeds": [
+      4300
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_replay_audit_s4300.yaml"
+    ],
+    "episodes": 48,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/audit_expert_actions.py: add the declared --protocol mode, reusing the validated Isaac runner rather than the legacy smoke rollout.",
+      "config/pen_spin_plateau_repair.yaml: freeze 16 Stage-3 cases; record the qualified expert in a 16-lane scene, then replay each target tape in the reconstructed whole scene and in a target-only scene. Execute identical already-scaled actions, use the existing episode-success rule, and record initial-state hashes and first observation divergence.",
+      "Record every lane's reset seed, initialization tensors, lane order, controller initialization and reset schedule; target-only replay must restore the target's recorded initial state.",
+      "config/manifests/pen_spin_stage3_replay_audit_s4300.yaml: add and freeze before execution; register the seed in config/experiment_seed_ledger.jsonl.",
+      "RESEARCH_HANDOFF.md: document whether exact self-replay is qualified, without revising D-037's cross-placement conclusion."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "rejected",
+  "source": "advisor",
+  "falsified_by": "The paired interval's upper bound is below +0.25; an interval including zero is inconclusive about a directional difference. Failure of full-context replay itself leaves faithful counterfactual branching unqualified.",
+  "cost_estimate": {
+    "episodes": 48,
+    "llm_calls": 0,
+    "wall_time_minutes": 30
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "b80877afd2c20c675164a9f7752f9106fe6cf37af36df5d7d39a9e57c1f1b492",
+  "proposal_call_id": "call_00104",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-27T22:00:01",
+      "from": "proposed",
+      "to": "rejected",
+      "note": "triage round 2: both say reject"
+    }
+  ],
+  "created_at": "2026-10-27T21:56:14",
+  "direction": "Continue researching the single-step exploration pipeline with plateau-triggered trace repair, extended to pen spinning on the Shadow Hand (Isaac Lab Isaac-ShadowHandSpin-Stage{1,2,3}-Direct-v0, vendored in lares/envs/isaac_pen_spin; 157-d full obs, 20-d action, 60 Hz, 360-step episodes). Expert demonstrations: first try a hand-written scripted spinning controller; also search online for an existing trained pen-spinning policy; if neither qualifies, train an RL expert (rsl_rl PPO on the box). No budget ceiling on GPU hours or LLM calls. Known gaps to turn into questions: the env's spin_rate is roll about the pen's own long axis (not end-over-end twirl), success is per step with no episode rule, and the pipeline (manifests, obs schema, runner, records) is MetaWorld-only today. Debug issues, improve the pipeline, and turn unexpected findings into concrete research questions; document results and limitations.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "This is the cheapest prerequisite for trustworthy counterfactual traces, and it tests recording fidelity rather than duplicating D-037's cross-placement generalization result. Its weakest point is that improved success does not establish faithful replay, while reconstructing a separate 16-lane scene for every target would exceed the stated 48-episode budget. Keep this a 48-simulator-episode, zero-LLM-call audit using free seed 4300.",
+          "suggested_changes": [
+            "Keep the paired_success_difference prediction of an increase of at least 0.25 against target-only same-placement replay and its existing falsified_by, but separate that contrast from downstream replay qualification. Require bit-identical full observation trajectories and identical frozen-rule outcomes for all 16 full-context self-replays; any mismatch leaves branching unqualified regardless of the success contrast.",
+            "In scripts/audit_expert_actions.py and config/pen_spin_plateau_repair.yaml, explicitly record and replay all 16 lanes' action tapes and reset schedules together, preserving lane order, initialization, RNG state and timing, with already-scaled actions applied exactly once.",
+            "Freeze the execution schedule as one 16-lane recording, one simultaneous 16-lane full-context replay, and 16 single-lane target-only replays: 48 simulator lane-episodes total. Do not silently substitute 16 separate full-scene reconstructions, which would raise the total to 288 lane-episodes."
+          ],
+          "priority": 1,
+          "call_id": "call_00105",
+          "briefing_sha256": "129c1bb85173b3f5adf50c609f63f0d91f6120f92a6f56257d2d190feb3a4cf4",
+          "at": "2026-10-27T21:58:17"
+        },
+        "implementer": {
+          "position": "reject",
+          "reasoning": "Branching does not need open-loop action-tape replay. D-034 and the R-044/R-047 reproducibility controls show that one manifest run in a fresh Isaac process under the same closed-loop controller is bit-identical across processes (0 diverged envs, 0 flips, twice). A branch at step t is therefore obtained by re-running the same manifest batch in a fresh process with a controller that switches from learner to expert at a per-case step t: the prefix is the same closed-loop computation, so it reproduces exactly without recording or replaying any tape. Tape replay fidelity is a different question (D-037 already shows open-loop replay is not a usable controller) and qualifying it would spend a protocol on a mechanism nothing downstream needs. R-051 can carry its own qualification gate: an unchanged-learner process that must be bit-identical to the donor run before any takeover is interpreted.",
+          "changes_applied": [],
+          "at": "2026-10-27T21:58:43"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "reject",
+          "reasoning": "I accept the implementer's argument: closed-loop prefix re-execution with its own reproducibility gate removes tape fidelity as a prerequisite for R-051. This audit's predicted paired_success_difference increase of at least 0.25 against target-only same-placement replay would not itself establish faithful trajectories; its falsified_by remains an interval upper bound below +0.25. Reject the 48-episode, zero-LLM-call spend because no current downstream experiment requires this mechanism. Reconsider only if a downstream protocol requires action-tape replay, or closed-loop reconstruction fails for a reason this audit could isolate.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00106",
+          "briefing_sha256": "2be204b5115bd1c3d050c4f5efc507b8644732b0d238f45962adab455c2ad83a",
+          "at": "2026-10-27T21:59:50"
+        },
+        "implementer": {
+          "position": "reject",
+          "reasoning": "Agree with round 2: no downstream protocol needs tape replay; closed-loop re-execution with its own gate replaces it.",
+          "changes_applied": [],
+          "at": "2026-10-27T22:00:01"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "reject",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": []
+}

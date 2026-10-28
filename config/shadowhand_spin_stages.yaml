@@ -103,3 +103,22 @@ research_protocols:
     pool_seed: 4200
     delay_steps: 4
     manifest: "config/manifests/pen_spin_stage3_feedback_delay_development_s4200.yaml"
+  # R-051 (approved 2026-10-27, advisor call_00107): expert takeover from learner-visited states, 96 episodes, no LLM.
+  # Branches by closed-loop re-execution in fresh processes (donor, learner_repeat, takeover); Gate 1 = repeat
+  # bit-identical to the donor, Gate 2 = takeover observations equal the donor's through each branch step.
+  #   python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study learner_recovery
+  #     --manifest-seed 4310 --output-dir logs/pen_spin_learner_recovery_s4310
+  learner_recovery:
+    log_dir: "logs/pen_spin_learner_recovery_s4310"
+    checkpoint: "logs/pen_spin/r040_ppo_expert/train/model_8239.pt"
+    checkpoint_sha256: "f81be523a51cc5bb8bd095d5ed208ba8dd227a37ca05d5dc78283a24d89985d7"
+    training_seed: 4020
+    cases: 32
+    pool_seed: 4310
+    manifest: "config/manifests/pen_spin_stage3_recovery_audit_s4310.yaml"
+    learner:  # R-046 block 3 promoted prefix candidate gen0_cand0 (10/30 on its promotion set)
+      source: "config/pen_spin/r046_block3_incumbent/policy_source.py"
+      source_sha256: "40782dcdf5a95589d0b34062919728fa92d4e5760fce890e3bd98833285e602d"
+      state: "config/pen_spin/r046_block3_incumbent/state.pt"
+      state_sha256: "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22"
+      fixed_action_scale: 0.1

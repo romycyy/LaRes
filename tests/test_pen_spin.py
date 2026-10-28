@@ -390,5 +390,88 @@ class TestFeedbackDelay(unittest.TestCase):
         self.assertEqual((cfg["pool_seed"], cfg["delay_steps"]), (4200, 4))
 
 
+class TestLearnerRecovery(unittest.TestCase):
+    class Const:
+        def __init__(self, value):
+            self.value = value
+            self.params = {"value": value}
+
+        def reset(self, ctx):
+            pass
+
+        def __call__(self, obs, t, ctx):
+            return obs[:, :20] * 0 + self.value
+
+    class Ctx:
+        device = "cpu"
+
+    def test_branch_rule_first_retained_failure_in_window_else_120_else_never(self):
+        from lares.envs.isaac_pen_spin.learner_recovery import NEVER, branch_steps
+
+        T, n = 360, 4
+        pred = np.ones((T, n), dtype=bool)
+        spin = np.full((T, n), 10.0)
+        centre = np.full((T, n), 0.01)
+        length = np.array([360, 360, 50, 100])
+        pred[70, 0], spin[70, 0] = False, 2.0       # case 0: slow spin at 70 -> expert from 71
+        pred[59, 1], centre[59, 1] = False, 0.2     # case 1: off-centre before the window only -> 120
+        spin[:, 2] = 0.0                            # case 2: dropped before the window -> never
+        pred[80:, 3], spin[80:, 3] = False, 0.0     # case 3: slow at 80 but still in play -> 81
+        steps = branch_steps(length, pred, centre, spin)
+        self.assertEqual(steps.tolist(), [71, 120, NEVER, 81])
+        length[3] = 81                              # case 3 ends at step 80: no switch
+        self.assertEqual(int(branch_steps(length, pred, centre, spin)[3]), NEVER)
+
+    def test_handover_switches_each_row_at_its_own_step(self):
+        import torch
+
+        from lares.envs.isaac_pen_spin.learner_recovery import NEVER, HandoverController
+
+        ctrl = HandoverController(self.Const(-0.5), self.Const(0.5), [2, NEVER, 0], "takeover")
+        ctrl.reset(self.Ctx())
+        obs = torch.zeros(3, 157)
+        rows = [ctrl(obs, t, None)[:, 0].tolist() for t in range(4)]
+        self.assertEqual(rows, [[-0.5, -0.5, 0.5], [-0.5, -0.5, 0.5], [0.5, -0.5, 0.5], [0.5, -0.5, 0.5]])
+        self.assertEqual(ctrl.params["switched_cases"], 2)
+
+    def test_gates_and_transitions(self):
+        from lares.envs.isaac_pen_spin.learner_recovery import NEVER, identity_gate, prefix_gate, transitions
+
+        rng = np.random.default_rng(0)
+        obs = rng.normal(size=(2, 10, 157))
+        a = {"obs": obs, "length": np.array([10, 4]), "actions": np.zeros((2, 10, 20))}
+        rows = [{"sustained": True, "completed": True, "length": 10}, {"sustained": False, "completed": False, "length": 4}]
+        b = {**a, "obs": obs.copy()}
+        b["obs"][1, 6] += 1.0                       # after case 1 ended: ignored
+        self.assertTrue(identity_gate(a, rows, b, [dict(r) for r in rows])["passes"])
+        b["obs"][0, 3] += 1e-7
+        g = identity_gate(a, rows, b, rows)
+        self.assertFalse(g["passes"])
+        self.assertEqual(g["observation_mismatch_cases"], [0])
+
+        take = {"obs": obs.copy(), "length": np.array([10, 4]), "actions": np.ones((2, 10, 20))}
+        take["obs"][0, 6:] += 1.0                   # diverges after its first expert action at step 5
+        self.assertTrue(prefix_gate(a, take, [5, NEVER])["passes"])
+        bad = prefix_gate(a, take, [6, NEVER])
+        self.assertFalse(bad["passes"])
+        self.assertEqual(bad["mismatches"][0]["first_mismatch_step"], 6)
+        tr = transitions(a, take, [5, NEVER], k=3)
+        self.assertEqual(tr["step"].tolist(), [5, 6, 7])
+        np.testing.assert_array_equal(tr["expert_next_obs"][0], take["obs"][0, 6])
+        np.testing.assert_array_equal(tr["learner_next_obs"][0], obs[0, 6])
+
+    def test_frozen_learner_hashes_and_manifest(self):
+        import yaml
+
+        from lares.envs.isaac_pen_spin import learner_recovery
+
+        with open("config/shadowhand_spin_stages.yaml") as f:
+            pc = yaml.safe_load(f)["research_protocols"]["learner_recovery"]
+        learner_recovery.check_learner(pc)
+        m = EvaluationManifest.load(pc["manifest"])
+        self.assertEqual((len(m), cases.stage_of(m)), (32, 3))
+        self.assertEqual(learner_recovery.build_manifests(pc), [])
+
+
 if __name__ == "__main__":
     unittest.main()

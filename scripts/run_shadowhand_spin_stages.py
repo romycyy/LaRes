@@ -344,13 +344,14 @@ def collect_scripted_dataset(env, cfg: SimpleNamespace, logger: TrainingLogger) 
 
 
 def run_study(args, cfg: SimpleNamespace) -> None:
-    """``--study feedback_ablation`` (R-041), ``feedback_lesions`` (R-044) or ``feedback_delay`` (R-047): the driver,
-    or one child cell."""
-    from lares.envs.isaac_pen_spin import feedback_ablation, feedback_delay, feedback_lesions
+    """``--study feedback_ablation`` (R-041), ``feedback_lesions`` (R-044), ``feedback_delay`` (R-047) or
+    ``learner_recovery`` (R-051): the driver, or one child cell."""
+    from lares.envs.isaac_pen_spin import feedback_ablation, feedback_delay, feedback_lesions, learner_recovery
 
     studies = {feedback_ablation.FEEDBACK_ABLATION: feedback_ablation,
                feedback_lesions.FEEDBACK_LESIONS: feedback_lesions,
-               feedback_delay.FEEDBACK_DELAY: feedback_delay}
+               feedback_delay.FEEDBACK_DELAY: feedback_delay,
+               learner_recovery.LEARNER_RECOVERY: learner_recovery}
     if args.study not in studies:
         raise SystemExit(f"unknown study {args.study!r}")
     fa = studies[args.study]
@@ -369,8 +370,8 @@ def run_study(args, cfg: SimpleNamespace) -> None:
         _ensure_isaaclab_on_path(str(cfg.isaaclab_root))
         launch_isaac_app(headless=True, device=str(cfg.device))
         try:
-            ctrl = (fa.make_controller(args.controller, protocol_cfg, out_dir) if fa is feedback_ablation
-                    else fa.make_controller(args.controller, protocol_cfg))
+            ctrl = (fa.make_controller(args.controller, protocol_cfg, out_dir)
+                    if fa in (feedback_ablation, learner_recovery) else fa.make_controller(args.controller, protocol_cfg))
             print("wrote", protocols.run_cell(args.cell_manifest, ctrl, args.cell_out, str(cfg.device),
                                               record_obs=args.record_obs))
         finally:
@@ -380,6 +381,8 @@ def run_study(args, cfg: SimpleNamespace) -> None:
         summary = fa.run_feedback_lesions(protocol_cfg, args.config, out_dir)
     elif fa is feedback_delay:
         summary = fa.run_feedback_delay(protocol_cfg, args.config, out_dir)
+    elif fa is learner_recovery:
+        summary = fa.run_learner_recovery(protocol_cfg, args.config, out_dir)
     else:
         summary = fa.run_feedback_ablation(protocol_cfg, args.config, out_dir)
     print(json.dumps({k: v for k, v in summary.items() if k != "tape"}, indent=2))
@@ -433,7 +436,7 @@ def main() -> None:
     parser.add_argument("--research-protocol", default=None,
                         help="run a named protocol from the config's research_protocols block instead of the smoke stages")
     parser.add_argument("--study", default=None,
-                        help="run a named study (feedback_ablation, feedback_lesions, feedback_delay) from the config's research_protocols block")
+                        help="run a named study (feedback_ablation, feedback_lesions, feedback_delay, learner_recovery) from the config's research_protocols block")
     parser.add_argument("--build-manifests", action="store_true",
                         help="with --research-protocol: write the protocol's frozen manifests and exit (no Isaac)")
     parser.add_argument("--stage", type=int, default=None, help=argparse.SUPPRESS)  # protocol child process

@@ -1,0 +1,112 @@
+{
+  "id": "R-052",
+  "title": "3. Repair with verified learner-state corrections, not expert-only traces",
+  "hypothesis": "Matched learner-versus-expert recovery transitions reveal corrective switch timing that expert-only demonstrations conceal, enabling more successful bounded controller edits.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.15,
+    "against": "baseline",
+    "rationale": "Compare fresh final-incumbent success between recovery-evidence and expert-demonstration-evidence repair, paired over eight generation blocks. Require a mean gain of at least 0.15 and a paired t interval above zero. Unlike R-042's expert-only keyframes and R-048's off-distribution finite differences, the new evidence contains verified corrective transitions from the parent's own visited states."
+  },
+  "protocol": {
+    "script": "scripts/run_full_evolution.py",
+    "config": "config/pen_spin_plateau_repair.yaml",
+    "command": "gpu run 'source ~/IsaacLab/source_env.sh && python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --protocol recovery_trace_pair'",
+    "seeds": [
+      4319,
+      4320,
+      4321,
+      4322,
+      4323,
+      4324,
+      4325,
+      4326,
+      4327,
+      4330,
+      4331,
+      4332,
+      4333,
+      4334,
+      4335,
+      4336,
+      4337
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_repair_gate_s4319.yaml",
+      "config/manifests/pen_spin_stage3_repair_development_s4320.yaml through config/manifests/pen_spin_stage3_repair_development_s4327.yaml",
+      "config/manifests/pen_spin_stage3_repair_fresh_s4330.yaml through config/manifests/pen_spin_stage3_repair_fresh_s4337.yaml"
+    ],
+    "episodes": 1860,
+    "llm_calls": 128,
+    "code_changes": [
+      "scripts/run_full_evolution.py: add recovery_trace_pair using existing generation, bounded-edit validation, Isaac evaluation and strict paired promotion; no new rollout implementation.",
+      "config/pen_spin_plateau_repair.yaml: require ideas 1 and 2 to qualify first, then require the frozen R-046 block-3 parent to score at least 4/20 on an independent gate manifest. Stop without replacement if the gate fails.",
+      "Run eight paired blocks, four one-step edits per arm. Hold parent, bounded-residual edit restriction, prompt instructions and evidence-token ceiling fixed. Recovery evidence contains 16 matched learner/expert transition pairs from idea 2; control evidence contains 32 expert-demonstration transitions. Freeze evidence selection before generation and consume no additional simulator seeds for archived evidence.",
+      "Use gpt-6.1-sol, reasoning_effort high, temperature 1, bc_steps 0, one generation call and at most one linked correction per candidate: 64 candidates, at most 128 calls.",
+      "Per block use shared development cases 0-9 for screening and 10-39 for promotion; evaluate both resulting incumbents on 30 disjoint fresh cases. Budget: gate 20, screens 640, promotion candidates plus shared parent 720, fresh incumbents 480.",
+      "Keep this evidence-mechanism comparison ungated by plateau because D-041 produced only one eligible block. It measures a prerequisite repair effect, not the benefit of the complete plateau-triggered loop.",
+      "Add and freeze the listed manifests, register all seeds, and document results and the ungated-comparison limitation in RESEARCH_HANDOFF.md."
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The paired interval's upper bound is below +0.15. If it includes zero, the repair advantage is inconclusive; the resolving measurement is additional fresh paired repair blocks under the unchanged protocol. Failure of either prerequisite stops the experiment without a repair verdict.",
+  "cost_estimate": {
+    "episodes": 1860,
+    "llm_calls": 128,
+    "wall_time_minutes": 240
+  },
+  "open_question_refs": [
+    0,
+    6,
+    9
+  ],
+  "briefing_sha256": "b80877afd2c20c675164a9f7752f9106fe6cf37af36df5d7d39a9e57c1f1b492",
+  "proposal_call_id": "call_00104",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-27T21:58:51",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-10-27T21:56:14",
+  "direction": "Continue researching the single-step exploration pipeline with plateau-triggered trace repair, extended to pen spinning on the Shadow Hand (Isaac Lab Isaac-ShadowHandSpin-Stage{1,2,3}-Direct-v0, vendored in lares/envs/isaac_pen_spin; 157-d full obs, 20-d action, 60 Hz, 360-step episodes). Expert demonstrations: first try a hand-written scripted spinning controller; also search online for an existing trained pen-spinning policy; if neither qualifies, train an RL expert (rsl_rl PPO on the box). No budget ceiling on GPU hours or LLM calls. Known gaps to turn into questions: the env's spin_rate is roll about the pen's own long axis (not end-over-end twirl), success is per step with no episode rule, and the pipeline (manifests, obs schema, runner, records) is MetaWorld-only today. Debug issues, improve the pipeline, and turn unexpected findings into concrete research questions; document results and limitations.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Verified learner-state corrections are meaningfully different from the expert-only keyframes and off-distribution switch maps already tested. However, neither faithful branching nor useful recovery evidence is established, so spending 1860 episodes and up to 128 LLM calls now would risk another uninterpretable evidence comparison. Reconsider after R-050 and R-051 qualify the evidence; the proposed ungated comparison can then test the repair-evidence mechanism, not the complete plateau-triggered loop.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00105",
+          "briefing_sha256": "129c1bb85173b3f5adf50c609f63f0d91f6120f92a6f56257d2d190feb3a4cf4",
+          "at": "2026-10-27T21:58:17"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree: depends on R-051 showing a usable recovery basin; also any evidence it produces is saturated +/-1 labels (D-043), which should be weighed before spending 1860 episodes.",
+          "changes_applied": [],
+          "at": "2026-10-27T21:58:51"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}
