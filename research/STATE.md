@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-10-27T22:27:09 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-10-27T22:30:13 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -10,17 +10,15 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 1 |
+| running | 0 |
 | approved | 1 |
 | proposed | 0 |
 | deferred | 3 |
-| decided | 45 |
+| decided | 46 |
 | rejected | 5 |
 
 ## Needs attention
 
-- **R-053** [running] Does the symbolic learner actually use signed axial-spin feedback?
-  - run the protocol, then `python scripts/research.py record R-053 --results <json>`
 - **R-054** [approved] Repair with successful traces from the learner's own grasp basin
   - `python scripts/research.py start R-054` then run its command
 
@@ -32,6 +30,9 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 
 ## Last 5 decisions
 
+- D-046 · R-053 · **inconclusive** · 2026-10-27
+  Identity gate passed (bit-identical on 32/32). Predicted a decrease of at least 0.15; observed -0.031 [-0.176, +0.113] (4/32 vs 5/32, 27 ties). The predeclared refutation needs the interval entirely above -0.15 and its lower bound is -0.176, so neither the prediction nor its refutation is established; the interval includes zero. Post hoc, the reason the lever is weak is visible: the frozen parameters (spin_target 12.16, speed_gain 0.81) saturate the drive 0.25 + 0.75 tanh(gain (target - spin)) above 0.99 on 94.6% of the learner's in-play steps, and reversing the axial sign changes it by more than 0.05 on only 10.4% of steps. The source audit found a code path, but at its operating point the learner is effectively an open-loop fixed-amplitude stroke in axial spin; reversal also did not slow the pen (|spin| 7.39 vs 6.89).
+  Next: Treat the learner's spin as open loop when designing repair evidence (R-054). A sharper dependence test would set the operating point inside the unsaturated range (e.g. spin_target at its declared 8.0) or replace the measured axial rate with the target (zero error) rather than reversing it.
 - D-045 · R-051 · **refuted** · 2026-10-27
   Both gates passed (repeat bit-identical on 32/32; 28/28 takeover prefixes match), so the contrast is interpretable. Predicted takeover minus learner >= +0.25; observed +0.031 [-0.183, +0.246] (8/32 vs 7/32). The upper bound is below +0.25, which the predeclared rule names as refutation; confidence 0.75 rather than higher because the bound clears the threshold by only 0.004 with 32 cases. The aggregate hides opposing effects: on 21 already-failing learner states takeover rescued 6 but dropped 6 the learner kept; on the 7 states where the learner was succeeding it broke 5 (all drops 38-126 steps after the switch). Takeover doubles spin (10.3 vs 4.8 rad/s) but drops the pen in 11 switched cases vs 0 for the learner, so the expert's recovery basin covers some slow-spin learner states but not the learner's own grasp; expert labels at these states are 99.85% saturated.
   Next: Do not collect expert takeover transitions as repair evidence for this learner as-is (R-052 should stay deferred or be re-scoped to the 6 rescued cases only). Closed-loop prefix re-execution is qualified for branching. A useful next question is whether the learner's own successful episodes (not the expert's) can serve as within-learner demonstrations for its failing cases.
@@ -44,9 +45,6 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 - D-042 · R-047 · **supported** · 2026-10-27
   Predicted a paired decrease of at least 0.25; observed -1.000 (40/40 -> 0/40) for a four-step pen-state delay, with the reproducibility control bit-identical (0 diverged, 0 flips). The hand-state delay is equally fatal (0/40, 39 drops). The claim is limited to this checkpoint under a temporal joint-distribution shift; with one delay value there is no dose-response, so the failure threshold lies at or below 67 ms but is otherwise unmeasured.
   Next: If latency matters for the pipeline, a dose-response (1, 2 steps) would locate the threshold; for generated controllers, the implication is that retention needs current-step pen and hand feedback, which R-049's two-channel requirement tests directly.
-- D-041 · R-046 · **inconclusive** · 2026-10-27
-  The predeclared rule needs >=3 eligible blocks; the plateau trigger fired in only 1 of 4 (blocks 0 and 2 had a probe success, block 3 promoted a cold prefix candidate at +0.333 [0.154, 0.512]), so the primary contrast is undefined and the trigger was not weakened. Block 1 is suggestive only: whole_edit replaced the gait (delta = desired - gait) and dropped the pen in 24/30 fresh cases (0/30), while bounded_residual matched the unchanged gait (0.467 vs 0.433; 9 wins 8 losses 13 ties), i.e. preservation, not improvement. The unexpected finding is the cold prefix's non-zero base rate on Stage 3 (3/4 blocks with probe successes, 1 promotion) after R-042 found 0/4 under the same search; whether Stage 3 is a floor depends on seeds, which a base-rate study should measure before any further plateau-gated comparison.
-  Next: Measure the cold single-step search's Stage 3 base rate (probe-success and promotion rates) over many prefix blocks, and run the gait-residual comparison ungated (every block) instead of behind the plateau trigger.
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 

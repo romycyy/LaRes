@@ -550,6 +550,11 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   pen in 11 switched cases where the learner dropped none. The expert's basin does not cover the learner's grasp, and
   its labels there are 99.85% saturated. **Closed-loop prefix re-execution is a qualified branching mechanism**: three
   fresh processes on one 32-case batch were bit-identical up to each switch (Gates 1 and 2).
+- **R-053 result (D-046, inconclusive).** Reversing the sign of the R-051 learner's observed axial spin
+  (`axial_sign.py`, `--study learner_axial_sign`) gave -0.031 [-0.18, +0.11] (27/32 ties). The code reads the signed
+  rate, but its frozen operating point (`spin_target` 12.16, `speed_gain` 0.81) saturates the spin drive on 94.6% of
+  in-play steps, so the learner is effectively an open-loop stroke in axial spin. A static source audit finds code
+  paths, not active feedback; check the operating point.
 - **Code extraction.** Generated code keeps only the class, so module-level constants in a reply are dropped.
 
 **Isaac Lab ShadowHandSpin.** A second, parallel stack merged in from the Isaac branch:

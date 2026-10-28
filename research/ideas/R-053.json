@@ -29,7 +29,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "A paired interval lying entirely above -0.15 refutes the predicted magnitude; an interval including zero supplies no evidence of a difference. A dependency audit proving that the learner never uses axial velocity directly refutes the proposed mechanism without simulator runs.",
   "cost_estimate": {
@@ -51,12 +51,158 @@
     "started_at": "2026-10-27T22:27:09",
     "git_sha": "5c47f3302b4d3c861032366255c464103428dfbb",
     "dirty_worktree": false,
-    "log_dir": ""
+    "log_dir": "",
+    "finished_at": "2026-10-27T22:29:37"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": -0.03125,
+      "paired_success_difference_ci95": [
+        -0.17559252888006782,
+        0.11309252888006782
+      ],
+      "reversed_minus_learner": {
+        "n": 32,
+        "mean": -0.03125,
+        "se": 0.07077302144543589,
+        "low": -0.17559252888006782,
+        "high": 0.11309252888006782,
+        "p_value": 0.6618778576080805
+      },
+      "win_loss_tie": {
+        "wins": 2,
+        "losses": 3,
+        "ties": 27
+      },
+      "arms": {
+        "learner": {
+          "n": 32,
+          "successes": 5,
+          "success": 0.15625,
+          "completed": 0.75,
+          "tail_hit_fraction": 0.2635460480149701,
+          "hit_fraction": 0.2905263753130203,
+          "mean_length": 279.34375,
+          "mean_abs_spin": 6.891378875821829,
+          "mean_transverse": 2.159853901481256,
+          "drops": 8,
+          "tail_spin_failures": 19,
+          "median_fall_step": 39.0
+        },
+        "axial_reversed": {
+          "n": 32,
+          "successes": 4,
+          "success": 0.125,
+          "completed": 0.71875,
+          "tail_hit_fraction": 0.21691423867130752,
+          "hit_fraction": 0.25035783198607076,
+          "mean_length": 268.5625,
+          "mean_abs_spin": 7.391530886292458,
+          "mean_transverse": 2.499750124523416,
+          "drops": 9,
+          "tail_spin_failures": 19,
+          "median_fall_step": 38.0
+        }
+      },
+      "post_hoc_drive_saturation": {
+        "steps": 8939,
+        "drive_true_mean": 0.9855383634567261,
+        "drive_reversed_mean": 0.9241534471511841,
+        "frac_abs_diff_gt_0.05": 0.10437409106164,
+        "frac_true_drive_gt_0.99": 0.9457433717418056,
+        "frac_abs_spin_gt_9": 0.11265242197113771,
+        "selected_parameters": {
+          "spin_target": 12.156,
+          "speed_gain": 0.809
+        },
+        "drive_law": "0.25 + 0.75 tanh(speed_gain (spin_target - spin))",
+        "how": "evaluated on the unchanged learner's in-play axial spin (env spin_rate, rad/s, equal to the learner's 5*obs projection); post hoc, not predeclared"
+      }
+    },
+    "controls": {
+      "identity_gate": {
+        "cases": 32,
+        "observation_mismatch_cases": [],
+        "outcome_mismatch_cases": [],
+        "passes": true
+      },
+      "source_audit": {
+        "fields_read": [
+          "fingertip_pos",
+          "hand_dof_pos",
+          "hand_dof_vel",
+          "in_hand_pos",
+          "obj_angvel",
+          "obj_pos",
+          "obj_rot"
+        ],
+        "reads_obj_angvel": true,
+        "axial_projection": true,
+        "axial_drive": true,
+        "lines": [
+          "omega = 5.0 * self.obs_field(obs, \"obj_angvel\")",
+          "spin = torch.sum(omega * axis, dim=1, keepdim=True)",
+          "transverse_omega = omega - spin * axis",
+          "# Positive startup drive; excessive spin can reverse the stroke.",
+          "self.speed_gain * (self.spin_target - spin)",
+          "zero = torch.zeros_like(spin)"
+        ]
+      }
+    },
+    "accounting": {
+      "isaac_episodes": 96,
+      "isaac_processes": 3,
+      "llm_calls": 0
+    },
+    "artifacts": [
+      "logs/pen_spin_learner_axial_sign_s4400/summary.json",
+      "logs/pen_spin_learner_axial_sign_s4400/source_audit.json",
+      "logs/pen_spin_learner_axial_sign_s4400/learner.json",
+      "logs/pen_spin_learner_axial_sign_s4400/learner_identity.json",
+      "logs/pen_spin_learner_axial_sign_s4400/axial_reversed.json"
+    ],
+    "notes": [
+      "Identity gate passes: the identity-wrapper repeat is bit-identical to the learner on all 32 cases.",
+      "Primary: axial-reversed minus learner = -0.031 [-0.176, +0.113] (4/32 vs 5/32; 2 wins, 3 losses, 27 ties). The predicted decrease of at least 0.15 is not shown; the interval is not entirely above -0.15, so by the predeclared rule this is not a refutation either: inconclusive on magnitude, with no evidence of any difference.",
+      "Reversal did not slow the pen: mean |spin| 7.39 vs 6.89 rad/s (per-episode means), drops 9 vs 8.",
+      "Mechanism (post hoc): the source reads the signed axial rate, but the selected parameters (spin_target 12.16 rad/s, speed_gain 0.81) put drive = 0.25 + 0.75 tanh(gain (target - spin)) in saturation: on the learner's own in-play steps the drive exceeds 0.99 on 94.6% of steps, and reversing the sign changes it by more than 0.05 on only 10.4%. The source audit establishes a code path, not an active feedback; in the visited range the spin law is effectively a fixed-amplitude, open-loop stroke.",
+      "The frozen state has spin_target 12.16 against the source's declared initial 8.0 (it is the state the R-046 prefix probe search selected and promoted; how that search moved it is not examined here). At 8.0 the drive would be unsaturated over much of the visited range, so the operating point, not the code path, decides whether the feedback is active; a static audit cannot see this."
+    ]
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": -0.03125,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.7,
+      "reasoning": "Identity gate passed (bit-identical on 32/32). Predicted a decrease of at least 0.15; observed -0.031 [-0.176, +0.113] (4/32 vs 5/32, 27 ties). The predeclared refutation needs the interval entirely above -0.15 and its lower bound is -0.176, so neither the prediction nor its refutation is established; the interval includes zero. Post hoc, the reason the lever is weak is visible: the frozen parameters (spin_target 12.16, speed_gain 0.81) saturate the drive 0.25 + 0.75 tanh(gain (target - spin)) above 0.99 on 94.6% of the learner's in-play steps, and reversing the axial sign changes it by more than 0.05 on only 10.4% of steps. The source audit found a code path, but at its operating point the learner is effectively an open-loop fixed-amplitude stroke in axial spin; reversal also did not slow the pen (|spin| 7.39 vs 6.89).",
+      "cited_artifacts": [
+        "logs/pen_spin_learner_axial_sign_s4400/research_result.json"
+      ],
+      "next_experiment": "Treat the learner's spin as open loop when designing repair evidence (R-054). A sharper dependence test would set the operating point inside the unsaturated range (e.g. spin_target at its declared 8.0) or replace the measured axial rate with the target (zero error) rather than reversing it.",
+      "recorded_at": "2026-10-27T22:29:41",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 0.99,
+      "reasoning": "The unchanged baseline was measured: axial reversal produced 4/32 successes versus 5/32, giving paired_success_difference = -0.03125 [logs/pen_spin_learner_axial_sign_s4400/summary.json]. The 95% paired interval [-0.17559, +0.11309] includes zero, so there is no evidence of a difference; it also crosses -0.15, neither establishing nor refuting the predicted decrease of at least 0.15 against baseline [logs/pen_spin_learner_axial_sign_s4400/summary.json]. The identity control matched observations and outcomes on all 32 cases, supporting the comparison's reproducibility [logs/pen_spin_learner_axial_sign_s4400/summary.json]. The source audit establishes a signed axial-rate dependency, while the post hoc diagnostic reports drive above 0.99 on 94.6% of baseline in-play steps; neither establishes that this feedback causes sustained success or that an open-loop replacement would preserve it [logs/pen_spin_learner_axial_sign_s4400/source_audit.json] [logs/pen_spin_learner_axial_sign_s4400/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin_learner_axial_sign_s4400/summary.json",
+        "logs/pen_spin_learner_axial_sign_s4400/source_audit.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-27T22:30:06",
+      "call_id": "call_00111"
+    }
+  ],
+  "decision_id": "D-046",
   "history": [
     {
       "at": "2026-10-27T22:22:48",
@@ -74,6 +220,18 @@
       "from": "approved",
       "to": "running",
       "note": "git 5c47f3302b"
+    },
+    {
+      "at": "2026-10-27T22:29:37",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-10-27T22:30:13",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-046: inconclusive"
     }
   ],
   "created_at": "2026-10-27T22:21:15",
