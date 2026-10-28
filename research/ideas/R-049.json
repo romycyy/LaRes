@@ -37,7 +37,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "An upper paired interval bound below +0.15 refutes the predicted gain; an interval spanning +0.15 is inconclusive. All-zero incumbents refute the predicted gain without identifying why the structures failed.",
   "cost_estimate": {
@@ -59,12 +59,405 @@
     "started_at": "2026-10-27T17:49:34",
     "git_sha": "d6241fe50b20e84f934ffffccfb4a648303adf69",
     "dirty_worktree": false,
-    "log_dir": ""
+    "log_dir": "",
+    "finished_at": "2026-10-27T21:51:23"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.0,
+      "paired_success_difference_ci95": [
+        0.0,
+        0.0
+      ],
+      "two_channel_minus_baseline_fresh_incumbent": {
+        "per_block": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "n": 8,
+        "mean": 0.0,
+        "se": 0.0,
+        "low": 0.0,
+        "high": 0.0,
+        "p_value": 1.0
+      },
+      "two_channel_minus_baseline_fresh_selected": {
+        "per_block": [
+          0.0,
+          0.06666666666666667,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "n": 8,
+        "mean": 0.008333333333333333,
+        "se": 0.008333333333333333,
+        "low": -0.011371868763273204,
+        "high": 0.028038535429939872,
+        "p_value": 0.3506166628202075
+      },
+      "by_stage": {
+        "stage1": {
+          "blocks": 4,
+          "null_fresh": 0.0,
+          "baseline": {
+            "fresh_incumbent": 0.0,
+            "promoted_blocks": 0,
+            "plateau_blocks": 4,
+            "candidates_with_screen_success": 0,
+            "valid_candidates": 16
+          },
+          "two_channel": {
+            "fresh_incumbent": 0.0,
+            "promoted_blocks": 0,
+            "plateau_blocks": 4,
+            "candidates_with_screen_success": 0,
+            "valid_candidates": 16
+          },
+          "two_channel_minus_baseline": {
+            "per_block": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "mean": 0.0
+          }
+        },
+        "stage2": {
+          "blocks": 4,
+          "null_fresh": 0.0,
+          "baseline": {
+            "fresh_incumbent": 0.0,
+            "promoted_blocks": 0,
+            "plateau_blocks": 4,
+            "candidates_with_screen_success": 0,
+            "valid_candidates": 16
+          },
+          "two_channel": {
+            "fresh_incumbent": 0.0,
+            "promoted_blocks": 0,
+            "plateau_blocks": 4,
+            "candidates_with_screen_success": 0,
+            "valid_candidates": 16
+          },
+          "two_channel_minus_baseline": {
+            "per_block": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "mean": 0.0
+          }
+        }
+      },
+      "per_block": [
+        {
+          "block": 0,
+          "stage": 1,
+          "seed": 4220,
+          "null_fresh": 0.0,
+          "baseline": {
+            "valid": 4,
+            "selected_slot": 2,
+            "probe": 0.0,
+            "promotion": 0.0,
+            "promoted": false,
+            "fresh_selected": 0.0,
+            "fresh_incumbent": 0.0
+          },
+          "two_channel": {
+            "valid": 4,
+            "selected_slot": 2,
+            "probe": 0.0,
+            "promotion": 0.0,
+            "promoted": false,
+            "fresh_selected": 0.0,
+            "fresh_incumbent": 0.0
+          }
+        },
+        {
+          "block": 1,
+          "stage": 1,
+          "seed": 4221,
+          "null_fresh": 0.0,
+          "baseline": {
+            "valid": 4,
+            "selected_slot": 3,
+            "probe": 0.0,
+            "promotion": 0.0,
+            "promoted": false,
+            "fresh_selected": 0.0,
+            "fresh_incumbent": 0.0
+          },
+          "two_channel": {
+            "valid": 4,
+            "selected_slot": 1,
+            "probe": 0.0,
+            "promotion": 0.06666666666666667,
+            "promoted": false,
+            "fresh_selected": 0.06666666666666667,
+            "fresh_incumbent": 0.0
+          }
+        },
+        {
+          "block": 2,
+          "stage": 1,
+          "seed": 4222,
+          "null_fresh": 0.0,
+          "baseline": {
+            "valid": 4,
+            "selected_slot": 3,
+            "probe": 0.0,
+            "promotion": 0.0,
+            "promoted": false,
+            "fresh_selected": 0.0,
+            "fresh_incumbent": 0.0
+          },
+          "two_channel": {
+            "valid": 4,
+            "selected_slot": 1,
+            "probe": 0.0,
+            "promotion": 0.0,
+            "promoted": false,
+            "fresh_selected": 0.0,
+            "fresh_incumbent": 0.0
+          }
+        },
+        {
+          "block": 3,
+          "stage": 1,
+          "seed": 4223,
+          "null_fresh": 0.0,
+          "baseline": {
+            "valid": 4,
+            "selected_slot": 0,
+            "probe": 0.0,
+            "promotion": 0.0,
+            "promoted": false,
+            "fresh_selected": 0.0,
+            "fresh_incumbent": 0.0
+          },
+          "two_channel": {
+            "valid": 4,
+            "selected_slot": 3,
+            "probe": 0.0,
+            "promotion": 0.0,
+            "promoted": false,
+            "fresh_selected": 0.0,
+            "fresh_incumbent": 0.0
+          }
+        },
+        {
+          "block": 4,
+          "stage": 2,
+          "seed": 4224,
+          "null_fresh": 0.0,
+          "baseline": {
+            "valid": 4,
+            "selected_slot": 3,
+            "probe": 0.0,
+            "promotion": 0.0,
+            "promoted": false,
+            "fresh_selected": 0.0,
+            "fresh_incumbent": 0.0
+          },
+          "two_channel": {
+            "valid": 4,
+            "selected_slot": 0,
+            "probe": 0.0,
+            "promotion": 0.0,
+            "promoted": false,
+            "fresh_selected": 0.0,
+            "fresh_incumbent": 0.0
+          }
+        },
+        {
+          "block": 5,
+          "stage": 2,
+          "seed": 4225,
+          "null_fresh": 0.0,
+          "baseline": {
+            "valid": 4,
+            "selected_slot": 3,
+            "probe": 0.0,
+            "promotion": 0.0,
+            "promoted": false,
+            "fresh_selected": 0.0,
+            "fresh_incumbent": 0.0
+          },
+          "two_channel": {
+            "valid": 4,
+            "selected_slot": 0,
+            "probe": 0.0,
+            "promotion": 0.0,
+            "promoted": false,
+            "fresh_selected": 0.0,
+            "fresh_incumbent": 0.0
+          }
+        },
+        {
+          "block": 6,
+          "stage": 2,
+          "seed": 4226,
+          "null_fresh": 0.0,
+          "baseline": {
+            "valid": 4,
+            "selected_slot": 0,
+            "probe": 0.0,
+            "promotion": 0.0,
+            "promoted": false,
+            "fresh_selected": 0.0,
+            "fresh_incumbent": 0.0
+          },
+          "two_channel": {
+            "valid": 4,
+            "selected_slot": 2,
+            "probe": 0.0,
+            "promotion": 0.0,
+            "promoted": false,
+            "fresh_selected": 0.0,
+            "fresh_incumbent": 0.0
+          }
+        },
+        {
+          "block": 7,
+          "stage": 2,
+          "seed": 4227,
+          "null_fresh": 0.0,
+          "baseline": {
+            "valid": 4,
+            "selected_slot": 2,
+            "probe": 0.0,
+            "promotion": 0.0,
+            "promoted": false,
+            "fresh_selected": 0.0,
+            "fresh_incumbent": 0.0
+          },
+          "two_channel": {
+            "valid": 4,
+            "selected_slot": 0,
+            "probe": 0.0,
+            "promotion": 0.0,
+            "promoted": false,
+            "fresh_selected": 0.0,
+            "fresh_incumbent": 0.0
+          }
+        }
+      ],
+      "candidates_with_screen_success": {
+        "baseline": 0,
+        "two_channel": 0
+      },
+      "promoted_blocks": {
+        "baseline": 0,
+        "two_channel": 0
+      },
+      "plateau_blocks": {
+        "baseline": 8,
+        "two_channel": 8
+      },
+      "screen_failure_labels": {
+        "baseline": {
+          "off_centre": 134,
+          "slow_spin": 145,
+          "dropped": 41
+        },
+        "two_channel": {
+          "slow_spin": 145,
+          "off_centre": 132,
+          "dropped": 43
+        }
+      },
+      "null_failure_labels": {
+        "slow_spin": 18,
+        "dropped": 622
+      },
+      "screen_drop_fraction": {
+        "baseline": 0.128125,
+        "two_channel": 0.134375
+      },
+      "null_drop_fraction": 0.971875
+    },
+    "controls": {
+      "null_incumbent": "neutral pose scored on all 80 cases per block in its own processes: 0/640 sustained, but 'dropped' in 622/640",
+      "baseline_arm": "contemporaneous cold search with the unchanged prompt, identical manifests, slots and selection"
+    },
+    "accounting": {
+      "llm_calls": 67,
+      "llm_tokens": 850716,
+      "isaac_processes": 112,
+      "isaac_episodes_arms": 1760,
+      "isaac_episodes_null": 640,
+      "isaac_episodes_total": 2400,
+      "declared": {
+        "episodes": 2400,
+        "llm_calls": 192
+      }
+    },
+    "artifacts": [
+      "logs/pen_spin_two_channel_cold/summary.json",
+      "logs/pen_spin_two_channel_cold/block0/null.json",
+      "logs/pen_spin_two_channel_cold/block1/null.json",
+      "logs/pen_spin_two_channel_cold/block2/null.json",
+      "logs/pen_spin_two_channel_cold/block3/null.json",
+      "logs/pen_spin_two_channel_cold/block4/null.json",
+      "logs/pen_spin_two_channel_cold/block5/null.json",
+      "logs/pen_spin_two_channel_cold/block6/null.json",
+      "logs/pen_spin_two_channel_cold/block7/null.json"
+    ],
+    "notes": [
+      "Primary: two_channel minus baseline on fresh incumbent success over 8 equally weighted blocks = 0.000 [0.000, 0.000]; the prediction (+0.15, interval excluding it) fails.",
+      "Both arms kept the neutral-pose null incumbent in all 8 blocks: no candidate in 64 had a screen success and no selected candidate promoted. The only non-zero cell is two_channel block 1 (stage 1): promotion 2/30 and fresh_selected 2/30, not promoted (tied rule).",
+      "Unexpected: Stage 1 (|spin|>1 rad/s, centre <0.10 m) and Stage 2 (>3 rad/s) are strictly looser per-step criteria than Stage 3 (>4 rad/s, <0.08 m), yet this 4-candidate cold search scored 0/8 blocks while R-046's 24-candidate Stage 3 prefix had probe successes in 3/4 blocks. The obvious untested difference is candidate count per block (4 vs 24), so neither R-046 nor this run measures a per-candidate base rate.",
+      "Unexpected: generated candidates mostly retain the pen (screen drop fraction 0.13 baseline, 0.13 two_channel, vs 0.97 for the neutral pose); their failures are slow_spin and off_centre. On Stages 1/2 the bottleneck is producing sustained axial spin near the centre, not retention, so a retention-plus-spin structural requirement addressed the wrong half.",
+      "Floor caveat: with both arms at 0 the test has no resolution below the floor; the result says the requirement does not lift cold search off the floor at 4 candidates per block, not that it has zero effect at larger budgets.",
+      "Calls 67 of the declared 192 (64 slots plus 3 corrections); episodes 2400, exactly the declared 2400 (640 null, 1760 arm)."
+    ]
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.0,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.7,
+      "reasoning": "Predicted two_channel minus baseline fresh-incumbent success of at least +0.15 with the interval establishing it; observed 0.000 [0.000, 0.000] over 8 blocks. Both arms kept the neutral-pose null incumbent everywhere: 0 of 32 candidates per arm had a screen success (0/320 screen episodes each), 0 promotions; the only non-zero cell is two_channel block 1 (2/30 promotion, not promoted). Confidence is 0.7 because both arms sit at the floor and 4 candidates per block gives little resolution. Diagnostics: generated candidates already retain the pen (13% of screen episodes dropped vs 97% for the neutral pose) and fail on slow_spin/off_centre, so the bottleneck on Stages 1/2 is sustained axial spin near the centre, not retention; and these per-step-looser stages scored 0/8 blocks while R-046's 24-candidate Stage 3 prefix had probe successes in 3/4, so candidates per block, not stage difficulty, is the untested candidate driver of the base rate.",
+      "cited_artifacts": [
+        "logs/pen_spin_two_channel_cold/research_result.json"
+      ],
+      "next_experiment": "Measure the cold-search per-candidate success rate with a larger candidate budget on Stage 1 and Stage 3 under one protocol, and target spin generation (axial angular-velocity feedback) rather than retention.",
+      "recorded_at": "2026-10-27T21:51:44",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "The contemporaneous baseline was measured, and treatment-minus-baseline paired_success_difference was 0.000 with a 95% interval of [0.000, 0.000], below the predicted increase of at least 0.15 [logs/pen_spin_two_channel_cold/summary.json]. Both arms retained the null incumbent in all eight blocks, with no promotions; tied success does not support improvement [logs/pen_spin_two_channel_cold/summary.json]. The secondary selected-candidate contrast was +0.0083 with interval [-0.0114, +0.0280], which includes zero and provides no evidence of a difference [logs/pen_spin_two_channel_cold/summary.json]. This refutes the preregistered gain under the tested budget, but the shared success floor does not identify why the requirement failed or establish that it cannot help at larger search budgets [logs/pen_spin_two_channel_cold/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin_two_channel_cold/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-27T21:52:05",
+      "call_id": "call_00103"
+    }
+  ],
+  "decision_id": "D-044",
   "history": [
     {
       "at": "2026-10-27T17:01:53",
@@ -83,6 +476,18 @@
       "from": "approved",
       "to": "running",
       "note": "git d6241fe50b"
+    },
+    {
+      "at": "2026-10-27T21:51:23",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-10-27T21:52:12",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-044: refuted"
     }
   ],
   "created_at": "2026-10-27T16:59:50",

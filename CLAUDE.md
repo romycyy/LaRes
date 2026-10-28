@@ -537,6 +537,13 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   its executed action switches sign in only 2.8% of state-coordinate-action triples within one demonstration range
   at the gait's states (`local_feedback.py`, `scripts/isaac/audit_expert_switches.py`). Expert-label evidence shows
   only saturated values. `IsaacPenSpinStream.query_actions` queries an actor at given observations with no episode.
+- **R-049 result (D-044, refuted).** Requiring separate retention and spin-feedback components in the cold prompt
+  (`two_channel.py`, `--study two_channel_cold`, 4 slots per arm, Stages 1 and 2, neutral pose as a *scored* null
+  incumbent) gave 0.000 [0, 0] over 8 blocks: neither arm had a screen success or a promotion. Candidates already keep
+  the pen (13% of screen episodes dropped vs 97% for the neutral pose) and fail on `slow_spin` / `off_centre`, so on
+  Stages 1/2 the bottleneck is sustained axial spin near the centre, not retention. These looser stages scored 0/8
+  blocks at 4 candidates while R-046's 24-candidate Stage 3 prefix had probe successes in 3/4: candidate budget, not
+  stage difficulty, is the untested driver of the base rate.
 - **Code extraction.** Generated code keeps only the class, so module-level constants in a reply are dropped.
 
 **Isaac Lab ShadowHandSpin.** A second, parallel stack merged in from the Isaac branch:
