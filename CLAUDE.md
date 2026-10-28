@@ -544,6 +544,12 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   Stages 1/2 the bottleneck is sustained axial spin near the centre, not retention. These looser stages scored 0/8
   blocks at 4 candidates while R-046's 24-candidate Stage 3 prefix had probe successes in 3/4: candidate budget, not
   stage difficulty, is the untested driver of the base rate.
+- **R-051 result (D-045, refuted).** Expert takeover from the R-046 block-3 learner's own states (`learner_recovery.py`,
+  `--study learner_recovery`; learner frozen in `config/pen_spin/r046_block3_incumbent/`) scored +0.031 [-0.18, +0.25]
+  (8/32 vs 7/32). It rescued 6 of 21 already-failing states but broke 5 of the learner's 7 successes; it drops the
+  pen in 11 switched cases where the learner dropped none. The expert's basin does not cover the learner's grasp, and
+  its labels there are 99.85% saturated. **Closed-loop prefix re-execution is a qualified branching mechanism**: three
+  fresh processes on one 32-case batch were bit-identical up to each switch (Gates 1 and 2).
 - **Code extraction.** Generated code keeps only the class, so module-level constants in a reply are dropped.
 
 **Isaac Lab ShadowHandSpin.** A second, parallel stack merged in from the Isaac branch:

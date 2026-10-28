@@ -30,7 +30,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "With both gates passing, a paired interval (takeover minus unchanged learner, 32 cases, frozen sustained rule) whose upper bound is below +0.25 refutes the predicted gain; an interval including zero is no evidence of a directional benefit, and an interval crossing +0.25 with lower bound above zero is inconclusive. A failed gate leaves the idea inconclusive.",
   "cost_estimate": {
@@ -54,12 +54,204 @@
     "started_at": "2026-10-27T22:12:52",
     "git_sha": "7a800c309b8fcdb67a8481993516cb18a011b442",
     "dirty_worktree": false,
-    "log_dir": ""
+    "log_dir": "",
+    "finished_at": "2026-10-27T22:16:52"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.03125,
+      "paired_success_difference_ci95": [
+        -0.18321148355818018,
+        0.24571148355818018
+      ],
+      "takeover_minus_learner": {
+        "n": 32,
+        "mean": 0.03125,
+        "se": 0.10515325796802646,
+        "low": -0.18321148355818018,
+        "high": 0.24571148355818018,
+        "p_value": 0.7683074113079962
+      },
+      "arms": {
+        "learner": {
+          "n": 32,
+          "successes": 7,
+          "success": 0.21875,
+          "completed": 0.875,
+          "tail_hit_fraction": 0.25265877016129035,
+          "hit_fraction": 0.26876253060697275,
+          "mean_length": 319.21875,
+          "mean_abs_spin": 4.836397275328636,
+          "mean_transverse": 1.5364455340895802,
+          "drops": 4,
+          "tail_spin_failures": 21,
+          "median_fall_step": 36.0
+        },
+        "takeover": {
+          "n": 32,
+          "successes": 8,
+          "success": 0.25,
+          "completed": 0.53125,
+          "tail_hit_fraction": 0.4214087701612903,
+          "hit_fraction": 0.423415567945806,
+          "mean_length": 248.59375,
+          "mean_abs_spin": 10.333789110183716,
+          "mean_transverse": 2.8369073942303658,
+          "drops": 15,
+          "tail_spin_failures": 9,
+          "median_fall_step": 114.0
+        }
+      },
+      "switched_cases": 28,
+      "never_switched_cases": [
+        7,
+        10,
+        13,
+        20
+      ],
+      "switched_only": {
+        "n": 28,
+        "learner_successes": 7,
+        "takeover_successes": 8,
+        "difference": {
+          "n": 28,
+          "mean": 0.03571428571428571,
+          "se": 0.12042849924994854,
+          "low": -0.21138458410068162,
+          "high": 0.282813155529253,
+          "p_value": 0.7690717158092564
+        },
+        "takeover_drops_after_switch": 11,
+        "learner_drops_after_switch": 0
+      },
+      "by_branch_reason": {
+        "learner_failing_in_window (switch 61-62)": {
+          "cases": [
+            0,
+            1,
+            2,
+            4,
+            5,
+            8,
+            9,
+            11,
+            12,
+            14,
+            15,
+            17,
+            19,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            29,
+            30
+          ],
+          "n": 21,
+          "learner_successes": 0,
+          "takeover_successes": 6,
+          "takeover_drops": 6,
+          "takeover_completed_tail_fail": 9
+        },
+        "learner_meeting_predicate_through_120 (switch 120)": {
+          "cases": [
+            3,
+            6,
+            16,
+            18,
+            27,
+            28,
+            31
+          ],
+          "n": 7,
+          "learner_successes": 7,
+          "takeover_successes": 2,
+          "takeover_drops": 5,
+          "takeover_completed_tail_fail": 0
+        }
+      },
+      "flips": {
+        "rescued": 6,
+        "broken": 5,
+        "both_success": 2,
+        "both_fail": 15
+      },
+      "transitions": {
+        "rows": 840,
+        "expert_saturated_fraction": 0.9985119047619048,
+        "learner_saturated_fraction": 0.06964285714285715
+      }
+    },
+    "controls": {
+      "gate1_identity": {
+        "cases": 32,
+        "observation_mismatch_cases": [],
+        "outcome_mismatch_cases": [],
+        "passes": true
+      },
+      "gate2_prefix": {
+        "switched_cases": 28,
+        "mismatches": [],
+        "passes": true
+      },
+      "interpretable": true
+    },
+    "accounting": {
+      "isaac_episodes": 96,
+      "isaac_processes": 3,
+      "llm_calls": 0
+    },
+    "artifacts": [
+      "logs/pen_spin_learner_recovery_s4310/summary.json",
+      "logs/pen_spin_learner_recovery_s4310/branch_steps.json",
+      "logs/pen_spin_learner_recovery_s4310/donor.json",
+      "logs/pen_spin_learner_recovery_s4310/learner_repeat.json",
+      "logs/pen_spin_learner_recovery_s4310/takeover.json"
+    ],
+    "notes": [
+      "Both gates pass: the learner repeat is bit-identical to the donor on all 32 cases (observations and outcomes), and all 28 takeover lanes match the donor through the observation of their first expert action. Closed-loop prefix re-execution is qualified as a branching mechanism on this manifest.",
+      "Primary: takeover minus unchanged learner = +0.031 [-0.183, +0.246] (8/32 vs 7/32). The upper bound is below the +0.25 threshold, so by the predeclared rule the predicted gain is refuted; the interval also includes zero.",
+      "The net +1 hides two opposite effects. On the 21 cases where the learner was already failing at step 60 (switch at 61-62), takeover rescued 6 (0 -> 6 successes) but dropped the pen in 6 that the learner kept. On the 7 cases where the learner met the predicate through step 120 (switch at 120), takeover broke 5 of the learner's 7 successes, all by drops 38-126 steps after the switch. Learner drops after switch: 0; takeover: 11.",
+      "Takeover doubles spin (mean |spin| 10.3 vs 4.8 rad/s, tail-hit 0.42 vs 0.25) but triples drops: the expert's gait is not compatible with the learner's grasp configuration, so its recovery basin covers some slow-spin states but not the learner's own successful spinning states.",
+      "Transitions saved (840 rows, 30 steps per switched case): 99.85% of expert action components are saturated vs 7% for the learner, so takeover labels are bang-bang as in D-043.",
+      "Branch steps cluster at 61 (median 61): a failing learner already fails the per-step predicate at step 60, so 'first retained failure' is effectively 'the start of the window'."
+    ]
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.03125,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.75,
+      "reasoning": "Both gates passed (repeat bit-identical on 32/32; 28/28 takeover prefixes match), so the contrast is interpretable. Predicted takeover minus learner >= +0.25; observed +0.031 [-0.183, +0.246] (8/32 vs 7/32). The upper bound is below +0.25, which the predeclared rule names as refutation; confidence 0.75 rather than higher because the bound clears the threshold by only 0.004 with 32 cases. The aggregate hides opposing effects: on 21 already-failing learner states takeover rescued 6 but dropped 6 the learner kept; on the 7 states where the learner was succeeding it broke 5 (all drops 38-126 steps after the switch). Takeover doubles spin (10.3 vs 4.8 rad/s) but drops the pen in 11 switched cases vs 0 for the learner, so the expert's recovery basin covers some slow-spin learner states but not the learner's own grasp; expert labels at these states are 99.85% saturated.",
+      "cited_artifacts": [
+        "logs/pen_spin_learner_recovery_s4310/research_result.json"
+      ],
+      "next_experiment": "Do not collect expert takeover transitions as repair evidence for this learner as-is (R-052 should stay deferred or be re-scoped to the 6 rescued cases only). Closed-loop prefix re-execution is qualified for branching. A useful next question is whether the learner's own successful episodes (not the expert's) can serve as within-learner demonstrations for its failing cases.",
+      "recorded_at": "2026-10-27T22:17:05",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.98,
+      "reasoning": "Both reconstruction gates passed, making the comparison against unchanged learner continuation interpretable [logs/pen_spin_learner_recovery_s4310/summary.json]. Takeover achieved 8/32 successes versus 7/32 for the learner, giving paired_success_difference +0.03125 with a 95% interval of [-0.18321148, +0.24571148] [logs/pen_spin_learner_recovery_s4310/summary.json]. Its upper bound is below the predicted +0.25, satisfying the predeclared refutation rule; because the interval includes zero, it also provides no evidence of a directional benefit [logs/pen_spin_learner_recovery_s4310/summary.json]. The 6 rescued cases and 5 broken successes demonstrate mixed recovery outcomes, not uniformly useful corrections, and do not establish the utility of these labels for symbolic repair [logs/pen_spin_learner_recovery_s4310/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin_learner_recovery_s4310/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-27T22:17:35",
+      "call_id": "call_00108"
+    }
+  ],
+  "decision_id": "D-045",
   "history": [
     {
       "at": "2026-10-27T22:01:21",
@@ -77,6 +269,18 @@
       "from": "approved",
       "to": "running",
       "note": "git 7a800c309b"
+    },
+    {
+      "at": "2026-10-27T22:16:52",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-10-27T22:17:41",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-045: refuted"
     }
   ],
   "created_at": "2026-10-27T21:56:14",

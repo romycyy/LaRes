@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-10-27T22:12:52 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-10-27T22:17:41 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -10,17 +10,16 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 1 |
+| running | 0 |
 | approved | 0 |
 | proposed | 0 |
 | deferred | 2 |
-| decided | 44 |
+| decided | 45 |
 | rejected | 5 |
 
 ## Needs attention
 
-- **R-051** [running] 2. Can the expert recover from actual symbolic-controller states?
-  - run the protocol, then `python scripts/research.py record R-051 --results <json>`
+- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
@@ -29,6 +28,9 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 
 ## Last 5 decisions
 
+- D-045 · R-051 · **refuted** · 2026-10-27
+  Both gates passed (repeat bit-identical on 32/32; 28/28 takeover prefixes match), so the contrast is interpretable. Predicted takeover minus learner >= +0.25; observed +0.031 [-0.183, +0.246] (8/32 vs 7/32). The upper bound is below +0.25, which the predeclared rule names as refutation; confidence 0.75 rather than higher because the bound clears the threshold by only 0.004 with 32 cases. The aggregate hides opposing effects: on 21 already-failing learner states takeover rescued 6 but dropped 6 the learner kept; on the 7 states where the learner was succeeding it broke 5 (all drops 38-126 steps after the switch). Takeover doubles spin (10.3 vs 4.8 rad/s) but drops the pen in 11 switched cases vs 0 for the learner, so the expert's recovery basin covers some slow-spin learner states but not the learner's own grasp; expert labels at these states are 99.85% saturated.
+  Next: Do not collect expert takeover transitions as repair evidence for this learner as-is (R-052 should stay deferred or be re-scoped to the 6 rescued cases only). Closed-loop prefix re-execution is qualified for branching. A useful next question is whether the learner's own successful episodes (not the expert's) can serve as within-learner demonstrations for its failing cases.
 - D-044 · R-049 · **refuted** · 2026-10-27
   Predicted two_channel minus baseline fresh-incumbent success of at least +0.15 with the interval establishing it; observed 0.000 [0.000, 0.000] over 8 blocks. Both arms kept the neutral-pose null incumbent everywhere: 0 of 32 candidates per arm had a screen success (0/320 screen episodes each), 0 promotions; the only non-zero cell is two_channel block 1 (2/30 promotion, not promoted). Confidence is 0.7 because both arms sit at the floor and 4 candidates per block gives little resolution. Diagnostics: generated candidates already retain the pen (13% of screen episodes dropped vs 97% for the neutral pose) and fail on slow_spin/off_centre, so the bottleneck on Stages 1/2 is sustained axial spin near the centre, not retention; and these per-step-looser stages scored 0/8 blocks while R-046's 24-candidate Stage 3 prefix had probe successes in 3/4, so candidates per block, not stage difficulty, is the untested candidate driver of the base rate.
   Next: Measure the cold-search per-candidate success rate with a larger candidate budget on Stage 1 and Stage 3 under one protocol, and target spin generation (axial angular-velocity feedback) rather than retention.
@@ -41,9 +43,6 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 - D-041 · R-046 · **inconclusive** · 2026-10-27
   The predeclared rule needs >=3 eligible blocks; the plateau trigger fired in only 1 of 4 (blocks 0 and 2 had a probe success, block 3 promoted a cold prefix candidate at +0.333 [0.154, 0.512]), so the primary contrast is undefined and the trigger was not weakened. Block 1 is suggestive only: whole_edit replaced the gait (delta = desired - gait) and dropped the pen in 24/30 fresh cases (0/30), while bounded_residual matched the unchanged gait (0.467 vs 0.433; 9 wins 8 losses 13 ties), i.e. preservation, not improvement. The unexpected finding is the cold prefix's non-zero base rate on Stage 3 (3/4 blocks with probe successes, 1 promotion) after R-042 found 0/4 under the same search; whether Stage 3 is a floor depends on seeds, which a base-rate study should measure before any further plateau-gated comparison.
   Next: Measure the cold single-step search's Stage 3 base rate (probe-success and promotion rates) over many prefix blocks, and run the gait-residual comparison ungated (every block) instead of behind the plateau trigger.
-- D-040 · R-044 · **supported** · 2026-10-27
-  Pen-state clamped minus the unmodified expert is -0.975 [-1.026,-0.924] over 40 paired cases, below the predicted -0.30 with the interval far from it; the reproducibility control is exact (0 flips, 0 diverged). Within the narrowed hypothesis (this checkpoint, under clamping, with hand proprioception and action history live) the prediction is supported. Two limits: the hand-state clamp is nearly as destructive (-0.950 [-1.021,-0.879]), so pen state is not uniquely required; and clamping shifts the input distribution, so this is dependence, not necessity. The failure split is informative: pen clamps produce early drops (39/40, median step 49, matching D-037's replay falls), hand clamps split into drops (22) and completed-but-slow spins (17).
-  Next: A symbolic controller needs both pen-state retention feedback and proprioceptive spin feedback; next, measure whether generated controllers on Stage 1/2 (non-zero base rate) improve when the prompt states this two-channel requirement.
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
