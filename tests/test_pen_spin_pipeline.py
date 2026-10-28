@@ -1208,5 +1208,102 @@ class TestTwoChannelStudy(unittest.TestCase):
         self.assertEqual(len(self.r.llm.labels), calls)
 
 
+class SelfTraceRun:
+    def __init__(self, blocks=2):
+        from lares.envs.isaac_pen_spin import self_trace
+
+        self.st = self_trace
+        self.tmp = tempfile.TemporaryDirectory()
+        root = self.tmp.name
+        cfg = yaml.safe_load(open(CONFIG))
+        c = cfg["self_trace_source"]
+        c["study_dir"] = os.path.join(root, "study")
+        c["block_seeds"] = c["block_seeds"][:blocks]
+        self.seeds = c["block_seeds"]
+        self.config_path = os.path.join(root, "config.yaml")
+        yaml.safe_dump(cfg, open(self.config_path, "w"))
+        self.study_dir = c["study_dir"]
+        self.child = FakeChild()
+        self.mdir = os.path.join(root, "manifests")
+        self.llm = ScriptedLLM({"trace_repair": [fence(POLICY_FLAT)] * (2 * self_trace.SLOTS * blocks)})
+        self.run()
+        self.summary = json.load(open(os.path.join(self.study_dir, "summary.json")))
+
+    def run(self):
+        import run_full_evolution as rfe
+
+        argv = ["run_full_evolution.py", "--config", self.config_path, "--study", "self_trace_source",
+                "--block-seeds", ",".join(str(s) for s in self.seeds), "--output-dir", self.study_dir]
+        child = self.child
+
+        class Stream(pb.IsaacPenSpinStream):
+            def __init__(self, stage, work, name, isaac_env=None):
+                super().__init__(stage, work, name, runner=child)
+
+        with patch.object(sys, "argv", argv), patch.dict(os.environ, {"OPENAI_API_KEY": "sk-mock-not-a-key"}), \
+                patch.object(pg, "_call_llm", side_effect=self.llm), \
+                patch.object(pg, "_run_policy_validation_subprocess", return_value=(True, "Success!", "full")), \
+                patch.object(self.st, "manifest_file", lambda seed: cases.manifest_path(3, "self_trace_source", seed,
+                                                                                        self.mdir)), \
+                patch.object(pb, "IsaacPenSpinStream", Stream):
+            rfe.main()
+
+    def close(self):
+        self.tmp.cleanup()
+
+
+class TestSelfTraceStudy(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.r = SelfTraceRun(blocks=2)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.r.close()
+
+    def test_requests_differ_only_in_the_source_sentence_and_packet(self):
+        ev = self.r.st.load_evidence(yaml.safe_load(open(self.r.config_path))["self_trace_source"])
+        self.assertEqual(ev["self"]["rows_shown"], ev["expert"]["rows_shown"])
+        for b in range(2):
+            d = os.path.join(self.r.study_dir, f"block{b}")
+            texts = {}
+            for arm in self.r.st.ARMS:
+                t = open(os.path.join(d, arm, "request.txt")).read()
+                self.assertIn(ev[arm]["packet"], t)
+                texts[arm] = t.replace(ev[arm]["packet"], "<P>").replace(self.r.st.SOURCE_TEXT[arm], "<S>")
+            self.assertEqual(texts["self"], texts["expert"])
+            self.assertIn("spin_target=12.16", texts["self"])
+
+    def test_episode_budget_and_calls(self):
+        eps = sum(len(EvaluationManifest.load(r["manifest_path"])) for r in self.r.child.episodes())
+        want = 0
+        for blk in self.r.summary["blocks"]:
+            want += 40
+            for arm in self.r.st.ARMS:
+                a = blk["arms"][arm]
+                want += 10 * a["valid_candidates"] + (30 if a["valid_candidates"] else 0)
+            promoted = [blk["arms"][arm].get("promoted") for arm in self.r.st.ARMS]
+            want += 40 * sum(promoted) + (40 if not all(promoted) else 0)
+        self.assertEqual(eps, want)
+        self.assertLessEqual(eps, 2 * 260)
+        self.assertEqual(len(self.r.llm.labels), 2 * 2 * self.r.st.SLOTS)
+
+    def test_promotion_is_against_the_parent_and_fresh_follows_it(self):
+        for blk in self.r.summary["blocks"]:
+            for arm in self.r.st.ARMS:
+                a = blk["arms"][arm]
+                self.assertEqual(a["promotion_decision"]["incumbent_id"], "r051_learner")
+                self.assertEqual(len(a["screens"]), self.r.st.SLOTS)
+                self.assertEqual(blk["fresh"][arm]["candidate"], f"slot{a['selected_slot']}" if a["promoted"] else "parent")
+                self.assertTrue(blk["fresh"][arm]["manifest_id"].endswith(":fresh"))
+        self.assertIn("self_minus_expert_fresh_incumbent", self.r.summary)
+
+    def test_a_rerun_resumes_without_a_new_episode_or_call(self):
+        before, calls = len(self.r.child.requests), len(self.r.llm.labels)
+        self.r.run()
+        self.assertEqual(len(self.r.child.requests), before)
+        self.assertEqual(len(self.r.llm.labels), calls)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -158,5 +158,23 @@ two_channel_cold:
   stage2_seeds: [4224, 4225, 4226, 4227]
   max_calls_per_slot: 2           # one call plus at most one linked correction; four slots per arm
 
+self_trace_source:
+  # R-054 (approved 2026-10-27, advisor call_00110): repair evidence from the learner's own successes vs the expert's.
+  study_dir: "logs/pen_spin_self_trace_source"
+  block_seeds: [4500, 4501, 4502, 4503, 4504, 4505, 4506, 4507]   # one 80-case Stage-3 manifest each
+  max_calls_per_slot: 2           # one call plus at most one linked correction; four slots per arm
+  learner:                        # the common parent: the R-051 learner (R-046 block 3 gen0_cand0)
+    source: "config/pen_spin/r046_block3_incumbent/policy_source.py"
+    source_sha256: "40782dcdf5a95589d0b34062919728fa92d4e5760fce890e3bd98833285e602d"
+    state: "config/pen_spin/r046_block3_incumbent/state.pt"
+    state_sha256: "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22"
+    fixed_action_scale: 0.1
+  evidence:                       # built once by self_trace.build_evidence from archived runs, committed
+    dir: "config/pen_spin/r054_evidence"
+    self_source: "logs/pen_spin_learner_recovery_s4310/donor.json"
+    expert_source: "logs/pen_spin/r046_gait_scaffold/block1/expert.json"
+    self_sha256: "5351187bd0b2a915017be1a77e943d5aaa19b55a24933693300db5cfb0dd26b8"
+    expert_sha256: "3a2b053756538407d62a4d1917ed3a3749cdfed10e9c0f767290a3347e77451c"
+
 log_dir: "logs/pen_spin/r042_keyframe_repair"
 record_demo_gif: false

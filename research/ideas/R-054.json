@@ -10,23 +10,19 @@
     "rationale": "Baseline is an equal-budget expert-trace repair arm; compare final-incumbent sustained success on fresh development cases, paired over eight generation blocks, to test whether demonstration source resolves the documented takeover mismatch."
   },
   "protocol": {
-    "script": "scripts/run_shadowhand_spin_stages.py",
+    "script": "scripts/run_full_evolution.py",
     "config": "config/pen_spin_plateau_repair.yaml",
-    "command": "gpu run \"bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/pen_spin_plateau_repair.yaml --study self_success_trace_source --output-dir logs/pen_spin_self_success_trace_source'\"",
-    "seeds": [
-      4500,
-      4501,
-      4502,
-      4503,
-      4504,
-      4505,
-      4506,
-      4507
-    ],
+    "command": "gpu run 'source ~/.profile >/dev/null 2>&1; nohup .venv-metaworld/bin/python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study self_trace_source --block-seeds 4500,4501,4502,4503,4504,4505,4506,4507 --output-dir logs/pen_spin_self_trace_source > logs/r054.log 2>&1 &'",
+    "seeds": [],
     "manifests": [
-      "config/manifests/pen_spin_self_trace_screen_s4500_4507.yaml",
-      "config/manifests/pen_spin_self_trace_promotion_s4500_4507.yaml",
-      "config/manifests/pen_spin_self_trace_fresh_development_s4500_4507.yaml"
+      "config/manifests/pen_spin_stage3_self_trace_source_s4500.yaml",
+      "config/manifests/pen_spin_stage3_self_trace_source_s4501.yaml",
+      "config/manifests/pen_spin_stage3_self_trace_source_s4502.yaml",
+      "config/manifests/pen_spin_stage3_self_trace_source_s4503.yaml",
+      "config/manifests/pen_spin_stage3_self_trace_source_s4504.yaml",
+      "config/manifests/pen_spin_stage3_self_trace_source_s4505.yaml",
+      "config/manifests/pen_spin_stage3_self_trace_source_s4506.yaml",
+      "config/manifests/pen_spin_stage3_self_trace_source_s4507.yaml"
     ],
     "episodes": 2080,
     "llm_calls": 128,
@@ -73,6 +69,11 @@
       "from": "proposed",
       "to": "approved",
       "note": "triage round 1: both say approve"
+    },
+    {
+      "at": "2026-10-27T22:34:27",
+      "event": "protocol_amended",
+      "note": "Before any LLM call or episode: (1) the study needs OpenAI calls, which only the orchestrator venv has (Isaac's Python lacks openai), so it runs through scripts/run_full_evolution.py --study self_trace_source (as R-049), not run_shadowhand_spin_stages.py; (2) one 80-case manifest per block (pen-spin manifests take one pool seed), seeds 4500-4507 recorded in the ledger, roles by index (screen 0-9, promotion 10-39, fresh 40-79); (3) evidence frozen and committed in config/pen_spin/r054_evidence/: self = first two sustained successes of the archived R-051 donor (recovery-0003, recovery-0006), expert = the two traced R-046 block-1 expert episodes (gait-0062, gait-0063), 16 uniform keyframes each, 32 rows per arm, identical fields and rounding; (4) the parent's fresh score is shared when both arms keep it, so episodes are at most 2080."
     }
   ],
   "created_at": "2026-10-27T22:21:15",

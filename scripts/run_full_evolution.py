@@ -277,15 +277,16 @@ def parse_args() -> tuple:
                    help="R-037: build (or verify) the task manifests, print their ids and hashes, and exit; no LLM call "
                         "and no episode")
     p.add_argument("--study", choices=("keyframe_repair", "dense_feedback_fit", "gait_preserving_repair",
-                                       "local_feedback_evidence", "two_channel_cold"), default=None,
+                                       "local_feedback_evidence", "two_channel_cold", "self_trace_source"), default=None,
                    help="R-042: run the whole pen-spin keyframe-repair study (parity gate, blocks, arms, fresh cases); "
                         "R-045: dense_feedback_fit (expert-label fitting vs rollout search, no LLM call); "
                         "R-046: gait_preserving_repair (scaffold continuation on the frozen R-039 gait); "
                         "R-048: local_feedback_evidence (expert sensitivities vs raw labels for a gait residual); "
-                        "R-049: two_channel_cold (a two-channel structural requirement in cold search, Stages 1/2)")
+                        "R-049: two_channel_cold (a two-channel structural requirement in cold search, Stages 1/2); "
+                        "R-054: self_trace_source (repair evidence from the learner's own successes vs the expert's)")
     p.add_argument("--block-seeds", default=None,
-                   help="R-048/R-049: comma-separated block seeds the command expects; refused if the config declares others")
-    p.add_argument("--output-dir", default=None, help="R-048/R-049: the study directory; refused if the config names another")
+                   help="R-048/R-049/R-054: comma-separated block seeds the command expects; refused if the config declares others")
+    p.add_argument("--output-dir", default=None, help="R-048/R-049/R-054: the study directory; refused if the config names another")
     p.add_argument("--gait-block", type=int, default=None, help="R-046 child: run one block's cold prefix")
     p.add_argument("--block", type=int, default=None, help="R-042 child: the block to run (with --phase or --arm)")
     p.add_argument("--phase", choices=("prefix",), default=None, help="R-042 child: run the block's prefix only")
@@ -607,6 +608,25 @@ def run_pen_spin_two_channel(cfg, overrides: dict) -> None:
     print(json.dumps({k: v for k, v in summary.items() if k != "blocks"}, indent=2, default=str))
 
 
+def run_pen_spin_self_trace(cfg, overrides: dict) -> None:
+    """R-054: per block the parent, then the self-trace and expert-trace repair arms, then fresh final incumbents."""
+    from lares.envs.isaac_pen_spin import self_trace
+
+    scfg = dict(getattr(cfg, "self_trace_source", None) or {})
+    if not scfg:
+        raise SystemExit("--study self_trace_source needs a self_trace_source block in the config")
+    _check_study_overrides(scfg["block_seeds"], scfg["study_dir"], overrides)
+    scfg.update(model=cfg.model, reasoning_effort=cfg.reasoning_effort)
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    if len(api_key) < 10:
+        raise SystemExit("OPENAI_API_KEY is not set")
+    from openai import OpenAI
+
+    factory = lambda name, work: pen_spin_stream(cfg, name, work)  # noqa: E731
+    summary = self_trace.run_study(scfg, factory, OpenAI(api_key=api_key))
+    print(json.dumps({k: v for k, v in summary.items() if k != "blocks"}, indent=2, default=str))
+
+
 def run_pen_spin_local_feedback(cfg, overrides: dict) -> None:
     """R-048: per block the gait parent, expert queries at its states, and the raw-label and sensitivity arms."""
     from lares.envs.isaac_pen_spin import local_feedback
@@ -653,6 +673,11 @@ def main() -> None:
                 from lares.envs.isaac_pen_spin import two_channel
 
                 print(json.dumps(two_channel.freeze_manifests(cfg.two_channel_cold), indent=2))
+            if getattr(cfg, "self_trace_source", None) is not None:
+                from lares.envs.isaac_pen_spin import self_trace
+
+                print(json.dumps(self_trace.freeze_manifests(cfg.self_trace_source), indent=2))
+                print(json.dumps(self_trace.build_evidence(cfg.self_trace_source), indent=2))
         elif overrides.get("study") == "dense_feedback_fit":
             run_pen_spin_dense_fit(cfg)
         elif overrides.get("study") == "gait_preserving_repair":
@@ -661,6 +686,8 @@ def main() -> None:
             run_pen_spin_local_feedback(cfg, overrides)
         elif overrides.get("study") == "two_channel_cold":
             run_pen_spin_two_channel(cfg, overrides)
+        elif overrides.get("study") == "self_trace_source":
+            run_pen_spin_self_trace(cfg, overrides)
         elif overrides.get("gait_block") is not None:
             run_gait_prefix(cfg, int(overrides["gait_block"]))
         elif overrides.get("study"):
