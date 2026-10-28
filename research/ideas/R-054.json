@@ -40,7 +40,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "approved",
+  "status": "running",
   "source": "advisor",
   "falsified_by": "An upper paired interval bound below +0.15 refutes the predicted improvement; an interval including zero cannot establish a benefit. If archived learner successes cannot supply the predeclared evidence budget without using evaluation cases, do not run the comparison.",
   "cost_estimate": {
@@ -58,7 +58,12 @@
     "round": 1,
     "note": "This directly tests demonstration-source mismatch without repeating expert-keyframe selection or claiming a plateau-trigger benefit. Archived donor adequacy is its weakest point, but the predeclared no-run gate addresses that risk, and block-level analysis avoids treating evaluation cases as indepen"
   },
-  "run": {},
+  "run": {
+    "started_at": "2026-10-27T22:37:04",
+    "git_sha": "52776e2d94c779f30e799e76c0929c7bf55993b7",
+    "dirty_worktree": false,
+    "log_dir": ""
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -74,6 +79,12 @@
       "at": "2026-10-27T22:34:27",
       "event": "protocol_amended",
       "note": "Before any LLM call or episode: (1) the study needs OpenAI calls, which only the orchestrator venv has (Isaac's Python lacks openai), so it runs through scripts/run_full_evolution.py --study self_trace_source (as R-049), not run_shadowhand_spin_stages.py; (2) one 80-case manifest per block (pen-spin manifests take one pool seed), seeds 4500-4507 recorded in the ledger, roles by index (screen 0-9, promotion 10-39, fresh 40-79); (3) evidence frozen and committed in config/pen_spin/r054_evidence/: self = first two sustained successes of the archived R-051 donor (recovery-0003, recovery-0006), expert = the two traced R-046 block-1 expert episodes (gait-0062, gait-0063), 16 uniform keyframes each, 32 rows per arm, identical fields and rounding; (4) the parent's fresh score is shared when both arms keep it, so episodes are at most 2080."
+    },
+    {
+      "at": "2026-10-27T22:37:04",
+      "from": "approved",
+      "to": "running",
+      "note": "git 52776e2d94"
     }
   ],
   "created_at": "2026-10-27T22:21:15",
