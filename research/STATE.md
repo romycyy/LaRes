@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-10-27T22:37:04 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-10-28T04:25:25 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -10,17 +10,16 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 1 |
+| running | 0 |
 | approved | 0 |
 | proposed | 0 |
 | deferred | 3 |
-| decided | 46 |
+| decided | 47 |
 | rejected | 5 |
 
 ## Needs attention
 
-- **R-054** [running] Repair with successful traces from the learner's own grasp basin
-  - run the protocol, then `python scripts/research.py record R-054 --results <json>`
+- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
@@ -30,6 +29,9 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 
 ## Last 5 decisions
 
+- D-047 · R-054 · **refuted** · 2026-10-28
+  Predicted self minus expert final-incumbent fresh success of at least +0.15, paired over eight blocks. Observed 0.000 with a degenerate [0, 0] interval (8 ties): no candidate in either arm passed the strict promotion rule against the frozen parent, so both arms kept the parent (fresh mean 0.225) in every block. The interval's upper bound is below +0.15, which refutes the prediction under this protocol (4 candidates per arm per block, one linked correction). Secondary and not predeclared: self-trace candidates kept some parent behaviour (27/320 candidate screen successes, 3 candidates beat the parent screen, block-level mean candidate screen self minus expert +0.084 [-0.008, +0.177], 7 wins 0 losses 1 tie) while expert-trace candidates scored 0/320 and dropped the pen in 200/320 screen episodes versus 97/320 for self and 14/80 for the parent. So the evidence source changes how much an edit damages the grasp, but neither source produced an improvement over the parent; the claim that self traces give more transferable repairs is not established at the final-incumbent level.
+  Next: none
 - D-046 · R-053 · **inconclusive** · 2026-10-27
   Identity gate passed (bit-identical on 32/32). Predicted a decrease of at least 0.15; observed -0.031 [-0.176, +0.113] (4/32 vs 5/32, 27 ties). The predeclared refutation needs the interval entirely above -0.15 and its lower bound is -0.176, so neither the prediction nor its refutation is established; the interval includes zero. Post hoc, the reason the lever is weak is visible: the frozen parameters (spin_target 12.16, speed_gain 0.81) saturate the drive 0.25 + 0.75 tanh(gain (target - spin)) above 0.99 on 94.6% of the learner's in-play steps, and reversing the axial sign changes it by more than 0.05 on only 10.4% of steps. The source audit found a code path, but at its operating point the learner is effectively an open-loop fixed-amplitude stroke in axial spin; reversal also did not slow the pen (|spin| 7.39 vs 6.89).
   Next: Treat the learner's spin as open loop when designing repair evidence (R-054). A sharper dependence test would set the operating point inside the unsaturated range (e.g. spin_target at its declared 8.0) or replace the measured axial rate with the target (zero error) rather than reversing it.
@@ -42,9 +44,6 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 - D-043 · R-048 · **inconclusive** · 2026-10-27
   No paired comparison ran, so the +0.15 prediction was not evaluated. The PPO expert is bang-bang (99.98% of executed components at +/-1), which made clamped finite differences zero almost everywhere; the executed-switch audit found switches in only 2.8% of state-coordinate-action triples within one demonstration range (median distance 0.7 ranges), so the evidence representation would be impoverished and the comparison would test it rather than the feedback-map hypothesis. Closed on the advisor's recommendation (call_00101) as insufficient demonstrated local signal on the sampled grid, not falsification.
   Next: Run R-049 (two-channel cold exploration on Stages 1/2). A future feedback-map idea needs a smooth expert (e.g. pre-saturation logits from a policy trained with an action penalty) or switch maps at on-distribution states.
-- D-042 · R-047 · **supported** · 2026-10-27
-  Predicted a paired decrease of at least 0.25; observed -1.000 (40/40 -> 0/40) for a four-step pen-state delay, with the reproducibility control bit-identical (0 diverged, 0 flips). The hand-state delay is equally fatal (0/40, 39 drops). The claim is limited to this checkpoint under a temporal joint-distribution shift; with one delay value there is no dose-response, so the failure threshold lies at or below 67 ms but is otherwise unmeasured.
-  Next: If latency matters for the pipeline, a dose-response (1, 2 steps) would locate the threshold; for generated controllers, the implication is that retention needs current-step pen and hand feedback, which R-049's two-channel requirement tests directly.
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 

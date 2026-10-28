@@ -40,7 +40,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "An upper paired interval bound below +0.15 refutes the predicted improvement; an interval including zero cannot establish a benefit. If archived learner successes cannot supply the predeclared evidence budget without using evaluation cases, do not run the comparison.",
   "cost_estimate": {
@@ -62,12 +62,336 @@
     "started_at": "2026-10-27T22:37:04",
     "git_sha": "52776e2d94c779f30e799e76c0929c7bf55993b7",
     "dirty_worktree": false,
-    "log_dir": ""
+    "log_dir": "",
+    "finished_at": "2026-10-28T04:24:46"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.0,
+      "paired_success_difference_ci95": [
+        0.0,
+        0.0
+      ],
+      "self_minus_expert_fresh_incumbent": {
+        "per_block": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "n": 8,
+        "mean": 0.0,
+        "se": 0.0,
+        "low": 0.0,
+        "high": 0.0,
+        "p_value": 1.0,
+        "wins": 0,
+        "losses": 0,
+        "ties": 8
+      },
+      "promoted_blocks": {
+        "self": 0,
+        "expert": 0
+      },
+      "fresh_incumbent_success_per_block": [
+        0.25,
+        0.225,
+        0.275,
+        0.25,
+        0.2,
+        0.175,
+        0.175,
+        0.25
+      ],
+      "per_arm": {
+        "self": {
+          "candidate_screen_successes": 27.0,
+          "candidate_screen_episodes": 320,
+          "candidate_screen_success": 0.084375,
+          "candidate_screen_labels": {
+            "off_centre": 99,
+            "dropped": 97,
+            "success": 27,
+            "slow_spin": 97
+          },
+          "mean_candidate_screen_per_block": [
+            0.025,
+            0.0,
+            0.075,
+            0.025,
+            0.07500000000000001,
+            0.05,
+            0.07500000000000001,
+            0.35
+          ],
+          "challenger_promotions": [
+            {
+              "block": 0,
+              "challenger": "self:slot0",
+              "challenger_promotion_success": 0.1,
+              "parent_promotion_success": 0.26666666666666666,
+              "reason": "lower_paired_success"
+            },
+            {
+              "block": 1,
+              "challenger": "self:slot1",
+              "challenger_promotion_success": 0.1,
+              "parent_promotion_success": 0.2,
+              "reason": "lower_paired_success"
+            },
+            {
+              "block": 2,
+              "challenger": "self:slot1",
+              "challenger_promotion_success": 0.23333333333333334,
+              "parent_promotion_success": 0.3333333333333333,
+              "reason": "lower_paired_success"
+            },
+            {
+              "block": 3,
+              "challenger": "self:slot2",
+              "challenger_promotion_success": 0.03333333333333333,
+              "parent_promotion_success": 0.23333333333333334,
+              "reason": "lower_paired_success"
+            },
+            {
+              "block": 4,
+              "challenger": "self:slot2",
+              "challenger_promotion_success": 0.16666666666666666,
+              "parent_promotion_success": 0.1,
+              "reason": "paired_success_interval_includes_zero"
+            },
+            {
+              "block": 5,
+              "challenger": "self:slot3",
+              "challenger_promotion_success": 0.0,
+              "parent_promotion_success": 0.2,
+              "reason": "lower_paired_success"
+            },
+            {
+              "block": 6,
+              "challenger": "self:slot1",
+              "challenger_promotion_success": 0.06666666666666667,
+              "parent_promotion_success": 0.1,
+              "reason": "lower_paired_success"
+            },
+            {
+              "block": 7,
+              "challenger": "self:slot3",
+              "challenger_promotion_success": 0.23333333333333334,
+              "parent_promotion_success": 0.3333333333333333,
+              "reason": "lower_paired_success"
+            }
+          ],
+          "isaac_episodes": 560,
+          "isaac_processes": 40,
+          "promoted_blocks": 0,
+          "valid_candidates": 32,
+          "candidates_beating_parent_screen": 3,
+          "mean_fresh_incumbent": 0.225,
+          "mean_best_screen": 0.1875,
+          "llm_calls": 32,
+          "llm_tokens": 942712
+        },
+        "expert": {
+          "candidate_screen_successes": 0.0,
+          "candidate_screen_episodes": 320,
+          "candidate_screen_success": 0.0,
+          "candidate_screen_labels": {
+            "dropped": 200,
+            "slow_spin": 52,
+            "off_centre": 68
+          },
+          "mean_candidate_screen_per_block": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "challenger_promotions": [
+            {
+              "block": 0,
+              "challenger": "expert:slot0",
+              "challenger_promotion_success": 0.0,
+              "parent_promotion_success": 0.26666666666666666,
+              "reason": "lower_paired_success"
+            },
+            {
+              "block": 1,
+              "challenger": "expert:slot2",
+              "challenger_promotion_success": 0.0,
+              "parent_promotion_success": 0.2,
+              "reason": "lower_paired_success"
+            },
+            {
+              "block": 2,
+              "challenger": "expert:slot3",
+              "challenger_promotion_success": 0.0,
+              "parent_promotion_success": 0.3333333333333333,
+              "reason": "lower_paired_success"
+            },
+            {
+              "block": 3,
+              "challenger": "expert:slot3",
+              "challenger_promotion_success": 0.0,
+              "parent_promotion_success": 0.23333333333333334,
+              "reason": "lower_paired_success"
+            },
+            {
+              "block": 4,
+              "challenger": "expert:slot1",
+              "challenger_promotion_success": 0.0,
+              "parent_promotion_success": 0.1,
+              "reason": "lower_paired_success"
+            },
+            {
+              "block": 5,
+              "challenger": "expert:slot3",
+              "challenger_promotion_success": 0.0,
+              "parent_promotion_success": 0.2,
+              "reason": "lower_paired_success"
+            },
+            {
+              "block": 6,
+              "challenger": "expert:slot0",
+              "challenger_promotion_success": 0.0,
+              "parent_promotion_success": 0.1,
+              "reason": "lower_paired_success"
+            },
+            {
+              "block": 7,
+              "challenger": "expert:slot3",
+              "challenger_promotion_success": 0.0,
+              "parent_promotion_success": 0.3333333333333333,
+              "reason": "lower_paired_success"
+            }
+          ],
+          "isaac_episodes": 560,
+          "isaac_processes": 40,
+          "promoted_blocks": 0,
+          "valid_candidates": 32,
+          "candidates_beating_parent_screen": 0,
+          "mean_fresh_incumbent": 0.225,
+          "mean_best_screen": 0.0,
+          "llm_calls": 34,
+          "llm_tokens": 1085343
+        }
+      },
+      "parent": {
+        "mean_screen": 0.25,
+        "mean_promotion": 0.22083333333333333,
+        "screen_labels": {
+          "success": 20,
+          "off_centre": 16,
+          "dropped": 14,
+          "slow_spin": 30
+        }
+      },
+      "secondary_post_hoc": {
+        "self_minus_expert_mean_candidate_screen_per_block": {
+          "n": 8,
+          "mean": 0.084375,
+          "se": 0.03922733080573871,
+          "low": -0.008382897748502469,
+          "high": 0.1771328977485025,
+          "p_value": 0.06852009452351054
+        },
+        "win_loss_tie": {
+          "wins": 7,
+          "losses": 0,
+          "ties": 1
+        },
+        "note": "not predeclared as primary; candidate screens are 10 cases, 4 candidates per arm per block"
+      }
+    },
+    "controls": {
+      "parent": "frozen R-051 learner (config/pen_spin/r046_block3_incumbent), shared by both arms; fresh score shared when no promotion",
+      "evidence": {
+        "self": {
+          "source": "logs/pen_spin_learner_recovery_s4310/donor.json",
+          "cases": [
+            "recovery-0003",
+            "recovery-0006"
+          ],
+          "rows_shown": 32,
+          "packet_sha256": "5351187bd0b2a915017be1a77e943d5aaa19b55a24933693300db5cfb0dd26b8"
+        },
+        "expert": {
+          "source": "logs/pen_spin/r046_gait_scaffold/block1/expert.json",
+          "cases": [
+            "gait-0062",
+            "gait-0063"
+          ],
+          "rows_shown": 32,
+          "packet_sha256": "3a2b053756538407d62a4d1917ed3a3749cdfed10e9c0f767290a3347e77451c"
+        }
+      },
+      "promotion_rule": "strict paired difference > 0 and t lower bound > 0 vs the parent on cases 10-39"
+    },
+    "accounting": {
+      "blocks": 8,
+      "llm_calls": 66,
+      "llm_tokens": 2028055,
+      "isaac_episodes": 1760,
+      "isaac_episodes_note": "arm screens + promotions 560 per arm; parent screen 10 + promotion 30 + fresh 40 per block (fresh shared because neither arm promoted)",
+      "protocol_estimate_episodes": 2080,
+      "protocol_estimate_llm_calls": 128
+    },
+    "artifacts": [
+      "logs/pen_spin_self_trace_source/summary.json",
+      "logs/pen_spin_self_trace_source/summary.partial.json",
+      "logs/pen_spin_self_trace_source/block0/parent.json",
+      "logs/pen_spin_self_trace_source/block1/parent.json",
+      "logs/pen_spin_self_trace_source/block2/parent.json",
+      "logs/pen_spin_self_trace_source/block3/parent.json",
+      "logs/pen_spin_self_trace_source/block4/parent.json",
+      "logs/pen_spin_self_trace_source/block5/parent.json",
+      "logs/pen_spin_self_trace_source/block6/parent.json",
+      "logs/pen_spin_self_trace_source/block7/parent.json"
+    ],
+    "notes": "Primary self minus expert fresh-incumbent success is 0.000 [0,0] over 8 blocks: no candidate in either arm promoted over the frozen parent (parent fresh mean 0.225), so both arms kept the parent everywhere. Secondary, not predeclared: self-trace candidates kept some of the parent behaviour (27/320 candidate screen successes, 3 candidates beat the parent screen, best challenger promotion 0.233 vs parent 0.333) while expert-trace candidates scored 0/320 and dropped the pen in 200/320 screen episodes (self 97/320, parent 14/80). Expert evidence drives edits that break the learner grasp; learner-success evidence does not break it but did not improve on it either."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.0,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.8,
+      "reasoning": "Predicted self minus expert final-incumbent fresh success of at least +0.15, paired over eight blocks. Observed 0.000 with a degenerate [0, 0] interval (8 ties): no candidate in either arm passed the strict promotion rule against the frozen parent, so both arms kept the parent (fresh mean 0.225) in every block. The interval's upper bound is below +0.15, which refutes the prediction under this protocol (4 candidates per arm per block, one linked correction). Secondary and not predeclared: self-trace candidates kept some parent behaviour (27/320 candidate screen successes, 3 candidates beat the parent screen, block-level mean candidate screen self minus expert +0.084 [-0.008, +0.177], 7 wins 0 losses 1 tie) while expert-trace candidates scored 0/320 and dropped the pen in 200/320 screen episodes versus 97/320 for self and 14/80 for the parent. So the evidence source changes how much an edit damages the grasp, but neither source produced an improvement over the parent; the claim that self traces give more transferable repairs is not established at the final-incumbent level.",
+      "cited_artifacts": [
+        "logs/pen_spin_self_trace_source/summary.json",
+        "logs/pen_spin_self_trace_source/research_result.json"
+      ],
+      "next_experiment": "",
+      "recorded_at": "2026-10-28T04:24:51",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.97,
+      "reasoning": "The named baseline—equal-budget expert-trace repair—was measured [logs/pen_spin_self_trace_source/summary.json]. The primary paired_success_difference was 0.000 with a 95% interval of [0.000, 0.000] across eight blocks; its upper bound is below the predicted +0.15, satisfying the predeclared refutation criterion [logs/pen_spin_self_trace_source/summary.json]. Neither arm promoted any candidate, so both retained the shared parent with mean fresh success 0.225; this tie is not an improvement [logs/pen_spin_self_trace_source/summary.json]. The post hoc candidate-screen difference was +0.084375 with interval [-0.008383, +0.177133], which includes zero and therefore does not establish a demonstration-source benefit or rescue the primary prediction [logs/pen_spin_self_trace_source/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin_self_trace_source/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-10-28T04:25:18",
+      "call_id": "call_00112"
+    }
+  ],
+  "decision_id": "D-047",
   "history": [
     {
       "at": "2026-10-27T22:22:55",
@@ -85,6 +409,18 @@
       "from": "approved",
       "to": "running",
       "note": "git 52776e2d94"
+    },
+    {
+      "at": "2026-10-28T04:24:46",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-10-28T04:25:25",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-047: refuted"
     }
   ],
   "created_at": "2026-10-27T22:21:15",

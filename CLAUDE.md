@@ -555,6 +555,13 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   rate, but its frozen operating point (`spin_target` 12.16, `speed_gain` 0.81) saturates the spin drive on 94.6% of
   in-play steps, so the learner is effectively an open-loop stroke in axial spin. A static source audit finds code
   paths, not active feedback; check the operating point.
+- **R-054 result (D-047, refuted).** Trace repair of the frozen R-051 learner with its own successful traces versus PPO
+  expert traces (`self_trace.py`, `run_full_evolution.py --study self_trace_source`, packets in
+  `config/pen_spin/r054_evidence/`, 8 blocks, 4 slots per arm): 0.000 [0, 0], no promotion in either arm; both kept the
+  parent (fresh 0.225). Not predeclared: self-trace candidates kept some of the parent's behaviour (27/320 screen
+  successes), while expert-trace candidates scored 0/320 and dropped the pen in 200/320 screens. Expert evidence breaks the
+  learner's grasp; self evidence does not, but it did not improve on the parent either. Session summary:
+  `docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md`.
 - **Code extraction.** Generated code keeps only the class, so module-level constants in a reply are dropped.
 
 **Isaac Lab ShadowHandSpin.** A second, parallel stack merged in from the Isaac branch:
