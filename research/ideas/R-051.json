@@ -30,7 +30,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "running",
   "source": "advisor",
   "falsified_by": "With both gates passing, a paired interval (takeover minus unchanged learner, 32 cases, frozen sustained rule) whose upper bound is below +0.25 refutes the predicted gain; an interval including zero is no evidence of a directional benefit, and an interval crossing +0.25 with lower bound above zero is inconclusive. A failed gate leaves the idea inconclusive.",
   "cost_estimate": {
@@ -50,7 +50,12 @@
     "round": 3,
     "note": "This tests whether expert takeover can recover actual learner-visited states, a prerequisite that successful expert demonstrations do not establish. I accept the implementer's closed-loop prefix reconstruction, full unchanged-learner reproducibility gate, and Isaac-specific implementation; the appli"
   },
-  "run": {},
+  "run": {
+    "started_at": "2026-10-27T22:12:52",
+    "git_sha": "7a800c309b8fcdb67a8481993516cb18a011b442",
+    "dirty_worktree": false,
+    "log_dir": ""
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -66,6 +71,12 @@
       "at": "2026-10-27T22:04:38",
       "event": "seeds_recorded",
       "note": "seed 4310 recorded in config/experiment_seed_ledger.jsonl with the frozen manifest; protocol.seeds cleared so the spent-seed check reads the ledger entry (R-046..R-049 precedent)"
+    },
+    {
+      "at": "2026-10-27T22:12:52",
+      "from": "approved",
+      "to": "running",
+      "note": "git 7a800c309b"
     }
   ],
   "created_at": "2026-10-27T21:56:14",
