@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-10-27T22:24:40 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-10-27T22:27:09 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -10,8 +10,8 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
-| running | 0 |
-| approved | 2 |
+| running | 1 |
+| approved | 1 |
 | proposed | 0 |
 | deferred | 3 |
 | decided | 45 |
@@ -19,8 +19,8 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 
 ## Needs attention
 
-- **R-053** [approved] Does the symbolic learner actually use signed axial-spin feedback?
-  - `python scripts/research.py start R-053` then run its command
+- **R-053** [running] Does the symbolic learner actually use signed axial-spin feedback?
+  - run the protocol, then `python scripts/research.py record R-053 --results <json>`
 - **R-054** [approved] Repair with successful traces from the learner's own grasp basin
   - `python scripts/research.py start R-054` then run its command
 

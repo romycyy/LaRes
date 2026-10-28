@@ -29,7 +29,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "running",
   "source": "advisor",
   "falsified_by": "A paired interval lying entirely above -0.15 refutes the predicted magnitude; an interval including zero supplies no evidence of a difference. A dependency audit proving that the learner never uses axial velocity directly refutes the proposed mechanism without simulator runs.",
   "cost_estimate": {
@@ -47,7 +47,12 @@
     "round": 1,
     "note": "This isolates signed axial-velocity dependence in the symbolic learner, unlike the decided expert-feedback interventions. Its weakest point is that sign reversal tests dependence under an observation shift, not proof of a stabilizing feedback law. The dependency audit and identity-control gate justi"
   },
-  "run": {},
+  "run": {
+    "started_at": "2026-10-27T22:27:09",
+    "git_sha": "5c47f3302b4d3c861032366255c464103428dfbb",
+    "dirty_worktree": false,
+    "log_dir": ""
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -63,6 +68,12 @@
       "at": "2026-10-27T22:24:39",
       "event": "protocol_amended",
       "note": "Before any episode: (1) pen-spin manifests take one pool seed, so the 32 cases come from seed 4400 alone (4401-4431 never used, not recorded); (2) a case's outcome depends on its batch (D-035), so the identity-transform reproducibility control must rerun the whole 32-case batch, not 8 extra cases: 3 x 32 = 96 episodes; (3) the Isaac studies live in config/shadowhand_spin_stages.yaml (learner_axial_sign block), not the plateau-repair yaml. Source audit (lares/envs/isaac_pen_spin/axial_sign.source_audit): the learner reads obj_angvel and drives speed_gain*(spin_target - spin) with spin = omega . axis. Seed 4400 recorded in the ledger."
+    },
+    {
+      "at": "2026-10-27T22:27:09",
+      "from": "approved",
+      "to": "running",
+      "note": "git 5c47f3302b"
     }
   ],
   "created_at": "2026-10-27T22:21:15",
