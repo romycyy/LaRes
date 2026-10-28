@@ -122,3 +122,18 @@ research_protocols:
       state: "config/pen_spin/r046_block3_incumbent/state.pt"
       state_sha256: "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22"
       fixed_action_scale: 0.1
+  # R-053 (approved 2026-10-27, advisor call_00110): sign reversal of the learner's observed axial angular velocity,
+  # 96 episodes, no LLM. Same frozen learner as R-051; identity-wrapper repeat must be bit-identical (gate).
+  #   python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study learner_axial_sign
+  #     --manifest-seed 4400 --output-dir logs/pen_spin_learner_axial_sign_s4400
+  learner_axial_sign:
+    log_dir: "logs/pen_spin_learner_axial_sign_s4400"
+    cases: 32
+    pool_seed: 4400
+    manifest: "config/manifests/pen_spin_stage3_learner_axial_sign_development_s4400.yaml"
+    learner:  # the R-051 learner: R-046 block 3 promoted prefix candidate gen0_cand0
+      source: "config/pen_spin/r046_block3_incumbent/policy_source.py"
+      source_sha256: "40782dcdf5a95589d0b34062919728fa92d4e5760fce890e3bd98833285e602d"
+      state: "config/pen_spin/r046_block3_incumbent/state.pt"
+      state_sha256: "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22"
+      fixed_action_scale: 0.1

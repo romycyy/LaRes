@@ -128,19 +128,26 @@ def check_learner(protocol_cfg: dict) -> dict:
     return lc
 
 
-def make_controller(arm: str, protocol_cfg: dict, out_dir: str):
+def make_learner(protocol_cfg: dict):
+    """The frozen learner (hashes checked), executed as ``clamp(mean, -1, 1)`` like every pipeline evaluation."""
     from lares.envs.isaac_pen_spin.layout import OBS_LAYOUT
     from lares.envs.isaac_pen_spin.pipeline_child import SymbolicController
+
+    lc = check_learner(protocol_cfg)
+    with open(lc["source"], encoding="utf-8") as f:
+        source = f.read()
+    return SymbolicController({"source": source, "state_path": lc["state"],
+                               "obs_dim": sum(size for _, size, _ in OBS_LAYOUT), "action_dim": cases.NUM_ACTIONS,
+                               "fixed_action_scale": float(lc["fixed_action_scale"]),
+                               "execution": "clamp(mean, -1, 1)"}, cases.STAGES[STAGE].task_id)
+
+
+def make_controller(arm: str, protocol_cfg: dict, out_dir: str):
     from lares.envs.isaac_pen_spin.ppo_expert import PPOController
 
     if arm not in ARMS:
         raise ValueError(f"unknown arm {arm!r}; one of {ARMS}")
-    lc = check_learner(protocol_cfg)
-    with open(lc["source"], encoding="utf-8") as f:
-        source = f.read()
-    learner = SymbolicController({"source": source, "state_path": lc["state"], "obs_dim": sum(size for _, size, _ in OBS_LAYOUT),
-                                  "action_dim": cases.NUM_ACTIONS, "fixed_action_scale": float(lc["fixed_action_scale"]),
-                                  "execution": "clamp(mean, -1, 1)"}, cases.STAGES[STAGE].task_id)
+    learner = make_learner(protocol_cfg)
     expert = PPOController(check_checkpoint(protocol_cfg), int(protocol_cfg["training_seed"]))
     n = int(protocol_cfg["cases"])
     if arm == "takeover":
@@ -152,11 +159,11 @@ def make_controller(arm: str, protocol_cfg: dict, out_dir: str):
     return HandoverController(learner, expert, steps, arm)
 
 
-def _child(config_path: str, manifest: str, arm: str, out_path: str) -> None:
+def _child(config_path: str, manifest: str, arm: str, out_path: str, study: str = LEARNER_RECOVERY) -> None:
     if os.path.exists(out_path):
         print("exists", out_path, flush=True)
         return
-    cmd = [sys.executable, "-u", sys.argv[0], "--config", config_path, "--study", LEARNER_RECOVERY,
+    cmd = [sys.executable, "-u", sys.argv[0], "--config", config_path, "--study", study,
            "--cell-manifest", manifest, "--controller", arm, "--cell-out", out_path, "--record-obs"]
     print("running", " ".join(cmd), flush=True)
     subprocess.run(cmd, check=True)
@@ -293,4 +300,4 @@ def run_learner_recovery(protocol_cfg: dict, config_path: str, out_dir: str) -> 
 
 
 __all__ = ["ARMS", "HandoverController", "LEARNER_RECOVERY", "NEVER", "aggregate", "branch_steps", "build_manifests",
-           "identity_gate", "prefix_gate", "run_learner_recovery", "transitions"]
+           "identity_gate", "make_learner", "prefix_gate", "run_learner_recovery", "transitions"]

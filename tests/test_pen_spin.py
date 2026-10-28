@@ -473,5 +473,38 @@ class TestLearnerRecovery(unittest.TestCase):
         self.assertEqual(learner_recovery.build_manifests(pc), [])
 
 
+class TestLearnerAxialSign(unittest.TestCase):
+    def test_reflection_negates_axial_keeps_transverse_and_other_columns(self):
+        import torch
+
+        from lares.envs.isaac_pen_spin.axial_sign import reflect_axial
+
+        sl = cases.obs_slices()
+        obs = torch.rand(5, 157, dtype=torch.float64)
+        q = torch.randn(5, 4, dtype=torch.float64)
+        obs[:, sl["obj_rot"]] = q / q.norm(dim=1, keepdim=True)
+        out = reflect_axial(obs)
+        ax0, tr0 = cases.spin_components(obs[:, sl["obj_rot"]].numpy(), obs[:, sl["obj_angvel"]].numpy())
+        ax1, tr1 = cases.spin_components(out[:, sl["obj_rot"]].numpy(), out[:, sl["obj_angvel"]].numpy())
+        np.testing.assert_allclose(ax1, -ax0, atol=1e-12)
+        np.testing.assert_allclose(tr1, tr0, atol=1e-12)
+        keep = np.setdiff1d(np.arange(157), np.arange(sl["obj_angvel"].start, sl["obj_angvel"].stop))
+        np.testing.assert_array_equal(out[:, keep].numpy(), obs[:, keep].numpy())
+        self.assertTrue(torch.equal(reflect_axial(obs, "identity"), obs))
+
+    def test_source_audit_and_manifest(self):
+        import yaml
+
+        from lares.envs.isaac_pen_spin import axial_sign
+
+        with open("config/shadowhand_spin_stages.yaml") as f:
+            pc = yaml.safe_load(f)["research_protocols"]["learner_axial_sign"]
+        audit = axial_sign.source_audit(pc)
+        self.assertTrue(audit["reads_obj_angvel"] and audit["axial_projection"] and audit["axial_drive"])
+        m = EvaluationManifest.load(pc["manifest"])
+        self.assertEqual((len(m), cases.stage_of(m)), (32, 3))
+        self.assertEqual(axial_sign.build_manifests(pc), [])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,102 @@
+{
+  "id": "R-055",
+  "title": "Train the expert's recovery basin on learner-prefix states",
+  "hypothesis": "PPO fine-tuning from faithfully reconstructed learner-prefix states expands the expert's grasp-recovery basin because training encounters the states where ordinary expert takeover drops the pen.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.2,
+    "against": "baseline",
+    "rationale": "Baseline is equal-budget PPO fine-tuning from expert-prefix states; a 20-point takeover advantage would justify reconsidering expert-generated repair evidence after D-045's failed recovery contrast."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run \"bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study learner_prefix_recovery_ppo --output-dir logs/pen_spin_learner_prefix_recovery_ppo'\"",
+    "seeds": [
+      4600,
+      4601,
+      4602,
+      4603,
+      4604,
+      4605,
+      4606
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_recovery_training_development_s4603.yaml",
+      "config/manifests/pen_spin_recovery_paired_development_s4604_4606.yaml"
+    ],
+    "episodes": 99032,
+    "llm_calls": 0,
+    "code_changes": [
+      "Extend the existing stage script and config to fine-tune the qualified checkpoint using rsl_rl and ShadowHandSpinPPORunnerCfg; do not start another expert-discovery effort.",
+      "Build a 128-case fresh training-prefix bank. Reconstruct states through the qualified closed-loop prefix method, not action-tape replay or an unqualified simulator snapshot.",
+      "Use three paired training replicates. Curriculum arm: 75% learner prefixes and 25% expert prefixes; control: 100% expert prefixes. Both execute 120 frozen prefix steps followed by 240 PPO-controlled steps.",
+      "Give each arm exactly 16384 training episodes per replicate, identical optimizer settings and equal trainable transition budgets; exclude prefix transitions from PPO updates.",
+      "Freeze the learner parent, checkpoint, training curriculum and last-checkpoint selection before evaluation; do not select checkpoints using the evaluation manifests.",
+      "Evaluate both fine-tuned policies and the original qualified expert after learner prefixes on 64 fresh cases per replicate, scoring the existing episode-level sustained-success rule.",
+      "Budget 98304 training episodes, 128 training-bank episodes, 576 evaluation episodes and 24 additional prefix-reproducibility episodes.",
+      "Use paired hierarchical intervals that retain training-replicate variation, and report takeover drops separately without treating spin-rate gains as success gains.",
+      "Freeze and ledger-check all manifest RNG streams before running. Do not replace the expert or collect repair labels in this study.",
+      "Unlike deferred R-052, this changes the expert's training-state distribution rather than filtering its existing corrections; D-045 establishes why the unchanged expert is insufficient."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "An upper paired interval bound below +0.20 refutes the predicted advantage; an interval including zero is not evidence of improvement. Failed closed-loop prefix reproducibility makes the experiment uninterpretable and stops training.",
+  "cost_estimate": {
+    "episodes": 99032,
+    "llm_calls": 0,
+    "wall_time_minutes": 480
+  },
+  "open_question_refs": [
+    6
+  ],
+  "briefing_sha256": "03fe9e5ffce14fae5117120aa9988f43dbf1db7e0531d39df1dba7562d413779",
+  "proposal_call_id": "call_00109",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-27T22:23:02",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-10-27T22:21:15",
+  "direction": "Continue researching the single-step exploration pipeline with plateau-triggered trace repair, extended to pen spinning on the Shadow Hand (Isaac Lab Isaac-ShadowHandSpin-Stage{1,2,3}-Direct-v0, vendored in lares/envs/isaac_pen_spin; 157-d full obs, 20-d action, 60 Hz, 360-step episodes). Expert demonstrations: first try a hand-written scripted spinning controller; also search online for an existing trained pen-spinning policy; if neither qualifies, train an RL expert (rsl_rl PPO on the box). No budget ceiling on GPU hours or LLM calls. Known gaps to turn into questions: the env's spin_rate is roll about the pen's own long axis (not end-over-end twirl), success is per step with no episode rule, and the pipeline (manifests, obs schema, runner, records) is MetaWorld-only today. Debug issues, improve the pipeline, and turn unexpected findings into concrete research questions; document results and limitations.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Changing the expert's training-state distribution is a legitimate recovery-basin experiment, distinct from unchanged-expert takeover and filtering existing corrections. However, spending 99032 episodes and zero LLM calls should follow R-054's 2080-episode test of a route that avoids expert retraining; three training replicates also provide limited resolution of training variability. Reconsider after R-054 establishes whether expert recovery remains a repair-evidence bottleneck, retaining scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml. Falsified_by: the predicted paired_success_difference increase of at least 0.20 against equal-budget expert-prefix PPO fine-tuning is refuted by an upper paired interval bound below +0.20; failed prefix reproducibility instead makes the experiment uninterpretable.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00110",
+          "briefing_sha256": "9f03ab80339af842def825ea8a54304fde5469a86119b376b1618a441880065b",
+          "at": "2026-10-27T22:22:38"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree: depends on R-054.",
+          "changes_applied": [],
+          "at": "2026-10-27T22:23:02"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

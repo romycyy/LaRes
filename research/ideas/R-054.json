@@ -1,0 +1,107 @@
+{
+  "id": "R-054",
+  "title": "Repair with successful traces from the learner's own grasp basin",
+  "hypothesis": "Successful traces from the learner's own grasp distribution produce more transferable symbolic repairs than saturated PPO demonstrations from a different grasp basin.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.15,
+    "against": "baseline",
+    "rationale": "Baseline is an equal-budget expert-trace repair arm; compare final-incumbent sustained success on fresh development cases, paired over eight generation blocks, to test whether demonstration source resolves the documented takeover mismatch."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/pen_spin_plateau_repair.yaml",
+    "command": "gpu run \"bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/pen_spin_plateau_repair.yaml --study self_success_trace_source --output-dir logs/pen_spin_self_success_trace_source'\"",
+    "seeds": [
+      4500,
+      4501,
+      4502,
+      4503,
+      4504,
+      4505,
+      4506,
+      4507
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_self_trace_screen_s4500_4507.yaml",
+      "config/manifests/pen_spin_self_trace_promotion_s4500_4507.yaml",
+      "config/manifests/pen_spin_self_trace_fresh_development_s4500_4507.yaml"
+    ],
+    "episodes": 2080,
+    "llm_calls": 128,
+    "code_changes": [
+      "Add self_success_trace_source to the existing script and config, using the frozen R-051 learner as the common parent.",
+      "Read archived successful learner trajectories without rerunning their spent seeds; compare 32 uniformly selected learner-success keyframes against 32 uniformly selected qualified-expert keyframes, with equal numbers of source episodes and identical field schemas.",
+      "Hold parent code, failure evidence, prompt instructions, editing freedom and candidate budget fixed; change only successful-demonstration source.",
+      "Run an ungated evidence-source component test, not a claimed plateau-trigger benefit: eight independent blocks, four repair candidates per arm, ten screening cases, promotion cases 10-39, and forty disjoint fresh development cases.",
+      "Budget per block: ten parent-screen episodes, eighty candidate-screen episodes, ninety promotion episodes including the shared parent, and eighty final-incumbent fresh episodes.",
+      "Use bc_steps=0 and gpt-6.1-sol with reasoning_effort high and temperature 1; allow at most one linked correction per slot, giving 64 primary calls and at most 64 corrections.",
+      "Require strictly positive promotion differences with paired t lower bounds above zero; retain the parent on ties or failed promotion. Analyse final outcomes with blocks, not individual cases, as the independent units.",
+      "Freeze and ledger-check manifest RNG streams before execution, keeping donor episodes disjoint from all new manifests.",
+      "This differs from R-042's expert-keyframe selection and R-052's expert learner-state corrections: it tests successful within-learner evidence without collecting PPO takeover labels."
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "An upper paired interval bound below +0.15 refutes the predicted improvement; an interval including zero cannot establish a benefit. If archived learner successes cannot supply the predeclared evidence budget without using evaluation cases, do not run the comparison.",
+  "cost_estimate": {
+    "episodes": 2080,
+    "llm_calls": 128,
+    "wall_time_minutes": 240
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "03fe9e5ffce14fae5117120aa9988f43dbf1db7e0531d39df1dba7562d413779",
+  "proposal_call_id": "call_00109",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-10-27T22:22:55",
+    "advisor_call_id": "call_00110",
+    "round": 1,
+    "note": "This directly tests demonstration-source mismatch without repeating expert-keyframe selection or claiming a plateau-trigger benefit. Archived donor adequacy is its weakest point, but the predeclared no-run gate addresses that risk, and block-level analysis avoids treating evaluation cases as indepen"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-10-27T22:22:55",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 1: both say approve"
+    }
+  ],
+  "created_at": "2026-10-27T22:21:15",
+  "direction": "Continue researching the single-step exploration pipeline with plateau-triggered trace repair, extended to pen spinning on the Shadow Hand (Isaac Lab Isaac-ShadowHandSpin-Stage{1,2,3}-Direct-v0, vendored in lares/envs/isaac_pen_spin; 157-d full obs, 20-d action, 60 Hz, 360-step episodes). Expert demonstrations: first try a hand-written scripted spinning controller; also search online for an existing trained pen-spinning policy; if neither qualifies, train an RL expert (rsl_rl PPO on the box). No budget ceiling on GPU hours or LLM calls. Known gaps to turn into questions: the env's spin_rate is roll about the pen's own long axis (not end-over-end twirl), success is per step with no episode rule, and the pipeline (manifests, obs schema, runner, records) is MetaWorld-only today. Debug issues, improve the pipeline, and turn unexpected findings into concrete research questions; document results and limitations.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This directly tests demonstration-source mismatch without repeating expert-keyframe selection or claiming a plateau-trigger benefit. Archived donor adequacy is its weakest point, but the predeclared no-run gate addresses that risk, and block-level analysis avoids treating evaluation cases as independent search replicates. Approve 2080 episodes and at most 128 LLM calls using scripts/run_shadowhand_spin_stages.py and config/pen_spin_plateau_repair.yaml. Falsified_by: the predicted paired_success_difference increase of at least 0.15 against equal-budget expert-trace repair is refuted by an upper paired interval bound below +0.15; an interval including zero establishes no benefit.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00110",
+          "briefing_sha256": "9f03ab80339af842def825ea8a54304fde5469a86119b376b1618a441880065b",
+          "at": "2026-10-27T22:22:38"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Agree; the 7 archived R-051 donor successes are the learner-success source (seed 4310 already spent, read only), and the expert keyframes come from the frozen R-046 demonstration trace.",
+          "changes_applied": [],
+          "at": "2026-10-27T22:22:55"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}
