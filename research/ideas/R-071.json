@@ -25,7 +25,7 @@
     "needs_gpu": false,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The paired interval's upper bound is below +0.5 reversals per second; an interval spanning the threshold is inconclusive, and one spanning zero is not evidence of increased reversals.",
   "cost_estimate": {
@@ -43,17 +43,169 @@
     "round": 3,
     "note": "I accept the implementer's dedicated NumPy audit and corrected gpu run command; both earlier interface objections are resolved. This distinguishes reversals from slower rotation after curl removal using archived data at 0 simulator episodes and 0 LLM calls, although it cannot establish weakened cont"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-11-04T06:13:14",
+    "git_sha": "d43b93cab949c97602c1afb6747c432ac4d12924",
+    "dirty_worktree": false,
+    "log_dir": "logs/pen_spin/r071_axial_reversals",
+    "finished_at": "2026-11-04T06:13:56"
+  },
+  "result": {
+    "metrics": {
+      "phase_transitions": 0.16219949399746816,
+      "phase_transitions_ci95": [
+        0.05139145656102846,
+        0.2730075314339079
+      ],
+      "fresh": {
+        "pairs": 160,
+        "phase_transitions": {
+          "n": 160,
+          "mean": 0.16219949399746816,
+          "se": 0.056105442998078486,
+          "low": 0.05139145656102846,
+          "high": 0.2730075314339079,
+          "p_value": 0.004377897740137006
+        },
+        "win_loss_tie": {
+          "wins": 48,
+          "losses": 50,
+          "ties": 62
+        },
+        "arms": {
+          "zero_curl": {
+            "reversals_per_second": 0.39395636645739784,
+            "held_direction_fraction": 0.9475795834361346,
+            "mean_abs_spin_on_window": 3.918612694860216,
+            "sustained_successes": 52,
+            "drops": 7
+          },
+          "parent": {
+            "reversals_per_second": 0.23175687245992965,
+            "held_direction_fraction": 0.9511585765112066,
+            "mean_abs_spin_on_window": 5.2485079389390545,
+            "sustained_successes": 28,
+            "drops": 21
+          }
+        },
+        "mean_window_steps": 313.33125
+      },
+      "promotion": {
+        "pairs": 30,
+        "phase_transitions": {
+          "n": 30,
+          "mean": -0.029079235480506116,
+          "se": 0.11788139672632995,
+          "low": -0.2701737623212011,
+          "high": 0.21201529136018887,
+          "p_value": 0.8068921150550494
+        },
+        "win_loss_tie": {
+          "wins": 11,
+          "losses": 11,
+          "ties": 8
+        },
+        "arms": {
+          "zero_curl": {
+            "reversals_per_second": 0.34618063470243265,
+            "held_direction_fraction": 0.9330996631448814,
+            "mean_abs_spin_on_window": 5.128173827449801,
+            "sustained_successes": 12,
+            "drops": 1
+          },
+          "parent": {
+            "reversals_per_second": 0.3752598701829388,
+            "held_direction_fraction": 0.9389895257405183,
+            "mean_abs_spin_on_window": 6.396106152065461,
+            "sustained_successes": 6,
+            "drops": 7
+          }
+        },
+        "mean_window_steps": 285.43333333333334
+      },
+      "definitions": {
+        "hysteresis_rad_s": 1.0,
+        "persistence_steps": 3,
+        "control_hz": 60.0,
+        "window": "common pre-drop window: min of the two recorded lengths",
+        "reversal": "change of held direction; a direction is held after persistence consecutive steps beyond the band with one sign"
+      },
+      "episodes": 0,
+      "llm_calls": 0
+    },
+    "controls": {
+      "parent": "the archived R-068 parent traces on the same cases (paired case for case by task hash)",
+      "window": "common pre-drop window per pair (min of the two recorded lengths; mean 313 of 360 steps on fresh, 285 on promotion)",
+      "no_new_data": "archived R-068 traces only; the script exits if any record is missing"
+    },
+    "artifacts": [
+      "logs/pen_spin/r071_axial_reversals/summary.json",
+      "logs/pen_spin/r068_capture_curl_confirmation/parent_fresh.npz",
+      "logs/pen_spin/r068_capture_curl_confirmation/zero_curl_fresh.npz"
+    ],
+    "notes": [
+      "Primary, predeclared (160 fresh pairs): zero-curl minus parent reversal rate +0.1622 [+0.051, +0.273] reversals per in-play second (48 wins, 50 losses, 62 ties). An increase is established, but the upper bound is below the +0.5 threshold: the prediction is refuted. Absolute rates 0.394 vs 0.232 per second, i.e. about 2.1 vs 1.2 reversals over a 5.2-second common window.",
+      "Promotion pairs (30): -0.0291 [-0.270, +0.212], no difference (0.346 vs 0.375 per second).",
+      "Both arms hold a direction on about 95% of in-play steps on both panels; the clamp's mean |spin| on the common window is 3.92 vs 5.25 rad/s on fresh (5.13 vs 6.40 on promotion). The zero-curl controller's slow-spin failures are therefore mostly slower unidirectional rotation, with a small, established increase in direction reversals, not a directional instability.",
+      "Reversal counts cannot establish lost traction as the cause (predeclared limitation); the audit says what the failure looks like, not why.",
+      "Accounting: 0 episodes, 0 LLM calls, about 1 min of CPU on the box. No deviation from the approved protocol."
+    ]
+  },
+  "prediction_outcome": {
+    "metric": "phase_transitions",
+    "before": null,
+    "after": 0.16219949399746816,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.9,
+      "reasoning": "Predicted at least +0.5 reversals per second for the zero-curl clamp against the parent on the 160 archived fresh pairs; observed +0.162 [+0.051, +0.273] (0.394 vs 0.232 per second; 48 wins, 50 losses, 62 ties), upper bound below +0.5, the predeclared refutation, and no difference on the 30 promotion pairs (-0.029 [-0.270, +0.212]). An increase is established but small: about one extra reversal per 5-second window. Both arms hold a direction on 95% of in-play steps, and the clamp's mean |spin| on the common window is 3.92 vs 5.25 rad/s, so its slow-spin failures are slower unidirectional rotation rather than directional instability. Confidence 0.9: exact paired computation on archived data, 160 pairs, definitions frozen.",
+      "cited_artifacts": [],
+      "next_experiment": "The repair target on the zero-curl operating point is spin rate, not direction: R-073 (constant preload) tests whether static compression restores traction; the deferred R-064 (stroke-timing feedback) and R-070 (stroke-synchronous unloading) are the structural candidates for raising spin without reintroducing the reactive curl.",
+      "recorded_at": "2026-11-04T06:13:58",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "Against the archived R-068 parent on the same 160 fresh pairs, phase_transitions increased by +0.1622 reversals/s, with a 95% paired interval of [+0.0514, +0.2730] [logs/pen_spin/r071_axial_reversals/summary.json]. The upper bound is below the predicted +0.5 reversals/s increase, satisfying the predeclared falsifier despite evidence of a smaller increase [logs/pen_spin/r071_axial_reversals/summary.json]. The secondary promotion interval, [-0.2702, +0.2120], includes zero and provides no evidence of a reversal-rate difference [logs/pen_spin/r071_axial_reversals/summary.json]. These measurements refute the predicted magnitude but do not establish weakened directional contact as the cause or show that reversals explain the slow-spin failures [logs/pen_spin/r071_axial_reversals/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r071_axial_reversals/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-04T06:14:19",
+      "call_id": "call_00142"
+    }
+  ],
+  "decision_id": "D-053",
   "history": [
     {
       "at": "2026-11-04T06:13:03",
       "from": "proposed",
       "to": "approved",
       "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-04T06:13:14",
+      "from": "approved",
+      "to": "running",
+      "note": "git d43b93cab9"
+    },
+    {
+      "at": "2026-11-04T06:13:56",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-04T06:14:50",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-053: refuted"
     }
   ],
   "created_at": "2026-11-04T06:03:32",
