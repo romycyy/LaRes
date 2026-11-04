@@ -1,0 +1,112 @@
+{
+  "id": "R-076",
+  "title": "Test nonreciprocal stroke shape on the zero-curl operating point",
+  "hypothesis": "A zero-mean second harmonic breaks reciprocal finger motion and increases axial traction without restoring harmful grasp compression.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.075,
+    "against": "Exact R-068 zero-curl control",
+    "rationale": "Use the predeclared mean success contrast of two opposite harmonic polarities against zero curl; +0.075 would identify stroke shape as a useful lever without selecting the favorable polarity on fresh cases."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --protocol pen_spin_stroke_harmonics --parent config/pen_spin/r046_block3_incumbent --zero-curl-source R-068 --seed 4641 --manifest config/manifests/pen_spin_stroke_harmonics_s4641.yaml --output logs/pen_spin/stroke_harmonics_s4641 --headless'",
+    "seeds": [
+      4641
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stroke_harmonics_s4641.yaml"
+    ],
+    "episodes": 760,
+    "llm_calls": 0,
+    "code_changes": [
+      "Extend the existing Isaac runner with a serial, fixed four-arm protocol: frozen parent, exact zero curl, and two zero-curl harmonic variants.",
+      "For each existing zero-mean periodic gait channel g, substitute g plus or minus 0.25 times its cycle-centered square, then normalize to the original cycle RMS. Freeze frequency, fundamental phase relationships, centering and compression; audit cycle means and unchanged baseline execution offline.",
+      "This changes stroke waveform rather than R-064's feedback-controlled tempo, R-067's relative phases or R-070's contact unloading; original-controller scalar tuning did not test this pathway.",
+      "Freeze 200 development cases and evaluate cases 10-39 plus 40-199, totaling 190 cases per arm. Analyze the fixed mean fresh contrast by case; report each arm's sustained success, drops, spin and drive/action saturation.",
+      "Apply multiplicity-adjusted strict promotion against the frozen parent to the two candidates before inspecting fresh outcomes. Neither zero curl nor a harmonic variant becomes a repair parent without promotion and fresh success/drop confirmation.",
+      "Run only after the preceding protocol finishes or is explicitly skipped; add no cold search, expert retraining or imitation."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The fresh interval's upper bound for the fixed mean contrast is below +0.075; an established drop increase would separately refute the retention-preserving mechanism.",
+  "cost_estimate": {
+    "episodes": 760,
+    "llm_calls": 0,
+    "wall_time_minutes": 160
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "884f36891ecf33391111c95a1100815733a083cc1a45833036a9478895c94f86",
+  "proposal_call_id": "call_00144",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T06:28:11",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 2: both say defer"
+    }
+  ],
+  "created_at": "2026-11-04T06:22:31",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "Waveform shaping is distinct from the deferred tempo and relative-phase interventions, but adding a squared-channel term does not establish nonreciprocity: a memoryless transformation preserves retracing of an already reciprocal gait path. Correct that mechanism before committing 760 episodes and zero LLM calls. Keep the paired_success_difference prediction as an increase of at least 0.075 for the fixed mean of both polarities versus the exact R-068 zero-curl control. An interval upper bound below 0.075 falsifies that prediction, and an established drop increase versus zero curl separately falsifies retention preservation.",
+          "suggested_changes": [
+            "Replace the hypothesis with: 'At zero curl, fixed-RMS waveform shaping redistributes contact loading through the stroke and increases axial traction without increasing drops'; remove the unsupported claim that the transformation breaks reciprocity.",
+            "Extend the existing offline cycle audit to verify each candidate's cycle mean, RMS and joint-target extrema and to quantify clipping on archived development observations before rollout; do not infer executed-action amplitude preservation from gait RMS alone.",
+            "Reuse scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, retain unspent seed 4641 and the 760-episode/zero-LLM cap, and preserve the requirement that preceding protocols finish or are explicitly skipped before execution."
+          ],
+          "priority": 3,
+          "call_id": "call_00145",
+          "briefing_sha256": "784c9e6e7331236ea834ad912ea63f90965108d4125bc0cecb59cd5f1b6e8d05",
+          "at": "2026-11-04T06:24:14"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Defer rather than revise now. I agree with the advisor's objection that a memoryless squared-channel term does not break reciprocity, which means the hypothesis needs a different mechanism statement before the protocol is worth 760 episodes; and the stroke-shaping question should follow the curl question (R-075), because the operating point it should be tested on (zero curl or filtered curl) is not yet known. Re-triage with the revised hypothesis and the extended offline cycle audit once R-075 is decided.",
+          "changes_applied": [],
+          "at": "2026-11-04T06:25:38"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "I accept the implementer's sequencing argument: R-075 may change the appropriate operating point, so committing 760 episodes and zero LLM calls to waveform shaping now is premature. The reciprocity claim remains incorrect; after R-075, re-triage a contact-loading mechanism with the cycle-mean, RMS, extrema and clipping audit, reusing scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml while leaving seed 4641 unspent. The current paired_success_difference prediction is an increase of at least 0.075 for the fixed mean of both polarities versus the exact R-068 zero-curl control; falsified_by: the fresh interval upper bound is below 0.075, with an established drop increase separately refuting retention preservation. Any change of operating point must have its control and contrast frozen before new rollouts.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00146",
+          "briefing_sha256": "29bf9033b979a26eebec1e5b9bbad2b61a8252c2b870098b44dfce0f61c878c2",
+          "at": "2026-11-04T06:27:09"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree: deferred until R-075 fixes the operating point; re-triage with a contact-loading mechanism and the extended offline cycle audit.",
+          "changes_applied": [],
+          "at": "2026-11-04T06:28:11"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": []
+}

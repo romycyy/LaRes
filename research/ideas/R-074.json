@@ -1,0 +1,104 @@
+{
+  "id": "R-074",
+  "title": "Audit whether capture-curl impulses predict drops",
+  "hypothesis": "Abrupt increases in reactive capture curl destabilize retention more than sustained compression at the same level.",
+  "prediction": {
+    "metric": "gate_statistics",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "Level- and state-matched nonspiking parent windows in archived R-068 and R-073 trajectories",
+    "rationale": "Measure the difference in subsequent 30-step drop probability after a one-step curl increase above 0.05 normalized units; a 0.10 excess would justify a causal bandwidth intervention, though association alone would not establish causation."
+  },
+  "protocol": {
+    "script": "scripts/analyse_failures.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'source ~/IsaacLab/source_env.sh && python scripts/analyse_failures.py --config config/shadowhand_spin_stages.yaml --protocol pen_spin_curl_impulse_audit --source-ideas R-068 R-073 --parent config/pen_spin/r046_block3_incumbent --output logs/pen_spin/curl_impulse_audit'",
+    "seeds": [],
+    "manifests": [],
+    "episodes": 0,
+    "llm_calls": 0,
+    "code_changes": [
+      "Extend scripts/analyse_failures.py with the named offline protocol, resolving archived development trajectories through their recorded provenance without rerunning their seeds.",
+      "Reconstruct raw curl with an archived-action identity gate; match nonoverlapping windows on curl level, contact, centering, spin and episode time, and bootstrap by episode.",
+      "Report matching coverage and separate spike risk from curl-level risk. D-054 tested constant compression, not command increments; D-048/D-049 already settle the requested original-controller scalar comparison."
+    ],
+    "needs_gpu": false,
+    "needs_llm": false
+  },
+  "status": "rejected",
+  "source": "advisor",
+  "falsified_by": "The episode-clustered 95% interval's upper bound for the matched drop-risk difference is below 0.10; inadequate matching overlap makes the audit inconclusive.",
+  "cost_estimate": {
+    "episodes": 0,
+    "llm_calls": 0,
+    "wall_time_minutes": 15
+  },
+  "open_question_refs": [
+    9,
+    10
+  ],
+  "briefing_sha256": "884f36891ecf33391111c95a1100815733a083cc1a45833036a9478895c94f86",
+  "proposal_call_id": "call_00144",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T06:28:06",
+      "from": "proposed",
+      "to": "rejected",
+      "note": "triage round 2: both say reject"
+    }
+  ],
+  "created_at": "2026-11-04T06:22:31",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This distinguishes command-increment risk from the compression-level effect tested by D-054, using scripts/analyse_failures.py and config/shadowhand_spin_stages.yaml at zero simulator episodes and zero LLM calls. Its weakest point is residual confounding by deteriorating grasp state, so even a positive association would motivate—not establish—a causal intervention. The gate_statistics prediction is an increase of at least 0.10 in subsequent drop probability versus matched nonspiking parent windows; an interval upper bound below 0.10 falsifies it, while inadequate matching overlap is inconclusive.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00145",
+          "briefing_sha256": "784c9e6e7331236ea834ad912ea63f90965108d4125bc0cecb59cd5f1b6e8d05",
+          "at": "2026-11-04T06:24:14"
+        },
+        "implementer": {
+          "position": "reject",
+          "reasoning": "Reject, in favour of running the intervention it is meant to gate. (1) The audit is associational by construction: windows after a one-step curl increase are compared with windows matched on curl level, contact, centring, spin and episode time, but a curl increase is itself the parent's response to deteriorating contact or centring (extra_curl = capture_curl ((1 - contact) + 0.75 (1 - retained))), so the spike and the drop share a cause that no matching on those same gates removes; the advisor's own triage says a positive result would motivate, not establish, a causal intervention. (2) The intervention is cheaper than the audit. R-075 is three arms on one 200-case manifest, six fresh processes, about six minutes of simulator time with the machinery R-068/R-073 already use (one-line audited substitution, offline identity gate), and it answers the causal question directly with a paired interval: does low-pass filtering the reactive curl keep the parent's spin and the clamp's retention. The audit needs a new matching and episode-bootstrap implementation with many analyst choices (window length, spike threshold 0.05, matching tolerances) whose result would then be used only to decide whether to spend those six minutes. (3) The decision it gates is not sensitive to its answer: if the audit found no association, R-075 would still be the only untried way to keep both the static and the dynamic benefits that D-054 showed cancel at the median level; if it found one, R-075 runs. An offline analysis that cannot change the next action is not worth a protocol. If the filtered controller fails, the archived R-075 traces would still allow the impulse audit afterwards at zero cost, with the intervention's own result as the causal anchor.",
+          "changes_applied": [],
+          "at": "2026-11-04T06:25:32"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "reject",
+          "reasoning": "I accept the implementer's decisive argument: this association cannot establish impulse causality, and neither a positive nor negative result would change the next decision to test R-075. Extending scripts/analyse_failures.py with config/shadowhand_spin_stages.yaml costs zero episodes and zero LLM calls, but introduces matching choices without sufficient decision value. The gate_statistics prediction remains an increase of at least 0.10 in subsequent drop probability versus matched nonspiking parent windows from archived R-068/R-073; falsified_by: its episode-clustered interval upper bound is below 0.10, while inadequate overlap is inconclusive. Re-propose only if an unresolved question after R-075 would change the next intervention and this audit could discriminate the alternatives.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00146",
+          "briefing_sha256": "29bf9033b979a26eebec1e5b9bbad2b61a8252c2b870098b44dfce0f61c878c2",
+          "at": "2026-11-04T06:27:09"
+        },
+        "implementer": {
+          "position": "reject",
+          "reasoning": "Agree: rejected. The impulse audit can be run at zero cost on the R-075 traces afterwards if an unresolved question then depends on it.",
+          "changes_applied": [],
+          "at": "2026-11-04T06:28:06"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "reject",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": []
+}

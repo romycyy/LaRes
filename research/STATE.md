@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-04T06:19:07 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-04T06:28:11 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -11,15 +11,16 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 0 |
+| approved | 1 |
 | proposed | 0 |
-| deferred | 13 |
+| deferred | 14 |
 | decided | 54 |
-| rejected | 6 |
+| rejected | 7 |
 
 ## Needs attention
 
-- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
+- **R-075** [approved] Conditionally smooth reactive curl without removing steady compression
+  - `python scripts/research.py start R-075` then run its command
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
@@ -36,6 +37,7 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 - R-069 2. Test whether curl removal prevents damage or recovers the grasp: This 272-episode, zero-LLM diagnostic becomes useful only after R-068 qualifies the exact reset clamp; it differs from D-045 by testing the newly identified wit
 - R-070 3. Repair slow spin with stroke-synchronous contact unloading: Stroke-synchronous contact unloading is distinct from the deferred timing, relative-phase, and clipping repairs, but its 1,210 episodes and at most 32 LLM calls
 - R-072 2. Test redundant stabilization after capture-curl removal: The zero-curl operating point leaves a genuine redundancy question that D-051's parent-controller lesions did not settle. However, 480 episodes and zero LLM cal
+- R-076 Test nonreciprocal stroke shape on the zero-curl operating point: I accept the implementer's sequencing argument: R-075 may change the appropriate operating point, so committing 760 episodes and zero LLM calls to waveform shap
 
 ## Last 5 decisions
 
@@ -57,11 +59,11 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
-- R-071 round 3 · advisor approve / implementer approve → agreed (approved)
-- R-073 round 2 · advisor approve / implementer approve → agreed (approved)
-- R-071 round 2 · advisor revise / implementer revise → agreed (proposed)
-- R-073 round 1 · advisor approve / implementer revise → disagreed (proposed)
-- R-071 round 1 · advisor approve / implementer revise → disagreed (proposed)
+- R-076 round 2 · advisor defer / implementer defer → agreed (deferred)
+- R-075 round 2 · advisor approve / implementer approve → agreed (approved)
+- R-074 round 2 · advisor reject / implementer reject → agreed (rejected)
+- R-076 round 1 · advisor revise / implementer defer → disagreed (proposed)
+- R-075 round 1 · advisor defer / implementer revise → disagreed (proposed)
 
 ## Standing constraints
 

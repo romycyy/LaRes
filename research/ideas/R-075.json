@@ -1,0 +1,155 @@
+{
+  "id": "R-075",
+  "title": "Conditionally smooth reactive curl without removing steady compression",
+  "hypothesis": "Low-pass filtering capture curl preserves useful steady traction while suppressing compression impulses that eject the pen.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "config/pen_spin/r046_block3_incumbent",
+    "rationale": "A 0.10 fresh sustained-success gain would make preserving compression dynamics worth pursuing; D-054's constant preload removed feedback entirely and therefore does not settle bandwidth reduction."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r075_curl_bandwidth --log-dir logs/pen_spin/r075_curl_bandwidth\"'",
+    "seeds": [
+      4642
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_r075_block_s4642.yaml"
+    ],
+    "episodes": 570,
+    "llm_calls": 0,
+    "code_changes": [
+      "New study module lares/envs/isaac_pen_spin/curl_bandwidth.py registered as --study r075_curl_bandwidth in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent config/pen_spin/r046_block3_incumbent (hashes checked), no fitting, parameters unchanged. No activation gate on any audit.",
+      "Filter, frozen: a first-order low-pass on extra_curl alone, y_t = y_{t-1} + alpha (x_t - y_{t-1}), alpha = dt / (tau + dt) with tau = 100 ms and dt = 1/60 s (alpha = 0.142857), kept per environment and initialised to the first raw value at reset; applied by one audited source substitution that wraps the extra_curl expression. Stroke, centring, rotation correction, parameters and execution unchanged; no search over the constant.",
+      "Identity gate, offline, before any episode: the wrapped source with alpha = 1 (the wrapper returns the raw value exactly) reproduces the parent's actions bit for bit on D-050's archived parent observations. Source audit as R-065.",
+      "Arms on one frozen 200-case Stage-3 manifest (seed 4642; cases 0-9 unused, promotion 10-39, fresh 40-199; placement-disjoint from every committed pen-spin manifest): parent; zero_curl (the exact R-068 clamp, a control); filtered_curl. Each arm runs each panel in its own fresh process: six processes, 570 evaluated episodes, zero LLM calls.",
+      "Primary: filtered_curl minus parent fresh sustained success (160 pairs), 95% t interval; prediction at least +0.10; supported if the mean is at least +0.10 and the lower bound is above zero; refuted if the upper bound is below +0.10 or if the filtered arm has an established drop increase against the parent; otherwise inconclusive. Secondary: filtered_curl minus zero_curl on both panels (retention kept, spin restored?), zero_curl minus parent (replication), and the raw versus filtered mean curl on recorded in-play steps. Repair qualification: strict promotion against both controls on the 30 promotion cases, fresh lower bound above zero against both, no observed drop increase against either on either panel.",
+      "Reported per panel and arm: sustained success, paired success and drop differences with intervals and win/loss/tie, failure split (drops, off-centre, slow spin), in-play mean |spin|, drive and per-axis executed-action saturation over recorded in-play steps. bc_steps 0, no imitation, no LLM repair, held-out split untouched."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "The fresh paired interval's upper bound is below +0.10, or the filtered controller has an established increase in drops; an interval spanning zero is inconclusive, not improvement.",
+  "cost_estimate": {
+    "episodes": 570,
+    "llm_calls": 0,
+    "wall_time_minutes": 20
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "884f36891ecf33391111c95a1100815733a083cc1a45833036a9478895c94f86",
+  "proposal_call_id": "call_00144",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-04T06:28:08",
+    "advisor_call_id": "call_00146",
+    "round": 2,
+    "note": "I accept removal of the R-074 activation gate and approve the applied revision: the frozen filter directly tests a dynamic compression intervention that D-054's constant preload did not settle. Reuse scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml on unspent seed 4642, c"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T06:28:08",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 2: both say approve"
+    }
+  ],
+  "created_at": "2026-11-04T06:22:31",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Filtering reactive compression is distinct from replacing it with D-054's constant preload, but its 570-episode, zero-LLM spend should wait for R-074. The weakest point is its activation gate: a point estimate alone cannot establish an association when the paired interval includes zero. Its paired_success_difference prediction is an increase of at least 0.10 versus config/pen_spin/r046_block3_incumbent; an upper bound below 0.10 or an established increase in drops falsifies it. Retain the existing runner and config, and reconsider execution only after the audit provides adequate matching coverage and a positive association interval.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00145",
+          "briefing_sha256": "784c9e6e7331236ea834ad912ea63f90965108d4125bc0cecb59cd5f1b6e8d05",
+          "at": "2026-11-04T06:24:14"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Revise and run now rather than defer: this is the direct test of D-054's split (static compression keeps spin, reactive compression loses the pen), it costs 570 episodes in six processes (about six minutes), and its activation gate on R-074 should be dropped because an associational audit on the same gates cannot establish the causal claim this protocol tests directly (see my R-074 position). Edits: (1) interfaces: --study r075_curl_bandwidth with --log-dir and a config block; manifest config/manifests/pen_spin_stage3_r075_block_s4642.yaml on seed 4642 (4640 is declared by the deferred R-070), 200 cases, cases 0-9 unused, promotion 10-39, fresh 40-199, placement-disjoint from every committed pen-spin manifest; (2) the filter, frozen: a first-order low-pass on extra_curl alone, y_t = y_{t-1} + alpha (x_t - y_{t-1}) with alpha = dt / (tau + dt), tau = 100 ms, dt = 1/60 s (alpha = 0.1429), per environment, initialised to the first raw value at reset, applied by one audited source substitution that wraps the extra_curl expression; stroke, centring, rotation correction, parameters and execution unchanged; no filter constant search; (3) identity gate offline on D-050's archived observations with alpha = 1 (the wrapper returns the raw value exactly), bit for bit; (4) arms: parent, exact zero-curl clamp (control), filtered curl; each arm on each panel in its own process; (5) prediction unchanged: filtered minus parent fresh success at least +0.10, supported if the mean is at least +0.10 with the lower bound above zero, refuted if the upper bound is below +0.10, or if the filtered arm has an established drop increase against the parent; secondary: filtered minus zero-curl on both panels (does the filter keep the clamp's retention while restoring spin?) and raw versus filtered mean curl; repair qualification as R-073 (strict promotion against both controls, fresh lower bound above zero against both, no observed drop increase against either on either panel).",
+          "changes_applied": [
+            "--study r075_curl_bandwidth --log-dir; config block; manifest s4642 (4640 is R-070's)",
+            "activation gate on R-074 dropped",
+            "filter frozen: first-order low-pass on extra_curl, tau 100 ms, alpha 0.1429 at 60 Hz, init to first raw value, per environment",
+            "identity gate alpha = 1 bit for bit on archived observations"
+          ],
+          "at": "2026-11-04T06:25:34"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept removal of the R-074 activation gate and approve the applied revision: the frozen filter directly tests a dynamic compression intervention that D-054's constant preload did not settle. Reuse scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml on unspent seed 4642, capped at 570 episodes and zero LLM calls; the weakest point is that lag and changed closed-loop curl levels prevent attributing any gain exclusively to impulse suppression. The paired_success_difference prediction is an increase of at least 0.10 versus config/pen_spin/r046_block3_incumbent, supported only with that mean gain and an interval lower bound above zero; falsified_by: an upper bound below 0.10 or an established drop increase versus the parent. Keep the offline identity gate, strict promotion and fresh confirmation against both controls, no observed drop increase on either panel, bc_steps 0, and the final-test lock exactly as written.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00146",
+          "briefing_sha256": "29bf9033b979a26eebec1e5b9bbad2b61a8252c2b870098b44dfce0f61c878c2",
+          "at": "2026-11-04T06:27:09"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve the revised record: parent, exact zero-curl clamp and the 100 ms low-pass on extra_curl (alpha 0.1429 at 60 Hz, per environment, initialised to the first raw value) on the frozen 200-case seed-4642 manifest, offline identity gate at alpha 1 first, six processes, 570 evaluated episodes, zero LLM calls, support and refutation rules as written, repair qualification against both controls, final test locked. Implementing and running now.",
+          "changes_applied": [],
+          "at": "2026-11-04T06:28:08"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-04T06:25:36",
+      "round": 1,
+      "patch": {
+        "protocol": {
+          "script": "scripts/run_shadowhand_spin_stages.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r075_curl_bandwidth --log-dir logs/pen_spin/r075_curl_bandwidth\"'",
+          "seeds": [
+            4642
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_r075_block_s4642.yaml"
+          ],
+          "episodes": 570,
+          "llm_calls": 0,
+          "code_changes": [
+            "New study module lares/envs/isaac_pen_spin/curl_bandwidth.py registered as --study r075_curl_bandwidth in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent config/pen_spin/r046_block3_incumbent (hashes checked), no fitting, parameters unchanged. No activation gate on any audit.",
+            "Filter, frozen: a first-order low-pass on extra_curl alone, y_t = y_{t-1} + alpha (x_t - y_{t-1}), alpha = dt / (tau + dt) with tau = 100 ms and dt = 1/60 s (alpha = 0.142857), kept per environment and initialised to the first raw value at reset; applied by one audited source substitution that wraps the extra_curl expression. Stroke, centring, rotation correction, parameters and execution unchanged; no search over the constant.",
+            "Identity gate, offline, before any episode: the wrapped source with alpha = 1 (the wrapper returns the raw value exactly) reproduces the parent's actions bit for bit on D-050's archived parent observations. Source audit as R-065.",
+            "Arms on one frozen 200-case Stage-3 manifest (seed 4642; cases 0-9 unused, promotion 10-39, fresh 40-199; placement-disjoint from every committed pen-spin manifest): parent; zero_curl (the exact R-068 clamp, a control); filtered_curl. Each arm runs each panel in its own fresh process: six processes, 570 evaluated episodes, zero LLM calls.",
+            "Primary: filtered_curl minus parent fresh sustained success (160 pairs), 95% t interval; prediction at least +0.10; supported if the mean is at least +0.10 and the lower bound is above zero; refuted if the upper bound is below +0.10 or if the filtered arm has an established drop increase against the parent; otherwise inconclusive. Secondary: filtered_curl minus zero_curl on both panels (retention kept, spin restored?), zero_curl minus parent (replication), and the raw versus filtered mean curl on recorded in-play steps. Repair qualification: strict promotion against both controls on the 30 promotion cases, fresh lower bound above zero against both, no observed drop increase against either on either panel.",
+            "Reported per panel and arm: sustained success, paired success and drop differences with intervals and win/loss/tie, failure split (drops, off-centre, slow spin), in-play mean |spin|, drive and per-axis executed-action saturation over recorded in-play steps. bc_steps 0, no imitation, no LLM repair, held-out split untouched."
+          ],
+          "needs_gpu": true,
+          "needs_llm": false
+        },
+        "cost_estimate": {
+          "episodes": 570,
+          "llm_calls": 0,
+          "wall_time_minutes": 20
+        }
+      },
+      "note": "Round 1 implementer revision: --study interface, seed 4642 (4640 is R-070's), frozen filter definition, offline identity gate, no activation gate on R-074."
+    }
+  ]
+}

@@ -1113,3 +1113,74 @@ class TestConstantPreload(unittest.TestCase):
         agg = cp.aggregate(r, sats)
         self.assertTrue(agg["prediction"]["refuted"])
         self.assertFalse(agg["qualifies_repair_parent"])
+
+
+class TestCurlBandwidth(unittest.TestCase):
+    """R-075: the wrapped source, the stateful filter, the identity at alpha 1, manifest and rule."""
+
+    @classmethod
+    def setUpClass(cls):
+        import yaml
+
+        with open("config/shadowhand_spin_stages.yaml") as f:
+            cls.pc = yaml.safe_load(f)["research_protocols"]["r075_curl_bandwidth"]
+
+    def test_filter_identity_and_lag(self):
+        import torch
+
+        from lares.envs.isaac_pen_spin import curl_bandwidth as cb
+        from lares.envs.isaac_pen_spin.learner_recovery import make_learner
+
+        self.assertAlmostEqual(cb.alpha_for(0.1), (1 / 60) / (0.1 + 1 / 60))
+        with open(self.pc["learner"]["source"]) as f:
+            src = f.read()
+        self.assertIn("extra_curl = self._curl_filter(self.capture_curl * (", cb.substituted_source(src))
+        obs = TestStrokeLesion._contact_obs(self, 3)
+        obs[:, cases.obs_slices()["fingertip_pos"]] += 0.03
+        parent = make_learner(self.pc)
+        a = parent(obs, 0, None)
+        ident = cb.FilteredCurlController(self.pc, 1.0, "i")
+        ident.reset(None)
+        self.assertTrue(torch.equal(a, ident(obs, 0, None)))
+        self.assertTrue(torch.equal(a, ident(obs, 1, None)))
+        filt = cb.make_controller("filtered_curl", self.pc)
+        filt.reset(None)
+        first = filt(obs, 0, None)                                   # initialised to the first raw value: equals parent
+        self.assertTrue(torch.equal(a, first))
+        obs2 = obs.clone()
+        obs2[:, cases.obs_slices()["fingertip_pos"]] += 0.05        # contact drops: raw curl jumps
+        lagged = filt(obs2, 1, None)
+        raw = parent(obs2, 0, None)
+        self.assertFalse(torch.allclose(lagged, raw))                 # the filtered arm lags the parent's jump
+        filt.reset(None)
+        self.assertTrue(torch.equal(filt(obs2, 0, None), raw))      # reset: first raw value again
+        self.assertIn("curl_means", filt.params)
+        self.assertGreater(filt.params["curl_means"]["values"], 0)
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "a.npz")
+            np.savez(p, obs=obs.unsqueeze(1).repeat(1, 2, 1).numpy(), length=np.array([2, 2, 1]))
+            self.assertTrue(cb.offline_identity_gate(self.pc, p)["passes"])
+
+    def test_manifest_and_rule(self):
+        from lares.envs.isaac_pen_spin import curl_bandwidth as cb
+
+        self.assertEqual(cb.build_manifests(self.pc), [])
+        self.assertEqual(len(EvaluationManifest.load(self.pc["manifest"])), 200)
+
+        def rows(succ, drops, n):
+            return [{"task_hash": f"h{i}", "sustained": i < succ, "completed": i < n - drops, "tail_hit_fraction": 0.0,
+                     "hit_steps": 0, "length": 360, "mean_abs_spin": 5.0, "mean_transverse": 1.0, "final_center_dist": 0.01}
+                    for i in range(n)]
+
+        sat = {"in_play_steps": 1, "drive_saturated_fraction": 0.9, "action_saturated_fraction": 0.1,
+               "action_saturated_by_axis": [0.1] * 20, "drive_unsaturated_fraction_per_case": [0.1], "note": ""}
+        sats = {a: {p: sat for p in cb.PANELS} for a in cb.ARMS}
+        r = {"parent": {"promotion": rows(6, 7, 30), "fresh": rows(28, 21, 160)},
+             "zero_curl": {"promotion": rows(12, 1, 30), "fresh": rows(52, 7, 160)},
+             "filtered_curl": {"promotion": rows(22, 1, 30), "fresh": rows(90, 5, 160)}}
+        agg = cb.aggregate(r, sats)
+        self.assertTrue(agg["prediction"]["supported"] and agg["qualifies_repair_parent"])
+        r["filtered_curl"] = {"promotion": rows(20, 1, 30), "fresh": rows(70, 40, 160)}   # gain but more drops
+        agg = cb.aggregate(r, sats)
+        self.assertTrue(agg["prediction"]["refuted"])
+        self.assertFalse(agg["qualifies_repair_parent"])
