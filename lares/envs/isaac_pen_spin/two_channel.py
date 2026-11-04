@@ -15,6 +15,9 @@ that spent episodes is never rerun):
 3. ``summary.json``: primary two_channel minus baseline on fresh final incumbents, paired over the eight blocks;
    stage-stratified means, cold-search base rates (candidates with any screen success; blocks promoting) and plateau
    eligibility (blocks where every candidate of an arm scored zero on the screen and nothing promoted).
+
+Since 2026-11-03 (after R-049 ran), every (block, arm) generation is queued at the start and runs concurrently
+(``llm_pool``, ``llm_workers``). The Isaac steps keep the order above, one process at a time.
 """
 
 from __future__ import annotations
@@ -162,20 +165,38 @@ def generate_slots(arm: str, env_id: str, adir: str, client, model: str, reasoni
             "prompt_sha256": sha256_text(gen.user_content)}
 
 
-def run_arm(arm: str, ccfg: dict, stage: int, roles: dict, null: dict, bdir: str, stream_factory, client) -> dict:
+def arm_needs_generation(bdir: str, arm: str) -> bool:
+    """False once the arm is finished; refuses an arm interrupted after spending episodes (never rerun)."""
+    adir = os.path.join(bdir, arm)
+    if os.path.exists(os.path.join(adir, "arm.json")):
+        return False
+    if os.path.exists(os.path.join(adir, "isaac")):
+        raise SystemExit(f"{adir} was interrupted after spending episodes; an interrupted arm is not rerun")
+    return True
+
+
+def generate_arm(arm: str, ccfg: dict, stage: int, bdir: str, client) -> dict:
+    """The arm's four slots; no episode. Safe on a worker thread (``llm_pool``)."""
+    from lares.envs.isaac_pen_spin import llm_pool
+
+    adir = os.path.join(bdir, arm)
+    env_id = cases.STAGES[stage].task_id
+    os.makedirs(adir, exist_ok=True)
+    return llm_pool.generate_once(adir, env_id, lambda: generate_slots(
+        arm, env_id, adir, client, ccfg["model"], ccfg["reasoning_effort"], int(ccfg.get("max_calls_per_slot", 2))))
+
+
+def run_arm(arm: str, ccfg: dict, stage: int, roles: dict, null: dict, bdir: str, stream_factory, client,
+            generated: dict | None = None) -> dict:
     from lares.eval.promotion import compare_to_incumbent
     from lares.eval.runner import PolicyActor
     from lares.fitting.checkpoints import RolloutScore, is_better_checkpoint
 
     adir = os.path.join(bdir, arm)
     path = os.path.join(adir, "arm.json")
-    if os.path.exists(path):
+    if not arm_needs_generation(bdir, arm):
         return json.load(open(path))
-    if os.path.exists(os.path.join(adir, "isaac")):
-        raise SystemExit(f"{adir} was interrupted after spending episodes; an interrupted arm is not rerun")
-    env_id = cases.STAGES[stage].task_id
-    g = generate_slots(arm, env_id, adir, client, ccfg["model"], ccfg["reasoning_effort"],
-                       int(ccfg.get("max_calls_per_slot", 2)))
+    g = generated or generate_arm(arm, ccfg, stage, bdir, client)
     out = {"arm": arm, "stage": stage, "llm_calls": g["llm_calls"], "llm_tokens": g["llm_tokens"],
            "prompt_sha256": g["prompt_sha256"],
            "slots": [{k: v for k, v in s.items() if k != "policy"} for s in g["slots"]]}
@@ -266,16 +287,28 @@ def run_study(ccfg: dict, stream_factory, client) -> dict:
     sdir = ccfg["study_dir"]
     os.makedirs(sdir, exist_ok=True)
     freeze_manifests(ccfg)
+    from lares.envs.isaac_pen_spin import llm_pool
+
+    plan = block_stages(ccfg)
     blocks = []
-    for b, (stage, seed) in enumerate(block_stages(ccfg)):
-        roles = block_roles(stage, seed)
-        bdir = os.path.join(sdir, f"block{b}")
-        null = run_null(roles, bdir, stream_factory, stage)
-        row = {"block": b, "stage": stage, "seed": seed,
-               "null": {k: null[k] for k in ROLES}}
-        row["arms"] = {arm: run_arm(arm, ccfg, stage, roles, null, bdir, stream_factory, client) for arm in ARMS}
-        blocks.append(row)
-        json.dump(summarise(blocks), open(os.path.join(sdir, "summary.partial.json"), "w"), indent=2, default=str)
+    with llm_pool.pool_for(ccfg) as pool:
+        # Cold prompts depend on no episode, so every (block, arm) generation is queued before any Isaac work.
+        for b, (stage, _) in enumerate(plan):
+            bdir = os.path.join(sdir, f"block{b}")
+            for arm in ARMS:
+                if arm_needs_generation(bdir, arm):
+                    pool.submit((b, arm), generate_arm, arm, ccfg, stage, bdir, client)
+        for b, (stage, seed) in enumerate(plan):
+            roles = block_roles(stage, seed)
+            bdir = os.path.join(sdir, f"block{b}")
+            null = run_null(roles, bdir, stream_factory, stage)
+            row = {"block": b, "stage": stage, "seed": seed,
+                   "null": {k: null[k] for k in ROLES}}
+            row["arms"] = {arm: run_arm(arm, ccfg, stage, roles, null, bdir, stream_factory, client,
+                                        generated=pool.result((b, arm)) if (b, arm) in pool.pending() else None)
+                           for arm in ARMS}
+            blocks.append(row)
+            json.dump(summarise(blocks), open(os.path.join(sdir, "summary.partial.json"), "w"), indent=2, default=str)
     summary = summarise(blocks)
     with open(os.path.join(sdir, "summary.json"), "w") as f:
         json.dump(summary, f, indent=2, default=str)

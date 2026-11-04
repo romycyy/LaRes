@@ -12,6 +12,7 @@ each field against the value the simulator reports for it.
 
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass
 
 import numpy as np
@@ -262,30 +263,40 @@ def get_obs_schema(env_id: str) -> ObsSchema:
 # ---------------------------------------------------------------------------
 
 _ACTIVE: ObsSchema | None = None
+#: Per-thread stack of schemas bound by :class:`active_schema`. Concurrent generation (several studies' LLM slots on
+#: worker threads) constructs policies at the same time; a single global binding would let one thread's ``__exit__``
+#: unbind the schema while another thread is mid-construction.
+_LOCAL = threading.local()
 
 
 def set_active_schema(schema: ObsSchema | None) -> None:
-    """Bind the schema new :class:`SymbolicPolicy` instances will read through."""
+    """Bind the process-wide schema new :class:`SymbolicPolicy` instances will read through.
+
+    An :class:`active_schema` block on the current thread takes precedence over this binding while it is open.
+    """
     global _ACTIVE
     _ACTIVE = schema
 
 
 def get_active_schema() -> ObsSchema | None:
+    stack = getattr(_LOCAL, "stack", None)
+    if stack:
+        return stack[-1]
     return _ACTIVE
 
 
 class active_schema:
-    """Context manager binding a schema for the duration of a block."""
+    """Context manager binding a schema for the duration of a block, on the current thread only."""
 
     def __init__(self, schema: ObsSchema | None):
         self.schema = schema
-        self._previous: ObsSchema | None = None
 
     def __enter__(self) -> ObsSchema | None:
-        self._previous = get_active_schema()
-        set_active_schema(self.schema)
+        if not hasattr(_LOCAL, "stack"):
+            _LOCAL.stack = []
+        _LOCAL.stack.append(self.schema)
         return self.schema
 
     def __exit__(self, *exc) -> None:
-        set_active_schema(self._previous)
+        _LOCAL.stack.pop()
         return None

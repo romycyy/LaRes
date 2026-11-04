@@ -25,6 +25,10 @@ Eight blocks, one frozen 80-case Stage-3 manifest each (seeds 4500-4507), split 
    checkpoint tie rule is scored on the promotion cases and replaces the parent only under the strict paired rule.
 3. ``fresh``: each arm's final incumbent on the 40 fresh cases (the parent's fresh score is shared when an arm keeps it).
 
+Since 2026-11-03 (after R-054 ran), the arms' generation runs concurrently (``llm_pool``, ``llm_workers``). Every
+block's parent is scored first, and its arms are queued for generation as soon as its screen exists. The Isaac steps
+then run in the order above, one process at a time, on the calling thread.
+
 Primary: self minus expert fresh final-incumbent success, paired over the eight blocks (blocks are the units).
 """
 
@@ -313,25 +317,43 @@ def _parent_like(record: dict, manifest, returns: list[float]):
     return res
 
 
+def arm_needs_generation(bdir: str, arm: str) -> bool:
+    """False once the arm is finished; refuses an arm interrupted after spending episodes (never rerun)."""
+    adir = os.path.join(bdir, arm)
+    if os.path.exists(os.path.join(adir, "arm.json")):
+        return False
+    if os.path.exists(os.path.join(adir, "isaac")):
+        raise SystemExit(f"{adir} was interrupted after spending episodes; an interrupted arm is not rerun")
+    return True
+
+
+def generate_arm(arm: str, scfg: dict, parent_rec: dict, parent_source: str, params: dict, evidence: dict,
+                 bdir: str, client) -> tuple[dict, dict]:
+    """The arm's request and its ``SLOTS`` repairs; no episode. Safe on a worker thread (``llm_pool``)."""
+    from lares.envs.isaac_pen_spin import llm_pool
+
+    adir = os.path.join(bdir, arm)
+    request, pk = repair_request(arm, parent_source, params, parent_rec["screen"], evidence)
+    os.makedirs(adir, exist_ok=True)
+    with open(os.path.join(adir, "request.txt"), "w", encoding="utf-8") as f:
+        f.write(request)
+    g = llm_pool.generate_once(adir, cases.STAGES[STAGE].task_id, lambda: generate(
+        arm, request, pk, adir, client, scfg["model"], scfg["reasoning_effort"], int(scfg.get("max_calls_per_slot", 2))))
+    return pk, g
+
+
 def run_arm(arm: str, scfg: dict, roles: dict, parent_rec: dict, parent_source: str, params: dict, evidence: dict,
-            bdir: str, stream_factory, client) -> dict:
-    """Generate, screen, promote against the parent. Fresh scoring is a separate step (``run_fresh``)."""
+            bdir: str, stream_factory, client, generated: tuple[dict, dict] | None = None) -> dict:
+    """Generate (unless ``generated`` is given), screen, promote against the parent. Fresh scoring is ``run_fresh``."""
     from lares.eval.promotion import compare_to_incumbent
     from lares.eval.runner import PolicyActor
     from lares.fitting.checkpoints import RolloutScore, is_better_checkpoint
 
     adir = os.path.join(bdir, arm)
     path = os.path.join(adir, "arm.json")
-    if os.path.exists(path):
+    if not arm_needs_generation(bdir, arm):
         return json.load(open(path))
-    if os.path.exists(os.path.join(adir, "isaac")):
-        raise SystemExit(f"{adir} was interrupted after spending episodes; an interrupted arm is not rerun")
-    request, pk = repair_request(arm, parent_source, params, parent_rec["screen"], evidence)
-    os.makedirs(adir, exist_ok=True)
-    with open(os.path.join(adir, "request.txt"), "w", encoding="utf-8") as f:
-        f.write(request)
-    g = generate(arm, request, pk, adir, client, scfg["model"], scfg["reasoning_effort"],
-                 int(scfg.get("max_calls_per_slot", 2)))
+    pk, g = generated or generate_arm(arm, scfg, parent_rec, parent_source, params, evidence, bdir, client)
     out = {"arm": arm, "packet": pk, "llm_calls": g["llm_calls"], "llm_tokens": g["llm_tokens"],
            "slots": [{k: v for k, v in s.items() if k != "policy"} for s in g["slots"]]}
     valid = [(s["slot"], s["policy"]) for s in g["slots"] if s["valid"]]
@@ -445,17 +467,32 @@ def run_study(scfg: dict, stream_factory, client) -> dict:
     parent = load_parent(scfg)
     parent_source = parent._generated_source
     params = parent_parameters(parent)
+    from lares.envs.isaac_pen_spin import llm_pool
+
+    seeds = [int(s) for s in scfg["block_seeds"]]
     blocks = []
-    for b, seed in enumerate(int(s) for s in scfg["block_seeds"]):
-        roles = block_roles(seed)
-        bdir = os.path.join(sdir, f"block{b}")
-        prec = run_parent(parent, roles, bdir, stream_factory)
-        arms = {arm: run_arm(arm, scfg, roles, prec, parent_source, params, evidence, bdir, stream_factory, client)
-                for arm in ARMS}
-        fresh = run_fresh(arms, parent, roles, bdir, stream_factory)
-        blocks.append({"block": b, "seed": seed, "parent": {k: prec[k] for k in ("screen", "promotion")},
-                       "arms": arms, "fresh": {arm: fresh[arm] for arm in ARMS}})
-        json.dump(summarise(blocks), open(os.path.join(sdir, "summary.partial.json"), "w"), indent=2, default=str)
+    with llm_pool.pool_for(scfg) as pool:
+        # Every block's parent first (two short Isaac processes each). Each block's arm generations are queued as
+        # soon as its parent screen exists, because the repair request quotes it; they run while later parents score.
+        precs = []
+        for b, seed in enumerate(seeds):
+            bdir = os.path.join(sdir, f"block{b}")
+            prec = run_parent(parent, block_roles(seed), bdir, stream_factory)
+            precs.append(prec)
+            for arm in ARMS:
+                if arm_needs_generation(bdir, arm):
+                    pool.submit((b, arm), generate_arm, arm, scfg, prec, parent_source, params, evidence, bdir, client)
+        for b, seed in enumerate(seeds):
+            roles = block_roles(seed)
+            bdir = os.path.join(sdir, f"block{b}")
+            prec = precs[b]
+            arms = {arm: run_arm(arm, scfg, roles, prec, parent_source, params, evidence, bdir, stream_factory, client,
+                                 generated=pool.result((b, arm)) if (b, arm) in pool.pending() else None)
+                    for arm in ARMS}
+            fresh = run_fresh(arms, parent, roles, bdir, stream_factory)
+            blocks.append({"block": b, "seed": seed, "parent": {k: prec[k] for k in ("screen", "promotion")},
+                           "arms": arms, "fresh": {arm: fresh[arm] for arm in ARMS}})
+            json.dump(summarise(blocks), open(os.path.join(sdir, "summary.partial.json"), "w"), indent=2, default=str)
     summary = summarise(blocks)
     summary["evidence"] = {arm: {k: evidence[arm][k] for k in ("source", "cases", "rows_shown", "packet_sha256")}
                            for arm in ARMS}

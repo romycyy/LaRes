@@ -1209,7 +1209,7 @@ class TestTwoChannelStudy(unittest.TestCase):
 
 
 class SelfTraceRun:
-    def __init__(self, blocks=2):
+    def __init__(self, blocks=2, llm_workers=None):
         from lares.envs.isaac_pen_spin import self_trace
 
         self.st = self_trace
@@ -1218,6 +1218,8 @@ class SelfTraceRun:
         cfg = yaml.safe_load(open(CONFIG))
         c = cfg["self_trace_source"]
         c["study_dir"] = os.path.join(root, "study")
+        if llm_workers is not None:
+            c["llm_workers"] = llm_workers
         c["block_seeds"] = c["block_seeds"][:blocks]
         self.seeds = c["block_seeds"]
         self.config_path = os.path.join(root, "config.yaml")
@@ -1303,6 +1305,125 @@ class TestSelfTraceStudy(unittest.TestCase):
         self.r.run()
         self.assertEqual(len(self.r.child.requests), before)
         self.assertEqual(len(self.r.llm.labels), calls)
+
+
+class TestConcurrentGeneration(unittest.TestCase):
+    """``llm_pool``: study cells generate on worker threads; Isaac evaluation stays serial and results are unchanged."""
+
+    def test_schema_binding_is_per_thread(self):
+        import threading
+
+        from lares.core.obs_schema import active_schema, get_active_schema, get_obs_schema
+
+        schema = get_obs_schema(cases.STAGES[3].task_id)
+        inside, done, seen = threading.Event(), threading.Event(), []
+
+        def holder():
+            with active_schema(schema):
+                inside.set()
+                done.wait(5)
+                seen.append(get_active_schema())
+
+        t = threading.Thread(target=holder)
+        t.start()
+        inside.wait(5)
+        with active_schema(None):  # another thread opens and closes its own binding meanwhile
+            self.assertIsNone(get_active_schema())
+        done.set()
+        t.join(5)
+        self.assertIs(seen[0], schema)
+
+    def test_pool_runs_jobs_concurrently(self):
+        import threading
+
+        from lares.envs.isaac_pen_spin.llm_pool import GenerationPool
+
+        barrier = threading.Barrier(2, timeout=5)  # breaks unless both jobs are running at once
+        with GenerationPool(2) as pool:
+            for k in range(2):
+                pool.submit(k, lambda k=k: (barrier.wait(), k)[1])
+            self.assertEqual([pool.result(k) for k in range(2)], [0, 1])
+
+    def test_one_worker_runs_each_job_on_the_caller_when_asked(self):
+        import threading
+
+        from lares.envs.isaac_pen_spin.llm_pool import GenerationPool
+
+        ran = []
+        with GenerationPool(1) as pool:
+            pool.submit("a", lambda: ran.append(threading.get_ident()) or "a")
+            self.assertEqual(ran, [])
+            self.assertEqual(pool.result("a"), "a")
+        self.assertEqual(ran, [threading.get_ident()])
+
+    def test_an_error_cancels_queued_jobs(self):
+        import threading
+
+        from lares.envs.isaac_pen_spin.llm_pool import GenerationPool
+
+        started, never = [], threading.Event()
+
+        def job(k):
+            started.append(k)
+            if k == 0:
+                raise RuntimeError("boom")
+            never.wait(0.5)  # every other job is still running or queued when job 0's error surfaces
+            return k
+
+        with self.assertRaises(RuntimeError):
+            with GenerationPool(2) as pool:
+                for k in range(6):
+                    pool.submit(k, job, k)
+                pool.result(0)
+        self.assertLessEqual(len(started), 3)  # job 0, the job on the other worker, and at most one more
+
+    def test_parallel_and_serial_studies_agree(self):
+        serial, parallel = SelfTraceRun(blocks=2, llm_workers=1), SelfTraceRun(blocks=2, llm_workers=8)
+        try:
+            for key in ("paired_success_difference", "per_arm", "parent"):
+                self.assertEqual(serial.summary[key], parallel.summary[key])
+            for a, b in zip(serial.summary["blocks"], parallel.summary["blocks"]):
+                self.assertEqual(a["fresh"], b["fresh"])
+                for arm in serial.st.ARMS:
+                    self.assertEqual(a["arms"][arm]["screens"], b["arms"][arm]["screens"])
+            self.assertEqual(len(serial.llm.labels), len(parallel.llm.labels))
+            self.assertEqual(len(serial.child.requests), len(parallel.child.requests))
+        finally:
+            serial.close()
+            parallel.close()
+
+    def test_a_saved_generation_is_rebuilt_without_a_call(self):
+        import shutil
+
+        import torch
+
+        from lares.envs.isaac_pen_spin import llm_pool
+
+        r = SelfTraceRun(blocks=1)
+        try:
+            adir = os.path.join(r.study_dir, "block0", "self")
+            arm = json.load(open(os.path.join(adir, "arm.json")))
+            copy = os.path.join(r.tmp.name, "copy")
+            os.makedirs(copy)
+            for f in os.listdir(adir):
+                if f == llm_pool.GENERATED or f.startswith("generated_slot"):
+                    shutil.copy(os.path.join(adir, f), copy)
+
+            def no_call():
+                raise AssertionError("a saved generation must not call the LLM again")
+
+            g = llm_pool.generate_once(copy, cases.STAGES[3].task_id, no_call)
+            self.assertEqual([s["valid"] for s in g["slots"]], [s["valid"] for s in arm["slots"]])
+            chosen = g["slots"][arm["selected_slot"]]["policy"]
+            saved = torch.load(os.path.join(adir, "selected_state.pt"), weights_only=True)
+            for k, v in chosen.state_dict().items():
+                self.assertTrue(torch.equal(v, saved[k]), k)
+            self.assertEqual(chosen._generated_source, open(os.path.join(adir, "selected_source.py")).read())
+            obs = torch.randn(5, cases.OBS_DIM)
+            rebuilt = llm_pool.load_generation(adir, cases.STAGES[3].task_id)["slots"][arm["selected_slot"]]["policy"]
+            self.assertTrue(torch.equal(chosen(obs)[0], rebuilt(obs)[0]))
+        finally:
+            r.close()
 
 
 if __name__ == "__main__":

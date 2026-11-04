@@ -574,6 +574,13 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   learner's grasp; self evidence does not, but it did not improve on the parent either. Session summary:
   `docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md`.
 - **Code extraction.** Generated code keeps only the class, so module-level constants in a reply are dropped.
+- **Concurrent generation (`llm_pool.py`, 2026-11-03).** In R-054, LLM calls took 4.73 h of 5.32 h (avg 258 s per
+  call, all in sequence), and Isaac took 0.52 h (about 18 s per process: about 8 s of startup, about 10 s of
+  rollouts). `two_channel` and `self_trace` now run each (block, arm) generation on a worker thread
+  (`llm_workers` in the study block, default 16; `1` is the old serial order). Isaac evaluation stays on the main
+  thread, one process at a time. Each cell's slots are saved to `generated.json` before any of its episodes run, so a
+  rerun rebuilds them without an LLM call. `active_schema` is now per thread (`obs_schema._LOCAL`). New multi-block
+  studies should use the same pattern.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override
