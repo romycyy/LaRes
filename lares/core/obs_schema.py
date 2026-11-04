@@ -241,6 +241,19 @@ del _stage, _s
 OBS_SCHEMAS[_gait_scaffold_schema().env_id] = _gait_scaffold_schema()
 
 
+def _parent_scaffold_schema() -> ObsSchema:
+    """R-084: the Stage-3 layout plus ``parent_action`` (177-d); ``parent_action`` is readable but not required."""
+    from lares.envs.isaac_pen_spin.layout import PARENT_FIELD, PARENT_SCAFFOLD_TASK_ID
+
+    base = _pen_spin_schema(3)
+    name, size, description = PARENT_FIELD
+    fields = tuple(base.fields) + (ObsField(name, base.obs_dim, base.obs_dim + size, description, required=False),)
+    return ObsSchema(PARENT_SCAFFOLD_TASK_ID, base.obs_dim + size, fields)
+
+
+OBS_SCHEMAS[_parent_scaffold_schema().env_id] = _parent_scaffold_schema()
+
+
 def get_obs_schema(env_id: str) -> ObsSchema:
     """Schema for ``env_id``, or a clear failure naming what is missing.
 

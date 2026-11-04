@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-04T07:29:32 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-04T07:30:27 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -11,16 +11,16 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 0 |
-| proposed | 1 |
+| approved | 1 |
+| proposed | 0 |
 | deferred | 18 |
 | decided | 59 |
 | rejected | 7 |
 
 ## Needs attention
 
-- **R-084** [proposed] R-043 on the current parent: anatomical versus joint residual coordinates
-  - round 1 closed without a final agreement; next round: `python scripts/research.py triage R-084`
+- **R-084** [approved] R-043 on the current parent: anatomical versus joint residual coordinates
+  - `python scripts/research.py start R-084` then run its command
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
@@ -63,11 +63,11 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
+- R-084 round 2 · advisor approve / implementer approve → agreed (approved)
 - R-084 round 1 · advisor approve / implementer revise → disagreed (proposed)
 - R-085 round 1 · advisor defer / implementer defer → agreed (deferred)
 - R-083 round 1 · advisor approve / implementer approve → agreed (approved)
 - R-081 round 3 · advisor approve / implementer approve → agreed (approved)
-- R-081 round 2 · advisor approve / implementer revise → disagreed (proposed)
 
 ## Standing constraints
 

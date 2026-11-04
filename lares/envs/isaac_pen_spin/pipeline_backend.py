@@ -112,6 +112,10 @@ def actor_spec(actor) -> tuple[dict, bytes | None]:
     if scaffold:
         spec.update(scaffold=dict(scaffold), schema_env_id=scaffold["schema_env_id"],
                     execution=f"gait scaffold, mode {scaffold['mode']}")
+    residual = getattr(policy, "_parent_residual", None)  # R-084: a bounded residual on the D-058 incumbent
+    if residual:
+        spec.update(parent_residual=dict(residual), schema_env_id=residual["schema_env_id"],
+                    execution=f"parent residual, bound {residual['bound']}, decoder {residual['decoder_name']}")
     return spec, buf.getvalue()
 
 

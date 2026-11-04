@@ -29,3 +29,8 @@ STAGE_TASK_IDS = {
 #: action for this step (20, normalised [-1, 1], action order), appended by the child before the policy is called.
 GAIT_SCAFFOLD_TASK_ID = "Isaac-ShadowHandSpin-Stage3-GaitScaffold-v0"
 GAIT_FIELD = ("gait_action", 20, "the frozen R-039 gait's action this step (normalised [-1, 1], action order)")
+
+#: R-084: the parent-scaffold schema id. The observation is the 157-d layout plus the frozen D-058 incumbent's action
+#: for this step (20, normalised [-1, 1], action order), appended by the child before the residual policy is called.
+PARENT_SCAFFOLD_TASK_ID = "Isaac-ShadowHandSpin-Stage3-ParentScaffold-v0"
+PARENT_FIELD = ("parent_action", 20, "the frozen parent controller's action this step (normalised [-1, 1], action order)")

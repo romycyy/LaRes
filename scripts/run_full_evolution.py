@@ -608,6 +608,15 @@ def run_pen_spin_self_trace(cfg, cfg_path: str, overrides: dict) -> None:
     _print_summary(self_trace.run_study(scfg, _stream_factory(cfg), client))
 
 
+def run_pen_spin_coordinate_repair(cfg, cfg_path: str, overrides: dict) -> None:
+    """R-084: anatomical versus joint residual coordinates for LLM repair of the D-058 incumbent (one block)."""
+    from lares.envs.isaac_pen_spin import coordinate_repair
+
+    rcfg = _study_block(cfg, PEN_SPIN_STUDIES["r084_coordinate_repair"], overrides)
+    client = openai_client()
+    _print_summary(coordinate_repair.run_study(rcfg, _stream_factory(cfg), client))
+
+
 def run_pen_spin_local_feedback(cfg, cfg_path: str, overrides: dict) -> None:
     """R-048: per block the gait parent, expert queries at its states, and the raw-label and sensitivity arms."""
     from lares.envs.isaac_pen_spin import local_feedback
@@ -651,6 +660,7 @@ PEN_SPIN_STUDIES = {s.name: s for s in (
     PenSpinStudy("two_channel_cold", "two_channel_cold", "two_channel", run_pen_spin_two_channel),
     PenSpinStudy("self_trace_source", "self_trace_source", "self_trace", run_pen_spin_self_trace,
                  freeze_extra=("build_evidence",)),
+    PenSpinStudy("r084_coordinate_repair", "r084_coordinate_repair", "coordinate_repair", run_pen_spin_coordinate_repair),
 )}
 
 

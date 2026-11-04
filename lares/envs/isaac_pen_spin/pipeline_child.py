@@ -74,6 +74,21 @@ def build_controller(spec: dict, env_id: str):
         sc = spec["scaffold"]
         policy = SymbolicController(spec, spec.get("schema_env_id", env_id))
         return gait_scaffold.ScaffoldController(sc["mode"], policy.mean, float(sc["bound"]), sc["gait_sha256"])
+    if spec["kind"] == "symbolic" and spec.get("parent_residual"):  # R-084: a bounded residual on the D-058 incumbent
+        from lares.envs.isaac_pen_spin import coordinate_repair
+
+        pr = spec["parent_residual"]
+        policy = SymbolicController(spec, spec.get("schema_env_id", env_id))
+        return coordinate_repair.ParentResidualController(coordinate_repair.incumbent_controller(pr["asset"]),
+                                                          policy.mean, pr["decoder"], float(pr["bound"]), pr.get("arm"))
+    if spec["kind"] == "symbolic" and spec.get("stroke_gain_constant") is not None:  # the D-058 incumbent itself
+        from lares.envs.isaac_pen_spin.stroke_feedback import StrokeGain
+
+        ctrl = SymbolicController(spec, spec.get("schema_env_id", env_id))
+        ctrl.policy._stroke_gain = StrokeGain("constant", float(spec["stroke_gain_constant"]))
+        ctrl.name = spec.get("name", "d058_fixed_stroke_incumbent")
+        ctrl.params = {**ctrl.params, "stroke_gain_constant": float(spec["stroke_gain_constant"])}
+        return ctrl
     if spec["kind"] == "symbolic":
         return SymbolicController(spec, spec.get("schema_env_id", env_id))
     if spec["kind"] == "ppo":

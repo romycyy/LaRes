@@ -1341,3 +1341,122 @@ class TestStrokeFeedback(unittest.TestCase):
         r["stroke_feedback"] = {"promotion": rows(12, 1, 30), "fresh": rows(27, 4, 80)}
         agg = sf.aggregate(r, sats, act)
         self.assertTrue(agg["prediction"]["refuted"] and agg["feedback_activated_without_gain"])
+
+
+class TestCoordinateRepair(unittest.TestCase):
+    """R-084: decoder, incumbent asset, residual controller, identity, bound, request, selection, aggregation."""
+
+    @classmethod
+    def setUpClass(cls):
+        import yaml
+
+        with open("config/pen_spin_plateau_repair.yaml") as f:
+            cls.rc = yaml.safe_load(f)["r084_coordinate_repair"]
+
+    def test_decoder_is_orthonormal_and_named(self):
+        from lares.envs.isaac_pen_spin import coordinate_repair as cr
+
+        D, names = cr.synergy_decoder()
+        self.assertEqual(D.shape, (20, 20))
+        np.testing.assert_allclose(D.T @ D, np.eye(20), atol=1e-10)
+        self.assertEqual(names[0], "all_finger_curl")
+        self.assertEqual(len(names), 20)
+        self.assertNotIn("lf_curl", names)                            # spanned: all_finger_curl minus ff, mf, rf
+        self.assertEqual(len([n for n in names if n.startswith("residual_")]), 20 - (len(cr.SYNERGIES) - 1))
+        I, jn = cr.decoder_for("joint")
+        np.testing.assert_array_equal(I, np.eye(20))
+        self.assertEqual(jn[0], "joint_WRJ1")
+        with tempfile.TemporaryDirectory() as d:
+            a = cr.freeze_decoders(d)
+            b = cr.freeze_decoders(d)
+            self.assertEqual(a["anatomical"]["sha256"], b["anatomical"]["sha256"])
+            self.assertNotEqual(a["anatomical"]["sha256"], a["joint"]["sha256"])
+
+    def test_incumbent_asset_and_residual_controller(self):
+        import torch
+
+        from lares.core.obs_schema import get_obs_schema
+        from lares.envs.isaac_pen_spin import coordinate_repair as cr
+        from lares.envs.isaac_pen_spin import stroke_feedback as sf
+        from lares.envs.isaac_pen_spin.layout import PARENT_SCAFFOLD_TASK_ID
+        from lares.envs.isaac_pen_spin.pipeline_backend import actor_spec
+        from lares.envs.isaac_pen_spin.pipeline_child import build_controller
+
+        self.assertEqual(get_obs_schema(PARENT_SCAFFOLD_TASK_ID).obs_dim, 177)
+        asset = self.rc["incumbent_asset"]
+        inc = cr.check_asset(asset)
+        obs = TestStrokeLesion._contact_obs(self, 3)
+        obs[:, cases.obs_slices()["obj_angvel"]] = torch.tensor([0.2, 0.0, 0.0])
+        parent = cr.incumbent_controller(asset)
+        a = parent(obs, 0, None)
+        pc = {"learner": {"source": os.path.join(asset, "parent_source.py"), "state": os.path.join(asset, "state.pt"),
+                          "fixed_action_scale": 0.1, "source_sha256": inc["files"]["parent_source.py"],
+                          "state_sha256": inc["files"]["state.pt"]}}
+        ref = sf.StrokeFeedbackController(pc, "constant", "ref", inc["constant"])
+        self.assertTrue(torch.equal(a, ref(obs, 0, None)))          # the asset rebuilds the evaluated controller exactly
+        D, _ = cr.decoder_for("anatomical")
+        zero = cr.ParentResidualController(cr.incumbent_controller(asset), lambda aug: torch.zeros(aug.shape[0], 20), D, 0.15, "anatomical")
+        self.assertTrue(torch.equal(a, zero(obs, 0, None)))         # zero residual: bit-identical to the parent
+        big = cr.ParentResidualController(cr.incumbent_controller(asset), lambda aug: torch.full((aug.shape[0], 20), 5.0), np.eye(20), 0.15, "joint")
+        out = big(obs, 0, None)
+        self.assertTrue(torch.all((out - a).abs() <= 0.15 + 1e-6))  # the joint-space bound holds
+        self.assertEqual(big.residual_stats()["rows"], 3)
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "a.npz")
+            np.savez(p, obs=obs.unsqueeze(1).repeat(1, 2, 1).numpy(), length=np.array([2, 2, 1]))
+            self.assertTrue(cr.offline_identity_gate(asset, p)["passes"])
+        # the pipeline round trip: a residual policy's spec carries the parent and decoder, the child rebuilds it
+        src = ("class GeneratedPolicy(SymbolicPolicy):\n"
+               "    def __init__(self, obs_dim, action_dim):\n"
+               "        super().__init__(obs_dim, action_dim)\n"
+               "        self.k = nn.Parameter(torch.tensor(0.5))\n"
+               "    def forward(self, obs):\n"
+               "        p = self.obs_field(obs, 'obj_pos'); g = self.obs_field(obs, 'parent_action')\n"
+               "        mean = self.k * torch.tanh(p[:, 2:3]) * torch.ones_like(g)\n"
+               "        return mean, self.fixed_std(mean)\n"
+               "    def get_param_ranges(self):\n"
+               "        return {'k': (0.0, 1.0)}\n")
+        pol = cr.build_residual_policy(src, {"k": torch.tensor(0.5)})
+        decs = {"joint": {"matrix": np.eye(20).tolist(), "sha256": "x"}}
+        spec, state = actor_spec(type("A", (), {"policy": cr.residual_policy(pol, "joint", decs, asset), "deterministic": True, "name": "t"})())
+        self.assertEqual(spec["parent_residual"]["arm"], "joint")
+        self.assertEqual(spec["schema_env_id"], PARENT_SCAFFOLD_TASK_ID)
+        with tempfile.TemporaryDirectory() as d:
+            sp = os.path.join(d, "s.pt")
+            open(sp, "wb").write(state)
+            ctrl = build_controller({**spec, "state_path": sp}, cases.STAGES[3].task_id)
+            self.assertIsInstance(ctrl, cr.ParentResidualController)
+            out = ctrl(obs, 0, None)
+            self.assertEqual(out.shape, (3, 20))
+            self.assertFalse(torch.equal(out, a))
+            inc_ctrl = build_controller(cr.incumbent_spec(asset), cases.STAGES[3].task_id)
+            self.assertTrue(torch.equal(inc_ctrl(obs, 0, None), a))
+
+    def test_request_selection_aggregation_and_manifests(self):
+        from lares.envs.isaac_pen_spin import coordinate_repair as cr
+
+        ev = cr.failure_evidence(self.rc)
+        self.assertEqual((ev["successes"], ev["cases"]), (35, 80))
+        text, pk = cr.repair_request("class GeneratedPolicy: pass", ev)
+        self.assertIn("parent_action", text)
+        self.assertIn("0.15", text)
+        self.assertNotIn("anatom", text.lower())                       # anonymous coordinates: no anatomy in the request
+        self.assertEqual(cr.finalist_key({"successes": 3, "drops": 1}, 5), (-3, 1, 5))
+        m = cr.load_manifests(self.rc)
+        self.assertEqual([len(m[k]) for k in ("screen", "promotion", "fresh")], [20, 30, 80])
+        self.assertEqual(cr.freeze_manifests(self.rc)["screen"], cr.manifest_files(self.rc)["screen"])
+
+        def rows(succ, drops, n):
+            return [{"task_hash": f"h{i}", "sustained": i < succ, "completed": i < n - drops, "tail_hit_fraction": 0.0,
+                     "hit_steps": 0, "length": 360, "mean_abs_spin": 5.0, "mean_transverse": 1.0, "final_center_dist": 0.01}
+                    for i in range(n)]
+
+        sat = {"in_play_steps": 1, "drive_saturated_fraction": 0.9, "action_saturated_fraction": 0.1,
+               "action_saturated_by_axis": [0.1] * 20, "drive_unsaturated_fraction_per_case": [0.1], "note": ""}
+        r = {"parent": {"promotion": rows(12, 1, 30), "fresh": rows(30, 4, 80)},
+             "joint": {"promotion": rows(12, 1, 30), "fresh": rows(30, 4, 80)},
+             "anatomical": {"promotion": rows(22, 1, 30), "fresh": rows(50, 3, 80)}}
+        sats = {c: {p: sat for p in cr.ROLES} for c in r}
+        agg = cr.aggregate(r, sats, {}, {"joint": {"slot": 0}, "anatomical": {"slot": 1}}, {})
+        self.assertTrue(agg["prediction"]["supported"])
+        self.assertTrue(agg["adoption"]["anatomical"] and not agg["adoption"]["joint"])
