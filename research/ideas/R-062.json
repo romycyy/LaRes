@@ -13,9 +13,7 @@
     "script": "scripts/run_shadowhand_spin_stages.py",
     "config": "config/shadowhand_spin_stages.yaml",
     "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r062_stroke_lesion --log-dir logs/pen_spin/r062_stroke_lesion\"'",
-    "seeds": [
-      4560
-    ],
+    "seeds": [],
     "manifests": [
       "config/manifests/pen_spin_stage3_r062_diagnostic_s4560.yaml"
     ],
@@ -32,7 +30,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The paired interval for lesion minus parent lies entirely above -0.15. A loss caused primarily by additional drops, rather than reduced pre-drop spin, would leave the proposed spin-generation mechanism inconclusive.",
   "cost_estimate": {
@@ -50,17 +48,238 @@
     "round": 2,
     "note": "I accept the implementer's corrected interface using scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, audited source substitution, and full 80-case identity gate. At 240 simulator episodes and zero LLM calls on free seed 4560, this tests stroke dependence rather than rep"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-11-04T05:26:10",
+    "git_sha": "d2ebae8e1d221a53b2f0215c3a768b0c3dd43d6a",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r062_stroke_lesion",
+    "finished_at": "2026-11-04T05:28:38"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": -0.0875,
+      "paired_success_difference_ci95": [
+        -0.16819531063277737,
+        -0.00680468936722263
+      ],
+      "lesion_minus_parent": {
+        "n": 80,
+        "mean": -0.0875,
+        "se": 0.04054123545418786,
+        "low": -0.16819531063277737,
+        "high": -0.00680468936722263,
+        "p_value": 0.03394129317145529
+      },
+      "win_loss_tie": {
+        "wins": 2,
+        "losses": 9,
+        "ties": 69
+      },
+      "drops_lesion_minus_parent": {
+        "n": 80,
+        "mean": 0.025,
+        "se": 0.03546704657009184,
+        "low": -0.04559539030168105,
+        "high": 0.09559539030168104,
+        "p_value": 0.48295813559135936
+      },
+      "arms": {
+        "parent": {
+          "n": 80,
+          "successes": 13,
+          "success": 0.1625,
+          "completed": 0.7875,
+          "tail_hit_fraction": 0.2398267697428687,
+          "hit_fraction": 0.2553208137503335,
+          "mean_length": 293.55,
+          "mean_abs_spin": 6.395073009282351,
+          "mean_transverse": 1.7552815760485827,
+          "drops": 17,
+          "tail_spin_failures": 50,
+          "median_fall_step": 40.0,
+          "saturation": {
+            "in_play_steps": 23484,
+            "drive_saturated_fraction": 0.9857349684891841,
+            "action_saturated_fraction": 0.06529339124510306,
+            "action_saturated_by_axis": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.03708908192812128,
+              0.0,
+              0.9220746039856924,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.3467041389882473,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "note": "recorded in-play steps only; the runner records nothing after a drop"
+          }
+        },
+        "stroke_lesion": {
+          "n": 80,
+          "successes": 6,
+          "success": 0.075,
+          "completed": 0.7625,
+          "tail_hit_fraction": 0.1423333222982593,
+          "hit_fraction": 0.17066955721005125,
+          "mean_length": 283.5625,
+          "mean_abs_spin": 6.387265847250819,
+          "mean_transverse": 1.7971611890010535,
+          "drops": 19,
+          "tail_spin_failures": 55,
+          "median_fall_step": 39.0,
+          "saturation": {
+            "in_play_steps": 22685,
+            "drive_saturated_fraction": 0.9763279700242451,
+            "action_saturated_fraction": 0.07141282785981927,
+            "action_saturated_by_axis": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.019219748732642716,
+              0.0,
+              0.9514216442583204,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.4576151642054221,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "note": "recorded in-play steps only; the runner records nothing after a drop"
+          }
+        }
+      },
+      "parent_sustained_cases": 13,
+      "mean_abs_spin_on_parent_sustained_cases": {
+        "parent": 7.683391571044922,
+        "stroke_lesion": 3.7399546183072605
+      },
+      "lesion_successes_on_parent_sustained_cases": 4,
+      "interpretation": {
+        "loss_at_least_threshold": false,
+        "loss_not_carried_by_drops": true,
+        "lesion_spin_below_stage_threshold": true,
+        "stage_spin_threshold": 4.0,
+        "stroke_is_spin_source": false,
+        "drop_driven_inconclusive": false,
+        "prediction_refuted": false
+      },
+      "identity_gate": {
+        "cases": 80,
+        "observation_mismatch_cases": [],
+        "outcome_mismatch_cases": [],
+        "passes": true
+      },
+      "source_audit": {
+        "gait_term_in_target": 1,
+        "rolling_is_retained_times_contact": 1,
+        "stroke_is_periodic": 1,
+        "load_is_periodic": 1,
+        "stance_from_cos_phase": 1,
+        "target_has_grasp_curl_stabilization": 1,
+        "passes": true
+      },
+      "episodes": 240,
+      "llm_calls": 0
+    },
+    "controls": {
+      "parent": "the unchanged frozen R-046 learner on the same 80 cases in its own process",
+      "identity_gate": "the substitution machinery with factor 1.0 was bit-identical to the parent in observations and outcomes on all 80 cases before the lesion ran",
+      "source_audit": "all six structural patterns matched exactly once before any episode; the lesioned source is saved beside the results"
+    },
+    "artifacts": [
+      "logs/pen_spin/r062_stroke_lesion/summary.json",
+      "logs/pen_spin/r062_stroke_lesion/source_audit.json",
+      "logs/pen_spin/r062_stroke_lesion/stroke_lesion_source.py",
+      "logs/pen_spin/r062_stroke_lesion/parent.json",
+      "logs/pen_spin/r062_stroke_lesion/parent_identity.json",
+      "logs/pen_spin/r062_stroke_lesion/stroke_lesion.json",
+      "config/manifests/pen_spin_stage3_r062_diagnostic_s4560.yaml"
+    ],
+    "notes": [
+      "Primary, predeclared: lesion minus parent sustained success on 80 paired cases is -0.0875 [-0.168, -0.007] (2 wins, 9 losses, 69 ties; 6/80 vs 13/80). The interval contains -0.15, so neither the predicted loss of at least 0.15 (needs the interval entirely below -0.15) nor its refutation (needs the lower bound above -0.15) is established: inconclusive by the predeclared rule. The loss itself is established at the 95% level (upper bound -0.007).",
+      "The loss is not carried by drops: lesion drops minus parent drops +0.025 per case [-0.046, +0.096] (19 vs 17 of 80); the lesion's extra failures are tail-spin failures (55 vs 50).",
+      "Not predeclared, and the main finding: without any periodic stroke the pen still spins. The lesion's in-play mean |spin| over all 80 cases is 6.39 rad/s against the parent's 6.40, and on the 13 cases the parent sustains it is 3.74 against 7.68, with the lesion still sustaining 4 of those 13 (and 6 of 80 overall). The periodic stroke therefore accounts for roughly half of the learner's sustained successes and for the spin rate on its successful cases, but it is not the sole spin source: the reactive stabilization and centering terms (and the curl response), which respond to the pen's own motion through the grasp, generate axial spin on their own. A controller with no stroke scores 0.075 on this manifest.",
+      "Saturation unchanged by the lesion: drive above 0.99 on 98.6% (parent) and 97.6% (lesion) of recorded in-play steps; executed-action saturation 6.5% and 7.1% of components. Recorded in-play steps only.",
+      "Implication for the deferred R-064 (phase-speed feedback on the stroke): the stroke is a real but partial lever; a timing change can at most move the stroke's share. Implication for R-063 (anticipatory centering): the centering channel already contributes to spin, so changing it changes spin as well as retention.",
+      "Accounting: 240 Isaac episodes in three fresh processes, 0 LLM calls, about 3 min wall time. Deviations: none; protocol.seeds was emptied mechanically after approval because the committed manifest carries seed 4560 (as R-053/R-058/R-060). Final-test split untouched."
+    ]
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": -0.0875,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.8,
+      "reasoning": "Predicted a loss of at least 0.15 when the periodic stroke is removed; observed -0.0875 [-0.168, -0.007] on 80 paired cases (6/80 vs 13/80). The interval contains -0.15, so by the predeclared rule the prediction is neither established nor refuted; a loss is established, and it is not carried by drops (+0.025 [-0.046, +0.096]). The informative part is unpredicted: with no stroke at all the pen spins at the same overall mean rate (6.39 vs 6.40 rad/s) and the lesion still sustains 4 of the 13 parent-sustained cases and 6 of 80 overall, so the stroke is a partial lever (about half the successes, and the spin rate on successful cases: 3.74 vs 7.68) and the reactive stabilization and centering terms generate spin on their own. Confidence 0.8: the identity gate was bit-identical on all 80 cases and the audit passed, so the measurement is clean; the uncertainty is the threshold, which 80 cases at a 0.16 base rate cannot resolve.",
+      "cited_artifacts": [],
+      "next_experiment": "Treat the stroke as a partial spin lever when re-triaging R-064 (timing feedback can move at most the stroke's share) and R-063 (the centering channel is itself a spin source, so an anticipatory centre changes spin, not only retention). A lesion of the stabilization terms would complete the localisation at the same cost; neither follow-up should assume the stroke is the whole mechanism.",
+      "recorded_at": "2026-11-04T05:28:40",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 0.99,
+      "reasoning": "The source audit and bit-identical identity gate passed, making the comparison against the frozen parent interpretable [logs/pen_spin/r062_stroke_lesion/summary.json]. Against config/pen_spin/r046_block3_incumbent, paired_success_difference was -0.0875 with a 95% interval of [-0.1682, -0.0068]: this establishes a success loss, but the interval straddles -0.15, neither supporting nor refuting the predicted decrease of at least 0.15 [logs/pen_spin/r062_stroke_lesion/summary.json]. The drop difference was +0.025 with interval [-0.0456, +0.0956], which does not establish unchanged drops or exclude a drop contribution [logs/pen_spin/r062_stroke_lesion/summary.json]. On parent-sustained cases, lesion mean absolute spin was 3.74 rad/s versus 7.68 for the parent, below the predeclared 4 rad/s threshold [logs/pen_spin/r062_stroke_lesion/summary.json]. Nevertheless, the lesion sustained success in 6/80 cases; these observations establish a contribution from the periodic stroke but do not identify which remaining controller terms account for residual spin [logs/pen_spin/r062_stroke_lesion/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r062_stroke_lesion/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-04T05:29:02",
+      "call_id": "call_00126"
+    }
+  ],
+  "decision_id": "D-050",
   "history": [
     {
       "at": "2026-11-04T05:22:46",
       "from": "proposed",
       "to": "approved",
       "note": "triage round 2: both say approve"
+    },
+    {
+      "at": "2026-11-04T05:26:10",
+      "from": "approved",
+      "to": "running",
+      "note": "git d2ebae8e1d (dirty)"
+    },
+    {
+      "at": "2026-11-04T05:28:38",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-04T05:29:16",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-050: inconclusive"
     }
   ],
   "created_at": "2026-11-04T05:18:13",
@@ -150,6 +369,16 @@
         }
       },
       "note": "Round 1 implementer revision: real --study/--log-dir interface and config block, one 80-case manifest at seed 4560, audited source-substitution lesion, identity gate on all 80 cases (240 episodes), predeclared interpretation rule."
+    },
+    {
+      "at": "2026-11-04T06:30:00",
+      "round": 2,
+      "patch": {
+        "protocol": {
+          "seeds": []
+        }
+      },
+      "note": "Mechanical, after approval: config/manifests/pen_spin_stage3_r062_diagnostic_s4560.yaml now carries seed 4560 and the seed ledger scans config/** manifests; as in R-053/R-058/R-060 the manifest is the seed record and protocol.seeds is emptied. No other field changed."
     }
   ]
 }
