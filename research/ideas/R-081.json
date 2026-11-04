@@ -1,0 +1,88 @@
+{
+  "id": "R-081",
+  "title": "Conditional R-078: give spin feedback direct stroke authority",
+  "hypothesis": "Applying spin-error feedback directly to the periodic stroke raises slow-spin success without restoring the harmful capture compression.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "R-078 constant-stroke-gain control on the qualified exact zero-curl parent",
+    "rationale": "Beating an equally evaluated constant-gain control distinguishes useful feedback from merely strengthening the open-loop stroke. This conditionally re-triages R-078 because the first proposal supplies a prospective qualification path; its earlier deferral measured no repair outcome."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --study r081_conditional_raw_stroke_feedback'",
+    "seeds": [
+      4663
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_r081_s4663.yaml"
+    ],
+    "episodes": 330,
+    "llm_calls": 0,
+    "code_changes": [
+      "config/shadowhand_spin_stages.yaml: add r081_conditional_raw_stroke_feedback with a hard preflight requiring r080 qualification and its no-more-drops condition; otherwise consume no episodes or seeds.",
+      "scripts/run_shadowhand_spin_stages.py: reuse the frozen stroke decomposition; compare qualified clamp, direct stroke feedback, and constant stroke gain while leaving compression zero and every other term unchanged.",
+      "config/shadowhand_spin_stages.yaml: predeclare feedback gain clip(4/max(abs(spin_rate),1),0.5,2); freeze the constant control to this gain's arithmetic mean over the archived D-052 clamp observations before any new rollout.",
+      "scripts/run_shadowhand_spin_stages.py: require gain=1 to reproduce frozen clamp actions bit-for-bit; score all three arms on promotion cases 10-39 and fresh cases 40-119 of one frozen 120-case manifest.",
+      "scripts/run_shadowhand_spin_stages.py: report paired sustained success, drops, gain activity and saturation; retain the standard strict 30-case promotion gate and prohibit retries or retrospective panel enlargement."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The fresh paired interval's upper bound against the constant-gain control is below +0.05. An interval including zero does not establish feedback benefit; failure to beat the qualified parent under strict promotion, or more observed drops, blocks adoption.",
+  "cost_estimate": {
+    "episodes": 330,
+    "llm_calls": 0,
+    "wall_time_minutes": 75
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "8a1a642674c66a567348431e5a284b148dc56a6c16b8179aa6e6c2486b407b07",
+  "proposal_call_id": "call_00154",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T07:01:11",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-04T06:58:24",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "The constant-gain control distinguishes useful online regulation from simply strengthening the stroke, a mechanism R-078's deferral did not test. Defer its 330 simulator episodes and zero LLM calls until R-080 actually qualifies the exact zero-curl parent; a possible qualification path is not yet qualification. The weakest point is that increased feedback authority may still produce no success benefit: an upper bound below 0.05 refutes the predicted paired_success_difference increase of at least 0.05 against the frozen constant-gain control. If feedback activates without improving success, prioritize R-043 rather than continuing automatically to another stroke repair.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00155",
+          "briefing_sha256": "738577046116dad1793ef7890a6416340d4ebc9d56a29a0378b6c991216101cd",
+          "at": "2026-11-04T06:59:35"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree to defer until R-080 qualifies the exact zero-curl parent; the constant-gain control stays.",
+          "changes_applied": [],
+          "at": "2026-11-04T07:01:11"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

@@ -1,0 +1,89 @@
+{
+  "id": "R-082",
+  "title": "Conditional R-079: transport the stroke with the pen axis",
+  "hypothesis": "Transporting the frozen stroke with the pen's instantaneous long axis preserves tangential actuation as the pen tilts, increasing roll without additional compression.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "R-079 reset-axis-only transport control on the qualified exact zero-curl parent",
+    "rationale": "The reset-axis control separates online geometric tracking from a favorable static remapping. This conditionally re-triages R-079 under the new prospective qualification path; its earlier deferral did not test geometric transport, and D-051's rotation-correction lesion did not rotate the stroke itself."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --study r082_conditional_axis_transport'",
+    "seeds": [
+      4664
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_r082_s4664.yaml"
+    ],
+    "episodes": 450,
+    "llm_calls": 0,
+    "code_changes": [
+      "config/shadowhand_spin_stages.yaml: add r082_conditional_axis_transport; require r080 qualification and its no-more-drops condition, and run only after the preceding protocol has finished.",
+      "scripts/run_shadowhand_spin_stages.py: compare the qualified clamp, instantaneous-axis stroke transport, and transport fixed to the reset axis; use the same qualified clamp parent regardless of the preceding repair result.",
+      "scripts/run_shadowhand_spin_stages.py: implement observation-derived geometric transport of only the periodic stroke using frozen hand kinematics; leave centering, rotation correction, stroke timing and zero curl unchanged.",
+      "scripts/run_shadowhand_spin_stages.py: apply transport as a correction to the original joint stroke, require identity transport to reproduce original actions bit-for-bit, and freeze mapping constants before rollouts.",
+      "config/shadowhand_spin_stages.yaml: freeze one 160-case manifest; evaluate all three arms on promotion cases 10-39 and fresh cases 40-159 with no screening or parameter selection.",
+      "scripts/run_shadowhand_spin_stages.py: report paired sustained success, drops, axial spin and saturation; retain the standard strict 30-case promotion gate without extension or retry."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The fresh paired interval's upper bound against reset-axis transport is below +0.05. An interval including zero leaves online transport unestablished; failure of strict promotion against the qualified parent, or more observed drops, blocks adoption.",
+  "cost_estimate": {
+    "episodes": 450,
+    "llm_calls": 0,
+    "wall_time_minutes": 100
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "8a1a642674c66a567348431e5a284b148dc56a6c16b8179aa6e6c2486b407b07",
+  "proposal_call_id": "call_00154",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T07:01:12",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-04T06:58:24",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Instantaneous-axis transport versus reset-axis transport isolates online geometric tracking, which the rotation-correction lesion did not test. Defer its 450 simulator episodes and zero LLM calls until R-080 and R-081 are decided; if R-081 activates feedback without improving success, R-043 takes priority. Its weakest point is the unverified joint-space transport mapping, so identity equivalence alone cannot establish that it preserves useful tangential actuation. An upper bound below 0.05 refutes the predicted paired_success_difference increase of at least 0.05 against reset-axis transport; an interval including zero leaves the benefit unestablished, and additional observed drops block adoption.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00155",
+          "briefing_sha256": "738577046116dad1793ef7890a6416340d4ebc9d56a29a0378b6c991216101cd",
+          "at": "2026-11-04T06:59:35"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree to defer until R-080 and R-081 are decided; the reset-axis control and an offline kinematic check stay.",
+          "changes_applied": [],
+          "at": "2026-11-04T07:01:12"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

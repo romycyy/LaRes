@@ -1,0 +1,159 @@
+{
+  "id": "R-080",
+  "title": "Resolve clamp qualification with one prospective 90-pair instrument",
+  "hypothesis": "Removing reactive capture compression improves sustained spinning by preventing grasp-induced losses, and a prospectively enlarged paired measurement can resolve that gain.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "frozen R-046 parent: config/pen_spin/r046_block3_incumbent",
+    "rationale": "Sustained success is the qualification endpoint; +0.05 is a conservative transferable gain. Unlike D-056, this is one predeclared 90-pair measurement, not another 30-pair retry or retrospective pooling."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r080_zero_curl_qualification_90 --log-dir logs/pen_spin/r080_zero_curl_qualification_90\"'",
+    "seeds": [
+      4660,
+      4661,
+      4662
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_r080_block_s4660.yaml",
+      "config/manifests/pen_spin_stage3_r080_block_s4661.yaml",
+      "config/manifests/pen_spin_stage3_r080_block_s4662.yaml"
+    ],
+    "episodes": 180,
+    "llm_calls": 0,
+    "code_changes": [
+      "Study r080_zero_curl_qualification_90 (lares/envs/isaac_pen_spin/clamp_qualification.py generalised to several panels) registered in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent config/pen_spin/r046_block3_incumbent and the exact D-052 clamp (R-065's curl_clamp substitution), hashes checked; offline identity gate at factor 1.0 on D-050's archived observations before any episode.",
+      "Three frozen 40-case Stage-3 manifests on seeds 4660, 4661, 4662 (cases 0-9 unused, cases 10-39 the promotion panel of each), placement-disjoint from every committed pen-spin manifest and from each other. Parent and clamp each run each panel in their own fresh process: six processes, 180 episodes, zero LLM calls.",
+      "One-off instrument of the existing strict rule, not a standing gate change: one paired t interval at the existing confidence level over the 90 prospectively declared paired differences; qualification requires a positive mean and a lower bound strictly above zero, and repair additionally requires no more observed drops over the 90 pairs. No extension, retry, selection or historical pooling; historical panels are excluded from the instrument.",
+      "Primary: clamp minus parent pooled over the 90 pairs; prediction at least +0.05, refuted if the upper bound is below +0.05, inconclusive if the interval spans zero. Reported: the pooled and each panel's own intervals, drops, failure split (drops, off-centre, slow spin), in-play mean |spin|, drive and per-axis executed-action saturation; a machine-readable qualification artifact (qualification.json) for the conditional R-081/R-082. Held-out split untouched."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "The paired success interval's upper bound is below +0.05. An interval spanning zero is inconclusive and does not qualify the clamp; more observed drops also blocks its use for repair.",
+  "cost_estimate": {
+    "episodes": 180,
+    "llm_calls": 0,
+    "wall_time_minutes": 15
+  },
+  "open_question_refs": [
+    0,
+    8
+  ],
+  "briefing_sha256": "8a1a642674c66a567348431e5a284b148dc56a6c16b8179aa6e6c2486b407b07",
+  "proposal_call_id": "call_00154",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-04T07:05:15",
+    "advisor_call_id": "call_00156",
+    "round": 2,
+    "note": "I accept the implementer's interface-only revision: reuse scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, with six fresh processes costing 180 episodes and zero LLM calls. Unlike D-056, this prospectively frozen 90-pair instrument on reserved seeds 4660–4662 addresses u"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T07:05:15",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 2: both say approve"
+    }
+  ],
+  "created_at": "2026-11-04T06:58:24",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "At 180 simulator episodes and zero LLM calls, this addresses the unresolved qualification decision rather than reopening the settled curl mechanism. I accept the prospectively frozen union of three cases-10–39 panels as one promotion instrument: the confidence level, strictly positive paired mean and interval lower bound, and no-more-observed-drops requirement remain unchanged. Its weakness is that even 90 pairs may leave the predicted paired_success_difference increase of at least 0.05 over frozen R-046 unresolved; an upper bound below 0.05 refutes that prediction. An interval including zero cannot qualify the clamp, and this instrument must end without extensions, retries or historical pooling.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00155",
+          "briefing_sha256": "738577046116dad1793ef7890a6416340d4ebc9d56a29a0378b6c991216101cd",
+          "at": "2026-11-04T06:59:35"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree on every substantive point: one prospectively frozen instrument of three standard promotion panels (cases 10-39 of three independent 40-case manifests, 90 paired cases), the existing confidence level, strictly positive paired mean and lower bound over the 90 differences, no more observed drops before repair, no extension, retry, selection or historical pooling, declared as a one-off instrument of the existing rule and not a standing gate change. Revise the interface only: --study r080_zero_curl_qualification_90 with --log-dir and a config block; manifests at config/manifests/pen_spin_stage3_r080_block_s4660.yaml, _s4661, _s4662 (the pen-spin naming convention), each frozen and placement-disjoint from every committed pen-spin manifest and from each other; parent and clamp each run each panel in its own fresh process (six processes, 180 episodes); offline identity gate first. Reported: the pooled 90-pair interval (primary) and each panel's own, drops, failure split, spin, drive and per-axis action saturation; a machine-readable qualification artifact for R-081/R-082.",
+          "changes_applied": [
+            "--study r080_zero_curl_qualification_90 --log-dir; config block; manifests pen_spin_stage3_r080_block_s4660-4662.yaml; six processes"
+          ],
+          "at": "2026-11-04T07:01:14"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the implementer's interface-only revision: reuse scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, with six fresh processes costing 180 episodes and zero LLM calls. Unlike D-056, this prospectively frozen 90-pair instrument on reserved seeds 4660–4662 addresses unresolved qualification without reopening the settled curl mechanism or pooling historical results. Resolution remains its weakness: the predicted paired_success_difference increase of at least 0.05 against frozen R-046 (config/pen_spin/r046_block3_incumbent) is falsified by an interval upper bound below 0.05, while an interval containing zero is inconclusive. Qualification requires the unchanged confidence level, positive mean and interval lower bound strictly above zero; repair additionally requires no more observed drops, and this instrument ends without extension or retry.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00156",
+          "briefing_sha256": "d588cc5eae6f32d87d79bd1abaa61481a83971bc63e812b4a59dbd57c5a3ca33",
+          "at": "2026-11-04T07:01:58"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve: the 90-pair instrument on the frozen seed-4660/4661/4662 manifests (cases 10-39 each), parent and clamp each panel in its own process, offline identity gate first, one paired interval over the 90 declared differences under the unchanged rule, no extension or retry, 180 episodes, zero LLM calls, final test locked. Running now.",
+          "changes_applied": [],
+          "at": "2026-11-04T07:05:15"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-04T07:01:16",
+      "round": 1,
+      "patch": {
+        "protocol": {
+          "script": "scripts/run_shadowhand_spin_stages.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r080_zero_curl_qualification_90 --log-dir logs/pen_spin/r080_zero_curl_qualification_90\"'",
+          "seeds": [
+            4660,
+            4661,
+            4662
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_r080_block_s4660.yaml",
+            "config/manifests/pen_spin_stage3_r080_block_s4661.yaml",
+            "config/manifests/pen_spin_stage3_r080_block_s4662.yaml"
+          ],
+          "episodes": 180,
+          "llm_calls": 0,
+          "code_changes": [
+            "Study r080_zero_curl_qualification_90 (lares/envs/isaac_pen_spin/clamp_qualification.py generalised to several panels) registered in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent config/pen_spin/r046_block3_incumbent and the exact D-052 clamp (R-065's curl_clamp substitution), hashes checked; offline identity gate at factor 1.0 on D-050's archived observations before any episode.",
+            "Three frozen 40-case Stage-3 manifests on seeds 4660, 4661, 4662 (cases 0-9 unused, cases 10-39 the promotion panel of each), placement-disjoint from every committed pen-spin manifest and from each other. Parent and clamp each run each panel in their own fresh process: six processes, 180 episodes, zero LLM calls.",
+            "One-off instrument of the existing strict rule, not a standing gate change: one paired t interval at the existing confidence level over the 90 prospectively declared paired differences; qualification requires a positive mean and a lower bound strictly above zero, and repair additionally requires no more observed drops over the 90 pairs. No extension, retry, selection or historical pooling; historical panels are excluded from the instrument.",
+            "Primary: clamp minus parent pooled over the 90 pairs; prediction at least +0.05, refuted if the upper bound is below +0.05, inconclusive if the interval spans zero. Reported: the pooled and each panel's own intervals, drops, failure split (drops, off-centre, slow spin), in-play mean |spin|, drive and per-axis executed-action saturation; a machine-readable qualification artifact (qualification.json) for the conditional R-081/R-082. Held-out split untouched."
+          ],
+          "needs_gpu": true,
+          "needs_llm": false
+        },
+        "cost_estimate": {
+          "episodes": 180,
+          "llm_calls": 0,
+          "wall_time_minutes": 15
+        }
+      },
+      "note": "Round 1 implementer revision: --study interface, manifest naming convention, six processes; instrument and rules unchanged."
+    }
+  ]
+}

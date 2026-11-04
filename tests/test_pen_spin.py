@@ -1225,3 +1225,45 @@ class TestClampQualification(unittest.TestCase):
         self.assertFalse(b["prediction"]["refuted"])
         c = cq.aggregate(rows(6, 4, 30), rows(6, 4, 30), sat, sat)
         self.assertTrue(c["prediction"]["refuted"])
+
+
+class TestZeroCurlQualification90(unittest.TestCase):
+    """R-080: three manifests, the pooled 90-pair instrument, per-panel reporting."""
+
+    @classmethod
+    def setUpClass(cls):
+        import yaml
+
+        with open("config/shadowhand_spin_stages.yaml") as f:
+            cls.pc = yaml.safe_load(f)["research_protocols"]["r080_zero_curl_qualification_90"]
+
+    def test_manifests_and_pooled_instrument(self):
+        from lares.envs.isaac_pen_spin import clamp_qualification as cq
+        from lares.eval.manifest import assert_disjoint
+
+        self.assertEqual(cq.manifest_paths(self.pc), self.pc["manifests"])
+        self.assertEqual(cq.pool_seeds(self.pc), [4660, 4661, 4662])
+        self.assertEqual(cq.build_manifests(self.pc), [])
+        ms = [EvaluationManifest.load(p) for p in self.pc["manifests"]]
+        self.assertEqual([len(m) for m in ms], [40, 40, 40])
+        assert_disjoint(ms + [EvaluationManifest.load(p) for p in self.pc["disjoint_from"]])
+
+        def rows(succ, drops, n, prefix):
+            return [{"task_hash": f"{prefix}{i}", "sustained": i < succ, "completed": i < n - drops, "tail_hit_fraction": 0.0,
+                     "hit_steps": 0, "length": 360, "mean_abs_spin": 5.0, "mean_transverse": 1.0, "final_center_dist": 0.01}
+                    for i in range(n)]
+
+        sat = {"in_play_steps": 1, "drive_saturated_fraction": 0.9, "action_saturated_fraction": 0.1,
+               "action_saturated_by_axis": [0.1] * 20, "drive_unsaturated_fraction_per_case": [0.1], "note": ""}
+        parent = rows(6, 2, 30, "a") + rows(6, 2, 30, "b") + rows(6, 2, 30, "c")
+        clamp = rows(12, 1, 30, "a") + rows(12, 1, 30, "b") + rows(12, 1, 30, "c")
+        for r in clamp[:2] + clamp[30:32] + clamp[60:62]:
+            r["sustained"] = False                                   # +0.133 with wins 8 and losses 2 per panel
+        agg = cq.aggregate(parent, clamp, sat, sat, per_panel={"s4660": {}})
+        self.assertEqual(agg["pairs"], 90)
+        self.assertAlmostEqual(agg["paired_success_difference"], 12 / 90)
+        self.assertTrue(agg["qualifies"])                             # 90 pairs resolve what 30 could not
+        single = cq.aggregate(parent[:30], clamp[:30], sat, sat)
+        self.assertFalse(single["qualifies"])
+        merged = cq._merge_saturation([sat, {**sat, "in_play_steps": 3, "drive_saturated_fraction": 0.5}])
+        self.assertAlmostEqual(merged["drive_saturated_fraction"], (0.9 + 3 * 0.5) / 4)

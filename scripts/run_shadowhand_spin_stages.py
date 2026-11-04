@@ -362,7 +362,8 @@ def pen_spin_studies() -> dict:
             curl_confirmation.STUDY: curl_confirmation,
             constant_preload.STUDY: constant_preload,
             curl_bandwidth.STUDY: curl_bandwidth,
-            clamp_qualification.STUDY: clamp_qualification}
+            clamp_qualification.STUDY: clamp_qualification,
+            clamp_qualification.STUDY_90: clamp_qualification}
 
 
 def run_study(args, cfg: SimpleNamespace) -> None:
@@ -448,7 +449,7 @@ def main() -> None:
     parser.add_argument("--research-protocol", default=None,
                         help="run a named protocol from the config's research_protocols block instead of the smoke stages")
     parser.add_argument("--study", default=None,
-                        help="run a named study (feedback_ablation, feedback_lesions, feedback_delay, learner_recovery, learner_axial_sign, r058_scalar_cma_vs_random, r060_archive_rescreen, r062_stroke_lesion, r065_channel_lesions, r068_capture_curl_confirmation, r073_constant_preload, r075_curl_bandwidth, r077_clamp_qualification) from the config's research_protocols block")
+                        help="run a named study (feedback_ablation, feedback_lesions, feedback_delay, learner_recovery, learner_axial_sign, r058_scalar_cma_vs_random, r060_archive_rescreen, r062_stroke_lesion, r065_channel_lesions, r068_capture_curl_confirmation, r073_constant_preload, r075_curl_bandwidth, r077_clamp_qualification, r080_zero_curl_qualification_90) from the config's research_protocols block")
     parser.add_argument("--build-manifests", action="store_true",
                         help="with --research-protocol: write the protocol's frozen manifests and exit (no Isaac)")
     parser.add_argument("--stage", type=int, default=None, help=argparse.SUPPRESS)  # protocol child process
