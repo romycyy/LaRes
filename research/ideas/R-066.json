@@ -1,0 +1,91 @@
+{
+  "id": "R-066",
+  "title": "2. Separate online centering from the frozen spin machinery",
+  "hypothesis": "Observation-dependent centering is a causal sustained-success channel even when the explicit axial-spin drive has almost no regulatory authority.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "decrease",
+    "threshold": 0.1,
+    "against": "config/pen_spin/r046_block3_incumbent",
+    "rationale": "A 0.10 sustained-success loss would establish that centering feedback, rather than another scalar setting of the spin drive, is an important structural pathway; this tests necessity, unlike deferred R-063's anticipatory replacement."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --research-protocol centering_feedback_clamp --parent config/pen_spin/r046_block3_incumbent --seed 4601 --freeze-diagnostic-manifest config/manifests/pen_spin_stage3_diagnostic_s4601.yaml --num-cases 80 --output-dir logs/pen_spin/centering_feedback_clamp_s4601'",
+    "seeds": [
+      4601
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_diagnostic_s4601.yaml"
+    ],
+    "episodes": 160,
+    "llm_calls": 0,
+    "code_changes": [
+      "Reuse the first protocol's dispatcher, identity gate, manifest freezing and paired reporting.",
+      "Clamp position-error inputs only inside the audited centering branch to their zero-error reference values; retain its reference output and leave the original observations available unchanged to every other branch.",
+      "Compare parent and intervention on 80 fresh Stage-3 cases using the unchanged sustained-success criterion; report drops, off-centre versus slow-spin failures, in-play axial spin and both drive and action saturation.",
+      "Run only after the stabilization protocol finishes; distinguish retention effects from spin effects rather than attributing every lost success to reduced spin.",
+      "Do not activate R-063, R-043 repair or imitation from this diagnostic alone; it neither supplies a qualifying tuned winner nor verifies expert recovery."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The paired interval for centering-clamp minus parent lies entirely above -0.10; an interval crossing -0.10 leaves the predicted magnitude inconclusive.",
+  "cost_estimate": {
+    "episodes": 160,
+    "llm_calls": 0,
+    "wall_time_minutes": 25
+  },
+  "open_question_refs": [
+    9,
+    10
+  ],
+  "briefing_sha256": "a7668679343bb7c53dab630a8a2613d27334b0bec69bf4b8172da7bdf37fa4ca",
+  "proposal_call_id": "call_00127",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T05:35:21",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-04T05:32:48",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "This tests centering-feedback necessity, unlike R-063's anticipatory replacement, but its 160 episodes and zero LLM calls should wait for R-065's localization result. Its weakest point is decision value: a second channel lesion should address the uncertainty remaining after the first, rather than automatically extend the diagnostic sequence. Reconsider after R-065 identifies whether the unresolved bottleneck is spin generation or retention. The predicted decrease of at least 0.10 in paired_success_difference versus config/pen_spin/r046_block3_incumbent is falsified by a paired interval wholly above -0.10.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00128",
+          "briefing_sha256": "67dd75847c0e961730f2f62d0f9b1f23943292a4adf1a4197bd58fd575edf175",
+          "at": "2026-11-04T05:34:06"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree to defer. Centering necessity is the right second question, and the revised R-065 I am proposing answers it on the same 80 cases as a within-panel arm (centering clamp to its zero-error reference) at 80 extra episodes; if that arm runs, R-066 should be closed as answered at re-triage rather than run again on new cases.",
+          "changes_applied": [],
+          "at": "2026-11-04T05:35:21"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

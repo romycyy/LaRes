@@ -888,3 +888,77 @@ class TestStrokeLesion(unittest.TestCase):
         self.assertEqual(sl_.build_manifests(self.pc), [])
         m = EvaluationManifest.load(self.pc["manifest"])
         self.assertEqual((len(m), cases.stage_of(m)), (80, 3))
+
+
+class TestChannelLesions(unittest.TestCase):
+    """R-065: audit, three substitutions, offline identity gate, tail split and interpretation."""
+
+    @classmethod
+    def setUpClass(cls):
+        import yaml
+
+        with open("config/shadowhand_spin_stages.yaml") as f:
+            cls.pc = yaml.safe_load(f)["research_protocols"]["r065_channel_lesions"]
+
+    def test_audit_substitutions_and_offline_gate(self):
+        import torch
+
+        from lares.envs.isaac_pen_spin import channel_lesions as cl
+        from lares.envs.isaac_pen_spin.learner_recovery import make_learner
+
+        with open(self.pc["learner"]["source"]) as f:
+            src = f.read()
+        audit = cl.source_audit(src)
+        self.assertTrue(audit["passes"], audit)
+        self.assertIn("rotation_correction = 0.0 * (", cl.substituted_source(src, "rotation_correction_lesion", 0.0))
+        self.assertIn("error = 0.0 * (home - obj)", cl.substituted_source(src, "centering_clamp", 0.0))
+        self.assertIn("extra_curl = 0.0 * self.capture_curl * (", cl.substituted_source(src, "curl_clamp", 0.0))
+        obs = TestStrokeLesion._contact_obs(self, 4)
+        obs[:, cases.obs_slices()["obj_pos"]] = torch.tensor([0.01, 0.0, 0.1])   # off centre: centering active
+        obs[:, cases.obs_slices()["obj_rot"]] = torch.tensor([0.96, 0.0, 0.28, 0.0])  # tilted: rotation correction active
+        parent = make_learner(self.pc)
+        a = parent(obs, 0, None)
+        for lesion in cl.LESIONS:
+            ident = cl.lesioned_learner(self.pc, lesion, 1.0, "i")
+            self.assertTrue(torch.equal(a, ident(obs, 0, None)), lesion)
+            self.assertFalse(torch.allclose(a, cl.make_controller(lesion, self.pc)(obs, 0, None)), lesion)
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "a.npz")
+            np.savez(p, obs=obs.unsqueeze(1).repeat(1, 3, 1).numpy(), length=np.array([3, 2, 0, 3]))
+            gate = cl.offline_identity_gate(self.pc, p)
+            self.assertTrue(gate["passes"])
+            self.assertEqual(gate["lesions"]["centering_clamp"]["rows"], 8)
+
+    def test_tail_split_and_interpretation(self):
+        from lares.envs.isaac_pen_spin import channel_lesions as cl
+
+        def rows(succ, drops, n, spin, off=0):
+            out = []
+            for i in range(n):
+                tail = succ <= i < n - drops
+                out.append({"task_hash": f"h{i}", "sustained": i < succ, "completed": i < n - drops, "tail_hit_fraction": 0.0,
+                            "hit_steps": 0, "length": 360, "mean_abs_spin": spin, "mean_transverse": 1.0,
+                            "final_center_dist": 0.2 if (tail and i < succ + off) else 0.01})
+            return out
+
+        sat = {"in_play_steps": 1, "drive_saturated_fraction": 0.9, "action_saturated_fraction": 0.1,
+               "action_saturated_by_axis": [0.1] * 20, "drive_unsaturated_fraction_per_case": [0.1] * 80, "note": ""}
+        parent = rows(24, 10, 80, 6.0)
+        self.assertEqual(cl.tail_failure_split(rows(24, 10, 80, 6.0, off=5)), {"tail_failures": 46, "off_centre": 5, "slow_spin": 41})
+        spin = cl.arm_contrast(parent, rows(4, 10, 80, 1.0), sat, sat)
+        self.assertTrue(spin["interpretation"]["spin_channel"])
+        ret = cl.arm_contrast(parent, rows(4, 60, 80, 6.0), sat, sat)
+        self.assertTrue(ret["interpretation"]["retention_channel"])
+        self.assertFalse(ret["interpretation"]["spin_channel"])
+        none = cl.arm_contrast(parent, rows(23, 10, 80, 6.0), sat, sat)
+        self.assertTrue(none["interpretation"]["prediction_refuted"])
+        agg = cl.aggregate({"parent": parent, **{k: rows(4, 10, 80, 1.0) for k in cl.LESIONS}}, {k: sat for k in cl.ARMS})
+        self.assertAlmostEqual(agg["paired_success_difference"], -0.25)
+        self.assertEqual(agg["primary"], "rotation_correction_lesion")
+
+    def test_manifest_matches_config(self):
+        from lares.envs.isaac_pen_spin import channel_lesions as cl
+
+        self.assertEqual(cl.build_manifests(self.pc), [])
+        m = EvaluationManifest.load(self.pc["manifest"])
+        self.assertEqual((len(m), cases.stage_of(m)), (80, 3))

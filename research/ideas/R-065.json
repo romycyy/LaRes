@@ -1,0 +1,159 @@
+{
+  "id": "R-065",
+  "title": "Localize the residual spin channel: rotation-correction, centering and capture-curl lesions",
+  "hypothesis": "Reactive stabilization supplies contact-driven axial rotation that sustains success independently of the saturated spin drive.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "decrease",
+    "threshold": 0.1,
+    "against": "config/pen_spin/r046_block3_incumbent",
+    "rationale": "An absolute 0.10 loss in sustained success would identify a substantial structural lever; D-050 lesioned the periodic stroke, not stabilization, and D-048/D-049 already close scalar tuning."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r065_channel_lesions --log-dir logs/pen_spin/r065_channel_lesions\"'",
+    "seeds": [
+      4610
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_r065_diagnostic_s4610.yaml"
+    ],
+    "episodes": 320,
+    "llm_calls": 0,
+    "code_changes": [
+      "New study module lares/envs/isaac_pen_spin/channel_lesions.py registered as --study r065_channel_lesions in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent config/pen_spin/r046_block3_incumbent (hashes checked), parameters unchanged, no fitting, R-062's source-substitution machinery.",
+      "Source audit before any episode: the parent's stabilization tensor mixes the centering term (center = center_gain * tanh(distance / center_length) * direction, from error = home - obj) with the rotation correction (tilt_gain * tilt_correction - swing_damping * tanh(transverse_speed / 4) * transverse_direction); the capture curl is extra_curl = capture_curl * ((1 - contact) + 0.75 * (1 - retained)). Each lesion is one audited substitution: rotation_correction_lesion zeroes rotation_correction (= 0.0 * (...)); centering_clamp sets error = 0.0 * (home - obj), the zero-error reference, so center = 0 while every other branch sees the true observation; curl_clamp sets extra_curl to 0.0 * (...), its no-loss reference. The study exits if any pattern does not match exactly once.",
+      "Offline identity gate, exact, before any episode: for each lesion the substituted source at its identity factor (1.0) must reproduce the parent's actions bit-for-bit (torch.equal) on the archived parent observations of D-050 (logs/pen_spin/r062_stroke_lesion/parent.npz, 80 cases x all in-play steps); no third process.",
+      "Arms, one fresh process each on the frozen 80-case Stage-3 diagnostic manifest (seed 4610): parent, rotation_correction_lesion, centering_clamp, curl_clamp. 320 episodes, zero LLM calls.",
+      "Primary (R-065): rotation_correction_lesion minus parent paired sustained success with the 95% t interval; threshold -0.10, falsified if the interval is wholly above -0.10, inconclusive if it crosses it. Secondary, same reporting: centering_clamp minus parent (R-066's question) and curl_clamp minus parent. Per arm: paired drop difference, win/loss/tie, failure split (drops, off-centre versus slow-spin tail failures by the final-centre and tail-spin reducers), in-play mean |spin| overall and on parent-sustained cases, drive and per-axis executed-action saturation over recorded in-play steps. Interpretation per arm as D-050: the channel carries spin if the loss is established, not carried by drops, and the arm's in-play |spin| on parent-sustained cases falls below 4 rad/s; a loss carried by drops is a retention channel, not a spin channel.",
+      "No arm is promoted or used for repair; this is channel localisation after D-050 and does not reopen scalar tuning, cold search, R-055 or imitation. Final test untouched."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "The paired interval for stabilization-lesion minus parent lies entirely above -0.10; an interval crossing -0.10 is inconclusive, and a success loss explained only by additional drops does not establish the proposed spin mechanism.",
+  "cost_estimate": {
+    "episodes": 320,
+    "llm_calls": 0,
+    "wall_time_minutes": 15
+  },
+  "open_question_refs": [
+    9,
+    10
+  ],
+  "briefing_sha256": "a7668679343bb7c53dab630a8a2613d27334b0bec69bf4b8172da7bdf37fa4ca",
+  "proposal_call_id": "call_00127",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-04T05:37:36",
+    "advisor_call_id": "call_00129",
+    "round": 2,
+    "note": "I accept the implementer's distinction between rotation correction and centering, and the shared-parent design: adding centering and capture-curl lesions incorporates R-066's question without another diagnostic protocol. Reusing scripts/run_shadowhand_spin_stages.py, config/shadowhand_spin_stages.ya"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T05:37:36",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 2: both say approve"
+    }
+  ],
+  "created_at": "2026-11-04T05:32:48",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This is the best next spend: 160 episodes and zero LLM calls to investigate the residual spin source left unidentified by D-050, without reopening exhausted scalar tuning. The predicted decrease of at least 0.10 in paired_success_difference versus config/pen_spin/r046_block3_incumbent is falsified if the paired interval lies wholly above -0.10. Its weakest point is that removing stabilization may damage retention rather than spin generation, so success loss alone cannot establish the mechanism; the planned drop and axial-spin diagnostics are essential. The isolated source substitution, identity gate, free seed 4600 and diagnostic-only status make this appropriately bounded.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00128",
+          "briefing_sha256": "67dd75847c0e961730f2f62d0f9b1f23943292a4adf1a4197bd58fd575edf175",
+          "at": "2026-11-04T05:34:06"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "The question is right and I will run it first, but revise: (1) the protocol's 'reactive-stabilization summand' is ambiguous in the parent source, where the tensor named stabilization mixes the centering term (center_gain, from the position error home - obj) with the rotation correction (tilt_gain and swing_damping, from the pen axis and transverse angular velocity) in one concatenation; 'preserving centering' therefore means the lesion must zero only rotation_correction, which is one audited line (rotation_correction = (...) becomes 0.0 * (...)), and I will state that. (2) The residual spin D-050 left unidentified can come from three reactive channels, each a one-line substitution with the R-062 machinery: the rotation correction (R-065's hypothesis), the centering term (R-066's question: error = home - obj clamped to its zero-error reference, so center = 0 while every other branch still sees the true observation) and the capture curl (extra_curl, driven by the contact and retained gates, clamped to its no-loss reference 0). Running all three as arms beside the parent on one frozen 80-case manifest (seed 4610; 4600-4602 are declared by the deferred R-055) costs 320 episodes, about 4 minutes, answers R-065 and R-066 on identical cases, and localises the residual spin in one run instead of a sequence; the diagnostic sequence does not extend, it collapses. The prediction stays R-065's: rotation-correction lesion minus parent decreases by at least 0.10, falsified if the interval is wholly above -0.10; the other two arms are secondary with the same reporting and interpretation rule (loss, not drop-carried, in-play |spin| on parent-sustained cases). (3) Interfaces: --study r065_channel_lesions with --log-dir and a config block, no --research-protocol flags; manifest config/manifests/pen_spin_stage3_r065_diagnostic_s4610.yaml. (4) Identity gate as the advisor suggested: offline and exact. Each arm's substituted source with its factor at the identity value must reproduce the parent's actions bit-for-bit (torch.equal) on the 80 x 360 archived parent observations of D-050 (logs/pen_spin/r062_stroke_lesion/parent.npz) before any episode; no third process. (5) Reporting per arm: paired success and drop differences with intervals and win/loss/tie, failure split (drops, off-centre versus slow-spin tail failures), in-play mean |spin| overall and on parent-sustained cases, drive and per-axis action saturation over recorded in-play steps. No arm is ever promoted. No LLM call; final test untouched.",
+          "changes_applied": [
+            "lesion = rotation_correction only (stabilization mixes centering and rotation correction)",
+            "three lesion arms on one manifest: rotation_correction, centering clamp, capture-curl clamp; 320 episodes, seed 4610",
+            "--study r065_channel_lesions --log-dir, config block",
+            "offline bit-identical identity gate on D-050's archived parent observations"
+          ],
+          "at": "2026-11-04T05:35:25"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the implementer's distinction between rotation correction and centering, and the shared-parent design: adding centering and capture-curl lesions incorporates R-066's question without another diagnostic protocol. Reusing scripts/run_shadowhand_spin_stages.py, config/shadowhand_spin_stages.yaml and R-062's substitution machinery costs 320 episodes and zero LLM calls on unused seed 4610, with exact offline identity gates before simulator spending. The primary prediction is a decrease of at least 0.10 in paired_success_difference versus config/pen_spin/r046_block3_incumbent, falsified by a paired interval wholly above -0.10 and inconclusive if it crosses -0.10. The weakest point remains causal attribution: drop-carried losses establish retention dependence rather than spin generation, and individual lesions cannot exclude redundant or interacting sources; all arms remain diagnostic, with no promotion or final-test access.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00129",
+          "briefing_sha256": "503fee3b18d9e3d9656bf6062b6f315085a54df04cd1ed06c81c70e002c9c98c",
+          "at": "2026-11-04T05:35:59"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve the revised panel: parent plus rotation-correction, centering-clamp and capture-curl lesions on one frozen 80-case manifest (seed 4610), 320 episodes, zero LLM calls, source audit and exact offline identity gates on D-050's archived observations before any episode, no promotion, final test untouched. Implementing now.",
+          "changes_applied": [],
+          "at": "2026-11-04T05:37:36"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-04T05:35:27",
+      "round": 1,
+      "patch": {
+        "title": "Localize the residual spin channel: rotation-correction, centering and capture-curl lesions",
+        "protocol": {
+          "script": "scripts/run_shadowhand_spin_stages.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r065_channel_lesions --log-dir logs/pen_spin/r065_channel_lesions\"'",
+          "seeds": [
+            4610
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_r065_diagnostic_s4610.yaml"
+          ],
+          "episodes": 320,
+          "llm_calls": 0,
+          "code_changes": [
+            "New study module lares/envs/isaac_pen_spin/channel_lesions.py registered as --study r065_channel_lesions in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent config/pen_spin/r046_block3_incumbent (hashes checked), parameters unchanged, no fitting, R-062's source-substitution machinery.",
+            "Source audit before any episode: the parent's stabilization tensor mixes the centering term (center = center_gain * tanh(distance / center_length) * direction, from error = home - obj) with the rotation correction (tilt_gain * tilt_correction - swing_damping * tanh(transverse_speed / 4) * transverse_direction); the capture curl is extra_curl = capture_curl * ((1 - contact) + 0.75 * (1 - retained)). Each lesion is one audited substitution: rotation_correction_lesion zeroes rotation_correction (= 0.0 * (...)); centering_clamp sets error = 0.0 * (home - obj), the zero-error reference, so center = 0 while every other branch sees the true observation; curl_clamp sets extra_curl to 0.0 * (...), its no-loss reference. The study exits if any pattern does not match exactly once.",
+            "Offline identity gate, exact, before any episode: for each lesion the substituted source at its identity factor (1.0) must reproduce the parent's actions bit-for-bit (torch.equal) on the archived parent observations of D-050 (logs/pen_spin/r062_stroke_lesion/parent.npz, 80 cases x all in-play steps); no third process.",
+            "Arms, one fresh process each on the frozen 80-case Stage-3 diagnostic manifest (seed 4610): parent, rotation_correction_lesion, centering_clamp, curl_clamp. 320 episodes, zero LLM calls.",
+            "Primary (R-065): rotation_correction_lesion minus parent paired sustained success with the 95% t interval; threshold -0.10, falsified if the interval is wholly above -0.10, inconclusive if it crosses it. Secondary, same reporting: centering_clamp minus parent (R-066's question) and curl_clamp minus parent. Per arm: paired drop difference, win/loss/tie, failure split (drops, off-centre versus slow-spin tail failures by the final-centre and tail-spin reducers), in-play mean |spin| overall and on parent-sustained cases, drive and per-axis executed-action saturation over recorded in-play steps. Interpretation per arm as D-050: the channel carries spin if the loss is established, not carried by drops, and the arm's in-play |spin| on parent-sustained cases falls below 4 rad/s; a loss carried by drops is a retention channel, not a spin channel.",
+            "No arm is promoted or used for repair; this is channel localisation after D-050 and does not reopen scalar tuning, cold search, R-055 or imitation. Final test untouched."
+          ],
+          "needs_gpu": true,
+          "needs_llm": false
+        },
+        "cost_estimate": {
+          "episodes": 320,
+          "llm_calls": 0,
+          "wall_time_minutes": 15
+        }
+      },
+      "note": "Round 1 implementer revision: rotation-correction lesion made unambiguous, centering-clamp and curl-clamp arms added on the same manifest (320 episodes, seed 4610), real --study/--log-dir interface, offline bit-identical identity gate on D-050's archived observations."
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "id": "R-067",
+  "title": "3. Test whether inter-finger stroke coordination matters",
+  "hypothesis": "The periodic stroke's contribution depends on coordinated finger phases rather than merely injecting periodic joint motion.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "decrease",
+    "threshold": 0.05,
+    "against": "config/pen_spin/r046_block3_incumbent",
+    "rationale": "A 0.05 loss would identify phase coordination as part of the partial stroke lever found in D-050; unlike R-062, motion remains present, and unlike R-064, frequency and global tempo are unchanged."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --research-protocol stroke_relative_phase --parent config/pen_spin/r046_block3_incumbent --seed 4602 --freeze-diagnostic-manifest config/manifests/pen_spin_stage3_diagnostic_s4602.yaml --num-cases 80 --output-dir logs/pen_spin/stroke_relative_phase_s4602'",
+    "seeds": [
+      4602
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_diagnostic_s4602.yaml"
+    ],
+    "episodes": 240,
+    "llm_calls": 0,
+    "code_changes": [
+      "Reuse the existing diagnostic dispatcher and evaluate three paired arms: parent, relative-phase disruption, and the audited R-062 no-stroke lesion.",
+      "Within only the zero-cycle-mean periodic stroke, delay middle- and little-finger components by half the original gait period; leave thumb, index and ring phases unchanged, preserving each component's mean, amplitude and frequency.",
+      "Verify the identity gate and per-component waveform invariants offline; abort if the frozen source does not permit this isolated transformation.",
+      "Freeze the 80-case manifest before simulation; report sustained success, paired drops, drive/action saturation and in-play axial spin for all arms without promoting any arm.",
+      "Run after the preceding protocols, one protocol at a time; this tests contact coordination not identified by D-050's wholesale stroke removal and does not reopen scalar tuning, cold search or R-055."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The paired interval for phase-disrupted minus parent lies entirely above -0.05; if the interval crosses -0.05 the result is inconclusive, while a loss carried exclusively by extra drops cannot establish a rolling-contact mechanism.",
+  "cost_estimate": {
+    "episodes": 240,
+    "llm_calls": 0,
+    "wall_time_minutes": 35
+  },
+  "open_question_refs": [
+    9,
+    10
+  ],
+  "briefing_sha256": "a7668679343bb7c53dab630a8a2613d27334b0bec69bf4b8172da7bdf37fa4ca",
+  "proposal_call_id": "call_00127",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T05:35:23",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-04T05:32:48",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Relative-phase disruption is distinct from D-050's stroke removal and R-064's tempo intervention, but its 240 episodes and zero LLM calls are lower priority than locating the residual spin channel. Its weakest point is resolution: 80 pairs may leave a 0.05 effect unresolved, and maintaining periodic motion does not by itself isolate a rolling-contact mechanism from retention effects. Reconsider after channel localization shows that stroke coordination is the next decision-relevant uncertainty. The predicted decrease of at least 0.05 in paired_success_difference versus config/pen_spin/r046_block3_incumbent is falsified by a paired interval wholly above -0.05; an interval including zero establishes no success difference.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00128",
+          "briefing_sha256": "67dd75847c0e961730f2f62d0f9b1f23943292a4adf1a4197bd58fd575edf175",
+          "at": "2026-11-04T05:34:06"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree to defer. Relative-phase disruption is a real question about the stroke's share, but 80 pairs cannot resolve a 0.05 effect (D-050's 80 pairs gave a 0.16-wide interval), so the protocol would need about 320 cases to be decisive; reconsider after channel localisation, with a budget sized to the threshold.",
+          "changes_applied": [],
+          "at": "2026-11-04T05:35:23"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}
