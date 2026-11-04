@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-04T08:47:42 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-04T08:50:55 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -13,9 +13,11 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 | running | 0 |
 | approved | 0 |
 | proposed | 0 |
-| deferred | 20 |
+| deferred | 19 |
 | decided | 63 |
-| rejected | 8 |
+| rejected | 9 |
+
+**Loop guard:** the last 2 propose call(s) were rejected in full at triage. After two in a row the loop stops and asks the user for a new direction.
 
 ## Needs attention
 
@@ -42,7 +44,6 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 - R-085 Conditional R-043: isolate anatomical language grounding: This cleanly separates anatomical language grounding from numerical decoder effects, but its prerequisite is an established R-084 anatomical advantage and paren
 - R-087 2. Re-nominate R-082: isolate online pen-axis transport: Online-versus-reset transport isolates changing-axis geometry, but R-086 should finish first because adoption could change the appropriate parent. Its weakest p
 - R-088 3. Re-nominate R-067: lesion inter-finger stroke coordination: Relative-phase disruption tests coordination rather than the common phase lead tested in D-061, but it localizes a mechanism without supplying a better controll
-- R-090 2. Conditional open-loop contact-dwell calibration: D-062 explicitly leaves one magnitude follow-up open, so this tests an unresolved calibration question rather than repeating its warp-sign comparison. Its 420 e
 
 ## Last 5 decisions
 
@@ -64,11 +65,11 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
+- R-090 round 2 · advisor reject / implementer reject → agreed (rejected)
 - R-089 round 2 · advisor approve / implementer approve → agreed (approved)
 - R-089 round 1 · advisor approve / implementer revise → disagreed (proposed)
 - R-091 round 1 · advisor reject / implementer reject → agreed (rejected)
 - R-090 round 1 · advisor defer / implementer defer → agreed (deferred)
-- R-086 round 2 · advisor approve / implementer approve → agreed (approved)
 
 ## Standing constraints
 

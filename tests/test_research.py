@@ -478,3 +478,19 @@ class TestSeedReservations(unittest.TestCase):
             consumed, reserved = proto.split_seed_uses(used, load_ideas(root) + [closed])
             self.assertEqual(reserved, {4653: "R-010"})
             self.assertEqual(sorted(consumed), [2600, 4654])
+
+
+class TestLoopGuardAbstention(unittest.TestCase):
+    def test_zero_idea_propose_calls_count_as_rejected_in_full(self):
+        from lares.research.schemas import log_proposal
+        from lares.research.state import loop_guard
+
+        with tempfile.TemporaryDirectory() as root:
+            idea = make_idea("R-001")
+            idea.save(root)
+            log_proposal(root, "call_1", "sha", "dir", index=0, raw={}, idea_id="R-001")
+            log_proposal(root, "call_2", "sha", "dir", index=-1, raw={}, idea_id="", parse_error="advisor abstained: 0 ideas")
+            log_proposal(root, "call_3", "sha", "dir", index=0, raw={}, idea_id="", parse_error="unparseable")
+            self.assertEqual(loop_guard(root)["consecutive_all_rejected"], 2)
+            log_proposal(root, "call_4", "sha", "dir", index=0, raw={}, idea_id="R-001")
+            self.assertEqual(loop_guard(root)["consecutive_all_rejected"], 0)

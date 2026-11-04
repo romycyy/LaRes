@@ -176,6 +176,14 @@ def cmd_propose(args):
         log_proposal(args.root, out["call_id"], briefing["sha256"], direction, index=r["index"], raw=r["raw"],
                      parse_error=r["reason"])
         print(f"unparseable entry {r['index']}: {r['reason']}")
+    if out.get("abstained"):
+        log_proposal(args.root, out["call_id"], briefing["sha256"], direction, index=-1, raw={},
+                     parse_error="advisor abstained: 0 ideas")
+        guard = loop_guard(args.root)
+        _finish(args, f"call {out['call_id']}: the advisor abstained (0 ideas); {guard['consecutive_all_rejected']} "
+                      "consecutive propose call(s) without a proposable idea. Two stop `propose`: ask the user for a "
+                      "new direction.")
+        return
     _finish(args, f"call {out['call_id']}: {len(out['ideas'])} ideas saved, {len(out['rejected'])} unparseable. "
                   f"Next: `python scripts/research.py triage`")
 

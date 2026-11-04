@@ -581,6 +581,23 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   thread, one process at a time. Each cell's slots are saved to `generated.json` before any of its episodes run, so a
   rerun rebuilds them without an LLM call. `active_schema` is now per thread (`obs_schema._LOCAL`). New multi-block
   studies should use the same pattern.
+- **2026-11-04 session (R-058 to R-089, D-048 to D-063; `docs/SESSION_2026-11-04_PEN_SPIN_SUMMARY.md`).** Scalar tuning of
+  the frozen R-046 learner is closed (D-048 CMA-ES vs random +0.003 [-0.08, +0.08]; D-049 re-ranking -0.002). Its
+  reactive capture curl was the defect: the exact zero-curl clamp (`channel_lesions.curl_clamp`) qualified on a 90-pair
+  instrument (D-057, +0.167 [+0.04, +0.29], drops 4 vs 10) after four 30-pair panels each missed the strict rule by
+  0.0004-0.02. The incumbent is now the clamp with its stroke scaled by a fixed 1.408 (D-058/D-059,
+  `config/pen_spin/d058_fixed_stroke_incumbent/`, verified by `scripts/isaac/adopt_fixed_stroke.py`): about 0.35-0.44
+  fresh success, few drops, slow spin as the failure mode. Feedback on the stroke's amplitude (D-058) and phase lead
+  (D-061), anonymous-coordinate LLM residuals (D-060, the R-043 branch) and a within-cycle warp (D-062/D-063) did not
+  qualify. The learner's roll direction differs across cases, so signed-rate targets are ill-posed. Isaac-only studies
+  are `--study` entries of `scripts/run_shadowhand_spin_stages.py` (one module each: `scalar_tuning`,
+  `archive_rescreen`, `stroke_lesion`, `channel_lesions`, `curl_confirmation`, `constant_preload`, `curl_bandwidth`,
+  `clamp_qualification` (30- and 90-pair instruments), `stroke_feedback`, `lead_feedback`, `phase_warp`,
+  `warp_qualification`); the LLM study `coordinate_repair` runs through `run_full_evolution.py` on the 177-d
+  `ParentScaffold` schema with the `parent_residual` actor kind. pycma 4.5.0 is installed in the box venvs and
+  `lares-local`, not checked in. Seed bookkeeping: a frozen manifest *reserves* its seed for the idea that names it
+  (`protocol.check_idea`, briefing and state distinguish reserved from consumed); the loop guard counts a zero-idea
+  advisor reply as a propose call rejected in full.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

@@ -118,6 +118,10 @@ class Advisor:
             payload = payload.get("ideas", [])
         if not isinstance(payload, list):
             raise ResearchSchemaError("propose response must be a JSON list of ideas")
+        if len(payload) == 0:
+            # An explicit abstention: the advisor found nothing proposable under the direction. Logged as a
+            # zero-idea call so the loop guard counts it (two in a row stop ``propose``).
+            return {"ideas": [], "rejected": [], "call_id": call_id, "abstained": True}
         if len(payload) != n:
             raise ResearchSchemaError(f"asked for {n} ideas, got {len(payload)}")
         ideas, rejected = [], []

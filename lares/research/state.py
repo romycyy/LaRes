@@ -57,7 +57,11 @@ def _proposed_action(idea) -> str:
 
 
 def loop_guard(root) -> dict:
-    """How many recent propose calls ended with every idea rejected, so the loop can stop and ask for a direction."""
+    """How many recent propose calls ended with every idea rejected, so the loop can stop and ask for a direction.
+
+    A call that saved no idea at all (the advisor abstained, or every entry was unparseable) counts as rejected in
+    full: nothing proposable came out of it, which is the condition the guard exists to detect.
+    """
     proposals = load_jsonl(root, PROPOSALS_LOG)
     ideas = {i.id: i for i in load_ideas(root)}
     by_call: dict[str, list] = {}
@@ -67,7 +71,7 @@ def loop_guard(root) -> dict:
     for call_id in reversed(list(by_call)):
         batch = by_call[call_id]
         statuses = [ideas[p["idea_id"]].status for p in batch if p.get("idea_id") in ideas]
-        if statuses and all(s == STATUS_REJECTED for s in statuses):
+        if not statuses or all(s == STATUS_REJECTED for s in statuses):
             streak += 1
         else:
             break

@@ -34,7 +34,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "deferred",
+  "status": "rejected",
   "source": "advisor",
   "falsified_by": "A fresh-confirmation paired interval upper bound below +0.05 refutes the predicted gain. An interval including zero is inconclusive. If idea 1 does not qualify, cancel this protocol without consuming its seeds.",
   "cost_estimate": {
@@ -57,6 +57,18 @@
       "from": "proposed",
       "to": "deferred",
       "note": "triage round 1: both say defer"
+    },
+    {
+      "at": "2026-11-04T08:49:16",
+      "from": "deferred",
+      "to": "proposed",
+      "note": "re-triaged"
+    },
+    {
+      "at": "2026-11-04T08:49:50",
+      "from": "proposed",
+      "to": "rejected",
+      "note": "triage round 2: both say reject"
     }
   ],
   "created_at": "2026-11-04T08:36:25",
@@ -81,10 +93,29 @@
           "at": "2026-11-04T08:38:18"
         },
         "outcome": "agreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "reject",
+          "reasoning": "I accepted the implementer's deferral while R-089 was pending, but D-063 now records failed qualification and more drops, triggering this protocol's explicit cancellation condition. Spending 420 episodes and zero LLM calls would therefore calibrate an unqualified control—the proposal's decisive weakness—not execute the agreed conditional follow-up. Its prediction of an increase of at least 0.05 in paired_success_difference against the qualified D-062 warp would be falsified by a fresh-confirmation interval upper bound below +0.05; cancellation does not refute that untested prediction. Reconsider only under an extended research direction with an independently justified comparison against the qualified incumbent, not another attempt to qualify the same frozen warp.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00179",
+          "briefing_sha256": "926b66f027314934a424c198e1f6e0bbd28a9fe9a9313782120712412c7553a1",
+          "at": "2026-11-04T08:49:16"
+        },
+        "implementer": {
+          "position": "reject",
+          "reasoning": "Agree: cancelled by its own condition, since R-089 did not qualify the warp; no manifest created, seeds 4703-4704 unspent.",
+          "changes_applied": [],
+          "at": "2026-11-04T08:49:50"
+        },
+        "outcome": "agreed"
       }
     ],
-    "outcome": "defer",
-    "agreed_round": 1
+    "outcome": "reject",
+    "agreed_round": 2
   },
   "escalation": {},
   "revisions": []
