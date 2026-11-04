@@ -30,7 +30,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The paired interval upper bound is below +0.05; an interval spanning +0.05 leaves the magnitude inconclusive. Regardless of magnitude, a lower bound at or below zero blocks qualification.",
   "cost_estimate": {
@@ -50,17 +50,203 @@
     "round": 4,
     "note": "I accept the implementer's seed-bookkeeping correction: the refreshed briefing explicitly reserves unconsumed seed 4653 for R-077, resolving my prior objection. This independent qualification of the exact frozen clamp settles eligibility for downstream repair without reopening curl mechanisms, using"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-11-04T06:53:08",
+    "git_sha": "45fdc41a8c04e5cb771b05f1cd41e41b5d639bca",
+    "dirty_worktree": false,
+    "log_dir": "logs/pen_spin/r077_clamp_qualification",
+    "finished_at": "2026-11-04T06:54:56"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.23333333333333334,
+      "paired_success_difference_ci95": [
+        -0.0004421772969606663,
+        0.46710884396362734
+      ],
+      "clamp_minus_parent": {
+        "n": 30,
+        "mean": 0.23333333333333334,
+        "se": 0.11430281754889883,
+        "low": -0.0004421772969606663,
+        "high": 0.46710884396362734,
+        "p_value": 0.05040694161721562
+      },
+      "win_loss_tie": {
+        "wins": 10,
+        "losses": 3,
+        "ties": 17
+      },
+      "drops_minus_parent": {
+        "n": 30,
+        "mean": -0.03333333333333333,
+        "se": 0.05839487722243926,
+        "low": -0.1527642671773659,
+        "high": 0.08609760051069923,
+        "p_value": 0.5725145639415321
+      },
+      "drop_counts_clamp_parent": [
+        1,
+        2
+      ],
+      "promotes": false,
+      "qualifies": false,
+      "repair_parent_eligible": false,
+      "prediction": {
+        "threshold": 0.05,
+        "supported": false,
+        "refuted": false
+      },
+      "arms": {
+        "parent": {
+          "n": 30,
+          "successes": 6,
+          "success": 0.2,
+          "drops": 2,
+          "tail_failures": 22,
+          "off_centre": 8,
+          "slow_spin": 14,
+          "mean_abs_spin": 4.495473674933115,
+          "drive_saturated_fraction": 0.9357517050509044,
+          "action_saturated_fraction": 0.06154986656123357
+        },
+        "zero_curl": {
+          "n": 30,
+          "successes": 13,
+          "success": 0.43333333333333335,
+          "drops": 1,
+          "tail_failures": 16,
+          "off_centre": 1,
+          "slow_spin": 15,
+          "mean_abs_spin": 4.6164208928744,
+          "drive_saturated_fraction": 0.9005641074672531,
+          "action_saturated_fraction": 0.047389807821015394
+        }
+      },
+      "identity_gate": {
+        "rows": 23484,
+        "passes": true
+      },
+      "promotion_panels_to_date_clamp_minus_parent": {
+        "R-068_s4620": {
+          "successes": [
+            12,
+            6
+          ],
+          "difference": 0.2,
+          "low": -0.0057
+        },
+        "R-073_s4631": {
+          "successes": [
+            6,
+            6
+          ],
+          "difference": 0.0,
+          "low": -0.219
+        },
+        "R-075_s4642": {
+          "successes": [
+            13,
+            6
+          ],
+          "difference": 0.2333,
+          "low": -0.02
+        },
+        "R-077_s4653": {
+          "successes": [
+            13,
+            6
+          ],
+          "difference": 0.23333333333333334,
+          "low": -0.0004421772969606663
+        },
+        "pooled_not_predeclared": {
+          "pairs": 120,
+          "successes": [
+            44,
+            24
+          ],
+          "difference": 0.16666666666666666
+        }
+      },
+      "episodes": 60,
+      "llm_calls": 0
+    },
+    "controls": {
+      "parent": "the unchanged frozen R-046 learner on the same 30 cases in its own process",
+      "identity_gate": "the curl_clamp substitution at factor 1.0 reproduced the parent's actions bit for bit on all 23,484 archived D-050 observations before any episode",
+      "no_selection": "one frozen panel (cases 10-39 of the seed-4653 manifest), no candidate selection, no extension, no retry"
+    },
+    "artifacts": [
+      "logs/pen_spin/r077_clamp_qualification/summary.json",
+      "logs/pen_spin/r077_clamp_qualification/identity_gate.json",
+      "logs/pen_spin/r077_clamp_qualification/zero_curl_source.py",
+      "logs/pen_spin/r077_clamp_qualification/parent_promotion.json",
+      "logs/pen_spin/r077_clamp_qualification/zero_curl_promotion.json",
+      "config/manifests/pen_spin_stage3_r077_block_s4653.yaml"
+    ],
+    "notes": [
+      "Primary, predeclared (30 fresh promotion pairs): clamp minus parent +0.2333 [-0.0004, +0.4671] (13/30 vs 6/30; 10 wins, 3 losses, 17 ties). The interval spans +0.05 (and zero), so the predicted magnitude is inconclusive; the standing qualification rule (lower bound above zero) is missed by 0.0004. Drops 1 vs 2 (-0.0333 [-0.1528, +0.0861]), off-centre tail failures 1 vs 8, slow-spin 15 vs 14, in-play |spin| 4.62 vs 4.50. By the predeclared rules the clamp is not qualified and not eligible as a repair parent on this run; no retry.",
+      "Four 30-case promotion panels have now scored the same frozen clamp against the same frozen parent on independent fresh placements: +0.200 (lower bound -0.006), 0.000 (-0.219), +0.233 (-0.020), +0.233 (-0.0004); 44 vs 24 successes over the 120 pairs (+0.167, not predeclared, not a qualification). Together with three fresh panels (148 vs 101 of 480, drops 23 vs 68) the direction of the effect is not in doubt; what the standing rule cannot resolve on 30 pairs is its lower bound, since the paired standard error at this base rate is 0.10-0.11 and the observed effect is about 0.2.",
+      "Saturation: drive above 0.99 on 90-94% of recorded in-play steps in both arms; executed-action saturation 4.7% (clamp) and 6.2% (parent) of components.",
+      "Accounting: 60 Isaac episodes in two fresh processes, 0 LLM calls, about 2 min wall time. The seed-4653 manifest was reserved by this protocol (the ledger now distinguishes reservation from consumption) and is consumed by this run. No deviation from the approved protocol. Final-test split untouched."
+    ]
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.23333333333333334,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.9,
+      "reasoning": "Predicted at least +0.05 for the exact zero-curl clamp against the parent on 30 fresh promotion pairs; observed +0.233 [-0.0004, +0.467] (13 vs 6; 10 wins, 3 losses, 17 ties), drops 1 vs 2. The interval spans +0.05 and zero, so the magnitude is inconclusive, and the standing qualification rule (lower bound above zero) is missed by 0.0004: by the predeclared rules the clamp is not qualified and I record that as it stands, with no retry. The fact the rule cannot see on 30 pairs: this is the fourth independent promotion panel with the same frozen pair (+0.200, 0.000, +0.233, +0.233; 44 vs 24 of 120 pairs) after three fresh panels (148 vs 101 of 480, drops 23 vs 68); a 30-pair panel has a paired standard error of 0.10-0.11 here and the effect is about 0.2, so the strict lower bound lands within a hair of zero each time. Confidence 0.9 in the inconclusive label; the replicated direction is not in doubt.",
+      "cited_artifacts": [],
+      "next_experiment": "The qualification question has become a question about the gate, not the controller: four panels of the standing size have each come within 0.0004-0.02 of the rule while every fresh panel favoured the clamp. Options for the next triage: (a) a one-off predeclared qualification on three standard promotion panels (three manifests, cases 10-39 each, 90 pairs) with the same strict lower-bound rule applied to the pooled paired differences, which keeps the rule's criterion and changes only its resolution; (b) escalate the gate question to the user if the advisor holds that any panel larger than 30 is a rule change. Until then the clamp is not a qualified repair parent and R-078/R-079 stay deferred.",
+      "recorded_at": "2026-11-04T06:54:58",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 0.99,
+      "reasoning": "Against the measured frozen parent, paired_success_difference was +0.2333, with a 95% interval of [-0.000442, +0.467109] [logs/pen_spin/r077_clamp_qualification/summary.json]. The interval contains both zero and the predicted +0.05 threshold, so neither an improvement nor the predicted magnitude is established, and the prediction is not refuted [logs/pen_spin/r077_clamp_qualification/summary.json]. The strictly positive lower-bound requirement fails, leaving the clamp unqualified and ineligible as a repair parent; retrospective pooling does not change this run's qualification outcome [logs/pen_spin/r077_clamp_qualification/summary.json]. Drops were descriptively lower, but their paired difference of -0.0333 also has an interval spanning zero, [-0.1528, +0.0861], so a drop reduction is not established [logs/pen_spin/r077_clamp_qualification/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r077_clamp_qualification/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-04T06:55:19",
+      "call_id": "call_00153"
+    }
+  ],
+  "decision_id": "D-056",
   "history": [
     {
       "at": "2026-11-04T06:48:45",
       "from": "proposed",
       "to": "approved",
       "note": "triage round 4: both say approve"
+    },
+    {
+      "at": "2026-11-04T06:53:08",
+      "from": "approved",
+      "to": "running",
+      "note": "git 45fdc41a8c"
+    },
+    {
+      "at": "2026-11-04T06:54:56",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-04T06:55:34",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-056: inconclusive"
     }
   ],
   "created_at": "2026-11-04T06:37:58",
