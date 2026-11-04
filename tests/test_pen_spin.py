@@ -1267,3 +1267,77 @@ class TestZeroCurlQualification90(unittest.TestCase):
         self.assertFalse(single["qualifies"])
         merged = cq._merge_saturation([sat, {**sat, "in_play_steps": 3, "drive_saturated_fraction": 0.5}])
         self.assertAlmostEqual(merged["drive_saturated_fraction"], (0.9 + 3 * 0.5) / 4)
+
+
+class TestStrokeFeedback(unittest.TestCase):
+    """R-081: gain law, substitution on the clamp, identity, constant control, preflight, manifest and rule."""
+
+    @classmethod
+    def setUpClass(cls):
+        import yaml
+
+        with open("config/shadowhand_spin_stages.yaml") as f:
+            cls.pc = yaml.safe_load(f)["research_protocols"]["r081_stroke_feedback"]
+
+    def test_gain_law_identity_and_feedback(self):
+        import torch
+
+        from lares.envs.isaac_pen_spin import channel_lesions as cl
+        from lares.envs.isaac_pen_spin import stroke_feedback as sf
+
+        np.testing.assert_allclose(sf.gain_law(np.array([0.0, 1.0, 2.0, 4.0, 8.0, 20.0])), [2.0, 2.0, 2.0, 1.0, 0.5, 0.5])
+        self.assertIn("+ self._stroke_gain(spin) * rolling * gait", sf.substituted_source(sf.clamp_source(self.pc)))
+        obs = TestStrokeLesion._contact_obs(self, 3)                   # in contact, pen at home: the stroke is live
+        obs[:, cases.obs_slices()["obj_angvel"]] = torch.tensor([0.2, 0.0, 0.0])   # axial spin 1 rad/s: gain 2
+        clamp = cl.lesioned_learner(self.pc, "curl_clamp", 0.0, "c")
+        a = clamp(obs, 0, None)
+        ident = sf.StrokeFeedbackController(self.pc, "identity", "i")
+        self.assertTrue(torch.equal(a, ident(obs, 0, None)))
+        fb = sf.StrokeFeedbackController(self.pc, "feedback", "f")
+        self.assertFalse(torch.allclose(a, fb(obs, 0, None)))
+        self.assertAlmostEqual(fb.params["gain_activity"]["mean_gain"], 2.0)
+        self.assertAlmostEqual(fb.params["gain_activity"]["active_fraction"], 1.0)
+        const = sf.StrokeFeedbackController(self.pc, "constant", "k", 1.0)
+        self.assertTrue(torch.allclose(a, const(obs, 0, None)))        # constant 1.0 equals the clamp numerically
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "a.npz")
+            np.savez(p, obs=obs.unsqueeze(1).repeat(1, 2, 1).numpy(), length=np.array([2, 2, 1]))
+            self.assertTrue(sf.offline_identity_gate(self.pc, p)["passes"])
+            g = sf.archived_gain_mean(self.pc, [p])
+            self.assertEqual(g["steps"], 5)
+            self.assertAlmostEqual(g["constant"], 2.0)
+            pc = {**self.pc, "gain_archives": [p]}
+            self.assertAlmostEqual(sf.freeze_constant(pc, d)["constant"], 2.0)
+            self.assertEqual(sf.make_controller("constant_gain", pc, d).params["constant"], 2.0)
+            qpath = os.path.join(d, "q.json")
+            json_dump = __import__("json").dump
+            json_dump({"qualifies": False, "repair_parent_eligible": False}, open(qpath, "w"))
+            with self.assertRaises(SystemExit):
+                sf.preflight({**self.pc, "qualification": qpath})
+
+    def test_manifest_and_rule(self):
+        from lares.envs.isaac_pen_spin import stroke_feedback as sf
+
+        self.assertEqual(sf.build_manifests(self.pc), [])
+        m = EvaluationManifest.load(self.pc["manifest"])
+        self.assertEqual(len(m), 120)
+        role = cases.role_manifests(m, sf.roles(self.pc), expected_cases=120, stage=3)
+        self.assertEqual([len(role[p]) for p in sf.PANELS], [30, 80])
+
+        def rows(succ, drops, n):
+            return [{"task_hash": f"h{i}", "sustained": i < succ, "completed": i < n - drops, "tail_hit_fraction": 0.0,
+                     "hit_steps": 0, "length": 360, "mean_abs_spin": 5.0, "mean_transverse": 1.0, "final_center_dist": 0.01}
+                    for i in range(n)]
+
+        sat = {"in_play_steps": 1, "drive_saturated_fraction": 0.9, "action_saturated_fraction": 0.1,
+               "action_saturated_by_axis": [0.1] * 20, "drive_unsaturated_fraction_per_case": [0.1], "note": ""}
+        sats = {a: {p: sat for p in sf.PANELS} for a in sf.ARMS}
+        act = {a: {p: {"active_fraction": 0.6 if a == "stroke_feedback" else 0.0, "mean_gain": 1.3} for p in sf.PANELS} for a in sf.ARMS}
+        r = {"zero_curl": {"promotion": rows(12, 1, 30), "fresh": rows(26, 4, 80)},
+             "constant_gain": {"promotion": rows(12, 1, 30), "fresh": rows(26, 4, 80)},
+             "stroke_feedback": {"promotion": rows(22, 1, 30), "fresh": rows(46, 3, 80)}}
+        agg = sf.aggregate(r, sats, act)
+        self.assertTrue(agg["prediction"]["supported"] and agg["adopts_stroke_feedback"] and agg["feedback_activated"])
+        r["stroke_feedback"] = {"promotion": rows(12, 1, 30), "fresh": rows(27, 4, 80)}
+        agg = sf.aggregate(r, sats, act)
+        self.assertTrue(agg["prediction"]["refuted"] and agg["feedback_activated_without_gain"])

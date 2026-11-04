@@ -12,37 +12,42 @@
   "protocol": {
     "script": "scripts/run_shadowhand_spin_stages.py",
     "config": "config/shadowhand_spin_stages.yaml",
-    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --study r081_conditional_raw_stroke_feedback'",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r081_stroke_feedback --log-dir logs/pen_spin/r081_stroke_feedback\"'",
     "seeds": [
       4663
     ],
     "manifests": [
-      "config/manifests/pen_spin_r081_s4663.yaml"
+      "config/manifests/pen_spin_stage3_r081_block_s4663.yaml"
     ],
     "episodes": 330,
     "llm_calls": 0,
     "code_changes": [
-      "config/shadowhand_spin_stages.yaml: add r081_conditional_raw_stroke_feedback with a hard preflight requiring r080 qualification and its no-more-drops condition; otherwise consume no episodes or seeds.",
-      "scripts/run_shadowhand_spin_stages.py: reuse the frozen stroke decomposition; compare qualified clamp, direct stroke feedback, and constant stroke gain while leaving compression zero and every other term unchanged.",
-      "config/shadowhand_spin_stages.yaml: predeclare feedback gain clip(4/max(abs(spin_rate),1),0.5,2); freeze the constant control to this gain's arithmetic mean over the archived D-052 clamp observations before any new rollout.",
-      "scripts/run_shadowhand_spin_stages.py: require gain=1 to reproduce frozen clamp actions bit-for-bit; score all three arms on promotion cases 10-39 and fresh cases 40-119 of one frozen 120-case manifest.",
-      "scripts/run_shadowhand_spin_stages.py: report paired sustained success, drops, gain activity and saturation; retain the standard strict 30-case promotion gate and prohibit retries or retrospective panel enlargement."
+      "New study module lares/envs/isaac_pen_spin/stroke_feedback.py registered as --study r081_stroke_feedback in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Preflight: logs/pen_spin/r080_zero_curl_qualification_90/qualification.json must say qualifies and repair_parent_eligible, else the study exits before any episode. The parent is the qualified exact zero-curl clamp (the R-065 curl_clamp substitution of config/pen_spin/r046_block3_incumbent, hashes checked).",
+      "Feedback: one audited substitution on the clamp's source, + rolling * gait becomes + self._stroke_gain(spin) * rolling * gait, with gain = clip(4 / max(|spin|, 1), 0.5, 2), spin the policy's own axial rate (5 * obj_angvel projected on the pen axis, rad/s) from the current observation, per environment per step. Constant control: the arithmetic mean of that gain over all recorded in-play steps of the clamp's archived R-068 fresh and promotion runs, frozen with provenance before any episode. Identity form returns exactly 1.0, gated bit for bit offline on D-050's archived observations. Compression stays zero; every other term unchanged.",
+      "One frozen 120-case Stage-3 manifest on seed 4663 at config/manifests/pen_spin_stage3_r081_block_s4663.yaml (cases 0-9 unused, promotion 10-39, fresh 40-119), placement-disjoint from every committed pen-spin manifest. Arms zero_curl, stroke_feedback, constant_gain, each on each panel in its own fresh process: six processes, 330 episodes, zero LLM calls.",
+      "Primary: stroke_feedback minus constant_gain fresh sustained success (80 pairs), 95% t interval; at least +0.05; supported if the mean is at least +0.05 and the lower bound is above zero; refuted if the upper bound is below +0.05; otherwise inconclusive. Adoption: strict promotion against the qualified parent on cases 10-39, fresh lower bound above zero against it, no more observed drops on either panel; no retry or panel enlargement. Reported per arm and panel: sustained success, paired success and drop differences with intervals and win/loss/tie, failure split, in-play mean |spin|, gain activity (fraction of in-play steps with gain outside [0.9, 1.1] and the mean gain), drive and per-axis executed-action saturation. If feedback activates without a success gain, R-043 takes priority. Held-out split untouched."
     ],
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "deferred",
+  "status": "approved",
   "source": "advisor",
   "falsified_by": "The fresh paired interval's upper bound against the constant-gain control is below +0.05. An interval including zero does not establish feedback benefit; failure to beat the qualified parent under strict promotion, or more observed drops, blocks adoption.",
   "cost_estimate": {
     "episodes": 330,
     "llm_calls": 0,
-    "wall_time_minutes": 75
+    "wall_time_minutes": 15
   },
   "open_question_refs": [],
   "briefing_sha256": "8a1a642674c66a567348431e5a284b148dc56a6c16b8179aa6e6c2486b407b07",
   "proposal_call_id": "call_00154",
-  "approval": {},
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-04T07:13:06",
+    "advisor_call_id": "call_00159",
+    "round": 3,
+    "note": "I accept Claude Code's revised interface, qualification preflight, frozen constant-gain control and offline identity gate; these resolve the remaining disagreement without changing the experiment. Feedback versus constant gain isolates online regulation from stronger open-loop actuation, but added s"
+  },
   "run": {},
   "result": {},
   "prediction_outcome": {},
@@ -54,6 +59,18 @@
       "from": "proposed",
       "to": "deferred",
       "note": "triage round 1: both say defer"
+    },
+    {
+      "at": "2026-11-04T07:09:56",
+      "from": "deferred",
+      "to": "proposed",
+      "note": "re-triaged"
+    },
+    {
+      "at": "2026-11-04T07:13:06",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
     }
   ],
   "created_at": "2026-11-04T06:58:24",
@@ -78,11 +95,85 @@
           "at": "2026-11-04T07:01:11"
         },
         "outcome": "agreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept Claude Code's qualification prerequisite: D-057 now qualifies the exact zero-curl parent with fewer drops, removing the reason for deferral. The constant-gain control separates useful online regulation from stronger open-loop actuation; the weakest point is whether additional stroke authority restores spin without sacrificing retention. The prediction is a paired_success_difference increase of at least 0.05 versus the frozen constant-gain control, falsified_by a fresh paired interval upper bound below +0.05; an interval including zero establishes no benefit, and failed strict promotion against the qualified parent or more observed drops blocks adoption. Approve 330 simulator episodes and zero LLM calls using scripts/run_shadowhand_spin_stages.py, config/shadowhand_spin_stages.yaml, and unspent seed 4663, without retries or panel enlargement.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00158",
+          "briefing_sha256": "4921efaf7014570f17a59fea055a0ab3bc5502325990530e8746e098cde6965a",
+          "at": "2026-11-04T07:09:56"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree on substance and ready to run it; revise the interface only. --study r081_stroke_feedback with --log-dir and a config block; one frozen 120-case Stage-3 manifest on the reserved seed 4663 at config/manifests/pen_spin_stage3_r081_block_s4663.yaml (cases 0-9 unused, promotion 10-39, fresh 40-119), placement-disjoint from every committed pen-spin manifest. Preflight reads logs/pen_spin/r080_zero_curl_qualification_90/qualification.json and exits before any episode unless qualifies and repair_parent_eligible are both true. The feedback is one audited substitution on the qualified clamp's source: + rolling * gait becomes + self._stroke_gain(spin) * rolling * gait, with gain = clip(4 / max(|spin|, 1), 0.5, 2) where spin is the policy's own axial rate (5 * obj_angvel projected on the pen axis, rad/s), computed per environment per step from the current observation; the constant control uses the arithmetic mean of that gain over all recorded in-play steps of the clamp's archived R-068 fresh and promotion runs, frozen with provenance before any episode; the identity form returns exactly 1.0 and is gated bit for bit offline on D-050's archived observations. Arms: zero_curl (the qualified parent), stroke_feedback, constant_gain; each arm on each panel in its own process, six processes, 330 episodes, zero LLM calls. Primary: feedback minus constant-gain fresh success (80 pairs), at least +0.05, supported if the mean is at least +0.05 with the lower bound above zero, refuted if the upper bound is below +0.05; adoption needs strict promotion against the qualified parent on cases 10-39, fresh lower bound above zero against it, and no more observed drops; feedback activation reported as the fraction of in-play steps with gain outside [0.9, 1.1]. If feedback activates without a success gain, R-043 is next, as the advisor says.",
+          "changes_applied": [
+            "--study r081_stroke_feedback --log-dir; config block; manifest pen_spin_stage3_r081_block_s4663.yaml; preflight on qualification.json; gain law, constant control and identity gate stated"
+          ],
+          "at": "2026-11-04T07:11:35"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept Claude Code's revised interface, qualification preflight, frozen constant-gain control and offline identity gate; these resolve the remaining disagreement without changing the experiment. Feedback versus constant gain isolates online regulation from stronger open-loop actuation, but added stroke authority may sacrifice the qualified clamp's retention advantage. The prediction is paired_success_difference increase of at least 0.05 against constant_gain on fresh cases; falsified_by is an interval upper bound below +0.05, and an interval including zero establishes no benefit. Approve 330 simulator episodes and zero LLM calls using scripts/run_shadowhand_spin_stages.py, config/shadowhand_spin_stages.yaml and reserved, unspent seed 4663, retaining strict promotion against the qualified parent, a positive fresh lower bound, no more observed drops on either panel, and no retries or enlargement.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00159",
+          "briefing_sha256": "25b978814b895c23d66ff95ac2eccad865d1eb4de4522fc2058049659810cec8",
+          "at": "2026-11-04T07:12:45"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve: the qualified zero-curl clamp, the stroke-feedback gain clip(4 / max(|spin|, 1), 0.5, 2), and the same gain frozen at its archived mean, each on each panel of the frozen seed-4663 manifest in its own process; preflight on R-080's qualification.json and the offline identity gate first; six processes, 330 episodes, zero LLM calls; strict promotion against the parent, positive fresh lower bound and no more drops for adoption; activated feedback without a gain routes to R-043. Running now.",
+          "changes_applied": [],
+          "at": "2026-11-04T07:13:06"
+        },
+        "outcome": "agreed"
       }
     ],
-    "outcome": "defer",
-    "agreed_round": 1
+    "outcome": "approve",
+    "agreed_round": 3
   },
   "escalation": {},
-  "revisions": []
+  "revisions": [
+    {
+      "at": "2026-11-04T07:11:37",
+      "round": 2,
+      "patch": {
+        "protocol": {
+          "script": "scripts/run_shadowhand_spin_stages.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r081_stroke_feedback --log-dir logs/pen_spin/r081_stroke_feedback\"'",
+          "seeds": [
+            4663
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_r081_block_s4663.yaml"
+          ],
+          "episodes": 330,
+          "llm_calls": 0,
+          "code_changes": [
+            "New study module lares/envs/isaac_pen_spin/stroke_feedback.py registered as --study r081_stroke_feedback in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Preflight: logs/pen_spin/r080_zero_curl_qualification_90/qualification.json must say qualifies and repair_parent_eligible, else the study exits before any episode. The parent is the qualified exact zero-curl clamp (the R-065 curl_clamp substitution of config/pen_spin/r046_block3_incumbent, hashes checked).",
+            "Feedback: one audited substitution on the clamp's source, + rolling * gait becomes + self._stroke_gain(spin) * rolling * gait, with gain = clip(4 / max(|spin|, 1), 0.5, 2), spin the policy's own axial rate (5 * obj_angvel projected on the pen axis, rad/s) from the current observation, per environment per step. Constant control: the arithmetic mean of that gain over all recorded in-play steps of the clamp's archived R-068 fresh and promotion runs, frozen with provenance before any episode. Identity form returns exactly 1.0, gated bit for bit offline on D-050's archived observations. Compression stays zero; every other term unchanged.",
+            "One frozen 120-case Stage-3 manifest on seed 4663 at config/manifests/pen_spin_stage3_r081_block_s4663.yaml (cases 0-9 unused, promotion 10-39, fresh 40-119), placement-disjoint from every committed pen-spin manifest. Arms zero_curl, stroke_feedback, constant_gain, each on each panel in its own fresh process: six processes, 330 episodes, zero LLM calls.",
+            "Primary: stroke_feedback minus constant_gain fresh sustained success (80 pairs), 95% t interval; at least +0.05; supported if the mean is at least +0.05 and the lower bound is above zero; refuted if the upper bound is below +0.05; otherwise inconclusive. Adoption: strict promotion against the qualified parent on cases 10-39, fresh lower bound above zero against it, no more observed drops on either panel; no retry or panel enlargement. Reported per arm and panel: sustained success, paired success and drop differences with intervals and win/loss/tie, failure split, in-play mean |spin|, gain activity (fraction of in-play steps with gain outside [0.9, 1.1] and the mean gain), drive and per-axis executed-action saturation. If feedback activates without a success gain, R-043 takes priority. Held-out split untouched."
+          ],
+          "needs_gpu": true,
+          "needs_llm": false
+        },
+        "cost_estimate": {
+          "episodes": 330,
+          "llm_calls": 0,
+          "wall_time_minutes": 15
+        }
+      },
+      "note": "Round 2 implementer revision: --study interface, manifest naming, preflight on R-080's qualification.json, gain law / constant control / identity gate stated; rules unchanged."
+    }
+  ]
 }
