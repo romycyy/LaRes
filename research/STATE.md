@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-04T08:18:01 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-04T08:26:07 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -11,15 +11,16 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 0 |
+| approved | 1 |
 | proposed | 0 |
-| deferred | 17 |
+| deferred | 19 |
 | decided | 61 |
 | rejected | 7 |
 
 ## Needs attention
 
-- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
+- **R-086** [approved] 1. Re-nominate R-076: reshape the stroke within each roll cycle
+  - `python scripts/research.py start R-086` then run its command
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
@@ -40,6 +41,8 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 - R-079 Transport the stroke into the pen's instantaneous tangential plane: Geometric stroke transport is distinct from the rotation-correction lesion, and the initial-axis control would separate online transport from static remapping. 
 - R-082 Conditional R-079: transport the stroke with the pen axis: Instantaneous-axis transport versus reset-axis transport isolates online geometric tracking, which the rotation-correction lesion did not test. Defer its 450 si
 - R-085 Conditional R-043: isolate anatomical language grounding: This cleanly separates anatomical language grounding from numerical decoder effects, but its prerequisite is an established R-084 anatomical advantage and paren
+- R-087 2. Re-nominate R-082: isolate online pen-axis transport: Online-versus-reset transport isolates changing-axis geometry, but R-086 should finish first because adoption could change the appropriate parent. Its weakest p
+- R-088 3. Re-nominate R-067: lesion inter-finger stroke coordination: Relative-phase disruption tests coordination rather than the common phase lead tested in D-061, but it localizes a mechanism without supplying a better controll
 
 ## Last 5 decisions
 
@@ -61,11 +64,11 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
+- R-086 round 2 · advisor approve / implementer approve → agreed (approved)
+- R-086 round 1 · advisor revise / implementer revise → agreed (proposed)
+- R-088 round 1 · advisor defer / implementer defer → agreed (deferred)
+- R-087 round 1 · advisor defer / implementer defer → agreed (deferred)
 - R-064 round 3 · advisor approve / implementer approve → agreed (approved)
-- R-064 round 2 · advisor revise / implementer revise → agreed (proposed)
-- R-084 round 2 · advisor approve / implementer approve → agreed (approved)
-- R-084 round 1 · advisor approve / implementer revise → disagreed (proposed)
-- R-085 round 1 · advisor defer / implementer defer → agreed (deferred)
 
 ## Standing constraints
 

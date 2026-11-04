@@ -1,0 +1,89 @@
+{
+  "id": "R-088",
+  "title": "3. Re-nominate R-067: lesion inter-finger stroke coordination",
+  "hypothesis": "Coordinated relative phases between fingers generate useful axial torque beyond the effect of increasing each finger's stroke amplitude.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "decrease",
+    "threshold": 0.1,
+    "against": "config/pen_spin/d058_fixed_stroke_incumbent/incumbent.json",
+    "rationale": "A ten-point loss under a fixed phase-scrambling lesion would identify coordination as an actionable stroke mechanism. R-067's localization prerequisite is resolved: the adopted improvement is in the periodic stroke. D-061 shifted the common phase lead, preserving relative phases, so its flat result does not answer this question. This cheap diagnostic ranks last because even a positive result localizes a mechanism rather than supplying a better controller."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --paired-protocol r067-relative-phase-lesion --parent config/pen_spin/d058_fixed_stroke_incumbent/incumbent.json --seed 4692 --manifest config/manifests/pen_spin_r067_relative_phase_s4692.yaml --freeze-manifest-size 90 --promotion-cases 10:40 --fresh-cases 40:90 --output logs/pen_spin/r067_relative_phase_s4692'",
+    "seeds": [
+      4692
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_r067_relative_phase_s4692.yaml"
+    ],
+    "episodes": 160,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py: reuse the paired runner; add one predeclared lesion applying digit phase offsets [-pi/2,-pi/4,0,pi/4,pi/2] in thumb-to-little order to periodic stroke contributions only, with no search or winner selection.",
+      "scripts/run_shadowhand_spin_stages.py: first verify offline that per-digit stroke contributions are separable and that zero offsets reconstruct the parent bit for bit; otherwise stop without rollouts. Preserve each digit's stroke mean and RMS, all non-stroke terms, and the parent's clipping.",
+      "scripts/run_shadowhand_spin_stages.py: evaluate parent and lesion on the same 80 cases in separate equal-shape processes; report paired sustained success, slow-spin and drop failure labels, in-play spin, and per-axis saturation. This is a lesion, not a promotion candidate.",
+      "config/shadowhand_spin_stages.yaml: add the opt-in fixed lesion specification; run only after the other protocols close and re-triage if their results change the value of this diagnostic."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The fresh lesion-minus-parent paired interval has a lower bound above -0.10, excluding the predicted loss. A loss explained solely by increased drops does not establish the proposed axial-torque mechanism.",
+  "cost_estimate": {
+    "episodes": 160,
+    "llm_calls": 0,
+    "wall_time_minutes": 25
+  },
+  "open_question_refs": [
+    9
+  ],
+  "briefing_sha256": "f299d7a8593ae7ef6b026cee9794303a601b65323b6a0da61323c56e463fcc39",
+  "proposal_call_id": "call_00170",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T08:23:08",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-04T08:20:48",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Relative-phase disruption tests coordination rather than the common phase lead tested in D-061, but it localizes a mechanism without supplying a better controller. Its 160-episode, zero-LLM budget should wait for the repair protocols, and a success loss caused by drops would not establish useful axial torque. Retain the prediction: paired_success_difference decrease of at least 0.10 against config/pen_spin/d058_fixed_stroke_incumbent/incumbent.json. Falsified_by: the fresh lesion-minus-parent interval's lower bound is above -0.10; a drop-only loss leaves the torque mechanism inconclusive.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00171",
+          "briefing_sha256": "6de6fd6cbc74367dab1097674c47039c6937807f3f3e7701205e1cc23f56102d",
+          "at": "2026-11-04T08:22:11"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree to defer: a diagnostic that cannot supply a better controller waits behind the repair protocols.",
+          "changes_applied": [],
+          "at": "2026-11-04T08:23:08"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

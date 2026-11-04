@@ -1,0 +1,156 @@
+{
+  "id": "R-086",
+  "title": "1. Re-nominate R-076: reshape the stroke within each roll cycle",
+  "hypothesis": "Redistributing stroke motion within each roll cycle reduces return-stroke opposition and raises sustained spin without increasing grasp compression.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "config/pen_spin/d058_fixed_stroke_incumbent/incumbent.json",
+    "rationale": "A ten-point sustained-success gain would justify waveform repair; this directly tests stroke efficiency rather than another feedback signal. R-076's operating-point prerequisite is now resolved: D-059 adopted the fixed-amplitude parent. D-058 changed amplitude and D-061 changed global phase lead; neither tested within-cycle waveform shape."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r086_phase_warp --log-dir logs/pen_spin/r086_phase_warp\"'",
+    "seeds": [
+      4690
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_r086_block_s4690.yaml"
+    ],
+    "episodes": 340,
+    "llm_calls": 0,
+    "code_changes": [
+      "New study module lares/envs/isaac_pen_spin/phase_warp.py registered as --study r086_phase_warp in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent: the D-058 incumbent (config/pen_spin/d058_fixed_stroke_incumbent, hashes checked); amplitude, phase lead, zero compression, stroke gain, centring and grasp unchanged; no LLM.",
+      "Mechanism: the stroke phase is the pen's roll angle phi = atan2(sin_roll, cos_roll) from the quaternion twist. One audited substitution at the roll stage applies h(phi) = phi + epsilon sin(phi) (epsilon -0.35 or +0.35) and, per finger, re-centres and rescales the warped sin_phase and cos_phase channels to the unwarped channel's cycle mean and RMS, using constants computed offline on a 3600-point phase grid at the frozen phase_lead and finger offsets, written to disk with their hash before any episode. At epsilon = 0 the substitution returns the original tensors untouched; gated bit for bit offline on D-050's archived observations.",
+      "One frozen 160-case Stage-3 manifest (seed 4690) at config/manifests/pen_spin_stage3_r086_block_s4690.yaml: cases 0-9 unused, promotion 10-39, screen 40-79, fresh 80-159; placement-disjoint from every committed pen-spin manifest. Both warps and the parent on the 40 screen cases, each in its own process; the winner (sustained successes, then fewer drops, then candidate order) frozen before any confirmation episode; winner and parent on promotion and fresh, each in its own process. 3 x 40 + 2 x 110 = 340 episodes, zero LLM calls.",
+      "Primary: winner minus parent fresh sustained success (80 pairs), 95% t interval; at least +0.10; supported if the mean is at least +0.10 with the lower bound above zero; refuted if the upper bound is below +0.10; otherwise inconclusive. Adoption: the standing strict rule on cases 10-39 (positive difference, lower bound above zero), fresh lower bound above zero, no more observed drops on either panel. Reported: sustained success, drops, failure split, in-play mean |spin|, drive and per-axis action saturation, the warp's realised per-finger channel mean and RMS on recorded observations, both candidates' screen scores. Final test untouched."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "The fresh paired interval's upper bound is below +0.10. An interval spanning the threshold is inconclusive. A success gain accompanied by more drops is not an adoptable repair.",
+  "cost_estimate": {
+    "episodes": 340,
+    "llm_calls": 0,
+    "wall_time_minutes": 12
+  },
+  "open_question_refs": [
+    9
+  ],
+  "briefing_sha256": "f299d7a8593ae7ef6b026cee9794303a601b65323b6a0da61323c56e463fcc39",
+  "proposal_call_id": "call_00170",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-04T08:26:06",
+    "advisor_call_id": "call_00172",
+    "round": 2,
+    "note": "I accept the implementer's corrected partition, exact-zero identity branch and frozen normalization constants; these resolve the previous revision within 340 simulator episodes and zero LLM calls. Within-cycle shaping tests a distinct repair mechanism on the adopted parent: amplitude scaling and com"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T08:26:06",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 2: both say approve"
+    }
+  ],
+  "created_at": "2026-11-04T08:20:48",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "Within-cycle phase warping tests a repair mechanism that amplitude scaling and common phase-lead changes did not settle. The 340-episode, zero-LLM protocol incorrectly screens on standing promotion cases 10-39 and substitutes cases 50-79 for promotion. Retain the prediction: paired_success_difference increase of at least 0.10 against config/pen_spin/d058_fixed_stroke_incumbent/incumbent.json. Falsified_by: the fresh paired interval's upper bound is below +0.10; an interval spanning the threshold is inconclusive.",
+          "suggested_changes": [
+            "Change the partition to --screen-cases 40:80 --promotion-cases 10:40 --fresh-cases 80:160 on the frozen seed-4690 development manifest; retain the 340-episode, zero-LLM budget.",
+            "Freeze the selected warp before confirmation and explicitly require the standing paired-t lower bound above zero on promotion cases 10-39, fresh confirmation against the parent, and no greater observed drop rate before adoption; report sustained success, drops and per-axis saturation.",
+            "Reuse scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, including existing paired-evaluation machinery; run each arm in separate processes with identical batch shape, retain the identity gate and scoring definition, and leave final test locked."
+          ],
+          "priority": 1,
+          "call_id": "call_00171",
+          "briefing_sha256": "6de6fd6cbc74367dab1097674c47039c6937807f3f3e7701205e1cc23f56102d",
+          "at": "2026-11-04T08:22:11"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree: revise with the advisor's partition and gates, plus the interface and two implementation details the mechanism needs on this parent. (1) Partition on one frozen 160-case Stage-3 manifest (seed 4690): cases 0-9 unused, promotion 10-39, screen 40-79, fresh 80-159; both warps and the parent screened on the 40 screen cases in their own processes; the winner (successes, fewer drops, candidate order) frozen before confirmation; winner and parent on promotion and fresh; 3 x 40 + 2 x 110 = 340 episodes, zero LLM calls. (2) Mechanism on this parent: the stroke phase is the pen's roll angle phi = atan2(sin_roll, cos_roll) from the quaternion twist; the warp h(phi) = phi + epsilon sin(phi), epsilon in {-0.35, +0.35}, is one audited substitution at the roll stage (sin_roll, cos_roll become sin(h), cos(h)), and per finger the warped sin_phase and cos_phase channels are re-centred and rescaled to the unwarped channel's cycle mean (zero) and RMS, with the constants computed offline on a 3600-point phase grid at the frozen phase_lead and finger offsets and written to disk with their hash before any episode, so only the within-cycle shape changes; amplitude, phase lead, compression (zero), stroke gain, centring and grasp are unchanged. (3) Identity: at epsilon = 0 the substitution returns the original tensors untouched (atan2 followed by sin is not bit-exact), gated bit for bit offline on D-050's archived observations. (4) Interface: --study r086_phase_warp with --log-dir and a config block in config/shadowhand_spin_stages.yaml; manifest config/manifests/pen_spin_stage3_r086_block_s4690.yaml. (5) Prediction retained (winner minus parent fresh at least +0.10; supported if the mean is at least +0.10 with the lower bound above zero; refuted if the upper bound is below +0.10); adoption needs the standing strict rule on cases 10-39, fresh lower bound above zero and no more observed drops; reported: sustained success, drops, failure split, spin, drive and per-axis action saturation, the warp's realised per-finger mean and RMS from recorded observations.",
+          "changes_applied": [
+            "partition promotion 10-39, screen 40-79, fresh 80-159 on manifest s4690",
+            "warp at the roll stage with frozen offline normalisation constants; exact identity at epsilon 0",
+            "--study r086_phase_warp --log-dir; config block"
+          ],
+          "at": "2026-11-04T08:23:10"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the implementer's corrected partition, exact-zero identity branch and frozen normalization constants; these resolve the previous revision within 340 simulator episodes and zero LLM calls. Within-cycle shaping tests a distinct repair mechanism on the adopted parent: amplitude scaling and common phase-lead changes did not test waveform shape. The weakest point is that uniform-cycle RMS matching need not preserve action authority over visited phases, making the specified realised-channel and saturation diagnostics important. Retain the prediction that paired_success_difference will increase by at least 0.10 against config/pen_spin/d058_fixed_stroke_incumbent/incumbent.json; falsified_by is a fresh paired 95% interval whose upper bound is below +0.10.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00172",
+          "briefing_sha256": "f345c24d29b6ee028f6b17030502eb62695dd449f1a8fbf738fe907253d30333",
+          "at": "2026-11-04T08:25:19"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve: two within-cycle warps (epsilon +-0.35 on the pen's roll angle with frozen per-finger normalisation constants) and the parent on the 40 screen cases of the frozen seed-4690 manifest in their own processes, the winner frozen, winner and parent on promotion 10-39 and fresh 80-159; exact identity at epsilon 0 gated offline first; 340 episodes, zero LLM calls; adoption under the strict rule; realised-channel and saturation diagnostics reported; final test locked. Implementing and running now.",
+          "changes_applied": [],
+          "at": "2026-11-04T08:26:06"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-04T08:23:12",
+      "round": 1,
+      "patch": {
+        "protocol": {
+          "script": "scripts/run_shadowhand_spin_stages.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r086_phase_warp --log-dir logs/pen_spin/r086_phase_warp\"'",
+          "seeds": [
+            4690
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_r086_block_s4690.yaml"
+          ],
+          "episodes": 340,
+          "llm_calls": 0,
+          "code_changes": [
+            "New study module lares/envs/isaac_pen_spin/phase_warp.py registered as --study r086_phase_warp in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent: the D-058 incumbent (config/pen_spin/d058_fixed_stroke_incumbent, hashes checked); amplitude, phase lead, zero compression, stroke gain, centring and grasp unchanged; no LLM.",
+            "Mechanism: the stroke phase is the pen's roll angle phi = atan2(sin_roll, cos_roll) from the quaternion twist. One audited substitution at the roll stage applies h(phi) = phi + epsilon sin(phi) (epsilon -0.35 or +0.35) and, per finger, re-centres and rescales the warped sin_phase and cos_phase channels to the unwarped channel's cycle mean and RMS, using constants computed offline on a 3600-point phase grid at the frozen phase_lead and finger offsets, written to disk with their hash before any episode. At epsilon = 0 the substitution returns the original tensors untouched; gated bit for bit offline on D-050's archived observations.",
+            "One frozen 160-case Stage-3 manifest (seed 4690) at config/manifests/pen_spin_stage3_r086_block_s4690.yaml: cases 0-9 unused, promotion 10-39, screen 40-79, fresh 80-159; placement-disjoint from every committed pen-spin manifest. Both warps and the parent on the 40 screen cases, each in its own process; the winner (sustained successes, then fewer drops, then candidate order) frozen before any confirmation episode; winner and parent on promotion and fresh, each in its own process. 3 x 40 + 2 x 110 = 340 episodes, zero LLM calls.",
+            "Primary: winner minus parent fresh sustained success (80 pairs), 95% t interval; at least +0.10; supported if the mean is at least +0.10 with the lower bound above zero; refuted if the upper bound is below +0.10; otherwise inconclusive. Adoption: the standing strict rule on cases 10-39 (positive difference, lower bound above zero), fresh lower bound above zero, no more observed drops on either panel. Reported: sustained success, drops, failure split, in-play mean |spin|, drive and per-axis action saturation, the warp's realised per-finger channel mean and RMS on recorded observations, both candidates' screen scores. Final test untouched."
+          ],
+          "needs_gpu": true,
+          "needs_llm": false
+        },
+        "cost_estimate": {
+          "episodes": 340,
+          "llm_calls": 0,
+          "wall_time_minutes": 12
+        }
+      },
+      "note": "Round 1 agreed revise: partition promotion 10-39 / screen 40-79 / fresh 80-159 on manifest s4690, --study interface, warp at the roll stage with frozen normalisation constants and exact identity at epsilon 0; rules unchanged."
+    }
+  ]
+}

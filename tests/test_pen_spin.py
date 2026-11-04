@@ -1532,3 +1532,69 @@ class TestLeadFeedback(unittest.TestCase):
         sats = {c: {p: sat for p in lf.PANELS} for c in r}
         agg = lf.aggregate(r, sats, {}, {"feedback": "fb_t6_g+0.1", "constant": "const_+0.1"}, {})
         self.assertTrue(agg["prediction"]["supported"] and agg["adoption"]["feedback"] and not agg["adoption"]["constant"])
+
+
+class TestPhaseWarp(unittest.TestCase):
+    """R-086: substitution, identity at zero warp, normalisation constants, controllers, manifest, rule."""
+
+    @classmethod
+    def setUpClass(cls):
+        import yaml
+
+        with open("config/shadowhand_spin_stages.yaml") as f:
+            cls.pc = yaml.safe_load(f)["research_protocols"]["r086_phase_warp"]
+
+    def test_constants_identity_and_warp(self):
+        import torch
+
+        from lares.envs.isaac_pen_spin import coordinate_repair as cr
+        from lares.envs.isaac_pen_spin import phase_warp as pw
+
+        src = cr.incumbent_spec(self.pc["incumbent_asset"])["source"]
+        sub = pw.substituted_source(src)
+        self.assertIn("self._warp(tw * tw - tx * tx, 2.0 * tw * tx)", sub)
+        self.assertIn("sin_phase, cos_phase = self._normalise(", sub)
+        c0 = pw.normalisation_constants(0.0, 0.4538)
+        np.testing.assert_allclose(c0["sin_mean"], [0] * 5, atol=1e-12)
+        np.testing.assert_allclose(c0["sin_rms"], [2 ** -0.5] * 5, atol=1e-6)
+        c = pw.normalisation_constants(0.35, 0.4538)
+        self.assertTrue(any(abs(m) > 1e-3 for m in c["sin_mean"]))     # the warp shifts the cycle mean
+        obs = TestStrokeLesion._contact_obs(self, 3)
+        obs[:, cases.obs_slices()["obj_rot"]] = torch.tensor([0.9, 0.3, 0.2, 0.1]) / (0.9 ** 2 + 0.3 ** 2 + 0.2 ** 2 + 0.1 ** 2) ** 0.5
+        parent = cr.incumbent_controller(self.pc["incumbent_asset"])
+        a = parent(obs, 0, None)
+        ident = pw.WarpController(self.pc["incumbent_asset"], "identity", 0.0, None)
+        self.assertTrue(torch.equal(a, ident(obs, 0, None)))
+        with tempfile.TemporaryDirectory() as d:
+            consts = pw.freeze_constants(self.pc, d)
+            self.assertEqual(set(consts), {"-0.35", "+0.35"})
+            self.assertEqual(pw.freeze_constants(self.pc, d)["+0.35"]["sha256"], consts["+0.35"]["sha256"])
+            w = pw.make_controller("warp_+0.35", self.pc, d)
+            self.assertFalse(torch.allclose(a, w(obs, 0, None)))
+            self.assertEqual(w.params["eps"], 0.35)
+            p = os.path.join(d, "a.npz")
+            np.savez(p, obs=obs.unsqueeze(1).repeat(1, 2, 1).numpy(), length=np.array([2, 2, 1]))
+            self.assertTrue(pw.offline_identity_gate(self.pc, p)["passes"])
+            ch = pw.realised_channels({"obs": obs.unsqueeze(1).repeat(1, 2, 1).numpy(), "length": np.array([2, 2, 1])}, 0.0, 0.4538, None)
+            self.assertEqual(ch["steps"], 5)
+
+    def test_manifest_and_rule(self):
+        from lares.envs.isaac_pen_spin import phase_warp as pw
+
+        self.assertEqual(pw.build_manifests(self.pc), [])
+        m = EvaluationManifest.load(self.pc["manifest"])
+        role = cases.role_manifests(m, pw.roles(self.pc), expected_cases=160, stage=3)
+        self.assertEqual([len(role[r]) for r in ("promotion", "screen", "fresh")], [30, 40, 80])
+        self.assertEqual(pw.candidate_names(self.pc), ["warp_-0.35", "warp_+0.35"])
+        self.assertEqual(pw.parse_arm("warp_-0.35"), -0.35)
+
+        def rows(succ, drops, n):
+            return [{"task_hash": f"h{i}", "sustained": i < succ, "completed": i < n - drops, "tail_hit_fraction": 0.0,
+                     "hit_steps": 0, "length": 360, "mean_abs_spin": 5.0, "mean_transverse": 1.0, "final_center_dist": 0.01}
+                    for i in range(n)]
+
+        sat = {"in_play_steps": 1, "drive_saturated_fraction": 0.9, "action_saturated_fraction": 0.1,
+               "action_saturated_by_axis": [0.1] * 20, "drive_unsaturated_fraction_per_case": [0.1], "note": ""}
+        r = {"parent": {"promotion": rows(12, 1, 30), "fresh": rows(30, 4, 80)}, "winner": {"promotion": rows(22, 1, 30), "fresh": rows(50, 3, 80)}}
+        agg = pw.aggregate(r, {c: {p: sat for p in pw.PANELS} for c in r}, {}, "warp_+0.35", {})
+        self.assertTrue(agg["prediction"]["supported"] and agg["adopts"])

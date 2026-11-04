@@ -1,0 +1,89 @@
+{
+  "id": "R-087",
+  "title": "2. Re-nominate R-082: isolate online pen-axis transport",
+  "hypothesis": "Transporting the stroke with the changing pen axis preserves tangential actuation that a reset-axis stroke loses during successful retention.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "R-082 reset-axis transport control on the D-058 incumbent",
+    "rationale": "Five points isolates the value of online geometry from static remapping. R-082 previously waited for parent qualification, now resolved by D-059. Neither amplitude scaling nor phase-lead adjustment changes the stroke's geometric plane, so D-058 through D-061 do not settle this mechanism. It ranks below waveform shaping because its geometric implementation requires a stronger offline feasibility gate."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --paired-protocol r082-axis-transport --parent config/pen_spin/d058_fixed_stroke_incumbent/incumbent.json --seed 4691 --manifest config/manifests/pen_spin_r082_axis_transport_s4691.yaml --freeze-manifest-size 120 --promotion-cases 10:40 --fresh-cases 40:120 --output logs/pen_spin/r082_axis_transport_s4691'",
+    "seeds": [
+      4691
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_r082_axis_transport_s4691.yaml"
+    ],
+    "episodes": 330,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py: reuse the paired runner extension from the preceding protocol; add parent, reset-axis transport and instantaneous-axis transport arms, each evaluated in its own process with identical batch shape.",
+      "scripts/run_shadowhand_spin_stages.py: implement transport only if the frozen source exposes a separable geometric stroke vector before its existing joint mapping; never rotate the 20 joint-action coordinates as though they were Cartesian vectors. Use only policy-visible observations and retain the adopted amplitude, zero curl, centering and phase lead.",
+      "scripts/run_shadowhand_spin_stages.py: freeze the transport map before rollouts, verify identity transport on archived observations, and stop without simulator spending if geometric separation or measurable online-versus-reset command authority cannot be demonstrated.",
+      "config/shadowhand_spin_stages.yaml: add the opt-in transport specification; report sustained success, drops and per-axis saturation for all three arms. Adoption additionally requires strict paired promotion and fresh confirmation against the incumbent with no greater observed drop rate. Run only after the preceding protocol closes; re-triage rather than silently changing the frozen parent."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The fresh online-minus-reset paired interval has an upper bound below +0.05. If online and reset transport produce indistinguishable commands, the intervention is inactive and cannot answer the hypothesis.",
+  "cost_estimate": {
+    "episodes": 330,
+    "llm_calls": 0,
+    "wall_time_minutes": 40
+  },
+  "open_question_refs": [
+    9
+  ],
+  "briefing_sha256": "f299d7a8593ae7ef6b026cee9794303a601b65323b6a0da61323c56e463fcc39",
+  "proposal_call_id": "call_00170",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T08:23:07",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-04T08:20:48",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Online-versus-reset transport isolates changing-axis geometry, but R-086 should finish first because adoption could change the appropriate parent. Its weakest point is whether a separable geometric stroke exists before joint mapping, so retain the offline feasibility and command-authority gates before any simulator spending. The eventual 330-episode, zero-LLM experiment predicts paired_success_difference increase of at least 0.05 against the reset-axis transport control on the D-058 incumbent. Falsified_by: the fresh online-minus-reset interval's upper bound is below +0.05; indistinguishable commands instead make the intervention inactive and the result inconclusive.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00171",
+          "briefing_sha256": "6de6fd6cbc74367dab1097674c47039c6937807f3f3e7701205e1cc23f56102d",
+          "at": "2026-11-04T08:22:11"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree to defer until R-086 closes; the offline separability and command-authority gates stay as the entry condition.",
+          "changes_applied": [],
+          "at": "2026-11-04T08:23:07"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}
