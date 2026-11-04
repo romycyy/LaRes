@@ -1,0 +1,190 @@
+{
+  "id": "R-060",
+  "title": "2. Re-rank archived CMA-ES and random candidates on larger screens",
+  "hypothesis": "Independent larger-screen re-ranking can recover transferable scalar candidates that ten-case extreme-score selection discarded.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "R-058 original ten-case-selected winners, re-evaluated on the same fresh cases",
+    "rationale": "Test the selection mechanism rather than repeat the optimizer hypothesis refuted by D-048. Average the two optimizer contrasts within each original block, then analyse eight block differences. A five-point fresh sustained-success gain would justify larger-screen selection; support also requires a paired interval excluding zero."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r060_archive_rescreen --log-dir logs/pen_spin/r060_archive_rescreen\"'",
+    "seeds": [
+      4550,
+      4551,
+      4552,
+      4553,
+      4554,
+      4555,
+      4556,
+      4557
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_r060_block_s4550.yaml",
+      "config/manifests/pen_spin_stage3_r060_block_s4551.yaml",
+      "config/manifests/pen_spin_stage3_r060_block_s4552.yaml",
+      "config/manifests/pen_spin_stage3_r060_block_s4553.yaml",
+      "config/manifests/pen_spin_stage3_r060_block_s4554.yaml",
+      "config/manifests/pen_spin_stage3_r060_block_s4555.yaml",
+      "config/manifests/pen_spin_stage3_r060_block_s4556.yaml",
+      "config/manifests/pen_spin_stage3_r060_block_s4557.yaml"
+    ],
+    "episodes": 8240,
+    "llm_calls": 0,
+    "code_changes": [
+      "New study module lares/envs/isaac_pen_spin/archive_rescreen.py registered as --study r060_archive_rescreen in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent, whitelist, bounds and execution exactly as R-058 (hashes checked); no new search, no LLM call.",
+      "Archive provenance: candidates are rebuilt from the R-058 archive logs/pen_spin/r058_scalar_cma_vs_random/block_s<seed>/<arm>/gen*_candidates.json and gen*_screen.json (parameters and ten-case screen metrics). Preflight: every archive file present, 64 candidates per arm per block, and the original winner.json reproduced by the frozen ranking, or the study exits before any episode. Each arm's shortlist is its original top 8 by the frozen R-058 ranking (always containing the original winner), frozen to disk with the archive files' hashes before any episode.",
+      "Eight new blocks, seeds 4550-4557; new block seed s' re-ranks R-058 block 4510 + (s' - 4550). Each seed freezes one 110-case Stage-3 manifest (rescreen 0-39, promotion 40-69, fresh 70-109; role slices) at config/manifests/pen_spin_stage3_r060_block_s<seed>.yaml, placement-disjoint across blocks and from every R-058 manifest.",
+      "Rescreen: each arm's 8 shortlisted candidates x 40 rescreen cases run tiled, candidate-major, in one fresh process of 320 environments (or two processes of 4 x 40 = 160 in shortlist order, identically for both arms, if 320 exceeds the box); the parent runs the same 40 cases in its own process. Re-ranking uses the frozen lexicographic rule (sustained successes, fewer drops, tail-hit fraction, shortlist index) and reads no promotion or fresh outcome; both re-ranked winners are frozen to disk before any promotion or fresh episode.",
+      "Per block the two re-ranked winners, the two original winners and the parent each run in their own process on the 30 promotion cases and on the 40 fresh cases, observations and actions recorded. A re-ranked winner that is the original winner still runs once per manifest; its contrast is zero by construction and reported as such.",
+      "Primary: per block, the mean over the two arms of (re-ranked winner minus original winner) fresh sustained success; paired 95% t interval over the eight blocks; threshold +0.05, falsified if the upper bound is below +0.05. Secondary: each re-ranked winner minus parent on promotion (strict paired rule) and fresh, paired drop differences, drive saturation (fraction of recorded in-play steps with the parent's drive law above 0.99 under each controller's own parameters) and executed-action saturation (|a| >= 0.99, overall and by axis), and the 40-case rescreen scores of all 16 shortlisted candidates per block beside the parent's. Repair-parent rule unchanged from R-058: strict promotion, fresh success interval lower bound above zero, no more fresh drops than the parent.",
+      "Accounting per block: 2 x 8 x 40 rescreen + 40 parent rescreen + 5 x 30 promotion + 5 x 40 fresh = 1030 episodes; 8240 over eight blocks; zero LLM calls. The R-059 offline diagnostic (per-axis clipping-induced reduction of the drive-override action difference, computed from R-058's recorded traces) is attached to the result file at no episode cost.",
+      "Decision artifact for the deferred R-056, R-057 and R-061: qualifying repair parents (if any) and feedback activation (unsaturated drive fraction up by at least 0.25 with the interval above zero). Run only this protocol; no imitation, no cold search, held-out split untouched."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "The paired interval upper bound for re-ranked minus original-winner fresh sustained success is below 0.05; an interval spanning the threshold is inconclusive.",
+  "cost_estimate": {
+    "episodes": 8240,
+    "llm_calls": 0,
+    "wall_time_minutes": 130
+  },
+  "open_question_refs": [
+    4
+  ],
+  "briefing_sha256": "eb748fbacd35a889ad38a8da0d6a551ac6084d7b3a41e62ef74f0b5d1ded12d1",
+  "proposal_call_id": "call_00119",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-04T04:24:40",
+    "advisor_call_id": "call_00121",
+    "round": 2,
+    "note": "Approve the implementer's amended selection-mechanism test using scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, seeds 4550-4557, and a budget cap of 8240 simulator episodes with zero LLM calls. I accept the corrected interfaces, role-sliced manifests, frozen archive pr"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T04:24:40",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 2: both say approve"
+    }
+  ],
+  "created_at": "2026-11-04T04:20:15",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This changes the selection mechanism rather than repeating D-048's optimizer comparison: independent larger screens test whether the original ten-case selection obscured transferable candidates. The 7920 episodes and zero LLM calls are substantial, but archived-candidate reuse, equal additional screening budgets, and eight paired blocks make this a controlled test without new search; its weakest point is that a negative result applies only to the retained top-eight shortlists. Retain the prediction of paired_success_difference increasing by at least 0.05 versus the original R-058 winners evaluated on the same fresh cases. Falsified_by: the paired interval upper bound is below 0.05; an interval crossing that threshold is inconclusive, and one including zero cannot establish improvement.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00120",
+          "briefing_sha256": "4180d8c56d893fa8b2e69ab22993b1cb6ffa026304e89736b51d0ae47dbe7031",
+          "at": "2026-11-04T04:22:04"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "The question is right and I want to run it: D-048's secondary finding (screen winners at 0.44/0.40 on their ten cases, 0.233/0.237 on promotion) says the selection, not the search, is the bottleneck, and the archive of 1024 screened candidates already exists. Revise, not approve, because the protocol as written is not runnable and one design choice needs fixing. (1) Seeds 4530-4537 are declared by the deferred R-057; use 4550-4557. (2) Interfaces: the script has --study and --log-dir, no --advisor-protocol/--protocol-seeds; settings go in the research_protocols block; one frozen 110-case Stage-3 block manifest per seed (rescreen 0-39, promotion 40-69, fresh 70-109, role slices) at config/manifests/pen_spin_stage3_r060_block_s<seed>.yaml, not one file for eight blocks; placement-disjoint from every R-058 manifest (checked). (3) Archive provenance: candidates are rebuilt from the R-058 archive files logs/pen_spin/r058_scalar_cma_vs_random/block_s<seed>/<arm>/gen*_candidates.json and *_screen.json (parameters plus screen metrics; the parent source and state hashes as in R-058), and the shortlist is each arm's original top 8 by the frozen R-058 ranking (which always includes the original winner); the shortlist and its hashes are frozen to disk before any episode. The new block seed s' pairs with R-058 block seed 4510 + (s' - 4550), so each new block re-ranks that block's archive. (4) Batch shape: each arm's 8 shortlisted candidates x 40 rescreen cases run in one fresh process of 320 environments (tiled, candidate-major, as R-058's screening did at 80); if 320 environments exceed the box, split into two processes of 4 x 40 = 160 in shortlist order, identically for both arms; the re-rank uses the same lexicographic rule (successes, fewer drops, tail-hit fraction, index) and selects without reading promotion or fresh outcomes. (5) Comparison: per block the two re-ranked winners, the two original winners and the parent each run in their own process on the 30 promotion and the 40 fresh cases (five controllers; when a re-ranked winner is the original winner it still runs once per manifest and the contrast is zero by construction, reported as such). Primary as proposed: per block, average over the two arms of (re-ranked winner minus original winner) fresh sustained success, then the paired interval over eight blocks; threshold +0.05, falsified if the upper bound is below +0.05. Secondary: each re-ranked winner minus parent on promotion (strict rule) and fresh, drops, drive and executed-action saturation as in R-058, and the rescreen scores of all 16 shortlisted candidates per block against the parent on the same 40 cases (the parent is also rescreened, 40 episodes). (6) Accounting: per block 2 x 8 x 40 + 40 (parent rescreen) + 5 x 30 + 5 x 40 = 1030 episodes; 8240 over eight blocks; zero LLM calls; about 2 h. Decision rule for repair unchanged from R-058 (strict promotion, fresh interval above zero, no more drops).",
+          "changes_applied": [
+            "seeds 4550-4557 (4530-4537 are R-057's)",
+            "--study r060_archive_rescreen --log-dir, config block, one 110-case manifest per block seed",
+            "shortlist = R-058 archive top 8 per arm by the frozen ranking, frozen to disk with hashes before any episode",
+            "rescreen in matched tiled processes (8 x 40, or 2 x (4 x 40) identically for both arms)",
+            "parent rescreened on the same 40 cases; 1030 episodes per block, 8240 total"
+          ],
+          "at": "2026-11-04T04:22:50"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "Approve the implementer's amended selection-mechanism test using scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, seeds 4550-4557, and a budget cap of 8240 simulator episodes with zero LLM calls. I accept the corrected interfaces, role-sliced manifests, frozen archive provenance, matched batches and parent rescreen; unlike D-048 this tests independent re-selection, although its top-eight restriction leaves the remaining archive untested. Prediction: paired_success_difference increases by at least 0.05 versus the original R-058 winners on identical fresh cases, averaging the two arm contrasts within each block; falsified_by: the eight-block paired interval upper bound is below 0.05, while a threshold-crossing interval is inconclusive and a zero-inclusive interval cannot establish improvement. Retain strict promotion, fresh paired confirmation and resolved drop safety before repair, report sustained success, drops and both saturation measures, and keep final test locked.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00121",
+          "briefing_sha256": "11c1fac5c97390cd71d0853ce24e40f3cf78bd5c38bea684d7e996a484642029",
+          "at": "2026-11-04T04:23:53"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve the amended protocol now written into the record: archive re-ranking of each arm's original top 8 on 40 fresh rescreen cases per block, seeds 4550-4557 paired to R-058 blocks 4510-4517, frozen shortlists and winners before any promotion or fresh episode, five controllers per block on 30 promotion and 40 fresh cases, 8240 episodes, zero LLM calls, the R-059 offline diagnostic attached at no episode cost, held-out split untouched.",
+          "changes_applied": [],
+          "at": "2026-11-04T04:24:40"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-04T04:24:31",
+      "round": 2,
+      "patch": {
+        "protocol": {
+          "script": "scripts/run_shadowhand_spin_stages.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r060_archive_rescreen --log-dir logs/pen_spin/r060_archive_rescreen\"'",
+          "seeds": [
+            4550,
+            4551,
+            4552,
+            4553,
+            4554,
+            4555,
+            4556,
+            4557
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_r060_block_s4550.yaml",
+            "config/manifests/pen_spin_stage3_r060_block_s4551.yaml",
+            "config/manifests/pen_spin_stage3_r060_block_s4552.yaml",
+            "config/manifests/pen_spin_stage3_r060_block_s4553.yaml",
+            "config/manifests/pen_spin_stage3_r060_block_s4554.yaml",
+            "config/manifests/pen_spin_stage3_r060_block_s4555.yaml",
+            "config/manifests/pen_spin_stage3_r060_block_s4556.yaml",
+            "config/manifests/pen_spin_stage3_r060_block_s4557.yaml"
+          ],
+          "episodes": 8240,
+          "llm_calls": 0,
+          "code_changes": [
+            "New study module lares/envs/isaac_pen_spin/archive_rescreen.py registered as --study r060_archive_rescreen in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent, whitelist, bounds and execution exactly as R-058 (hashes checked); no new search, no LLM call.",
+            "Archive provenance: candidates are rebuilt from the R-058 archive logs/pen_spin/r058_scalar_cma_vs_random/block_s<seed>/<arm>/gen*_candidates.json and gen*_screen.json (parameters and ten-case screen metrics). Preflight: every archive file present, 64 candidates per arm per block, and the original winner.json reproduced by the frozen ranking, or the study exits before any episode. Each arm's shortlist is its original top 8 by the frozen R-058 ranking (always containing the original winner), frozen to disk with the archive files' hashes before any episode.",
+            "Eight new blocks, seeds 4550-4557; new block seed s' re-ranks R-058 block 4510 + (s' - 4550). Each seed freezes one 110-case Stage-3 manifest (rescreen 0-39, promotion 40-69, fresh 70-109; role slices) at config/manifests/pen_spin_stage3_r060_block_s<seed>.yaml, placement-disjoint across blocks and from every R-058 manifest.",
+            "Rescreen: each arm's 8 shortlisted candidates x 40 rescreen cases run tiled, candidate-major, in one fresh process of 320 environments (or two processes of 4 x 40 = 160 in shortlist order, identically for both arms, if 320 exceeds the box); the parent runs the same 40 cases in its own process. Re-ranking uses the frozen lexicographic rule (sustained successes, fewer drops, tail-hit fraction, shortlist index) and reads no promotion or fresh outcome; both re-ranked winners are frozen to disk before any promotion or fresh episode.",
+            "Per block the two re-ranked winners, the two original winners and the parent each run in their own process on the 30 promotion cases and on the 40 fresh cases, observations and actions recorded. A re-ranked winner that is the original winner still runs once per manifest; its contrast is zero by construction and reported as such.",
+            "Primary: per block, the mean over the two arms of (re-ranked winner minus original winner) fresh sustained success; paired 95% t interval over the eight blocks; threshold +0.05, falsified if the upper bound is below +0.05. Secondary: each re-ranked winner minus parent on promotion (strict paired rule) and fresh, paired drop differences, drive saturation (fraction of recorded in-play steps with the parent's drive law above 0.99 under each controller's own parameters) and executed-action saturation (|a| >= 0.99, overall and by axis), and the 40-case rescreen scores of all 16 shortlisted candidates per block beside the parent's. Repair-parent rule unchanged from R-058: strict promotion, fresh success interval lower bound above zero, no more fresh drops than the parent.",
+            "Accounting per block: 2 x 8 x 40 rescreen + 40 parent rescreen + 5 x 30 promotion + 5 x 40 fresh = 1030 episodes; 8240 over eight blocks; zero LLM calls. The R-059 offline diagnostic (per-axis clipping-induced reduction of the drive-override action difference, computed from R-058's recorded traces) is attached to the result file at no episode cost.",
+            "Decision artifact for the deferred R-056, R-057 and R-061: qualifying repair parents (if any) and feedback activation (unsaturated drive fraction up by at least 0.25 with the interval above zero). Run only this protocol; no imitation, no cold search, held-out split untouched."
+          ],
+          "needs_gpu": true,
+          "needs_llm": false
+        },
+        "cost_estimate": {
+          "episodes": 8240,
+          "llm_calls": 0,
+          "wall_time_minutes": 130
+        }
+      },
+      "note": "Round 2: the advisor approved the amended protocol stated in the implementer's round-1 revise position; this patch writes it into the record (seeds 4550-4557, --study/--log-dir interface, one 110-case manifest per block, frozen archive shortlist, matched tiled rescreen, parent rescreen, 8240 episodes)."
+    }
+  ]
+}

@@ -688,3 +688,127 @@ class TestScalarTuning(unittest.TestCase):
         self.assertEqual([len(m) for m in ms], [80] * 8)
         assert_disjoint(ms)
         self.assertEqual(self.pc["optimizer"]["popsize"] * self.pc["optimizer"]["generations"], 64)
+
+
+class TestArchiveRescreen(unittest.TestCase):
+    """R-060: archive shortlist, re-ranking, manifests, aggregation and the offline clipping diagnostic."""
+
+    @classmethod
+    def setUpClass(cls):
+        import yaml
+
+        with open("config/shadowhand_spin_stages.yaml") as f:
+            cls.pc = yaml.safe_load(f)["research_protocols"]["r060_archive_rescreen"]
+
+    def _fake_archive(self, d, block_seed=4510, generations=2, popsize=4):
+        import json
+
+        adir = os.path.join(d, f"block_s{block_seed}", "cma")
+        os.makedirs(adir)
+        idx = 0
+        best = None
+        for g in range(generations):
+            cands = [{"spin_target": 6.0 + idx + k} for k in range(popsize)]
+            metrics = [{"successes": (idx + k) % 3, "drops": 0, "tail_hit_fraction": 0.1 * k} for k in range(popsize)]
+            json.dump({"label": "x", "tile": popsize, "candidates": cands}, open(os.path.join(adir, f"gen{g}_candidates.json"), "w"))
+            json.dump({"generation": g, "metrics": metrics, "candidate_indices": list(range(idx, idx + popsize))},
+                      open(os.path.join(adir, f"gen{g}_screen.json"), "w"))
+            idx += popsize
+        # the frozen ranking: successes 2 first; among those higher tail; index 2 (succ 2, tail .2) vs 5 (succ 2, tail .1)
+        json.dump({"index": 2}, open(os.path.join(adir, "winner.json"), "w"))
+        return adir
+
+    def test_shortlist_reproduces_the_winner_and_orders_by_the_frozen_ranking(self):
+        import json
+
+        from lares.envs.isaac_pen_spin import archive_rescreen as ar
+
+        with tempfile.TemporaryDirectory() as d:
+            adir = self._fake_archive(d)
+            arch = ar.load_archive_arm(d, 4510, "cma", 2, 4)
+            self.assertEqual(len(arch["params"]), 8)
+            sl = ar.shortlist(arch, 3)
+            self.assertEqual(sl["indices"][0], 2)
+            self.assertEqual(sl["indices"], [2, 5, 7])   # succ 2: idx 2 (tail .2), 5 (.1); then succ 1 with the highest tail: 7
+            self.assertEqual(sl["params"][0], {"spin_target": 8.0})
+            json.dump({"index": 5}, open(os.path.join(adir, "winner.json"), "w"))
+            with self.assertRaises(SystemExit):
+                ar.shortlist(ar.load_archive_arm(d, 4510, "cma", 2, 4), 3)
+            with self.assertRaises(SystemExit):
+                ar.load_archive_arm(d, 4511, "cma", 2, 4)
+
+    def test_block_seed_pairing_and_manifests(self):
+        from lares.envs.isaac_pen_spin import archive_rescreen as ar
+        from lares.eval.manifest import assert_disjoint
+
+        self.assertEqual(ar.archive_block_seed(self.pc, 4550), 4510)
+        self.assertEqual(ar.archive_block_seed(self.pc, 4557), 4517)
+        self.assertEqual(ar.build_manifests(self.pc), [])
+        ms = [EvaluationManifest.load(ar.manifest_path(self.pc, s)) for s in self.pc["seeds"]]
+        self.assertEqual([len(m) for m in ms], [110] * 8)
+        assert_disjoint(ms + [EvaluationManifest.load(p) for p in self.pc["disjoint_from"]])
+        role = cases.role_manifests(ms[0], ar.roles(self.pc), expected_cases=110, stage=3)
+        self.assertEqual([len(role[r]) for r in ("rescreen", "promotion", "fresh")], [40, 30, 40])
+
+    def test_block_summary_summary_and_decision(self):
+        import json
+
+        from lares.envs.isaac_pen_spin import archive_rescreen as ar
+
+        def rows(succ, drops, n):
+            return [{"task_hash": f"h{i}", "sustained": i < succ, "completed": i < n - drops,
+                     "tail_hit_fraction": 1.0 if i < succ else 0.0, "hit_steps": 60, "length": 360,
+                     "mean_abs_spin": 5.0, "mean_transverse": 1.0} for i in range(n)]
+
+        def sat(u):
+            return {"in_play_steps": 1, "drive_saturated_fraction": 1 - u, "action_saturated_fraction": 0.5,
+                    "action_saturated_by_axis": [0.5] * 20, "drive_unsaturated_fraction_per_case": [u] * 40, "note": ""}
+
+        r = {"cma_reranked": {"promotion": rows(20, 0, 30), "fresh": rows(30, 0, 40)},
+             "cma_original": {"promotion": rows(6, 2, 30), "fresh": rows(8, 2, 40)},
+             "random_reranked": {"promotion": rows(6, 2, 30), "fresh": rows(8, 2, 40)},
+             "random_original": {"promotion": rows(6, 2, 30), "fresh": rows(8, 2, 40)},
+             "parent": {"promotion": rows(6, 2, 30), "fresh": rows(8, 2, 40)}}
+        s = {c: {"promotion": sat(0.1), "fresh": sat(0.1)} for c in r}
+        rescreen = {"cases": 40, "archive_block_seed": 4510, "parent": {"successes": 8},
+                    "cma": {"metrics": [{"successes": 12}, {"successes": 9}]}, "random": {"metrics": [{"successes": 7}]}}
+        winners = {"cma": {"reranked_index": 44, "original_index": 10}, "random": {"reranked_index": 3, "original_index": 3}}
+        b = ar.block_summary(r, s, rescreen, winners)
+        self.assertTrue(b["fresh"]["cma_reranked_minus_cma_original"]["success"]["mean"] > 0.5)
+        self.assertTrue(b["fresh"]["random_reranked_minus_random_original"]["same_candidate"])
+        self.assertAlmostEqual(b["fresh"]["reranked_minus_original_mean_over_arms"], (22 / 40 + 0) / 2)
+        self.assertTrue(b["fresh"]["cma_reranked_qualifies_repair_parent"])
+        self.assertFalse(b["fresh"]["cma_original_qualifies_repair_parent"])
+        b["seed"] = 4550
+        b2 = json.loads(json.dumps(b))
+        b2["seed"] = 4551
+        summ = ar.summarise([b, b2])
+        self.assertAlmostEqual(summ["paired_success_difference"], 11 / 40)
+        self.assertEqual(summ["same_candidate_blocks"]["random"], [4550, 4551])
+        self.assertEqual(summ["rescreen"]["shortlist_best_success_per_block"]["cma"], [0.3, 0.3])
+        dec = ar.decision_artifact(summ, [b, b2])
+        self.assertEqual(dec["repair_parent"]["controller"], "cma_reranked")
+
+    def test_clipping_diagnostic_measures_pre_minus_post_clip_variation(self):
+        import torch
+
+        from lares.envs.isaac_pen_spin import archive_rescreen as ar
+
+        pol = ar.instrumented_policy(self.pc, {})
+        sl = cases.obs_slices()
+        obs = torch.zeros(3, cases.OBS_DIM)
+        obs[:, sl["obj_rot"]] = torch.tensor([1.0, 0, 0, 0])
+        obs[:, sl["fingertip_rot"]] = torch.tensor([1.0, 0, 0, 0]).repeat(5)
+        obs[:, sl["in_hand_pos"]] = torch.tensor([0.0, 0.0, 0.1])
+        obs[:, sl["obj_pos"]] = torch.tensor([0.0, 0.0, 0.1])  # at the centre: retained gate open, pre-clip mean unclamped
+        pol._drive_delta = 0.0
+        m0, _ = pol(obs)
+        pol._drive_delta = 0.3
+        m1, _ = pol(obs)
+        self.assertEqual(m0.shape, (3, 20))
+        self.assertFalse(torch.allclose(m0, m1))                     # the override reaches the output
+        trace = {"obs": obs.unsqueeze(1).repeat(1, 4, 1).numpy(), "length": np.array([4, 2, 0])}
+        d = ar.clipping_diagnostic(self.pc, [trace], [{}], delta=0.5)
+        self.assertEqual(d["episodes"], 2)
+        self.assertEqual(len(d["reduction_by_axis"]), 20)
+        self.assertTrue(all(x >= y - 1e-6 for x, y in zip(d["action_variation_by_axis_pre_clip"], d["action_variation_by_axis_post_clip"])))

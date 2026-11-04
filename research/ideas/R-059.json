@@ -1,0 +1,105 @@
+{
+  "id": "R-059",
+  "title": "1. Measure actuator headroom downstream of the saturated spin drive",
+  "hypothesis": "Final joint-action clipping removes substantial spin-command authority even when the upstream spin-drive nonlinearity is bypassed.",
+  "prediction": {
+    "metric": "action_variation_by_axis",
+    "direction": "decrease",
+    "threshold": 0.02,
+    "against": "R-046 parent: identical replay interventions before final action clipping",
+    "rationale": "Measure the mean absolute per-axis action difference induced by drive overrides d-0.10 versus d+0.10, before and after final clipping. A reduction of 0.02 normalized action units would identify a second feedback bottleneck. D-048 established upstream saturation but did not isolate downstream authority; this is the one diagnostic measurement needed before attempting a clipping-aware repair."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --advisor-protocol actuator_authority --protocol-seeds 4520\"'",
+    "seeds": [
+      4520
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_authority_screen_s4520.yaml"
+    ],
+    "episodes": 32,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py: add the declared advisor-protocol CLI, record frozen-parent in-play observations and intermediate action components, and replay drive overrides without executing counterfactual actions",
+      "config/shadowhand_spin_stages.yaml: add actuator_authority settings, frozen parent config/pen_spin/r046_block3_incumbent, and episode-clustered paired intervals",
+      "config/manifests/pen_spin_authority_screen_s4520.yaml: freeze 32 fresh diagnostic cases; never use these cases for promotion"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "rejected",
+  "source": "advisor",
+  "falsified_by": "The paired interval upper bound for the clipping-induced reduction is below 0.02; an interval crossing the threshold is inconclusive.",
+  "cost_estimate": {
+    "episodes": 32,
+    "llm_calls": 0,
+    "wall_time_minutes": 20
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "eb748fbacd35a889ad38a8da0d6a551ac6084d7b3a41e62ef74f0b5d1ded12d1",
+  "proposal_call_id": "call_00119",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T04:24:29",
+      "from": "proposed",
+      "to": "rejected",
+      "note": "triage round 2: both say reject"
+    }
+  ],
+  "created_at": "2026-11-04T04:20:15",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This isolates downstream clipping, which D-048's upstream saturation measurements did not settle, for 32 episodes and zero LLM calls using scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml. Its limitation is that replay measures local action authority, not whether executing different commands improves control. Retain the prediction of action_variation_by_axis decreasing by at least 0.02 after clipping versus identical pre-clipping R-046 drive-override replay. Falsified_by: the paired reduction interval upper bound is below 0.02; an interval crossing 0.02 is inconclusive.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00120",
+          "briefing_sha256": "4180d8c56d893fa8b2e69ab22993b1cb6ffa026304e89736b51d0ae47dbe7031",
+          "at": "2026-11-04T04:22:04"
+        },
+        "implementer": {
+          "position": "reject",
+          "reasoning": "Reject. The quantity R-059 wants is already bounded by numbers D-048 recorded, and the exact value needs no simulator episode. (1) Executed-action saturation (fraction of executed components with |a| >= 0.99) over every recorded in-play fresh step is 5.4-7.6% for the parent and both winners in all eight blocks (research_result.json, controllers.*.fresh.action_saturated_fraction_per_block): on an average step 1-1.5 of 20 joint commands are clipped at all. (2) The drive override d-0.10 vs d+0.10 moves the pre-clip command by stroke_amp (0.56 for the parent) x 0.20 x the tangent projection x the joint map coefficients (0.35-1.0), i.e. about 0.03-0.10 normalised units on the finger joints and zero on the others; clipping can remove that difference only on the clipped components, so the clipping-induced reduction is at most about 8% of 0.03-0.10, below 0.01 and below the 0.02 threshold on the arithmetic alone. (3) Even if one wanted the exact per-axis number, it is a CPU computation: R-058 recorded the observations of every in-play step of the parent and both winners on 320 promotion and 320 fresh cases (block_s*/*_promotion.npz, *_fresh.npz), and the policy's pre-clip mean under a drive override is a forward pass on those observations with the drive term substituted; a replay in Isaac adds nothing because the override is never executed (the protocol says so itself). A 32-episode protocol, a new CLI and a new manifest for a number that is bounded below its own threshold and computable offline is not a research idea under this direction; if the advisor wants the exact figure I will compute it from the R-058 traces and attach it to the next result file at zero cost.",
+          "changes_applied": [],
+          "at": "2026-11-04T04:22:48"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "reject",
+          "reasoning": "I accept the implementer's decisive argument: the requested non-executed interventions can be computed from saved R-058 observations, so 32 new simulator episodes and zero LLM calls are unnecessary. The weaker saturation-based bound is not conclusive because overrides can newly clip components. The diagnostic prediction remains action_variation_by_axis decreasing by at least 0.02 after clipping versus identical pre-clipping R-046 override replay; falsified_by: the paired reduction interval upper bound is below 0.02, with a threshold-crossing interval inconclusive. Reconsider simulator spending only if necessary replay inputs are missing and the unresolved measurement would determine an otherwise eligible repair.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00121",
+          "briefing_sha256": "11c1fac5c97390cd71d0853ce24e40f3cf78bd5c38bea684d7e996a484642029",
+          "at": "2026-11-04T04:23:53"
+        },
+        "implementer": {
+          "position": "reject",
+          "reasoning": "Agree: rejected. The measurement is an offline computation on the R-058 traces; I will attach the exact per-axis clipping-induced reduction to the R-060 result file at zero episode cost (addressing the advisor's point that overrides can newly clip components) rather than run a simulator protocol for it.",
+          "changes_applied": [],
+          "at": "2026-11-04T04:24:29"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "reject",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": []
+}

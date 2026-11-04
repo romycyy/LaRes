@@ -1,0 +1,96 @@
+{
+  "id": "R-061",
+  "title": "3. Repair a qualifying winner with clipping-aware command allocation",
+  "hypothesis": "Jointly allocating spin and centering commands within available actuator headroom preserves useful feedback that ordinary componentwise clipping discards.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "matched ordinary-clipping repair arm using the same qualifying tuned parent",
+    "rationale": "This changes command allocation, not scalar bounds, anatomical coordinates, or the deferred slip-gated repair. Compare final incumbents over eight paired blocks; a ten-point sustained-success gain with a positive paired interval would justify the added allocator complexity."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/pen_spin_plateau_repair.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/pen_spin_plateau_repair.yaml --advisor-protocol headroom_repair --protocol-seeds 4540 4541 4542 4543 4544 4545 4546 4547\"'",
+    "seeds": [
+      4540,
+      4541,
+      4542,
+      4543,
+      4544,
+      4545,
+      4546,
+      4547
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_headroom_repair_s4540_4547.yaml"
+    ],
+    "episodes": 2400,
+    "llm_calls": 128,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py: add a preflight gate requiring a qualifying tuned winner from archive_rescreen and demonstrated downstream authority loss from actuator_authority; otherwise exit without consuming seeds or budget",
+      "scripts/run_shadowhand_spin_stages.py: defer this protocol and prioritize R-043 whenever feedback activates without improving success",
+      "scripts/run_shadowhand_spin_stages.py: run eight blocks, four candidates per arm, ten shared screen cases, one selected candidate per arm, 30 promotion cases, and 40 fresh cases; retain the parent unless strict paired promotion passes",
+      "config/pen_spin_plateau_repair.yaml: freeze all parent logic except spin/centering command composition; compare headroom-constrained joint allocation with ordinary componentwise clipping under identical edit bounds and evidence",
+      "config/pen_spin_plateau_repair.yaml: use llm_pool with 16 workers, gpt-6.1-sol, high reasoning effort, temperature 1, and at most one linked correction per candidate; keep imitation disabled",
+      "config/manifests/pen_spin_headroom_repair_s4540_4547.yaml: freeze disjoint screen, promotion, and fresh cases; report sustained success, paired drops, and both drive and executed-action saturation"
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The paired interval upper bound for clipping-aware minus ordinary-clipping final-incumbent fresh success is below 0.10; any apparent success gain accompanied by increased drops also disqualifies the repair.",
+  "cost_estimate": {
+    "episodes": 2400,
+    "llm_calls": 128,
+    "wall_time_minutes": 180
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "eb748fbacd35a889ad38a8da0d6a551ac6084d7b3a41e62ef74f0b5d1ded12d1",
+  "proposal_call_id": "call_00119",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T04:22:46",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-04T04:20:15",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Joint command allocation differs from R-056's slip-gated repair, but spending 2400 episodes and up to 128 LLM calls requires demonstrated downstream authority loss and a strictly promoted, fresh-confirmed tuned winner with resolved drop safety. Neither prerequisite currently exists, and a preflight exit does not justify approving the repair budget now; if feedback activates without demonstrated success improvement, prioritize R-043 instead. Retain the prediction of paired_success_difference increasing by at least 0.10 versus the matched ordinary-clipping repair arm using the same qualifying parent. Falsified_by: the paired interval upper bound is below 0.10; increased drops separately disqualify deployment, while unresolved drop safety blocks qualification.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00120",
+          "briefing_sha256": "4180d8c56d893fa8b2e69ab22993b1cb6ffa026304e89736b51d0ae47dbe7031",
+          "at": "2026-11-04T04:22:04"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree to defer. Both prerequisites (a qualifying tuned winner from a larger-screen re-rank, and demonstrated downstream authority loss) are unobserved; a preflight exit does not justify holding a 2400-episode, 128-call budget. Seeds 4540-4547 should be released if the prerequisites never materialise.",
+          "changes_applied": [],
+          "at": "2026-11-04T04:22:46"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}
