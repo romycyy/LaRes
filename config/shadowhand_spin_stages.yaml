@@ -137,3 +137,33 @@ research_protocols:
       state: "config/pen_spin/r046_block3_incumbent/state.pt"
       state_sha256: "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22"
       fixed_action_scale: 0.1
+  # R-058 (approved 2026-11-04, advisor call_00117): budget-matched CMA-ES vs random search on the frozen R-046
+  # learner's twelve spin and centering scalars, 8 blocks x (2 arms x 8 generations x 8 candidates x 10 screen cases
+  # + 10 parent screen + 3 x 30 promotion + 3 x 40 fresh) = 12,000 episodes, no LLM. Both arms screen each generation
+  # in one fresh process of 80 environments; the random arm is a fresh pycma instance per generation, asked once,
+  # never told. Winners frozen before promotion; fresh cases confirm only.
+  #   python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml
+  #     --study r058_scalar_cma_vs_random --log-dir logs/pen_spin/r058_scalar_cma_vs_random
+  r058_scalar_cma_vs_random:
+    log_dir: "logs/pen_spin/r058_scalar_cma_vs_random"
+    cases: 80
+    roles: {screen: [0, 10], promotion: [10, 40], fresh: [40, 80]}
+    seeds: [4510, 4511, 4512, 4513, 4514, 4515, 4516, 4517]
+    manifest_pattern: "config/manifests/pen_spin_stage3_r058_block_s{seed}.yaml"
+    learner:  # the R-051/R-053/R-054 learner: R-046 block 3 promoted prefix candidate gen0_cand0
+      source: "config/pen_spin/r046_block3_incumbent/policy_source.py"
+      source_sha256: "40782dcdf5a95589d0b34062919728fa92d4e5760fce890e3bd98833285e602d"
+      state: "config/pen_spin/r046_block3_incumbent/state.pt"
+      state_sha256: "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22"
+      fixed_action_scale: 0.1
+    whitelist:  # bounds are the parent's own declared get_param_ranges; everything else stays frozen
+      spin: [stroke_amp, lift_amp, spin_target, speed_gain, phase_lead, stance_sharpness]
+      centering: [center_gain, center_length, safe_radius, position_sharpness, tilt_gain, swing_damping]
+    optimizer:  # pycma; x0 = parent in bound-normalised coordinates
+      library: pycma
+      sigma0: 0.2
+      popsize: 8
+      generations: 8
+      bounds: [0.0, 1.0]
+      random_seed_base: 100   # random arm generation g of block seed s: pycma seed = 100 + 100 s + g + 1
+    ranking: "sustained successes desc, drops asc, mean tail-hit fraction desc, candidate index asc"

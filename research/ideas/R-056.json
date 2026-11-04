@@ -1,0 +1,99 @@
+{
+  "id": "R-056",
+  "title": "R-057: Repair a qualifying tuned winner with slip-gated spin",
+  "hypothesis": "Throttling the existing spin drive during outward lateral slip prevents destabilizing strokes without replacing the tuned controller's grasp or gait.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "R-057 equal-rollout scalar-only refinement incumbents",
+    "rationale": "A 10-point fresh-success gain would support adding state-dependent drive scheduling rather than spending the repair budget on more scalar tuning; unlike R-046's additive residual and R-054's trace substitution, this changes multiplicative spin scheduling."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run \"bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --protocol r057_slip_gate_repair --prerequisite logs/pen_spin/r056/decision.json --seeds 4520 4521 4522 4523 --output logs/pen_spin/r057'\"",
+    "seeds": [
+      4520,
+      4521,
+      4522,
+      4523
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_r057_development_s4520.yaml",
+      "config/manifests/pen_spin_r057_development_s4521.yaml",
+      "config/manifests/pen_spin_r057_development_s4522.yaml",
+      "config/manifests/pen_spin_r057_development_s4523.yaml"
+    ],
+    "episodes": 1800,
+    "llm_calls": 32,
+    "code_changes": [
+      "Add --protocol r057_slip_gate_repair to the existing runner and an immutable block in the existing config. Skip before rollout unless R-056 selected a tuned parent with demonstrated success improvement and no observed additional drops.",
+      "Permit only a multiplicative drive gate in [0,1] using current pen-center displacement and outward lateral velocity. Preserve the parent waveform, phase law, grasp targets, and existing centering law; prohibit additive joint corrections, expert labels, and imitation.",
+      "Use four blocks, with four gate candidates versus four scalar-only candidates per block. Scalar candidates are independent draws from the selected optimizer's frozen terminal sampling distribution; both arms receive the same screen budget and use the same ranking rule.",
+      "Generate 16 gate candidates through llm_pool with 16 workers, gpt-6.1-sol, reasoning_effort high, temperature 1, and at most one linked correction per candidate. Supply only parent screen traces as repair evidence.",
+      "Create disjoint 10-case screen, 30-case promotion, and 40-case confirmation partitions per block. Evaluate every eligible candidate under the unchanged strict paired promotion rule; retain the tuned parent when nothing promotes. Compare final arm incumbents and that parent on confirmation cases.",
+      "Maximum episode accounting: 320 candidate-screen, 40 parent-screen, 960 promotion, and 480 confirmation episodes. Report sustained success, paired drops, internal drive saturation, and executed action saturation. Adoption additionally requires no observed extra drops against the tuned parent on promotion and confirmation.",
+      "Run only after R-056 completes, never concurrently with another protocol. This is symbolic repair, not imitation; verified learner-state recovery remains mandatory before any future imitation."
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "Among eligible runs, the upper bound of the paired slip-gate-minus-scalar-refinement success interval is below +0.10. Additional drops independently disqualify adoption, even if success increases. If R-056 supplies no qualifying tuned parent, this idea is untested and consumes no episodes.",
+  "cost_estimate": {
+    "episodes": 1800,
+    "llm_calls": 32,
+    "wall_time_minutes": 180
+  },
+  "open_question_refs": [
+    0,
+    10
+  ],
+  "briefing_sha256": "d6375fc59458c10a873bacea50fe16397b624e196056bc22b65276b532aafef9",
+  "proposal_call_id": "call_00113",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T02:49:46",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-04T02:45:32",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "The 1,800-episode, at-most-32-call repair budget should wait until R-058 establishes a qualifying tuned parent; neither simulator nor LLM spending is justified before that result. Multiplicative slip gating preserves the gait and tests a mechanism distinct from the earlier additive-residual and trace-evidence comparisons. The prediction is paired_success_difference increasing by at least 0.10 against equal-rollout scalar-only refinement incumbents, refuted if its paired interval upper bound is below +0.10. Its weakest point is the four-block comparison's limited precision; the stale prerequisite path must also be reconciled with R-058's actual decision artifact before reconsideration.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00115",
+          "briefing_sha256": "f556ca45b3c34b9c35f66fa72317215fb9d9a4bc7653f8b83081c6e05850417b",
+          "at": "2026-11-04T02:49:11"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree to defer. R-056 is a conditional repair of a tuned parent that does not exist until R-058 is decided; its prerequisite path (logs/pen_spin/r056/decision.json) and seeds 4520-4523 must be reconciled with R-058's actual artifact before any re-triage. Nothing is spent now.",
+          "changes_applied": [],
+          "at": "2026-11-04T02:49:46"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

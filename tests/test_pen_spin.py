@@ -508,3 +508,183 @@ class TestLearnerAxialSign(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestScalarTuning(unittest.TestCase):
+    """R-058: parameter space, samplers, ranking, tiling, saturation and aggregation, no Isaac."""
+
+    @classmethod
+    def setUpClass(cls):
+        import yaml
+
+        with open("config/shadowhand_spin_stages.yaml") as f:
+            cls.pc = yaml.safe_load(f)["research_protocols"]["r058_scalar_cma_vs_random"]
+
+    def test_space_reads_bounds_and_values_from_the_frozen_parent(self):
+        from lares.envs.isaac_pen_spin import scalar_tuning as st
+
+        space = st.parameter_space(self.pc)
+        self.assertEqual(space.names, st.whitelist_names(self.pc))
+        self.assertEqual(space.dim, 12)
+        i = space.names.index("spin_target")
+        self.assertAlmostEqual(space.parent[i], 12.156, places=2)       # the frozen operating point (D-046)
+        self.assertEqual((space.lo[i], space.hi[i]), (5.5, 14.0))
+        z = space.normalise(space.parent)
+        self.assertTrue(np.all((z >= 0) & (z <= 1)))
+        np.testing.assert_allclose(space.denormalise(z), space.parent)
+        with self.assertRaises(ValueError):
+            st.ParameterSpace(["a"], [0.0], [1.0], [2.0])
+
+    def test_samplers_are_deterministic_bounded_and_the_random_arm_never_adapts(self):
+        from lares.envs.isaac_pen_spin import scalar_tuning as st
+
+        space = st.ParameterSpace([f"p{i}" for i in range(12)], [0.0] * 12, [1.0] * 12, [0.5] * 12)
+        opts = {"sigma0": 0.2, "popsize": 8, "generations": 3, "bounds": [0.0, 1.0], "random_seed_base": 100}
+        a, b = st.make_sampler("cma", space, opts, 4510), st.make_sampler("cma", space, opts, 4510)
+        xa, xb = a.ask(), b.ask()
+        self.assertEqual(xa.shape, (8, 12))
+        np.testing.assert_allclose(xa, xb)
+        self.assertTrue(np.all((xa >= 0) & (xa <= 1)))
+        a.tell(list(range(8)))
+        b.tell(list(reversed(range(8))))
+        self.assertFalse(np.allclose(a.ask(), b.ask()))              # the adaptive arm depends on the ranks
+        r1, r2 = st.make_sampler("random", space, opts, 4510), st.make_sampler("random", space, opts, 4510)
+        g0 = r1.ask()
+        r1.tell(list(range(8)))
+        g1 = r1.ask()
+        r2.ask()
+        r2.tell(list(reversed(range(8))))
+        np.testing.assert_allclose(g1, r2.ask())                      # ranks never reach the random arm
+        self.assertFalse(np.allclose(g0, g1))
+        fresh = st._new_es(space, opts, 100 + 4510 * 100 + 1).ask()  # generation 0 = one fresh instance, asked once
+        np.testing.assert_allclose(g0, np.stack(fresh))
+
+    def test_ranking_is_lexicographic_with_index_tie_break(self):
+        from lares.envs.isaac_pen_spin import scalar_tuning as st
+
+        m = [{"successes": 1, "drops": 2, "tail_hit_fraction": 0.5},
+             {"successes": 2, "drops": 3, "tail_hit_fraction": 0.1},
+             {"successes": 1, "drops": 1, "tail_hit_fraction": 0.2},
+             {"successes": 1, "drops": 1, "tail_hit_fraction": 0.9},
+             {"successes": 1, "drops": 1, "tail_hit_fraction": 0.9}]
+        self.assertEqual(st.rank_candidates(m), [4, 0, 3, 1, 2])
+        rows = [{"sustained": True, "completed": True, "tail_hit_fraction": 1.0, "mean_abs_spin": 5.0},
+                {"sustained": False, "completed": False, "tail_hit_fraction": 0.0, "mean_abs_spin": None}]
+        self.assertEqual(st.screen_metrics(rows)["successes"], 1)
+        self.assertEqual(st.screen_metrics(rows)["drops"], 1)
+        self.assertEqual(st.split_rows(list(range(6)), 3), [[0, 1], [2, 3], [4, 5]])
+
+    def test_tiled_manifest_and_tiled_controller_route_rows_by_candidate(self):
+        import torch
+
+        from lares.envs.isaac_pen_spin import scalar_tuning as st
+        from lares.envs.isaac_pen_spin.learner_recovery import make_learner
+
+        m = EvaluationManifest.load(st.manifest_path(self.pc, 4510))
+        role = cases.role_manifests(m, st.roles(self.pc), expected_cases=80, stage=3)
+        self.assertEqual([len(role[r]) for r in ("screen", "promotion", "fresh")], [10, 30, 40])
+        tiled = st.tiled_manifest(role["screen"], 8)
+        self.assertEqual(len(tiled), 80)
+        self.assertEqual(len({c.case_id for c in tiled.episodes}), 80)
+        self.assertEqual(cases.resolve_placements(tiled).shape, (80, cases.PLACEMENT_DIM))
+        np.testing.assert_array_equal(cases.resolve_placements(tiled)[10:20], cases.resolve_placements(role["screen"]))
+
+        cands = [{"center_gain": 0.05}, {"center_gain": 0.5}]   # centering acts on every observation
+        ctrl = st.TiledCandidates([make_learner(self.pc), make_learner(self.pc)], cands, "t")
+        self.assertAlmostEqual(float(ctrl.learners[1].policy.center_gain), 0.5)
+        obs = torch.randn(6, cases.OBS_DIM)
+        obs[:, cases.obs_slices()["obj_rot"]] = torch.tensor([1.0, 0, 0, 0])
+        out = ctrl(obs, 0, None)
+        single = st.TiledCandidates([make_learner(self.pc)], [cands[1]], "s")(obs[3:], 0, None)
+        torch.testing.assert_close(out[3:], single)
+        self.assertFalse(torch.allclose(out[:3], st.TiledCandidates([make_learner(self.pc)], [cands[1]], "s")(obs[:3], 0, None)))
+
+    def test_candidates_file_freezes_and_controller_rebuilds_from_it(self):
+        from lares.envs.isaac_pen_spin import scalar_tuning as st
+
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "c.json")
+            st.write_candidates(p, "x", [{"spin_target": 8.0}], {"normalised": [[0.3]]})
+            st.write_candidates(p, "x", [{"spin_target": 8.0}])          # identical: accepted
+            with self.assertRaises(SystemExit):
+                st.write_candidates(p, "x", [{"spin_target": 8.5}])
+            ctrl = st.make_controller("candidates:c.json", self.pc, d)
+            self.assertEqual(ctrl.tile, 1)
+            self.assertAlmostEqual(float(ctrl.learners[0].policy.spin_target), 8.0)
+            with self.assertRaises(ValueError):
+                st.make_controller("parent", self.pc, d)
+
+    def test_saturation_from_recorded_traces(self):
+        from lares.envs.isaac_pen_spin import scalar_tuning as st
+
+        sl = cases.obs_slices()
+        obs = np.zeros((2, 4, cases.OBS_DIM))
+        obs[:, :, sl["obj_rot"]] = [1.0, 0.0, 0.0, 0.0]               # long axis = world x
+        obs[0, :, sl["obj_angvel"]] = [2.0, 0.0, 0.0]                  # spin = 5 * 2 = 10 rad/s
+        obs[1, :, sl["obj_angvel"]] = [0.0, 0.0, 0.0]
+        d = st.drive_from_obs(obs[0], spin_target=12.0, speed_gain=0.8)
+        np.testing.assert_allclose(d, 0.25 + 0.75 * np.tanh(0.8 * 2.0))
+        actions = np.zeros((2, 4, 20))
+        actions[0, :, 0] = 1.0
+        actions[1, :2, :] = -1.0
+        trace = {"obs": obs, "actions": actions, "length": np.array([4, 2])}
+        s = st.saturation(trace, {"spin_target": 12.0, "speed_gain": 0.8})
+        self.assertEqual(s["in_play_steps"], 6)
+        self.assertAlmostEqual(s["drive_saturated_fraction"], 2 / 6)   # case 1 (spin 0) saturates, case 0 does not
+        self.assertEqual(s["drive_unsaturated_fraction_per_case"], [1.0, 0.0])
+        self.assertAlmostEqual(s["action_saturated_fraction"], (4 + 40) / 120)
+        self.assertAlmostEqual(s["action_saturated_by_axis"][0], 1.0)
+
+    def test_block_summary_and_decision(self):
+        from lares.envs.isaac_pen_spin import scalar_tuning as st
+
+        def rows(succ, drops, n):
+            out = []
+            for i in range(n):
+                out.append({"task_hash": f"h{i}", "sustained": i < succ, "completed": i < n - drops,
+                            "tail_hit_fraction": 1.0 if i < succ else 0.0, "hit_steps": 60, "length": 360,
+                            "mean_abs_spin": 5.0, "mean_transverse": 1.0})
+            return out
+
+        def sat(unsat):
+            return {"in_play_steps": 1, "drive_saturated_fraction": 1 - unsat, "action_saturated_fraction": 0.5,
+                    "action_saturated_by_axis": [0.5] * 20, "drive_unsaturated_fraction_per_case": [unsat] * 40,
+                    "note": ""}
+
+        r = {"cma_winner": {"promotion": rows(20, 0, 30), "fresh": rows(30, 0, 40)},
+             "random_winner": {"promotion": rows(6, 2, 30), "fresh": rows(8, 3, 40)},
+             "parent": {"promotion": rows(6, 2, 30), "fresh": rows(8, 2, 40)}}
+        s = {"cma_winner": {"promotion": sat(0.5), "fresh": sat(0.5)},
+             "random_winner": {"promotion": sat(0.1), "fresh": sat(0.1)},
+             "parent": {"promotion": sat(0.1), "fresh": sat(0.1)}}
+        winners = {"cma": {"params": {"spin_target": 9.0}}, "random": {"params": {"spin_target": 11.0}}}
+        b = st.block_summary(r, s, winners, {"successes": 2}, {})
+        self.assertTrue(b["promotion"]["cma_winner_minus_parent"]["promotes"])
+        self.assertFalse(b["promotion"]["random_winner_minus_parent"]["promotes"])   # tie never promotes
+        self.assertTrue(b["fresh"]["cma_winner_qualifies_repair_parent"])
+        self.assertFalse(b["fresh"]["random_winner_qualifies_repair_parent"])        # one more drop than the parent
+        self.assertEqual(b["fresh"]["cma_minus_random"]["drop_counts"], [0, 3])
+        self.assertTrue(b["fresh"]["cma_winner_feedback"]["activated"])    # +0.4 on every case: interval above zero
+        self.assertFalse(b["fresh"]["random_winner_feedback"]["activated"])
+        import json
+
+        b["seed"] = 4510
+        b2 = json.loads(json.dumps(b))
+        b2["seed"] = 4511
+        summary = st.summarise([b, b2])
+        self.assertAlmostEqual(summary["paired_success_difference"], 30 / 40 - 8 / 40)
+        self.assertEqual(summary["promotions"]["cma_winner"], [4510, 4511])
+        self.assertEqual(summary["qualifying_repair_parents"]["random_winner"], [])
+        dec = st.decision_artifact(summary, [b, b2])
+        self.assertEqual(dec["repair_parent"]["arm"], "cma_winner")
+        self.assertTrue(dec["route"].startswith("R-056"))
+
+    def test_manifests_match_config_and_are_disjoint(self):
+        from lares.envs.isaac_pen_spin import scalar_tuning as st
+        from lares.eval.manifest import assert_disjoint
+
+        self.assertEqual(st.build_manifests(self.pc), [])
+        ms = [EvaluationManifest.load(st.manifest_path(self.pc, s)) for s in self.pc["seeds"]]
+        self.assertEqual([len(m) for m in ms], [80] * 8)
+        assert_disjoint(ms)
+        self.assertEqual(self.pc["optimizer"]["popsize"] * self.pc["optimizer"]["generations"], 64)

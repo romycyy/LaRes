@@ -1,31 +1,34 @@
 # Research state
 
-_Generated 2026-10-28T04:25:25 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-04T02:52:19 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
-Continue researching the single-step exploration pipeline with plateau-triggered trace repair, extended to pen spinning on the Shadow Hand (Isaac Lab Isaac-ShadowHandSpin-Stage{1,2,3}-Direct-v0, vendored in lares/envs/isaac_pen_spin; 157-d full obs, 20-d action, 60 Hz, 360-step episodes). Expert demonstrations: first try a hand-written scripted spinning controller; also search online for an existing trained pen-spinning policy; if neither qualifies, train an RL expert (rsl_rl PPO on the box). No budget ceiling on GPU hours or LLM calls. Known gaps to turn into questions: the env's spin_rate is roll about the pen's own long axis (not end-over-end twirl), success is per step with no episode rule, and the pipeline (manifests, obs schema, runner, records) is MetaWorld-only today. Debug issues, improve the pipeline, and turn unexpected findings into concrete research questions; document results and limitations.  _(set 2026-10-27)_
+Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.  _(set 2026-11-04)_
 
 | status | count |
 |---|---|
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 0 |
+| approved | 1 |
 | proposed | 0 |
-| deferred | 3 |
+| deferred | 5 |
 | decided | 47 |
 | rejected | 5 |
 
 ## Needs attention
 
-- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
+- **R-058** [approved] R-046 scalar tuning: budget-matched CMA-ES versus random search
+  - `python scripts/research.py start R-058` then run its command
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
 - R-043 Do anatomical action coordinates improve single-step exploration?: This is a useful action-representation experiment, but its 1536 episodes and at most 16 LLM calls should follow R-042's validated Isaac integration and direct-a
 - R-052 3. Repair with verified learner-state corrections, not expert-only traces: Verified learner-state corrections are meaningfully different from the expert-only keyframes and off-distribution switch maps already tested. However, neither f
 - R-055 Train the expert's recovery basin on learner-prefix states: Changing the expert's training-state distribution is a legitimate recovery-basin experiment, distinct from unchanged-expert takeover and filtering existing corr
+- R-056 R-057: Repair a qualifying tuned winner with slip-gated spin: The 1,800-episode, at-most-32-call repair budget should wait until R-058 establishes a qualifying tuned parent; neither simulator nor LLM spending is justified 
+- R-057 R-058: Conditional R-043 anatomical-coordinate repair: This is the appropriate priority branch if R-058 establishes activated feedback without a demonstrated success gain, but its 1,680 episodes and at most 32 LLM c
 
 ## Last 5 decisions
 
@@ -47,11 +50,11 @@ Continue researching the single-step exploration pipeline with plateau-triggered
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
-- R-055 round 1 · advisor defer / implementer defer → agreed (deferred)
-- R-054 round 1 · advisor approve / implementer approve → agreed (approved)
-- R-053 round 1 · advisor approve / implementer approve → agreed (approved)
-- R-051 round 3 · advisor approve / implementer approve → agreed (approved)
-- R-051 round 2 · advisor revise / implementer revise → agreed (proposed)
+- R-058 round 3 · advisor approve / implementer approve → agreed (approved)
+- R-058 round 2 · advisor revise / implementer revise → agreed (proposed)
+- R-058 round 1 · advisor approve / implementer revise → disagreed (proposed)
+- R-057 round 1 · advisor defer / implementer defer → agreed (deferred)
+- R-056 round 1 · advisor defer / implementer defer → agreed (deferred)
 
 ## Standing constraints
 

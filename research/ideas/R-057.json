@@ -1,0 +1,106 @@
+{
+  "id": "R-057",
+  "title": "R-058: Conditional R-043 anatomical-coordinate repair",
+  "hypothesis": "Anatomical action coordinates make coordinated finger corrections easier to express than independent joint edits when activated feedback alone has not produced a success gain.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.15,
+    "against": "R-058 direct-joint bounded-repair incumbents",
+    "rationale": "A 15-point gain would justify changing the repair action representation; this re-scopes deferred R-043 to incumbent repair after the tuning diagnostic, not cold exploration."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run \"bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --protocol r058_anatomical_repair --prerequisite logs/pen_spin/r056/decision.json --parent config/pen_spin/r046_block3_incumbent --seeds 4530 4531 4532 4533 4534 4535 4536 4537 --output logs/pen_spin/r058'\"",
+    "seeds": [
+      4530,
+      4531,
+      4532,
+      4533,
+      4534,
+      4535,
+      4536,
+      4537
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_r058_development_s4530.yaml",
+      "config/manifests/pen_spin_r058_development_s4531.yaml",
+      "config/manifests/pen_spin_r058_development_s4532.yaml",
+      "config/manifests/pen_spin_r058_development_s4533.yaml",
+      "config/manifests/pen_spin_r058_development_s4534.yaml",
+      "config/manifests/pen_spin_r058_development_s4535.yaml",
+      "config/manifests/pen_spin_r058_development_s4536.yaml",
+      "config/manifests/pen_spin_r058_development_s4537.yaml"
+    ],
+    "episodes": 1680,
+    "llm_calls": 32,
+    "code_changes": [
+      "Add --protocol r058_anatomical_repair to the existing runner and an immutable config block. Run this branch before any other follow-up if R-056 establishes at least +0.25 unsaturated-drive occupancy with a positive paired interval, but neither tuned winner establishes positive paired success against the parent.",
+      "Re-scope deferred R-043 from cold single-step exploration to repair of the unchanged R-046 incumbent. This new prerequisite distinguishes an action-expression bottleneck from feedback that simply remained saturated; earlier results did not compare anatomical and joint-coordinate repair.",
+      "Audit the vendored Shadow Hand joint ordering and freeze a deterministic anatomical flexion/abduction action map. Compare anatomical-coordinate and direct-joint residuals with the same induced joint-action infinity-norm cap of 0.10 and identical final clipping, observation access, parent source, and preserved gait.",
+      "Use eight paired blocks with one candidate per representation per block. Generate all 16 candidates through llm_pool with 16 workers, gpt-6.1-sol, reasoning_effort high, temperature 1, and at most one linked correction each. Match prompt content except for the action representation.",
+      "Create disjoint 10-case screen, 30-case promotion, and 40-case confirmation partitions per block. Supply identical parent screen evidence to both arms; retain the parent unless the unchanged strict paired promotion rule passes.",
+      "Maximum episode accounting: 160 candidate-screen, 80 parent-screen, 480 promotion, and 960 confirmation episodes. Report final-incumbent sustained success, drops, internal drive saturation, and executed action saturation; reject adoption with observed additional drops against the parent.",
+      "Keep cold search, R-055, and imitation disabled. Run only this protocol at a time, and never read final test."
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The paired interval's upper bound for anatomical-minus-direct final-incumbent success is below +0.15; ties are not improvements. Additional drops block adoption. If R-056 does not establish feedback activation without a demonstrated success gain, the conditional hypothesis remains untested.",
+  "cost_estimate": {
+    "episodes": 1680,
+    "llm_calls": 32,
+    "wall_time_minutes": 180
+  },
+  "open_question_refs": [
+    0
+  ],
+  "briefing_sha256": "d6375fc59458c10a873bacea50fe16397b624e196056bc22b65276b532aafef9",
+  "proposal_call_id": "call_00113",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T02:49:48",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-04T02:45:32",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "This is the appropriate priority branch if R-058 establishes activated feedback without a demonstrated success gain, but its 1,680 episodes and at most 32 LLM calls should not be spent before that prerequisite is observed. Re-scoping R-043 to incumbent repair rather than cold exploration makes the representation comparison responsive to the current direction. The prediction is paired_success_difference increasing by at least 0.15 against direct-joint bounded-repair incumbents, refuted if its paired interval upper bound is below +0.15. Its weakest point is sampling only one candidate per representation per block, which may leave both arms retaining the parent; its stale prerequisite path also needs reconciliation before reconsideration.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00115",
+          "briefing_sha256": "f556ca45b3c34b9c35f66fa72317215fb9d9a4bc7653f8b83081c6e05850417b",
+          "at": "2026-11-04T02:49:11"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree to defer. R-057 re-scopes R-043 to incumbent repair and is the right branch only if R-058 shows activated spin feedback without a success gain; that observation does not exist yet. Its one-candidate-per-representation-per-block design and stale prerequisite path need revisiting at re-triage. Nothing is spent now.",
+          "changes_applied": [],
+          "at": "2026-11-04T02:49:48"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}
