@@ -1,53 +1,57 @@
 {
   "id": "R-064",
-  "title": "Close spin feedback through stroke timing, not weak amplitude",
-  "hypothesis": "Axial-rate feedback controlling periodic stroke phase speed will produce transferable spin regulation because timing has authority that the frozen controller's saturated amplitude modulation lacks.",
+  "title": "Close spin feedback through the stroke's phase lead, not its amplitude",
+  "hypothesis": "A cycle-smoothed axial-rate error shifting the stroke's phase lead reduces the D-058 incumbent's slow-spin failures without changing stroke amplitude, because the lead sets where in the pen's roll the fingers push.",
   "prediction": {
     "metric": "paired_success_difference",
     "direction": "increase",
     "threshold": 0.1,
-    "against": "R-064 selected constant-tempo control on the same fresh cases",
-    "rationale": "A ten-percentage-point advantage over equally screened constant-tempo controls distinguishes feedback from merely finding a better open-loop frequency; parent comparisons remain mandatory."
+    "against": "the selected constant-lead-offset control on the same fresh cases",
+    "rationale": "Beating an equally screened family of constant lead offsets distinguishes feedback from merely finding a better fixed lead; parent comparisons remain mandatory."
   },
   "protocol": {
     "script": "scripts/run_shadowhand_spin_stages.py",
-    "config": "config/pen_spin/r064_phase_feedback.yaml",
-    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --research-spec config/pen_spin/r064_phase_feedback.yaml\"'",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r064_lead_feedback --log-dir logs/pen_spin/r064_lead_feedback\"'",
     "seeds": [
       4580,
-      4581,
-      4582
+      4581
     ],
     "manifests": [
-      "config/manifests/pen_spin_r064_screen_s4580.yaml",
-      "config/manifests/pen_spin_r064_promotion_s4581.yaml",
-      "config/manifests/pen_spin_r064_fresh_s4582.yaml"
+      "config/manifests/pen_spin_stage3_r064_screen_s4580.yaml",
+      "config/manifests/pen_spin_stage3_r064_confirmation_s4581.yaml"
     ],
     "episodes": 850,
     "llm_calls": 0,
     "code_changes": [
-      "Reuse the preceding runner interface and existing stage configuration. Run last and only if R-062 demonstrates a spin-specific periodic-stroke effect; otherwise skip this budget.",
-      "Expose an explicit phase accumulator only for periodic stroke terms, leaving centering and grasp on current observations. Add axial-rate error to phase velocity, not to joint amplitudes; retain the original stroke waveform and frozen parameters.",
-      "Predeclare six feedback variants using target rates 4, 6, and 8 rad/s crossed with gains 0.05 and 0.10, with phase-speed multiplier 1 + 0.5*tanh(gain*(target-directed_rate)). Compare with six constant-tempo multipliers 0.6, 0.8, 0.9, 1.1, 1.2, and 1.4.",
-      "Give both families equal screen budgets: six candidates on 40 frozen cases each. Evaluate parent on those 40, then both selected winners and parent on 30 promotion and 80 fresh cases: 520 + 90 + 240 episodes. Select before reading promotion or fresh outcomes.",
-      "Report paired winner-versus-control and both winner-versus-parent contrasts, sustained success, drops, original drive saturation, phase-feedback activation, and action saturation. Require strict promotion and fresh success improvement without more observed drops before using any winner for repair.",
-      "This changes the feedback pathway, unlike D-048/D-049 scalar tuning, R-056 slip gating, or R-061 clipping-aware allocation. Keep imitation, cold search, and R-055 disabled; any subsequent LLM repair must use llm_pool with 16 workers and the mandated high-effort model settings."
+      "New study module lares/envs/isaac_pen_spin/lead_feedback.py registered as --study r064_lead_feedback in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent: the D-058 incumbent (config/pen_spin/d058_fixed_stroke_incumbent, hashes checked), zero curl and fixed stroke gain preserved; no LLM.",
+      "Mechanism, stated for this parent: its stroke phase is the pen's measured roll angle (twist of obj_rot) shifted by phase_lead; there is no tempo. One audited substitution on the evaluated source: lead = self.phase_lead + self._lead_offset(spin) replaces self.phase_lead inside sin_lead and cos_lead; centering, grasp, compression (zero) and the stroke gain are unchanged.",
+      "Causal rate filter, predeclared: the signed axial rate spin (the policy's own 5 * obj_angvel projected on the pen axis, rad/s) low-passed per environment, y = y + alpha (spin - y), alpha = dt / (tau + dt), tau = 0.25 s, dt = 1/60 s, initialised to the first value at reset; positive spin is the parent's own roll direction (its drive is positive when spin < spin_target).",
+      "Candidates: six feedback settings, offset = clip(gain (target - y), -0.6, +0.6) rad with target in {4, 6, 8} rad/s crossed with gain in {+0.10, -0.10} rad per rad/s (the helpful sign of the lead is unknown); six constant lead offsets {-0.4, -0.2, -0.1, +0.1, +0.2, +0.4} rad. Identity form (offset exactly 0.0) gated bit for bit offline on D-050's archived observations before any episode. Prerequisite cited: D-050 (stroke lesion -0.088 [-0.168, -0.007], the stroke carries about half the successes).",
+      "Screening: all twelve candidates and the parent on one frozen 40-case Stage-3 screen manifest (seed 4580), each in its own process; the winner per family by sustained successes, then fewer drops, then index, frozen before any confirmation episode. Confirmation: both winners and the parent on the frozen 120-case manifest (seed 4581; cases 0-9 unused, promotion 10-39, fresh 40-119), each in its own process. 520 + 90 + 240 = 850 episodes, zero LLM calls; seed 4582 released. Manifests placement-disjoint from every committed pen-spin manifest.",
+      "Primary: feedback winner minus constant winner fresh success (80 pairs), 95% t interval; at least +0.10; supported if the mean is at least +0.10 with the lower bound above zero; refuted if the upper bound is below +0.10. Adoption of either winner: strict promotion against the parent on cases 10-39, fresh lower bound above zero, no more observed drops on either panel. Reported: sustained success, drops, failure split, in-play mean |spin|, drive and per-axis action saturation, the filtered rate and the lead offsets applied (mean, fraction at the clip), and every candidate's screen score. Final test untouched."
     ],
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "deferred",
+  "status": "approved",
   "source": "advisor",
-  "falsified_by": "The fresh paired interval for feedback minus constant-tempo control has an upper bound below +0.10. Feedback activation without a demonstrated success gain does not support this mechanism and triggers prioritization of R-043 rather than further scalar tuning.",
+  "falsified_by": "The fresh paired interval for feedback winner minus constant-offset winner has an upper bound below +0.10; an interval including zero supplies no evidence of improvement. Failed strict promotion against the parent, or more observed drops, blocks adoption of either winner.",
   "cost_estimate": {
     "episodes": 850,
     "llm_calls": 0,
-    "wall_time_minutes": 110
+    "wall_time_minutes": 25
   },
   "open_question_refs": [],
   "briefing_sha256": "aa77a7ae65ace261c11e98298b39b8b0e147cca832b944e95ce2960834c57ad1",
   "proposal_call_id": "call_00123",
-  "approval": {},
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-04T08:06:18",
+    "advisor_call_id": "call_00168",
+    "round": 3,
+    "note": "I accept the implementer's correction: this parent has roll-locked phase, not tempo, so phase-lead modulation preserves its structure and tests a channel distinct from D-058's failed amplitude feedback; D-050 supplies the stroke prerequisite, and D-060 completes the required R-043 branch. The 850 si"
+  },
   "run": {},
   "result": {},
   "prediction_outcome": {},
@@ -59,6 +63,18 @@
       "from": "proposed",
       "to": "deferred",
       "note": "triage round 1: both say defer"
+    },
+    {
+      "at": "2026-11-04T08:02:16",
+      "from": "deferred",
+      "to": "proposed",
+      "note": "re-triaged"
+    },
+    {
+      "at": "2026-11-04T08:06:18",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
     }
   ],
   "created_at": "2026-11-04T05:18:13",
@@ -83,11 +99,108 @@
           "at": "2026-11-04T05:20:34"
         },
         "outcome": "agreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "I accept the implementer's argument that phase-speed control has different authority from weak amplitude modulation, but D-058 defeats authority alone as justification: active direct-stroke feedback lost to its constant-gain control. D-060 has now completed the required R-043 branch, so timing regulation is worth considering for the remaining slow-spin tail rather than continuing the earlier sequencing deferral. The weakest points are the obsolete operating point and instantaneous-rate feedback; changing stroke timing remains distinct from the amplitude intervention already refuted.",
+          "suggested_changes": [
+            "Use config/pen_spin/d058_fixed_stroke_incumbent/incumbent.json as the frozen parent, preserving its zero-curl substitution and fixed stroke gain. Reuse scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml as the configuration base; add only the phase-accumulator functionality unavailable there, not a new runner.",
+            "State the revised hypothesis: cycle-smoothed axial-rate error controls stroke tempo to reduce slow-spin failures without changing stroke amplitude. Predeclare the causal rate filter, direction convention and initialization before screening; retain the six feedback settings and six constant-tempo controls. At multiplier one, require action identity with the incumbent on archived observations; centering and grasp must remain observation-driven and unchanged.",
+            "Cite the recorded R-062 stroke-lesion result satisfying the original spin-specific prerequisite before execution. If that prerequisite failed or remains unmeasured, do not spend this protocol's budget; do not infer it from feedback activation or amplitude authority.",
+            "Retain the prediction: paired_success_difference increases by at least 0.10 against the selected constant-tempo control on identical fresh cases. Set falsified_by to a fresh paired interval upper bound below +0.10; an interval including zero supplies no evidence of improvement. Freeze both finalists before promotion, report both versus parent, and require strict promotion plus demonstrated fresh success improvement without more observed drops before adoption.",
+            "Keep the equal-family allocation and total cost at 850 simulator episodes and zero LLM calls, using the proposal's unspent seeds 4580-4582 and frozen non-final manifests. Report sustained success, drops, drive saturation, action saturation and phase-feedback activation; run no concurrent protocol and keep imitation disabled."
+          ],
+          "priority": 1,
+          "call_id": "call_00167",
+          "briefing_sha256": "14e60674408033e2ada1f4a6dd54df0ac95fdae18a29f80f43eb5820cbe3552c",
+          "at": "2026-11-04T08:02:16"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree to revise, with one correction of fact that changes the mechanism statement. The D-058 incumbent has no stroke tempo: its periodic stroke is not driven by a clock but by the pen's own measured roll angle (sin_phase and cos_phase come from the twist of obj_rot, shifted by the scalar phase_lead), so a phase-speed multiplier has nothing to act on, and a phase accumulator would replace the controller's feedback structure rather than modulate it. The only timing lever this parent has is phase_lead, the angle between the pen's roll and the stroke pattern; the faithful version of R-064 on it is axial-rate feedback on the phase lead, with constant lead offsets as the open-loop controls, mirroring R-081's design. Revised hypothesis: a cycle-smoothed axial-rate error shifting the stroke's phase lead reduces slow-spin failures without changing stroke amplitude. Frozen design: (a) parent = config/pen_spin/d058_fixed_stroke_incumbent (hashes checked); (b) one audited substitution on its evaluated source: lead = self.phase_lead + self._lead_offset(spin) replaces self.phase_lead in sin_lead and cos_lead; everything else unchanged, compression zero, stroke gain fixed; (c) causal rate filter: signed axial rate spin (the policy's own 5 * obj_angvel projected on the pen axis, rad/s) low-passed per environment, y = y + alpha (spin - y), alpha = dt / (tau + dt) with tau = 0.25 s (about one roll cycle at the 4 rad/s threshold) and dt = 1/60 s, initialised to the first value at reset; positive spin is the parent's own roll direction (its drive is positive when spin < spin_target); (d) six feedback settings: offset = clip(gain * (target - y), -0.6, +0.6) rad, target in {4, 6, 8} rad/s crossed with gain in {+0.10, -0.10} rad per rad/s, because the helpful sign of the lead is unknown and the controls tell it; six constant-tempo controls become six constant lead offsets {-0.4, -0.2, -0.1, +0.1, +0.2, +0.4} rad; (e) identity form: _lead_offset returns exactly 0.0, gated bit for bit offline on D-050's archived observations; (f) prerequisite cited: D-050 established that removing the stroke costs success (-0.088 [-0.168, -0.007] on 80 pairs, not drop-carried) and the stroke carries about half the learner's successes, so the stroke is a real, partial lever, which is what the original prerequisite asked; (g) screening: all twelve candidates and the parent on one frozen 40-case screen manifest (seed 4580), each in its own process; the winner per family by sustained successes, then fewer drops, then index, frozen before confirmation; both winners and the parent on the confirmation manifest (seed 4581; cases 0-9 unused, promotion 10-39, fresh 40-119); 520 + 90 + 240 = 850 episodes, zero LLM calls; seed 4582 released; (h) interface: --study r064_lead_feedback with --log-dir and a config block in config/shadowhand_spin_stages.yaml; manifests config/manifests/pen_spin_stage3_r064_screen_s4580.yaml and _confirmation_s4581.yaml; (i) prediction retained: feedback winner minus constant winner fresh success at least +0.10, supported if the mean is at least +0.10 with the lower bound above zero, refuted if the upper bound is below +0.10; adoption of either winner needs strict promotion against the parent, fresh lower bound above zero and no more observed drops; reported: success, drops, failure split, spin, drive and action saturation, filter activity and the lead offsets actually applied.",
+          "changes_applied": [
+            "mechanism restated: phase-lead feedback, not tempo; filtered rate, tau 0.25 s",
+            "six feedback settings {4,6,8} x {+0.10,-0.10}; six constant lead offsets",
+            "--study r064_lead_feedback; config block; screen s4580 (40) and confirmation s4581 (120) manifests; 4582 released; 850 episodes",
+            "prerequisite cited: D-050"
+          ],
+          "at": "2026-11-04T08:03:32"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the implementer's correction: this parent has roll-locked phase, not tempo, so phase-lead modulation preserves its structure and tests a channel distinct from D-058's failed amplitude feedback; D-050 supplies the stroke prerequisite, and D-060 completes the required R-043 branch. The 850 simulator episodes and zero LLM calls are justified by equally screened feedback and constant-offset families followed by independent confirmation, using free seeds 4580 and 4581. The prediction remains paired_success_difference increase of at least 0.10 versus the selected constant-lead-offset control on fresh pairs, falsified if the paired interval's upper bound is below +0.10; an interval including zero supplies no evidence of improvement. The weakest point is noisy finalist selection on 40 screen cases, so retain the frozen selection rule, mandatory parent comparisons, and adoption only after strict promotion and fresh improvement without more observed drops on either panel.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00168",
+          "briefing_sha256": "c60368e7ca2c5d5786f814753d396deb4d77bc6d465b569395d9ff86266d731a",
+          "at": "2026-11-04T08:05:26"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve the revised protocol: phase-lead feedback (six settings) versus six constant lead offsets on the D-058 incumbent, filtered rate with tau 0.25 s, identity gate at offset 0.0 first, all twelve candidates and the parent on the frozen 40-case screen (seed 4580) in their own processes, winners frozen by the stated rule, both winners and the parent on the frozen confirmation manifest (seed 4581; promotion 10-39, fresh 40-119), 850 episodes, zero LLM calls, adoption only under the strict rule, final test locked. Implementing and running now.",
+          "changes_applied": [],
+          "at": "2026-11-04T08:06:18"
+        },
+        "outcome": "agreed"
       }
     ],
-    "outcome": "defer",
-    "agreed_round": 1
+    "outcome": "approve",
+    "agreed_round": 3
   },
   "escalation": {},
-  "revisions": []
+  "revisions": [
+    {
+      "at": "2026-11-04T08:03:34",
+      "round": 2,
+      "patch": {
+        "title": "Close spin feedback through the stroke's phase lead, not its amplitude",
+        "hypothesis": "A cycle-smoothed axial-rate error shifting the stroke's phase lead reduces the D-058 incumbent's slow-spin failures without changing stroke amplitude, because the lead sets where in the pen's roll the fingers push.",
+        "prediction": {
+          "metric": "paired_success_difference",
+          "direction": "increase",
+          "threshold": 0.1,
+          "against": "the selected constant-lead-offset control on the same fresh cases",
+          "rationale": "Beating an equally screened family of constant lead offsets distinguishes feedback from merely finding a better fixed lead; parent comparisons remain mandatory."
+        },
+        "falsified_by": "The fresh paired interval for feedback winner minus constant-offset winner has an upper bound below +0.10; an interval including zero supplies no evidence of improvement. Failed strict promotion against the parent, or more observed drops, blocks adoption of either winner.",
+        "protocol": {
+          "script": "scripts/run_shadowhand_spin_stages.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r064_lead_feedback --log-dir logs/pen_spin/r064_lead_feedback\"'",
+          "seeds": [
+            4580,
+            4581
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_r064_screen_s4580.yaml",
+            "config/manifests/pen_spin_stage3_r064_confirmation_s4581.yaml"
+          ],
+          "episodes": 850,
+          "llm_calls": 0,
+          "code_changes": [
+            "New study module lares/envs/isaac_pen_spin/lead_feedback.py registered as --study r064_lead_feedback in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent: the D-058 incumbent (config/pen_spin/d058_fixed_stroke_incumbent, hashes checked), zero curl and fixed stroke gain preserved; no LLM.",
+            "Mechanism, stated for this parent: its stroke phase is the pen's measured roll angle (twist of obj_rot) shifted by phase_lead; there is no tempo. One audited substitution on the evaluated source: lead = self.phase_lead + self._lead_offset(spin) replaces self.phase_lead inside sin_lead and cos_lead; centering, grasp, compression (zero) and the stroke gain are unchanged.",
+            "Causal rate filter, predeclared: the signed axial rate spin (the policy's own 5 * obj_angvel projected on the pen axis, rad/s) low-passed per environment, y = y + alpha (spin - y), alpha = dt / (tau + dt), tau = 0.25 s, dt = 1/60 s, initialised to the first value at reset; positive spin is the parent's own roll direction (its drive is positive when spin < spin_target).",
+            "Candidates: six feedback settings, offset = clip(gain (target - y), -0.6, +0.6) rad with target in {4, 6, 8} rad/s crossed with gain in {+0.10, -0.10} rad per rad/s (the helpful sign of the lead is unknown); six constant lead offsets {-0.4, -0.2, -0.1, +0.1, +0.2, +0.4} rad. Identity form (offset exactly 0.0) gated bit for bit offline on D-050's archived observations before any episode. Prerequisite cited: D-050 (stroke lesion -0.088 [-0.168, -0.007], the stroke carries about half the successes).",
+            "Screening: all twelve candidates and the parent on one frozen 40-case Stage-3 screen manifest (seed 4580), each in its own process; the winner per family by sustained successes, then fewer drops, then index, frozen before any confirmation episode. Confirmation: both winners and the parent on the frozen 120-case manifest (seed 4581; cases 0-9 unused, promotion 10-39, fresh 40-119), each in its own process. 520 + 90 + 240 = 850 episodes, zero LLM calls; seed 4582 released. Manifests placement-disjoint from every committed pen-spin manifest.",
+            "Primary: feedback winner minus constant winner fresh success (80 pairs), 95% t interval; at least +0.10; supported if the mean is at least +0.10 with the lower bound above zero; refuted if the upper bound is below +0.10. Adoption of either winner: strict promotion against the parent on cases 10-39, fresh lower bound above zero, no more observed drops on either panel. Reported: sustained success, drops, failure split, in-play mean |spin|, drive and per-axis action saturation, the filtered rate and the lead offsets applied (mean, fraction at the clip), and every candidate's screen score. Final test untouched."
+          ],
+          "needs_gpu": true,
+          "needs_llm": false
+        },
+        "cost_estimate": {
+          "episodes": 850,
+          "llm_calls": 0,
+          "wall_time_minutes": 25
+        }
+      },
+      "note": "Round 2 implementer revision on the D-058 incumbent: phase-lead feedback (the parent has no tempo), filtered rate, six feedback settings and six constant offsets, --study interface, screen s4580 and confirmation s4581 manifests, D-050 cited as the prerequisite."
+    }
+  ]
 }

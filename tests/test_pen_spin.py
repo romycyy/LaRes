@@ -1460,3 +1460,75 @@ class TestCoordinateRepair(unittest.TestCase):
         agg = cr.aggregate(r, sats, {}, {"joint": {"slot": 0}, "anatomical": {"slot": 1}}, {})
         self.assertTrue(agg["prediction"]["supported"])
         self.assertTrue(agg["adoption"]["anatomical"] and not agg["adoption"]["joint"])
+
+
+class TestLeadFeedback(unittest.TestCase):
+    """R-064 (revised): substitution, identity, constant and feedback offsets, names, manifests, rule."""
+
+    @classmethod
+    def setUpClass(cls):
+        import yaml
+
+        with open("config/shadowhand_spin_stages.yaml") as f:
+            cls.pc = yaml.safe_load(f)["research_protocols"]["r064_lead_feedback"]
+
+    def test_offsets_identity_and_feedback(self):
+        import torch
+
+        from lares.envs.isaac_pen_spin import coordinate_repair as cr
+        from lares.envs.isaac_pen_spin import lead_feedback as lf
+
+        src = cr.incumbent_spec(self.pc["incumbent_asset"])["source"]
+        self.assertIn("lead = self.phase_lead + self._lead_offset(spin)", lf.substituted_source(src))
+        names = lf.candidate_names(self.pc)
+        self.assertEqual(len(names["feedback"]), 6)
+        self.assertEqual(names["constant"][0], "const_-0.4")
+        self.assertEqual(lf.parse_arm("fb_t6_g-0.1"), {"mode": "feedback", "target": 6.0, "gain": -0.1})
+        obs = TestStrokeLesion._contact_obs(self, 3)
+        obs[:, cases.obs_slices()["obj_angvel"]] = torch.tensor([0.2, 0.0, 0.0])     # axial 1 rad/s
+        parent = cr.incumbent_controller(self.pc["incumbent_asset"])
+        a = parent(obs, 0, None)
+        ident = lf.LeadController(self.pc["incumbent_asset"], "identity", {"mode": "identity"}, 1.0, 0.6)
+        self.assertTrue(torch.equal(a, ident(obs, 0, None)))
+        const = lf.make_controller("const_+0.4", self.pc)
+        self.assertFalse(torch.allclose(a, const(obs, 0, None)))
+        fb = lf.make_controller("fb_t6_g+0.1", self.pc)
+        fb.reset(None)
+        out = fb(obs, 0, None)
+        act = fb.params["offset_activity"]
+        self.assertAlmostEqual(act["mean_offset"], 0.5)                  # 0.1 * (6 - 1), below the 0.6 clip
+        self.assertAlmostEqual(act["mean_filtered_rate"], 1.0)           # initialised to the first rate
+        self.assertFalse(torch.allclose(a, out))
+        big = lf.make_controller("fb_t8_g+0.1", self.pc)
+        big.reset(None)
+        big(obs, 0, None)
+        self.assertAlmostEqual(big.params["offset_activity"]["mean_offset"], 0.6)   # clipped
+        self.assertEqual(big.params["offset_activity"]["at_clip_fraction"], 1.0)
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "a.npz")
+            np.savez(p, obs=obs.unsqueeze(1).repeat(1, 2, 1).numpy(), length=np.array([2, 2, 1]))
+            self.assertTrue(lf.offline_identity_gate(self.pc, p)["passes"])
+
+    def test_manifests_and_rule(self):
+        from lares.envs.isaac_pen_spin import lead_feedback as lf
+        from lares.eval.manifest import assert_disjoint
+
+        self.assertEqual(lf.build_manifests(self.pc), [])
+        ms = [EvaluationManifest.load(p) for p in lf.manifest_files(self.pc).values()]
+        self.assertEqual([len(m) for m in ms], [40, 120])
+        assert_disjoint(ms + [EvaluationManifest.load(p) for p in self.pc["disjoint_from"]])
+        self.assertEqual(lf.screen_key({"successes": 5, "drops": 2}, 3), (-5, 2, 3))
+
+        def rows(succ, drops, n):
+            return [{"task_hash": f"h{i}", "sustained": i < succ, "completed": i < n - drops, "tail_hit_fraction": 0.0,
+                     "hit_steps": 0, "length": 360, "mean_abs_spin": 5.0, "mean_transverse": 1.0, "final_center_dist": 0.01}
+                    for i in range(n)]
+
+        sat = {"in_play_steps": 1, "drive_saturated_fraction": 0.9, "action_saturated_fraction": 0.1,
+               "action_saturated_by_axis": [0.1] * 20, "drive_unsaturated_fraction_per_case": [0.1], "note": ""}
+        r = {"parent": {"promotion": rows(12, 1, 30), "fresh": rows(30, 4, 80)},
+             "constant": {"promotion": rows(12, 1, 30), "fresh": rows(30, 4, 80)},
+             "feedback": {"promotion": rows(22, 1, 30), "fresh": rows(50, 3, 80)}}
+        sats = {c: {p: sat for p in lf.PANELS} for c in r}
+        agg = lf.aggregate(r, sats, {}, {"feedback": "fb_t6_g+0.1", "constant": "const_+0.1"}, {})
+        self.assertTrue(agg["prediction"]["supported"] and agg["adoption"]["feedback"] and not agg["adoption"]["constant"])
