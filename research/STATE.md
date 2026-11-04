@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-04T06:14:50 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-04T06:19:07 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -11,16 +11,15 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 1 |
+| approved | 0 |
 | proposed | 0 |
 | deferred | 13 |
-| decided | 53 |
+| decided | 54 |
 | rejected | 6 |
 
 ## Needs attention
 
-- **R-073** [approved] 3. Separate useful grasp preload from harmful reactive compression
-  - `python scripts/research.py start R-073` then run its command
+- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
@@ -40,6 +39,9 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 
 ## Last 5 decisions
 
+- D-054 · R-073 · **refuted** · 2026-11-04
+  Predicted that a frozen constant grasp preload (0.2266, the median of the parent's own extra_curl over 59,315 archived R-068 in-play steps, frozen with provenance before any episode) in place of the reactive capture curl would beat the exact zero-curl clamp by at least +0.10 fresh sustained success on a frozen 200-case seed-4631 manifest (promotion 10-39, fresh 40-199; three arms, six processes, 570 episodes, no LLM). Observed 0.000 [-0.086, +0.086] (45/160 vs 45/160; 24 wins, 24 losses, 112 ties): the upper bound is below +0.10, the predeclared refutation. The preload recovers spin rate (5.75 vs 4.30 rad/s; slow-spin failures 80 vs 97) but doubles the clamp's drops (20 vs 10; +0.063 [+0.017, +0.108], established) and off-centre failures (15 vs 8): static compression trades retention for spin one for one at this level, and no arm qualifies as a repair parent (promotion: preload 2/30, clamp 6/30, parent 6/30). Secondary: the zero-curl clamp's advantage over the parent (D-052) replicated on new cases in drops (10 vs 26) and off-centre failures (8 vs 43), with a smaller success gain (+0.069 [-0.024, +0.162], 45 vs 34; promotion tied 6 vs 6); pooled over the R-068 and R-073 fresh panels the clamp is 97 vs 62 of 320 (+0.109) with 17 vs 47 drops. The parent's capture curl thus has a useful static component and a harmful reactive one that cancel on success at the median level; other preload levels were not run. The lever for more spin on the zero-curl operating point is the stroke, not compression.
+  Next: Do not spend more episodes on preload levels: the clamp's retention gain and the preload's spin gain are the same lever pulled in opposite directions. The way to raise spin on the zero-curl operating point without reintroducing compression is the stroke itself (deferred R-064 timing feedback, R-070 stroke-synchronous unloading); the zero-curl clamp is the parent for those, qualified by its replicated drop reduction and a pooled +0.109 over 320 fresh pairs even though it missed the strict 30-case rule by 0.006 and tied the parent on this block's promotion panel.
 - D-053 · R-071 · **refuted** · 2026-11-04
   Predicted that the zero-curl clamp would show at least 0.5 more axial-direction reversals per in-play second than the parent on the 160 archived R-068 fresh pairs (offline audit; hysteresis 1.0 rad/s, three-step persistence, common pre-drop window; 0 episodes, 0 LLM calls). Observed +0.162 [+0.051, +0.273] (0.394 vs 0.232 per second; 48 wins, 50 losses, 62 ties): an increase is established but the upper bound is below +0.5, the predeclared refutation; the 30 promotion pairs show no difference (-0.029 [-0.270, +0.212]). Both arms hold a direction on about 95% of in-play steps, and the clamp's mean |spin| on the common window is 3.92 vs 5.25 rad/s, so its slow-spin failures (D-052) are slower unidirectional rotation with about one extra reversal per five seconds, not directional instability. Reversal counts cannot establish weakened contact as the cause. The repair target on the zero-curl operating point is therefore spin rate, not direction.
   Next: The repair target on the zero-curl operating point is spin rate, not direction: R-073 (constant preload) tests whether static compression restores traction; the deferred R-064 (stroke-timing feedback) and R-070 (stroke-synchronous unloading) are the structural candidates for raising spin without reintroducing the reactive curl.
@@ -52,9 +54,6 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 - D-050 · R-062 · **inconclusive** · 2026-11-04
   Predicted that removing the frozen R-046 learner's periodic stroke (the zero-cycle-mean rolling * gait term, by audited source substitution with a bit-identical identity gate) would cost at least 0.15 sustained success on 80 paired Stage-3 cases (240 episodes, no LLM). Observed -0.0875 [-0.168, -0.007] (6/80 vs 13/80; 2 wins, 9 losses, 69 ties): a loss is established, but the interval straddles -0.15, so the predicted magnitude is neither supported nor refuted. The loss is not carried by drops (+0.025 per case [-0.046, +0.096]; 19 vs 17). Unpredicted and the useful part: with no periodic stroke the pen still spins at the same overall in-play rate (6.39 vs 6.40 rad/s), the lesion sustains 4 of the 13 parent-sustained cases and 6 of 80 overall, and on the parent-sustained cases its spin falls to 3.74 from 7.68 rad/s. The stroke is therefore a partial lever, worth about half the learner's successes and the spin rate on its successful cases, while the reactive stabilization and centering terms generate axial spin on their own; which of those terms carries the residual spin is not identified. Saturation unchanged (drive above 0.99 on 98-99% of recorded steps). Implication for the deferred R-064 (timing feedback on the stroke) and R-063 (anticipatory centering): neither may assume the stroke is the whole mechanism, and the centering channel is itself a spin source.
   Next: Treat the stroke as a partial spin lever when re-triaging R-064 (timing feedback can move at most the stroke's share) and R-063 (the centering channel is itself a spin source, so an anticipatory centre changes spin, not only retention). A lesion of the stabilization terms would complete the localisation at the same cost; neither follow-up should assume the stroke is the whole mechanism.
-- D-049 · R-060 · **refuted** · 2026-11-04
-  Predicted that re-ranking each R-058 arm's original top 8 candidates on 40 new independent screen cases per block would beat the original ten-case winners by at least +0.05 fresh sustained success (mean over arms, eight paired blocks; 8240 episodes, no LLM). Observed -0.002 [-0.043, +0.040]: the upper bound is below +0.05, the predeclared refutation. Per arm, CMA re-ranked minus original +0.028 [-0.036, +0.093] and random -0.031 [-0.085, +0.022] with more fresh drops (+0.875 per 40 [+0.339, +1.411]). No controller differs from the parent on fresh cases (means 0.25-0.28 against 0.272; every interval through zero), no re-ranked winner passed strict promotion, no (block, controller) qualifies as a repair parent, and no block activates spin feedback (largest unsaturated-drive gain +0.051). The selection inflation was measured directly: the 128 shortlisted candidates averaged 0.352 on their original ten screen cases, 0.221 on the 40 new cases (parent 0.184 on the same 40), and parent level on fresh. Larger screens remove the inflation but find nothing to select: within the parent's declared bounds the twelve scalars do not contain a controller better than the parent by more than a 40-case screen's noise, so with D-048 scalar tuning of this learner is closed. The R-059 question was answered offline from the R-058 traces at no episode cost: final clipping removes drive-override authority only on one joint already at its limit (MFJ2, 0.0105 of 0.0117 normalised units; zero elsewhere), below the 0.02 threshold; the spin drive's total authority over the executed action is about 0.01 units per 0.2 of drive, which, with its saturation above 0.99 on most steps, says the learner's spin feedback is both saturated and nearly powerless. R-056, R-057 and R-061 stay deferred.
-  Next: Scalar tuning of this learner is closed: neither optimiser choice (D-048) nor selection size (this result) moves fresh success, drops or drive saturation; no repair parent exists for R-056/R-061 and feedback does not activate, so R-057 stays deferred. A gain on this task needs a structural change to the controller (the spin drive has almost no authority over the executed action and is saturated), not a scalar one.
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 

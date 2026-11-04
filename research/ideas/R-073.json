@@ -13,9 +13,7 @@
     "script": "scripts/run_shadowhand_spin_stages.py",
     "config": "config/shadowhand_spin_stages.yaml",
     "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r073_constant_preload --log-dir logs/pen_spin/r073_constant_preload\"'",
-    "seeds": [
-      4631
-    ],
+    "seeds": [],
     "manifests": [
       "config/manifests/pen_spin_stage3_r073_block_s4631.yaml"
     ],
@@ -32,7 +30,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The fresh paired interval's upper bound is below +0.10; increased drops would separately disqualify the candidate for repair even if success improved.",
   "cost_estimate": {
@@ -50,17 +48,408 @@
     "round": 2,
     "note": "I accept the implementer's corrected study interface, provenance-frozen preload definition, identity gate, and explicit support rule; these resolve the earlier implementation objections. Constant preload tests whether static grasp compression can preserve spin without reactive tightening, distinct f"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-11-04T06:15:01",
+    "git_sha": "e4dfb87caecf2c9177cb1f55b12c3730e0e88367",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r073_constant_preload",
+    "finished_at": "2026-11-04T06:18:28"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.0,
+      "paired_success_difference_ci95": [
+        -0.08578835343852272,
+        0.08578835343852272
+      ],
+      "contrasts": {
+        "promotion": {
+          "constant_preload_minus_zero_curl": {
+            "success": {
+              "n": 30,
+              "mean": -0.13333333333333333,
+              "se": 0.07926868804398468,
+              "low": -0.295456003813861,
+              "high": 0.028789337147194338,
+              "p_value": 0.10329970911247391
+            },
+            "win_loss_tie": {
+              "wins": 1,
+              "losses": 5,
+              "ties": 24
+            },
+            "drops": {
+              "n": 30,
+              "mean": 0.03333333333333333,
+              "se": 0.05839487722243926,
+              "low": -0.08609760051069923,
+              "high": 0.1527642671773659,
+              "p_value": 0.5725145639415321
+            },
+            "drop_counts": [
+              5,
+              4
+            ],
+            "promotes": false,
+            "drops_not_increased": false,
+            "drop_increase_established": false
+          },
+          "constant_preload_minus_parent": {
+            "success": {
+              "n": 30,
+              "mean": -0.13333333333333333,
+              "se": 0.07926868804398468,
+              "low": -0.295456003813861,
+              "high": 0.028789337147194338,
+              "p_value": 0.10329970911247391
+            },
+            "win_loss_tie": {
+              "wins": 1,
+              "losses": 5,
+              "ties": 24
+            },
+            "drops": {
+              "n": 30,
+              "mean": 0.03333333333333333,
+              "se": 0.07555668243468872,
+              "low": -0.12119743324329937,
+              "high": 0.18786409990996603,
+              "p_value": 0.6623617732700396
+            },
+            "drop_counts": [
+              5,
+              4
+            ],
+            "promotes": false,
+            "drops_not_increased": false,
+            "drop_increase_established": false
+          },
+          "zero_curl_minus_parent": {
+            "success": {
+              "n": 30,
+              "mean": 0.0,
+              "se": 0.10721125348377948,
+              "low": -0.2192716335952288,
+              "high": 0.2192716335952288,
+              "p_value": 1.0
+            },
+            "win_loss_tie": {
+              "wins": 5,
+              "losses": 5,
+              "ties": 20
+            },
+            "drops": {
+              "n": 30,
+              "mean": 0.0,
+              "se": 0.06780635036208103,
+              "low": -0.13867955768536366,
+              "high": 0.13867955768536366,
+              "p_value": 1.0
+            },
+            "drop_counts": [
+              4,
+              4
+            ],
+            "promotes": false,
+            "drops_not_increased": true,
+            "drop_increase_established": false
+          }
+        },
+        "fresh": {
+          "constant_preload_minus_zero_curl": {
+            "success": {
+              "n": 160,
+              "mean": 0.0,
+              "se": 0.04343722427630694,
+              "low": -0.08578835343852272,
+              "high": 0.08578835343852272,
+              "p_value": 1.0
+            },
+            "win_loss_tie": {
+              "wins": 24,
+              "losses": 24,
+              "ties": 112
+            },
+            "drops": {
+              "n": 160,
+              "mean": 0.0625,
+              "se": 0.022929170402478844,
+              "low": 0.017214975293370433,
+              "high": 0.10778502470662957,
+              "p_value": 0.007134370360849711
+            },
+            "drop_counts": [
+              20,
+              10
+            ],
+            "promotes": false,
+            "drops_not_increased": false,
+            "drop_increase_established": true
+          },
+          "constant_preload_minus_parent": {
+            "success": {
+              "n": 160,
+              "mean": 0.06875,
+              "se": 0.03447936558208976,
+              "low": 0.0006533835569974694,
+              "high": 0.13684661644300256,
+              "p_value": 0.04786775385352901
+            },
+            "win_loss_tie": {
+              "wins": 21,
+              "losses": 10,
+              "ties": 129
+            },
+            "drops": {
+              "n": 160,
+              "mean": -0.0375,
+              "se": 0.01960197493579787,
+              "low": -0.07621382626082165,
+              "high": 0.0012138262608216571,
+              "p_value": 0.05753606220797813
+            },
+            "drop_counts": [
+              20,
+              26
+            ],
+            "promotes": true,
+            "drops_not_increased": true,
+            "drop_increase_established": false
+          },
+          "zero_curl_minus_parent": {
+            "success": {
+              "n": 160,
+              "mean": 0.06875,
+              "se": 0.04701956220085155,
+              "low": -0.024113457272325653,
+              "high": 0.16161345727232568,
+              "p_value": 0.14567178303828524
+            },
+            "win_loss_tie": {
+              "wins": 34,
+              "losses": 23,
+              "ties": 103
+            },
+            "drops": {
+              "n": 160,
+              "mean": -0.1,
+              "se": 0.025390039150232014,
+              "low": -0.1501452311635421,
+              "high": -0.04985476883645793,
+              "p_value": 0.0001224051496840976
+            },
+            "drop_counts": [
+              10,
+              26
+            ],
+            "promotes": false,
+            "drops_not_increased": true,
+            "drop_increase_established": false
+          }
+        }
+      },
+      "arms": {
+        "parent": {
+          "promotion": {
+            "n": 30,
+            "successes": 6,
+            "success": 0.2,
+            "drops": 4,
+            "tail_failures": 20,
+            "off_centre": 6,
+            "slow_spin": 14,
+            "mean_abs_spin": 5.282511520385742,
+            "drive_saturated_fraction": 0.9474238752502371,
+            "action_saturated_fraction": 0.05823411653145085
+          },
+          "fresh": {
+            "n": 160,
+            "successes": 34,
+            "success": 0.2125,
+            "drops": 26,
+            "tail_failures": 100,
+            "off_centre": 43,
+            "slow_spin": 57,
+            "mean_abs_spin": 5.6283985886722805,
+            "drive_saturated_fraction": 0.9608715074723847,
+            "action_saturated_fraction": 0.06360359811565952
+          }
+        },
+        "zero_curl": {
+          "promotion": {
+            "n": 30,
+            "successes": 6,
+            "success": 0.2,
+            "drops": 4,
+            "tail_failures": 20,
+            "off_centre": 1,
+            "slow_spin": 19,
+            "mean_abs_spin": 5.150299205382665,
+            "drive_saturated_fraction": 0.9663157894736842,
+            "action_saturated_fraction": 0.0605
+          },
+          "fresh": {
+            "n": 160,
+            "successes": 45,
+            "success": 0.28125,
+            "drops": 10,
+            "tail_failures": 105,
+            "off_centre": 8,
+            "slow_spin": 97,
+            "mean_abs_spin": 4.303235196508467,
+            "drive_saturated_fraction": 0.9584900789260161,
+            "action_saturated_fraction": 0.05884874972339013
+          }
+        },
+        "constant_preload": {
+          "promotion": {
+            "n": 30,
+            "successes": 2,
+            "success": 0.06666666666666667,
+            "drops": 5,
+            "tail_failures": 23,
+            "off_centre": 3,
+            "slow_spin": 20,
+            "mean_abs_spin": 6.385305746396383,
+            "drive_saturated_fraction": 0.9763203841117416,
+            "action_saturated_fraction": 0.048297686599738106
+          },
+          "fresh": {
+            "n": 160,
+            "successes": 45,
+            "success": 0.28125,
+            "drops": 20,
+            "tail_failures": 95,
+            "off_centre": 15,
+            "slow_spin": 80,
+            "mean_abs_spin": 5.751734147593379,
+            "drive_saturated_fraction": 0.9233949178111714,
+            "action_saturated_fraction": 0.04913794792421779
+          }
+        }
+      },
+      "preload": {
+        "constant": 0.22663702070713043,
+        "rule": "median of parent extra_curl over archived in-play steps with extra_curl > 1e-06",
+        "steps": 59315,
+        "positive_steps": 59315,
+        "mean": 0.3341972231864929,
+        "quartiles": [
+          0.17739231139421463,
+          0.22663702070713043,
+          0.6030602157115936
+        ],
+        "max": 0.6967688798904419,
+        "capture_curl": 0.39815419912338257
+      },
+      "prediction": {
+        "threshold": 0.1,
+        "supported": false,
+        "refuted": true
+      },
+      "qualifies_repair_parent": false,
+      "identity_gate": {
+        "rows": 23484,
+        "passes": true
+      },
+      "pooled_zero_curl_minus_parent_fresh_r068_r073": {
+        "successes": [
+          97,
+          62
+        ],
+        "pairs": 320,
+        "difference": 0.109375,
+        "drops": [
+          17,
+          47
+        ]
+      },
+      "episodes": 570,
+      "llm_calls": 0
+    },
+    "controls": {
+      "parent": "the unchanged frozen R-046 learner, each panel in its own process",
+      "zero_curl": "the exact R-068 clamp, each panel in its own process (an experimental control; replicates D-052 on new cases)",
+      "preload": "constant 0.2266 = median of the parent's extra_curl over 59,315 archived R-068 in-play steps (all positive; quartiles 0.177 / 0.227 / 0.603, mean 0.334, capture_curl 0.398), frozen with archive hashes before any episode",
+      "identity_gate": "the preload form at C = 0, factor 1.0 reproduced the parent's actions bit for bit on all 23,484 archived D-050 observations"
+    },
+    "artifacts": [
+      "logs/pen_spin/r073_constant_preload/summary.json",
+      "logs/pen_spin/r073_constant_preload/preload.json",
+      "logs/pen_spin/r073_constant_preload/identity_gate.json",
+      "logs/pen_spin/r073_constant_preload/constant_preload_source.py",
+      "logs/pen_spin/r073_constant_preload/parent_promotion.json",
+      "logs/pen_spin/r073_constant_preload/parent_fresh.json",
+      "logs/pen_spin/r073_constant_preload/zero_curl_promotion.json",
+      "logs/pen_spin/r073_constant_preload/zero_curl_fresh.json",
+      "logs/pen_spin/r073_constant_preload/constant_preload_promotion.json",
+      "logs/pen_spin/r073_constant_preload/constant_preload_fresh.json",
+      "config/manifests/pen_spin_stage3_r073_block_s4631.yaml"
+    ],
+    "notes": [
+      "Primary, predeclared (160 fresh pairs): constant preload minus zero-curl clamp +0.0000 [-0.086, +0.086] (45/160 vs 45/160; 24 wins, 24 losses, 112 ties); the upper bound is below +0.10: refuted. The preload doubles the drops of the clamp (20 vs 10; +0.0625 [+0.017, +0.108] per case) and has more off-centre failures (15 vs 8), fewer slow-spin failures (80 vs 97) and higher spin (5.75 vs 4.30 rad/s): static compression buys back spin rate at the price of retention, and the two cancel exactly on success. Promotion panel: preload 2/30 vs clamp 6/30 (-0.1333 [-0.295, +0.029]). No arm qualifies as a repair parent.",
+      "Replication of D-052 on new cases (secondary): zero-curl minus parent on this fresh panel +0.0688 [-0.024, +0.162] (45 vs 34; 34 wins, 23 losses), drops 10 vs 26 (-0.1000 [-0.150, -0.050], established), off-centre 8 vs 43; promotion 6/30 vs 6/30 (tie). The drop and off-centre reductions replicate at the same size; the success gain is smaller than R-068's +0.15 and its interval includes zero here. Pooled over the R-068 and R-073 fresh panels (320 pairs, not predeclared): 97 vs 62 successes, +0.109; drops 17 vs 47.",
+      "Constant preload minus parent on fresh: +0.0688 [+0.001, +0.137] (45 vs 34), drops 20 vs 26; the preload keeps part of the parent's spin (5.75 vs 5.63 rad/s) and part of the clamp's retention, and ends between them on drops and off-centre failures.",
+      "Reading: the parent's capture curl has a useful static component (the preload recovers spin rate: slow-spin failures 80 vs 97) and a harmful reactive component (the preload still drops the pen twice as often as the clamp, though less than the parent). At the median level the two effects cancel on success; a lower constant might trade differently, but no other level was run (predeclared limitation: one frozen constant).",
+      "Saturation: drive above 0.99 on 92-98% of recorded in-play steps in every arm; executed-action saturation 4-7% of components.",
+      "Accounting: 570 Isaac episodes in six fresh processes, 0 LLM calls, about 6 min wall time. Deviations: none; protocol.seeds was emptied mechanically after approval because the committed manifest carries seed 4631. Final-test split untouched."
+    ]
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.0,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.9,
+      "reasoning": "Predicted that a frozen constant preload (0.2266, the median of the parent's own extra_curl over 59,315 archived in-play steps) would beat the exact zero-curl clamp by at least +0.10 fresh sustained success; observed 0.000 [-0.086, +0.086] on 160 pairs (45 vs 45; 24 wins, 24 losses), upper bound below +0.10, the predeclared refutation. The mechanism split is visible: the preload recovers spin rate (5.75 vs 4.30 rad/s; slow-spin failures 80 vs 97) but doubles the clamp's drops (20 vs 10, +0.063 [+0.016, +0.109]) and off-centre failures (15 vs 8), so static compression trades retention for spin one for one at this level. No arm qualifies as a repair parent (promotion: preload 2/30, clamp 6/30, parent 6/30). Secondary: the clamp's advantage over the parent replicated on new cases in drops (10 vs 26) and off-centre failures (8 vs 43) at the same size, with a smaller success gain (+0.069 [-0.024, +0.162], 45 vs 34); pooled with R-068 the clamp is 97 vs 62 of 320 with 17 vs 47 drops. Confidence 0.9: exact identity gate, frozen constant, 160 pairs; the only open end is other preload levels.",
+      "cited_artifacts": [],
+      "next_experiment": "Do not spend more episodes on preload levels: the clamp's retention gain and the preload's spin gain are the same lever pulled in opposite directions. The way to raise spin on the zero-curl operating point without reintroducing compression is the stroke itself (deferred R-064 timing feedback, R-070 stroke-synchronous unloading); the zero-curl clamp is the parent for those, qualified by its replicated drop reduction and a pooled +0.109 over 320 fresh pairs even though it missed the strict 30-case rule by 0.006 and tied the parent on this block's promotion panel.",
+      "recorded_at": "2026-11-04T06:18:30",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "The predicted paired_success_difference increase of at least +0.10 versus the exact zero-curl control is refuted: the fresh estimate was 0.0000 with 95% interval [-0.08579, +0.08579], whose upper bound is below the predeclared threshold [logs/pen_spin/r073_constant_preload/summary.json]. Both arms achieved 45/160 successes, so the tie provides no evidence of improvement [logs/pen_spin/r073_constant_preload/summary.json]. Constant preload also established a fresh drop increase against zero-curl: 20 versus 10 drops, paired difference +0.0625 [0.01721, 0.10779], independently disqualifying it for repair [logs/pen_spin/r073_constant_preload/summary.json]. It failed strict promotion against both controls; this result rejects the tested frozen preload, not every possible constant preload or a uniquely identified compression mechanism [logs/pen_spin/r073_constant_preload/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r073_constant_preload/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-04T06:18:52",
+      "call_id": "call_00143"
+    }
+  ],
+  "decision_id": "D-054",
   "history": [
     {
       "at": "2026-11-04T06:09:33",
       "from": "proposed",
       "to": "approved",
       "note": "triage round 2: both say approve"
+    },
+    {
+      "at": "2026-11-04T06:15:01",
+      "from": "approved",
+      "to": "running",
+      "note": "git e4dfb87cae (dirty)"
+    },
+    {
+      "at": "2026-11-04T06:18:28",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-04T06:19:07",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-054: refuted"
     }
   ],
   "created_at": "2026-11-04T06:03:32",
@@ -149,6 +538,16 @@
         }
       },
       "note": "Round 1 implementer revision: --study interface and config block, manifest pen_spin_stage3_r073_block_s4631.yaml, frozen preload-constant definition, explicit support rule, six processes."
+    },
+    {
+      "at": "2026-11-04T08:40:00",
+      "round": 2,
+      "patch": {
+        "protocol": {
+          "seeds": []
+        }
+      },
+      "note": "Mechanical, after approval: config/manifests/pen_spin_stage3_r073_block_s4631.yaml carries seed 4631 and the seed ledger scans config/** manifests; as in R-053/R-058/R-060/R-062/R-065/R-068 the manifest is the seed record and protocol.seeds is emptied. No other field changed."
     }
   ]
 }
