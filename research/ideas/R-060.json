@@ -13,16 +13,7 @@
     "script": "scripts/run_shadowhand_spin_stages.py",
     "config": "config/shadowhand_spin_stages.yaml",
     "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r060_archive_rescreen --log-dir logs/pen_spin/r060_archive_rescreen\"'",
-    "seeds": [
-      4550,
-      4551,
-      4552,
-      4553,
-      4554,
-      4555,
-      4556,
-      4557
-    ],
+    "seeds": [],
     "manifests": [
       "config/manifests/pen_spin_stage3_r060_block_s4550.yaml",
       "config/manifests/pen_spin_stage3_r060_block_s4551.yaml",
@@ -48,7 +39,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The paired interval upper bound for re-ranked minus original-winner fresh sustained success is below 0.05; an interval spanning the threshold is inconclusive.",
   "cost_estimate": {
@@ -68,17 +59,1035 @@
     "round": 2,
     "note": "Approve the implementer's amended selection-mechanism test using scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, seeds 4550-4557, and a budget cap of 8240 simulator episodes with zero LLM calls. I accept the corrected interfaces, role-sliced manifests, frozen archive pr"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-11-04T04:36:28",
+    "git_sha": "15b25f486b37844caa8fda3dcefac0bc2b40a346",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r060_archive_rescreen",
+    "finished_at": "2026-11-04T05:13:35"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": -0.0015625000000000005,
+      "paired_success_difference_ci95": [
+        -0.04277625859256292,
+        0.03965125859256292
+      ],
+      "reranked_minus_original_fresh": {
+        "per_block": [
+          0.0,
+          0.0375,
+          0.012499999999999997,
+          -0.012499999999999997,
+          0.0375,
+          -0.0375,
+          0.05,
+          -0.1
+        ],
+        "n": 8,
+        "mean": -0.0015625000000000005,
+        "se": 0.0174293055502589,
+        "low": -0.04277625859256292,
+        "high": 0.03965125859256292,
+        "p_value": 0.9310781640131753
+      },
+      "cma_reranked_minus_cma_original_fresh": {
+        "per_block": [
+          -0.024999999999999994,
+          0.07500000000000001,
+          0.07499999999999998,
+          0.05000000000000002,
+          0.0,
+          0.04999999999999999,
+          0.12499999999999997,
+          -0.125
+        ],
+        "n": 8,
+        "mean": 0.028124999999999997,
+        "se": 0.027319823715704,
+        "low": -0.03647611770739338,
+        "high": 0.09272611770739338,
+        "p_value": 0.3375098903355412
+      },
+      "cma_reranked_minus_cma_original_fresh_drops": {
+        "per_block": [
+          0.0,
+          0.0,
+          -2.0,
+          -2.0,
+          0.0,
+          1.0,
+          -2.0,
+          -1.0
+        ],
+        "n": 8,
+        "mean": -0.75,
+        "se": 0.411877235523957,
+        "low": -1.7239348997989419,
+        "high": 0.22393489979894188,
+        "p_value": 0.11141646787533989
+      },
+      "cma_reranked_minus_parent_fresh": {
+        "per_block": [
+          -0.024999999999999994,
+          0.125,
+          0.024999999999999994,
+          -0.09999999999999998,
+          0.07500000000000001,
+          0.0,
+          0.07499999999999996,
+          -0.09999999999999998
+        ],
+        "n": 8,
+        "mean": 0.009375000000000001,
+        "se": 0.02910015801380761,
+        "low": -0.05943593936463159,
+        "high": 0.07818593936463158,
+        "p_value": 0.7567370321800373
+      },
+      "cma_reranked_minus_parent_fresh_drops": {
+        "per_block": [
+          1.0,
+          -2.0,
+          1.0,
+          -3.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          -2.0
+        ],
+        "n": 8,
+        "mean": -1.0,
+        "se": 0.5,
+        "low": -2.1823121257963924,
+        "high": 0.18231212579639222,
+        "p_value": 0.08561932856297597
+      },
+      "cma_reranked_minus_parent_promotion": {
+        "per_block": [
+          0.1,
+          0.1,
+          0.06666666666666667,
+          -0.06666666666666667,
+          0.06666666666666667,
+          0.03333333333333333,
+          0.13333333333333333,
+          -0.1
+        ],
+        "n": 8,
+        "mean": 0.04166666666666667,
+        "se": 0.029378482569650154,
+        "low": -0.027802405692523985,
+        "high": 0.11113573902585733,
+        "p_value": 0.19905953953787836
+      },
+      "cma_reranked_feedback_unsaturated_gain": {
+        "per_block": [
+          -0.023467966573816154,
+          0.060863509749303636,
+          0.011260019328065493,
+          0.0070334261838440135,
+          0.12033426183844012,
+          -0.014151944194982688,
+          0.05712103513343517,
+          -0.017130919220055715
+        ],
+        "n": 8,
+        "mean": 0.025232677780529237,
+        "se": 0.017715387940893862,
+        "low": -0.016657558170882752,
+        "high": 0.06712291373194122,
+        "p_value": 0.19736570960318015
+      },
+      "cma_original_minus_parent_fresh": {
+        "per_block": [
+          0.0,
+          0.04999999999999999,
+          -0.04999999999999999,
+          -0.15,
+          0.07500000000000001,
+          -0.04999999999999999,
+          -0.05000000000000002,
+          0.025000000000000022
+        ],
+        "n": 8,
+        "mean": -0.018749999999999996,
+        "se": 0.02533260885555555,
+        "low": -0.07865210125596078,
+        "high": 0.04115210125596079,
+        "p_value": 0.48328741731971636
+      },
+      "cma_original_minus_parent_fresh_drops": {
+        "per_block": [
+          1.0,
+          -2.0,
+          3.0,
+          -1.0,
+          -1.0,
+          -2.0,
+          1.0,
+          -1.0
+        ],
+        "n": 8,
+        "mean": -0.25,
+        "se": 0.6196196990320526,
+        "low": -1.7151677670958136,
+        "high": 1.2151677670958136,
+        "p_value": 0.6986403481780348
+      },
+      "cma_original_minus_parent_promotion": {
+        "per_block": [
+          0.16666666666666666,
+          0.0,
+          0.03333333333333333,
+          -0.2,
+          0.06666666666666667,
+          0.06666666666666667,
+          0.03333333333333333,
+          0.0
+        ],
+        "n": 8,
+        "mean": 0.02083333333333333,
+        "se": 0.03669776819475798,
+        "low": -0.06594309931932174,
+        "high": 0.1076097659859884,
+        "p_value": 0.5879756327862228
+      },
+      "cma_original_feedback_unsaturated_gain": {
+        "per_block": [
+          0.15125883025820594,
+          0.03781337047353761,
+          0.003475498834631352,
+          0.02346796657381615,
+          0.12033426183844012,
+          0.053018931187454856,
+          0.009269186778777694,
+          0.013091922005571018
+        ],
+        "n": 8,
+        "mean": 0.05146624599380434,
+        "se": 0.019470844198603784,
+        "low": 0.0054250156028011545,
+        "high": 0.09750747638480753,
+        "p_value": 0.033266257212742054
+      },
+      "random_reranked_minus_random_original_fresh": {
+        "per_block": [
+          0.025000000000000022,
+          0.0,
+          -0.04999999999999999,
+          -0.07500000000000001,
+          0.07500000000000001,
+          -0.125,
+          -0.024999999999999994,
+          -0.07500000000000001
+        ],
+        "n": 8,
+        "mean": -0.031249999999999997,
+        "se": 0.02253469547164993,
+        "low": -0.08453608741452152,
+        "high": 0.022036087414521528,
+        "p_value": 0.20807312571474443
+      },
+      "random_reranked_minus_random_original_fresh_drops": {
+        "per_block": [
+          1.0,
+          0.0,
+          0.0,
+          1.0,
+          2.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "n": 8,
+        "mean": 0.875,
+        "se": 0.2265817417937414,
+        "low": 0.33921931838638464,
+        "high": 1.4107806816136153,
+        "p_value": 0.006197520580834283
+      },
+      "random_reranked_minus_parent_fresh": {
+        "per_block": [
+          0.07500000000000001,
+          0.125,
+          -0.024999999999999994,
+          -0.125,
+          0.04999999999999999,
+          -0.07500000000000001,
+          -0.05000000000000002,
+          -0.14999999999999997
+        ],
+        "n": 8,
+        "mean": -0.021875,
+        "se": 0.03453695613810971,
+        "low": -0.1035419240603705,
+        "high": 0.059791924060370504,
+        "p_value": 0.5466143779317036
+      },
+      "random_reranked_minus_parent_fresh_drops": {
+        "per_block": [
+          1.0,
+          -1.0,
+          1.0,
+          0.0,
+          1.0,
+          0.0,
+          2.0,
+          0.0
+        ],
+        "n": 8,
+        "mean": 0.5,
+        "se": 0.32732683535398854,
+        "low": -0.2740049730751597,
+        "high": 1.2740049730751597,
+        "p_value": 0.17047066078705375
+      },
+      "random_reranked_minus_parent_promotion": {
+        "per_block": [
+          0.1,
+          0.0,
+          0.03333333333333333,
+          -0.13333333333333333,
+          0.0,
+          -0.03333333333333333,
+          0.03333333333333333,
+          -0.1
+        ],
+        "n": 8,
+        "mean": -0.0125,
+        "se": 0.02667968432263687,
+        "low": -0.07558742857414695,
+        "high": 0.050587428574146956,
+        "p_value": 0.6536513528934699
+      },
+      "random_reranked_feedback_unsaturated_gain": {
+        "per_block": [
+          -0.018245125348189412,
+          0.016643454038997214,
+          -0.005403331248934107,
+          -0.047771587743732594,
+          0.04727367688022284,
+          0.005599331288746334,
+          0.03688736134822934,
+          -0.018662952646239555
+        ],
+        "n": 8,
+        "mean": 0.002040103321137507,
+        "se": 0.011070431852415267,
+        "low": -0.024137308312688868,
+        "high": 0.02821751495496388,
+        "p_value": 0.859015724393735
+      },
+      "random_original_minus_parent_fresh": {
+        "per_block": [
+          0.04999999999999999,
+          0.125,
+          0.024999999999999994,
+          -0.04999999999999999,
+          -0.025000000000000022,
+          0.04999999999999999,
+          -0.025000000000000022,
+          -0.07499999999999996
+        ],
+        "n": 8,
+        "mean": 0.009374999999999998,
+        "se": 0.023115345474999313,
+        "low": -0.04528410649412891,
+        "high": 0.06403410649412891,
+        "p_value": 0.6971651351430865
+      },
+      "random_original_minus_parent_fresh_drops": {
+        "per_block": [
+          0.0,
+          -1.0,
+          1.0,
+          -1.0,
+          -1.0,
+          -1.0,
+          1.0,
+          -1.0
+        ],
+        "n": 8,
+        "mean": -0.375,
+        "se": 0.3238992347717331,
+        "low": -1.140899985613585,
+        "high": 0.39089998561358497,
+        "p_value": 0.2849313808423218
+      },
+      "random_original_minus_parent_promotion": {
+        "per_block": [
+          0.1,
+          0.0,
+          0.13333333333333333,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "n": 8,
+        "mean": 0.029166666666666667,
+        "se": 0.01935210500834388,
+        "low": -0.016593790155433455,
+        "high": 0.07492712348876679,
+        "p_value": 0.1754994493585011
+      },
+      "random_original_feedback_unsaturated_gain": {
+        "per_block": [
+          -0.03906685236768802,
+          0.016643454038997214,
+          -0.008328122335285081,
+          -0.016124835068171823,
+          0.11901114206128134,
+          0.018478541215310014,
+          -0.01843606793063168,
+          0.01390032699527673
+        ],
+        "n": 8,
+        "mean": 0.010759698326136088,
+        "se": 0.017031818275349372,
+        "low": -0.029514152216476228,
+        "high": 0.051033548868748405,
+        "p_value": 0.5476244564006414
+      },
+      "promotions": {
+        "cma_reranked": [],
+        "cma_original": [
+          4550
+        ],
+        "random_reranked": [],
+        "random_original": []
+      },
+      "qualifying_repair_parents": {
+        "cma_reranked": [],
+        "cma_original": [],
+        "random_reranked": [],
+        "random_original": []
+      },
+      "feedback_activated_blocks": {
+        "cma_reranked": [],
+        "cma_original": [],
+        "random_reranked": [],
+        "random_original": []
+      },
+      "same_candidate_blocks": {
+        "cma": [
+          4554
+        ],
+        "random": [
+          4551
+        ]
+      },
+      "controllers": {
+        "cma_reranked": {
+          "promotion": {
+            "success_mean": 0.25416666666666665,
+            "success_per_block": [
+              0.26666666666666666,
+              0.3333333333333333,
+              0.16666666666666666,
+              0.3,
+              0.3333333333333333,
+              0.13333333333333333,
+              0.36666666666666664,
+              0.13333333333333333
+            ],
+            "successes_total": 61,
+            "drops_total": 40,
+            "drive_saturated_fraction_per_block": [
+              0.933970631713807,
+              0.9748139084327521,
+              0.944510346645578,
+              0.8693181818181818,
+              0.7427311850530073,
+              0.992363080951342,
+              0.9303745928338762,
+              0.9505231037489102
+            ],
+            "action_saturated_fraction_per_block": [
+              0.06487631812358333,
+              0.06609054756806362,
+              0.05822459470146303,
+              0.051613878143133465,
+              0.06828487456702005,
+              0.08625354571241545,
+              0.06401669381107492,
+              0.0656713164777681
+            ]
+          },
+          "fresh": {
+            "success_mean": 0.28125,
+            "success_per_block": [
+              0.225,
+              0.325,
+              0.175,
+              0.2,
+              0.4,
+              0.325,
+              0.35,
+              0.25
+            ],
+            "successes_total": 90,
+            "drops_total": 36,
+            "drive_saturated_fraction_per_block": [
+              0.9668053315222005,
+              0.9237393271546377,
+              0.9735924699320202,
+              0.9310560462753068,
+              0.7972175686503022,
+              0.9807135234029578,
+              0.90569847442417,
+              0.9613807500186387
+            ],
+            "action_saturated_fraction_per_block": [
+              0.05754308515154088,
+              0.07504561045026636,
+              0.06753093951542619,
+              0.060482295005080906,
+              0.06552917182606162,
+              0.061228845860649486,
+              0.06410035895901885,
+              0.06816148512636994
+            ]
+          }
+        },
+        "random_reranked": {
+          "promotion": {
+            "success_mean": 0.2,
+            "success_per_block": [
+              0.26666666666666666,
+              0.23333333333333334,
+              0.13333333333333333,
+              0.23333333333333334,
+              0.26666666666666666,
+              0.06666666666666667,
+              0.26666666666666666,
+              0.13333333333333333
+            ],
+            "successes_total": 48,
+            "drops_total": 47,
+            "drive_saturated_fraction_per_block": [
+              0.980672268907563,
+              0.99292863359443,
+              0.9902413292891995,
+              0.995442327918663,
+              0.9191788222582388,
+              0.9861444468688632,
+              0.8769962982548916,
+              0.9946838592919353
+            ],
+            "action_saturated_fraction_per_block": [
+              0.06814600840336134,
+              0.06830395996518712,
+              0.07169985493867863,
+              0.05662615402594367,
+              0.06562938951917882,
+              0.07615644774165393,
+              0.06899524061343204,
+              0.05826263997285375
+            ]
+          },
+          "fresh": {
+            "success_mean": 0.25,
+            "success_per_block": [
+              0.325,
+              0.325,
+              0.125,
+              0.175,
+              0.375,
+              0.25,
+              0.225,
+              0.2
+            ],
+            "successes_total": 80,
+            "drops_total": 48,
+            "drive_saturated_fraction_per_block": [
+              0.9605151669208609,
+              0.9693435023179303,
+              0.9905906952430737,
+              0.9919777064685019,
+              0.8711693855770697,
+              0.9569842014703582,
+              0.9367658889782784,
+              0.9611954310749492
+            ],
+            "action_saturated_fraction_per_block": [
+              0.06364599220471107,
+              0.07226708538956184,
+              0.07497386304234187,
+              0.05979142036818105,
+              0.05407836560451288,
+              0.05635460660096981,
+              0.061979082864038616,
+              0.06038569863871069
+            ]
+          }
+        },
+        "cma_original": {
+          "promotion": {
+            "success_mean": 0.23333333333333334,
+            "success_per_block": [
+              0.3333333333333333,
+              0.23333333333333334,
+              0.13333333333333333,
+              0.16666666666666666,
+              0.3333333333333333,
+              0.16666666666666666,
+              0.26666666666666666,
+              0.23333333333333334
+            ],
+            "successes_total": 56,
+            "drops_total": 42,
+            "drive_saturated_fraction_per_block": [
+              0.6845153424100793,
+              0.972986748216106,
+              0.9948630136986302,
+              0.9926062846580407,
+              0.7427311850530073,
+              0.9864910503208375,
+              0.9477336803296464,
+              0.9185138273168673
+            ],
+            "action_saturated_fraction_per_block": [
+              0.058473887421255845,
+              0.06697247706422019,
+              0.061762381454162275,
+              0.0549387707948244,
+              0.06828487456702005,
+              0.09670156478667118,
+              0.058761656907395356,
+              0.06726831327844628
+            ]
+          },
+          "fresh": {
+            "success_mean": 0.253125,
+            "success_per_block": [
+              0.25,
+              0.25,
+              0.1,
+              0.15,
+              0.4,
+              0.275,
+              0.225,
+              0.375
+            ],
+            "successes_total": 81,
+            "drops_total": 42,
+            "drive_saturated_fraction_per_block": [
+              0.7568577494692145,
+              0.9480538377591852,
+              0.9936276320650166,
+              0.908164941678988,
+              0.7972175686503022,
+              0.9073756432246999,
+              0.9590926867422761,
+              0.927289391277782
+            ],
+            "action_saturated_fraction_per_block": [
+              0.0600552016985138,
+              0.07009457984721718,
+              0.06733007018840044,
+              0.05592245769673074,
+              0.06552917182606162,
+              0.07042657916324857,
+              0.05938991005084083,
+              0.06193385778660353
+            ]
+          }
+        },
+        "random_original": {
+          "promotion": {
+            "success_mean": 0.2416666666666667,
+            "success_per_block": [
+              0.26666666666666666,
+              0.23333333333333334,
+              0.23333333333333334,
+              0.36666666666666664,
+              0.26666666666666666,
+              0.1,
+              0.23333333333333334,
+              0.23333333333333334
+            ],
+            "successes_total": 58,
+            "drops_total": 52,
+            "drive_saturated_fraction_per_block": [
+              0.9886363636363636,
+              0.99292863359443,
+              0.991680971873762,
+              0.8468785328476323,
+              0.7765063054647361,
+              0.9896514161220044,
+              0.9567221223021583,
+              0.8360212022104432
+            ],
+            "action_saturated_fraction_per_block": [
+              0.05858585858585859,
+              0.06830395996518712,
+              0.0666446586557507,
+              0.05198467529204874,
+              0.06280359645025689,
+              0.08831699346405229,
+              0.06225831834532374,
+              0.05519341378143679
+            ]
+          },
+          "fresh": {
+            "success_mean": 0.28125,
+            "success_per_block": [
+              0.3,
+              0.325,
+              0.175,
+              0.25,
+              0.3,
+              0.375,
+              0.25,
+              0.275
+            ],
+            "successes_total": 90,
+            "drops_total": 41,
+            "drive_saturated_fraction_per_block": [
+              0.9861972063806926,
+              0.9693435023179303,
+              0.9942368145302131,
+              0.9554402438019932,
+              0.7985721570627231,
+              0.9436683530921997,
+              0.9861863276037988,
+              0.9273866850110831
+            ],
+            "action_saturated_fraction_per_block": [
+              0.060521530705016945,
+              0.07226708538956184,
+              0.06869105833042263,
+              0.05917963923894243,
+              0.058975012748597656,
+              0.0691837197009741,
+              0.05628286633702221,
+              0.060834670947030496
+            ]
+          }
+        },
+        "parent": {
+          "promotion": {
+            "success_mean": 0.21250000000000002,
+            "success_per_block": [
+              0.16666666666666666,
+              0.23333333333333334,
+              0.1,
+              0.36666666666666664,
+              0.26666666666666666,
+              0.1,
+              0.23333333333333334,
+              0.23333333333333334
+            ],
+            "successes_total": 51,
+            "drops_total": 44,
+            "drive_saturated_fraction_per_block": [
+              0.9465656884400968,
+              0.9825479930191972,
+              0.9861648493375542,
+              0.9546277301797997,
+              0.8513817119748371,
+              0.9864850596557914,
+              0.9563805606667388,
+              0.9467992134585973
+            ],
+            "action_saturated_fraction_per_block": [
+              0.05534343115599032,
+              0.0587641797556719,
+              0.06428068941259234,
+              0.05011463738385423,
+              0.06771512019770838,
+              0.07536163023967903,
+              0.06008225998484684,
+              0.05576250819313961
+            ]
+          },
+          "fresh": {
+            "success_mean": 0.271875,
+            "success_per_block": [
+              0.25,
+              0.2,
+              0.15,
+              0.3,
+              0.325,
+              0.325,
+              0.275,
+              0.35
+            ],
+            "successes_total": 87,
+            "drops_total": 44,
+            "drive_saturated_fraction_per_block": [
+              0.939943903646263,
+              0.9869095919773406,
+              0.9901869554183234,
+              0.9339311394975044,
+              0.9212586682574007,
+              0.9628121819462929,
+              0.9686806034152692,
+              0.9402985074626866
+            ],
+            "action_saturated_fraction_per_block": [
+              0.05696254743441676,
+              0.061111536400520555,
+              0.06642839015311733,
+              0.054724642585229674,
+              0.05835508164939229,
+              0.05741016206059657,
+              0.05725553258289302,
+              0.060350082050480584
+            ]
+          }
+        }
+      },
+      "rescreen": {
+        "parent_success_per_block": [
+          0.175,
+          0.275,
+          0.175,
+          0.175,
+          0.15,
+          0.175,
+          0.15,
+          0.2
+        ],
+        "shortlist_best_success_per_block": {
+          "cma": [
+            0.375,
+            0.55,
+            0.2,
+            0.225,
+            0.25,
+            0.325,
+            0.3,
+            0.325
+          ],
+          "random": [
+            0.375,
+            0.375,
+            0.25,
+            0.275,
+            0.225,
+            0.25,
+            0.275,
+            0.35
+          ]
+        },
+        "shortlist_mean_success_per_block": {
+          "cma": [
+            0.303125,
+            0.39375,
+            0.18125,
+            0.146875,
+            0.19375,
+            0.23125,
+            0.1625,
+            0.240625
+          ],
+          "random": [
+            0.278125,
+            0.328125,
+            0.16875,
+            0.196875,
+            0.165625,
+            0.175,
+            0.153125,
+            0.225
+          ]
+        },
+        "shortlisted_candidates": 128,
+        "shortlist_original_10case_screen_mean": 0.35234374999999996,
+        "shortlist_40case_rescreen_mean": 0.221484375,
+        "parent_40case_rescreen_mean": 0.184375
+      },
+      "r059_offline_clipping_diagnostic": {
+        "parent": {
+          "episodes": 320,
+          "reduction_mean_over_axes": {
+            "n": 320,
+            "mean": 0.0005249233431257494,
+            "se": 3.512260096157377e-05,
+            "low": 0.0004558221409721125,
+            "high": 0.0005940245452793864,
+            "p_value": 1.189344701704199e-38
+          },
+          "reduction_max_axis": {
+            "axis": 8,
+            "n": 320,
+            "mean": 0.010474298938561333,
+            "se": 0.0007024289438760413,
+            "low": 0.009092320294597913,
+            "high": 0.011856277582524753,
+            "p_value": 1.6044605397735787e-38
+          },
+          "pre_clip_max_axis_variation": 0.011656632646918297,
+          "post_clip_max_axis_variation": 0.009566457942128181
+        },
+        "cma_winner": {
+          "episodes": 320,
+          "reduction_mean_over_axes": {
+            "n": 320,
+            "mean": 0.0005977409360211183,
+            "se": 4.576093577785702e-05,
+            "low": 0.0005077095719605562,
+            "high": 0.0006877723000816803,
+            "p_value": 1.5770818840342855e-31
+          },
+          "reduction_max_axis": {
+            "axis": 8,
+            "n": 320,
+            "mean": 0.011660685176934749,
+            "se": 0.0008738206957016637,
+            "low": 0.00994150553514871,
+            "high": 0.013379864818720787,
+            "p_value": 1.398008170977187e-32
+          },
+          "pre_clip_max_axis_variation": 0.012684047222137451,
+          "post_clip_max_axis_variation": 0.009930303320288658
+        },
+        "random_winner": {
+          "episodes": 320,
+          "reduction_mean_over_axes": {
+            "n": 320,
+            "mean": 0.0006382558326026633,
+            "se": 4.267678530635119e-05,
+            "low": 0.0005542923137292193,
+            "high": 0.0007222193514761072,
+            "p_value": 1.0877113528089148e-38
+          },
+          "reduction_max_axis": {
+            "axis": 8,
+            "n": 320,
+            "mean": 0.012572810643268895,
+            "se": 0.000833144525207085,
+            "low": 0.010933658453984363,
+            "high": 0.014211962832553427,
+            "p_value": 3.292962165830602e-39
+          },
+          "pre_clip_max_axis_variation": 0.014053335413336754,
+          "post_clip_max_axis_variation": 0.010748065076768398
+        }
+      },
+      "blocks": 8,
+      "episodes": 8240,
+      "llm_calls": 0
+    },
+    "controls": {
+      "original_winners": "each arm's R-058 ten-case screen winner, re-evaluated in its own process on this block's promotion and fresh cases",
+      "parent": "the unchanged frozen R-046 learner, rescreened on the same 40 cases and scored on promotion and fresh in its own processes",
+      "archive_preflight": "every R-058 archive file present and hashed; the frozen ranking reproduced all 16 original winners (preflight.json)",
+      "frozen_before_promotion": "shortlist.json per arm and winners.json per block written before any promotion or fresh episode; fresh cases selected nothing",
+      "matched_batches": "each arm's 8 shortlisted candidates x 40 rescreen cases in one fresh process of 320 environments",
+      "decision_artifact": {
+        "rule": {
+          "repair_parent": "strict promotion on the 30 promotion cases, fresh success interval lower bound above zero, and no more fresh drops than the parent, in the same block",
+          "feedback_activated": "unsaturated in-play drive fraction up by at least 0.25 versus the parent on the fresh cases with the paired interval above zero"
+        },
+        "qualifying_repair_parents": [],
+        "repair_parent": null,
+        "feedback_activated_blocks": {
+          "cma_reranked": [],
+          "random_reranked": [],
+          "cma_original": [],
+          "random_original": []
+        },
+        "route": "neither follow-up is enabled by this result"
+      }
+    },
+    "artifacts": [
+      "logs/pen_spin/r060_archive_rescreen/summary.json",
+      "logs/pen_spin/r060_archive_rescreen/decision.json",
+      "logs/pen_spin/r060_archive_rescreen/preflight.json",
+      "logs/pen_spin/r058_scalar_cma_vs_random/r059_offline_clipping_diagnostic.json",
+      "logs/pen_spin/r060_archive_rescreen/block_s4550/summary.json",
+      "logs/pen_spin/r060_archive_rescreen/block_s4551/summary.json",
+      "logs/pen_spin/r060_archive_rescreen/block_s4552/summary.json",
+      "logs/pen_spin/r060_archive_rescreen/block_s4553/summary.json",
+      "logs/pen_spin/r060_archive_rescreen/block_s4554/summary.json",
+      "logs/pen_spin/r060_archive_rescreen/block_s4555/summary.json",
+      "logs/pen_spin/r060_archive_rescreen/block_s4556/summary.json",
+      "logs/pen_spin/r060_archive_rescreen/block_s4557/summary.json",
+      "config/manifests/pen_spin_stage3_r060_block_s4550.yaml",
+      "config/manifests/pen_spin_stage3_r060_block_s4551.yaml",
+      "config/manifests/pen_spin_stage3_r060_block_s4552.yaml",
+      "config/manifests/pen_spin_stage3_r060_block_s4553.yaml",
+      "config/manifests/pen_spin_stage3_r060_block_s4554.yaml",
+      "config/manifests/pen_spin_stage3_r060_block_s4555.yaml",
+      "config/manifests/pen_spin_stage3_r060_block_s4556.yaml",
+      "config/manifests/pen_spin_stage3_r060_block_s4557.yaml"
+    ],
+    "notes": [
+      "Primary, predeclared: re-ranked minus original winner fresh sustained success, mean over the two arms, over 8 block-paired contrasts is -0.002 [-0.043, +0.040]; the upper bound is below +0.05, the predeclared refutation.",
+      "Per arm: CMA re-ranked minus original +0.028 [-0.036, +0.093] (one block re-selected the original winner); random re-ranked minus original -0.031 [-0.085, +0.022] with more fresh drops (+0.875 per 40 cases [+0.339, +1.411]; 48 vs 41 of 320), one block re-selected the original winner.",
+      "No controller differs from the parent on fresh cases: cma_reranked +0.009 [-0.059, +0.078], random_reranked -0.022 [-0.104, +0.060], cma_original -0.019 [-0.079, +0.041], random_original +0.009 [-0.045, +0.064]; fresh means 0.281 / 0.250 / 0.253 / 0.281 against the parent's 0.272. No re-ranked winner passed strict promotion (one promotion in 32: cma_original in block 4550, 10/30 vs 5/30, not confirmed on fresh: 0.25 vs 0.25). No (block, controller) qualifies as a repair parent; no block activates feedback (largest unsaturated-drive gain +0.051 [+0.005, +0.098] for cma_original, far below +0.25).",
+      "Selection inflation measured directly (not predeclared): the 128 shortlisted candidates averaged 0.352 on their original ten screen cases and 0.221 on 40 new rescreen cases, against the parent's 0.184 on the same 40; the shortlists are at most a few points above the parent, and that margin does not survive the promotion and fresh sets. The best rescreen score per block (0.20-0.55) again did not predict the fresh score of the candidate selected by it.",
+      "Drops: 36-48 of 320 fresh cases per controller (parent 44); every drop interval against the parent includes zero.",
+      "Saturation: the drive stays above 0.99 on 74-100% of recorded in-play steps for every controller in every block; executed-action saturation 5-10% of components. Recorded in-play steps only.",
+      "R-059 offline diagnostic (no episode run; R-058 fresh traces, 320 episodes per controller, drive shifted -0.10/+0.10): the clipping-induced reduction of the per-axis action difference averages 0.0005 over the 20 axes for the parent (CMA winner 0.0006, random winner 0.0006). Only one axis loses anything: axis 8 (MFJ2, the middle-finger proximal flexion), reduction 0.0105 [0.0091, 0.0119] of a pre-clip variation of 0.0117, i.e. that joint sits at its limit under the grasp pose and the override never reaches it; every other axis has a reduction of 0.0000. Every interval's upper bound is below R-059's 0.02 threshold, so its prediction would have been refuted; the spin drive's total authority over the executed action is itself small (about 0.01 normalised units per 0.2 of drive on the most responsive axes).",
+      "Accounting: 8240 Isaac episodes in 104 fresh processes, 0 LLM calls, about 32 min wall time (the 320-environment rescreen processes ran without memory trouble). The final-test split was not touched. Deviations: none from the approved protocol; protocol.seeds was emptied mechanically after approval because the committed manifests carry the seeds (as R-053, R-058)."
+    ]
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": -0.0015625000000000005,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.85,
+      "reasoning": "Predicted re-ranked minus original fresh sustained success of at least +0.05 (mean over arms, eight paired blocks); observed -0.002 [-0.043, +0.040], upper bound below +0.05, the predeclared refutation. Per arm, CMA +0.028 [-0.036, +0.093] and random -0.031 [-0.085, +0.022] with more drops; no controller differs from the parent on fresh cases (means 0.25-0.28 against 0.272) and no re-ranked winner passed strict promotion. The mechanism is visible in the numbers: the 128 shortlisted candidates averaged 0.352 on their original ten screen cases, 0.221 on 40 new cases (parent 0.184 on the same 40), and their fresh scores sit on the parent. Larger independent screens remove the selection inflation but find nothing to select: within the parent's declared bounds the twelve scalars do not contain a controller that is better than the parent by more than the noise of a 40-case screen. The R-059 offline diagnostic adds that final clipping removes override authority only on one joint already at its limit (0.0105 of 0.0117 on MFJ2; zero elsewhere), below R-059's threshold. Confidence 0.85 because only the top 8 of 64 per arm were re-ranked and a 40-case screen still resolves only about 0.15 per candidate.",
+      "cited_artifacts": [],
+      "next_experiment": "Scalar tuning of this learner is closed: neither optimiser choice (D-048) nor selection size (this result) moves fresh success, drops or drive saturation; no repair parent exists for R-056/R-061 and feedback does not activate, so R-057 stays deferred. A gain on this task needs a structural change to the controller (the spin drive has almost no authority over the executed action and is saturated), not a scalar one.",
+      "recorded_at": "2026-11-04T05:14:05",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.96,
+      "reasoning": "Against the original winners re-evaluated on the same fresh cases, paired_success_difference was -0.00156, with a 95% paired interval of [-0.04278, +0.03965] across eight blocks [logs/pen_spin/r060_archive_rescreen/summary.json]. The upper bound is below the predeclared +0.05 threshold, satisfying the approved falsification rule [logs/pen_spin/r060_archive_rescreen/summary.json]. Because the interval includes zero, this does not establish that re-ranking worsened success or that the procedures are equivalent [logs/pen_spin/r060_archive_rescreen/summary.json]. No controller qualified as a repair parent, and the feedback-activation condition was not met, so neither conditional follow-up is enabled [logs/pen_spin/r060_archive_rescreen/decision.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r060_archive_rescreen/summary.json",
+        "logs/pen_spin/r060_archive_rescreen/decision.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-04T05:14:52",
+      "call_id": "call_00122"
+    }
+  ],
+  "decision_id": "D-049",
   "history": [
     {
       "at": "2026-11-04T04:24:40",
       "from": "proposed",
       "to": "approved",
       "note": "triage round 2: both say approve"
+    },
+    {
+      "at": "2026-11-04T04:36:28",
+      "from": "approved",
+      "to": "running",
+      "note": "git 15b25f486b (dirty)"
+    },
+    {
+      "at": "2026-11-04T05:13:35",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-04T05:50:00",
+      "note": "result note 7 (R-059 offline diagnostic) corrected after record: only axis 8 (MFJ2) shows a clipping-induced reduction, not axes 8-10; numbers unchanged, metrics unchanged; research_result.json on disk is the corrected copy"
+    },
+    {
+      "at": "2026-11-04T05:15:09",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-049: refuted"
     }
   ],
   "created_at": "2026-11-04T04:20:15",
@@ -185,6 +1194,16 @@
         }
       },
       "note": "Round 2: the advisor approved the amended protocol stated in the implementer's round-1 revise position; this patch writes it into the record (seeds 4550-4557, --study/--log-dir interface, one 110-case manifest per block, frozen archive shortlist, matched tiled rescreen, parent rescreen, 8240 episodes)."
+    },
+    {
+      "at": "2026-11-04T05:05:00",
+      "round": 2,
+      "patch": {
+        "protocol": {
+          "seeds": []
+        }
+      },
+      "note": "Mechanical, after approval: the eight block manifests (config/manifests/pen_spin_stage3_r060_block_s4550-4557.yaml) now carry seeds 4550-4557 and the seed ledger scans config/** manifests, so check_idea reports them spent; as in R-053 and R-058, the manifests are the seed record and protocol.seeds is emptied. No other field changed."
     }
   ]
 }
