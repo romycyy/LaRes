@@ -29,7 +29,7 @@ from lares.research.schemas import (
     now,
     open_triage_round,
 )
-from lares.research.protocol import spent_seeds
+from lares.research.protocol import spent_seeds, split_seed_uses
 
 ORDER = (STATUS_ESCALATED, STATUS_ANALYSED, STATUS_RUNNING, STATUS_APPROVED, STATUS_PROPOSED)
 NEXT_ACTION = {
@@ -147,8 +147,10 @@ def render_state(root, recent: int = 5) -> str:
     lines += ["", "## Standing constraints", ""]
     for c in load_constraints(root):
         lines.append(f"- {c['fact']} _({c['source']})_")
-    used = spent_seeds()
-    lines.append(f"- Spent seeds: {sorted(used)}")
+    consumed, reserved = split_seed_uses(spent_seeds(), load_ideas(root))
+    lines.append(f"- Spent seeds: {sorted(consumed)}")
+    if reserved:
+        lines.append(f"- Reserved seeds (an open idea's own frozen manifest): {dict(sorted(reserved.items()))}")
     lines += ["", "## Pointers", "",
               "- Narrative findings: `RESEARCH_HANDOFF.md` (appended once per decision)",
               "- Frozen history: `IMPLEMENTATION_PROGRESS.md`, `DEBUG_PROGRESS.md`",

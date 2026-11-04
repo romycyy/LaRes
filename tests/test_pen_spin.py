@@ -1184,3 +1184,44 @@ class TestCurlBandwidth(unittest.TestCase):
         agg = cb.aggregate(r, sats)
         self.assertTrue(agg["prediction"]["refuted"])
         self.assertFalse(agg["qualifies_repair_parent"])
+
+
+class TestClampQualification(unittest.TestCase):
+    """R-077: the manifest, the panel slice and the qualification rule."""
+
+    @classmethod
+    def setUpClass(cls):
+        import yaml
+
+        with open("config/shadowhand_spin_stages.yaml") as f:
+            cls.pc = yaml.safe_load(f)["research_protocols"]["r077_clamp_qualification"]
+
+    def test_manifest_panel_and_rule(self):
+        from lares.envs.isaac_pen_spin import clamp_qualification as cq
+
+        self.assertEqual(cq.build_manifests(self.pc), [])
+        m = EvaluationManifest.load(self.pc["manifest"])
+        self.assertEqual((len(m), cases.stage_of(m)), (40, 3))
+        role = cases.role_manifests(m, cq.roles(self.pc), expected_cases=40, stage=3)
+        self.assertEqual(len(role["promotion"]), 30)
+        self.assertEqual(role["promotion"].episodes[0].case_id, m.episodes[10].case_id)
+        self.assertIs(cq.make_controller, __import__("lares.envs.isaac_pen_spin.curl_confirmation", fromlist=["x"]).make_controller)
+
+        def rows(succ, drops, n):
+            return [{"task_hash": f"h{i}", "sustained": i < succ, "completed": i < n - drops, "tail_hit_fraction": 0.0,
+                     "hit_steps": 0, "length": 360, "mean_abs_spin": 5.0, "mean_transverse": 1.0, "final_center_dist": 0.01}
+                    for i in range(n)]
+
+        sat = {"in_play_steps": 1, "drive_saturated_fraction": 0.9, "action_saturated_fraction": 0.1,
+               "action_saturated_by_axis": [0.1] * 20, "drive_unsaturated_fraction_per_case": [0.1], "note": ""}
+        a = cq.aggregate(rows(6, 4, 30), rows(14, 1, 30), sat, sat)
+        self.assertTrue(a["qualifies"] and a["repair_parent_eligible"] and a["prediction"]["supported"])
+        clamp = rows(14, 1, 30)
+        for r in clamp[:2]:
+            r["sustained"] = False                                       # 12 successes: wins on 6-13, losses on 0-1
+        b = cq.aggregate(rows(6, 4, 30), clamp, sat, sat)                # +0.20 with the lower bound just below zero
+        self.assertAlmostEqual(b["paired_success_difference"], 0.2)
+        self.assertFalse(b["qualifies"])
+        self.assertFalse(b["prediction"]["refuted"])
+        c = cq.aggregate(rows(6, 4, 30), rows(6, 4, 30), sat, sat)
+        self.assertTrue(c["prediction"]["refuted"])

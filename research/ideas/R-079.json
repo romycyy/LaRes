@@ -1,0 +1,89 @@
+{
+  "id": "R-079",
+  "title": "Transport the stroke into the pen's instantaneous tangential plane",
+  "hypothesis": "Projecting fingertip stroke motion onto the pen's instantaneous circumferential directions converts less stroke effort into axial sliding as the pen tilts.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "exact zero-curl R-046 clamp qualified by clamp_qualification_s4650",
+    "rationale": "This changes the stroke's geometric direction rather than its timing, temporal shape or contact unloading. A frozen-initial-axis projection control distinguishes online geometric transport from a static stroke remapping; D-051's rotation-correction lesion did not test either mechanism."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run \"bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --study stroke_axis_transport_s4652'\"",
+    "seeds": [
+      4652
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stroke_axis_transport_s4652.yaml"
+    ],
+    "episodes": 450,
+    "llm_calls": 0,
+    "code_changes": [
+      "config/shadowhand_spin_stages.yaml: add stroke_axis_transport_s4652, conditional on first-protocol qualification and no observed drop-rate increase; run after stroke_authority_s4651 finishes, without combining its intervention or selecting parameters from its results",
+      "scripts/run_shadowhand_spin_stages.py: first verify that joint angles and pen pose are available through the frozen 157-dimensional observation schema; defer without simulator episodes if they are unavailable",
+      "scripts/run_shadowhand_spin_stages.py: use deterministic hand forward kinematics and fingertip Jacobians to project only the periodic stroke's fingertip displacement onto local circumferential directions around the observed pen axis; map back with predeclared damped least squares and cap the resulting joint-increment norm at the original stroke norm",
+      "scripts/run_shadowhand_spin_stages.py: preserve all non-stroke terms, zero capture curl, frequency and temporal waveform; add an identity gate with projection disabled; compare clamp, instantaneous-axis projection and projection using each episode's initial axis",
+      "config/manifests/pen_spin_stroke_axis_transport_s4652.yaml: freeze one manifest containing 30 promotion cases 10-39 and 120 fresh confirmation cases 40-159 for all three arms",
+      "scripts/run_shadowhand_spin_stages.py: report paired sustained success, drops, saturation and projected stroke norms; require the strict promotion gate, fresh confirmation above zero and no observed drop-rate increase before adopting a child"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The fresh paired interval upper bound against the clamp is below +0.10. If online transport does not beat frozen-axis projection with an interval above zero, online axis tracking is not established as the source of any gain.",
+  "cost_estimate": {
+    "episodes": 450,
+    "llm_calls": 0,
+    "wall_time_minutes": 140
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "5a24700eea484eaa7d30194cd85f404fdb4323ba7fba15c204bdf51a379beab0",
+  "proposal_call_id": "call_00148",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T06:40:28",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-04T06:37:58",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Geometric stroke transport is distinct from the rotation-correction lesion, and the initial-axis control would separate online transport from static remapping. Defer its 450 episodes and zero LLM calls until qualification and R-078 determine the next branch; activated feedback without a success gain makes R-043 the priority instead. Its weakest point is the unverified observation-to-kinematics mapping, so the proposed offline feasibility and identity checks must precede any simulator spending. Retain the prediction of paired_success_difference increasing by at least 0.10 against the qualified zero-curl clamp; falsified_by a fresh paired interval upper bound below +0.10, with online-transport attribution unestablished unless its paired interval against frozen-axis projection is wholly above zero.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00149",
+          "briefing_sha256": "6325c42f7ca7e65d25488753160aa965a184c883b5f6e11d00346631807954c1",
+          "at": "2026-11-04T06:38:57"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree to defer: the kinematic mapping from the 157-d observation (joint angles are in hand_dof_pos, fingertip poses are in fingertip_pos/rot, the pen axis in obj_rot) is available but the Jacobian machinery is new and should wait for R-077 and R-078.",
+          "changes_applied": [],
+          "at": "2026-11-04T06:40:28"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

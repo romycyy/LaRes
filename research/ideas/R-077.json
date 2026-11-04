@@ -1,0 +1,217 @@
+{
+  "id": "R-077",
+  "title": "Decision measurement: qualify the frozen clamp without pooling",
+  "hypothesis": "Removing reactive capture compression improves sustained success by preserving the grasp on an independently frozen promotion panel.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "frozen R-046 parent, config/pen_spin/r046_block3_incumbent",
+    "rationale": "Retrospective pooling does not satisfy the standing promotion rule. This is the required qualification measurement, not another curl-mechanism experiment: test only the already frozen clamp on 30 fresh promotion cases. A larger replacement gate would require an explicit rule change."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r077_clamp_qualification --log-dir logs/pen_spin/r077_clamp_qualification\"'",
+    "seeds": [
+      4653
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_r077_block_s4653.yaml"
+    ],
+    "episodes": 60,
+    "llm_calls": 0,
+    "code_changes": [
+      "New study module lares/envs/isaac_pen_spin/clamp_qualification.py registered as --study r077_clamp_qualification in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent config/pen_spin/r046_block3_incumbent and the exact D-052 clamp (R-065's curl_clamp substitution), hashes checked; offline identity gate at factor 1.0 on D-050's archived observations before any episode.",
+      "One frozen 40-case Stage-3 manifest on seed 4653 at config/manifests/pen_spin_stage3_r077_block_s4653.yaml: cases 0-9 unused, cases 10-39 the promotion panel; placement-disjoint from every committed pen-spin manifest. Parent and clamp each run the panel in their own fresh process: 60 episodes, zero LLM calls. No candidate selection, no sample extension, no retry.",
+      "Seed bookkeeping: the research briefing now distinguishes seeds reserved by an open idea's own frozen manifest from seeds consumed by an executed run, so freezing a protocol's manifest before approval no longer reads as seed reuse; all consumed seeds stay unavailable.",
+      "Primary: clamp minus parent paired sustained success on the 30 promotion cases with the 95% t interval; prediction at least +0.05; refuted if the upper bound is below +0.05; an interval spanning +0.05 leaves the magnitude inconclusive. Qualification (the standing strict rule): positive difference and lower bound above zero; downstream repair additionally requires no observed drop increase. Reported: paired success and drop differences with intervals and win/loss/tie, failure split, in-play mean |spin|, drive and executed-action saturation. Decision artifact naming the qualified repair parent (if any) for R-078/R-079. Held-out split untouched."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "The paired interval upper bound is below +0.05; an interval spanning +0.05 leaves the magnitude inconclusive. Regardless of magnitude, a lower bound at or below zero blocks qualification.",
+  "cost_estimate": {
+    "episodes": 60,
+    "llm_calls": 0,
+    "wall_time_minutes": 10
+  },
+  "open_question_refs": [
+    0
+  ],
+  "briefing_sha256": "5a24700eea484eaa7d30194cd85f404fdb4323ba7fba15c204bdf51a379beab0",
+  "proposal_call_id": "call_00148",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-04T06:48:45",
+    "advisor_call_id": "call_00152",
+    "round": 4,
+    "note": "I accept the implementer's seed-bookkeeping correction: the refreshed briefing explicitly reserves unconsumed seed 4653 for R-077, resolving my prior objection. This independent qualification of the exact frozen clamp settles eligibility for downstream repair without reopening curl mechanisms, using"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T06:48:45",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 4: both say approve"
+    }
+  ],
+  "created_at": "2026-11-04T06:37:58",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This settles the outstanding promotion requirement without reopening the curl mechanism: 60 episodes and zero LLM calls, reusing scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml. The weakest point is limited power on 30 pairs, but retrospective pooling cannot replace the standing gate. Retain the prediction of paired_success_difference increasing by at least 0.05 against the frozen R-046 parent; falsified_by an interval upper bound below +0.05, otherwise the magnitude may remain inconclusive. Qualification requires a lower bound above zero, and downstream repair additionally requires no observed drop-rate increase; an inconclusive result does not authorize an automatic retry.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00149",
+          "briefing_sha256": "6325c42f7ca7e65d25488753160aa965a184c883b5f6e11d00346631807954c1",
+          "at": "2026-11-04T06:38:57"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree on substance: the standing rule is a 30-case promotion panel with a strictly positive paired lower bound, pooling does not replace it, and the exact clamp must be scored on a fresh frozen panel with no selection or extension. Revise only the interface: --study r077_clamp_qualification with --log-dir and a config block; one frozen 40-case Stage-3 manifest on seed 4650 at config/manifests/pen_spin_stage3_r077_block_s4650.yaml with cases 0-9 unused and cases 10-39 the promotion panel (the convention the ledger asked for in R-068), placement-disjoint from every committed pen-spin manifest; parent and exact zero-curl clamp each in their own process (identity gate rerun offline at factor 1.0 first); 60 episodes, zero LLM calls. Prediction, falsifier and qualification rule unchanged. One honest caveat for the record, not a change: on 30 pairs at this base rate the paired standard error is about 0.10, so the strict lower-bound rule has low power against the effect size seen (+0.07 to +0.15 on fresh panels); an inconclusive result will not be retried, as the advisor says.",
+          "changes_applied": [
+            "--study r077_clamp_qualification --log-dir; config block; 40-case manifest s4650 with promotion = cases 10-39"
+          ],
+          "at": "2026-11-04T06:40:30"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "I accept the implementer's interface revision, 40-case convention, offline identity gate and separate-process pairing: this qualification measurement reuses scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml for 60 episodes and zero LLM calls. The weakest point remains low power on 30 pairs, but that does not justify pooling, extending the sample or relaxing the standing promotion rule. However, the current briefing explicitly lists seed 4650 as spent, so the protocol cannot run as written. Retain the prediction that paired_success_difference increases by at least 0.05 against the frozen R-046 parent, falsified_by an interval upper bound below +0.05; qualification requires a strictly positive lower bound, and repair additionally requires no observed drop increase.",
+          "suggested_changes": [
+            "Replace spent seed 4650 with unused seed 4651 throughout the protocol, manifest-generation settings and preregistration; use config/manifests/pen_spin_stage3_r077_block_s4651.yaml and freeze its placement-disjoint panel before any rollout, retaining cases 0-9 unused and cases 10-39 for promotion."
+          ],
+          "priority": 1,
+          "call_id": "call_00150",
+          "briefing_sha256": "794eaa60e863d15127569511775146015420207f105d7fab12705c1ebe948d25",
+          "at": "2026-11-04T06:41:22"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve as written; the seed objection is the ledger artefact the advisor accepted in R-068 round 4. Seed 4650 is listed as spent only because its entry is this protocol's own frozen manifest, config/manifests/pen_spin_stage3_r077_block_s4650.yaml, built and committed before execution as the protocol requires (the seed ledger scans config/** manifests; a pen-spin manifest is the seed record). config/experiment_seed_ledger.jsonl has no 4650 entry, no other manifest names it, and no run has used it; placement disjointness against all 24 committed Stage-3 pen-spin manifests is asserted at build and in the test suite. The proposed replacement 4651 is already declared by the deferred R-078, and freezing a 4651 manifest would reproduce the same artefact. Everything else is as agreed: exact clamp, offline identity gate, 40-case manifest with cases 10-39 as the promotion panel, two processes, 60 episodes, no LLM, strict rule, no retry, final test locked.",
+          "changes_applied": [],
+          "at": "2026-11-04T06:41:35"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "I accept the implementer's bookkeeping explanation and withdraw 4651 because R-078 reserves it, but the briefing still explicitly prohibits 4650; the absence of an execution-ledger entry cannot override that standing constraint. This independent qualification measurement remains the right next spend: 60 episodes and zero LLM calls using scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml. Its weakness is low power on 30 pairs, which does not justify pooling, extension or retry; qualification requires a positive paired difference with its 95% t lower bound above zero, and repair additionally requires no observed drop increase. Retain the prediction that paired_success_difference increases by at least 0.05 against frozen R-046 parent config/pen_spin/r046_block3_incumbent, falsified_by an interval upper bound below +0.05; an interval spanning +0.05 leaves the magnitude inconclusive.",
+          "suggested_changes": [
+            "Replace 4650 with unlisted, unreserved seed 4653 throughout the protocol and preregistration, using config/manifests/pen_spin_stage3_r077_block_s4653.yaml; preserve placement disjointness, cases 0-9 unused, cases 10-39 for promotion, and all other gates and budgets.",
+            "Distinguish manifest reservation from executed-seed consumption in the seed bookkeeping and refreshed briefing before returning for approval, so freezing this new manifest does not reproduce the same classification conflict; keep all currently spent seeds unavailable."
+          ],
+          "priority": 1,
+          "call_id": "call_00151",
+          "briefing_sha256": "770cae90b34afc0c3e65505d3cb741b1bb71d12f8cc6c37fddef2cb1593ed0d4",
+          "at": "2026-11-04T06:42:24"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree: revise. Seed 4653 replaces 4650 throughout (the 4650 manifest, never committed or run, is deleted and the 4653 manifest frozen and disjointness-checked), and I am adding the bookkeeping distinction the advisor asks for: the briefing will list seeds that are reserved only by an open idea's own frozen manifest separately from seeds consumed by an executed run, so this classification conflict stops recurring; consumed seeds stay unavailable.",
+          "changes_applied": [
+            "seed 4653, manifest pen_spin_stage3_r077_block_s4653.yaml",
+            "briefing distinguishes reserved-by-own-manifest from consumed seeds"
+          ],
+          "at": "2026-11-04T06:46:05"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 4,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the implementer's seed-bookkeeping correction: the refreshed briefing explicitly reserves unconsumed seed 4653 for R-077, resolving my prior objection. This independent qualification of the exact frozen clamp settles eligibility for downstream repair without reopening curl mechanisms, using scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml for 60 simulator episodes and zero LLM calls. The weakest point remains low power on 30 pairs; retain the prediction that paired_success_difference increases by at least 0.05 against frozen R-046 parent config/pen_spin/r046_block3_incumbent, with falsified_by an interval upper bound below +0.05 and magnitude inconclusive if the interval spans +0.05. Qualification requires a positive difference with the paired 95% t lower bound above zero, and downstream repair additionally requires no observed drop increase; pooling, sample extension and automatic retry remain prohibited.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00152",
+          "briefing_sha256": "2fbd28fe08464c8888bb15623ec7434c6bd3b9124b5b6d7e0f20930d8ca14a7e",
+          "at": "2026-11-04T06:48:03"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve: parent versus the exact clamp on cases 10-39 of the frozen seed-4653 manifest, offline identity gate first, two fresh processes, 60 episodes, zero LLM calls, strict rule, no pooling, extension or retry; the briefing and the protocol check now distinguish seeds reserved by an idea's own frozen manifest from consumed seeds. Running now.",
+          "changes_applied": [],
+          "at": "2026-11-04T06:48:45"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 4
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-04T06:40:32",
+      "round": 1,
+      "patch": {
+        "protocol": {
+          "script": "scripts/run_shadowhand_spin_stages.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r077_clamp_qualification --log-dir logs/pen_spin/r077_clamp_qualification\"'",
+          "seeds": [
+            4650
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_r077_block_s4650.yaml"
+          ],
+          "episodes": 60,
+          "llm_calls": 0,
+          "code_changes": [
+            "New study module lares/envs/isaac_pen_spin/clamp_qualification.py registered as --study r077_clamp_qualification in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent config/pen_spin/r046_block3_incumbent and the exact D-052 clamp (R-065's curl_clamp substitution), hashes checked; offline identity gate at factor 1.0 on D-050's archived observations before any episode.",
+            "One frozen 40-case Stage-3 manifest on seed 4650 at config/manifests/pen_spin_stage3_r077_block_s4650.yaml: cases 0-9 unused, cases 10-39 the promotion panel; placement-disjoint from every committed pen-spin manifest. Parent and clamp each run the panel in their own fresh process: 60 episodes, zero LLM calls. No candidate selection, no sample extension, no retry.",
+            "Primary: clamp minus parent paired sustained success on the 30 promotion cases with the 95% t interval; prediction at least +0.05; refuted if the upper bound is below +0.05; an interval spanning +0.05 leaves the magnitude inconclusive. Qualification (the standing strict rule): positive difference and lower bound above zero; downstream repair additionally requires no observed drop increase. Reported: paired success and drop differences with intervals and win/loss/tie, failure split, in-play mean |spin|, drive and executed-action saturation. Decision artifact naming the qualified repair parent (if any) for R-078/R-079. Held-out split untouched."
+          ],
+          "needs_gpu": true,
+          "needs_llm": false
+        },
+        "cost_estimate": {
+          "episodes": 60,
+          "llm_calls": 0,
+          "wall_time_minutes": 10
+        }
+      },
+      "note": "Round 1 implementer revision: --study interface, 40-case manifest s4650 with promotion = cases 10-39, identity gate; rules unchanged."
+    },
+    {
+      "at": "2026-11-04T06:46:07",
+      "round": 3,
+      "patch": {
+        "protocol": {
+          "seeds": [
+            4653
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_r077_block_s4653.yaml"
+          ],
+          "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r077_clamp_qualification --log-dir logs/pen_spin/r077_clamp_qualification\"'",
+          "code_changes": [
+            "New study module lares/envs/isaac_pen_spin/clamp_qualification.py registered as --study r077_clamp_qualification in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent config/pen_spin/r046_block3_incumbent and the exact D-052 clamp (R-065's curl_clamp substitution), hashes checked; offline identity gate at factor 1.0 on D-050's archived observations before any episode.",
+            "One frozen 40-case Stage-3 manifest on seed 4653 at config/manifests/pen_spin_stage3_r077_block_s4653.yaml: cases 0-9 unused, cases 10-39 the promotion panel; placement-disjoint from every committed pen-spin manifest. Parent and clamp each run the panel in their own fresh process: 60 episodes, zero LLM calls. No candidate selection, no sample extension, no retry.",
+            "Seed bookkeeping: the research briefing now distinguishes seeds reserved by an open idea's own frozen manifest from seeds consumed by an executed run, so freezing a protocol's manifest before approval no longer reads as seed reuse; all consumed seeds stay unavailable.",
+            "Primary: clamp minus parent paired sustained success on the 30 promotion cases with the 95% t interval; prediction at least +0.05; refuted if the upper bound is below +0.05; an interval spanning +0.05 leaves the magnitude inconclusive. Qualification (the standing strict rule): positive difference and lower bound above zero; downstream repair additionally requires no observed drop increase. Reported: paired success and drop differences with intervals and win/loss/tie, failure split, in-play mean |spin|, drive and executed-action saturation. Decision artifact naming the qualified repair parent (if any) for R-078/R-079. Held-out split untouched."
+          ]
+        }
+      },
+      "note": "Round 3 agreed revise: seed 4653 and its manifest; briefing bookkeeping distinguishes reserved from consumed seeds."
+    }
+  ]
+}

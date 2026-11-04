@@ -26,7 +26,7 @@ from lares.research.schemas import (
     load_ideas,
     now,
 )
-from lares.research.protocol import spent_seeds
+from lares.research.protocol import spent_seeds, split_seed_uses
 from lares.utils.hashing import sha256_text
 
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -44,9 +44,12 @@ def constraints_block(root) -> str:
     lines = ["## Standing constraints (each with its source; do not propose anything that violates one)"]
     for c in load_constraints(root):
         lines.append(f"- {c['fact']}  _(source: {c['source']})_")
-    used = spent_seeds()
-    if used:
-        lines.append(f"- Spent seeds (never reuse): {sorted(used)}")
+    consumed, reserved = split_seed_uses(spent_seeds(), load_ideas(root))
+    if consumed:
+        lines.append(f"- Spent seeds (consumed by a run or a committed manifest nobody open owns; never reuse): {sorted(consumed)}")
+    if reserved:
+        lines.append("- Reserved seeds (held only by an open idea's own frozen manifest; that idea may run on them, "
+                     f"no other may use them): {dict(sorted(reserved.items()))}")
     lines.append("- The final-test split is locked. No protocol may read or score it.")
     return "\n".join(lines)
 

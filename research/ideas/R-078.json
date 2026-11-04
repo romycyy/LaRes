@@ -1,0 +1,88 @@
+{
+  "id": "R-078",
+  "title": "Give spin feedback direct authority over the raw stroke",
+  "hypothesis": "Applying speed-error feedback directly to the periodic stroke raises slow-spin cases above threshold without restoring harmful capture compression.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "exact zero-curl R-046 clamp qualified by clamp_qualification_s4650",
+    "rationale": "The intervention bypasses the nearly powerless drive pathway identified in D-049. Unlike R-064 it changes stroke amplitude, not timing; unlike R-056 it responds to axial speed rather than slip. An equally amplified open-loop control separates feedback value from simply increasing stroke strength."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run \"bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --study stroke_authority_s4651'\"",
+    "seeds": [
+      4651
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stroke_authority_s4651.yaml"
+    ],
+    "episodes": 330,
+    "llm_calls": 0,
+    "code_changes": [
+      "config/shadowhand_spin_stages.yaml: add stroke_authority_s4651, conditional on first-protocol qualification and no observed drop-rate increase; run only after that protocol finishes",
+      "scripts/run_shadowhand_spin_stages.py: add a bounded multiplier directly to the audited periodic-stroke term, preserving its frequency, relative phases and waveform; use multiplier 1 + 0.5 * clip((4 - filtered_absolute_axial_speed) / 4, 0, 1), with a 100 ms exponential filter",
+      "scripts/run_shadowhand_spin_stages.py: require multiplier-one bit identity on archived observations; compare clamp, feedback and constant multiplier; freeze the constant multiplier to the feedback multiplier's mean computed offline from archived D-052 clamp traces before new rollouts",
+      "config/manifests/pen_spin_stroke_authority_s4651.yaml: freeze one manifest containing 30 promotion cases 10-39 and 80 fresh confirmation cases 40-119; evaluate all three arms on identical cases",
+      "scripts/run_shadowhand_spin_stages.py: report paired sustained success, drops, executed-action saturation, stroke multiplier and original drive saturation; require the strict promotion gate, fresh confirmation above zero and no observed drop-rate increase before adopting a child"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The fresh paired interval upper bound against the clamp is below +0.10. If feedback does not beat the matched constant-amplitude control with an interval above zero, its feedback-specific advantage remains unestablished.",
+  "cost_estimate": {
+    "episodes": 330,
+    "llm_calls": 0,
+    "wall_time_minutes": 100
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "5a24700eea484eaa7d30194cd85f404fdb4323ba7fba15c204bdf51a379beab0",
+  "proposal_call_id": "call_00148",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T06:40:26",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-04T06:37:58",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Direct stroke scaling tests an authority pathway that scalar tuning did not reach, while the constant-amplitude control distinguishes feedback from stronger open-loop actuation. Defer its 330 episodes and zero LLM calls until R-077 qualifies the exact clamp without an observed drop-rate increase. Its weakest point is that greater stroke authority could reproduce the spin-versus-retention tradeoff; if feedback activates without improving success, prioritize R-043 rather than another stroke intervention. Retain the prediction of paired_success_difference increasing by at least 0.10 against the qualified zero-curl clamp; falsified_by a fresh paired interval upper bound below +0.10, with feedback-specific advantage unestablished unless its paired interval against the constant-amplitude control is wholly above zero.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00149",
+          "briefing_sha256": "6325c42f7ca7e65d25488753160aa965a184c883b5f6e11d00346631807954c1",
+          "at": "2026-11-04T06:38:57"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree to defer until R-077 settles qualification. The constant-amplitude control is the right design; note from D-049 that the parent's drive already saturates, so the feedback term must act on the stroke amplitude directly as proposed, not through the drive.",
+          "changes_applied": [],
+          "at": "2026-11-04T06:40:26"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

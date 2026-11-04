@@ -462,3 +462,19 @@ class TestCli(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestSeedReservations(unittest.TestCase):
+    def test_own_frozen_manifest_reserves_rather_than_spends(self):
+        with tempfile.TemporaryDirectory() as root:
+            open_idea = make_idea("R-010", seeds=(4653,))
+            open_idea.protocol = Protocol(**{**open_idea.protocol.__dict__, "manifests": ("config/manifests/x_s4653.yaml",)})
+            open_idea.save(root)
+            closed = make_idea("R-011", seeds=())
+            closed.protocol = Protocol(**{**closed.protocol.__dict__, "manifests": ("config/manifests/y_s4654.yaml",)})
+            closed.status = "decided"                                    # not saved: a decided idea's manifest is spent
+            used = {4653: "manifest config/manifests/x_s4653.yaml", 4654: "manifest config/manifests/y_s4654.yaml",
+                    2600: "mt1_pool: spent"}
+            consumed, reserved = proto.split_seed_uses(used, load_ideas(root) + [closed])
+            self.assertEqual(reserved, {4653: "R-010"})
+            self.assertEqual(sorted(consumed), [2600, 4654])

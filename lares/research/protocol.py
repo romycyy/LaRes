@@ -38,6 +38,38 @@ def reserved_seeds(root, exclude_id: str = "") -> dict:
     return out
 
 
+OPEN_STATUSES = ("proposed", "approved", "running", "analysed", "deferred", "escalated")
+
+
+def manifest_reservations(ideas) -> dict:
+    """``{manifest path: idea id}`` for every manifest an open idea's protocol names.
+
+    A pen-spin protocol freezes and commits its manifests before it runs, and the seed ledger scans
+    ``config/**`` manifests, so such a seed reads as spent before any episode has used it. The seed is
+    *reserved* by the idea that owns the manifest, which is not reuse: ``check_idea`` and the briefing
+    treat it as such, while a manifest owned by nobody, or by a decided idea, keeps counting as spent.
+    """
+    out = {}
+    for idea in ideas:
+        if idea.status in OPEN_STATUSES:
+            for m in idea.protocol.manifests:
+                out.setdefault(m, idea.id)
+    return out
+
+
+def split_seed_uses(used: dict, ideas) -> tuple[dict, dict]:
+    """``(consumed, reserved)``: seeds spent by a run or a foreign manifest, and seeds held only by an open idea's own manifest."""
+    owners = manifest_reservations(ideas)
+    consumed, reserved = {}, {}
+    for seed, use in used.items():
+        path = use[len("manifest "):] if use.startswith("manifest ") else None
+        if path is not None and path in owners:
+            reserved[seed] = owners[path]
+        else:
+            consumed[seed] = use
+    return consumed, reserved
+
+
 def check_idea(idea: ResearchIdea, root, project_root: str = _PROJECT_ROOT,
                ledger_path: str = SEED_LEDGER, metrics: set | None = None) -> list:
     """Every reason the idea may not be run. Empty means it may."""
@@ -56,9 +88,14 @@ def check_idea(idea: ResearchIdea, root, project_root: str = _PROJECT_ROOT,
         if not os.path.isfile(os.path.join(project_root, m)):
             problems.append(f"manifest {m!r} does not exist")
     used = spent_seeds(ledger_path, manifest_globs=None if ledger_path == SEED_LEDGER else [])
+    own = set(proto.manifests)
     for s in proto.seeds:
-        if int(s) in used:
-            problems.append(f"seed {s} is spent ({used[int(s)]})")
+        use = used.get(int(s))
+        if use is None:
+            continue
+        if use.startswith("manifest ") and use[len("manifest "):] in own:
+            continue  # reserved by this idea's own frozen manifest, not spent
+        problems.append(f"seed {s} is spent ({use})")
     held = reserved_seeds(root, exclude_id=idea.id)
     for s in proto.seeds:
         if int(s) in held:
