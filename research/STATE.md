@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-04T08:34:07 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-04T08:40:33 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -11,15 +11,16 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 0 |
+| approved | 1 |
 | proposed | 0 |
-| deferred | 19 |
+| deferred | 20 |
 | decided | 62 |
-| rejected | 7 |
+| rejected | 8 |
 
 ## Needs attention
 
-- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
+- **R-089** [approved] 1. Qualify the frozen negative warp with one 90-pair instrument
+  - `python scripts/research.py start R-089` then run its command
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
@@ -42,6 +43,7 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 - R-085 Conditional R-043: isolate anatomical language grounding: This cleanly separates anatomical language grounding from numerical decoder effects, but its prerequisite is an established R-084 anatomical advantage and paren
 - R-087 2. Re-nominate R-082: isolate online pen-axis transport: Online-versus-reset transport isolates changing-axis geometry, but R-086 should finish first because adoption could change the appropriate parent. Its weakest p
 - R-088 3. Re-nominate R-067: lesion inter-finger stroke coordination: Relative-phase disruption tests coordination rather than the common phase lead tested in D-061, but it localizes a mechanism without supplying a better controll
+- R-090 2. Conditional open-loop contact-dwell calibration: D-062 explicitly leaves one magnitude follow-up open, so this tests an unresolved calibration question rather than repeating its warp-sign comparison. Its 420 e
 
 ## Last 5 decisions
 
@@ -63,11 +65,11 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
+- R-089 round 2 · advisor approve / implementer approve → agreed (approved)
+- R-089 round 1 · advisor approve / implementer revise → disagreed (proposed)
+- R-091 round 1 · advisor reject / implementer reject → agreed (rejected)
+- R-090 round 1 · advisor defer / implementer defer → agreed (deferred)
 - R-086 round 2 · advisor approve / implementer approve → agreed (approved)
-- R-086 round 1 · advisor revise / implementer revise → agreed (proposed)
-- R-088 round 1 · advisor defer / implementer defer → agreed (deferred)
-- R-087 round 1 · advisor defer / implementer defer → agreed (deferred)
-- R-064 round 3 · advisor approve / implementer approve → agreed (approved)
 
 ## Standing constraints
 
@@ -87,6 +89,7 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 - No pretrained pen-spinning policy for this task exists publicly as of 2026-10-27: the closest work (Wang et al., 'Lessons from Learning to Spin Pens', CoRL 2024) uses an Allegro hand in Isaac Gym and end-over-end spinning. The user's order for the expert: scripted controller first; if it cannot qualify, train an RL expert with rsl_rl PPO (ShadowHandSpinPPORunnerCfg) on the box. No budget ceiling on GPU hours or LLM calls. _(user instruction 2026-10-27; web search 2026-10-27)_
 - The policy-search pipeline (manifests, obs schema, run_episode, EXPERT_POLICY_MAP, run_full_evolution.py) is MetaWorld-only. The Isaac path today is the pre-manifest smoke script scripts/run_shadowhand_spin_stages.py with its own rollout copy (no action_space.high scaling, num_envs 1). _(CLAUDE.md 'Things that will bite you'; scripts/run_shadowhand_spin_stages.py)_
 - Spent seeds: [0, 1, 2, 1000, 1001, 1002, 2000, 2100, 2200, 2201, 2202, 2203, 2204, 2300, 2301, 2302, 2303, 2304, 2400, 2401, 2402, 2403, 2404, 2410, 2411, 2412, 2413, 2414, 2420, 2421, 2422, 2423, 2424, 2500, 2501, 2502, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2607, 2610, 2611, 2612, 2613, 2614, 2615, 2616, 2617, 2618, 2619, 2620, 2621, 2622, 2623, 2624, 2625, 2626, 2627, 2628, 2629, 2700, 2701, 2702, 2703, 2704, 2705, 2710, 2800, 2801, 2802, 2803, 2804, 2805, 2810, 2811, 2812, 2813, 2820, 2822, 2823, 2824, 2825, 2900, 2901, 2902, 2903, 2904, 2905, 2906, 2910, 2911, 2912, 2913, 2920, 2921, 2922, 2923, 2940, 3000, 3001, 3010, 3011, 3012, 3013, 3020, 3021, 3022, 3023, 3024, 3025, 3026, 3030, 3031, 3032, 3033, 3040, 3041, 3042, 3043, 3044, 3045, 3046, 3047, 3100, 3101, 3102, 3103, 3104, 3105, 3106, 3107, 3108, 3109, 3110, 3111, 3130, 3131, 3132, 3133, 3134, 3135, 3200, 3201, 3202, 3205, 3210, 3211, 3212, 3213, 3214, 3215, 3220, 3221, 3222, 3223, 3300, 3301, 3302, 3303, 3304, 3305, 3310, 3311, 3312, 3313, 3314, 3315, 3320, 3321, 3330, 3331, 3332, 3333, 3334, 3335, 3400, 3410, 3420, 3421, 3422, 3500, 3501, 3502, 3503, 3505, 3506, 3507, 3520, 3521, 3522, 3523, 3524, 3525, 3526, 3527, 3528, 3529, 3540, 3541, 3544, 3600, 3601, 3602, 3603, 3604, 3605, 3606, 3607, 3608, 3609, 3710, 3711, 3712, 3713, 3720, 3721, 3722, 3723, 3724, 3725, 3726, 3800, 3801, 3802, 3803, 3804, 3805, 3806, 3807, 3810, 3811, 3812, 3813, 3814, 3815, 3816, 3817, 3818, 3820, 3821, 3822, 3823, 3824, 3825, 3900, 3901, 3902, 3903, 3904, 3910, 3911, 3912, 3913, 3914, 4000, 4001, 4002, 4010, 4011, 4012, 4020, 4030, 4031, 4032, 4097, 4098, 4099, 4100, 4101, 4120, 4121, 4122, 4123, 4124, 4125, 4126, 4127, 4128, 4129, 4130, 4131, 4132, 4133, 4134, 4135, 4136, 4137, 4140, 4170, 4171, 4172, 4173, 4174, 4180, 4181, 4182, 4183, 4184, 4190, 4191, 4192, 4193, 4200, 4210, 4211, 4212, 4213, 4214, 4215, 4220, 4221, 4222, 4223, 4224, 4225, 4226, 4227, 4310, 4400, 4500, 4501, 4502, 4503, 4504, 4505, 4506, 4507, 4510, 4511, 4512, 4513, 4514, 4515, 4516, 4517, 4550, 4551, 4552, 4553, 4554, 4555, 4556, 4557, 4560, 4580, 4581, 4610, 4620, 4631, 4642, 4653, 4660, 4661, 4662, 4663, 4672, 4673, 4690]
+- Reserved seeds (an open idea's own frozen manifest): {4700: 'R-089', 4701: 'R-089', 4702: 'R-089'}
 
 ## Pointers
 

@@ -348,7 +348,8 @@ def pen_spin_studies() -> dict:
     from lares.envs.isaac_pen_spin import (archive_rescreen, axial_sign, channel_lesions, clamp_qualification,
                                            constant_preload, curl_bandwidth, curl_confirmation, feedback_ablation,
                                            feedback_delay, feedback_lesions, lead_feedback, learner_recovery,
-                                           phase_warp, scalar_tuning, stroke_feedback, stroke_lesion)
+                                           phase_warp, scalar_tuning, stroke_feedback, stroke_lesion,
+                                           warp_qualification)
 
     return {feedback_ablation.FEEDBACK_ABLATION: feedback_ablation,
             feedback_lesions.FEEDBACK_LESIONS: feedback_lesions,
@@ -366,7 +367,8 @@ def pen_spin_studies() -> dict:
             clamp_qualification.STUDY_90: clamp_qualification,
             stroke_feedback.STUDY: stroke_feedback,
             lead_feedback.STUDY: lead_feedback,
-            phase_warp.STUDY: phase_warp}
+            phase_warp.STUDY: phase_warp,
+            warp_qualification.STUDY: warp_qualification}
 
 
 def run_study(args, cfg: SimpleNamespace) -> None:
@@ -452,7 +454,7 @@ def main() -> None:
     parser.add_argument("--research-protocol", default=None,
                         help="run a named protocol from the config's research_protocols block instead of the smoke stages")
     parser.add_argument("--study", default=None,
-                        help="run a named study (feedback_ablation, feedback_lesions, feedback_delay, learner_recovery, learner_axial_sign, r058_scalar_cma_vs_random, r060_archive_rescreen, r062_stroke_lesion, r065_channel_lesions, r068_capture_curl_confirmation, r073_constant_preload, r075_curl_bandwidth, r077_clamp_qualification, r080_zero_curl_qualification_90, r081_stroke_feedback, r064_lead_feedback, r086_phase_warp) from the config's research_protocols block")
+                        help="run a named study (feedback_ablation, feedback_lesions, feedback_delay, learner_recovery, learner_axial_sign, r058_scalar_cma_vs_random, r060_archive_rescreen, r062_stroke_lesion, r065_channel_lesions, r068_capture_curl_confirmation, r073_constant_preload, r075_curl_bandwidth, r077_clamp_qualification, r080_zero_curl_qualification_90, r081_stroke_feedback, r064_lead_feedback, r086_phase_warp, r089_warp_qualification_90) from the config's research_protocols block")
     parser.add_argument("--build-manifests", action="store_true",
                         help="with --research-protocol: write the protocol's frozen manifests and exit (no Isaac)")
     parser.add_argument("--stage", type=int, default=None, help=argparse.SUPPRESS)  # protocol child process

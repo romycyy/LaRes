@@ -1,0 +1,78 @@
+{
+  "id": "R-091",
+  "title": "3. Abstain: no third research protocol within this focus",
+  "hypothesis": "A hard stop after failed qualification prevents repeated-testing selection from turning an unresolved warp comparison into an apparent qualification.",
+  "prediction": {
+    "metric": "num_episodes",
+    "direction": "decrease",
+    "threshold": 180.0,
+    "against": "one additional 90-pair qualification retry costing 180 episodes",
+    "rationale": "This is an explicit administrative abstention, not a third scientific experiment: it predicts zero retry episodes and adds no budget beyond the two permitted protocols."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "",
+    "command": "true",
+    "seeds": [],
+    "manifests": [],
+    "episodes": 0,
+    "llm_calls": 0,
+    "code_changes": [],
+    "needs_gpu": false,
+    "needs_llm": false
+  },
+  "status": "rejected",
+  "source": "advisor",
+  "falsified_by": "Any simulator episode is consumed by an additional qualification retry under this proposal.",
+  "cost_estimate": {
+    "episodes": 0,
+    "llm_calls": 0,
+    "wall_time_minutes": 0
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "3c423e53781cf57fcda68eea88609d23a3a880d95bc5f1f9669b7db36b5f8e81",
+  "proposal_call_id": "call_00174",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T08:38:20",
+      "from": "proposed",
+      "to": "rejected",
+      "note": "triage round 1: both say reject"
+    }
+  ],
+  "created_at": "2026-11-04T08:36:25",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "reject",
+          "reasoning": "This is a useful administrative stop constraint, but not a separate experiment: R-089 already prohibits retries, and R-090 already cancels after failed qualification. Its zero-episode, zero-LLM command supplies no additional evidence about the controller; the stated falsifier, any additional qualification-retry episode, should instead identify a protocol violation. Record the stop rule without running an idea, and reconsider a research proposal only if a new direction calls for an empirical comparison of stopping procedures.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00175",
+          "briefing_sha256": "aace3e53aad64a4522fb35c2696e0c89bb2c9873a810a639d79a354aedffd761",
+          "at": "2026-11-04T08:37:32"
+        },
+        "implementer": {
+          "position": "reject",
+          "reasoning": "Agree: an administrative stop rule, not an experiment; R-089 already forbids retries and R-090 already cancels on failed qualification. Recorded here as a rule, not run.",
+          "changes_applied": [],
+          "at": "2026-11-04T08:38:20"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "reject",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

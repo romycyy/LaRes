@@ -1,0 +1,156 @@
+{
+  "id": "R-089",
+  "title": "1. Qualify the frozen negative warp with one 90-pair instrument",
+  "hypothesis": "The frozen negative phase warp improves sustained spinning by redistributing contact dwell within each roll cycle without increasing stroke energy or drops.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "config/pen_spin/d058_fixed_stroke_incumbent/incumbent.json",
+    "rationale": "D-062 motivates a prospective gain prediction; qualification still requires the standing paired-t lower bound above zero, not merely a positive point estimate."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r089_warp_qualification_90 --log-dir logs/pen_spin/r089_warp_qualification_90\"'",
+    "seeds": [
+      4700,
+      4701,
+      4702
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_r089_block_s4700.yaml",
+      "config/manifests/pen_spin_stage3_r089_block_s4701.yaml",
+      "config/manifests/pen_spin_stage3_r089_block_s4702.yaml"
+    ],
+    "episodes": 180,
+    "llm_calls": 0,
+    "code_changes": [
+      "The 90-pair instrument (lares/envs/isaac_pen_spin/clamp_qualification.py) generalised to take parent and candidate from its config block; registered as --study r089_warp_qualification_90 in scripts/run_shadowhand_spin_stages.py; settings in config/shadowhand_spin_stages.yaml. Parent: the D-058 incumbent asset (hashes checked). Candidate: the exact D-062 epsilon -0.35 warp, resolved from the archived run's phase_warp_source.py and constants.json, both hash-checked; the study aborts if either is missing or differs, never reconstructs it.",
+      "Three frozen 40-case Stage-3 manifests (seeds 4700, 4701, 4702; cases 0-9 unused, cases 10-39 the panel), placement-disjoint from every committed pen-spin manifest and from each other. Offline identity gate (epsilon 0 bit for bit on D-050's archived observations) rerun before any episode. Parent and candidate each run each panel in its own fresh process: six processes, 180 episodes, zero LLM calls.",
+      "One-off instrument of the existing strict rule: one paired t interval at the existing confidence level over the 90 prospectively declared differences; qualification requires a positive mean and a lower bound strictly above zero; adoption additionally requires candidate drops not exceeding the parent's over the 90 pairs. No interim decision, historical pooling, extension or retry.",
+      "Prediction: candidate minus parent pooled over the 90 pairs at least +0.05; refuted if the upper bound is below +0.05; a zero-inclusive interval is inconclusive and does not qualify. Reported: sustained success, paired wins/losses/ties, drops, failure split, in-play mean |spin|, drive and per-axis executed-action saturation, overall and per panel; qualification.json for the conditional R-090. Held-out split untouched."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "A paired interval upper bound below +0.05 refutes the predicted magnitude. An interval including zero is inconclusive and does not qualify the warp; more observed drops blocks adoption.",
+  "cost_estimate": {
+    "episodes": 180,
+    "llm_calls": 0,
+    "wall_time_minutes": 10
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "3c423e53781cf57fcda68eea88609d23a3a880d95bc5f1f9669b7db36b5f8e81",
+  "proposal_call_id": "call_00174",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-04T08:40:32",
+    "advisor_call_id": "call_00176",
+    "round": 2,
+    "note": "I accept the implementer's config-driven interface revision: it preserves the agreed instrument and exact-source provenance checks. D-062 left qualification unresolved, making this one-shot 180-episode, zero-LLM comparison using the existing script/config and unspent seeds 4700–4702 the right next s"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T08:40:32",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 2: both say approve"
+    }
+  ],
+  "created_at": "2026-11-04T08:36:25",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "D-062 left qualification unresolved and explicitly identified this one-shot 90-pair instrument as the next measurement; it is not another waveform search. The 180-episode, zero-LLM spend reuses the existing evaluator and free seeds 4700–4702, although success alone cannot establish contact-dwell or mechanical-energy causality. An interval upper bound below +0.05 refutes the predicted magnitude; adoption requires the predeclared paired-t lower bound above zero and no more observed drops. Keep the exact-source provenance abort, frozen task settings, saturation reporting, and prohibition on pooling, extension, or retry.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00175",
+          "briefing_sha256": "aace3e53aad64a4522fb35c2696e0c89bb2c9873a810a639d79a354aedffd761",
+          "at": "2026-11-04T08:37:32"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree on everything substantive; revise the interface only. The 90-pair machinery (clamp_qualification) is generalised to take the candidate from a config block rather than hard-coding the clamp: --study r089_warp_qualification_90 with --log-dir, config block in config/shadowhand_spin_stages.yaml naming the parent (the D-058 incumbent asset, hashes checked) and the candidate (the exact D-062 epsilon -0.35 warp: logs/pen_spin/r086_phase_warp/phase_warp_source.py and constants.json, both hash-checked against the archived run; the study aborts if either is missing or differs, never reconstructs). Three frozen 40-case manifests at config/manifests/pen_spin_stage3_r089_block_s4700.yaml, _s4701, _s4702 (cases 0-9 unused, 10-39 the panel), disjoint from every committed pen-spin manifest and each other; offline identity gate (epsilon 0 bit for bit) rerun first; parent and candidate each panel in its own process: six processes, 180 episodes, zero LLM calls. One paired t interval over the 90 declared differences at the existing confidence level; qualification = positive mean and lower bound above zero; adoption additionally = candidate drops not more than the parent's over the 90 pairs; no interim decision, pooling, extension or retry. Prediction and falsifier as proposed (at least +0.05; refuted if the upper bound is below +0.05; zero-inclusive is inconclusive). Reported: success, paired wins/losses/ties, drops, failure split, spin, drive and per-axis action saturation, overall and per panel; a machine-readable qualification.json for R-090.",
+          "changes_applied": [
+            "--study r089_warp_qualification_90 --log-dir; config block with parent asset and candidate provenance; manifests pen_spin_stage3_r089_block_s4700-4702.yaml"
+          ],
+          "at": "2026-11-04T08:38:22"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the implementer's config-driven interface revision: it preserves the agreed instrument and exact-source provenance checks. D-062 left qualification unresolved, making this one-shot 180-episode, zero-LLM comparison using the existing script/config and unspent seeds 4700–4702 the right next spend; its weakest point is that success cannot establish contact-dwell or mechanical-energy causality. The prediction remains paired_success_difference increase by at least 0.05 versus config/pen_spin/d058_fixed_stroke_incumbent/incumbent.json, falsified by an interval upper bound below +0.05. Qualification requires a positive mean and paired-t lower bound above zero, adoption additionally requires no more observed drops, and a zero-inclusive interval is inconclusive, with no historical pooling, extension, or retry.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00176",
+          "briefing_sha256": "1e9cf652c5593ae85430b3db596dd3a0b113c8d703710b87fae2f6da3019431a",
+          "at": "2026-11-04T08:40:03"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve: the 90-pair instrument on the frozen seed-4700/4701/4702 manifests (cases 10-39 each), parent = D-058 incumbent, candidate = the archived D-062 warp (source and constants hash-checked, never reconstructed), identity gate first, six processes, 180 episodes, zero LLM calls, the standing rule over the 90 differences, no pooling, extension or retry, final test locked. Running now.",
+          "changes_applied": [],
+          "at": "2026-11-04T08:40:32"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-04T08:38:24",
+      "round": 1,
+      "patch": {
+        "protocol": {
+          "script": "scripts/run_shadowhand_spin_stages.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r089_warp_qualification_90 --log-dir logs/pen_spin/r089_warp_qualification_90\"'",
+          "seeds": [
+            4700,
+            4701,
+            4702
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_r089_block_s4700.yaml",
+            "config/manifests/pen_spin_stage3_r089_block_s4701.yaml",
+            "config/manifests/pen_spin_stage3_r089_block_s4702.yaml"
+          ],
+          "episodes": 180,
+          "llm_calls": 0,
+          "code_changes": [
+            "The 90-pair instrument (lares/envs/isaac_pen_spin/clamp_qualification.py) generalised to take parent and candidate from its config block; registered as --study r089_warp_qualification_90 in scripts/run_shadowhand_spin_stages.py; settings in config/shadowhand_spin_stages.yaml. Parent: the D-058 incumbent asset (hashes checked). Candidate: the exact D-062 epsilon -0.35 warp, resolved from the archived run's phase_warp_source.py and constants.json, both hash-checked; the study aborts if either is missing or differs, never reconstructs it.",
+            "Three frozen 40-case Stage-3 manifests (seeds 4700, 4701, 4702; cases 0-9 unused, cases 10-39 the panel), placement-disjoint from every committed pen-spin manifest and from each other. Offline identity gate (epsilon 0 bit for bit on D-050's archived observations) rerun before any episode. Parent and candidate each run each panel in its own fresh process: six processes, 180 episodes, zero LLM calls.",
+            "One-off instrument of the existing strict rule: one paired t interval at the existing confidence level over the 90 prospectively declared differences; qualification requires a positive mean and a lower bound strictly above zero; adoption additionally requires candidate drops not exceeding the parent's over the 90 pairs. No interim decision, historical pooling, extension or retry.",
+            "Prediction: candidate minus parent pooled over the 90 pairs at least +0.05; refuted if the upper bound is below +0.05; a zero-inclusive interval is inconclusive and does not qualify. Reported: sustained success, paired wins/losses/ties, drops, failure split, in-play mean |spin|, drive and per-axis executed-action saturation, overall and per panel; qualification.json for the conditional R-090. Held-out split untouched."
+          ],
+          "needs_gpu": true,
+          "needs_llm": false
+        },
+        "cost_estimate": {
+          "episodes": 180,
+          "llm_calls": 0,
+          "wall_time_minutes": 10
+        }
+      },
+      "note": "Round 1 implementer revision: --study interface, config-defined parent and candidate with provenance checks, manifest naming; instrument and rules unchanged."
+    }
+  ]
+}

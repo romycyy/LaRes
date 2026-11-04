@@ -1598,3 +1598,54 @@ class TestPhaseWarp(unittest.TestCase):
         r = {"parent": {"promotion": rows(12, 1, 30), "fresh": rows(30, 4, 80)}, "winner": {"promotion": rows(22, 1, 30), "fresh": rows(50, 3, 80)}}
         agg = pw.aggregate(r, {c: {p: sat for p in pw.PANELS} for c in r}, {}, "warp_+0.35", {})
         self.assertTrue(agg["prediction"]["supported"] and agg["adopts"])
+
+
+class TestWarpQualification(unittest.TestCase):
+    """R-089: candidate provenance, controllers, manifests and the pooled rule."""
+
+    @classmethod
+    def setUpClass(cls):
+        import yaml
+
+        with open("config/shadowhand_spin_stages.yaml") as f:
+            cls.pc = yaml.safe_load(f)["research_protocols"]["r089_warp_qualification_90"]
+
+    def test_candidate_provenance_and_controllers(self):
+        import torch
+
+        from lares.envs.isaac_pen_spin import coordinate_repair as cr
+        from lares.envs.isaac_pen_spin import warp_qualification as wq
+
+        c = wq.check_candidate(self.pc)
+        self.assertEqual(c["epsilon"], -0.35)
+        with self.assertRaises(SystemExit):
+            wq.check_candidate({**self.pc, "candidate": {**self.pc["candidate"], "source_sha256": "0" * 64}})
+        obs = TestStrokeLesion._contact_obs(self, 2)
+        obs[:, cases.obs_slices()["obj_rot"]] = torch.tensor([0.9, 0.3, 0.2, 0.1]) / (0.9 ** 2 + 0.3 ** 2 + 0.2 ** 2 + 0.1 ** 2) ** 0.5
+        a = wq.make_controller("parent", self.pc)(obs, 0, None)
+        self.assertTrue(torch.equal(a, cr.incumbent_controller(self.pc["incumbent_asset"])(obs, 0, None)))
+        w = wq.make_controller("warp", self.pc)
+        self.assertEqual(w.params["eps"], -0.35)
+        self.assertFalse(torch.allclose(a, w(obs, 0, None)))
+        self.assertEqual(wq.build_manifests(self.pc), [])
+        ms = [EvaluationManifest.load(p) for p in self.pc["manifests"]]
+        self.assertEqual([len(m) for m in ms], [40, 40, 40])
+
+    def test_pooled_rule(self):
+        from lares.envs.isaac_pen_spin import warp_qualification as wq
+
+        def rows(succ, drops, n, prefix):
+            return [{"task_hash": f"{prefix}{i}", "sustained": i < succ, "completed": i < n - drops, "tail_hit_fraction": 0.0,
+                     "hit_steps": 0, "length": 360, "mean_abs_spin": 5.0, "mean_transverse": 1.0, "final_center_dist": 0.01}
+                    for i in range(n)]
+
+        sat = {"in_play_steps": 1, "drive_saturated_fraction": 0.9, "action_saturated_fraction": 0.1,
+               "action_saturated_by_axis": [0.1] * 20, "drive_unsaturated_fraction_per_case": [0.1], "note": ""}
+        parent = rows(6, 2, 30, "a") + rows(6, 2, 30, "b") + rows(6, 2, 30, "c")
+        warp = rows(12, 1, 30, "a") + rows(12, 1, 30, "b") + rows(12, 1, 30, "c")
+        for r in warp[:2] + warp[30:32] + warp[60:62]:
+            r["sustained"] = False
+        agg = wq.aggregate(parent, warp, sat, sat)
+        self.assertEqual(agg["pairs"], 90)
+        self.assertTrue(agg["qualifies"] and agg["adopts"] and agg["prediction"]["supported"])
+        self.assertFalse(wq.aggregate(parent[:30], warp[:30], sat, sat)["qualifies"])
