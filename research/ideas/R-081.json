@@ -30,7 +30,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The fresh paired interval's upper bound against the constant-gain control is below +0.05. An interval including zero does not establish feedback benefit; failure to beat the qualified parent under strict promotion, or more observed drops, blocks adoption.",
   "cost_estimate": {
@@ -48,11 +48,419 @@
     "round": 3,
     "note": "I accept Claude Code's revised interface, qualification preflight, frozen constant-gain control and offline identity gate; these resolve the remaining disagreement without changing the experiment. Feedback versus constant gain isolates online regulation from stronger open-loop actuation, but added s"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-11-04T07:16:27",
+    "git_sha": "df0613bccafd246cb87275c7782d1263214dc093",
+    "dirty_worktree": false,
+    "log_dir": "logs/pen_spin/r081_stroke_feedback",
+    "finished_at": "2026-11-04T07:19:42"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": -0.1625,
+      "paired_success_difference_ci95": [
+        -0.2713128080625606,
+        -0.05368719193743943
+      ],
+      "contrasts": {
+        "promotion": {
+          "stroke_feedback_minus_constant_gain": {
+            "success": {
+              "n": 30,
+              "mean": -0.23333333333333334,
+              "se": 0.0920186554465537,
+              "low": -0.4215326150818208,
+              "high": -0.04513405158484582,
+              "p_value": 0.01686915999876371
+            },
+            "win_loss_tie": {
+              "wins": 1,
+              "losses": 8,
+              "ties": 21
+            },
+            "drops": {
+              "n": 30,
+              "mean": 0.0,
+              "se": 0.0,
+              "low": 0.0,
+              "high": 0.0,
+              "p_value": 1.0
+            },
+            "drop_counts": [
+              3,
+              3
+            ],
+            "promotes": false,
+            "drops_not_increased": true,
+            "drop_increase_established": false
+          },
+          "stroke_feedback_minus_zero_curl": {
+            "success": {
+              "n": 30,
+              "mean": -0.1,
+              "se": 0.07350033231608352,
+              "low": -0.2503250583594583,
+              "high": 0.05032505835945825,
+              "p_value": 0.1841413422919716
+            },
+            "win_loss_tie": {
+              "wins": 1,
+              "losses": 4,
+              "ties": 25
+            },
+            "drops": {
+              "n": 30,
+              "mean": 0.0,
+              "se": 0.0,
+              "low": 0.0,
+              "high": 0.0,
+              "p_value": 1.0
+            },
+            "drop_counts": [
+              3,
+              3
+            ],
+            "promotes": false,
+            "drops_not_increased": true,
+            "drop_increase_established": false
+          },
+          "constant_gain_minus_zero_curl": {
+            "success": {
+              "n": 30,
+              "mean": 0.13333333333333333,
+              "se": 0.06312427686319992,
+              "low": 0.004229691154525289,
+              "high": 0.2624369755121414,
+              "p_value": 0.043397417810775565
+            },
+            "win_loss_tie": {
+              "wins": 4,
+              "losses": 0,
+              "ties": 26
+            },
+            "drops": {
+              "n": 30,
+              "mean": 0.0,
+              "se": 0.0,
+              "low": 0.0,
+              "high": 0.0,
+              "p_value": 1.0
+            },
+            "drop_counts": [
+              3,
+              3
+            ],
+            "promotes": true,
+            "drops_not_increased": true,
+            "drop_increase_established": false
+          }
+        },
+        "fresh": {
+          "stroke_feedback_minus_constant_gain": {
+            "success": {
+              "n": 80,
+              "mean": -0.1625,
+              "se": 0.05466743528841149,
+              "low": -0.2713128080625606,
+              "high": -0.05368719193743943,
+              "p_value": 0.003913818368197306
+            },
+            "win_loss_tie": {
+              "wins": 4,
+              "losses": 17,
+              "ties": 59
+            },
+            "drops": {
+              "n": 80,
+              "mean": 0.0,
+              "se": 0.0,
+              "low": 0.0,
+              "high": 0.0,
+              "p_value": 1.0
+            },
+            "drop_counts": [
+              4,
+              4
+            ],
+            "promotes": false,
+            "drops_not_increased": true,
+            "drop_increase_established": false
+          },
+          "stroke_feedback_minus_zero_curl": {
+            "success": {
+              "n": 80,
+              "mean": -0.0125,
+              "se": 0.041695665014635015,
+              "low": -0.09549314519406527,
+              "high": 0.07049314519406527,
+              "p_value": 0.7651236904312959
+            },
+            "win_loss_tie": {
+              "wins": 5,
+              "losses": 6,
+              "ties": 69
+            },
+            "drops": {
+              "n": 80,
+              "mean": 0.0,
+              "se": 0.0,
+              "low": 0.0,
+              "high": 0.0,
+              "p_value": 1.0
+            },
+            "drop_counts": [
+              4,
+              4
+            ],
+            "promotes": false,
+            "drops_not_increased": true,
+            "drop_increase_established": false
+          },
+          "constant_gain_minus_zero_curl": {
+            "success": {
+              "n": 80,
+              "mean": 0.15,
+              "se": 0.05062895554167107,
+              "low": 0.04922558479834899,
+              "high": 0.250774415201651,
+              "p_value": 0.004027375872835522
+            },
+            "win_loss_tie": {
+              "wins": 15,
+              "losses": 3,
+              "ties": 62
+            },
+            "drops": {
+              "n": 80,
+              "mean": 0.0,
+              "se": 0.0,
+              "low": 0.0,
+              "high": 0.0,
+              "p_value": 1.0
+            },
+            "drop_counts": [
+              4,
+              4
+            ],
+            "promotes": true,
+            "drops_not_increased": true,
+            "drop_increase_established": false
+          }
+        }
+      },
+      "arms": {
+        "zero_curl": {
+          "promotion": {
+            "n": 30,
+            "successes": 12,
+            "success": 0.4,
+            "drops": 3,
+            "tail_failures": 15,
+            "off_centre": 1,
+            "slow_spin": 14,
+            "mean_abs_spin": 5.122604727745056,
+            "drive_saturated_fraction": 0.9631064003261313,
+            "action_saturated_fraction": 0.05577354260089686
+          },
+          "fresh": {
+            "n": 80,
+            "successes": 23,
+            "success": 0.2875,
+            "drops": 4,
+            "tail_failures": 53,
+            "off_centre": 1,
+            "slow_spin": 52,
+            "mean_abs_spin": 4.073809725418687,
+            "drive_saturated_fraction": 0.9725188613915515,
+            "action_saturated_fraction": 0.05250756278018734
+          }
+        },
+        "stroke_feedback": {
+          "promotion": {
+            "n": 30,
+            "successes": 9,
+            "success": 0.3,
+            "drops": 3,
+            "tail_failures": 18,
+            "off_centre": 2,
+            "slow_spin": 16,
+            "mean_abs_spin": 4.519694926341375,
+            "drive_saturated_fraction": 0.989399653450209,
+            "action_saturated_fraction": 0.08984303332993579
+          },
+          "fresh": {
+            "n": 80,
+            "successes": 22,
+            "success": 0.275,
+            "drops": 4,
+            "tail_failures": 54,
+            "off_centre": 2,
+            "slow_spin": 52,
+            "mean_abs_spin": 4.02123291194439,
+            "drive_saturated_fraction": 0.9927839935857721,
+            "action_saturated_fraction": 0.08740296658041474
+          }
+        },
+        "constant_gain": {
+          "promotion": {
+            "n": 30,
+            "successes": 16,
+            "success": 0.5333333333333333,
+            "drops": 3,
+            "tail_failures": 11,
+            "off_centre": 1,
+            "slow_spin": 10,
+            "mean_abs_spin": 5.593628009160359,
+            "drive_saturated_fraction": 0.8935671322255072,
+            "action_saturated_fraction": 0.09759404628402488
+          },
+          "fresh": {
+            "n": 80,
+            "successes": 35,
+            "success": 0.4375,
+            "drops": 4,
+            "tail_failures": 41,
+            "off_centre": 3,
+            "slow_spin": 38,
+            "mean_abs_spin": 4.710477215051651,
+            "drive_saturated_fraction": 0.9231385983454208,
+            "action_saturated_fraction": 0.08971901308356718
+          }
+        }
+      },
+      "gain_activity": {
+        "zero_curl": {
+          "promotion": null,
+          "fresh": null
+        },
+        "stroke_feedback": {
+          "promotion": {
+            "mean_gain": 1.4049439841990352,
+            "active_fraction": 0.9158774373259053,
+            "values": 10770,
+            "band": [
+              0.9,
+              1.1
+            ]
+          },
+          "fresh": {
+            "mean_gain": 1.3953389340456481,
+            "active_fraction": 0.8669220055710306,
+            "values": 28720,
+            "band": [
+              0.9,
+              1.1
+            ]
+          }
+        },
+        "constant_gain": {
+          "promotion": {
+            "mean_gain": 1.408149210611979,
+            "active_fraction": 1.0,
+            "values": 10770,
+            "band": [
+              0.9,
+              1.1
+            ]
+          },
+          "fresh": {
+            "mean_gain": 1.4081490516662598,
+            "active_fraction": 1.0,
+            "values": 28720,
+            "band": [
+              0.9,
+              1.1
+            ]
+          }
+        }
+      },
+      "constant_gain": {
+        "constant": 1.4081491479357957,
+        "steps": 65668,
+        "quartiles": [
+          0.8173816103667316,
+          1.602898833331698,
+          2.0
+        ],
+        "active_fraction": 0.8892763598708656,
+        "rule": "arithmetic mean of clip(4 / max(|spin|, 1), 0.5, 2) over the clamp's archived in-play steps"
+      },
+      "prediction": {
+        "threshold": 0.05,
+        "supported": false,
+        "refuted": true
+      },
+      "adopts_stroke_feedback": false,
+      "feedback_activated": true,
+      "feedback_activated_without_gain": true,
+      "decision_route": "R-043 next: feedback activates without a success gain",
+      "constant_gain_control_meets_adoption_criteria_against_parent": true,
+      "identity_gate": {
+        "rows": 23484,
+        "passes": true
+      },
+      "episodes": 330,
+      "llm_calls": 0
+    },
+    "controls": {
+      "zero_curl": "the qualified parent (D-057), each panel in its own process",
+      "constant_gain": "the feedback gain frozen at its arithmetic mean over 65,668 archived in-play steps of the clamp's R-068 runs (1.4081; quartiles 0.82 / 1.60 / 2.00), i.e. a stronger open-loop stroke with no feedback; frozen with provenance before any episode",
+      "identity_gate": "the gain substitution at gain 1.0 reproduced the clamp's actions bit for bit on all 23,484 archived D-050 observations",
+      "preflight": "R-080's qualification.json (qualifies, repair_parent_eligible) read before any episode"
+    },
+    "artifacts": [
+      "logs/pen_spin/r081_stroke_feedback/summary.json",
+      "logs/pen_spin/r081_stroke_feedback/constant_gain.json",
+      "logs/pen_spin/r081_stroke_feedback/identity_gate.json",
+      "logs/pen_spin/r081_stroke_feedback/stroke_feedback_source.py",
+      "logs/pen_spin/r081_stroke_feedback/zero_curl_promotion.json",
+      "logs/pen_spin/r081_stroke_feedback/zero_curl_fresh.json",
+      "logs/pen_spin/r081_stroke_feedback/stroke_feedback_promotion.json",
+      "logs/pen_spin/r081_stroke_feedback/stroke_feedback_fresh.json",
+      "logs/pen_spin/r081_stroke_feedback/constant_gain_promotion.json",
+      "logs/pen_spin/r081_stroke_feedback/constant_gain_fresh.json",
+      "config/manifests/pen_spin_stage3_r081_block_s4663.yaml"
+    ],
+    "notes": [
+      "Primary, predeclared (80 fresh pairs): stroke feedback minus constant gain -0.1625 [-0.271, -0.054] (22/80 vs 35/80; 4 wins, 17 losses, 59 ties): the upper bound is below +0.05 and below zero; refuted, and the feedback arm is worse than its open-loop control. Promotion: 9/30 vs 16/30 (-0.2333 [-0.422, -0.045]). Drops are equal in every arm and panel (3 of 30; 4 of 80).",
+      "Feedback activity: the gain was outside [0.9, 1.1] on 87% of in-play fresh steps (92% promotion) with mean 1.40, so the feedback was fully active; against the parent it changed nothing (-0.0125 [-0.095, +0.070] fresh, 22 vs 23). By the predeclared decision rule (feedback activates without a success gain) the route is R-043 next.",
+      "Unpredicted and not predeclared as a candidate: the constant-gain control (the stroke scaled by a fixed 1.408, no feedback) beats the qualified parent on both panels: promotion +0.1333 [+0.004, +0.262] (16 vs 12; 4 wins, 0 losses, 26 ties; drops 3 vs 3), which passes the strict promotion rule, and fresh +0.1500 [+0.049, +0.251] (35 vs 23; 15 wins, 3 losses, 62 ties; drops 4 vs 4), lower bound above zero; slow-spin tail failures 38 vs 52, in-play |spin| 4.71 vs 4.07 rad/s, off-centre 3 vs 1. Every criterion of the study's adoption rule (strict promotion on cases 10-39, fresh lower bound above zero, no more observed drops on either panel) is met by the control arm prospectively on frozen panels with no selection among candidates; the rule was declared for the feedback arm, so whether a control can be adopted as the incumbent is a triage question, recorded here rather than decided.",
+      "Reading: a stronger stroke helps and online modulation of it hurts. The gain law raises the stroke when the pen is slow (gain 2 below 2 rad/s) and cuts it when fast (0.5 above 8 rad/s); on the clamp's trajectories the mean of that law is 1.41, and applying 1.41 throughout is better than applying it where the law says. The learner's stroke amplitude was under-set (stroke_amp 0.56 of a 0.60 range is already near its bound; the gain acts on the whole rolling * gait term, i.e. also the load) and its axial-rate signal, being the thing the stroke changes within a cycle, makes a poor instantaneous gain input; a slow or per-cycle average would be the next feedback design if any, but the open-loop gain is the result to carry.",
+      "Executed-action saturation rises with the gain (5.3% parent, 8.7% feedback, 9.0% constant of components on fresh); the drive stays saturated above 0.99 on 92-96% of steps in every arm. Recorded in-play steps only.",
+      "Accounting: 330 Isaac episodes in six fresh processes, 0 LLM calls, about 4 min wall time. No deviation from the approved protocol. Final-test split untouched."
+    ]
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": -0.1625,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.92,
+      "reasoning": "Predicted that spin feedback on the stroke would beat the same gain frozen at its archived mean by at least +0.05 fresh success; observed -0.163 [-0.271, -0.054] on 80 pairs (22 vs 35; 4 wins, 17 losses), upper bound below +0.05 and below zero: refuted, with the feedback fully active (87% of steps outside the identity band) and no change against the parent (-0.013 [-0.095, +0.070]); by the predeclared route, R-043 is next. The informative part is the control: the stroke scaled by a fixed 1.408 beats the qualified zero-curl parent on the promotion panel +0.133 [+0.004, +0.262] (16 vs 12; 4 wins, 0 losses), passing the strict rule, and on the fresh panel +0.150 [+0.049, +0.251] (35 vs 23; 15 wins, 3 losses), with drops equal (3 vs 3, 4 vs 4) and slow-spin failures 38 vs 52. It meets every criterion of the study's adoption rule prospectively, on frozen panels, with no selection among candidates; it was declared a control, so adopting it is a triage decision, not mine alone. Confidence 0.92: exact identity gate, frozen constant with provenance, 80 and 30 pairs, consistent direction on both panels.",
+      "cited_artifacts": [],
+      "next_experiment": "Two things for the next triage. (1) Whether the constant-gain controller (clamp plus stroke x 1.408) becomes the incumbent: it passed the strict promotion rule and fresh confirmation against the qualified parent with no more drops, which is exactly what the direction asks of a winner; if the advisor holds that a control cannot be adopted without a predeclared candidate run, a one-shot confirmation on a fresh panel (parent vs constant gain, 180-220 episodes) settles it. (2) R-043 per the predeclared route, now on whichever parent is current. Instantaneous spin feedback on the stroke is closed; if feedback on the stroke is tried again it should use a per-cycle or low-pass rate, not the instantaneous one.",
+      "recorded_at": "2026-11-04T07:19:44",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "The primary fresh paired_success_difference against the named constant-gain control was -0.1625, with a 95% interval of [-0.2713, -0.0537]; its upper bound is below both the predicted +0.05 threshold and zero, refuting the prediction and establishing worse success for feedback [logs/pen_spin/r081_stroke_feedback/summary.json]. Against the qualified parent, feedback's fresh difference was -0.0125 [-0.0955, +0.0705], which establishes no difference, and feedback failed the adoption gates [logs/pen_spin/r081_stroke_feedback/summary.json]. Feedback activated on 86.7% of fresh in-play steps, while observed drops were equal across arms on both panels, so lack of activation or additional observed drops does not explain away the failed prediction [logs/pen_spin/r081_stroke_feedback/summary.json]. Separately, constant gain beat the parent on promotion by +0.1333 [+0.0042, +0.2624] and fresh cases by +0.1500 [+0.0492, +0.2508], meeting the numerical adoption criteria, but adopting this control requires separate triage rather than relabeling the feedback prediction as supported [logs/pen_spin/r081_stroke_feedback/summary.json]. The results distinguish this feedback law from its constant-gain control but do not identify why online modulation performed worse [logs/pen_spin/r081_stroke_feedback/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r081_stroke_feedback/summary.json"
+      ],
+      "next_experiment": "Re-triage the existing R-043 anatomical-action-coordinate study because the predeclared trigger—activated feedback without a demonstrated success gain—is now met [logs/pen_spin/r081_stroke_feedback/summary.json].",
+      "recorded_at": "2026-11-04T07:20:13",
+      "call_id": "call_00160"
+    }
+  ],
+  "decision_id": "D-058",
   "history": [
     {
       "at": "2026-11-04T07:01:11",
@@ -71,6 +479,24 @@
       "from": "proposed",
       "to": "approved",
       "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-04T07:16:27",
+      "from": "approved",
+      "to": "running",
+      "note": "git df0613bcca"
+    },
+    {
+      "at": "2026-11-04T07:19:42",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-04T07:20:29",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-058: refuted"
     }
   ],
   "created_at": "2026-11-04T06:58:24",
