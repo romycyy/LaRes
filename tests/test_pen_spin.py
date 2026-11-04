@@ -962,3 +962,59 @@ class TestChannelLesions(unittest.TestCase):
         self.assertEqual(cl.build_manifests(self.pc), [])
         m = EvaluationManifest.load(self.pc["manifest"])
         self.assertEqual((len(m), cases.stage_of(m)), (80, 3))
+
+
+class TestCurlConfirmation(unittest.TestCase):
+    """R-068: the zero-curl controller, the manifest and the qualification rule."""
+
+    @classmethod
+    def setUpClass(cls):
+        import yaml
+
+        with open("config/shadowhand_spin_stages.yaml") as f:
+            cls.pc = yaml.safe_load(f)["research_protocols"]["r068_capture_curl_confirmation"]
+
+    def test_controller_is_the_r065_curl_clamp_and_manifest_is_disjoint(self):
+        import torch
+
+        from lares.envs.isaac_pen_spin import channel_lesions as cl
+        from lares.envs.isaac_pen_spin import curl_confirmation as cc
+
+        obs = TestStrokeLesion._contact_obs(self, 2)
+        obs[:, cases.obs_slices()["fingertip_pos"]] += 0.03       # partial contact: the capture curl is active
+        a = cc.make_controller("zero_curl", self.pc)(obs, 0, None)
+        b = cl.make_controller("curl_clamp", self.pc)(obs, 0, None)
+        self.assertTrue(torch.equal(a, b))
+        self.assertFalse(torch.allclose(a, cc.make_controller("parent", self.pc)(obs, 0, None)))
+        self.assertEqual(cc.build_manifests(self.pc), [])
+        m = EvaluationManifest.load(self.pc["manifest"])
+        self.assertEqual((len(m), cases.stage_of(m)), (200, 3))
+        role = cases.role_manifests(m, cc.roles(self.pc), expected_cases=200, stage=3)
+        self.assertEqual(cc.roles(self.pc), {"promotion": (10, 40), "fresh": (40, 200)})
+        self.assertEqual([len(role[p]) for p in cc.PANELS], [30, 160])
+        self.assertGreaterEqual(len(self.pc["disjoint_from"]), 20)
+
+    def test_aggregate_rule(self):
+        from lares.envs.isaac_pen_spin import curl_confirmation as cc
+
+        def rows(succ, drops, n):
+            return [{"task_hash": f"h{i}", "sustained": i < succ, "completed": i < n - drops, "tail_hit_fraction": 0.0,
+                     "hit_steps": 0, "length": 360, "mean_abs_spin": 5.0, "mean_transverse": 1.0, "final_center_dist": 0.01}
+                    for i in range(n)]
+
+        sat = {"in_play_steps": 1, "drive_saturated_fraction": 0.9, "action_saturated_fraction": 0.1,
+               "action_saturated_by_axis": [0.1] * 20, "drive_unsaturated_fraction_per_case": [0.1], "note": ""}
+        sats = {a: {p: sat for p in cc.PANELS} for a in cc.ARMS}
+        good = cc.aggregate({"parent": {"promotion": rows(6, 4, 30), "fresh": rows(30, 20, 160)},
+                             "zero_curl": {"promotion": rows(14, 2, 30), "fresh": rows(60, 10, 160)}}, sats)
+        self.assertTrue(good["prediction"]["supported"])
+        self.assertTrue(good["qualifies_repair_parent"])
+        self.assertAlmostEqual(good["paired_success_difference"], 30 / 160)
+        flat = cc.aggregate({"parent": {"promotion": rows(6, 4, 30), "fresh": rows(30, 20, 160)},
+                             "zero_curl": {"promotion": rows(7, 4, 30), "fresh": rows(32, 20, 160)}}, sats)
+        self.assertTrue(flat["prediction"]["refuted"])
+        self.assertFalse(flat["qualifies_repair_parent"])
+        droppy = cc.aggregate({"parent": {"promotion": rows(6, 4, 30), "fresh": rows(30, 10, 160)},
+                               "zero_curl": {"promotion": rows(14, 2, 30), "fresh": rows(60, 40, 160)}}, sats)
+        self.assertTrue(droppy["prediction"]["retention_refuted"])
+        self.assertFalse(droppy["qualifies_repair_parent"])

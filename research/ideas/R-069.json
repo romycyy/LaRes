@@ -1,0 +1,90 @@
+{
+  "id": "R-069",
+  "title": "2. Test whether curl removal prevents damage or recovers the grasp",
+  "hypothesis": "Capture curl causes early, persistent grasp damage, so disabling it after a parent-controlled prefix loses sustained success relative to disabling it from reset.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "decrease",
+    "threshold": 0.1,
+    "against": "R-068's strictly promoted and fresh-confirmed zero-curl controller",
+    "rationale": "A delayed-clamp minus reset-clamp difference of at most -0.10 would distinguish prevention from recovery and determine whether clamp-based learner-state corrections are worth collecting."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --study r069_delayed_curl_clamp'",
+    "seeds": [
+      4630
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_r069_delayed_clamp_s4630.yaml"
+    ],
+    "episodes": 272,
+    "llm_calls": 0,
+    "code_changes": [
+      "config/shadowhand_spin_stages.yaml: add r069_delayed_curl_clamp, runnable only after R-068 qualifies the exact zero clamp; otherwise defer without simulator spending.",
+      "config/manifests/pen_spin_r069_delayed_clamp_s4630.yaml: freeze one block containing 16 reproducibility-gate cases and 80 disjoint diagnostic cases, all fresh.",
+      "scripts/run_shadowhand_spin_stages.py: reuse D-045's closed-loop prefix re-execution machinery; require identical physical and controller state through step 120 on all 16 repeated gate cases, costing at most 32 episodes.",
+      "scripts/run_shadowhand_spin_stages.py: on 80 paired cases compare unchanged parent, zero clamp from reset, and parent through step 120 followed by the exact zero clamp. Preserve controller memory at switching; count early terminations as failures without survivor filtering. Cost 240 episodes.",
+      "scripts/run_shadowhand_spin_stages.py: report sustained success, drops, saturation, and paired rescue/regression counts. Collect no imitation labels and promote no diagnostic arm. Unlike deferred R-052, this tests within-learner intervention history, not expert corrections; D-051 supplies the newly identified intervention."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "A paired interval entirely above -0.10 refutes the predicted persistent-damage magnitude; an interval crossing -0.10 is inconclusive. Failure of prefix-state identity invalidates the comparison rather than supporting either mechanism.",
+  "cost_estimate": {
+    "episodes": 272,
+    "llm_calls": 0,
+    "wall_time_minutes": 60
+  },
+  "open_question_refs": [
+    6
+  ],
+  "briefing_sha256": "5613a4342b0cfef5a1cb69684663afd7fba3bb696e24f74ae796e4a654d1398f",
+  "proposal_call_id": "call_00131",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T05:49:02",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-04T05:47:10",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "This 272-episode, zero-LLM diagnostic becomes useful only after R-068 qualifies the exact reset clamp; it differs from D-045 by testing the newly identified within-learner intervention rather than expert takeover. Its weakest point is that a delayed-clamp deficit demonstrates history dependence, not necessarily persistent damage or verified recovery for imitation. A delayed-minus-reset paired_success_difference interval entirely above -0.10 refutes the predicted decrease; prefix-state mismatch invalidates the comparison.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00132",
+          "briefing_sha256": "bc7623283ec7c32e6d82c46c93b5b4013fc7f0e967fd41c16cea8f31fe9bee68",
+          "at": "2026-11-04T05:48:22"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree to defer until R-068 qualifies the exact zero-curl clamp. The prefix re-execution machinery (D-045) makes it cheap, and a delayed-clamp deficit would show history dependence of the curl damage; it is not yet decision-relevant.",
+          "changes_applied": [],
+          "at": "2026-11-04T05:49:02"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

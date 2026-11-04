@@ -1,0 +1,90 @@
+{
+  "id": "R-070",
+  "title": "3. Repair slow spin with stroke-synchronous contact unloading",
+  "hypothesis": "Unloading returning finger contacts while preserving opposing support rectifies the existing reciprocal stroke into axial roll without restoring harmful reactive capture curl.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "R-068's strictly promoted and fresh-confirmed zero-curl controller",
+    "rationale": "Require a +0.10 fresh sustained-success gain to justify structural repair after the clamp's retention benefit; promotion and fresh confirmation must also exclude zero and show no increase in drops."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --study r070_contact_rectification_repair'",
+    "seeds": [
+      4640
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_r070_contact_rectification_s4640.yaml"
+    ],
+    "episodes": 1210,
+    "llm_calls": 32,
+    "code_changes": [
+      "config/shadowhand_spin_stages.yaml: add r070_contact_rectification_repair, gated on R-068's exact zero clamp qualifying; execute only after preceding protocols finish. Keep imitation disabled with bc_steps 0.",
+      "config/manifests/pen_spin_r070_contact_rectification_s4640.yaml: freeze one block with disjoint 40-case screen, 30-case promotion (IDs 10-39), and 160-case fresh panels.",
+      "scripts/run_shadowhand_spin_stages.py: reuse the repair-generation path with llm_pool, 16 workers, gpt-6.1-sol, reasoning_effort high, temperature 1, 16 candidates and at most one linked correction each. Use archived zero-clamp traces rather than collecting demonstrations.",
+      "config/shadowhand_spin_stages.yaml: restrict edits to bounded, zero-cycle-mean flexion-preload modulation synchronized to the existing stroke; preserve opposition, capture_curl=0, stroke timing, existing inter-finger phases, and spin/centering parameters. This changes contact loading, unlike deferred slip-gated drive, timing feedback, clipping allocation, or relative-phase disruption.",
+      "scripts/run_shadowhand_spin_stages.py: screen 16 candidates on 40 cases (640 episodes), freeze one eligible winner, then evaluate winner, parent, and an amplitude-matched phase-shuffled unloading control on promotion plus fresh cases (570 episodes). Report sustained success, drops, slow-spin failures, and saturation; retain the parent on ties or failed qualification."
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "A fresh paired interval wholly below +0.10 refutes the predicted gain; an interval including zero is inconclusive. If an amplitude-matched phase-shuffled control performs indistinguishably, the proposed rectification mechanism remains unestablished even if a candidate improves.",
+  "cost_estimate": {
+    "episodes": 1210,
+    "llm_calls": 32,
+    "wall_time_minutes": 240
+  },
+  "open_question_refs": [
+    4
+  ],
+  "briefing_sha256": "5613a4342b0cfef5a1cb69684663afd7fba3bb696e24f74ae796e4a654d1398f",
+  "proposal_call_id": "call_00131",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T05:49:04",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-04T05:47:10",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Stroke-synchronous contact unloading is distinct from the deferred timing, relative-phase, and clipping repairs, but its 1,210 episodes and at most 32 LLM calls require a qualified zero-curl parent first. Its weakest point is attributing any improvement specifically to synchronization rather than generic unloading, which the phase-shuffled control must resolve. A fresh paired_success_difference interval wholly below +0.10 against the confirmed zero-curl controller refutes the predicted increase; an interval including zero establishes no improvement, and indistinguishable shuffled-control performance leaves the mechanism unestablished.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00132",
+          "briefing_sha256": "bc7623283ec7c32e6d82c46c93b5b4013fc7f0e967fd41c16cea8f31fe9bee68",
+          "at": "2026-11-04T05:48:22"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree to defer: an LLM repair of slow spin on a zero-curl parent needs that parent to be qualified first (R-068), and the phase-shuffled control is the right mechanism check when it is re-triaged.",
+          "changes_applied": [],
+          "at": "2026-11-04T05:49:04"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

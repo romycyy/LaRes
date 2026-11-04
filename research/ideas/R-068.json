@@ -1,0 +1,239 @@
+{
+  "id": "R-068",
+  "title": "1. Confirm the capture-curl clamp before using it for repair",
+  "hypothesis": "Reactive capture curl destabilizes the learner's grasp, so removing exactly that contribution improves sustained success without increasing drops.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "config/pen_spin/r046_block3_incumbent",
+    "rationale": "Predeclare a +0.10 absolute sustained-success gain on fresh cases; D-051 selected this lesion but did not establish improvement. Qualification additionally requires positive paired t-interval lower bounds on both promotion and fresh panels, with no increase in drops on either."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r068_capture_curl_confirmation --log-dir logs/pen_spin/r068_capture_curl_confirmation\"'",
+    "seeds": [
+      4620
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_r068_block_s4620.yaml"
+    ],
+    "episodes": 380,
+    "llm_calls": 0,
+    "code_changes": [
+      "New study module lares/envs/isaac_pen_spin/curl_confirmation.py registered as --study r068_capture_curl_confirmation in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent config/pen_spin/r046_block3_incumbent (hashes checked), no fitting, parameters unchanged.",
+      "The intervention is exactly R-065's audited curl_clamp substitution (extra_curl = 0.0 * self.capture_curl * (...)); every other line, parameter and the execution are frozen. Before any episode: the source audit and the offline identity gate at factor 1.0 on D-050's archived parent observations (bit-identical actions), as in R-065.",
+      "One frozen 200-case Stage-3 manifest on seed 4620 at config/manifests/pen_spin_stage3_r068_block_s4620.yaml: cases 0-9 unused, promotion panel cases 10-39, fresh panel cases 40-199 (role slices), placement-disjoint from every committed pen-spin manifest. Parent and zero-curl clamp each run each panel in their own fresh process: four processes, 380 evaluated episodes, zero LLM calls.",
+      "Primary: zero-clamp minus parent fresh sustained success (160 paired cases), 95% t interval; prediction at least +0.10, refuted if the fresh interval is wholly below +0.10; an interval including zero is inconclusive and cannot qualify the controller. Qualification for repair: strict paired rule on the promotion panel (positive difference and lower bound above zero), fresh lower bound above zero, and no observed increase in drops on either panel; an established drop increase refutes the retention mechanism.",
+      "Reported per panel: sustained success, paired success and drop differences with intervals and win/loss/tie, failure split (drops, off-centre, slow spin), in-play mean |spin|, drive and per-axis executed-action saturation over recorded in-play steps. Decision artifact naming the qualified repair parent (if any) for R-069 and R-070. No imitation, no cold search, held-out split untouched."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "A fresh paired interval wholly below +0.10 refutes the predicted magnitude; an established drop increase refutes the retention mechanism. An interval including zero is inconclusive and cannot qualify the controller.",
+  "cost_estimate": {
+    "episodes": 380,
+    "llm_calls": 0,
+    "wall_time_minutes": 15
+  },
+  "open_question_refs": [
+    4
+  ],
+  "briefing_sha256": "5613a4342b0cfef5a1cb69684663afd7fba3bb696e24f74ae796e4a654d1398f",
+  "proposal_call_id": "call_00131",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-04T05:56:15",
+    "advisor_call_id": "call_00135",
+    "round": 4,
+    "note": "I accept Claude Code's specific distinction: 4620 is reserved by this protocol's own frozen manifest, not previously executed or allocated elsewhere, so its first execution is not seed reuse; renaming would reproduce the bookkeeping artifact. This confirms D-051's selected capture-curl lesion before"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T05:56:15",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 4: both say approve"
+    }
+  ],
+  "created_at": "2026-11-04T05:47:10",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "The requested optimizer comparison is complete in D-048/D-049, while D-051 leaves this selected structural lesion unconfirmed. Confirming the exact clamp is the right next experiment, but the descriptive multiplier search spends additional episodes without changing which controller can qualify. Reduce the budget from 770 to 380 episodes, with zero LLM calls. A fresh paired_success_difference interval wholly below +0.10 against the frozen parent refutes the predicted increase; an established drop increase refutes the retention claim.",
+          "suggested_changes": [
+            "Remove the five-multiplier screen and secondary winner: compare only the frozen parent and exact D-051 zero-curl clamp.",
+            "Reuse scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml; retain the offline substitution audit and freeze all other controller code and parameters.",
+            "Using free seed 4620, freeze disjoint 30-case promotion and 160-case fresh panels before execution, verify every generated case seed against the ledger, and evaluate both controllers on both panels: 380 episodes, zero LLM calls.",
+            "Retain the prediction of paired_success_difference increase by at least 0.10 against config/pen_spin/r046_block3_incumbent, strict positive paired t-interval lower bounds on both panels, and no observed increase in drops on either panel. Report sustained success, drops, failure categories, and saturation separately; keep imitation disabled and final test locked."
+          ],
+          "priority": 1,
+          "call_id": "call_00132",
+          "briefing_sha256": "bc7623283ec7c32e6d82c46c93b5b4013fc7f0e967fd41c16cea8f31fe9bee68",
+          "at": "2026-11-04T05:48:22"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree: revise to the advisor's 380-episode form. Parent versus the exact D-051 zero-curl clamp only, no multiplier sweep, no secondary winner. One frozen 190-case Stage-3 manifest on seed 4620 (promotion cases 0-29, fresh cases 30-189, role slices, placement-disjoint from every committed pen-spin manifest), each controller on each panel in its own process (four processes). Interfaces: --study r068_capture_curl_confirmation --log-dir with a config block in config/shadowhand_spin_stages.yaml; the clamp is R-065's audited curl_clamp substitution (extra_curl = 0.0 * capture_curl * (...)), with the offline identity gate at factor 1.0 on D-050's archived observations rerun before any episode. Prediction unchanged: zero-clamp minus parent fresh sustained success at least +0.10, falsified by a fresh interval wholly below +0.10; qualification for repair needs the strict paired rule on the promotion panel (positive difference, lower bound above zero), a fresh interval lower bound above zero, and no observed increase in drops on either panel; an established drop increase refutes the retention mechanism. Reported per panel: sustained success, drops, off-centre and slow-spin failures, drive and action saturation. I am applying this as the revision patch now.",
+          "changes_applied": [
+            "parent vs exact zero-curl clamp only; 380 episodes; seed 4620",
+            "one 190-case manifest: promotion 0-29, fresh 30-189; four processes",
+            "--study r068_capture_curl_confirmation --log-dir; config block; R-065 substitution and offline identity gate"
+          ],
+          "at": "2026-11-04T05:49:06"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "I accept Claude Code's exact-clamp comparison and removal of the multiplier sweep: D-051 selected this lesion but left its transferable benefit unconfirmed. One detail still conflicts with the standing promotion rule: the revised protocol assigns promotion to cases 0–29 rather than development cases 10–39. Retain the prediction of paired_success_difference increasing by at least 0.10 against config/pen_spin/r046_block3_incumbent; falsified_by is a fresh paired interval wholly below +0.10, while an established drop increase refutes the retention mechanism. Correcting the indices leaves the budget at 380 simulator episodes and zero LLM calls, with qualification still requiring positive paired interval lower bounds and no observed drop increase on both panels.",
+          "suggested_changes": [
+            "Freeze a 200-case manifest on free seed 4620: leave cases 0–9 unused, assign promotion cases 10–39 and fresh cases 40–199, and verify every generated case seed against the ledger before execution.",
+            "Update the role slices in scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml accordingly; retain the exact intervention, offline identity gate, four fresh processes, 380 evaluated episodes, and all reporting and qualification criteria."
+          ],
+          "priority": 1,
+          "call_id": "call_00133",
+          "briefing_sha256": "5f8c78591a2541e5aa6c9f40577adf27dd7a1c53cb258275fff748279c17f7de",
+          "at": "2026-11-04T05:50:58"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree: revise to the standing index convention. The manifest becomes 200 cases on seed 4620 with cases 0-9 unused, promotion 10-39 and fresh 40-199; the role slices in the config block change accordingly; nothing else changes (exact clamp, offline identity gate, four fresh processes, 380 evaluated episodes, qualification and reporting). Applying the patch now.",
+          "changes_applied": [
+            "200-case manifest, promotion 10-39, fresh 40-199, cases 0-9 unused"
+          ],
+          "at": "2026-11-04T05:51:41"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "I accept Claude Code's exact-clamp comparison and corrected panel indices: this would establish whether D-051's selected lesion transfers before repair, rather than treating its uncertain success gain as established. However, the current briefing explicitly lists seed 4620 as spent, which defeats our earlier seed agreement and prevents approval as written. Retain the prediction that paired_success_difference increases by at least 0.10 against config/pen_spin/r046_block3_incumbent; a fresh paired interval wholly below +0.10 falsifies that magnitude, an established drop increase refutes the retention mechanism, and an interval including zero cannot establish improvement. Replacing the spent seed preserves the informative 380-episode, zero-LLM-call comparison.",
+          "suggested_changes": [
+            "Replace seed 4620 with unused seed 4621 under the briefing's 2600-upward allocation rule; verify every generated case seed against the ledger before execution and abort on any overlap.",
+            "Rename the manifest to config/manifests/pen_spin_stage3_r068_block_s4621.yaml and update all seed references and configuration entries. Reuse scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml; retain cases 0–9 unused, promotion 10–39, fresh 40–199, the identity gate, exact intervention, four processes, qualification criteria, reporting, and locked final test."
+          ],
+          "priority": 1,
+          "call_id": "call_00134",
+          "briefing_sha256": "5850a11329af0ab26492f59eb9bdc483e572a34bfbb6da102cc47341ca6c53c5",
+          "at": "2026-11-04T05:52:19"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve as written; the seed objection rests on a ledger artefact, not a conflict. Seed 4620 is listed as spent only because its entry is this protocol's own frozen manifest, config/manifests/pen_spin_stage3_r068_block_s4620.yaml, which was built and committed before execution exactly as the protocol requires (the seed ledger scans config/** manifests, and a pen-spin manifest is the seed record). No other protocol, run or manifest uses 4620; config/experiment_seed_ledger.jsonl has no 4620 entry and the only manifest naming it is this one. Every approved pen-spin idea has reached this state before its run (R-053, R-058, R-060, R-062, R-065: manifest built, seed then shown as spent by its own manifest, protocol.seeds emptied mechanically at start with a recorded note), so replacing 4620 by 4621 would recreate the identical situation the moment the 4621 manifest is frozen. Disjointness is verified in code, not only in the ledger: build_manifests asserts placement disjointness of this manifest against all 20 committed Stage-3 pen-spin manifests, and the test suite checks it. Everything else is as agreed: exact clamp, offline identity gate, cases 0-9 unused, promotion 10-39, fresh 40-199, four processes, 380 evaluated episodes, zero LLM calls, final test locked.",
+          "changes_applied": [],
+          "at": "2026-11-04T05:55:26"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 4,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept Claude Code's specific distinction: 4620 is reserved by this protocol's own frozen manifest, not previously executed or allocated elsewhere, so its first execution is not seed reuse; renaming would reproduce the bookkeeping artifact. This confirms D-051's selected capture-curl lesion before repair, with an uncertain transferable success gain as its weakest point. The prediction remains paired_success_difference increase by at least 0.10 against config/pen_spin/r046_block3_incumbent; falsified_by is a fresh interval wholly below +0.10, while an established drop increase refutes the retention mechanism and an interval including zero cannot establish improvement. Approve 380 simulator episodes and zero LLM calls using scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, retaining the identity and disjointness gates, positive paired interval lower bounds and no observed drop increase on both panels, disabled imitation, and locked final test.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00135",
+          "briefing_sha256": "5e8fb80a3579b13d2a14cf8349fdee656018913e92129094fda3cfd83c2d5a96",
+          "at": "2026-11-04T05:56:02"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve, jointly: exact zero-curl clamp versus the parent on the frozen 200-case seed-4620 manifest (promotion 10-39, fresh 40-199), offline identity gate and placement-disjointness gates before any episode, four processes, 380 evaluated episodes, zero LLM calls, final test locked. Running now.",
+          "changes_applied": [],
+          "at": "2026-11-04T05:56:15"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 4
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-04T05:49:08",
+      "round": 1,
+      "patch": {
+        "protocol": {
+          "script": "scripts/run_shadowhand_spin_stages.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r068_capture_curl_confirmation --log-dir logs/pen_spin/r068_capture_curl_confirmation\"'",
+          "seeds": [
+            4620
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_r068_block_s4620.yaml"
+          ],
+          "episodes": 380,
+          "llm_calls": 0,
+          "code_changes": [
+            "New study module lares/envs/isaac_pen_spin/curl_confirmation.py registered as --study r068_capture_curl_confirmation in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent config/pen_spin/r046_block3_incumbent (hashes checked), no fitting, parameters unchanged.",
+            "The intervention is exactly R-065's audited curl_clamp substitution (extra_curl = 0.0 * self.capture_curl * (...)); every other line, parameter and the execution are frozen. Before any episode: the source audit and the offline identity gate at factor 1.0 on D-050's archived parent observations (bit-identical actions), as in R-065.",
+            "One frozen 190-case Stage-3 manifest on seed 4620 at config/manifests/pen_spin_stage3_r068_block_s4620.yaml: promotion panel cases 0-29, fresh panel cases 30-189 (role slices), placement-disjoint from every committed pen-spin manifest. Parent and zero-curl clamp each run each panel in their own fresh process: four processes, 380 episodes, zero LLM calls.",
+            "Primary: zero-clamp minus parent fresh sustained success (160 paired cases), 95% t interval; prediction at least +0.10, refuted if the fresh interval is wholly below +0.10; an interval including zero is inconclusive and cannot qualify the controller. Qualification for repair: strict paired rule on the promotion panel (positive difference and lower bound above zero), fresh lower bound above zero, and no observed increase in drops on either panel; an established drop increase refutes the retention mechanism.",
+            "Reported per panel: sustained success, paired success and drop differences with intervals and win/loss/tie, failure split (drops, off-centre, slow spin), in-play mean |spin|, drive and per-axis executed-action saturation over recorded in-play steps. Decision artifact naming the qualified repair parent (if any) for R-069 and R-070. No imitation, no cold search, held-out split untouched."
+          ],
+          "needs_gpu": true,
+          "needs_llm": false
+        },
+        "cost_estimate": {
+          "episodes": 380,
+          "llm_calls": 0,
+          "wall_time_minutes": 15
+        }
+      },
+      "note": "Round 1 agreed revise: parent vs exact zero-curl clamp only (no multiplier sweep), one 190-case manifest (promotion 0-29, fresh 30-189) on seed 4620, four processes, 380 episodes, real --study/--log-dir interface, R-065 substitution and offline identity gate."
+    },
+    {
+      "at": "2026-11-04T05:51:43",
+      "round": 2,
+      "patch": {
+        "protocol": {
+          "script": "scripts/run_shadowhand_spin_stages.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r068_capture_curl_confirmation --log-dir logs/pen_spin/r068_capture_curl_confirmation\"'",
+          "seeds": [
+            4620
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_r068_block_s4620.yaml"
+          ],
+          "episodes": 380,
+          "llm_calls": 0,
+          "code_changes": [
+            "New study module lares/envs/isaac_pen_spin/curl_confirmation.py registered as --study r068_capture_curl_confirmation in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent config/pen_spin/r046_block3_incumbent (hashes checked), no fitting, parameters unchanged.",
+            "The intervention is exactly R-065's audited curl_clamp substitution (extra_curl = 0.0 * self.capture_curl * (...)); every other line, parameter and the execution are frozen. Before any episode: the source audit and the offline identity gate at factor 1.0 on D-050's archived parent observations (bit-identical actions), as in R-065.",
+            "One frozen 200-case Stage-3 manifest on seed 4620 at config/manifests/pen_spin_stage3_r068_block_s4620.yaml: cases 0-9 unused, promotion panel cases 10-39, fresh panel cases 40-199 (role slices), placement-disjoint from every committed pen-spin manifest. Parent and zero-curl clamp each run each panel in their own fresh process: four processes, 380 evaluated episodes, zero LLM calls.",
+            "Primary: zero-clamp minus parent fresh sustained success (160 paired cases), 95% t interval; prediction at least +0.10, refuted if the fresh interval is wholly below +0.10; an interval including zero is inconclusive and cannot qualify the controller. Qualification for repair: strict paired rule on the promotion panel (positive difference and lower bound above zero), fresh lower bound above zero, and no observed increase in drops on either panel; an established drop increase refutes the retention mechanism.",
+            "Reported per panel: sustained success, paired success and drop differences with intervals and win/loss/tie, failure split (drops, off-centre, slow spin), in-play mean |spin|, drive and per-axis executed-action saturation over recorded in-play steps. Decision artifact naming the qualified repair parent (if any) for R-069 and R-070. No imitation, no cold search, held-out split untouched."
+          ],
+          "needs_gpu": true,
+          "needs_llm": false
+        },
+        "cost_estimate": {
+          "episodes": 380,
+          "llm_calls": 0,
+          "wall_time_minutes": 15
+        }
+      },
+      "note": "Round 2 agreed revise: 200-case manifest, cases 0-9 unused, promotion 10-39, fresh 40-199; nothing else changed."
+    }
+  ]
+}
