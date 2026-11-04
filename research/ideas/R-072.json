@@ -1,0 +1,87 @@
+{
+  "id": "R-072",
+  "title": "2. Test redundant stabilization after capture-curl removal",
+  "hypothesis": "With capture curl removed, centering and rotation correction substitute for each other as spin-generating stabilizers, concealing their importance in single-channel lesions.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "decrease",
+    "threshold": 0.1,
+    "against": "Frozen R-046 with the exact R-068 zero-curl substitution",
+    "rationale": "The joint centering-and-rotation lesion should lose at least 0.10 sustained success; the two single lesions distinguish redundancy from one channel simply carrying the effect. Unlike D-051 and R-066, this tests their interaction on the retention-improved operating point."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run \"bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --protocol stabilizer-factorial --controller config/pen_spin/r046_block3_incumbent --base-substitution r068-zero-curl --stage 3 --seed 4630 --manifest config/manifests/pen_spin_stabilizer_factorial_s4630.yaml --create-manifest --manifest-cases 160 --case-range 40:160 --identity-records-from R-065 --output logs/pen_spin/stabilizer_factorial_s4630'\"",
+    "seeds": [
+      4630
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stabilizer_factorial_s4630.yaml"
+    ],
+    "episodes": 480,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py: add the declared four-arm protocol using existing Isaac rollout machinery: zero-curl control, centering lesion, rotation-correction lesion, and both lesions.",
+      "Require offline identity gates against the frozen controller and exact R-068 substitution before simulation; preserve every other parameter and the sustained-success rule.",
+      "Freeze 120 evaluation cases before rollout; report paired arm differences, the factorial interaction, drops, slow-spin failures, and saturation.",
+      "Treat all arms as diagnostic controls, not qualified repair parents; run only after the preceding protocol finishes."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The joint-lesion difference has an interval entirely above -0.10, or the factorial contrast excludes any additional loss beyond the summed single-lesion losses; unresolved intervals leave the redundancy mechanism inconclusive.",
+  "cost_estimate": {
+    "episodes": 480,
+    "llm_calls": 0,
+    "wall_time_minutes": 60
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "96bdaeea60c1caad66f145ac2ff86d03a0bf568043c575cfb588082e7c510533",
+  "proposal_call_id": "call_00138",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T06:06:04",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-04T06:03:32",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "The zero-curl operating point leaves a genuine redundancy question that D-051's parent-controller lesions did not settle. However, 480 episodes and zero LLM calls buy a localization result rather than a candidate improvement, making this lower priority than the free reversal audit and the direct preload intervention. Redundancy is falsified if the joint-lesion paired_success_difference interval lies entirely above -0.10 against the exact zero-curl control, or the factorial contrast rules out additional loss beyond the summed single-lesion losses. Reconsider after R-071 and R-073 establish whether this operating point remains the useful repair target.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00139",
+          "briefing_sha256": "3c18ffa331ac5e9d275061888bd166a5ce530ad59029c0b85ce54d817b2fbe36",
+          "at": "2026-11-04T06:04:47"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree to defer. The redundancy question at the zero-curl operating point is real, but R-071 (free) and R-073 (a candidate improvement) come first; reconsider with a factorial design once the preload result says whether this operating point stays the repair target.",
+          "changes_applied": [],
+          "at": "2026-11-04T06:06:04"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

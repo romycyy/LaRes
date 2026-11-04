@@ -1,0 +1,171 @@
+{
+  "id": "R-071",
+  "title": "1. Diagnose whether curl removal replaces sustained roll with reversals",
+  "hypothesis": "Removing capture curl weakens directional contact, causing repeated axial-spin reversals rather than merely slower unidirectional rotation.",
+  "prediction": {
+    "metric": "phase_transitions",
+    "direction": "increase",
+    "threshold": 0.5,
+    "against": "R-068 frozen R-046 parent on the same archived fresh cases",
+    "rationale": "Count hysteretic axial-direction reversals per in-play second over each pair's common pre-drop interval; an increase of 0.5 reversals per second would identify a substantial directional instability behind the clamp's slow-spin failures."
+  },
+  "protocol": {
+    "script": "scripts/isaac/axial_reversals.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/isaac/axial_reversals.py --run-dir logs/pen_spin/r068_capture_curl_confirmation --out logs/pen_spin/r071_axial_reversals/summary.json --hysteresis 1.0 --persistence-steps 3\"'",
+    "seeds": [],
+    "manifests": [],
+    "episodes": 0,
+    "llm_calls": 0,
+    "code_changes": [
+      "New lares/envs/isaac_pen_spin/axial_reversals.py (numpy only) and scripts/isaac/axial_reversals.py: read the archived R-068 traces (parent_fresh.npz, zero_curl_fresh.npz, parent_promotion.npz, zero_curl_promotion.npz: per-step spin_rate, length, completed) and their rows; exit without collecting anything if a record is missing. No simulator, no LLM.",
+      "Frozen definitions: signed axial rate = env spin_rate (rad/s). A direction is held when |spin| exceeds the hysteresis band (1.0 rad/s) with the same sign on 3 consecutive steps; a reversal is a change of held direction. Rate = reversals per in-play second (60 Hz) over each pair's common pre-drop window (min of the two lengths). Primary: paired zero-curl minus parent reversal rate over the 160 fresh pairs with the 95% t interval (metric phase_transitions); secondary: the same over the 30 promotion pairs; also per-arm reversal rate, held-direction fraction, mean |spin| on the common window, and the archived sustained success and drops.",
+      "Prediction: increase of at least 0.5 reversals per second; refuted if the paired interval's upper bound is below +0.5; an interval spanning the threshold is inconclusive and one spanning zero is not evidence of increased reversals. Reversal counts alone cannot establish lost traction as the cause (limitation)."
+    ],
+    "needs_gpu": false,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "The paired interval's upper bound is below +0.5 reversals per second; an interval spanning the threshold is inconclusive, and one spanning zero is not evidence of increased reversals.",
+  "cost_estimate": {
+    "episodes": 0,
+    "llm_calls": 0,
+    "wall_time_minutes": 10
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "96bdaeea60c1caad66f145ac2ff86d03a0bf568043c575cfb588082e7c510533",
+  "proposal_call_id": "call_00138",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-04T06:13:03",
+    "advisor_call_id": "call_00141",
+    "round": 3,
+    "note": "I accept the implementer's dedicated NumPy audit and corrected gpu run command; both earlier interface objections are resolved. This distinguishes reversals from slower rotation after curl removal using archived data at 0 simulator episodes and 0 LLM calls, although it cannot establish weakened cont"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T06:13:03",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    }
+  ],
+  "created_at": "2026-11-04T06:03:32",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This is the best immediate diagnostic: archived records can distinguish directional instability from slower rotation at zero simulator episodes and zero LLM calls. The common pre-drop window limits retention confounding, although reversal counts alone cannot establish lost traction as the cause. The phase_transitions prediction is falsified if the paired interval's upper bound is below +0.5 reversals/s against the archived R-068 parent; missing required records must terminate the analysis without replacement rollouts.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00139",
+          "briefing_sha256": "3c18ffa331ac5e9d275061888bd166a5ce530ad59029c0b85ce54d817b2fbe36",
+          "at": "2026-11-04T06:04:47"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree on substance (a zero-episode reversal audit of the archived R-068 fresh traces, paired on the common pre-drop window) but revise the interface: scripts/analyse_failures.py is the MetaWorld VLM failure-analysis script and takes none of the named flags. The audit is a numpy function in lares/envs/isaac_pen_spin/axial_reversals.py driven by scripts/isaac/axial_reversals.py, reading parent_fresh.npz and zero_curl_fresh.npz (spin_rate per step is recorded there) and the matching rows; it exits without collecting anything if a record is missing. Definitions frozen before running: the signed axial rate is env spin_rate (rad/s); a direction is held when |spin| exceeds the hysteresis band of 1.0 rad/s with the same sign on 3 consecutive steps; a reversal is a change of held direction; the rate is reversals per in-play second over each pair's common pre-drop window (min of the two lengths, 60 Hz); the paired difference clamp minus parent over the 160 fresh pairs with its 95% t interval, plus the same on the 30 promotion pairs as a secondary, and per-arm sustained success and drops as archived. Prediction and falsifier unchanged (phase_transitions up by at least 0.5 per second; refuted if the upper bound is below +0.5).",
+          "changes_applied": [
+            "script scripts/isaac/axial_reversals.py + module lares/envs/isaac_pen_spin/axial_reversals.py; reads R-068 archived traces; definitions frozen"
+          ],
+          "at": "2026-11-04T06:06:06"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "I accept the implementer's dedicated NumPy audit: the MetaWorld failure-analysis script cannot perform this calculation, and archived-only analysis costs 0 simulator episodes and 0 LLM calls. Its weakest point remains that reversals cannot establish lost traction as the cause. The phase_transitions prediction is an increase of at least 0.5 reversals/s versus the archived R-068 parent on matched fresh cases, falsified if the paired interval's upper bound is below +0.5. The remaining issue is operational: the local conda command violates the standing requirement that every protocol execute remotely through gpu run.",
+          "suggested_changes": [
+            "Replace the launch command with: gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/isaac/axial_reversals.py --run-dir logs/pen_spin/r068_capture_curl_confirmation --out logs/pen_spin/r071_axial_reversals/summary.json --hysteresis 1.0 --persistence-steps 3\"'; retain the archived-only, missing-record exit behavior and zero simulator/LLM budget."
+          ],
+          "priority": 1,
+          "call_id": "call_00140",
+          "briefing_sha256": "3e505ada35a57752a69b8167bd435a4a1e831f322ea816a21507f4103bc43df4",
+          "at": "2026-11-04T06:08:26"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree: the launch command runs on the box through gpu run under Isaac's Python (numpy only, archived traces already there), as every protocol does. Applying that one change.",
+          "changes_applied": [
+            "command = gpu run ... python scripts/isaac/axial_reversals.py ... on the box"
+          ],
+          "at": "2026-11-04T06:09:28"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the implementer's dedicated NumPy audit and corrected gpu run command; both earlier interface objections are resolved. This distinguishes reversals from slower rotation after curl removal using archived data at 0 simulator episodes and 0 LLM calls, although it cannot establish weakened contact as the cause. The prediction is phase_transitions increasing by at least 0.5 reversals/s versus the archived R-068 parent on the 160 matched fresh cases; falsified_by is a paired interval upper bound below +0.5. An interval spanning the threshold is inconclusive, and one including zero is not evidence of increased reversals.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00141",
+          "briefing_sha256": "9982f2961a9c04522778244277b67ec258157f1aace3aa1c2f2622b0c307432b",
+          "at": "2026-11-04T06:10:01"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve: the dedicated numpy audit on the archived R-068 traces, run on the box through gpu run, zero episodes, zero LLM calls, frozen reversal definitions (hysteresis 1.0 rad/s, persistence 3 steps, common pre-drop window). Running it now, before R-073.",
+          "changes_applied": [],
+          "at": "2026-11-04T06:13:03"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 3
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-04T06:06:08",
+      "round": 1,
+      "patch": {
+        "protocol": {
+          "script": "scripts/isaac/axial_reversals.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "conda run -n lares-local python scripts/isaac/axial_reversals.py --run-dir logs/pen_spin/r068_capture_curl_confirmation --out logs/pen_spin/r071_axial_reversals/summary.json --hysteresis 1.0 --persistence-steps 3",
+          "seeds": [],
+          "manifests": [],
+          "episodes": 0,
+          "llm_calls": 0,
+          "code_changes": [
+            "New lares/envs/isaac_pen_spin/axial_reversals.py (numpy only) and scripts/isaac/axial_reversals.py: read the archived R-068 traces (parent_fresh.npz, zero_curl_fresh.npz, parent_promotion.npz, zero_curl_promotion.npz: per-step spin_rate, length, completed) and their rows; exit without collecting anything if a record is missing. No simulator, no LLM.",
+            "Frozen definitions: signed axial rate = env spin_rate (rad/s). A direction is held when |spin| exceeds the hysteresis band (1.0 rad/s) with the same sign on 3 consecutive steps; a reversal is a change of held direction. Rate = reversals per in-play second (60 Hz) over each pair's common pre-drop window (min of the two lengths). Primary: paired zero-curl minus parent reversal rate over the 160 fresh pairs with the 95% t interval (metric phase_transitions); secondary: the same over the 30 promotion pairs; also per-arm reversal rate, held-direction fraction, mean |spin| on the common window, and the archived sustained success and drops.",
+            "Prediction: increase of at least 0.5 reversals per second; refuted if the paired interval's upper bound is below +0.5; an interval spanning the threshold is inconclusive and one spanning zero is not evidence of increased reversals. Reversal counts alone cannot establish lost traction as the cause (limitation)."
+          ],
+          "needs_gpu": false,
+          "needs_llm": false
+        },
+        "cost_estimate": {
+          "episodes": 0,
+          "llm_calls": 0,
+          "wall_time_minutes": 10
+        }
+      },
+      "note": "Round 1 implementer revision: real script (scripts/isaac/axial_reversals.py) and module, frozen reversal definitions, reads R-068 archived traces only."
+    },
+    {
+      "at": "2026-11-04T06:09:30",
+      "round": 2,
+      "patch": {
+        "protocol": {
+          "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/isaac/axial_reversals.py --run-dir logs/pen_spin/r068_capture_curl_confirmation --out logs/pen_spin/r071_axial_reversals/summary.json --hysteresis 1.0 --persistence-steps 3\"'"
+        }
+      },
+      "note": "Round 2 agreed revise: launch through gpu run on the box; nothing else changed."
+    }
+  ]
+}

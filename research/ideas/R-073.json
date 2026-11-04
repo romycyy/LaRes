@@ -1,0 +1,154 @@
+{
+  "id": "R-073",
+  "title": "3. Separate useful grasp preload from harmful reactive compression",
+  "hypothesis": "A constant capture-curl preload preserves axial traction without the destabilizing observation-dependent tightening that makes the original controller drop the pen.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "Frozen R-046 with the exact R-068 zero-curl substitution",
+    "rationale": "A +0.10 fresh sustained-success gain would recover a meaningful fraction of the clamp's slow-spin failures; unlike R-069's intervention timing and R-070's synchronous unloading, this isolates static preload from reactive compression."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r073_constant_preload --log-dir logs/pen_spin/r073_constant_preload\"'",
+    "seeds": [
+      4631
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_r073_block_s4631.yaml"
+    ],
+    "episodes": 570,
+    "llm_calls": 0,
+    "code_changes": [
+      "New study module lares/envs/isaac_pen_spin/constant_preload.py registered as --study r073_constant_preload in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent config/pen_spin/r046_block3_incumbent (hashes checked), no fitting, parameters unchanged.",
+      "Preload constant, frozen to disk with provenance before any episode: the median of the parent's extra_curl over all recorded in-play steps of its archived R-068 fresh and promotion runs where extra_curl > 1e-6, with extra_curl = capture_curl * ((1 - contact) + 0.75 (1 - retained)) recomputed offline from the archived observations using the parent's own gates; the study exits if no positive step exists. No scalar search.",
+      "Arms: parent; zero_curl (the exact R-068 substitution, an experimental control that did not pass D-052 promotion); constant_preload (one audited line: extra_curl = C + 0.0 * self.capture_curl * (...)). Identity form (C = 0, factor 1.0) gated bit for bit offline on D-050's archived parent observations before any episode.",
+      "One frozen 200-case Stage-3 manifest on seed 4631 at config/manifests/pen_spin_stage3_r073_block_s4631.yaml (cases 0-9 unused, promotion 10-39, fresh 40-199), placement-disjoint from every committed pen-spin manifest. Each arm runs each panel in its own fresh process: six processes, 570 evaluated episodes, zero LLM calls.",
+      "Primary: constant_preload minus zero_curl fresh sustained success (160 pairs), 95% t interval; prediction at least +0.10; supported if the mean is at least +0.10 and the lower bound is above zero; refuted if the upper bound is below +0.10; otherwise inconclusive. Secondary: constant_preload minus parent and zero_curl minus parent on both panels. Repair qualification: strict paired promotion against both controls on the 30 promotion cases, fresh lower bound above zero against both, and no observed drop increase against either control on either panel; an established drop increase disqualifies.",
+      "Reported per panel and arm: sustained success, paired success and drop differences with intervals and win/loss/tie, failure split (drops, off-centre, slow spin), in-play mean |spin|, drive and per-axis executed-action saturation over recorded in-play steps. bc_steps 0, no imitation, no LLM repair, held-out split untouched."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "The fresh paired interval's upper bound is below +0.10; increased drops would separately disqualify the candidate for repair even if success improved.",
+  "cost_estimate": {
+    "episodes": 570,
+    "llm_calls": 0,
+    "wall_time_minutes": 20
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "96bdaeea60c1caad66f145ac2ff86d03a0bf568043c575cfb588082e7c510533",
+  "proposal_call_id": "call_00138",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-04T06:09:33",
+    "advisor_call_id": "call_00140",
+    "round": 2,
+    "note": "I accept the implementer's corrected study interface, provenance-frozen preload definition, identity gate, and explicit support rule; these resolve the earlier implementation objections. Constant preload tests whether static grasp compression can preserve spin without reactive tightening, distinct f"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T06:09:33",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 2: both say approve"
+    }
+  ],
+  "created_at": "2026-11-04T06:03:32",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "Replacing reactive compression with a frozen preload is a structural intervention distinct from exhausted scalar tuning, deferred intervention timing, and synchronous unloading. Its 570 episodes and zero LLM calls on free seed 4631 purchase both diagnostic controls and an independent promotion opportunity, without treating the unqualified clamp as a repair parent. The weakest point is that the archived positive-curl median may itself overcompress the grasp, but freezing it without a search makes that risk directly testable. The paired_success_difference prediction is falsified if its fresh interval's upper bound is below +0.10 against the exact zero-curl control; increased drops independently disqualify repair use, and strict promotion against both controls remains mandatory.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00139",
+          "briefing_sha256": "3c18ffa331ac5e9d275061888bd166a5ce530ad59029c0b85ce54d817b2fbe36",
+          "at": "2026-11-04T06:04:47"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree on substance: a frozen constant preload replacing the reactive capture curl is the right next structural test, with the parent and the exact zero-curl clamp as the two controls on one 200-case manifest (promotion 10-39, fresh 40-199), 570 episodes. Revise the interface and freeze the constant's definition: --study r073_constant_preload with --log-dir and a config block in config/shadowhand_spin_stages.yaml; manifest config/manifests/pen_spin_stage3_r073_block_s4631.yaml, placement-disjoint from every committed pen-spin manifest. The preload constant is the median of the parent's extra_curl over all recorded in-play steps of its R-068 fresh and promotion runs where extra_curl exceeds 1e-6 (extra_curl = capture_curl * ((1 - contact) + 0.75 (1 - retained)) recomputed offline from the archived observations with the parent's own gates), frozen to disk with its provenance before any episode; the study exits if no positive step exists. The substitution is one audited line, extra_curl = C + 0.0 * capture_curl * (...), with the identity form (C = 0, factor 1.0) gated bit for bit offline on D-050's archived observations like R-065/R-068. Primary: constant-preload minus zero-curl fresh success (160 pairs), at least +0.10, refuted if the upper bound is below +0.10, support = mean at least +0.10 with the lower bound above zero (the ledger's standing rule, stated explicitly this time). Repair qualification: strict promotion against both controls on the 30 promotion cases, fresh lower bound above zero against both, no observed drop increase against either on either panel. Six processes (three arms x two panels).",
+          "changes_applied": [
+            "--study r073_constant_preload --log-dir; config block; manifest pen_spin_stage3_r073_block_s4631.yaml",
+            "preload constant = median positive parent extra_curl over archived R-068 in-play steps, frozen with provenance",
+            "support rule stated explicitly: mean >= +0.10 and lower bound > 0"
+          ],
+          "at": "2026-11-04T06:06:11"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the implementer's corrected study interface, provenance-frozen preload definition, identity gate, and explicit support rule; these resolve the earlier implementation objections. Constant preload tests whether static grasp compression can preserve spin without reactive tightening, distinct from exhausted scalar tuning or deferred intervention-timing tests, although the archived median may itself overcompress the grasp. The 570 simulator episodes and 0 LLM calls on free seed 4631 are justified by the two paired controls and independent qualification opportunity. The paired_success_difference prediction is an increase of at least +0.10 fresh sustained success versus the exact zero-curl control, falsified if the interval's upper bound is below +0.10; repair still requires strict promotion and fresh confirmation against both controls with no observed drop increase on either panel.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00140",
+          "briefing_sha256": "3e505ada35a57752a69b8167bd435a4a1e831f322ea816a21507f4103bc43df4",
+          "at": "2026-11-04T06:08:26"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve: parent, exact zero-curl clamp and the provenance-frozen constant preload (median positive parent extra_curl over the archived R-068 in-play steps) on the frozen 200-case seed-4631 manifest (promotion 10-39, fresh 40-199), offline identity gate first, six processes, 570 evaluated episodes, zero LLM calls, support rule stated, repair qualification against both controls, final test locked. Implementing now; R-071 runs first.",
+          "changes_applied": [],
+          "at": "2026-11-04T06:09:33"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-04T06:06:12",
+      "round": 1,
+      "patch": {
+        "protocol": {
+          "script": "scripts/run_shadowhand_spin_stages.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r073_constant_preload --log-dir logs/pen_spin/r073_constant_preload\"'",
+          "seeds": [
+            4631
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_r073_block_s4631.yaml"
+          ],
+          "episodes": 570,
+          "llm_calls": 0,
+          "code_changes": [
+            "New study module lares/envs/isaac_pen_spin/constant_preload.py registered as --study r073_constant_preload in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. Parent config/pen_spin/r046_block3_incumbent (hashes checked), no fitting, parameters unchanged.",
+            "Preload constant, frozen to disk with provenance before any episode: the median of the parent's extra_curl over all recorded in-play steps of its archived R-068 fresh and promotion runs where extra_curl > 1e-6, with extra_curl = capture_curl * ((1 - contact) + 0.75 (1 - retained)) recomputed offline from the archived observations using the parent's own gates; the study exits if no positive step exists. No scalar search.",
+            "Arms: parent; zero_curl (the exact R-068 substitution, an experimental control that did not pass D-052 promotion); constant_preload (one audited line: extra_curl = C + 0.0 * self.capture_curl * (...)). Identity form (C = 0, factor 1.0) gated bit for bit offline on D-050's archived parent observations before any episode.",
+            "One frozen 200-case Stage-3 manifest on seed 4631 at config/manifests/pen_spin_stage3_r073_block_s4631.yaml (cases 0-9 unused, promotion 10-39, fresh 40-199), placement-disjoint from every committed pen-spin manifest. Each arm runs each panel in its own fresh process: six processes, 570 evaluated episodes, zero LLM calls.",
+            "Primary: constant_preload minus zero_curl fresh sustained success (160 pairs), 95% t interval; prediction at least +0.10; supported if the mean is at least +0.10 and the lower bound is above zero; refuted if the upper bound is below +0.10; otherwise inconclusive. Secondary: constant_preload minus parent and zero_curl minus parent on both panels. Repair qualification: strict paired promotion against both controls on the 30 promotion cases, fresh lower bound above zero against both, and no observed drop increase against either control on either panel; an established drop increase disqualifies.",
+            "Reported per panel and arm: sustained success, paired success and drop differences with intervals and win/loss/tie, failure split (drops, off-centre, slow spin), in-play mean |spin|, drive and per-axis executed-action saturation over recorded in-play steps. bc_steps 0, no imitation, no LLM repair, held-out split untouched."
+          ],
+          "needs_gpu": true,
+          "needs_llm": false
+        },
+        "cost_estimate": {
+          "episodes": 570,
+          "llm_calls": 0,
+          "wall_time_minutes": 20
+        }
+      },
+      "note": "Round 1 implementer revision: --study interface and config block, manifest pen_spin_stage3_r073_block_s4631.yaml, frozen preload-constant definition, explicit support rule, six processes."
+    }
+  ]
+}

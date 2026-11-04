@@ -1018,3 +1018,98 @@ class TestCurlConfirmation(unittest.TestCase):
                                "zero_curl": {"promotion": rows(14, 2, 30), "fresh": rows(60, 40, 160)}}, sats)
         self.assertTrue(droppy["prediction"]["retention_refuted"])
         self.assertFalse(droppy["qualifies_repair_parent"])
+
+
+class TestAxialReversals(unittest.TestCase):
+    """R-071: held directions, reversals and the paired rate."""
+
+    def test_held_direction_and_reversals(self):
+        from lares.envs.isaac_pen_spin.axial_reversals import held_directions, reversals
+
+        spin = [0.5, 2, 2, 2, 0.2, -2, -2, -2, 2, -2, 2, 2, 2]
+        self.assertEqual(held_directions(spin, 1.0, 3).tolist(), [0, 0, 0, 1, 1, 1, 1, -1, -1, -1, -1, -1, 1])
+        self.assertEqual(reversals(spin, 1.0, 3), 2)
+        self.assertEqual(reversals([5.0] * 100, 1.0, 3), 0)
+        self.assertEqual(reversals([0.0] * 100, 1.0, 3), 0)
+
+    def test_pair_rates_use_the_common_window(self):
+        from lares.envs.isaac_pen_spin.axial_reversals import CONTROL_HZ, pair_rates
+
+        T = 120
+        a = {"length": np.array([120, 60]), "spin_rate": np.zeros((T, 2))}
+        b = {"length": np.array([90, 120]), "spin_rate": np.full((T, 2), 5.0)}
+        a["spin_rate"][:, 0] = [5.0 if (t // 10) % 2 == 0 else -5.0 for t in range(T)]   # reversal every 10 steps
+        r = pair_rates(a, b, 1.0, 3)
+        self.assertEqual(r["window_steps"], [90, 60])
+        self.assertAlmostEqual(r["rate"]["a"][0], 8 / (90 / CONTROL_HZ))
+        self.assertEqual(r["rate"]["b"], [0.0, 0.0])
+
+
+class TestConstantPreload(unittest.TestCase):
+    """R-073: substitution, identity, preload from gates, manifest and qualification."""
+
+    @classmethod
+    def setUpClass(cls):
+        import yaml
+
+        with open("config/shadowhand_spin_stages.yaml") as f:
+            cls.pc = yaml.safe_load(f)["research_protocols"]["r073_constant_preload"]
+
+    def test_substitution_identity_and_preload(self):
+        import torch
+
+        from lares.envs.isaac_pen_spin import channel_lesions as cl
+        from lares.envs.isaac_pen_spin import constant_preload as cp
+        from lares.envs.isaac_pen_spin.learner_recovery import make_learner
+
+        obs = TestStrokeLesion._contact_obs(self, 3)
+        obs[:, cases.obs_slices()["fingertip_pos"]] += 0.03
+        parent = make_learner(self.pc)
+        a = parent(obs, 0, None)
+        self.assertTrue(torch.equal(a, cp.preload_learner(self.pc, 0.0, 1.0, "i")(obs, 0, None)))
+        self.assertTrue(torch.equal(cp.preload_learner(self.pc, 0.0, 0.0, "z")(obs, 0, None),
+                                    cl.lesioned_learner(self.pc, "curl_clamp", 0.0, "z")(obs, 0, None)))
+        self.assertFalse(torch.allclose(a, cp.preload_learner(self.pc, 0.2, 0.0, "c")(obs, 0, None)))
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "a.npz")
+            np.savez(p, obs=obs.unsqueeze(1).repeat(1, 2, 1).numpy(), length=np.array([2, 2, 1]))
+            ec = cp.parent_extra_curl(self.pc, [p])
+            self.assertEqual(ec.shape, (5,))
+            pol = parent.policy
+            pol(obs)
+            expect = float(pol.capture_curl) * ((1 - pol.last_gates["contact"][0].item()) + 0.75 * (1 - pol.last_gates["retained"][0].item()))
+            self.assertAlmostEqual(float(ec[0]), expect, places=6)
+            self.assertTrue(cp.offline_identity_gate(self.pc, p)["passes"])
+            pc = {**self.pc, "preload_archives": [p]}
+            frozen = cp.freeze_preload(pc, d)
+            self.assertAlmostEqual(frozen["constant"], float(np.median(ec[ec > 1e-6])))
+            self.assertEqual(cp.freeze_preload(pc, d)["constant"], frozen["constant"])
+            ctrl = cp.make_controller("constant_preload", pc, d)
+            self.assertEqual(ctrl.params["preload"], frozen["constant"])
+
+    def test_manifest_and_qualification(self):
+        from lares.envs.isaac_pen_spin import constant_preload as cp
+
+        self.assertEqual(cp.build_manifests(self.pc), [])
+        m = EvaluationManifest.load(self.pc["manifest"])
+        self.assertEqual((len(m), cases.stage_of(m)), (200, 3))
+
+        def rows(succ, drops, n):
+            return [{"task_hash": f"h{i}", "sustained": i < succ, "completed": i < n - drops, "tail_hit_fraction": 0.0,
+                     "hit_steps": 0, "length": 360, "mean_abs_spin": 5.0, "mean_transverse": 1.0, "final_center_dist": 0.01}
+                    for i in range(n)]
+
+        sat = {"in_play_steps": 1, "drive_saturated_fraction": 0.9, "action_saturated_fraction": 0.1,
+               "action_saturated_by_axis": [0.1] * 20, "drive_unsaturated_fraction_per_case": [0.1], "note": ""}
+        sats = {a: {p: sat for p in cp.PANELS} for a in cp.ARMS}
+        r = {"parent": {"promotion": rows(6, 7, 30), "fresh": rows(28, 21, 160)},
+             "zero_curl": {"promotion": rows(12, 1, 30), "fresh": rows(52, 7, 160)},
+             "constant_preload": {"promotion": rows(22, 1, 30), "fresh": rows(90, 5, 160)}}
+        agg = cp.aggregate(r, sats)
+        self.assertTrue(agg["prediction"]["supported"])
+        self.assertTrue(agg["qualifies_repair_parent"])
+        self.assertAlmostEqual(agg["paired_success_difference"], 38 / 160)
+        r["constant_preload"] = {"promotion": rows(12, 1, 30), "fresh": rows(54, 7, 160)}
+        agg = cp.aggregate(r, sats)
+        self.assertTrue(agg["prediction"]["refuted"])
+        self.assertFalse(agg["qualifies_repair_parent"])

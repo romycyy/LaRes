@@ -345,9 +345,9 @@ def pen_spin_studies() -> dict:
     """``{study name: module}`` for ``--study``. Every module exposes ``build_manifests(protocol_cfg)``,
     ``make_controller(name, protocol_cfg, out_dir)`` and ``run(protocol_cfg, config_path, out_dir)``; a new study is
     one module with those three names and one entry here."""
-    from lares.envs.isaac_pen_spin import (archive_rescreen, axial_sign, channel_lesions, curl_confirmation,
-                                           feedback_ablation, feedback_delay, feedback_lesions, learner_recovery,
-                                           scalar_tuning, stroke_lesion)
+    from lares.envs.isaac_pen_spin import (archive_rescreen, axial_sign, channel_lesions, constant_preload,
+                                           curl_confirmation, feedback_ablation, feedback_delay, feedback_lesions,
+                                           learner_recovery, scalar_tuning, stroke_lesion)
 
     return {feedback_ablation.FEEDBACK_ABLATION: feedback_ablation,
             feedback_lesions.FEEDBACK_LESIONS: feedback_lesions,
@@ -358,14 +358,15 @@ def pen_spin_studies() -> dict:
             archive_rescreen.STUDY: archive_rescreen,
             stroke_lesion.STUDY: stroke_lesion,
             channel_lesions.STUDY: channel_lesions,
-            curl_confirmation.STUDY: curl_confirmation}
+            curl_confirmation.STUDY: curl_confirmation,
+            constant_preload.STUDY: constant_preload}
 
 
 def run_study(args, cfg: SimpleNamespace) -> None:
     """``--study feedback_ablation`` (R-041), ``feedback_lesions`` (R-044), ``feedback_delay`` (R-047),
     ``learner_recovery`` (R-051), ``learner_axial_sign`` (R-053), ``r058_scalar_cma_vs_random`` (R-058),
-    ``r060_archive_rescreen`` (R-060), ``r062_stroke_lesion`` (R-062), ``r065_channel_lesions`` (R-065) or
-    ``r068_capture_curl_confirmation`` (R-068): the driver, or one child cell."""
+    ``r060_archive_rescreen`` (R-060), ``r062_stroke_lesion`` (R-062), ``r065_channel_lesions`` (R-065),
+    ``r068_capture_curl_confirmation`` (R-068) or ``r073_constant_preload`` (R-073): the driver, or one child cell."""
     studies = pen_spin_studies()
     if args.study not in studies:
         raise SystemExit(f"unknown study {args.study!r}; one of {sorted(studies)}")
@@ -443,7 +444,7 @@ def main() -> None:
     parser.add_argument("--research-protocol", default=None,
                         help="run a named protocol from the config's research_protocols block instead of the smoke stages")
     parser.add_argument("--study", default=None,
-                        help="run a named study (feedback_ablation, feedback_lesions, feedback_delay, learner_recovery, learner_axial_sign, r058_scalar_cma_vs_random, r060_archive_rescreen, r062_stroke_lesion, r065_channel_lesions, r068_capture_curl_confirmation) from the config's research_protocols block")
+                        help="run a named study (feedback_ablation, feedback_lesions, feedback_delay, learner_recovery, learner_axial_sign, r058_scalar_cma_vs_random, r060_archive_rescreen, r062_stroke_lesion, r065_channel_lesions, r068_capture_curl_confirmation, r073_constant_preload) from the config's research_protocols block")
     parser.add_argument("--build-manifests", action="store_true",
                         help="with --research-protocol: write the protocol's frozen manifests and exit (no Isaac)")
     parser.add_argument("--stage", type=int, default=None, help=argparse.SUPPRESS)  # protocol child process
