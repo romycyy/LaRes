@@ -1,0 +1,128 @@
+{
+  "id": "R-084",
+  "title": "R-043 on the current parent: anatomical versus joint residual coordinates",
+  "hypothesis": "A fixed anatomical synergy decoder aligns small local policy edits with coordinated finger motion better than independent joint coordinates, improving repair without changing the reachable residual-action set.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "logs/pen_spin/d058_r043_current_parent_coordinates/joint_winner",
+    "rationale": "This is the prioritized R-043 branch after D-058, not its former cold-exploration experiment. Compare the two independently screen-selected winners on 80 fresh pairs, requiring mean gain at least 0.05 and paired lower bound above zero. Anonymous coordinate labels isolate numerical action representation from explicit anatomical language. Incumbent adoption separately requires strict promotion and fresh improvement against the current parent, with no additional observed drops."
+  },
+  "protocol": {
+    "script": "scripts/run_full_evolution.py",
+    "config": "config/pen_spin_plateau_repair.yaml",
+    "command": "gpu run 'nohup bash -lc \"source .venv-metaworld/bin/activate && python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study r084_coordinate_repair\" > logs/r084_run.log 2>&1 &'",
+    "seeds": [
+      4671,
+      4672,
+      4673
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_r084_screen_s4672.yaml",
+      "config/manifests/pen_spin_stage3_r084_confirmation_s4673.yaml"
+    ],
+    "episodes": 650,
+    "llm_calls": 32,
+    "code_changes": [
+      "New study module lares/envs/isaac_pen_spin/coordinate_repair.py registered as --study r084_coordinate_repair in scripts/run_full_evolution.py (PEN_SPIN_STUDIES); block r084_coordinate_repair in config/pen_spin_plateau_repair.yaml; llm_pool with 16 workers, gpt-6.1-sol, reasoning_effort high, temperature 1; bc_steps 0. Parent: the D-058 incumbent frozen under config/pen_spin/d058_fixed_stroke_incumbent/ (hashes checked; the qualified zero-curl clamp with its stroke scaled by the fixed 1.4081490516662598).",
+      "Residual contract: a GeneratedPolicy on the new 177-d schema Isaac-ShadowHandSpin-Stage3-ParentScaffold-v0 (the 157-d observation plus parent_action); its mean c (20-d, decoder coordinates) gives the executed action clamp(parent + clamp(D c, -0.15, 0.15), -1, 1), the same joint-space bound and clipping for both arms. D = identity (joint arm) or a frozen full-rank orthonormal 20 x 20 synergy matrix (anatomical arm) built by Gram-Schmidt in the verified action order from: all-finger curl; FF, MF, RF, LF curl; FFJ3, MFJ3, RFJ3 abduction; LFJ4; thumb opposition (THJ4, THJ3); thumb flexion (THJ2, THJ1, THJ0); wrist (WRJ1, WRJ0); completed by the remaining joint directions; written to disk with its sha256 before any call. Both arms see anonymous labels c0-c19 with length-matched numerical documentation. Identity gate: the zero residual reproduces the parent bit for bit on D-050's archived observations, offline. The pipeline child gains a parent_residual actor kind (parent spec, residual source and state, decoder, bound).",
+      "Prompts: one repair request per arm (parent description, archived failure evidence from R-081's constant-gain fresh rows, the residual contract, the coordinate documentation), 8 slots per arm, at most one linked correction each: 16 initial calls, at most 32. Seed 4671 orders slot allocation. Every call is an LLMCallLedger entry.",
+      "Manifests: one frozen 20-case Stage-3 screen manifest (seed 4672) and one frozen 120-case confirmation manifest (seed 4673; cases 0-9 unused, promotion 10-39, fresh 40-119), placement-disjoint from every committed pen-spin manifest; seed 4674 released. Screening: each arm's 8 candidates on the 20 screen cases in one tiled 160-environment process per arm (matched batch shape; invalid candidates score 0 and are charged); finalist per arm by sustained successes, then fewer drops, then slot order, frozen before any confirmation episode. Confirmation: the two finalists and the parent on promotion and fresh, each in its own fresh process. 320 + 330 = 650 episodes.",
+      "Primary: anatomical finalist minus joint finalist fresh sustained success (80 pairs), 95% t interval; at least +0.05; supported if the mean is at least +0.05 and the lower bound is above zero; refuted if the upper bound is below +0.05; otherwise inconclusive. Adoption of either finalist as incumbent: strict promotion against the parent on cases 10-39, fresh lower bound above zero, no more observed drops on either panel. Reported: sustained success, drops, failure split, in-play mean |spin|, saturation, residual-norm statistics, every candidate's validity and screen score, LLM call and token accounting. No cross-study pooling; held-out split untouched."
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "proposed",
+  "source": "advisor",
+  "falsified_by": "A fresh anatomical-minus-joint paired interval entirely below +0.05 refutes the predicted benefit. An interval including zero leaves representation advantage inconclusive; tied success cannot promote either winner.",
+  "cost_estimate": {
+    "episodes": 650,
+    "llm_calls": 32,
+    "wall_time_minutes": 60
+  },
+  "open_question_refs": [
+    0,
+    4,
+    9
+  ],
+  "briefing_sha256": "c94004aca66f6365148f75a3272ec1cc32809f4f5bc01590966d106b543def10",
+  "proposal_call_id": "call_00161",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [],
+  "created_at": "2026-11-04T07:24:17",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "After R-083's administrative adoption, this is the prioritized R-043 repair experiment following activated feedback without improved success, rather than a repeat of deferred cold exploration. Its paired_success_difference prediction is an increase of at least 0.05 against logs/pen_spin/d058_r043_current_parent_coordinates/joint_winner; a fresh upper bound below +0.05 refutes the predicted magnitude, while a zero-spanning interval cannot establish representation advantage. Its weakest point is that one generated cohort tests this frozen search procedure, not a general anatomical-coordinate advantage. Approve 650 simulator episodes and at most 32 LLM calls using scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml as specified, with separate strict parent qualification and no additional observed drops required for adoption.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00162",
+          "briefing_sha256": "a52ea3e32e451dfca847c8d1ef57974a067c2ec0c73c2e50d5109ed5bca4a38f",
+          "at": "2026-11-04T07:25:29"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree on the design and the budget; revise the interface and pin the open details so the record matches what will run. (1) Driver: LLM studies run under .venv-metaworld through scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study r084_coordinate_repair (the PEN_SPIN_STUDIES registry), with llm_pool, 16 workers, gpt-6.1-sol, reasoning_effort high, temperature 1; Isaac evaluation through the pipeline backend in fresh processes. (2) Parent: the D-058 incumbent frozen under config/pen_spin/d058_fixed_stroke_incumbent/ (hashes checked), otherwise the qualified zero-curl clamp. (3) Residual policy: a GeneratedPolicy on a new 177-d schema Isaac-ShadowHandSpin-Stage3-ParentScaffold-v0 (the 157-d observation plus parent_action, the parent's action this step); its mean is a 20-d vector c in decoder coordinates; executed action = clamp(parent + clamp(D c, -0.15, 0.15), -1, 1) with the same joint-space bound 0.15 and clipping for both arms. D is the identity for the joint arm and a frozen full-rank orthonormal 20 x 20 matrix for the anatomical arm, built by Gram-Schmidt from these synergies in the verified action order (WRJ1, WRJ0, FFJ3, MFJ3, RFJ3, LFJ4, THJ4, FFJ2, MFJ2, RFJ2, LFJ3, THJ3, FFJ1, MFJ1, RFJ1, LFJ2, THJ2, LFJ1, THJ1, THJ0): all-finger curl, each finger's curl (FF, MF, RF, LF), each finger's abduction (FFJ3, MFJ3, RFJ3), little-finger palm (LFJ4), thumb opposition (THJ4, THJ3), thumb flexion (THJ2, THJ1, THJ0), wrist (WRJ1, WRJ0), completed by the remaining joint directions; the matrix is written to disk with its hash before any call. Both arms see anonymous coordinate labels c0-c19 and length-matched numerical documentation, so only the basis differs. Identity gate: the zero residual is bit-identical to the parent on D-050's archived observations (CPU, offline). (4) Prompts: one repair request per arm (the parent's description, its archived failure evidence from R-081's constant-gain fresh rows: 38 slow-spin tail failures of 80, drops 4), the residual contract and the coordinate documentation; 8 slots per arm, at most one linked correction each: 16 initial calls, at most 32. Seed 4671 orders slot allocation. (5) Manifests: one frozen 20-case screen manifest (seed 4672) and one frozen 120-case confirmation manifest (seed 4673; cases 0-9 unused, promotion 10-39, fresh 40-119), both placement-disjoint from every committed pen-spin manifest; seed 4674 released. Screening: each arm's 8 candidates on the 20 screen cases in one tiled 160-environment process per arm (matched batch shape); finalist per arm by sustained successes, then fewer drops, then slot order, frozen before any confirmation episode. Confirmation: the two finalists and the parent on promotion and fresh, each in its own process. 320 + 330 = 650 episodes. (6) Primary as proposed: anatomical finalist minus joint finalist fresh success (80 pairs), at least +0.05, supported if the mean is at least +0.05 with the lower bound above zero, refuted if the upper bound is below +0.05. Adoption of either finalist: strict promotion against the parent on cases 10-39, fresh lower bound above zero, no more observed drops. Reported: sustained success, drops, failure split, spin, saturation, residual norm statistics and every candidate's screen score and validity.",
+          "changes_applied": [
+            "run_full_evolution.py --study r084_coordinate_repair with config/pen_spin_plateau_repair.yaml; parent = D-058 incumbent",
+            "ParentScaffold 177-d schema; residual bound 0.15 in joint space for both arms; frozen orthonormal synergy decoder with hash; anonymous labels",
+            "one 20-case screen manifest s4672 and one 120-case confirmation manifest s4673; seed 4674 released; 650 episodes, at most 32 calls"
+          ],
+          "at": "2026-11-04T07:29:08"
+        },
+        "outcome": "disagreed"
+      }
+    ]
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-04T07:29:09",
+      "round": 1,
+      "patch": {
+        "protocol": {
+          "script": "scripts/run_full_evolution.py",
+          "config": "config/pen_spin_plateau_repair.yaml",
+          "command": "gpu run 'nohup bash -lc \"source .venv-metaworld/bin/activate && python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study r084_coordinate_repair\" > logs/r084_run.log 2>&1 &'",
+          "seeds": [
+            4671,
+            4672,
+            4673
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_r084_screen_s4672.yaml",
+            "config/manifests/pen_spin_stage3_r084_confirmation_s4673.yaml"
+          ],
+          "episodes": 650,
+          "llm_calls": 32,
+          "code_changes": [
+            "New study module lares/envs/isaac_pen_spin/coordinate_repair.py registered as --study r084_coordinate_repair in scripts/run_full_evolution.py (PEN_SPIN_STUDIES); block r084_coordinate_repair in config/pen_spin_plateau_repair.yaml; llm_pool with 16 workers, gpt-6.1-sol, reasoning_effort high, temperature 1; bc_steps 0. Parent: the D-058 incumbent frozen under config/pen_spin/d058_fixed_stroke_incumbent/ (hashes checked; the qualified zero-curl clamp with its stroke scaled by the fixed 1.4081490516662598).",
+            "Residual contract: a GeneratedPolicy on the new 177-d schema Isaac-ShadowHandSpin-Stage3-ParentScaffold-v0 (the 157-d observation plus parent_action); its mean c (20-d, decoder coordinates) gives the executed action clamp(parent + clamp(D c, -0.15, 0.15), -1, 1), the same joint-space bound and clipping for both arms. D = identity (joint arm) or a frozen full-rank orthonormal 20 x 20 synergy matrix (anatomical arm) built by Gram-Schmidt in the verified action order from: all-finger curl; FF, MF, RF, LF curl; FFJ3, MFJ3, RFJ3 abduction; LFJ4; thumb opposition (THJ4, THJ3); thumb flexion (THJ2, THJ1, THJ0); wrist (WRJ1, WRJ0); completed by the remaining joint directions; written to disk with its sha256 before any call. Both arms see anonymous labels c0-c19 with length-matched numerical documentation. Identity gate: the zero residual reproduces the parent bit for bit on D-050's archived observations, offline. The pipeline child gains a parent_residual actor kind (parent spec, residual source and state, decoder, bound).",
+            "Prompts: one repair request per arm (parent description, archived failure evidence from R-081's constant-gain fresh rows, the residual contract, the coordinate documentation), 8 slots per arm, at most one linked correction each: 16 initial calls, at most 32. Seed 4671 orders slot allocation. Every call is an LLMCallLedger entry.",
+            "Manifests: one frozen 20-case Stage-3 screen manifest (seed 4672) and one frozen 120-case confirmation manifest (seed 4673; cases 0-9 unused, promotion 10-39, fresh 40-119), placement-disjoint from every committed pen-spin manifest; seed 4674 released. Screening: each arm's 8 candidates on the 20 screen cases in one tiled 160-environment process per arm (matched batch shape; invalid candidates score 0 and are charged); finalist per arm by sustained successes, then fewer drops, then slot order, frozen before any confirmation episode. Confirmation: the two finalists and the parent on promotion and fresh, each in its own fresh process. 320 + 330 = 650 episodes.",
+            "Primary: anatomical finalist minus joint finalist fresh sustained success (80 pairs), 95% t interval; at least +0.05; supported if the mean is at least +0.05 and the lower bound is above zero; refuted if the upper bound is below +0.05; otherwise inconclusive. Adoption of either finalist as incumbent: strict promotion against the parent on cases 10-39, fresh lower bound above zero, no more observed drops on either panel. Reported: sustained success, drops, failure split, in-play mean |spin|, saturation, residual-norm statistics, every candidate's validity and screen score, LLM call and token accounting. No cross-study pooling; held-out split untouched."
+          ],
+          "needs_gpu": true,
+          "needs_llm": true
+        },
+        "cost_estimate": {
+          "episodes": 650,
+          "llm_calls": 32,
+          "wall_time_minutes": 60
+        }
+      },
+      "note": "Round 1 implementer revision: run_full_evolution.py --study interface, D-058 parent, ParentScaffold schema and residual contract, frozen synergy decoder, one screen and one confirmation manifest, seed 4674 released."
+    }
+  ]
+}

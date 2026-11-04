@@ -1,0 +1,47 @@
+{
+  "name": "d058_fixed_stroke_incumbent",
+  "decision": "D-058 / R-083",
+  "construction": "lares.envs.isaac_pen_spin.stroke_feedback.StrokeFeedbackController(protocol_cfg, mode='constant', name, constant=<constant_gain.json['constant']>) built from parent_source.py + state.pt: the R-065 curl_clamp substitution (extra_curl = 0) then '+ rolling * gait' -> '+ self._stroke_gain(spin) * rolling * gait' with the gain fixed at the constant; execution clamp(mean, -1, 1); fixed_action_scale 0.1",
+  "constant": 1.4081491479357957,
+  "constant_repr": "1.4081491479357957",
+  "evaluated_in": {
+    "run": "logs/pen_spin/r081_stroke_feedback",
+    "promotion": {
+      "successes": [
+        16,
+        12
+      ],
+      "difference": 0.1333,
+      "low": 0.0042,
+      "high": 0.2624,
+      "drops": [
+        3,
+        3
+      ]
+    },
+    "fresh": {
+      "successes": [
+        35,
+        23
+      ],
+      "difference": 0.15,
+      "low": 0.0492,
+      "high": 0.2508,
+      "drops": [
+        4,
+        4
+      ]
+    }
+  },
+  "parent": {
+    "qualified_by": "D-057 (R-080)",
+    "source": "config/pen_spin/r046_block3_incumbent/policy_source.py",
+    "substitution": "curl_clamp factor 0.0"
+  },
+  "files": {
+    "parent_source.py": "40782dcdf5a95589d0b34062919728fa92d4e5760fce890e3bd98833285e602d",
+    "state.pt": "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22",
+    "evaluated_source.py": "fdc1da8e2811d94c5bcd1bda2f0e97625a6ea805452e56d65726e587a418c062",
+    "constant_gain.json": "dacec45947d56133b39ca0edb773df4660d73768c0814e85d180e5423b1fcb69"
+  }
+}

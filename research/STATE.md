@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-04T07:20:29 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-04T07:29:32 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -12,14 +12,15 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 | analysed | 0 |
 | running | 0 |
 | approved | 0 |
-| proposed | 0 |
-| deferred | 17 |
-| decided | 58 |
+| proposed | 1 |
+| deferred | 18 |
+| decided | 59 |
 | rejected | 7 |
 
 ## Needs attention
 
-- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
+- **R-084** [proposed] R-043 on the current parent: anatomical versus joint residual coordinates
+  - round 1 closed without a final agreement; next round: `python scripts/research.py triage R-084`
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
@@ -40,9 +41,13 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 - R-078 Give spin feedback direct authority over the raw stroke: Direct stroke scaling tests an authority pathway that scalar tuning did not reach, while the constant-amplitude control distinguishes feedback from stronger ope
 - R-079 Transport the stroke into the pen's instantaneous tangential plane: Geometric stroke transport is distinct from the rotation-correction lesion, and the initial-axis control would separate online transport from static remapping. 
 - R-082 Conditional R-079: transport the stroke with the pen axis: Instantaneous-axis transport versus reset-axis transport isolates online geometric tracking, which the rotation-correction lesion did not test. Defer its 450 si
+- R-085 Conditional R-043: isolate anatomical language grounding: This cleanly separates anatomical language grounding from numerical decoder effects, but its prerequisite is an established R-084 anatomical advantage and paren
 
 ## Last 5 decisions
 
+- D-059 · R-083 · **supported** · 2026-11-04
+  Administrative adoption, on the agreed zero-spend branch, of R-081's constant-gain control as the pen-spin incumbent: the D-057-qualified zero-curl clamp of the frozen R-046 learner with its periodic stroke (the rolling * gait term) scaled by the fixed 1.4081491479357957 and no feedback. Its comparison against the qualified parent in R-081 was prospective, on frozen seed-4663 panels, with no selection among candidates: promotion +0.133 [+0.004, +0.262] (16 vs 12; the strict rule passed), fresh +0.150 [+0.049, +0.251] (35 vs 23), drops equal on both panels (3 vs 3, 4 vs 4); every adoption criterion met, a control designation being no disqualification. No episode, no LLM call, seed 4670 unused and its fallback manifest never built. The exact evaluated artefacts are frozen with sha256 hashes under config/pen_spin/d058_fixed_stroke_incumbent/ (parent source and state, the evaluated substituted source, constant_gain.json, incumbent.json) and verified by scripts/isaac/adopt_fixed_stroke.py. The incumbent's remaining failure mode is slow spin (38 of 80 fresh tail failures) with few drops (4 of 80); R-084 (the R-043 branch) runs on it as parent.
+  Next: R-084 (the R-043 branch) runs on this incumbent as its parent.
 - D-058 · R-081 · **refuted** · 2026-11-04
   Predicted that spin feedback on the qualified zero-curl learner's periodic stroke (gain clip(4 / max(|spin|, 1), 0.5, 2) on the policy's own axial rate) would beat the same gain frozen at its archived mean (1.408 over 65,668 in-play steps) by at least +0.05 fresh sustained success, on a frozen 120-case seed-4663 manifest (promotion 10-39, fresh 40-119; three arms, six processes, 330 episodes, no LLM; identity gate bit for bit). Observed -0.163 [-0.271, -0.054] on 80 fresh pairs (22 vs 35; 4 wins, 17 losses) and -0.233 [-0.422, -0.045] on promotion (9 vs 16): refuted, and the feedback arm is worse than its open-loop control while no different from the parent (-0.013 [-0.095, +0.070]); the feedback was fully active (87% of in-play steps outside [0.9, 1.1], mean gain 1.40) and drops were equal in every arm (3 of 30, 4 of 80). By the predeclared route, activated feedback without a success gain sends priority to R-043. Unpredicted: the constant-gain control, the clamp with its stroke scaled by a fixed 1.408 and no feedback, beats the qualified parent on the promotion panel +0.133 [+0.004, +0.262] (16 vs 12; 4 wins, 0 losses; the strict rule passed) and on the fresh panel +0.150 [+0.049, +0.251] (35 vs 23; 15 wins, 3 losses), with equal drops and slow-spin tail failures 38 vs 52; it meets every numerical adoption criterion prospectively on frozen panels with no selection among candidates, but it was declared a control, so adopting it as the incumbent is a separate triage decision. Instantaneous axial-rate feedback on the stroke is closed as a mechanism; a stronger open-loop stroke is the lead.
   Next: Two things for the next triage. (1) Whether the constant-gain controller (clamp plus stroke x 1.408) becomes the incumbent: it passed the strict promotion rule and fresh confirmation against the qualified parent with no more drops, which is exactly what the direction asks of a winner; if the advisor holds that a control cannot be adopted without a predeclared candidate run, a one-shot confirmation on a fresh panel (parent vs constant gain, 180-220 episodes) settles it. (2) R-043 per the predeclared route, now on whichever parent is current. Instantaneous spin feedback on the stroke is closed; if feedback on the stroke is tried again it should use a per-cycle or low-pass rate, not the instantaneous one.
@@ -55,17 +60,14 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 - D-055 · R-075 · **refuted** · 2026-11-04
   Predicted that a 100 ms first-order low-pass on the frozen R-046 learner's reactive capture curl (mean level unchanged, 0.410 raw vs 0.410 filtered; timing only) would beat the parent by at least +0.10 fresh sustained success on a frozen 200-case seed-4642 manifest (promotion 10-39, fresh 40-199; parent, exact zero-curl clamp and filtered curl, six processes, 570 episodes, no LLM; identity gate bit for bit at alpha 1). Observed -0.094 [-0.170, -0.018] on 160 fresh pairs (24 vs 39; 12 wins, 27 losses): refuted, and the filtered controller is worse than the parent, with more drops (29 vs 21 fresh; 10 vs 1 on promotion, +0.300 [+0.126, +0.474], an established increase that refutes the retention claim separately). Against the zero-curl clamp it is far worse (-0.169 [-0.258, -0.079]; drops 29 vs 6; promotion 4 vs 13). The delayed curl spins the pen fastest of the three arms (5.59 rad/s fresh) and loses it most: compressing late is worse than compressing promptly, and both are worse than not compressing. With D-052 and D-054 the curl question is closed: remove the reactive curl; do not replace it by a constant, and do not retime it. Secondary: the zero-curl clamp beat the parent on a third independent fresh panel (51 vs 39, +0.075 [-0.022, +0.172]; drops 6 vs 21; off-centre 8 vs 43) and on the promotion panel (13 vs 6, +0.233 [-0.020, +0.487]), missing the strict 30-case rule by 0.02 as it missed it by 0.006 in R-068 and tied in R-073; pooled over the three fresh panels (480 pairs, not predeclared) it is 148 vs 101 (+0.098) with drops 23 vs 68, every panel positive. Whether that pooled evidence qualifies the clamp as the repair parent for the deferred stroke-side ideas (R-064, R-070, R-076) or a larger promotion panel is needed first is the next triage's question.
   Next: Close the curl question: remove, do not reshape or retime. The zero-curl clamp has now beaten the parent on three independent fresh panels (all positive, pooled +0.098 over 480 pairs, drops cut by two thirds) and on two of three promotion panels, missing the strict 30-case rule each time by 0.006-0.02; the advisor and I should decide at the next triage whether the pooled fresh evidence qualifies it as the repair parent for the deferred stroke-side ideas (R-064 timing feedback, R-070 synchronous unloading, R-076 waveform shaping), or whether a 90-case promotion panel is needed first.
-- D-054 · R-073 · **refuted** · 2026-11-04
-  Predicted that a frozen constant grasp preload (0.2266, the median of the parent's own extra_curl over 59,315 archived R-068 in-play steps, frozen with provenance before any episode) in place of the reactive capture curl would beat the exact zero-curl clamp by at least +0.10 fresh sustained success on a frozen 200-case seed-4631 manifest (promotion 10-39, fresh 40-199; three arms, six processes, 570 episodes, no LLM). Observed 0.000 [-0.086, +0.086] (45/160 vs 45/160; 24 wins, 24 losses, 112 ties): the upper bound is below +0.10, the predeclared refutation. The preload recovers spin rate (5.75 vs 4.30 rad/s; slow-spin failures 80 vs 97) but doubles the clamp's drops (20 vs 10; +0.063 [+0.017, +0.108], established) and off-centre failures (15 vs 8): static compression trades retention for spin one for one at this level, and no arm qualifies as a repair parent (promotion: preload 2/30, clamp 6/30, parent 6/30). Secondary: the zero-curl clamp's advantage over the parent (D-052) replicated on new cases in drops (10 vs 26) and off-centre failures (8 vs 43), with a smaller success gain (+0.069 [-0.024, +0.162], 45 vs 34; promotion tied 6 vs 6); pooled over the R-068 and R-073 fresh panels the clamp is 97 vs 62 of 320 (+0.109) with 17 vs 47 drops. The parent's capture curl thus has a useful static component and a harmful reactive one that cancel on success at the median level; other preload levels were not run. The lever for more spin on the zero-curl operating point is the stroke, not compression.
-  Next: Do not spend more episodes on preload levels: the clamp's retention gain and the preload's spin gain are the same lever pulled in opposite directions. The way to raise spin on the zero-curl operating point without reintroducing compression is the stroke itself (deferred R-064 timing feedback, R-070 stroke-synchronous unloading); the zero-curl clamp is the parent for those, qualified by its replicated drop reduction and a pooled +0.109 over 320 fresh pairs even though it missed the strict 30-case rule by 0.006 and tied the parent on this block's promotion panel.
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
+- R-084 round 1 · advisor approve / implementer revise → disagreed (proposed)
+- R-085 round 1 · advisor defer / implementer defer → agreed (deferred)
+- R-083 round 1 · advisor approve / implementer approve → agreed (approved)
 - R-081 round 3 · advisor approve / implementer approve → agreed (approved)
 - R-081 round 2 · advisor approve / implementer revise → disagreed (proposed)
-- R-080 round 2 · advisor approve / implementer approve → agreed (approved)
-- R-080 round 1 · advisor approve / implementer revise → disagreed (proposed)
-- R-082 round 1 · advisor defer / implementer defer → agreed (deferred)
 
 ## Standing constraints
 

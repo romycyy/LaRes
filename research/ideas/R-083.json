@@ -1,0 +1,243 @@
+{
+  "id": "R-083",
+  "title": "Adopt the fixed-stroke control, with one-shot confirmation only if required",
+  "hypothesis": "Increasing the periodic stroke by the frozen factor 1.408 restores sustained axial rotation without the destabilizing modulation introduced by instantaneous spin feedback.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "logs/pen_spin/r080_zero_curl_qualification_90",
+    "rationale": "Highest information per episode because it settles incumbent eligibility. Prefer direct adoption of the exact R-081 constant-gain control: its prospectively frozen comparisons already passed promotion and fresh confirmation without candidate selection. Execute this fallback only if triage rules its control designation disqualifying. On the new fresh panel, require mean gain at least 0.05 and paired lower bound above zero; promotion independently requires its paired lower bound above zero."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "(administrative) python scripts/isaac/adopt_fixed_stroke.py  # freezes config/pen_spin/d058_fixed_stroke_incumbent/, no episode",
+    "seeds": [],
+    "manifests": [],
+    "episodes": 0,
+    "llm_calls": 0,
+    "code_changes": [
+      "config/shadowhand_spin_stages.yaml: add d058_fixed_stroke_confirmation; freeze the exact R-081 constant-gain source and qualified zero-curl parent with hashes before execution; no candidate selection, historical pooling, extension or retry.",
+      "config/manifests/pen_spin_d058_fixed_stroke_s4670.yaml: freeze 120 cases; evaluate both controllers on promotion cases 10-39 and fresh cases 40-119.",
+      "scripts/run_shadowhand_spin_stages.py: reuse existing paired-study machinery and archived-observation identity gates; report sustained success, paired drop differences and intervals, and saturation by axis on both panels. If direct adoption is agreed, skip this study entirely, consume no seed and spend zero episodes."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "decided",
+  "source": "advisor",
+  "falsified_by": "A fresh paired interval entirely below +0.05 refutes the predicted gain; an established increase in drops refutes safe strengthening. An interval including zero is inconclusive, not improvement. Any increase in observed drops blocks adoption under this protocol.",
+  "cost_estimate": {
+    "episodes": 220,
+    "llm_calls": 0,
+    "wall_time_minutes": 30
+  },
+  "open_question_refs": [
+    0,
+    4
+  ],
+  "briefing_sha256": "c94004aca66f6365148f75a3272ec1cc32809f4f5bc01590966d106b543def10",
+  "proposal_call_id": "call_00161",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-04T07:26:10",
+    "advisor_call_id": "call_00162",
+    "round": 1,
+    "note": "Approve direct adoption of the exact R-081 constant-gain control: D-058 already passed prospective promotion and fresh confirmation with equal observed drops, and being designated a control is not a standing disqualification. The stated paired_success_difference prediction is an increase of at least"
+  },
+  "run": {
+    "started_at": "2026-11-04T07:28:23",
+    "git_sha": "eb7ba15aad5981fcd0dbbf4f66f1fee5f0bc25d4",
+    "dirty_worktree": true,
+    "log_dir": "config/pen_spin/d058_fixed_stroke_incumbent",
+    "finished_at": "2026-11-04T07:28:26"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.15,
+      "paired_success_difference_ci95": [
+        0.04922558479834899,
+        0.250774415201651
+      ],
+      "fresh_constant_gain_minus_zero_curl": {
+        "success": {
+          "n": 80,
+          "mean": 0.15,
+          "se": 0.05062895554167107,
+          "low": 0.04922558479834899,
+          "high": 0.250774415201651,
+          "p_value": 0.004027375872835522
+        },
+        "win_loss_tie": {
+          "wins": 15,
+          "losses": 3,
+          "ties": 62
+        },
+        "drops": {
+          "n": 80,
+          "mean": 0.0,
+          "se": 0.0,
+          "low": 0.0,
+          "high": 0.0,
+          "p_value": 1.0
+        },
+        "drop_counts": [
+          4,
+          4
+        ]
+      },
+      "promotion_constant_gain_minus_zero_curl": {
+        "success": {
+          "n": 30,
+          "mean": 0.13333333333333333,
+          "se": 0.06312427686319992,
+          "low": 0.004229691154525289,
+          "high": 0.2624369755121414,
+          "p_value": 0.043397417810775565
+        },
+        "win_loss_tie": {
+          "wins": 4,
+          "losses": 0,
+          "ties": 26
+        },
+        "drops": {
+          "n": 30,
+          "mean": 0.0,
+          "se": 0.0,
+          "low": 0.0,
+          "high": 0.0,
+          "p_value": 1.0
+        },
+        "drop_counts": [
+          3,
+          3
+        ],
+        "promotes": true
+      },
+      "constant": 1.4081491479357957,
+      "asset_files": {
+        "parent_source.py": "40782dcdf5a95589d0b34062919728fa92d4e5760fce890e3bd98833285e602d",
+        "state.pt": "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22",
+        "evaluated_source.py": "fdc1da8e2811d94c5bcd1bda2f0e97625a6ea805452e56d65726e587a418c062",
+        "constant_gain.json": "dacec45947d56133b39ca0edb773df4660d73768c0814e85d180e5423b1fcb69"
+      },
+      "episodes": 0,
+      "llm_calls": 0
+    },
+    "controls": {
+      "source_of_numbers": "R-081 (D-058): the prospectively frozen seed-4663 panels, no selection among candidates; the zero-curl parent qualified by D-057",
+      "provenance": "config/pen_spin/d058_fixed_stroke_incumbent/ holds the parent source and state, the evaluated substituted source, constant_gain.json with the exact float, and incumbent.json with each file's sha256; scripts/isaac/adopt_fixed_stroke.py verifies them"
+    },
+    "artifacts": [
+      "config/pen_spin/d058_fixed_stroke_incumbent/incumbent.json",
+      "config/pen_spin/d058_fixed_stroke_incumbent/evaluated_source.py",
+      "config/pen_spin/d058_fixed_stroke_incumbent/constant_gain.json",
+      "logs/pen_spin/r081_stroke_feedback/summary.json"
+    ],
+    "notes": [
+      "Administrative adoption on the agreed zero-spend branch: no episode, no LLM call, seed 4670 unused and its fallback manifest never built. The numbers are R-081's: promotion +0.133 [+0.004, +0.262] (16 vs 12; strict rule passed), fresh +0.150 [+0.049, +0.251] (35 vs 23), drops equal on both panels (3 vs 3, 4 vs 4).",
+      "The incumbent is the qualified zero-curl clamp of the frozen R-046 learner with its periodic stroke (the rolling * gait term) scaled by the fixed 1.4081490516662598 and no feedback. Its remaining failure mode is slow spin (38 of 80 fresh tail failures) with few drops (4 of 80)."
+    ]
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.15,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "supported",
+      "confidence": 0.9,
+      "reasoning": "Administrative adoption on the agreed zero-spend branch. The prediction (at least +0.05 fresh against the D-057-qualified parent, lower bound above zero, no more drops) is met by R-081's prospectively frozen comparison with no selection among candidates: fresh +0.150 [+0.049, +0.251] (35 vs 23), promotion +0.133 [+0.004, +0.262] (16 vs 12, strict rule passed), drops equal. The exact evaluated controller is frozen with hashes under config/pen_spin/d058_fixed_stroke_incumbent/ and verified by scripts/isaac/adopt_fixed_stroke.py. Confidence 0.9: one block of panels, one learner.",
+      "cited_artifacts": [],
+      "next_experiment": "R-084 (the R-043 branch) runs on this incumbent as its parent.",
+      "recorded_at": "2026-11-04T07:28:28",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "supported",
+      "confidence": 0.96,
+      "reasoning": "Against the named qualified zero-curl control, paired_success_difference was +0.150 with a 95% interval of [+0.04923, +0.25077], satisfying the approved rule of mean gain at least +0.05 and a lower bound above zero [logs/pen_spin/r081_stroke_feedback/summary.json]. The interval spans +0.05, so that minimum population gain is not itself established [logs/pen_spin/r081_stroke_feedback/summary.json]. Promotion also passed at +0.1333 [+0.00423, +0.26244], with equal observed drops on promotion (3 versus 3) and fresh cases (4 versus 4), so the drop-based adoption blocker was not triggered [logs/pen_spin/r081_stroke_feedback/summary.json]. This administrative adoption reuses the archived comparison rather than adding independent confirmation [config/pen_spin/d058_fixed_stroke_incumbent/incumbent.json; logs/pen_spin/r081_stroke_feedback/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r081_stroke_feedback/summary.json",
+        "config/pen_spin/d058_fixed_stroke_incumbent/incumbent.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-04T07:29:05",
+      "call_id": "call_00163"
+    }
+  ],
+  "decision_id": "D-059",
+  "history": [
+    {
+      "at": "2026-11-04T07:26:10",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 1: both say approve"
+    },
+    {
+      "at": "2026-11-04T07:28:23",
+      "from": "approved",
+      "to": "running",
+      "note": "git eb7ba15aad (dirty)"
+    },
+    {
+      "at": "2026-11-04T07:28:26",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-04T07:29:32",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-059: supported"
+    }
+  ],
+  "created_at": "2026-11-04T07:24:17",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "Approve direct adoption of the exact R-081 constant-gain control: D-058 already passed prospective promotion and fresh confirmation with equal observed drops, and being designated a control is not a standing disqualification. The stated paired_success_difference prediction is an increase of at least 0.05 against logs/pen_spin/r080_zero_curl_qualification_90; a fresh upper bound below +0.05 would refute that magnitude, and any observed drop increase would block adoption. The weakest point is provenance, so adoption must preserve the exact evaluated source and hash rather than reconstruct an equivalent controller. Select the protocol's zero-spend branch: 0 simulator episodes, 0 LLM calls, no fallback run, and seed 4670 remains unused.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00162",
+          "briefing_sha256": "a52ea3e32e451dfca847c8d1ef57974a067c2ec0c73c2e50d5109ed5bca4a38f",
+          "at": "2026-11-04T07:25:29"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve the zero-spend branch: direct adoption of the exact R-081 constant-gain controller (the qualified zero-curl clamp with its periodic stroke scaled by the frozen 1.4081490516662598, no feedback). Its comparison against the qualified parent was prospective, on frozen panels, with no selection among candidates, and met every adoption criterion (strict promotion +0.133 [+0.004, +0.262], fresh +0.150 [+0.049, +0.251], equal drops); a control designation is not a disqualification. Provenance: the adoption freezes the exact evaluated artefacts under config/pen_spin/d058_fixed_stroke_incumbent/ (the parent source and state with their hashes, the evaluated substituted source logs/pen_spin/r081_stroke_feedback/stroke_feedback_source.py, constant_gain.json with the exact float, and an incumbent.json naming the controller construction StrokeFeedbackController(mode constant, constant 1.4081490516662598) and the sha256 of each file), so future studies load the evaluated controller rather than reconstruct an equivalent. No episode, no LLM call, seed 4670 unused; recorded as an administrative decision with R-081's numbers as its result.",
+          "changes_applied": [],
+          "at": "2026-11-04T07:26:10"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-04T11:10:00",
+      "round": 1,
+      "patch": {
+        "protocol": {
+          "manifests": [],
+          "seeds": [],
+          "episodes": 0
+        }
+      },
+      "note": "Mechanical, after the agreed zero-spend branch (advisor call_00162, implementer approve): direct adoption, no fallback run; the fallback manifest and seed 4670 are dropped so the protocol check matches what was agreed."
+    }
+  ]
+}

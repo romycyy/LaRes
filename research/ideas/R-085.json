@@ -1,0 +1,97 @@
+{
+  "id": "R-085",
+  "title": "Conditional R-043: isolate anatomical language grounding",
+  "hypothesis": "Correct descriptions of finger-function coordinates improve LLM residual repairs through anatomical language grounding beyond any benefit supplied by the numerical decoder alone.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "logs/pen_spin/d058_r043_coordinate_grounding/opaque_winner",
+    "rationale": "Ranked third because this attributes an R-043 effect rather than resolving incumbent choice or representation usefulness. Run only after the preceding anatomical arm establishes an advantage and qualifies against its parent. Both arms use exactly the same anatomical decoder and constraints; only accurate anatomical descriptions versus opaque coordinate documentation differ. Require fresh mean gain at least 0.05 with paired lower bound above zero."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run \"bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --study d058_r043_coordinate_grounding'\"",
+    "seeds": [
+      4675,
+      4676,
+      4677,
+      4678
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_r043_grounding_screen_s4676.yaml",
+      "config/manifests/pen_spin_r043_grounding_screen_s4677.yaml",
+      "config/manifests/pen_spin_r043_grounding_confirmation_s4678.yaml"
+    ],
+    "episodes": 650,
+    "llm_calls": 32,
+    "code_changes": [
+      "config/shadowhand_spin_stages.yaml: add d058_r043_coordinate_grounding with the preceding study's positive-result prerequisite; otherwise defer without spending. Freeze the then-current incumbent, decoder, residual constraints and evidence packet identically across arms.",
+      "scripts/run_shadowhand_spin_stages.py: reuse the R-043 study hooks; vary only accurate anatomical coordinate names and functional descriptions versus opaque names and length-matched numerical documentation. Keep executable decoder, observation access, prompts' repair objectives and raw-joint action limits identical.",
+      "config/shadowhand_spin_stages.yaml: use llm_pool with 16 workers, gpt-6.1-sol, reasoning_effort=high, temperature=1, bc_steps=0; eight candidates per arm, 16 initial calls and at most 16 linked corrections. Seed 4675 controls balanced generation allocation. Run only after the preceding protocol finishes.",
+      "config/manifests/pen_spin_r043_grounding_screen_s4676.yaml: ten common screening cases.",
+      "config/manifests/pen_spin_r043_grounding_screen_s4677.yaml: ten additional common screening cases; 320 screening episodes, with finalists selected by sustained success, then fewer drops, then slot order.",
+      "config/manifests/pen_spin_r043_grounding_confirmation_s4678.yaml: freeze both finalists before 330 episodes comparing them and the current parent on promotion cases 10-39 and fresh cases 40-119. Report sustained success, paired drops and saturation; adopt only with strict promotion, fresh improvement and no additional observed drops."
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "A fresh grounded-minus-opaque paired interval entirely below +0.05 refutes the predicted grounding benefit. An interval including zero is inconclusive. Decoder benefit without a grounding difference would not establish a language-semantic mechanism.",
+  "cost_estimate": {
+    "episodes": 650,
+    "llm_calls": 32,
+    "wall_time_minutes": 75
+  },
+  "open_question_refs": [
+    0,
+    9
+  ],
+  "briefing_sha256": "c94004aca66f6365148f75a3272ec1cc32809f4f5bc01590966d106b543def10",
+  "proposal_call_id": "call_00161",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T07:26:12",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-04T07:24:17",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "This cleanly separates anatomical language grounding from numerical decoder effects, but its prerequisite is an established R-084 anatomical advantage and parent qualification. Its paired_success_difference prediction is an increase of at least 0.05 against logs/pen_spin/d058_r043_coordinate_grounding/opaque_winner; a fresh upper bound below +0.05 refutes that magnitude, and a zero-spanning interval cannot establish grounding benefit. The weakest point is spending another 650 simulator episodes and at most 32 LLM calls on attribution before representation has demonstrated usefulness; spend nothing now and preserve seeds 4675-4678.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00162",
+          "briefing_sha256": "a52ea3e32e451dfca847c8d1ef57974a067c2ec0c73c2e50d5109ed5bca4a38f",
+          "at": "2026-11-04T07:25:29"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree to defer: grounding attribution only matters once R-084 shows a representation advantage that qualifies against the parent; seeds 4675-4678 stay unspent.",
+          "changes_applied": [],
+          "at": "2026-11-04T07:26:12"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

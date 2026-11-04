@@ -1,0 +1,15 @@
+{
+  "constant": 1.4081491479357957,
+  "steps": 65668,
+  "quartiles": [
+    0.8173816103667316,
+    1.602898833331698,
+    2.0
+  ],
+  "active_fraction": 0.8892763598708656,
+  "rule": "arithmetic mean of clip(4 / max(|spin|, 1), 0.5, 2) over the clamp's archived in-play steps",
+  "archives": {
+    "logs/pen_spin/r068_capture_curl_confirmation/zero_curl_fresh.npz": "91ec7cda5cec7def0752ed553bf2b571de1e7f1802760a2085daa803060e6b6c",
+    "logs/pen_spin/r068_capture_curl_confirmation/zero_curl_promotion.npz": "d0916ba20adb5de72351493247291485b5a541ada5f1f257e0957499fb409b21"
+  }
+}
