@@ -13,16 +13,7 @@
     "script": "scripts/run_shadowhand_spin_stages.py",
     "config": "config/shadowhand_spin_stages.yaml",
     "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r058_scalar_cma_vs_random --log-dir logs/pen_spin/r058_scalar_cma_vs_random\"'",
-    "seeds": [
-      4510,
-      4511,
-      4512,
-      4513,
-      4514,
-      4515,
-      4516,
-      4517
-    ],
+    "seeds": [],
     "manifests": [
       "config/manifests/pen_spin_stage3_r058_block_s4510.yaml",
       "config/manifests/pen_spin_stage3_r058_block_s4511.yaml",
@@ -49,7 +40,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The upper bound of the paired 95% t interval for CMA-ES-minus-random fresh sustained success is below +0.10. Support requires a difference of at least +0.10 with an interval lower bound above zero; otherwise the result is inconclusive. Increased drops independently prevent adoption.",
   "cost_estimate": {
@@ -69,17 +60,571 @@
     "round": 3,
     "note": "I accept the implementer's revision: fresh, never-told pycma instances with identical options and boundary handling resolve the remaining sampling-prior confound. Reusing scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, the 12,000-episode, zero-LLM-call protocol on free "
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-11-04T03:08:14",
+    "git_sha": "ad01a0833d6918b7192e99786c4a6164382be9ec",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r058_scalar_cma_vs_random",
+    "finished_at": "2026-11-04T04:15:29"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.003124999999999996,
+      "paired_success_difference_ci95": [
+        -0.0762164089490264,
+        0.08246640894902638
+      ],
+      "cma_minus_random_fresh": {
+        "per_block": [
+          0.175,
+          -0.04999999999999999,
+          -0.12499999999999997,
+          -0.04999999999999999,
+          -0.025000000000000022,
+          0.09999999999999998,
+          0.024999999999999994,
+          -0.025000000000000022
+        ],
+        "n": 8,
+        "mean": 0.003124999999999996,
+        "se": 0.03355349540020276,
+        "low": -0.0762164089490264,
+        "high": 0.08246640894902638,
+        "p_value": 0.9284060163077056
+      },
+      "cma_minus_random_fresh_drops": {
+        "per_block": [
+          2.0,
+          1.0,
+          -3.0,
+          1.0,
+          0.0,
+          2.0,
+          -1.0,
+          -1.0
+        ],
+        "n": 8,
+        "mean": 0.125,
+        "se": 0.6105471784742413,
+        "low": -1.3187146649617392,
+        "high": 1.5687146649617392,
+        "p_value": 0.8436054350779514
+      },
+      "cma_winner_minus_parent_fresh": {
+        "per_block": [
+          0.04999999999999999,
+          0.0,
+          0.024999999999999994,
+          -0.024999999999999994,
+          -0.07500000000000001,
+          0.025000000000000022,
+          0.0,
+          -0.05000000000000002
+        ],
+        "n": 8,
+        "mean": -0.006250000000000002,
+        "se": 0.014752421108802058,
+        "low": -0.041133932723582664,
+        "high": 0.028633932723582656,
+        "p_value": 0.6845283355605283
+      },
+      "cma_winner_minus_parent_fresh_drops": {
+        "per_block": [
+          1.0,
+          -1.0,
+          -2.0,
+          1.0,
+          0.0,
+          0.0,
+          1.0,
+          -1.0
+        ],
+        "n": 8,
+        "mean": -0.125,
+        "se": 0.3980981573144277,
+        "low": -1.0663525573000951,
+        "high": 0.8163525573000951,
+        "p_value": 0.7626770646286338
+      },
+      "cma_winner_minus_parent_promotion": {
+        "per_block": [
+          0.03333333333333333,
+          0.0,
+          0.03333333333333333,
+          -0.06666666666666667,
+          -0.1,
+          0.13333333333333333,
+          0.0,
+          0.06666666666666667
+        ],
+        "n": 8,
+        "mean": 0.012499999999999999,
+        "se": 0.02592533540521734,
+        "low": -0.048803676829853974,
+        "high": 0.07380367682985398,
+        "p_value": 0.6444071578961849
+      },
+      "random_winner_minus_parent_fresh": {
+        "per_block": [
+          -0.125,
+          0.04999999999999999,
+          0.14999999999999997,
+          0.024999999999999994,
+          -0.04999999999999999,
+          -0.07499999999999996,
+          -0.024999999999999994,
+          -0.024999999999999994
+        ],
+        "n": 8,
+        "mean": -0.009374999999999998,
+        "se": 0.029857361798582074,
+        "low": -0.07997644179750713,
+        "high": 0.061226441797507136,
+        "p_value": 0.7626770646286338
+      },
+      "random_winner_minus_parent_fresh_drops": {
+        "per_block": [
+          -1.0,
+          -2.0,
+          1.0,
+          0.0,
+          0.0,
+          -2.0,
+          2.0,
+          0.0
+        ],
+        "n": 8,
+        "mean": -0.25,
+        "se": 0.4909902530309828,
+        "low": -1.4110074596127395,
+        "high": 0.9110074596127395,
+        "p_value": 0.6262832660486098
+      },
+      "random_winner_minus_parent_promotion": {
+        "per_block": [
+          -0.03333333333333333,
+          0.06666666666666667,
+          -0.03333333333333333,
+          0.03333333333333333,
+          -0.1,
+          0.1,
+          0.06666666666666667,
+          0.03333333333333333
+        ],
+        "n": 8,
+        "mean": 0.016666666666666666,
+        "se": 0.023570226039551584,
+        "low": -0.03906806144198076,
+        "high": 0.07240139477531408,
+        "p_value": 0.502354017079918
+      },
+      "promotions": {
+        "cma_winner": [
+          4515
+        ],
+        "random_winner": []
+      },
+      "qualifying_repair_parents": {
+        "cma_winner": [],
+        "random_winner": []
+      },
+      "feedback_activated_blocks": {
+        "cma_winner": [],
+        "random_winner": []
+      },
+      "cma_winner_feedback_unsaturated_gain": {
+        "per_block": [
+          0.13915172353760447,
+          0.09440957250607344,
+          -0.03835619777158774,
+          0.0032033426183843946,
+          0.07512239385498438,
+          0.07671600216189248,
+          0.01142061281337047,
+          0.0025790901099778858
+        ],
+        "n": 8,
+        "mean": 0.04553081747883747,
+        "se": 0.02106079095753649,
+        "low": -0.004270039577079332,
+        "high": 0.09533167453475427,
+        "p_value": 0.0674209271239758
+      },
+      "random_winner_feedback_unsaturated_gain": {
+        "per_block": [
+          -0.008565459610027849,
+          0.013583202961040949,
+          0.039986420612813364,
+          0.026740947075208917,
+          0.01019759749303622,
+          0.009376169292811713,
+          -0.016103760445682465,
+          0.00289157917291622
+        ],
+        "n": 8,
+        "mean": 0.009763337069014635,
+        "se": 0.006365190569154866,
+        "low": -0.00528794691681864,
+        "high": 0.02481462105484791,
+        "p_value": 0.16893274293859625
+      },
+      "controllers": {
+        "cma_winner": {
+          "promotion": {
+            "success_mean": 0.2333333333333333,
+            "success_per_block": [
+              0.23333333333333334,
+              0.26666666666666666,
+              0.3,
+              0.03333333333333333,
+              0.16666666666666666,
+              0.3333333333333333,
+              0.26666666666666666,
+              0.26666666666666666
+            ],
+            "successes_total": 56,
+            "drops_total": 35,
+            "drive_saturated_fraction_per_block": [
+              0.8650802314157843,
+              0.9630471297302639,
+              0.9976776100496147,
+              0.9333333333333333,
+              0.7791824694479562,
+              0.9853956976514703,
+              0.9534807713258525,
+              0.993386916268186
+            ],
+            "action_saturated_fraction_per_block": [
+              0.05976421788014409,
+              0.058650330994960975,
+              0.060878285653963894,
+              0.06833004602235372,
+              0.07341445427728614,
+              0.07608052101835405,
+              0.06371609107745942,
+              0.07115169396683284
+            ]
+          },
+          "fresh": {
+            "success_mean": 0.21875,
+            "success_per_block": [
+              0.25,
+              0.25,
+              0.225,
+              0.125,
+              0.175,
+              0.375,
+              0.175,
+              0.175
+            ],
+            "successes_total": 70,
+            "drops_total": 46,
+            "drive_saturated_fraction_per_block": [
+              0.8244599694852646,
+              0.8729342927176406,
+              0.9812848521885265,
+              0.9630880579010856,
+              0.8510990928122819,
+              0.9036755386565273,
+              0.9281182234358686,
+              0.9925826560404009
+            ],
+            "action_saturated_fraction_per_block": [
+              0.06501244679996789,
+              0.06084842255080256,
+              0.06505614544343442,
+              0.06417772416566143,
+              0.07397505233775296,
+              0.07024155669872512,
+              0.06638422616657297,
+              0.06455456482285173
+            ]
+          }
+        },
+        "random_winner": {
+          "promotion": {
+            "success_mean": 0.2375,
+            "success_per_block": [
+              0.16666666666666666,
+              0.3333333333333333,
+              0.23333333333333334,
+              0.13333333333333333,
+              0.16666666666666666,
+              0.3,
+              0.3333333333333333,
+              0.23333333333333334
+            ],
+            "successes_total": 57,
+            "drops_total": 34,
+            "drive_saturated_fraction_per_block": [
+              0.9967351237493418,
+              0.9661033698982113,
+              0.9951483696265373,
+              0.9095313204146012,
+              0.9416873449131513,
+              0.9943997556257,
+              0.9911411094705759,
+              0.9497967479674797
+            ],
+            "action_saturated_fraction_per_block": [
+              0.06034755134281201,
+              0.06151793655499555,
+              0.061446462822971906,
+              0.05408404686795854,
+              0.06760658696142567,
+              0.07283372365339578,
+              0.057076566125290024,
+              0.060823170731707316
+            ]
+          },
+          "fresh": {
+            "success_mean": 0.21562499999999998,
+            "success_per_block": [
+              0.075,
+              0.3,
+              0.35,
+              0.175,
+              0.2,
+              0.275,
+              0.15,
+              0.2
+            ],
+            "successes_total": 69,
+            "drops_total": 45,
+            "drive_saturated_fraction_per_block": [
+              0.9942621069543264,
+              0.9615776679996864,
+              0.8871499176276771,
+              0.9374901960784314,
+              0.9324901875272569,
+              0.9768485539250605,
+              0.9652983844378503,
+              0.9870183222413935
+            ],
+            "action_saturated_fraction_per_block": [
+              0.06895034809884477,
+              0.05847643691680389,
+              0.06207990115321252,
+              0.06586274509803922,
+              0.059058002616659395,
+              0.07439093888018236,
+              0.06819155951203429,
+              0.06014707090625257
+            ]
+          }
+        },
+        "parent": {
+          "promotion": {
+            "success_mean": 0.22083333333333333,
+            "success_per_block": [
+              0.2,
+              0.26666666666666666,
+              0.26666666666666666,
+              0.1,
+              0.26666666666666666,
+              0.2,
+              0.26666666666666666,
+              0.2
+            ],
+            "successes_total": 53,
+            "drops_total": 38,
+            "drive_saturated_fraction_per_block": [
+              0.9882468168462292,
+              0.9596042027950628,
+              0.9922105263157894,
+              0.976921274601687,
+              0.9546889089269612,
+              0.9877280625543006,
+              0.9491340812547653,
+              0.9599308451133937
+            ],
+            "action_saturated_fraction_per_block": [
+              0.058140167591685714,
+              0.05535550341732123,
+              0.061905263157894734,
+              0.05931935332708529,
+              0.06315374211000901,
+              0.06706125108601216,
+              0.05944886177976255,
+              0.06398352486524966
+            ]
+          },
+          "fresh": {
+            "success_mean": 0.225,
+            "success_per_block": [
+              0.2,
+              0.25,
+              0.2,
+              0.15,
+              0.25,
+              0.35,
+              0.175,
+              0.225
+            ],
+            "successes_total": 72,
+            "drops_total": 47,
+            "drive_saturated_fraction_per_block": [
+              0.9844912665465654,
+              0.9838126540673788,
+              0.9369497977635023,
+              0.9676230793352149,
+              0.9434209377455689,
+              0.9861617439178633,
+              0.9426891415131321,
+              0.990034590676989
+            ],
+            "action_saturated_fraction_per_block": [
+              0.06711443565442156,
+              0.05415776499589154,
+              0.06555634863986042,
+              0.06714487300094073,
+              0.06317122151401379,
+              0.06411353321925452,
+              0.06618972951783614,
+              0.05860237193213639
+            ]
+          }
+        }
+      },
+      "screen_dynamics_pooled": {
+        "cma": {
+          "mean_candidate_successes_of_10_gen0": 1.796875,
+          "mean_candidate_successes_of_10_gen7": 2.53125,
+          "mean_candidate_successes_of_10_gens0_3": 2.03125,
+          "mean_candidate_successes_of_10_gens4_7": 2.3671875,
+          "screen_drops_per_80_episode_generation_gens0_3": 14.09375,
+          "screen_drops_per_80_episode_generation_gens4_7": 12.6875,
+          "winner_screen_success_mean": 0.4375,
+          "winner_promotion_success_mean": 0.23333333333333334,
+          "duplicate_candidates_total": 0
+        },
+        "random": {
+          "mean_candidate_successes_of_10_gen0": 2.03125,
+          "mean_candidate_successes_of_10_gen7": 2.015625,
+          "mean_candidate_successes_of_10_gens0_3": 1.93359375,
+          "mean_candidate_successes_of_10_gens4_7": 2.02734375,
+          "screen_drops_per_80_episode_generation_gens0_3": 15.03125,
+          "screen_drops_per_80_episode_generation_gens4_7": 14.9375,
+          "winner_screen_success_mean": 0.4,
+          "winner_promotion_success_mean": 0.2375,
+          "duplicate_candidates_total": 0
+        },
+        "parent_screen_success_mean": 0.225
+      },
+      "blocks": 8,
+      "episodes": 12000,
+      "llm_calls": 0,
+      "pycma_version": "4.5.0"
+    },
+    "controls": {
+      "parent": "the unchanged frozen R-046 block-3 learner, scored in its own process on every promotion and fresh manifest (and on each block's 10 screen cases)",
+      "random_arm": "frozen copy of the CMA-ES initial sampling law: a fresh pycma instance per generation (identical options and BoundTransform bounds), asked once, never told",
+      "matched_batches": "every generation of either arm ran in one fresh Isaac process of 8 candidates x 10 screen cases = 80 environments; winners and the parent in their own processes per manifest",
+      "frozen_before_promotion": "each arm's winner.json and the block's winners.json were written before any promotion or fresh episode; fresh cases selected nothing",
+      "decision_artifact": {
+        "rule": {
+          "repair_parent": "strict promotion on cases 10-39, fresh success interval lower bound above zero, and no more fresh drops than the parent, in the same block",
+          "feedback_activated": "unsaturated in-play drive fraction up by at least 0.25 versus the parent on the fresh cases with the paired interval above zero"
+        },
+        "qualifying_repair_parents": [],
+        "repair_parent": null,
+        "feedback_activated_blocks": {
+          "cma_winner": [],
+          "random_winner": []
+        },
+        "route": "neither follow-up is enabled by this result"
+      }
+    },
+    "artifacts": [
+      "logs/pen_spin/r058_scalar_cma_vs_random/summary.json",
+      "logs/pen_spin/r058_scalar_cma_vs_random/decision.json",
+      "logs/pen_spin/r058_scalar_cma_vs_random/space.json",
+      "logs/pen_spin/r058_scalar_cma_vs_random/screen_dynamics.json",
+      "logs/pen_spin/r058_scalar_cma_vs_random/block_s4510/summary.json",
+      "logs/pen_spin/r058_scalar_cma_vs_random/block_s4511/summary.json",
+      "logs/pen_spin/r058_scalar_cma_vs_random/block_s4512/summary.json",
+      "logs/pen_spin/r058_scalar_cma_vs_random/block_s4513/summary.json",
+      "logs/pen_spin/r058_scalar_cma_vs_random/block_s4514/summary.json",
+      "logs/pen_spin/r058_scalar_cma_vs_random/block_s4515/summary.json",
+      "logs/pen_spin/r058_scalar_cma_vs_random/block_s4516/summary.json",
+      "logs/pen_spin/r058_scalar_cma_vs_random/block_s4517/summary.json",
+      "config/manifests/pen_spin_stage3_r058_block_s4510.yaml",
+      "config/manifests/pen_spin_stage3_r058_block_s4511.yaml",
+      "config/manifests/pen_spin_stage3_r058_block_s4512.yaml",
+      "config/manifests/pen_spin_stage3_r058_block_s4513.yaml",
+      "config/manifests/pen_spin_stage3_r058_block_s4514.yaml",
+      "config/manifests/pen_spin_stage3_r058_block_s4515.yaml",
+      "config/manifests/pen_spin_stage3_r058_block_s4516.yaml",
+      "config/manifests/pen_spin_stage3_r058_block_s4517.yaml"
+    ],
+    "notes": [
+      "Primary, predeclared: CMA-ES winner minus random-search winner fresh sustained success over 8 block-paired contrasts is +0.003 [-0.076, +0.082]; the upper bound is below +0.10, the predeclared refutation.",
+      "Neither winner beats the parent on fresh cases (CMA -0.006 [-0.041, +0.029]; random -0.009 [-0.080, +0.061]) or on the promotion cases pooled over blocks (+0.012 [-0.049, +0.074]; +0.017 [-0.039, +0.072]). One strict promotion in 16 (CMA winner, block 4515, 10/30 vs 6/30), which did not confirm on that block's fresh cases (0.375 vs 0.350 parent). No (block, arm) qualifies as a repair parent.",
+      "Drops: fresh totals over 320 cases are 46 (CMA winner), 45 (random winner), 47 (parent); all drop intervals include zero, so no reduction and no increase is established.",
+      "Saturation: the parent's spin drive is above 0.99 on 94-99% of recorded in-play fresh steps per block; CMA winners 82-99% (unsaturated gain +0.046 [-0.004, +0.095], largest +0.139 in block 4510), random winners 89-99%. No block reaches the +0.25 activation margin: tuning left the learner effectively open loop in axial spin (D-046 still holds). Executed-action saturation is 5-8% of components for every controller; the learner is not bang-bang, unlike the PPO expert.",
+      "Adaptation happened on the screen but did not transfer (not predeclared): the mean candidate screen successes per generation rose for CMA-ES from 1.8/10 at generation 0 to 2.5/10 at generation 7 (random: 2.0 to 2.0), screen drops per 80-episode generation fell from 14.1 to 12.7 (random 15.0 to 14.9), and the screen winners scored 0.44 (CMA) and 0.40 (random) on their 10 screen cases against the parent's 0.225; on the 30 promotion cases those same winners score 0.233 and 0.237 against the parent's 0.221. Selection on 10 screen cases is almost entirely selection noise at this success rate.",
+      "Winner parameters are scattered across the box (CMA spin_target 8.2-14.0, speed_gain 0.49-0.92); no consistent direction across blocks.",
+      "Accounting: 12,000 Isaac episodes in 184 fresh processes, 0 LLM calls, about 1 h 55 min wall time; pycma 4.5.0 installed into both box venvs (not checked in). The final-test split was not touched.",
+      "Deviations: none from the approved protocol. After approval the idea's protocol.seeds list was emptied mechanically because the committed block manifests carry seeds 4510-4517 and the seed ledger scans config/** (same convention as R-053); recorded in the idea's revisions. The saturation 'pre/post-drop' distinction is not measurable (nothing is recorded after a drop), as stated in the protocol.",
+      "Implementation note: pycma's seed option seeds the global numpy RNG, so each instance is given its own RandomState via the randn option to make samplers instance-local and deterministic."
+    ]
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.003124999999999996,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.85,
+      "reasoning": "Predicted CMA-ES minus random fresh sustained success of at least +0.10 over eight paired blocks; observed +0.003 [-0.076, +0.082], upper bound below +0.10, which is the predeclared refutation. Neither winner differs from the parent on fresh cases (CMA -0.006 [-0.041, +0.029], random -0.009 [-0.080, +0.061]) or on promotion pooled over blocks; one strict promotion in sixteen (CMA, block 4515) did not confirm. Drops are 46/45/47 of 320 with every interval through zero. The drive stays saturated above 0.99 on most in-play steps for every controller (CMA winners 82-99%, unsaturated gain +0.046 [-0.004, +0.095], far from the +0.25 activation margin), so tuning did not activate spin feedback either. The adaptive mechanism did work on the screen (mean candidate screen successes rose 1.8 to 2.5 of 10 across generations, screen drops fell 14.1 to 12.7 per generation; random flat) and screen winners sit at 0.44/0.40 against the parent's 0.225, but on promotion they fall to 0.233/0.237 against 0.221: at this success rate selection on ten screen cases is selection noise, and twelve scalars inside the parent's declared bounds do not contain a better controller that ten cases can identify. Confidence 0.85 rather than higher because the result is budget-specific (64 candidates per arm, 10 screen cases) and a larger screen could still reveal a transferable gain.",
+      "cited_artifacts": [],
+      "next_experiment": "Neither follow-up is enabled: no tuned winner qualifies as a repair parent (R-056 stays deferred) and no block activates feedback (R-057 stays deferred). Scalar tuning of this learner at this screen size is exhausted; a transferable gain would need a screen large enough to resolve 0.05 differences (about 40+ cases per candidate) or a structural change rather than a scalar one.",
+      "recorded_at": "2026-11-04T04:15:44",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.97,
+      "reasoning": "Against the measured equal-budget random-search winners, fresh paired_success_difference was +0.003125 with a 95% interval of [-0.076216, +0.082466]; its upper bound is below the predeclared +0.10 threshold, meeting the falsification rule [logs/pen_spin/r058_scalar_cma_vs_random/summary.json]. The interval includes zero, so it establishes neither CMA-ES superiority nor equivalence [logs/pen_spin/r058_scalar_cma_vs_random/summary.json]. Neither arm established a fresh success gain over the parent: CMA-ES was -0.00625 [-0.04113, +0.02863], and random search was -0.009375 [-0.07998, +0.06123] [logs/pen_spin/r058_scalar_cma_vs_random/summary.json]. All fresh drop-difference intervals include zero, establishing no increase or reduction [logs/pen_spin/r058_scalar_cma_vs_random/summary.json]. Unsaturated-drive gains also had intervals containing zero, with neither arm reaching the required +0.25 activation margin [logs/pen_spin/r058_scalar_cma_vs_random/summary.json]. Consequently, no qualifying repair parent or activated-feedback branch was established, and neither conditional follow-up is enabled by this result [logs/pen_spin/r058_scalar_cma_vs_random/decision.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r058_scalar_cma_vs_random/summary.json",
+        "logs/pen_spin/r058_scalar_cma_vs_random/decision.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-04T04:16:05",
+      "call_id": "call_00118"
+    }
+  ],
+  "decision_id": "D-048",
   "history": [
     {
       "at": "2026-11-04T02:52:19",
       "from": "proposed",
       "to": "approved",
       "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-04T03:08:14",
+      "from": "approved",
+      "to": "running",
+      "note": "git ad01a0833d (dirty)"
+    },
+    {
+      "at": "2026-11-04T04:15:29",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-04T04:16:19",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-048: refuted"
     }
   ],
   "created_at": "2026-11-04T02:47:21",
@@ -210,6 +755,16 @@
         }
       },
       "note": "Round 2 agreed revise: consolidated protocol (8x8 per arm, matched 80-env batches, random arm = frozen copy of pycma's initial law asked once per generation, real --study/--log-dir interface, one 80-case manifest per block seed 4510-4517, 12000 episodes, 0 LLM calls)."
+    },
+    {
+      "at": "2026-11-04T03:20:00",
+      "round": 3,
+      "patch": {
+        "protocol": {
+          "seeds": []
+        }
+      },
+      "note": "Mechanical, after approval: the eight block manifests (config/manifests/pen_spin_stage3_r058_block_s4510-4517.yaml) now carry seeds 4510-4517 and the seed ledger scans config/** manifests, so check_idea reports them spent; as in R-053, the manifests are the seed record and protocol.seeds is emptied. No other field changed."
     }
   ]
 }
