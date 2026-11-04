@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-04T05:56:15 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-04T06:00:32 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -11,16 +11,15 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 1 |
+| approved | 0 |
 | proposed | 0 |
 | deferred | 12 |
-| decided | 51 |
+| decided | 52 |
 | rejected | 6 |
 
 ## Needs attention
 
-- **R-068** [approved] 1. Confirm the capture-curl clamp before using it for repair
-  - `python scripts/research.py start R-068` then run its command
+- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
@@ -39,6 +38,9 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 
 ## Last 5 decisions
 
+- D-052 · R-068 · **supported** · 2026-11-04
+  Predicted that the exact zero-curl clamp of the frozen R-046 learner (R-065's curl_clamp substitution: extra_curl = 0, everything else frozen; audited, identity-gated bit for bit on 23,484 archived observations) would beat the parent by at least +0.10 fresh sustained success on a frozen 200-case seed-4620 manifest (promotion 10-39 under the strict paired rule, fresh 40-199; 380 episodes, no LLM). Fresh (160 pairs): +0.150 [+0.052, +0.248] (52/160 vs 28/160; 45 wins, 21 losses, 94 ties), drops 21 to 7 (-0.087 [-0.138, -0.037]), off-centre tail failures 44 to 9, slow-spin tail failures 67 to 92, in-play |spin| 5.22 to 3.88 rad/s. Promotion (30 pairs): +0.200 [-0.006, +0.406] (12 vs 6; 8 wins, 2 losses), drops 7 to 1 (-0.200 [-0.352, -0.048]). The capture curl, which tightens the grasp whenever contact or centring deteriorates, is what loses the pen; without it the learner roughly doubles its fresh success and cuts drops by two thirds, and its remaining failures are slow spin. This is the first transferable gain on this learner since its promotion in R-046 (D-041), found by a lesion panel (D-051), not by the LLM search, scalar tuning (D-048, D-049) or demonstrations. The strict promotion rule on the 30-case panel misses by 0.006, so by the predeclared qualification rule the clamp does not qualify as a repair parent on this run; whether the fresh evidence suffices for R-069/R-070 is for their re-triage. Verdict label: the implementer reads the predeclared test as met (mean at least +0.10, interval above zero, the ledger's standing support rule and the study's predeclared code); the advisor reads the interval spanning +0.10 as leaving the magnitude unestablished.
+  Next: Re-triage R-069 and R-070 with this evidence (fresh +0.15 [+0.05, +0.25], drops 21 to 7, strict promotion missed by 0.006). If the ledger wants the stricter 'interval excludes the threshold' rule, declare it in the next protocols. A 30-case re-promotion on a fresh panel (60 episodes) would settle qualification if needed.
 - D-051 · R-065 · **refuted** · 2026-11-04
   Predicted that zeroing the frozen R-046 learner's rotation correction (tilt and swing-damping terms) would cost at least 0.10 sustained success on 80 paired Stage-3 cases (panel of three one-line lesions beside the parent, exact offline identity gates on D-050's 23,484 archived observations, 320 episodes, no LLM). Observed +0.0375 [-0.037, +0.112] (17/80 vs 14/80; 6 wins, 3 losses, 71 ties), drops identical (13 vs 13), spin on the parent-sustained cases 7.64 vs 7.06 rad/s: the lower bound is above -0.10, the predeclared refutation; the rotation correction carries neither success nor spin for this learner. Secondary, centring clamp (R-066's question): -0.0625 [-0.127, +0.002] (9 vs 14; 1 win, 6 losses), more off-centre failures (24 vs 18), spin on the parent-sustained cases 5.03, inconclusive and at most a partial channel. Secondary, unpredicted, capture-curl clamp: +0.125 [-0.014, +0.264] (24 vs 14; 21 wins, 11 losses) with an established reduction in drops (5 vs 13; -0.100 per case [-0.176, -0.024]) and off-centre failures (3 vs 18), at the price of slower spin (48 slow-spin failures vs 33; in-play |spin| 4.16 vs 5.74; only 3 of the parent's 14 sustained cases survive). The reactive curl, which tightens the grasp when contact or centring deteriorates, is what loses the pen; without it the learner retains the pen and fails by spinning slowly. This arm is a diagnostic lesion selected on this manifest, not a promotion; no improvement is established. Together with D-050, the learner's success rests on its periodic stroke (about half) and weakly on centring; rotation correction is inert; the capture curl is net harmful to retention; the spin that survives the stroke lesion is not the rotation correction, and single-channel lesions cannot exclude redundancy.
   Next: The capture-curl clamp is the first intervention on this learner with a success gain trend and fewer drops; it is a selected diagnostic, so the next step is a predeclared confirmation of exactly that one-line change against the parent on fresh paired cases under the strict promotion rule (promotion cases 10-39 plus fresh cases, prediction +0.10, drops not increased), which is what the direction asks before any repair. The residual spin after the stroke lesion is not the rotation correction; centring and the grasp-curl interaction remain candidates.
@@ -51,9 +53,6 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 - D-048 · R-058 · **refuted** · 2026-11-04
   Predicted that budget-matched CMA-ES would beat random search by at least +0.10 fresh sustained success when tuning the frozen R-046 learner's twelve spin and centering scalars inside their declared bounds (8 blocks, 64 candidates per arm per block on 10 screen cases, winners and parent scored on 30 promotion and 40 fresh cases each, 12,000 episodes, no LLM). Observed +0.003 [-0.076, +0.082] over the eight block contrasts: the upper bound is below +0.10, the predeclared refutation. Neither winner differs from the parent on fresh cases (CMA -0.006 [-0.041, +0.029]; random -0.009 [-0.080, +0.061]) or on promotion pooled over blocks; one strict promotion in sixteen (CMA, block 4515, 10/30 vs 6/30) did not confirm on fresh cases. Drops 46/45/47 of 320 with every interval through zero. The spin drive stays saturated above 0.99 on most recorded in-play steps for every controller (parent 94-99%, CMA winners 82-99%; unsaturated gain +0.046 [-0.004, +0.095]), far from the +0.25 activation margin, so tuning did not activate spin feedback. Not predeclared: CMA-ES did adapt on the screen (mean candidate screen successes 1.8 to 2.5 of 10 across generations, screen drops per generation 14.1 to 12.7; random flat at 2.0 and 15.0) and the screen winners scored 0.44/0.40 against the parent's 0.225 on the same ten cases, yet 0.233/0.237 against 0.221 on promotion: at this success rate selection on ten screen cases is selection noise, and the twelve scalars do not contain a better controller that ten cases can identify. No (block, arm) qualifies as a repair parent and no block activates feedback, so R-056 and R-057 stay deferred.
   Next: Neither follow-up is enabled: no tuned winner qualifies as a repair parent (R-056 stays deferred) and no block activates feedback (R-057 stays deferred). Scalar tuning of this learner at this screen size is exhausted; a transferable gain would need a screen large enough to resolve 0.05 differences (about 40+ cases per candidate) or a structural change rather than a scalar one.
-- D-047 · R-054 · **refuted** · 2026-10-28
-  Predicted self minus expert final-incumbent fresh success of at least +0.15, paired over eight blocks. Observed 0.000 with a degenerate [0, 0] interval (8 ties): no candidate in either arm passed the strict promotion rule against the frozen parent, so both arms kept the parent (fresh mean 0.225) in every block. The interval's upper bound is below +0.15, which refutes the prediction under this protocol (4 candidates per arm per block, one linked correction). Secondary and not predeclared: self-trace candidates kept some parent behaviour (27/320 candidate screen successes, 3 candidates beat the parent screen, block-level mean candidate screen self minus expert +0.084 [-0.008, +0.177], 7 wins 0 losses 1 tie) while expert-trace candidates scored 0/320 and dropped the pen in 200/320 screen episodes versus 97/320 for self and 14/80 for the parent. So the evidence source changes how much an edit damages the grasp, but neither source produced an improvement over the parent; the claim that self traces give more transferable repairs is not established at the final-incumbent level.
-  Next: none
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
