@@ -1,0 +1,155 @@
+{
+  "id": "R-062",
+  "title": "Locate spin generation with a grasp-preserving stroke lesion",
+  "hypothesis": "The frozen controller generates sustained axial spin through its periodic stroke rather than through its mean grasp or nearly powerless spin-feedback modulation.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "decrease",
+    "threshold": 0.15,
+    "against": "config/pen_spin/r046_block3_incumbent",
+    "rationale": "A 15-percentage-point loss would identify a substantial structural lever before spending episodes on repairs; unlike R-053, this removes the periodic stroke rather than reversing saturated feedback."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r062_stroke_lesion --log-dir logs/pen_spin/r062_stroke_lesion\"'",
+    "seeds": [
+      4560
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_r062_diagnostic_s4560.yaml"
+    ],
+    "episodes": 240,
+    "llm_calls": 0,
+    "code_changes": [
+      "New study module lares/envs/isaac_pen_spin/stroke_lesion.py registered as --study r062_stroke_lesion in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. The parent is config/pen_spin/r046_block3_incumbent (hashes checked), no fitting, parameters unchanged.",
+      "Source audit before any episode: the parent's joint target must be grasp_pose + curl terms + stabilization + rolling * gait, with gait built only from the periodic stroke (sin_phase through drive and the fingertip tangents) and the periodic load (2 * stance - 1); both have zero cycle mean, so replacing the periodic contribution by its cycle mean is the removal of the rolling * gait term. The study exits if the source no longer matches.",
+      "Arms, one fresh process each on the frozen 80-case diagnostic manifest (seed 4560): parent; parent_identity (the substitution machinery with the no-op factor 1.0: must be bit-identical to parent in observations and outcomes on all 80 cases, else the lesion is not run); stroke_lesion (+ rolling * gait becomes + 0.0 * rolling * gait; gates still recorded; grasp, curl, centering, tilt correction and execution unchanged). 240 episodes, no LLM call.",
+      "Reporting: paired lesion minus parent sustained success with the 95% t interval and win/loss/tie; paired drop difference; failure split (drops vs tail-spin failures); in-play mean |spin| per arm and on the cases the parent sustains; drive saturation and executed-action saturation per axis over recorded in-play steps.",
+      "Predeclared interpretation: the periodic stroke is the spin source if lesion minus parent is below -0.15 with the interval entirely below -0.15, the drop difference has an interval through or below zero, and the lesion's in-play mean |spin| on the parent-sustained cases is below the Stage-3 threshold of 4 rad/s. A loss carried by additional drops is inconclusive. An interval entirely above -0.15 refutes the prediction.",
+      "Run first; D-048 and D-049 settle the scalar comparison and nothing here repeats it. Final test untouched."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "The paired interval for lesion minus parent lies entirely above -0.15. A loss caused primarily by additional drops, rather than reduced pre-drop spin, would leave the proposed spin-generation mechanism inconclusive.",
+  "cost_estimate": {
+    "episodes": 240,
+    "llm_calls": 0,
+    "wall_time_minutes": 15
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "aa77a7ae65ace261c11e98298b39b8b0e147cca832b944e95ce2960834c57ad1",
+  "proposal_call_id": "call_00123",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-04T05:22:46",
+    "advisor_call_id": "call_00125",
+    "round": 2,
+    "note": "I accept the implementer's corrected interface using scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, audited source substitution, and full 80-case identity gate. At 240 simulator episodes and zero LLM calls on free seed 4560, this tests stroke dependence rather than rep"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T05:22:46",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 2: both say approve"
+    }
+  ],
+  "created_at": "2026-11-04T05:18:13",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "At 192 simulator episodes and zero LLM calls, this directly tests a source of spin authority not settled by scalar tuning or signed-feedback reversal. Its weakest point is grasp disruption: a success loss driven primarily by additional drops would leave the spin-generation mechanism inconclusive. The prediction is a paired_success_difference decrease of at least 0.15 versus config/pen_spin/r046_block3_incumbent; an interval entirely above -0.15 refutes it, while an interval including zero provides no evidence of a difference. The source-separation audit and bit-identical identity gate make this the appropriate first spend.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00124",
+          "briefing_sha256": "f165cf217fb75c9f022d564769d1a6727b3614d7e327e382bbb0ed056cf34692",
+          "at": "2026-11-04T05:19:11"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "The question is right and cheap, and I will run it first, but revise rather than approve: the protocol names an interface and files that do not exist and its gate is under-specified. (1) Interfaces: no --research-spec and no config/pen_spin/r062_stroke_lesion.yaml; the study is --study r062_stroke_lesion with --log-dir, its block in config/shadowhand_spin_stages.yaml, one frozen 80-case Stage-3 diagnostic manifest at config/manifests/pen_spin_stage3_r062_diagnostic_s4560.yaml. (2) Source separation, audited before any episode: the parent's joint target is grasp_pose + curl terms + stabilization (centering and tilt corrections) + rolling * gait, where gait is built only from the periodic stroke (sin_phase, through drive and the tangents) and the periodic load (2 * stance - 1); both periodic terms have zero cycle mean (sin averages to zero, stance = sigmoid(k cos_phase) averages to 0.5 over a roll cycle), so the cycle-mean replacement is exactly the removal of the rolling * gait term. The lesion is a frozen source substitution (+ rolling * gait becomes + 0.0 * rolling * gait, gates still recorded) with the parameters, grasp, centering and execution unchanged; the audit fails the study if the parent source no longer matches that structure. (3) Identity gate on all 80 cases, not 32: the same substitution machinery with the no-op factor 1.0 must be bit-identical to the parent (observations and outcomes, D-045's gate) or the lesion is not run; three processes, 240 episodes. (4) Interpretation rule stated in advance, since a success loss is near-certain and the information is in its form: the stroke is the spin source if lesion minus parent is below -0.15 with the interval below -0.15 AND the lost successes are not drops (lesion drops minus parent drops per case with an interval through or below zero) AND the lesion's in-play mean |spin| is below the Stage-3 threshold of 4 rad/s on the cases the parent sustains; a loss carried by drops is inconclusive, as the falsifier says. Reported: paired success and drop differences with intervals, win/loss/tie, failure split, in-play mean |spin| per arm, drive and executed-action saturation (recorded in-play steps only). No LLM call, final test untouched.",
+          "changes_applied": [
+            "--study r062_stroke_lesion --log-dir, config block, one 80-case manifest at seed 4560",
+            "lesion = frozen source substitution removing rolling * gait (zero cycle mean), audited",
+            "identity gate on all 80 cases; 240 episodes",
+            "predeclared interpretation rule: loss not carried by drops and in-play |spin| below 4 rad/s"
+          ],
+          "at": "2026-11-04T05:20:36"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the implementer's corrected interface using scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, audited source substitution, and full 80-case identity gate. At 240 simulator episodes and zero LLM calls on free seed 4560, this tests stroke dependence rather than repeating D-048/D-049 scalar tuning or D-046 feedback reversal. The prediction is a paired_success_difference decrease of at least 0.15 versus config/pen_spin/r046_block3_incumbent, falsified by an interval entirely above -0.15. Its weakest point remains dynamic grasp disruption: drop-driven losses are inconclusive, and a drop interval including zero does not prove unchanged drops.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00125",
+          "briefing_sha256": "55ea5e187977dae31edb20ec1c82c95c3121fed91e37afb0d6a7788007ce4d89",
+          "at": "2026-11-04T05:21:09"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve the revised protocol: audited source-substitution lesion of the periodic stroke, identity gate on all 80 cases of the seed-4560 diagnostic manifest, three processes, 240 episodes, zero LLM calls, predeclared interpretation rule, final test untouched. Implementing now.",
+          "changes_applied": [],
+          "at": "2026-11-04T05:22:46"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-04T05:20:38",
+      "round": 1,
+      "patch": {
+        "protocol": {
+          "script": "scripts/run_shadowhand_spin_stages.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r062_stroke_lesion --log-dir logs/pen_spin/r062_stroke_lesion\"'",
+          "seeds": [
+            4560
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_r062_diagnostic_s4560.yaml"
+          ],
+          "episodes": 240,
+          "llm_calls": 0,
+          "code_changes": [
+            "New study module lares/envs/isaac_pen_spin/stroke_lesion.py registered as --study r062_stroke_lesion in scripts/run_shadowhand_spin_stages.py; settings in the research_protocols block of config/shadowhand_spin_stages.yaml. The parent is config/pen_spin/r046_block3_incumbent (hashes checked), no fitting, parameters unchanged.",
+            "Source audit before any episode: the parent's joint target must be grasp_pose + curl terms + stabilization + rolling * gait, with gait built only from the periodic stroke (sin_phase through drive and the fingertip tangents) and the periodic load (2 * stance - 1); both have zero cycle mean, so replacing the periodic contribution by its cycle mean is the removal of the rolling * gait term. The study exits if the source no longer matches.",
+            "Arms, one fresh process each on the frozen 80-case diagnostic manifest (seed 4560): parent; parent_identity (the substitution machinery with the no-op factor 1.0: must be bit-identical to parent in observations and outcomes on all 80 cases, else the lesion is not run); stroke_lesion (+ rolling * gait becomes + 0.0 * rolling * gait; gates still recorded; grasp, curl, centering, tilt correction and execution unchanged). 240 episodes, no LLM call.",
+            "Reporting: paired lesion minus parent sustained success with the 95% t interval and win/loss/tie; paired drop difference; failure split (drops vs tail-spin failures); in-play mean |spin| per arm and on the cases the parent sustains; drive saturation and executed-action saturation per axis over recorded in-play steps.",
+            "Predeclared interpretation: the periodic stroke is the spin source if lesion minus parent is below -0.15 with the interval entirely below -0.15, the drop difference has an interval through or below zero, and the lesion's in-play mean |spin| on the parent-sustained cases is below the Stage-3 threshold of 4 rad/s. A loss carried by additional drops is inconclusive. An interval entirely above -0.15 refutes the prediction.",
+            "Run first; D-048 and D-049 settle the scalar comparison and nothing here repeats it. Final test untouched."
+          ],
+          "needs_gpu": true,
+          "needs_llm": false
+        },
+        "cost_estimate": {
+          "episodes": 240,
+          "llm_calls": 0,
+          "wall_time_minutes": 15
+        }
+      },
+      "note": "Round 1 implementer revision: real --study/--log-dir interface and config block, one 80-case manifest at seed 4560, audited source-substitution lesion, identity gate on all 80 cases (240 episodes), predeclared interpretation rule."
+    }
+  ]
+}

@@ -812,3 +812,79 @@ class TestArchiveRescreen(unittest.TestCase):
         self.assertEqual(d["episodes"], 2)
         self.assertEqual(len(d["reduction_by_axis"]), 20)
         self.assertTrue(all(x >= y - 1e-6 for x, y in zip(d["action_variation_by_axis_pre_clip"], d["action_variation_by_axis_post_clip"])))
+
+
+class TestStrokeLesion(unittest.TestCase):
+    """R-062: source audit, substitution, identity, aggregation and the frozen manifest."""
+
+    @classmethod
+    def setUpClass(cls):
+        import yaml
+
+        with open("config/shadowhand_spin_stages.yaml") as f:
+            cls.pc = yaml.safe_load(f)["research_protocols"]["r062_stroke_lesion"]
+
+    def _contact_obs(self, n=3):
+        import torch
+
+        sl = cases.obs_slices()
+        obs = torch.zeros(n, cases.OBS_DIM)
+        obs[:, sl["obj_rot"]] = torch.tensor([1.0, 0, 0, 0])
+        obs[:, sl["in_hand_pos"]] = torch.tensor([0.0, 0.0, 0.1])
+        obs[:, sl["obj_pos"]] = torch.tensor([0.0, 0.0, 0.1])          # retained
+        tips = torch.tensor([[0.02, 0.0, 0.1], [0.0, 0.02, 0.1], [-0.02, 0.0, 0.1], [0.0, -0.02, 0.1], [0.0, 0.0, 0.12]])
+        obs[:, sl["fingertip_pos"]] = tips.flatten()                     # in contact: mean tip distance 0.02
+        obs[:, sl["fingertip_rot"]] = torch.tensor([1.0, 0, 0, 0]).repeat(5)
+        obs[:, sl["obj_angvel"]] = torch.tensor([0.4, 0.0, 0.0])
+        return obs
+
+    def test_audit_substitution_identity_and_lesion(self):
+        import torch
+
+        from lares.envs.isaac_pen_spin import stroke_lesion as sl_
+        from lares.envs.isaac_pen_spin.learner_recovery import make_learner
+
+        with open(self.pc["learner"]["source"]) as f:
+            src = f.read()
+        audit = sl_.source_audit(src)
+        self.assertTrue(audit["passes"], audit)
+        self.assertIn("+ 0.0 * rolling * gait", sl_.substituted_source(src, 0.0))
+        with self.assertRaises(SystemExit):
+            sl_.substituted_source(src.replace("+ rolling * gait\n", "+ gait\n"), 0.0)
+        obs = self._contact_obs()
+        parent, ident, lesion = (make_learner(self.pc), sl_.make_controller("parent_identity", self.pc),
+                                 sl_.make_controller("stroke_lesion", self.pc))
+        a, b, c = parent(obs, 0, None), ident(obs, 0, None), lesion(obs, 0, None)
+        self.assertTrue(torch.equal(a, b))                               # identity factor is bit-identical
+        self.assertFalse(torch.allclose(a, c))                           # the stroke contributes in contact
+        self.assertEqual(lesion.params["gait_factor"], 0.0)
+        far = obs.clone()
+        far[:, cases.obs_slices()["obj_pos"]] = torch.tensor([0.3, 0.3, 0.3])  # out of the safe region: gate closed
+        self.assertTrue(torch.allclose(parent(far, 0, None), lesion(far, 0, None)))
+
+    def test_aggregate_interpretation_rule(self):
+        from lares.envs.isaac_pen_spin import stroke_lesion as sl_
+
+        def rows(succ, drops, n, spin):
+            return [{"task_hash": f"h{i}", "sustained": i < succ, "completed": i < n - drops, "tail_hit_fraction": 0.0,
+                     "hit_steps": 0, "length": 360, "mean_abs_spin": spin, "mean_transverse": 1.0} for i in range(n)]
+
+        sat = {"in_play_steps": 1, "drive_saturated_fraction": 0.9, "action_saturated_fraction": 0.1,
+               "action_saturated_by_axis": [0.1] * 20, "drive_unsaturated_fraction_per_case": [0.1] * 80, "note": ""}
+        parent = rows(24, 10, 80, 6.0)
+        a = sl_.aggregate(parent, rows(0, 10, 80, 1.0), sat, sat)
+        self.assertTrue(a["interpretation"]["stroke_is_spin_source"])
+        self.assertAlmostEqual(a["paired_success_difference"], -0.3)
+        self.assertEqual(a["parent_sustained_cases"], 24)
+        b = sl_.aggregate(parent, rows(0, 60, 80, 1.0), sat, sat)       # loss carried by drops
+        self.assertTrue(b["interpretation"]["drop_driven_inconclusive"])
+        self.assertFalse(b["interpretation"]["stroke_is_spin_source"])
+        c = sl_.aggregate(parent, rows(22, 10, 80, 6.0), sat, sat)      # no loss: refuted
+        self.assertTrue(c["interpretation"]["prediction_refuted"])
+
+    def test_manifest_matches_config(self):
+        from lares.envs.isaac_pen_spin import stroke_lesion as sl_
+
+        self.assertEqual(sl_.build_manifests(self.pc), [])
+        m = EvaluationManifest.load(self.pc["manifest"])
+        self.assertEqual((len(m), cases.stage_of(m)), (80, 3))

@@ -1,0 +1,93 @@
+{
+  "id": "R-064",
+  "title": "Close spin feedback through stroke timing, not weak amplitude",
+  "hypothesis": "Axial-rate feedback controlling periodic stroke phase speed will produce transferable spin regulation because timing has authority that the frozen controller's saturated amplitude modulation lacks.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "R-064 selected constant-tempo control on the same fresh cases",
+    "rationale": "A ten-percentage-point advantage over equally screened constant-tempo controls distinguishes feedback from merely finding a better open-loop frequency; parent comparisons remain mandatory."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/pen_spin/r064_phase_feedback.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --research-spec config/pen_spin/r064_phase_feedback.yaml\"'",
+    "seeds": [
+      4580,
+      4581,
+      4582
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_r064_screen_s4580.yaml",
+      "config/manifests/pen_spin_r064_promotion_s4581.yaml",
+      "config/manifests/pen_spin_r064_fresh_s4582.yaml"
+    ],
+    "episodes": 850,
+    "llm_calls": 0,
+    "code_changes": [
+      "Reuse the preceding runner interface and existing stage configuration. Run last and only if R-062 demonstrates a spin-specific periodic-stroke effect; otherwise skip this budget.",
+      "Expose an explicit phase accumulator only for periodic stroke terms, leaving centering and grasp on current observations. Add axial-rate error to phase velocity, not to joint amplitudes; retain the original stroke waveform and frozen parameters.",
+      "Predeclare six feedback variants using target rates 4, 6, and 8 rad/s crossed with gains 0.05 and 0.10, with phase-speed multiplier 1 + 0.5*tanh(gain*(target-directed_rate)). Compare with six constant-tempo multipliers 0.6, 0.8, 0.9, 1.1, 1.2, and 1.4.",
+      "Give both families equal screen budgets: six candidates on 40 frozen cases each. Evaluate parent on those 40, then both selected winners and parent on 30 promotion and 80 fresh cases: 520 + 90 + 240 episodes. Select before reading promotion or fresh outcomes.",
+      "Report paired winner-versus-control and both winner-versus-parent contrasts, sustained success, drops, original drive saturation, phase-feedback activation, and action saturation. Require strict promotion and fresh success improvement without more observed drops before using any winner for repair.",
+      "This changes the feedback pathway, unlike D-048/D-049 scalar tuning, R-056 slip gating, or R-061 clipping-aware allocation. Keep imitation, cold search, and R-055 disabled; any subsequent LLM repair must use llm_pool with 16 workers and the mandated high-effort model settings."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The fresh paired interval for feedback minus constant-tempo control has an upper bound below +0.10. Feedback activation without a demonstrated success gain does not support this mechanism and triggers prioritization of R-043 rather than further scalar tuning.",
+  "cost_estimate": {
+    "episodes": 850,
+    "llm_calls": 0,
+    "wall_time_minutes": 110
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "aa77a7ae65ace261c11e98298b39b8b0e147cca832b944e95ce2960834c57ad1",
+  "proposal_call_id": "call_00123",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T05:20:34",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-04T05:18:13",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "The equally screened constant-tempo controls distinguish feedback regulation from finding a better open-loop frequency, but 850 simulator episodes and zero LLM calls are premature before R-062 establishes a spin-specific stroke effect. Its weakest point is that changing phase speed also changes contact timing and retention, so activation alone cannot validate the mechanism. The prediction is a paired_success_difference increase of at least 0.10 versus the selected constant-tempo control on identical fresh cases; an upper bound below +0.10 refutes it, and an interval including zero is not evidence of improvement. Reconsider only after the stroke prerequisite is demonstrated; activated feedback without demonstrated success improvement must prioritize R-043 rather than another tuning round.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00124",
+          "briefing_sha256": "f165cf217fb75c9f022d564769d1a6727b3614d7e327e382bbb0ed056cf34692",
+          "at": "2026-11-04T05:19:11"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree to defer. Phase-speed feedback is the first proposed channel with real authority over spin (D-049 measured the amplitude channel at about 0.01 normalised units per 0.2 of drive), so it is the right next structural test, but it presupposes that the periodic stroke is what generates the spin; R-062 establishes that first. The constant-tempo control family is the right control and should be kept when it is re-triaged.",
+          "changes_applied": [],
+          "at": "2026-11-04T05:20:34"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

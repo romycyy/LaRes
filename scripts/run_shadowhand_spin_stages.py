@@ -346,7 +346,7 @@ def pen_spin_studies() -> dict:
     ``make_controller(name, protocol_cfg, out_dir)`` and ``run(protocol_cfg, config_path, out_dir)``; a new study is
     one module with those three names and one entry here."""
     from lares.envs.isaac_pen_spin import (archive_rescreen, axial_sign, feedback_ablation, feedback_delay,
-                                           feedback_lesions, learner_recovery, scalar_tuning)
+                                           feedback_lesions, learner_recovery, scalar_tuning, stroke_lesion)
 
     return {feedback_ablation.FEEDBACK_ABLATION: feedback_ablation,
             feedback_lesions.FEEDBACK_LESIONS: feedback_lesions,
@@ -354,13 +354,14 @@ def pen_spin_studies() -> dict:
             learner_recovery.LEARNER_RECOVERY: learner_recovery,
             axial_sign.LEARNER_AXIAL_SIGN: axial_sign,
             scalar_tuning.STUDY: scalar_tuning,
-            archive_rescreen.STUDY: archive_rescreen}
+            archive_rescreen.STUDY: archive_rescreen,
+            stroke_lesion.STUDY: stroke_lesion}
 
 
 def run_study(args, cfg: SimpleNamespace) -> None:
     """``--study feedback_ablation`` (R-041), ``feedback_lesions`` (R-044), ``feedback_delay`` (R-047),
-    ``learner_recovery`` (R-051), ``learner_axial_sign`` (R-053), ``r058_scalar_cma_vs_random`` (R-058) or
-    ``r060_archive_rescreen`` (R-060): the driver, or one child cell."""
+    ``learner_recovery`` (R-051), ``learner_axial_sign`` (R-053), ``r058_scalar_cma_vs_random`` (R-058),
+    ``r060_archive_rescreen`` (R-060) or ``r062_stroke_lesion`` (R-062): the driver, or one child cell."""
     studies = pen_spin_studies()
     if args.study not in studies:
         raise SystemExit(f"unknown study {args.study!r}; one of {sorted(studies)}")
@@ -438,7 +439,7 @@ def main() -> None:
     parser.add_argument("--research-protocol", default=None,
                         help="run a named protocol from the config's research_protocols block instead of the smoke stages")
     parser.add_argument("--study", default=None,
-                        help="run a named study (feedback_ablation, feedback_lesions, feedback_delay, learner_recovery, learner_axial_sign, r058_scalar_cma_vs_random, r060_archive_rescreen) from the config's research_protocols block")
+                        help="run a named study (feedback_ablation, feedback_lesions, feedback_delay, learner_recovery, learner_axial_sign, r058_scalar_cma_vs_random, r060_archive_rescreen, r062_stroke_lesion) from the config's research_protocols block")
     parser.add_argument("--build-manifests", action="store_true",
                         help="with --research-protocol: write the protocol's frozen manifests and exit (no Isaac)")
     parser.add_argument("--stage", type=int, default=None, help=argparse.SUPPRESS)  # protocol child process

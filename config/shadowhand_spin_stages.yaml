@@ -203,3 +203,19 @@ research_protocols:
     whitelist:  # as R-058 (bounds = the parent's declared ranges)
       spin: [stroke_amp, lift_amp, spin_target, speed_gain, phase_lead, stance_sharpness]
       centering: [center_gain, center_length, safe_radius, position_sharpness, tilt_gain, swing_damping]
+  # R-062 (approved 2026-11-04, advisor call_00125): does the R-046 learner spin through its periodic stroke? Source
+  # substitution + rolling * gait -> + 0.0 * rolling * gait (zero cycle mean), identity factor 1.0 as the gate, one
+  # 80-case diagnostic manifest (seed 4560), three processes, 240 episodes, no LLM.
+  #   python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml
+  #     --study r062_stroke_lesion --log-dir logs/pen_spin/r062_stroke_lesion
+  r062_stroke_lesion:
+    log_dir: "logs/pen_spin/r062_stroke_lesion"
+    cases: 80
+    pool_seed: 4560
+    manifest: "config/manifests/pen_spin_stage3_r062_diagnostic_s4560.yaml"
+    learner:  # as R-058 / R-060
+      source: "config/pen_spin/r046_block3_incumbent/policy_source.py"
+      source_sha256: "40782dcdf5a95589d0b34062919728fa92d4e5760fce890e3bd98833285e602d"
+      state: "config/pen_spin/r046_block3_incumbent/state.pt"
+      state_sha256: "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22"
+      fixed_action_scale: 0.1

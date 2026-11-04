@@ -1,0 +1,92 @@
+{
+  "id": "R-063",
+  "title": "Anticipatory centering without changing the spin stroke",
+  "hypothesis": "Feeding a short-horizon predicted pen centre into the existing centering channel will counter outward motion before displacement feedback reacts, preserving more sustained spins.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "config/pen_spin/r046_block3_incumbent",
+    "rationale": "A ten-percentage-point fresh sustained-success gain would justify a structural centering change; D-048 and D-049 tested scalar changes, not a new velocity-dependent observation pathway."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/pen_spin/r063_predictive_centering.yaml",
+    "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --research-spec config/pen_spin/r063_predictive_centering.yaml\"'",
+    "seeds": [
+      4570,
+      4571,
+      4572
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_r063_screen_s4570.yaml",
+      "config/manifests/pen_spin_r063_promotion_s4571.yaml",
+      "config/manifests/pen_spin_r063_fresh_s4572.yaml"
+    ],
+    "episodes": 380,
+    "llm_calls": 0,
+    "code_changes": [
+      "Reuse the first protocol's runner interface and inherit config/shadowhand_spin_stages.yaml. Source-audit the parent first; skip if this exact predictive-centering pathway already exists.",
+      "Replace the pen-centre input only within the centering calculation by position plus horizon times current linear velocity in the same frame. Test fixed horizons of one, two, and four control steps; leave stroke timing, grasp, original parameters, and all other observations unchanged.",
+      "Freeze disjoint manifests before execution: 40 screen, development promotion cases 10-39 with newly frozen placements, and 80 fresh development cases. Screen three variants plus parent, then evaluate the selected variant and parent on promotion and fresh cases: 160 + 60 + 160 episodes.",
+      "Keep fitting disabled. Require the unchanged strictly positive paired promotion interval, fresh confirmation, and no increase in observed fresh drops before designating a repair parent; report drop intervals without interpreting an interval through zero as equivalence.",
+      "Report sustained success, drops, drive saturation, and action saturation using unchanged R-058 definitions. Run only after the first protocol has finished, without incorporating its diagnostic cases into these manifests."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The fresh paired interval's upper bound is below +0.10. An interval including zero is not evidence of improvement; any increased fresh drop rate disqualifies the controller as a repair parent even if success increases.",
+  "cost_estimate": {
+    "episodes": 380,
+    "llm_calls": 0,
+    "wall_time_minutes": 55
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "aa77a7ae65ace261c11e98298b39b8b0e147cca832b944e95ce2960834c57ad1",
+  "proposal_call_id": "call_00123",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-04T05:20:32",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-04T05:18:13",
+  "direction": "Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md. First compare CMA-ES and random search at equal rollout budgets on the frozen R-046 controller's spin and centering parameters (config/pen_spin/r046_block3_incumbent). Compare both winners with the parent on fresh paired cases. Report sustained success, drops, and saturation. Keep final test locked. If tuning improves success without more drops, use the winner for repair. If feedback activates without improving success, prioritize R-043. Defer cold search and R-055. Require verified learner-state recovery before imitation. Use llm_pool with 16 workers and high reasoning effort. Run one protocol at a time.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Predictive centering introduces a genuinely new observation pathway, but its 380 simulator episodes and zero LLM calls should wait for R-062's structural diagnosis. Its weakest point is that extrapolation can disrupt contact stability, making the fresh-drop disqualification essential. The prediction remains a paired_success_difference increase of at least 0.10 versus config/pen_spin/r046_block3_incumbent; a fresh interval upper bound below +0.10 refutes it, and an interval including zero demonstrates no improvement. Re-triage after R-062 rather than committing this budget now.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00124",
+          "briefing_sha256": "f165cf217fb75c9f022d564769d1a6727b3614d7e327e382bbb0ed056cf34692",
+          "at": "2026-11-04T05:19:11"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree to defer. A velocity-extrapolated centre is a new observation pathway worth testing, but it should follow R-062's localisation of the spin source, and its one-, two- and four-step horizons should be reconsidered against the measured pen linear velocity before freezing. Nothing is spent now.",
+          "changes_applied": [],
+          "at": "2026-11-04T05:20:32"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

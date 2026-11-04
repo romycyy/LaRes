@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-04T05:15:09 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-04T05:22:47 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -11,15 +11,16 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 0 |
+| approved | 1 |
 | proposed | 0 |
-| deferred | 6 |
+| deferred | 8 |
 | decided | 49 |
 | rejected | 6 |
 
 ## Needs attention
 
-- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
+- **R-062** [approved] Locate spin generation with a grasp-preserving stroke lesion
+  - `python scripts/research.py start R-062` then run its command
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
@@ -29,6 +30,8 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 - R-056 R-057: Repair a qualifying tuned winner with slip-gated spin: The 1,800-episode, at-most-32-call repair budget should wait until R-058 establishes a qualifying tuned parent; neither simulator nor LLM spending is justified 
 - R-057 R-058: Conditional R-043 anatomical-coordinate repair: This is the appropriate priority branch if R-058 establishes activated feedback without a demonstrated success gain, but its 1,680 episodes and at most 32 LLM c
 - R-061 3. Repair a qualifying winner with clipping-aware command allocation: Joint command allocation differs from R-056's slip-gated repair, but spending 2400 episodes and up to 128 LLM calls requires demonstrated downstream authority l
+- R-063 Anticipatory centering without changing the spin stroke: Predictive centering introduces a genuinely new observation pathway, but its 380 simulator episodes and zero LLM calls should wait for R-062's structural diagno
+- R-064 Close spin feedback through stroke timing, not weak amplitude: The equally screened constant-tempo controls distinguish feedback regulation from finding a better open-loop frequency, but 850 simulator episodes and zero LLM 
 
 ## Last 5 decisions
 
@@ -50,11 +53,11 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
+- R-062 round 2 · advisor approve / implementer approve → agreed (approved)
+- R-062 round 1 · advisor approve / implementer revise → disagreed (proposed)
+- R-064 round 1 · advisor defer / implementer defer → agreed (deferred)
+- R-063 round 1 · advisor defer / implementer defer → agreed (deferred)
 - R-060 round 2 · advisor approve / implementer approve → agreed (approved)
-- R-059 round 2 · advisor reject / implementer reject → agreed (rejected)
-- R-060 round 1 · advisor approve / implementer revise → disagreed (proposed)
-- R-059 round 1 · advisor approve / implementer reject → disagreed (proposed)
-- R-061 round 1 · advisor defer / implementer defer → agreed (deferred)
 
 ## Standing constraints
 
