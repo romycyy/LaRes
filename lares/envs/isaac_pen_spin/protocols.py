@@ -26,21 +26,20 @@ def audit_manifest_paths(protocol_cfg: dict) -> dict:
 
 def build_audit_manifests(protocol_cfg: dict) -> list[str]:
     """Write the probe manifests the protocol names; refuses to overwrite a different one."""
-    from lares.eval.manifest import EvaluationManifest
-
     written = []
     n = int(protocol_cfg["cases_per_stage"])
     for stage, path in audit_manifest_paths(protocol_cfg).items():
         seed = int(protocol_cfg["pool_seeds"][stage])
-        m = cases.build_manifest(stage, seed, n, label="probe")
-        if os.path.exists(path):
-            old = EvaluationManifest.load(path)
-            if old.to_dict() != m.to_dict():
-                raise ValueError(f"{path} exists and differs from the manifest this protocol builds")
-            continue
-        m.save(path)
-        written.append(path)
+        if cases.freeze_manifest(path, cases.build_manifest(stage, seed, n, label="probe")):
+            written.append(path)
     return written
+
+
+def build_single_manifest(protocol_cfg: dict, label: str, stage: int) -> list[str]:
+    """The one-manifest protocols' ``build_manifests``: ``pool_seed`` and ``cases`` from the config, frozen at ``manifest``."""
+    path = protocol_cfg["manifest"]
+    m = cases.build_manifest(stage, int(protocol_cfg["pool_seed"]), int(protocol_cfg["cases"]), label=label)
+    return [path] if cases.freeze_manifest(path, m) else []
 
 
 def run_audit_cell(stage: int, controller: str, protocol_cfg: dict, out_dir: str, device: str) -> str:
@@ -150,8 +149,6 @@ def controller_factory(name: str):
 
 
 def build_qualification_manifests(protocol_cfg: dict) -> list[str]:
-    from lares.eval.manifest import EvaluationManifest
-
     written = []
     specs = [(int(k), v, int(protocol_cfg["pool_seeds"][k]), "development") for k, v in protocol_cfg["manifests"].items()]
     specs.append((None, None, int(protocol_cfg["control_seed"]), "debug"))
@@ -159,13 +156,8 @@ def build_qualification_manifests(protocol_cfg: dict) -> list[str]:
         stages = [stage] if stage is not None else [int(k) for k in protocol_cfg["manifests"]]
         for st in stages:
             p = path or os.path.join(protocol_cfg["log_dir"], "control_manifests", f"pen_spin_stage{st}_debug_s{seed}.yaml")
-            m = cases.build_manifest(st, seed, int(protocol_cfg["cases_per_stage"]), label=label)
-            if os.path.exists(p):
-                if EvaluationManifest.load(p).to_dict() != m.to_dict():
-                    raise ValueError(f"{p} exists and differs from the manifest this protocol builds")
-                continue
-            m.save(p)
-            written.append(p)
+            if cases.freeze_manifest(p, cases.build_manifest(st, seed, int(protocol_cfg["cases_per_stage"]), label=label)):
+                written.append(p)
     return written
 
 
@@ -201,13 +193,78 @@ def run_cell(manifest_path: str, controller: str, out_path: str, device: str, re
     return out_path
 
 
-def _child(config_path: str, protocol: str, manifest_path: str, controller: str, out_path: str, record_obs: bool):
-    cmd = [sys.executable, "-u", sys.argv[0], "--config", config_path, "--research-protocol", protocol,
+def child_cell(config_path: str, manifest_path: str, controller: str, out_path: str, *, protocol: str | None = None,
+               study: str | None = None, record_obs: bool = False, skip_existing: bool = False) -> None:
+    """Re-exec this script for one cell (one controller on one manifest in a fresh Isaac process, D-034).
+
+    ``protocol`` names a ``--research-protocol``, ``study`` a ``--study``; exactly one is given. With
+    ``skip_existing`` a cell whose output exists is not rerun, which is how every driver resumes.
+    """
+    if (protocol is None) == (study is None):
+        raise ValueError("child_cell takes exactly one of protocol= and study=")
+    if skip_existing and os.path.exists(out_path):
+        print("exists", out_path, flush=True)
+        return
+    flag, name = ("--study", study) if study is not None else ("--research-protocol", protocol)
+    cmd = [sys.executable, "-u", sys.argv[0], "--config", config_path, flag, name,
            "--cell-manifest", manifest_path, "--controller", controller, "--cell-out", out_path]
     if record_obs:
         cmd.append("--record-obs")
     print("running", " ".join(cmd), flush=True)
     subprocess.run(cmd, check=True)
+
+
+def _child(config_path: str, protocol: str, manifest_path: str, controller: str, out_path: str, record_obs: bool):
+    child_cell(config_path, manifest_path, controller, out_path, protocol=protocol, record_obs=record_obs)
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+#  Per-arm row summaries shared by the feedback studies (R-041, R-044, R-047, R-051, R-053)
+# ---------------------------------------------------------------------------------------------------------------------
+
+
+def arm_summary(rows: list[dict]) -> dict:
+    n = len(rows)
+    return {
+        "n": n,
+        "successes": int(sum(r["sustained"] for r in rows)),
+        "success": float(np.mean([r["sustained"] for r in rows])),
+        "completed": float(np.mean([r["completed"] for r in rows])),
+        "tail_hit_fraction": float(np.mean([r["tail_hit_fraction"] for r in rows])),
+        "hit_fraction": float(np.mean([r["hit_steps"] / max(1, r["length"]) for r in rows])),
+        "mean_length": float(np.mean([r["length"] for r in rows])),
+        "mean_abs_spin": float(np.mean([r["mean_abs_spin"] for r in rows if r["mean_abs_spin"] is not None])),
+        "mean_transverse": float(np.mean([r["mean_transverse"] for r in rows if r["mean_transverse"] is not None])),
+    }
+
+
+def failure_split(rows: list[dict]) -> dict:
+    drops = [r for r in rows if not r["completed"]]
+    tail = [r for r in rows if r["completed"] and not r["sustained"]]
+    return {"drops": len(drops), "tail_spin_failures": len(tail),
+            "median_fall_step": float(np.median([r["length"] for r in drops])) if drops else None}
+
+
+def aggregate_vs_expert(rows: dict, arms, primary: str) -> dict:
+    """Per-arm summaries and each of ``arms`` minus the ``"expert"`` rows, paired by case.
+
+    ``primary`` names the arm whose paired mean is reported as ``paired_success_difference``.
+    """
+    from lares.eval.stats import t_summary
+
+    base = rows["expert"]
+    out = {"arms": {}}
+    for arm, rs in rows.items():
+        if [r["task_hash"] for r in rs] != [r["task_hash"] for r in base]:
+            raise ValueError(f"{arm} rows are not paired case for case with the expert")
+        out["arms"][arm] = {**arm_summary(rs), **failure_split(rs)}
+    for arm in arms:
+        if arm in rows:
+            d = [float(x["sustained"]) - float(e["sustained"]) for x, e in zip(rows[arm], base)]
+            out[f"{arm}_minus_expert"] = t_summary(d)
+    head = out.get(f"{primary}_minus_expert")
+    out["paired_success_difference"] = head["mean"] if head else None
+    return out
 
 
 #: Amended gate (advisor consult call_00075, before any development case ran): the first, bit-identity

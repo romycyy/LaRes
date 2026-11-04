@@ -21,9 +21,9 @@ from __future__ import annotations
 import json
 import os
 
-from lares.envs.isaac_pen_spin import cases
 from lares.envs.isaac_pen_spin.feedback_ablation import _arm_summary, check_checkpoint, reproducibility_gate
 from lares.envs.isaac_pen_spin.feedback_lesions import LESIONS, _child, failure_split, lesion_index
+from lares.envs.isaac_pen_spin.protocols import aggregate_vs_expert, build_single_manifest
 
 FEEDBACK_DELAY = "feedback_delay"
 STAGE = 3
@@ -81,19 +81,10 @@ def manifest_path(protocol_cfg: dict) -> str:
 
 
 def build_manifests(protocol_cfg: dict) -> list[str]:
-    from lares.eval.manifest import EvaluationManifest
-
-    path = manifest_path(protocol_cfg)
-    m = cases.build_manifest(STAGE, int(protocol_cfg["pool_seed"]), int(protocol_cfg["cases"]), label="delay")
-    if os.path.exists(path):
-        if EvaluationManifest.load(path).to_dict() != m.to_dict():
-            raise ValueError(f"{path} exists and differs from the manifest this protocol builds")
-        return []
-    m.save(path)
-    return [path]
+    return build_single_manifest(protocol_cfg, "delay", STAGE)
 
 
-def make_controller(arm: str, protocol_cfg: dict):
+def make_controller(arm: str, protocol_cfg: dict, out_dir: str | None = None):
     from lares.envs.isaac_pen_spin.ppo_expert import PPOController
 
     expert = PPOController(check_checkpoint(protocol_cfg), int(protocol_cfg["training_seed"]))
@@ -104,21 +95,7 @@ def make_controller(arm: str, protocol_cfg: dict):
 
 def aggregate(rows: dict) -> dict:
     """Per-arm summaries and each delay minus the expert, paired by case."""
-    from lares.eval.stats import t_summary
-
-    base = rows["expert"]
-    out = {"arms": {}}
-    for arm, rs in rows.items():
-        if [r["task_hash"] for r in rs] != [r["task_hash"] for r in base]:
-            raise ValueError(f"{arm} rows are not paired case for case with the expert")
-        out["arms"][arm] = {**_arm_summary(rs), **failure_split(rs)}
-    for arm in DELAYS:
-        if arm in rows:
-            d = [float(x["sustained"]) - float(e["sustained"]) for x, e in zip(rows[arm], base)]
-            out[f"{arm}_minus_expert"] = t_summary(d)
-    pen = out.get("pen_state_delayed4_minus_expert")
-    out["paired_success_difference"] = pen["mean"] if pen else None
-    return out
+    return aggregate_vs_expert(rows, DELAYS, "pen_state_delayed4")
 
 
 def run_feedback_delay(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
@@ -155,5 +132,7 @@ def run_feedback_delay(protocol_cfg: dict, config_path: str, out_dir: str) -> di
     return summary
 
 
+run = run_feedback_delay
+
 __all__ = ["ARMS", "DELAYS", "DELAY_STEPS", "DelayedController", "FEEDBACK_DELAY", "aggregate", "build_manifests",
-           "run_feedback_delay"]
+           "run", "run_feedback_delay"]

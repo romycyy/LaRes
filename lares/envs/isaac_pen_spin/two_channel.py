@@ -64,34 +64,16 @@ def manifest_file(stage: int, seed: int) -> str:
 
 
 def freeze_manifests(ccfg: dict) -> dict:
-    from lares.eval.manifest import EvaluationManifest
-
-    built, hashes = {}, {}
-    for b, (stage, seed) in enumerate(block_stages(ccfg)):
-        m = cases.build_manifest(stage, seed, BLOCK_CASES, label=LABEL)
-        path = manifest_file(stage, seed)
-        if os.path.exists(path):
-            if EvaluationManifest.load(path).to_dict() != m.to_dict():
-                raise ValueError(f"{path} exists and differs from the manifest this study builds")
-        else:
-            m.save(path)
-        for c in m.episodes:
-            if c.task_hash in hashes:
-                raise ValueError(f"block{b} shares placement {c.task_hash} with {hashes[c.task_hash]}")
-            hashes[c.task_hash] = f"block{b}"
-        built[f"block{b}"] = path
-    return built
+    return cases.freeze_manifest_set(
+        (manifest_file(stage, seed), cases.build_manifest(stage, seed, BLOCK_CASES, label=LABEL), f"block{b}")
+        for b, (stage, seed) in enumerate(block_stages(ccfg)))
 
 
 def block_roles(stage: int, seed: int) -> dict:
     from lares.eval.manifest import EvaluationManifest
 
-    m = EvaluationManifest.load(manifest_file(stage, seed))
-    if len(m) != BLOCK_CASES or cases.stage_of(m) != stage:
-        raise ValueError(f"block manifest for stage {stage} seed {seed} is not an {BLOCK_CASES}-case stage-{stage} one")
-    return {role: EvaluationManifest(manifest_id=f"{m.manifest_id}:{role}", environment=m.environment, pool=m.pool,
-                                     split=m.split, episodes=list(m.episodes[a:b]))
-            for role, (a, b) in ROLES.items()}
+    return cases.role_manifests(EvaluationManifest.load(manifest_file(stage, seed)), ROLES,
+                                expected_cases=BLOCK_CASES, stage=stage)
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -151,7 +133,7 @@ def generate_slots(arm: str, env_id: str, adir: str, client, model: str, reasoni
     os.makedirs(adir, exist_ok=True)
     data_pkl = os.path.join(adir, "data.pkl")
     with open(data_pkl, "wb") as f:
-        pickle.dump([{"obs": np.zeros(157)}], f)
+        pickle.dump([{"obs": np.zeros(cases.OBS_DIM)}], f)
     prompts = dict(load_policy_prompt_assets(env_id))
     if arm == "two_channel":
         prompts["task_description"] = prompts["task_description"] + "\n" + TWO_CHANNEL_REQUIREMENT
@@ -162,7 +144,7 @@ def generate_slots(arm: str, env_id: str, adir: str, client, model: str, reasoni
     plan = SimpleNamespace(n=SLOTS, slot=lambda k: specs[k])
     ledger = LLMCallLedger(adir)
     gen = PlateauSlotGenerator(client, SimpleNamespace(model=model, reasoning_effort=reasoning_effort),
-                               os.path.join(adir, "gen_0"), 157, cases.NUM_ACTIONS, env_id, prompts, plan, data_pkl,
+                               os.path.join(adir, "gen_0"), cases.OBS_DIM, cases.NUM_ACTIONS, env_id, prompts, plan, data_pkl,
                                ledger, llm_transcript_path=os.path.join(adir, "llm_transcript.log"),
                                max_total_calls=SLOTS * int(max_calls_per_slot), max_repair_per_candidate=1)
     with open(os.path.join(adir, "user_prompt.txt"), "w", encoding="utf-8") as f:
@@ -252,14 +234,14 @@ def _arm_stats(a: dict) -> dict:
 
 
 def summarise(blocks: list[dict]) -> dict:
-    from lares.eval.stats import t_summary
+    from lares.eval.stats import block_contrast
 
     out = {"blocks": blocks, "n_blocks": len(blocks)}
     for a, b in (PRIMARY,):
         for key in ("fresh_incumbent", "fresh_selected"):
-            d = [blk["arms"][a][key]["success"] - blk["arms"][b][key]["success"] for blk in blocks
-                 if blk["arms"][a].get(key) is not None and blk["arms"][b].get(key) is not None]
-            out[f"{a}_minus_{b}_{key}"] = {"per_block": d, **(t_summary(d) if len(d) >= 2 else {"n": len(d)})}
+            out[f"{a}_minus_{b}_{key}"] = block_contrast(
+                blk["arms"][a][key]["success"] - blk["arms"][b][key]["success"] for blk in blocks
+                if blk["arms"][a].get(key) is not None and blk["arms"][b].get(key) is not None)
     out["paired_success_difference"] = out[f"{PRIMARY[0]}_minus_{PRIMARY[1]}_fresh_incumbent"].get("mean")
     by_stage = {}
     for stage in sorted({blk["stage"] for blk in blocks}):

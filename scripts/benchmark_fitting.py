@@ -23,6 +23,8 @@ _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
 sys.path.insert(0, _PROJECT_ROOT)
 
+from lares.utils.clock import run_stamp  # noqa: E402
+from lares.utils.cli import separator  # noqa: E402
 from lares.core.obs_schema import get_obs_schema  # noqa: E402
 from lares.core.training_pipeline import DemoBuffer, ensure_mujoco_headless_gl  # noqa: E402
 from lares.eval import EvaluationManifest, make_manifest_env  # noqa: E402
@@ -62,10 +64,6 @@ def parse_args():
     p.add_argument("--no-rollouts", action="store_true",
                    help="Skip development rollouts; compare on loss only.")
     return p.parse_args()
-
-
-def separator(title):
-    print(f"\n{'=' * 78}\n  {title}\n{'=' * 78}")
 
 
 def main():
@@ -184,7 +182,7 @@ def main():
             print(f"  {sid:<20} {names}")
 
     out_path = os.path.join(
-        args.out_dir, f"fitting_benchmark_{time.strftime('%Y%m%d_%H%M%S')}.json"
+        args.out_dir, f"fitting_benchmark_{run_stamp()}.json"
     )
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, default=str)

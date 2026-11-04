@@ -14,7 +14,6 @@ final-test splits are built from disjoint pool seeds and checked for overlap.
 
 from __future__ import annotations
 
-import hashlib
 import os
 import pickle
 from dataclasses import asdict, dataclass, field
@@ -24,6 +23,7 @@ import numpy as np
 import yaml
 
 from lares.utils.env_ids import resolve_registry_env_id
+from lares.utils.hashing import SHORT_HASH_LENGTH, sha256_bytes
 
 SPLIT_TRAIN = "train"
 SPLIT_DEVELOPMENT = "development"
@@ -55,7 +55,7 @@ def to_v3(env_id: str) -> str:
 def _hash_rand_vec(rand_vec) -> str:
     """Stable short digest of a placement vector, used to detect pool drift."""
     arr = np.asarray(rand_vec, dtype=np.float64)
-    return hashlib.sha256(arr.tobytes()).hexdigest()[:16]
+    return sha256_bytes(arr.tobytes())[:SHORT_HASH_LENGTH]
 
 
 @dataclass(frozen=True)
@@ -500,6 +500,25 @@ def synthetic_manifest(
         split=split,
         episodes=synthetic_cases(n, prefix=label),
     )
+
+
+def unique_manifests(manifests: Iterable[EvaluationManifest]) -> list:
+    """One copy per manifest id, refusing two different manifests under one id.
+
+    An evaluation saves its manifest beside each output, so the same spent
+    manifest can sit in several directories; comparing those copies with each
+    other would report a false overlap.
+    """
+    seen, out = {}, []
+    for m in manifests:
+        hashes = [c.task_hash for c in m.episodes]
+        if m.manifest_id in seen:
+            if seen[m.manifest_id] != hashes:
+                raise ValueError(f"two different manifests share the id {m.manifest_id!r}")
+            continue
+        seen[m.manifest_id] = hashes
+        out.append(m)
+    return out
 
 
 def assert_disjoint(manifests: Sequence[EvaluationManifest]) -> None:

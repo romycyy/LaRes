@@ -13,14 +13,14 @@ import tempfile
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 import numpy as np  # noqa: E402
-import yaml  # noqa: E402
 
+from lares.utils.cli import load_yaml  # noqa: E402
 from lares.envs.isaac_pen_spin import cases  # noqa: E402
 from lares.envs.isaac_pen_spin.pipeline_backend import IsaacExpertActor, IsaacPenSpinStream  # noqa: E402
 
 
 def main():
-    cfg = yaml.safe_load(open("config/pen_spin_plateau_repair.yaml"))
+    cfg = load_yaml("config/pen_spin_plateau_repair.yaml")
     e, lf = cfg["pen_spin"]["expert"], cfg["local_feedback_evidence"]
     demo = np.load(lf["demo_trace"])
     obs, act = demo["obs"][0, :40:4], demo["actions"][0, :40:4]

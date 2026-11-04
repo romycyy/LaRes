@@ -9,12 +9,10 @@ import os
 import shutil
 import subprocess
 import sys
-import time
 from types import SimpleNamespace
 
 import numpy as np
 import torch
-import yaml
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
@@ -35,6 +33,8 @@ from lares.envs.isaac_lab_adapter import (  # noqa: E402
     launch_isaac_app,
 )
 from lares.eval.manifest import synthetic_cases  # noqa: E402
+from lares.utils.cli import load_yaml  # noqa: E402
+from lares.utils.clock import run_stamp  # noqa: E402
 
 
 class ShadowHandSpinSymbolicPolicy(SymbolicPolicy):
@@ -71,9 +71,7 @@ _CONFIG_DEFAULTS = {
 
 
 def load_config(path: str) -> SimpleNamespace:
-    with open(path, "r", encoding="utf-8") as f:
-        raw = yaml.safe_load(f) or {}
-    cfg = {**_CONFIG_DEFAULTS, **raw}
+    cfg = {**_CONFIG_DEFAULTS, **(load_yaml(path) or {})}
     # Derived from other keys, so these cannot live in the static defaults above.
     cfg.setdefault("gif_max_steps", cfg["max_steps"])
     if "pipeline_task" not in cfg:
@@ -343,18 +341,25 @@ def collect_scripted_dataset(env, cfg: SimpleNamespace, logger: TrainingLogger) 
     return buffer, stats
 
 
-def run_study(args, cfg: SimpleNamespace) -> None:
-    """``--study feedback_ablation`` (R-041), ``feedback_lesions`` (R-044), ``feedback_delay`` (R-047) or
-    ``learner_recovery`` (R-051) or ``learner_axial_sign`` (R-053): the driver, or one child cell."""
+def pen_spin_studies() -> dict:
+    """``{study name: module}`` for ``--study``. Every module exposes ``build_manifests(protocol_cfg)``,
+    ``make_controller(name, protocol_cfg, out_dir)`` and ``run(protocol_cfg, config_path, out_dir)``; a new study is
+    one module with those three names and one entry here."""
     from lares.envs.isaac_pen_spin import axial_sign, feedback_ablation, feedback_delay, feedback_lesions, learner_recovery
 
-    studies = {feedback_ablation.FEEDBACK_ABLATION: feedback_ablation,
-               feedback_lesions.FEEDBACK_LESIONS: feedback_lesions,
-               feedback_delay.FEEDBACK_DELAY: feedback_delay,
-               learner_recovery.LEARNER_RECOVERY: learner_recovery,
-               axial_sign.LEARNER_AXIAL_SIGN: axial_sign}
+    return {feedback_ablation.FEEDBACK_ABLATION: feedback_ablation,
+            feedback_lesions.FEEDBACK_LESIONS: feedback_lesions,
+            feedback_delay.FEEDBACK_DELAY: feedback_delay,
+            learner_recovery.LEARNER_RECOVERY: learner_recovery,
+            axial_sign.LEARNER_AXIAL_SIGN: axial_sign}
+
+
+def run_study(args, cfg: SimpleNamespace) -> None:
+    """``--study feedback_ablation`` (R-041), ``feedback_lesions`` (R-044), ``feedback_delay`` (R-047),
+    ``learner_recovery`` (R-051) or ``learner_axial_sign`` (R-053): the driver, or one child cell."""
+    studies = pen_spin_studies()
     if args.study not in studies:
-        raise SystemExit(f"unknown study {args.study!r}")
+        raise SystemExit(f"unknown study {args.study!r}; one of {sorted(studies)}")
     fa = studies[args.study]
     protocol_cfg = (getattr(cfg, "research_protocols", None) or {}).get(args.study)
     if protocol_cfg is None:
@@ -371,23 +376,13 @@ def run_study(args, cfg: SimpleNamespace) -> None:
         _ensure_isaaclab_on_path(str(cfg.isaaclab_root))
         launch_isaac_app(headless=True, device=str(cfg.device))
         try:
-            ctrl = (fa.make_controller(args.controller, protocol_cfg, out_dir)
-                    if fa in (feedback_ablation, learner_recovery) else fa.make_controller(args.controller, protocol_cfg))
+            ctrl = fa.make_controller(args.controller, protocol_cfg, out_dir)
             print("wrote", protocols.run_cell(args.cell_manifest, ctrl, args.cell_out, str(cfg.device),
                                               record_obs=args.record_obs))
         finally:
             close_isaac_app()
         return
-    if fa is feedback_lesions:
-        summary = fa.run_feedback_lesions(protocol_cfg, args.config, out_dir)
-    elif fa is feedback_delay:
-        summary = fa.run_feedback_delay(protocol_cfg, args.config, out_dir)
-    elif fa is learner_recovery:
-        summary = fa.run_learner_recovery(protocol_cfg, args.config, out_dir)
-    elif fa is axial_sign:
-        summary = fa.run_learner_axial_sign(protocol_cfg, args.config, out_dir)
-    else:
-        summary = fa.run_feedback_ablation(protocol_cfg, args.config, out_dir)
+    summary = fa.run(protocol_cfg, args.config, out_dir)
     print(json.dumps({k: v for k, v in summary.items() if k != "tape"}, indent=2))
 
 
@@ -460,7 +455,7 @@ def main() -> None:
     if args.research_protocol:
         run_research_protocol(args, cfg)
         return
-    run_id = time.strftime("%Y%m%d_%H%M%S")
+    run_id = run_stamp()
     run_dir = os.path.abspath(os.path.join(str(cfg.log_dir), run_id))
     os.makedirs(run_dir, exist_ok=True)
     shutil.copy2(args.config, os.path.join(run_dir, "config.yaml"))

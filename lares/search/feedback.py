@@ -26,7 +26,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-import numpy as np
 
 #: Reported alongside the fitting loss so the generator is not misled by it.
 LOSS_CAVEAT = (

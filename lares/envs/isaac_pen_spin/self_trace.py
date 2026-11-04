@@ -173,34 +173,16 @@ def manifest_file(seed: int) -> str:
 
 
 def freeze_manifests(scfg: dict) -> dict:
-    from lares.eval.manifest import EvaluationManifest
-
-    built, hashes = {}, {}
-    for b, seed in enumerate(int(s) for s in scfg["block_seeds"]):
-        m = cases.build_manifest(STAGE, seed, BLOCK_CASES, label=LABEL)
-        path = manifest_file(seed)
-        if os.path.exists(path):
-            if EvaluationManifest.load(path).to_dict() != m.to_dict():
-                raise ValueError(f"{path} exists and differs from the manifest this study builds")
-        else:
-            m.save(path)
-        for c in m.episodes:
-            if c.task_hash in hashes:
-                raise ValueError(f"block{b} shares placement {c.task_hash} with {hashes[c.task_hash]}")
-            hashes[c.task_hash] = f"block{b}"
-        built[f"block{b}"] = path
-    return built
+    return cases.freeze_manifest_set(
+        (manifest_file(seed), cases.build_manifest(STAGE, seed, BLOCK_CASES, label=LABEL), f"block{b}")
+        for b, seed in enumerate(int(s) for s in scfg["block_seeds"]))
 
 
 def block_roles(seed: int) -> dict:
     from lares.eval.manifest import EvaluationManifest
 
-    m = EvaluationManifest.load(manifest_file(seed))
-    if len(m) != BLOCK_CASES or cases.stage_of(m) != STAGE:
-        raise ValueError(f"block manifest for seed {seed} is not an {BLOCK_CASES}-case stage-{STAGE} one")
-    return {role: EvaluationManifest(manifest_id=f"{m.manifest_id}:{role}", environment=m.environment, pool=m.pool,
-                                     split=m.split, episodes=list(m.episodes[a:b]))
-            for role, (a, b) in ROLES.items()}
+    return cases.role_manifests(EvaluationManifest.load(manifest_file(seed)), ROLES, expected_cases=BLOCK_CASES,
+                                stage=STAGE)
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -262,11 +244,11 @@ def generate(arm: str, request: str, packet: dict, adir: str, client, model: str
     os.makedirs(adir, exist_ok=True)
     data_pkl = os.path.join(adir, "data.pkl")
     with open(data_pkl, "wb") as f:
-        pickle.dump([{"obs": np.zeros(157)}], f)
+        pickle.dump([{"obs": np.zeros(cases.OBS_DIM)}], f)
     env_id = cases.STAGES[STAGE].task_id
     ledger = LLMCallLedger(adir)
     gen = PlateauSlotGenerator(client, SimpleNamespace(model=model, reasoning_effort=reasoning_effort),
-                               os.path.join(adir, "gen_0"), 157, cases.NUM_ACTIONS, env_id,
+                               os.path.join(adir, "gen_0"), cases.OBS_DIM, cases.NUM_ACTIONS, env_id,
                                load_policy_prompt_assets(env_id), SimpleNamespace(n=SLOTS), data_pkl, ledger,
                                llm_transcript_path=os.path.join(adir, "llm_transcript.log"),
                                max_total_calls=SLOTS * int(max_calls_per_slot), max_repair_per_candidate=1)
@@ -428,13 +410,12 @@ def run_fresh(arms: dict, parent, roles: dict, bdir: str, stream_factory) -> dic
 
 
 def summarise(blocks: list[dict]) -> dict:
-    from lares.eval.stats import t_summary, win_loss_tie
+    from lares.eval.stats import block_contrast, win_loss_tie
 
     out = {"blocks": blocks, "n_blocks": len(blocks)}
     a, b = PRIMARY
     d = [blk["fresh"][a]["success"] - blk["fresh"][b]["success"] for blk in blocks]
-    out[f"{a}_minus_{b}_fresh_incumbent"] = {"per_block": d, **(t_summary(d) if len(d) >= 2 else {"n": len(d)}),
-                                             **win_loss_tie(d)}
+    out[f"{a}_minus_{b}_fresh_incumbent"] = {**block_contrast(d), **win_loss_tie(d)}
     out["paired_success_difference"] = out[f"{a}_minus_{b}_fresh_incumbent"].get("mean")
     per_arm = {}
     for arm in ARMS:

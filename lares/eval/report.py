@@ -15,7 +15,7 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import asdict, dataclass, field
-from typing import Any, Sequence
+from typing import Sequence
 
 import numpy as np
 
@@ -184,10 +184,14 @@ class EvaluationReport:
     def to_dict(self) -> dict:
         return asdict(self)
 
+    def to_json(self) -> str:
+        """The one serialisation of a report; ``save`` writes it and the orchestrator hashes it."""
+        return json.dumps(self.to_dict(), indent=2, default=str)
+
     def save(self, path: str) -> str:
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(self.to_dict(), f, indent=2, default=str)
+            f.write(self.to_json())
         return path
 
     @classmethod

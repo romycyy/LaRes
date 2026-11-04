@@ -15,15 +15,15 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 import numpy as np  # noqa: E402
-import yaml  # noqa: E402
 
+from lares.utils.cli import load_yaml  # noqa: E402
 from lares.envs.isaac_pen_spin import cases, local_feedback as lf  # noqa: E402
 from lares.envs.isaac_pen_spin.pipeline_backend import IsaacExpertActor, IsaacPenSpinStream  # noqa: E402
 from lares.utils.hashing import sha256_file  # noqa: E402
 
 
 def main(bdir: str):
-    cfg = yaml.safe_load(open("config/pen_spin_plateau_repair.yaml"))
+    cfg = load_yaml("config/pen_spin_plateau_repair.yaml")
     e, lcfg = cfg["pen_spin"]["expert"], cfg["local_feedback_evidence"]
     meta = json.load(open(os.path.join(bdir, "evidence.json")))
     states = np.load(os.path.join(bdir, "evidence.npz"))["obs"][meta["evidence_rows"]]

@@ -25,11 +25,12 @@ from __future__ import annotations
 
 import json
 import os
-import time
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 
+from lares.utils.clock import now_iso
 from lares.utils.hashing import short_hash_file, short_hash_text
+from lares.utils.jsonl import read_jsonl
 
 FREEZE_FILENAME = "freeze.json"
 LEDGER_FILENAME = "final_test_ledger.jsonl"
@@ -157,7 +158,7 @@ def build_freeze(
     """Digest everything a final run must not change, from what is on disk."""
     record = FreezeRecord(
         freeze_id=freeze_id,
-        created_at=time.strftime("%Y-%m-%dT%H:%M:%S"),
+        created_at=now_iso(),
         models=dict(models),
         prompts=hash_directory(prompt_dir, ".txt"),
         code={name: hash_file(path) for name, path in code_files.items()},
@@ -197,10 +198,7 @@ def assert_final_test_allowed(manifest_id: str) -> None:
 
 
 def ledger_entries(path: str) -> list:
-    if not os.path.isfile(path):
-        return []
-    with open(path, encoding="utf-8") as f:
-        return [json.loads(line) for line in f if line.strip()]
+    return read_jsonl(path)
 
 
 def record_final_test(result, code_hash: str = "", allow_rescore: bool = False) -> dict:
@@ -223,7 +221,7 @@ def record_final_test(result, code_hash: str = "", allow_rescore: bool = False) 
             f"allow_rescore=True to record a deliberate re-score."
         )
     entry = {
-        "at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "at": now_iso(),
         "freeze_id": _SESSION["freeze_id"],
         "key": key,
         "actor": result.actor_name,

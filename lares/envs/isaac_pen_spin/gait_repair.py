@@ -66,43 +66,22 @@ def manifest_file(label: str, seed: int) -> str:
 
 
 def freeze_manifests(gcfg: dict) -> dict:
-    from lares.eval.manifest import EvaluationManifest
-
     specs = [("gait", int(s), BLOCK_CASES, f"block{b}") for b, s in enumerate(gcfg["block_seeds"])]
     specs.append(("parity", int(gcfg["parity_seed"]), int(gcfg["parity_cases"]), "parity"))
-    built, hashes = {}, {}
-    for label, seed, n, role in specs:
-        m = cases.build_manifest(STAGE, seed, n, label=label)
-        path = manifest_file(label, seed)
-        if os.path.exists(path):
-            if EvaluationManifest.load(path).to_dict() != m.to_dict():
-                raise ValueError(f"{path} exists and differs from the manifest this study builds")
-        else:
-            m.save(path)
-        for c in m.episodes:
-            if c.task_hash in hashes:
-                raise ValueError(f"{role} shares placement {c.task_hash} with {hashes[c.task_hash]}")
-            hashes[c.task_hash] = role
-        built[role] = path
-    return built
+    return cases.freeze_manifest_set((manifest_file(label, seed), cases.build_manifest(STAGE, seed, n, label=label), role)
+                                     for label, seed, n, role in specs)
 
 
 def role_manifest(m, role: str):
     """Cases ``ROLES[role]`` of a block manifest, under an id naming the role (so its own slices stay unambiguous)."""
-    from lares.eval.manifest import EvaluationManifest
-
-    a, b = ROLES[role]
-    return EvaluationManifest(manifest_id=f"{m.manifest_id}:{role}", environment=m.environment, pool=m.pool,
-                              split=m.split, episodes=list(m.episodes[a:b]))
+    return cases.role_manifests(m, {role: ROLES[role]})[role]
 
 
 def block_roles(seed: int) -> dict:
     from lares.eval.manifest import EvaluationManifest
 
     m = EvaluationManifest.load(manifest_file("gait", seed))
-    if len(m) != BLOCK_CASES:
-        raise ValueError(f"block manifest for seed {seed} has {len(m)} cases, not {BLOCK_CASES}")
-    roles = {r: role_manifest(m, r) for r in ROLES}
+    roles = cases.role_manifests(m, ROLES, expected_cases=BLOCK_CASES)
     dev = roles["development"]
     roles["screen"], roles["promotion"] = dev.head(SCREEN), dev.slice(SCREEN, SCREEN + PROMOTION)
     return roles
@@ -455,15 +434,15 @@ def run_arm(arm: str, b: int, gcfg: dict, roles: dict, expert: dict, bdir: str, 
 
 
 def summarise(blocks: list[dict]) -> dict:
-    from lares.eval.stats import t_summary
+    from lares.eval.stats import block_contrast
 
     eligible = [b for b in blocks if b.get("eligible")]
     out = {"blocks": blocks, "eligible_blocks": len(eligible), "min_eligible_blocks": MIN_ELIGIBLE_BLOCKS}
     for a, b in (PRIMARY,) + SECONDARY:
         for key in ("fresh_incumbent", "fresh_selected"):
-            d = [blk["arms"][a][key]["success"] - blk["arms"][b][key]["success"] for blk in eligible
-                 if key in blk["arms"][a] and key in blk["arms"][b]]
-            out[f"{a}_minus_{b}_{key}"] = {"per_block": d, **(t_summary(d) if len(d) >= 2 else {"n": len(d)})}
+            out[f"{a}_minus_{b}_{key}"] = block_contrast(
+                blk["arms"][a][key]["success"] - blk["arms"][b][key]["success"] for blk in eligible
+                if key in blk["arms"][a] and key in blk["arms"][b])
     out["paired_success_difference"] = out[f"{PRIMARY[0]}_minus_{PRIMARY[1]}_fresh_incumbent"].get("mean")
     out["conclusive"] = len(eligible) >= MIN_ELIGIBLE_BLOCKS
     return out

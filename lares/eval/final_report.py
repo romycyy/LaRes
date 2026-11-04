@@ -25,6 +25,8 @@ from dataclasses import asdict, dataclass, field
 
 import numpy as np
 
+from lares.utils.clock import now_iso
+
 #: Quantities AC-7 requires in the final report. Each maps to the artifact that
 #: would carry it, so a missing one names where to add instrumentation rather
 #: than merely reading "unavailable".
@@ -53,14 +55,10 @@ def _mean(values):
 
 
 def load_records(directory: str) -> list:
-    """Every experiment record under ``directory``, newest last."""
-    from lares.search.schemas import ExperimentRecord
+    """Every experiment record under ``directory``, sorted by file name."""
+    from lares.search.schemas import load_records as _load_records
 
-    records = []
-    for path in sorted(glob.glob(os.path.join(directory, "*.json"))):
-        with open(path, encoding="utf-8") as f:
-            records.append(ExperimentRecord.from_dict(json.load(f)))
-    return records
+    return _load_records(directory)
 
 
 def load_json_dir(directory: str) -> list:
@@ -267,7 +265,6 @@ def build_final_report(
     ablation_budget=None,
 ) -> FinalReport:
     """Assemble the aggregate report. Reads files; runs nothing."""
-    import time
 
     if isinstance(experiments_dirs, str):
         experiments_dirs = [experiments_dirs]
@@ -279,7 +276,7 @@ def build_final_report(
     ablations = load_json_dir(ablation_dir) if os.path.isdir(ablation_dir) else []
 
     report = FinalReport(
-        generated_at=time.strftime("%Y-%m-%dT%H:%M:%S"),
+        generated_at=now_iso(),
         sources={
             "experiments": list(experiments_dirs), "experiment_records": len(records),
             "repair_studies": repair_studies_dir, "studies": len(studies),

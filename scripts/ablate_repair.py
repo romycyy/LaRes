@@ -39,6 +39,9 @@ sys.path.insert(0, _PROJECT_ROOT)
 
 import numpy as np  # noqa: E402
 
+from lares.eval.stats import win_loss_tie  # noqa: E402
+from lares.utils.clock import run_stamp  # noqa: E402
+from lares.utils.cli import separator  # noqa: E402
 from lares.core.obs_schema import get_obs_schema  # noqa: E402
 from lares.core.training_pipeline import DemoBuffer, ensure_mujoco_headless_gl  # noqa: E402
 from lares.eval import EvaluationManifest, make_manifest_env  # noqa: E402
@@ -92,10 +95,6 @@ def parse_args():
     p.add_argument("--summarise", default=None,
                    help="re-print the comparison from a saved run instead of running anything")
     return p.parse_args()
-
-
-def separator(title):
-    print(f"\n{'=' * 84}\n  {title}\n{'=' * 84}")
 
 
 def scoped_repair(policy, explanation, data, schema):
@@ -337,7 +336,7 @@ def main():
     print(summarise(rows, args))
     print(render_paired(rows, reference=args.reference_arm))
     os.makedirs(args.out_dir, exist_ok=True)
-    path = os.path.join(args.out_dir, f"ablation_{time.strftime('%Y%m%d_%H%M%S')}.json")
+    path = os.path.join(args.out_dir, f"ablation_{run_stamp()}.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(
             {
@@ -387,9 +386,7 @@ def paired_arms(rows, reference: str) -> list:
             "se": se,
             "ci95_low": mean - 1.96 * se,
             "ci95_high": mean + 1.96 * se,
-            "wins": sum(1 for d in diffs if d > 0),
-            "losses": sum(1 for d in diffs if d < 0),
-            "ties": sum(1 for d in diffs if d == 0),
+            **win_loss_tie(diffs),
         })
     return out
 

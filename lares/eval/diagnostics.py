@@ -156,16 +156,18 @@ class RolloutGeometry:
             "final_tcp_object_distance": float(separation[-1]),
         }
 
-    def failure_label(self, success: float) -> str | None:
+    def failure_label(self, success: float, stats: dict | None = None) -> str | None:
         """Coarse cause of failure, or ``None`` when geometry is unavailable.
 
         Heuristic, and deliberately coarse: the thresholds it uses are reported
         alongside it so a reader can see what the label means rather than
-        trusting the word.
+        trusting the word. ``stats`` is ``geometry_statistics()`` when the caller
+        has already computed it.
         """
         if float(success) > 0:
             return "success"
-        stats = self.geometry_statistics()
+        if stats is None:
+            stats = self.geometry_statistics()
         if stats["min_tcp_object_distance"] is None:
             return None
         if stats["min_tcp_object_distance"] > REACH_RADIUS:

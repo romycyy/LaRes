@@ -17,7 +17,6 @@ import argparse
 import json
 import os
 import platform
-import subprocess
 import sys
 import time
 from datetime import datetime, timezone
@@ -30,12 +29,11 @@ import numpy as np  # noqa: E402
 import torch  # noqa: E402
 import torch.nn as nn  # noqa: E402
 
+from lares.utils.gitstate import git  # noqa: E402
+from lares.utils.clock import run_stamp  # noqa: E402
+from lares.utils.cli import separator  # noqa: E402
 from lares.core.symbolic_policy import SymbolicPolicy  # noqa: E402
-from lares.core.training_pipeline import (  # noqa: E402
-    DemoBuffer,
-    ensure_mujoco_headless_gl,
-    generate_dataset,
-)
+from lares.core.training_pipeline import ensure_mujoco_headless_gl, generate_dataset  # noqa: E402
 from lares.eval import (  # noqa: E402
     CHECKPOINT_FITTED,
     ConstantActor,
@@ -96,15 +94,9 @@ class Checks:
         return [r for r in self.rows if not r["ok"]]
 
 
-def separator(title):
-    print(f"\n{'=' * 68}\n  {title}\n{'=' * 68}")
-
-
 def _git(*args):
     try:
-        return subprocess.check_output(
-            ["git", *args], cwd=_PROJECT_ROOT, text=True, stderr=subprocess.DEVNULL
-        ).strip()
+        return git(*args).strip()
     except Exception:
         return "unknown"
 
@@ -377,7 +369,7 @@ def main():
         print(f"  actions exactly at an endpoint: "
               f"{endpoint['any_axis_exactly_at_endpoint']:.4f} of transitions")
 
-    out_path = os.path.join(args.out_dir, f"baseline_lock_{time.strftime('%Y%m%d_%H%M%S')}.json")
+    out_path = os.path.join(args.out_dir, f"baseline_lock_{run_stamp()}.json")
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2, default=str)
 

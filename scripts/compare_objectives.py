@@ -34,12 +34,12 @@ _PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
 sys.path.insert(0, _PROJECT_ROOT)
 
 import numpy as np  # noqa: E402
-import torch  # noqa: E402
 
+from lares.utils.clock import run_stamp  # noqa: E402
+from lares.utils.cli import separator  # noqa: E402
 from lares.core.obs_schema import get_obs_schema  # noqa: E402
 from lares.core.training_pipeline import DemoBuffer, ensure_mujoco_headless_gl  # noqa: E402
 from lares.eval import EvaluationManifest, make_manifest_env  # noqa: E402
-from lares.eval.manifest import SPLIT_TRAIN  # noqa: E402
 from lares.eval.report import CHECKPOINT_FITTED, build_report  # noqa: E402
 from lares.eval.runner import PolicyActor, evaluate_manifest  # noqa: E402
 from lares.fitting import (  # noqa: E402
@@ -79,10 +79,6 @@ def parse_args():
         "--out-dir", default=os.path.join(_PROJECT_ROOT, "logs", "objective_comparison")
     )
     return p.parse_args()
-
-
-def separator(title):
-    print(f"\n{'=' * 84}\n  {title}\n{'=' * 84}")
 
 
 def score(policy, structure, dev_manifest, dev_env, execution, max_steps, label):
@@ -323,7 +319,7 @@ def main():
 
     dev_env.close()
     path = os.path.join(
-        args.out_dir, f"objective_comparison_{time.strftime('%Y%m%d_%H%M%S')}.json"
+        args.out_dir, f"objective_comparison_{run_stamp()}.json"
     )
     with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, default=str)

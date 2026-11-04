@@ -26,7 +26,7 @@ import torch.nn as nn
 
 from lares.core.training_pipeline import split_buffer_by_episode
 from lares.fitting.diagnostics import bound_activity as _bound_activity
-from lares.fitting.diagnostics import loss_by_phase as _loss_by_phase
+from lares.fitting.diagnostics import loss_by_phase_from_mean, per_axis_mse_from_mean
 from lares.fitting.diagnostics import per_axis_mse as _per_axis_mse
 
 #: Names are stable: reports and the handoff table key on them.
@@ -613,31 +613,36 @@ def fitting_diagnostics(policy, data, objective: str) -> dict:
     was_training = policy.training
     policy.eval()
     axes = [f"axis_{i}" for i in range(policy.action_dim)]
+    reset_diagnostics = getattr(policy, "reset_diagnostics", None)
 
-    def loss_on(obs, actions):
+    def split(obs, actions):
+        """One forward pass per split; loss, per-axis error and gate split all read it."""
         if obs is None:
-            return None
+            return None, None, None
+        if callable(reset_diagnostics):
+            reset_diagnostics()
         with torch.no_grad():
             mean, std = policy(obs)
-            return float(objective_loss(objective, mean, std, actions))
+            loss = float(objective_loss(objective, mean, std, actions))
+        gates = dict(getattr(policy, "last_gates", {}) or {}) if callable(reset_diagnostics) else None
+        return loss, dict(zip(axes, per_axis_mse_from_mean(mean, actions))), (mean, gates)
 
+    # Validation first so the policy's gate telemetry is left as the training pass set it.
+    val_loss, val_by_axis, _ = split(data.val_obs, data.val_actions)
+    train_loss, train_by_axis, (train_mean, train_gates) = split(data.train_obs, data.train_actions)
     state = policy.state_dict()
     out = {
         "objective": objective,
-        "train_loss": loss_on(data.train_obs, data.train_actions),
-        "validation_loss": loss_on(data.val_obs, data.val_actions),
-        "train_loss_by_axis": dict(
-            zip(axes, _per_axis_mse(policy, data.train_obs.numpy(), data.train_actions.numpy()))
-        ),
-        "validation_loss_by_axis": (
-            dict(zip(axes, _per_axis_mse(policy, data.val_obs.numpy(), data.val_actions.numpy())))
-            if data.has_validation
-            else None
-        ),
+        "train_loss": train_loss,
+        "validation_loss": val_loss,
+        "train_loss_by_axis": train_by_axis,
+        "validation_loss_by_axis": val_by_axis if data.has_validation else None,
         "bound_activity": _bound_activity(policy),
         "parameters": {name: [float(x) for x in p.detach().reshape(-1)] for name, p in policy.named_parameters()},
         "parameters_sha256": state_parameters_sha256(state),
-        "loss_by_phase": _loss_by_phase(policy, data.train_obs.numpy(), data.train_actions.numpy()),
+        "loss_by_phase": (
+            loss_by_phase_from_mean(train_mean, train_gates, data.train_actions) if train_gates is not None else None
+        ),
     }
     policy.train(was_training)
     return out

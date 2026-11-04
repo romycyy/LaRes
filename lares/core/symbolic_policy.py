@@ -112,10 +112,6 @@ class SymbolicPolicy(nn.Module):
             )
         return self.obs_schema.slice(obs, name)
 
-    def obs_fields(self, obs, *names):
-        """Several named fields at once, in the order requested."""
-        return tuple(self.obs_field(obs, n) for n in names)
-
     # ------------------------------------------------------------------
     #  Gate telemetry
     # ------------------------------------------------------------------
@@ -162,10 +158,6 @@ class SymbolicPolicy(nn.Module):
         forced = torch.full_like(tensor, float(override))
         self.last_gates[key] = forced.detach()
         return forced
-
-    def gate_snapshot(self):
-        """Detached copy of the gates recorded by the most recent ``forward``."""
-        return {k: v.detach().clone() for k, v in self.last_gates.items()}
 
     # ------------------------------------------------------------------
     #  Utilities

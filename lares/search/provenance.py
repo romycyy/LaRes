@@ -167,34 +167,61 @@ def reconstruct_record(record, run_root: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _feedback_problems(record, run_root: str) -> list:
+def _load_feedback_bundle(run_root: str, generation: int, cache: dict | None = None):
+    """``(bundle, problems)`` for the bundle generation ``generation`` was built from.
+
+    Reading and validating a bundle re-hashes ``feedback.md``, so a summary over a
+    run passes one ``cache`` dict and pays that cost once per generation rather
+    than once per record.
+    """
+    if cache is not None and generation in cache:
+        return cache[generation]
     from lares.search.generation import FeedbackBundle
 
+    path = os.path.join(run_root, f"gen_{generation - 1}", "feedback_bundle.json")
+    if not os.path.isfile(path):
+        out = (None, [f"feedback bundle {os.path.relpath(path, run_root)} is missing"])
+    else:
+        with open(path, "r", encoding="utf-8") as f:
+            bundle = FeedbackBundle.from_dict(json.load(f))
+        problems = []
+        try:
+            bundle.validate(run_root)
+        except Exception as exc:
+            problems.append(str(exc))
+        out = (bundle, problems)
+    if cache is not None:
+        cache[generation] = out
+    return out
+
+
+def _feedback_problems(record, run_root: str, bundle_cache: dict | None = None) -> list:
     if record.generation == 0:
         return []
     feedback_id = (record.lineage or {}).get("feedback_id")
     if not feedback_id:
         return ["no feedback id"]
-    path = os.path.join(run_root, f"gen_{record.generation - 1}", "feedback_bundle.json")
-    if not os.path.isfile(path):
-        return [f"feedback bundle {os.path.relpath(path, run_root)} is missing"]
-    with open(path, "r", encoding="utf-8") as f:
-        bundle = FeedbackBundle.from_dict(json.load(f))
+    bundle, bundle_problems = _load_feedback_bundle(run_root, record.generation, bundle_cache)
+    if bundle is None:
+        return list(bundle_problems)
     problems = []
     if bundle.feedback_id != feedback_id:
         problems.append(f"record names {feedback_id}, the bundle on disk is {bundle.feedback_id}")
-    try:
-        bundle.validate(run_root)
-    except Exception as exc:
-        problems.append(str(exc))
+    problems.extend(bundle_problems)
     if list(bundle.context_parent_ids) != list(record.lineage.get("context_parent_ids") or []):
         problems.append("context parents differ from the bundle on disk")
     return problems
 
 
 def traceability_gaps(record, run_root: str, ledger: LLMCallLedger | None = None,
-                      verify_reconstruction: bool = True) -> dict:
-    """``{field: [reasons]}``; an empty list means that field is complete for this record."""
+                      verify_reconstruction: bool = True, ledger_problems: dict | None = None,
+                      bundle_cache: dict | None = None) -> dict:
+    """``{field: [reasons]}``; an empty list means that field is complete for this record.
+
+    ``ledger_problems`` is ``ledger.verify()``; a caller summarising many records
+    computes it once and passes it in, since verifying re-hashes every prompt and
+    response file. ``bundle_cache`` likewise shares feedback-bundle reads.
+    """
     gaps = {name: [] for name in TRACEABILITY_FIELDS}
     if record.origin != ORIGIN_GENERATED or not record.lineage:
         for name in TRACEABILITY_FIELDS:
@@ -215,10 +242,11 @@ def traceability_gaps(record, run_root: str, ledger: LLMCallLedger | None = None
         if lineage.get(key) is None:
             gaps["lineage"].append(f"no {key}")
     if evaluated or record.validation.get("stage") not in ("ideation", "budget_exhausted"):
-        gaps["feedback"].extend(_feedback_problems(record, run_root))
+        gaps["feedback"].extend(_feedback_problems(record, run_root, bundle_cache))
 
     ledger = ledger if ledger is not None else LLMCallLedger(run_root)
-    ledger_problems = ledger.verify()
+    if ledger_problems is None:
+        ledger_problems = ledger.verify()
     if not record.llm_call_ids:
         gaps["prompt_hashes"].append("no LLM call ids")
     embedded = {c.get("call_id"): c for c in (record.llm.get("calls") or [])}
@@ -273,9 +301,13 @@ def traceability_gaps(record, run_root: str, ledger: LLMCallLedger | None = None
 def traceability_summary(records, run_root: str, verify_reconstruction: bool = True) -> dict:
     """Per field: complete only if *no* record has a gap in it."""
     ledger = LLMCallLedger(run_root)
+    ledger_problems = ledger.verify()
+    bundle_cache: dict = {}
     per_field = {name: {} for name in TRACEABILITY_FIELDS}
     for record in records:
-        for name, reasons in traceability_gaps(record, run_root, ledger, verify_reconstruction).items():
+        gaps = traceability_gaps(record, run_root, ledger, verify_reconstruction,
+                                 ledger_problems=ledger_problems, bundle_cache=bundle_cache)
+        for name, reasons in gaps.items():
             if reasons:
                 per_field[name][record.experiment_id] = reasons
     return {
@@ -307,6 +339,7 @@ def reconcile_resources(records, ledger: LLMCallLedger | None, run_root: str | N
         for record in records:
             referenced.extend(record.llm_call_ids or [])
         unique = list(dict.fromkeys(referenced))
+        seen = set(unique)
         from_records = ledger.totals(unique)
         total = ledger.totals()
         shared = [c for c in unique if c in ledger and ledger.get(c).shared]
@@ -318,7 +351,7 @@ def reconcile_resources(records, ledger: LLMCallLedger | None, run_root: str | N
             "referenced_unique_calls": from_records["llm_calls"],
             "referenced_unique_total_tokens": from_records["llm_total_tokens"],
             "exclusive_plus_shared_total_tokens": exclusive_tokens + shared_tokens,
-            "unreferenced_call_ids": [c.call_id for c in ledger.records() if c.call_id not in set(unique)],
+            "unreferenced_call_ids": [c.call_id for c in ledger.records() if c.call_id not in seen],
             "unknown_call_ids": from_records["unknown_call_ids"],
             "reconciles": (
                 from_records["llm_total_tokens"] == total["llm_total_tokens"]

@@ -414,6 +414,18 @@ def _extract_code_string(response_text):
 
 POLICY_IMPL_BATCHED = "batched"
 POLICY_IMPL_PER_IDEA = "per_idea"
+POLICY_IMPL_MODES = (POLICY_IMPL_BATCHED, POLICY_IMPL_PER_IDEA)
+#: What every config in ``config/`` declares and what the orchestrator assumes when a
+#: config says nothing: each idea is implemented in its own call.
+DEFAULT_POLICY_IMPL_MODE = POLICY_IMPL_PER_IDEA
+
+
+def normalise_impl_mode(raw, default: str = DEFAULT_POLICY_IMPL_MODE) -> str:
+    """The one spelling rule for ``policy_impl_mode`` (case, hyphens, ``None``)."""
+    if raw is None:
+        return default
+    mode = str(raw).strip().lower().replace("-", "_")
+    return mode if mode in POLICY_IMPL_MODES else default
 
 #: Imports every generated policy is executed with. Reconstruction uses the same
 #: prefix, so a rebuilt policy is the same program that was validated.
@@ -860,10 +872,10 @@ def _request_structured(session, messages, parse, n, kind, attempt_ids, transcri
                 {
                     "role": "user",
                     "content": (
-                        f"Your previous reply was rejected for these reasons:\n- "
+                        "Your previous reply was rejected for these reasons:\n- "
                         + "\n- ".join(problems)
                         + f"\n\nReply again with ONLY the JSON object, with exactly {n} complete "
-                        f"entries that satisfy every rule. Nothing will be filled in for you."
+                        "entries that satisfy every rule. Nothing will be filled in for you."
                     ),
                 },
             ]
@@ -1007,14 +1019,13 @@ def generate_candidates(
     """
     from lares.core.obs_schema import get_obs_schema
     from lares.search.generation import (
-        LABEL_CORRECTION,
         LABEL_GENERATION,
         PARAMETER_BUDGET,
         CandidateAllocator,
         GeneratedCandidate,
         attempt_id_for,
-        sha256_text,
     )
+    from lares.utils.hashing import sha256_text
 
     if not env_name:
         raise ValueError("generate_candidates requires env_name to bind the observation schema")
@@ -1314,10 +1325,11 @@ def generate_two_lane_candidates(
     implementer = _SlotImplementer(session, validate, prompts, user_content, allocator, make, plan.parent_sources(),
                                    max_repair_per_candidate, max_total_calls, max_total_tokens)
     for spec, sp, calls, meta in ready:
-        extra = None
         if spec.lane == LANE_FITTABLE:
             def extra(policy, _slot=spec.slot, _declaration=sp.mutation):
                 return plan.child_problems(_slot, policy, _declaration, schema)
+        else:
+            extra = None
         candidates.extend(implementer.fill(ids[spec.slot], spec.slot, sp, "per_idea", calls, extra_check=extra,
                                            lane_metadata=meta))
 
@@ -1641,10 +1653,7 @@ def get_symbolic_policies(
                 "args.policy_gen_two_phase requires ideas_system and ideas_user "
                 "(from load_policy_prompt_assets)."
             )
-        raw_impl = getattr(args, "policy_impl_mode", POLICY_IMPL_BATCHED)
-        if isinstance(raw_impl, str):
-            raw_impl = raw_impl.strip().lower().replace("-", "_")
-        impl_mode = POLICY_IMPL_PER_IDEA if raw_impl == POLICY_IMPL_PER_IDEA else POLICY_IMPL_BATCHED
+        impl_mode = normalise_impl_mode(getattr(args, "policy_impl_mode", None))
         prompts.update(
             ideas_system=ideas_system,
             ideas_user=ideas_user,

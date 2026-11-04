@@ -32,12 +32,12 @@ import json
 import os
 import re
 import sys
-import time
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
 sys.path.insert(0, _PROJECT_ROOT)
 
+from lares.utils.clock import now_iso  # noqa: E402
 from lares.search import (  # noqa: E402
     LINEAGE_LEGACY_MISSING,
     LINEAGE_PARTIAL_RECOVERY,
@@ -177,7 +177,7 @@ def main():
     version = next_version(args.log_dir)
     payload = {
         "sidecar_version": version,
-        "created_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "created_at": now_iso(),
         "policy": "raw records are not modified; this sidecar holds only what other files support",
         "source_files_sha256": sources,
         "records": entries,

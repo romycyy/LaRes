@@ -19,13 +19,12 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
-import sys
 
 import numpy as np
 
 from lares.envs.isaac_pen_spin import cases
 from lares.envs.isaac_pen_spin.feedback_ablation import _arm_summary, check_checkpoint, reproducibility_gate
+from lares.envs.isaac_pen_spin.protocols import aggregate_vs_expert, build_single_manifest, child_cell, failure_split
 
 FEEDBACK_LESIONS = "feedback_lesions"
 STAGE = 3
@@ -79,19 +78,10 @@ def manifest_path(protocol_cfg: dict) -> str:
 
 
 def build_manifests(protocol_cfg: dict) -> list[str]:
-    from lares.eval.manifest import EvaluationManifest
-
-    path = manifest_path(protocol_cfg)
-    m = cases.build_manifest(STAGE, int(protocol_cfg["pool_seed"]), int(protocol_cfg["cases"]), label="lesion")
-    if os.path.exists(path):
-        if EvaluationManifest.load(path).to_dict() != m.to_dict():
-            raise ValueError(f"{path} exists and differs from the manifest this protocol builds")
-        return []
-    m.save(path)
-    return [path]
+    return build_single_manifest(protocol_cfg, "lesion", STAGE)
 
 
-def make_controller(arm: str, protocol_cfg: dict):
+def make_controller(arm: str, protocol_cfg: dict, out_dir: str | None = None):
     from lares.envs.isaac_pen_spin.ppo_expert import PPOController
 
     expert = PPOController(check_checkpoint(protocol_cfg), int(protocol_cfg["training_seed"]))
@@ -101,39 +91,12 @@ def make_controller(arm: str, protocol_cfg: dict):
 
 
 def _child(config_path: str, manifest: str, arm: str, out_path: str, study: str = FEEDBACK_LESIONS) -> None:
-    if os.path.exists(out_path):
-        print("exists", out_path, flush=True)
-        return
-    cmd = [sys.executable, "-u", sys.argv[0], "--config", config_path, "--study", study,
-           "--cell-manifest", manifest, "--controller", arm, "--cell-out", out_path]
-    print("running", " ".join(cmd), flush=True)
-    subprocess.run(cmd, check=True)
-
-
-def failure_split(rows: list[dict]) -> dict:
-    drops = [r for r in rows if not r["completed"]]
-    tail = [r for r in rows if r["completed"] and not r["sustained"]]
-    return {"drops": len(drops), "tail_spin_failures": len(tail),
-            "median_fall_step": float(np.median([r["length"] for r in drops])) if drops else None}
+    child_cell(config_path, manifest, arm, out_path, study=study, skip_existing=True)
 
 
 def aggregate(rows: dict) -> dict:
     """Per-arm summaries and each lesion minus the expert, paired by case."""
-    from lares.eval.stats import t_summary
-
-    base = rows["expert"]
-    out = {"arms": {}}
-    for arm, rs in rows.items():
-        if [r["task_hash"] for r in rs] != [r["task_hash"] for r in base]:
-            raise ValueError(f"{arm} rows are not paired case for case with the expert")
-        out["arms"][arm] = {**_arm_summary(rs), **failure_split(rs)}
-    for lesion in LESIONS:
-        if lesion in rows:
-            d = [float(x["sustained"]) - float(e["sustained"]) for x, e in zip(rows[lesion], base)]
-            out[f"{lesion}_minus_expert"] = t_summary(d)
-    pen = out.get("pen_state_clamped_minus_expert")
-    out["paired_success_difference"] = pen["mean"] if pen else None
-    return out
+    return aggregate_vs_expert(rows, LESIONS, "pen_state_clamped")
 
 
 def run_feedback_lesions(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
@@ -165,5 +128,7 @@ def run_feedback_lesions(protocol_cfg: dict, config_path: str, out_dir: str) -> 
     return summary
 
 
+run = run_feedback_lesions
+
 __all__ = ["ARMS", "FEEDBACK_LESIONS", "LESIONS", "LesionedController", "aggregate", "build_manifests",
-           "failure_split", "lesion_index", "run_feedback_lesions"]
+           "failure_split", "lesion_index", "run", "run_feedback_lesions"]

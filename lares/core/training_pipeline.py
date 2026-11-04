@@ -24,7 +24,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from lares.utils.hashing import sha256_bytes, sha256_file, sha256_text
+from lares.utils.hashing import sha256_bytes, sha256_text
+from lares.utils.clock import now_iso
 
 from lares.core.training_logger import (
     BC_GRAD_NORM_POST_CLIP,
@@ -1224,11 +1225,9 @@ def load_policy_prompt_assets(env_name):
 
 
 def _impl_mode(args):
-    from lares.core.policy_generation import POLICY_IMPL_BATCHED, POLICY_IMPL_PER_IDEA
+    from lares.core.policy_generation import normalise_impl_mode
 
-    raw = getattr(args, "policy_impl_mode", POLICY_IMPL_PER_IDEA)
-    raw = str(raw).strip().lower().replace("-", "_")
-    return POLICY_IMPL_BATCHED if raw == POLICY_IMPL_BATCHED else POLICY_IMPL_PER_IDEA
+    return normalise_impl_mode(getattr(args, "policy_impl_mode", None))
 
 
 def llm_evolution(
@@ -1575,9 +1574,20 @@ class EvolutionOrchestrator:
     #  Manifests
     # ------------------------------------------------------------------
 
+    def _cached_manifest(self, key, build):
+        """``dev_manifest`` and the promotion policy are fixed at construction, so each
+        slice is built once; the first access still raises for an undersized manifest."""
+        cache = self.__dict__.setdefault("_manifest_cache", {})
+        if key not in cache:
+            cache[key] = build()
+        return cache[key]
+
     @property
     def screen_manifest(self):
         """The fixed screening subset: the first ``screen_episodes`` development cases."""
+        return self._cached_manifest("screen", self._build_screen_manifest)
+
+    def _build_screen_manifest(self):
         n = min(self.promotion_policy.screen_episodes, len(self.dev_manifest))
         return self.dev_manifest.head(n)
 
@@ -1589,6 +1599,9 @@ class EvolutionOrchestrator:
         checkpoint selection, so this is a slice after the screen, never a prefix
         containing it.
         """
+        return self._cached_manifest("promotion", self._build_promotion_manifest)
+
+    def _build_promotion_manifest(self):
         start = min(self.promotion_policy.screen_episodes, len(self.dev_manifest))
         stop = start + int(self.promotion_policy.expanded_episodes)
         if stop > len(self.dev_manifest):
@@ -1611,9 +1624,13 @@ class EvolutionOrchestrator:
         """True when no probe case is also a screen or promotion case."""
         if self._probe_manifest is None:
             return False
-        probe = {c.case_id for c in self._probe_manifest.episodes}
-        used = {c.case_id for c in self.promotion_manifest.episodes} | {c.case_id for c in self.screen_manifest.episodes}
-        return not (probe & used)
+
+        def build():
+            probe = {c.case_id for c in self._probe_manifest.episodes}
+            used = {c.case_id for c in self.promotion_manifest.episodes} | {c.case_id for c in self.screen_manifest.episodes}
+            return not (probe & used)
+
+        return self._cached_manifest("probe_is_isolated", build)
 
     def check_manifest_isolation(self):
         """Refuse a run whose promotion evidence overlaps screening or checkpoint selection."""
@@ -1819,7 +1836,7 @@ class EvolutionOrchestrator:
             validation=dict(candidate.validation),
             lineage=candidate.lineage_dict(feedback_bundle),
             resources=resources.to_dict(),
-            timestamps={"recorded_at": time.strftime("%Y-%m-%dT%H:%M:%S")},
+            timestamps={"recorded_at": now_iso()},
             final_disposition=disposition,
         )
         return self._save_record(record)
@@ -1940,11 +1957,9 @@ class EvolutionOrchestrator:
         return probe
 
     def _save_report(self, report, rel_name, gen):
-        from lares.search.generation import run_relative
+        from lares.search.generation import write_artifact
 
-        path = os.path.join(self.log_dir, f"gen_{gen}", "reports", rel_name)
-        report.save(path)
-        return {"path": run_relative(path, self.log_dir), "sha256": sha256_file(path)}
+        return write_artifact(self.log_dir, os.path.join(f"gen_{gen}", "reports", rel_name), report.to_json())
 
     def _report_fitting_stats(self, fit):
         """The fitting section of the fitted report, taken from the selected state only."""
@@ -2300,7 +2315,7 @@ class EvolutionOrchestrator:
             },
             resources=resources.to_dict(),
             reconstruction=reconstruction,
-            timestamps={"recorded_at": time.strftime("%Y-%m-%dT%H:%M:%S")},
+            timestamps={"recorded_at": now_iso()},
             final_disposition="screened",
         )
         self._save_record(record)
@@ -2701,7 +2716,10 @@ class EvolutionOrchestrator:
                 )
             )
             gen_results.append(result)
-            self.history.append(result)
+            # Only candidate identity is read back (``_write_incumbents``); keeping the
+            # whole result would hold every report, state and policy for the run's lifetime.
+            self.history.append({"candidate_id": result["candidate_id"], "attempt_id": result["attempt_id"],
+                                 "lane": result.get("lane")})
             parent_sources[c.candidate_id] = c.code
             print(f"    zero-shot   {result['zero_shot_report'].headline()}")
             if result["intermediate_report"] is not None:

@@ -31,16 +31,16 @@ import time
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, _ROOT)
 
-import yaml  # noqa: E402
 
+from lares.utils.cli import load_yaml  # noqa: E402
+from lares.utils.clock import now_iso  # noqa: E402
 from lares.envs.isaac_pen_spin.ppo_expert import PPOController, build_runner, make_agent_cfg  # noqa: E402,F401
 
 PROTOCOL = "ppo_expert"
 
 
 def load_protocol(config_path: str) -> dict:
-    with open(config_path, encoding="utf-8") as f:
-        return yaml.safe_load(f)["research_protocols"][PROTOCOL]
+    return load_yaml(config_path)["research_protocols"][PROTOCOL]
 
 
 def _self_cmd(args, *extra) -> list:
@@ -109,7 +109,7 @@ def phase_gate(args, proto):
     frozen = {"num_envs": n, "transitions_per_iteration": per_it, "iterations": iterations,
               "save_interval": max(1, iterations // 10), "trials": trials,
               "estimated_hours": iterations * per_it / trials[n]["steps_per_second"] / 3600.0,
-              "frozen_at": time.strftime("%Y-%m-%dT%H:%M:%S")}
+              "frozen_at": now_iso()}
     with open(os.path.join(out_dir, "gate.json"), "w") as f:
         json.dump(frozen, f, indent=2)
     print(json.dumps(frozen, indent=2))
@@ -154,7 +154,7 @@ def phase_train(args, proto):
         log_dir = os.path.join(proto["log_dir"], "train")
         runner, _ = build_runner(env, agent, log_dir, "cuda:0")
         with open(os.path.join(proto["log_dir"], "train_started.json"), "w") as f:
-            json.dump({"gate": gate, "agent_cfg": agent.to_dict(), "started_at": time.strftime("%Y-%m-%dT%H:%M:%S")}, f,
+            json.dump({"gate": gate, "agent_cfg": agent.to_dict(), "started_at": now_iso()}, f,
                       indent=2, default=str)
         runner.learn(num_learning_iterations=gate["iterations"], init_at_random_ep_len=True)
         env.close()

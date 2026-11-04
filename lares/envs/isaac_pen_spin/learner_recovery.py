@@ -24,14 +24,13 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
-import sys
 
 import numpy as np
 
 from lares.envs.isaac_pen_spin import cases
 from lares.envs.isaac_pen_spin.feedback_ablation import _arm_summary, check_checkpoint
 from lares.envs.isaac_pen_spin.feedback_lesions import failure_split
+from lares.envs.isaac_pen_spin.protocols import build_single_manifest, child_cell
 
 LEARNER_RECOVERY = "learner_recovery"
 STAGE = 3
@@ -105,16 +104,7 @@ def manifest_path(protocol_cfg: dict) -> str:
 
 
 def build_manifests(protocol_cfg: dict) -> list[str]:
-    from lares.eval.manifest import EvaluationManifest
-
-    path = manifest_path(protocol_cfg)
-    m = cases.build_manifest(STAGE, int(protocol_cfg["pool_seed"]), int(protocol_cfg["cases"]), label="recovery")
-    if os.path.exists(path):
-        if EvaluationManifest.load(path).to_dict() != m.to_dict():
-            raise ValueError(f"{path} exists and differs from the manifest this protocol builds")
-        return []
-    m.save(path)
-    return [path]
+    return build_single_manifest(protocol_cfg, "recovery", STAGE)
 
 
 def check_learner(protocol_cfg: dict) -> dict:
@@ -160,13 +150,7 @@ def make_controller(arm: str, protocol_cfg: dict, out_dir: str):
 
 
 def _child(config_path: str, manifest: str, arm: str, out_path: str, study: str = LEARNER_RECOVERY) -> None:
-    if os.path.exists(out_path):
-        print("exists", out_path, flush=True)
-        return
-    cmd = [sys.executable, "-u", sys.argv[0], "--config", config_path, "--study", study,
-           "--cell-manifest", manifest, "--controller", arm, "--cell-out", out_path, "--record-obs"]
-    print("running", " ".join(cmd), flush=True)
-    subprocess.run(cmd, check=True)
+    child_cell(config_path, manifest, arm, out_path, study=study, record_obs=True, skip_existing=True)
 
 
 def _load(out_path: str):
@@ -299,5 +283,7 @@ def run_learner_recovery(protocol_cfg: dict, config_path: str, out_dir: str) -> 
     return summary
 
 
-__all__ = ["ARMS", "HandoverController", "LEARNER_RECOVERY", "NEVER", "aggregate", "branch_steps", "build_manifests",
+run = run_learner_recovery
+
+__all__ = ["ARMS", "HandoverController", "LEARNER_RECOVERY", "NEVER", "aggregate", "branch_steps", "build_manifests", "run",
            "identity_gate", "make_learner", "prefix_gate", "run_learner_recovery", "transitions"]

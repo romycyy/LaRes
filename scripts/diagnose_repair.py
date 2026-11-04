@@ -18,12 +18,12 @@ Usage (from the project root)::
 import argparse
 import os
 import sys
-import time
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
 sys.path.insert(0, _PROJECT_ROOT)
 
+from lares.utils.cli import separator  # noqa: E402
 from lares.core.obs_schema import get_obs_schema  # noqa: E402
 from lares.core.training_pipeline import DemoBuffer, ensure_mujoco_headless_gl  # noqa: E402
 from lares.eval import EvaluationManifest, make_manifest_env  # noqa: E402
@@ -63,10 +63,6 @@ def parse_args():
     p.add_argument("--no-repair", action="store_true")
     p.add_argument("--out-dir", default=os.path.join(_PROJECT_ROOT, "logs", "repair_studies"))
     return p.parse_args()
-
-
-def separator(title):
-    print(f"\n{'=' * 80}\n  {title}\n{'=' * 80}")
 
 
 def describe_repair(record) -> str:

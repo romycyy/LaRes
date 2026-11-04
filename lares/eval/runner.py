@@ -424,7 +424,7 @@ def run_episode(
         gate_statistics=(
             gate_agg.statistics() if gate_agg is not None and gate_agg.names else None
         ),
-        failure_label=geometry.failure_label(success),
+        failure_label=geometry.failure_label(success, geo),
         **geo,
         **acts,
     )

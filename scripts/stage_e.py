@@ -28,7 +28,6 @@ Subcommands, in order (from the project root)::
 from __future__ import annotations
 
 import argparse
-import datetime as _dt
 import glob
 import json
 import math
@@ -41,14 +40,17 @@ _PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
 sys.path.insert(0, _PROJECT_ROOT)
 
 import numpy as np  # noqa: E402
-import yaml  # noqa: E402
 
 CONFIG_PATH = os.path.join(_PROJECT_ROOT, "config", "stage_e", "stage_e.yaml")
-from lares.eval.stats import t_interval  # noqa: E402,F401  (re-exported for qualify_fittable_bank)
+from lares.eval.manifest import unique_manifests as _unique_manifests  # noqa: E402
+from lares.eval.stats import t_interval  # noqa: E402
+from lares.utils.cli import load_yaml  # noqa: E402
+from lares.utils.clock import now_iso as now, run_stamp  # noqa: E402
+from lares.utils.gitstate import rel  # noqa: E402
 from lares.utils.gitstate import require_clean_worktree as _require_clean_worktree  # noqa: E402
-from lares.utils.hashing import sha256_file, sha256_text  # noqa: E402,F401
-from lares.utils.seeds import SEED_LEDGER as LEDGER_PATH  # noqa: E402,F401
-from lares.utils.seeds import read_ledger, reserve_seeds, seed_conflicts  # noqa: E402,F401
+from lares.utils.hashing import sha256_file, sha256_text  # noqa: E402
+from lares.utils.seeds import SEED_LEDGER as LEDGER_PATH  # noqa: E402
+from lares.utils.seeds import read_ledger, reserve_seeds, seed_conflicts  # noqa: E402,F401  (read_ledger used by tests)
 
 ZERO_SHOT = "zero_shot"
 MSE_FIXED = "mse_fixed_2000"
@@ -66,17 +68,8 @@ FAMILY_EVOLVED = "evolved"
 # ---------------------------------------------------------------------------
 
 
-def rel(path: str) -> str:
-    return os.path.relpath(os.path.abspath(path), _PROJECT_ROOT)
-
-
 def load_config(path: str = CONFIG_PATH) -> dict:
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
-
-
-def now() -> str:
-    return _dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    return load_yaml(path)
 
 
 def require_clean_worktree(cwd=_PROJECT_ROOT) -> str:
@@ -271,22 +264,11 @@ def cmd_select(args) -> int:
 
 
 def unique_manifests(manifests) -> list:
-    """One copy per manifest id, refusing two different manifests under one id.
-
-    An evaluation saves its manifest beside each output, so the same spent
-    manifest can sit in several directories; comparing those copies with each
-    other would report a false overlap.
-    """
-    seen, out = {}, []
-    for m in manifests:
-        hashes = [c.task_hash for c in m.episodes]
-        if m.manifest_id in seen:
-            if seen[m.manifest_id] != hashes:
-                raise SystemExit(f"two different manifests share the id {m.manifest_id!r}")
-            continue
-        seen[m.manifest_id] = hashes
-        out.append(m)
-    return out
+    """``lares.eval.manifest.unique_manifests`` with the clash reported as a clean exit."""
+    try:
+        return _unique_manifests(manifests)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
 
 
 def cmd_build_manifest(args) -> int:
@@ -527,7 +509,7 @@ def cmd_run(args) -> int:
     cfg = load_config(args.config)
     frozen = verify_frozen_inputs(cfg)
     specs = structure_specs(cfg)
-    run_id = _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_id = run_stamp()
     out_dir = os.path.join(_PROJECT_ROOT, "logs", "stage_e", run_id)
     os.makedirs(out_dir)
     with open(os.path.join(out_dir, "run.json"), "w", encoding="utf-8") as f:

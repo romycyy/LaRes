@@ -30,6 +30,7 @@ sys.path.insert(0, _PROJECT_ROOT)
 import numpy as np  # noqa: E402
 
 from lares.eval.stats import t_bounds as t_interval  # noqa: E402
+from lares.eval.stats import win_loss_tie  # noqa: E402
 from lares.search import STATUS_INVALID, load_records  # noqa: E402
 from lares.search.provenance import lineage_status, load_sidecar  # noqa: E402
 
@@ -94,9 +95,7 @@ def paired(a, b):
         "n_shared_cases": len(shared),
         "success_mean_difference": float(np.mean(success)) if success else None,
         "success_t95": t_interval(success),
-        "wins": sum(1 for d in success if d > 0),
-        "losses": sum(1 for d in success if d < 0),
-        "ties": sum(1 for d in success if d == 0),
+        **win_loss_tie(success),
         "progress_mean_difference": float(np.mean(progress)) if progress else None,
         "progress_t95": t_interval(progress),
     }

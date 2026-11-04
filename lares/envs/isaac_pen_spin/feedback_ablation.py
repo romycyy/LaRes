@@ -14,12 +14,11 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
-import sys
 
 import numpy as np
 
 from lares.envs.isaac_pen_spin import cases
+from lares.envs.isaac_pen_spin.protocols import arm_summary, child_cell
 
 FEEDBACK_ABLATION = "feedback_ablation"
 STAGE = 3
@@ -67,19 +66,12 @@ def manifest_paths(protocol_cfg: dict) -> dict:
 
 
 def build_manifests(protocol_cfg: dict) -> list[str]:
-    from lares.eval.manifest import EvaluationManifest
-
     written = []
     n = int(protocol_cfg["cases"])
     for label, path in manifest_paths(protocol_cfg).items():
         seed = int(protocol_cfg["pool_seeds"][label])
-        m = cases.build_manifest(STAGE, seed, n, label=label)
-        if os.path.exists(path):
-            if EvaluationManifest.load(path).to_dict() != m.to_dict():
-                raise ValueError(f"{path} exists and differs from the manifest this protocol builds")
-            continue
-        m.save(path)
-        written.append(path)
+        if cases.freeze_manifest(path, cases.build_manifest(STAGE, seed, n, label=label)):
+            written.append(path)
     return written
 
 
@@ -108,15 +100,8 @@ def make_controller(name: str, protocol_cfg: dict, out_dir: str):
 
 
 def _child(config_path: str, manifest_path: str, controller: str, out_path: str, record_obs: bool = False):
-    if os.path.exists(out_path):
-        print("exists", out_path, flush=True)
-        return
-    cmd = [sys.executable, "-u", sys.argv[0], "--config", config_path, "--study", FEEDBACK_ABLATION,
-           "--cell-manifest", manifest_path, "--controller", controller, "--cell-out", out_path]
-    if record_obs:
-        cmd.append("--record-obs")
-    print("running", " ".join(cmd), flush=True)
-    subprocess.run(cmd, check=True)
+    child_cell(config_path, manifest_path, controller, out_path, study=FEEDBACK_ABLATION, record_obs=record_obs,
+               skip_existing=True)
 
 
 def reproducibility_gate(a_json: str, b_json: str) -> dict:
@@ -132,19 +117,7 @@ def reproducibility_gate(a_json: str, b_json: str) -> dict:
             "passes": bool(flips == 0 and len(union) <= MAX_DIVERGED_ENVS)}
 
 
-def _arm_summary(rows: list[dict]) -> dict:
-    n = len(rows)
-    return {
-        "n": n,
-        "successes": int(sum(r["sustained"] for r in rows)),
-        "success": float(np.mean([r["sustained"] for r in rows])),
-        "completed": float(np.mean([r["completed"] for r in rows])),
-        "tail_hit_fraction": float(np.mean([r["tail_hit_fraction"] for r in rows])),
-        "hit_fraction": float(np.mean([r["hit_steps"] / max(1, r["length"]) for r in rows])),
-        "mean_length": float(np.mean([r["length"] for r in rows])),
-        "mean_abs_spin": float(np.mean([r["mean_abs_spin"] for r in rows if r["mean_abs_spin"] is not None])),
-        "mean_transverse": float(np.mean([r["mean_transverse"] for r in rows if r["mean_transverse"] is not None])),
-    }
+_arm_summary = arm_summary  # kept name: the sibling studies import it from here
 
 
 def aggregate(closed_rows: list[dict], tape_rows: list[dict]) -> dict:
@@ -198,3 +171,6 @@ def run_feedback_ablation(protocol_cfg: dict, config_path: str, out_dir: str) ->
     with open(os.path.join(out_dir, "summary.json"), "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
     return summary
+
+
+run = run_feedback_ablation

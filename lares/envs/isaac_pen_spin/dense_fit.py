@@ -56,25 +56,10 @@ def manifest_file(label: str, seed: int) -> str:
 
 def freeze_manifests(dcfg: dict) -> dict:
     """Build (or verify) the block and parity manifests; refuse a placement shared between any two."""
-    from lares.eval.manifest import EvaluationManifest
-
     specs = [("dense", int(s), BLOCK_CASES, f"block{b}") for b, s in enumerate(dcfg["block_seeds"])]
     specs.append(("parity", int(dcfg["parity_seed"]), int(dcfg["parity_cases"]), "parity"))
-    built, hashes = {}, {}
-    for label, seed, n, role in specs:
-        m = cases.build_manifest(STAGE, seed, n, label=label)
-        path = manifest_file(label, seed)
-        if os.path.exists(path):
-            if EvaluationManifest.load(path).to_dict() != m.to_dict():
-                raise ValueError(f"{path} exists and differs from the manifest this study builds")
-        else:
-            m.save(path)
-        for c in m.episodes:
-            if c.task_hash in hashes:
-                raise ValueError(f"{role} shares placement {c.task_hash} with {hashes[c.task_hash]}")
-            hashes[c.task_hash] = role
-        built[role] = path
-    return built
+    return cases.freeze_manifest_set((manifest_file(label, seed), cases.build_manifest(STAGE, seed, n, label=label), role)
+                                     for label, seed, n, role in specs)
 
 
 def block_slices(seed: int) -> dict:
@@ -107,7 +92,7 @@ def build_policy(source: str, state: dict, env_id: str, scale: float):
     ns: dict = {}
     exec(GENERATED_IMPORTS + source, ns)
     with active_schema(get_obs_schema(env_id)):
-        policy = ns["GeneratedPolicy"](157, cases.NUM_ACTIONS)
+        policy = ns["GeneratedPolicy"](cases.OBS_DIM, cases.NUM_ACTIONS)
     policy.fixed_action_scale = float(scale)
     policy.load_state_dict(state)
     policy._generated_source = source
@@ -336,13 +321,12 @@ def run_block(b: int, dcfg: dict, study_dir: str, stream_factory, expert, env_id
 
 
 def summarise(blocks: list[dict]) -> dict:
-    from lares.eval.stats import t_summary
+    from lares.eval.stats import block_contrast
 
     out = {"blocks": blocks, "eligible_blocks": len(blocks), "min_eligible_blocks": MIN_ELIGIBLE_BLOCKS}
     a, b = PRIMARY
     for key in ("fresh_incumbent", "fresh_selected"):
-        d = [blk[a][key] - blk[b][key] for blk in blocks]
-        out[f"{a}_minus_{b}_{key}"] = {"per_block": d, **(t_summary(d) if len(d) >= 2 else {"n": len(d)})}
+        out[f"{a}_minus_{b}_{key}"] = block_contrast(blk[a][key] - blk[b][key] for blk in blocks)
     out["paired_success_difference"] = out[f"{a}_minus_{b}_fresh_incumbent"].get("mean")
     out["conclusive"] = len(blocks) >= MIN_ELIGIBLE_BLOCKS
     return out

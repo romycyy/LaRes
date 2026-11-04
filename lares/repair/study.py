@@ -14,11 +14,12 @@ from __future__ import annotations
 import json
 import os
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 
 import numpy as np
 import torch
 
+from lares.utils.clock import run_stamp
 from lares.eval.report import CHECKPOINT_FITTED, build_report
 from lares.eval.runner import PolicyActor, evaluate_manifest, paired_difference
 from lares.repair.hypotheses import (
@@ -453,7 +454,7 @@ def summarise(payload) -> str:
 
 def save(payload, directory: str, name: str = "") -> str:
     os.makedirs(directory, exist_ok=True)
-    stamp = time.strftime("%Y%m%d_%H%M%S")
+    stamp = run_stamp()
     path = os.path.join(directory, f"{name or payload['structure_id']}_{stamp}.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, default=str)

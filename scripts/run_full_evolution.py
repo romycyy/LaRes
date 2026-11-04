@@ -27,13 +27,14 @@ import os
 import sys
 import time
 import argparse
+from dataclasses import dataclass
 from types import SimpleNamespace
+from typing import Callable
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
 sys.path.insert(0, _PROJECT_ROOT)
 
-import yaml  # noqa: E402
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 
@@ -53,9 +54,9 @@ from lares.eval import (  # noqa: E402
     build_report,
     episode_table,
     evaluate_manifest,
-    make_manifest_env,
 )
 from lares.eval.manifest import SPLIT_DEVELOPMENT, SPLIT_TRAIN  # noqa: E402
+from lares.utils.cli import load_yaml, openai_client, separator  # noqa: E402
 
 DEFAULT_CONFIG_PATH = os.path.join(_PROJECT_ROOT, "config", "run_full_evolution.yaml")
 MANIFEST_DIR = os.path.join(_PROJECT_ROOT, "config", "manifests")
@@ -85,8 +86,7 @@ _REQUIRED_KEYS = (
 
 def load_config(path: str) -> SimpleNamespace:
     """Load and validate the YAML config.  Returns a SimpleNamespace."""
-    with open(path, "r", encoding="utf-8") as f:
-        raw = yaml.safe_load(f)
+    raw = load_yaml(path)
     if not isinstance(raw, dict):
         raise ValueError(f"Config must be a YAML mapping: {path}")
     missing = [k for k in _REQUIRED_KEYS if k not in raw]
@@ -102,17 +102,20 @@ def load_config(path: str) -> SimpleNamespace:
     else:
         raw["use_mt1"] = bool(raw["use_mt1"])
     # Every LLM call uses the model and reasoning effort named here (gpt-6.1-sol, high; 2026-10-13).
-    from lares.core.policy_generation import DEFAULT_REASONING_EFFORT, check_reasoning_effort
+    from lares.core.policy_generation import (
+        DEFAULT_POLICY_IMPL_MODE,
+        DEFAULT_REASONING_EFFORT,
+        POLICY_IMPL_MODES,
+        POLICY_IMPL_PER_IDEA,
+        check_reasoning_effort,
+    )
 
     raw["reasoning_effort"] = check_reasoning_effort(raw.get("reasoning_effort", DEFAULT_REASONING_EFFORT))
-    if "policy_gen_two_phase" not in raw:
-        raw["policy_gen_two_phase"] = False
-    else:
-        raw["policy_gen_two_phase"] = bool(raw["policy_gen_two_phase"])
-    if "policy_impl_mode" not in raw:
-        raw["policy_impl_mode"] = "batched"
-    else:
-        raw["policy_impl_mode"] = str(raw["policy_impl_mode"]).strip().lower()
+    raw["policy_gen_two_phase"] = bool(raw.get("policy_gen_two_phase", False))
+    # Validated once here, against the library's one default; every later reader takes the value as is.
+    raw["policy_impl_mode"] = str(raw.get("policy_impl_mode", DEFAULT_POLICY_IMPL_MODE)).strip().lower().replace("-", "_")
+    if raw["policy_impl_mode"] not in POLICY_IMPL_MODES:
+        raise ValueError(f"{path}: policy_impl_mode must be one of {sorted(POLICY_IMPL_MODES)}")
     raw.setdefault("eval_max_steps", 150)
     raw["eval_max_steps"] = int(raw["eval_max_steps"])
     # Staged development budget (spec.md section 12). ``eval_episodes`` is kept as
@@ -172,7 +175,7 @@ def load_config(path: str) -> SimpleNamespace:
             problems.append(f"pop_size {raw['pop_size']} must equal two_lane_search.candidates {block.get('candidates')}")
         if int(raw["bc_steps"]) != 0:
             problems.append("bc_steps must be 0: explorations are zero-shot; the fittable lane's budget is in the plan")
-        if raw["policy_impl_mode"] != "per_idea":
+        if raw["policy_impl_mode"] != POLICY_IMPL_PER_IDEA:
             problems.append("policy_impl_mode must be per_idea for the two-lane search")
         if problems:
             raise ValueError(f"{path}: " + "; ".join(problems))
@@ -276,8 +279,7 @@ def parse_args() -> tuple:
     p.add_argument("--freeze-manifests", action="store_true",
                    help="R-037: build (or verify) the task manifests, print their ids and hashes, and exit; no LLM call "
                         "and no episode")
-    p.add_argument("--study", choices=("keyframe_repair", "dense_feedback_fit", "gait_preserving_repair",
-                                       "local_feedback_evidence", "two_channel_cold", "self_trace_source"), default=None,
+    p.add_argument("--study", choices=tuple(PEN_SPIN_STUDIES), default=None,
                    help="R-042: run the whole pen-spin keyframe-repair study (parity gate, blocks, arms, fresh cases); "
                         "R-045: dense_feedback_fit (expert-label fitting vs rollout search, no LLM call); "
                         "R-046: gait_preserving_repair (scaffold continuation on the frozen R-039 gait); "
@@ -354,12 +356,6 @@ def policy_space_dims(env) -> tuple[int, int]:
 # ---------------------------------------------------------------------------
 
 
-def separator(title: str) -> None:
-    print(f"\n{'=' * 65}")
-    print(f"  {title}")
-    print(f"{'=' * 65}")
-
-
 def print_eval(label: str, result: dict) -> None:
     print(
         f"  {label:35s}  reward={result['mean_reward']:8.2f}  "
@@ -417,6 +413,8 @@ def run_pen_spin_block(cfg, cfg_path: str, block: int, phase: str | None, arm: s
 def pen_spin_orchestrator_run(cfg, log_dir: str, seed: int, dev, probe, demo, fork: dict, incumbent_file: str,
                               tags: dict) -> None:
     """One plateau-repair orchestrator run on Isaac streams (R-042's prefix or continuation; R-046's prefix)."""
+    from lares.core.obs_schema import get_obs_schema
+    from lares.envs.isaac_pen_spin import cases
     from lares.search.lanes import load_plateau_repair_plan
 
     np.random.seed(seed)
@@ -426,15 +424,12 @@ def pen_spin_orchestrator_run(cfg, log_dir: str, seed: int, dev, probe, demo, fo
     isaac = os.path.join(log_dir, "isaac")
     envs = PipelineEnvs(development=pen_spin_stream(cfg, "development", isaac), rl=None,
                         gif=pen_spin_stream(cfg, "reset", isaac), probe=pen_spin_stream(cfg, "probe", isaac))
-    api_key = os.environ.get("OPENAI_API_KEY", "")
-    if len(api_key) < 10:
-        raise SystemExit("OPENAI_API_KEY is not set")
-    from openai import OpenAI
-
+    client = openai_client()
     llm_args = SimpleNamespace(model=cfg.model, reasoning_effort=cfg.reasoning_effort, policy_gen_two_phase=True,
                                policy_impl_mode=cfg.policy_impl_mode)
     orchestrator = EvolutionOrchestrator(
-        env_name=cfg.env_name, obs_dim=157, action_dim=20, num_generations=1, pop_size=2, elite_num=1, bc_steps=0,
+        env_name=cfg.env_name, obs_dim=get_obs_schema(cfg.env_name).obs_dim, action_dim=cases.NUM_ACTIONS,
+        num_generations=1, pop_size=2, elite_num=1, bc_steps=0,
         rl_iterations=0, rl_episodes_per_iter=0, log_dir=log_dir, record_demo_gif=False, dev_manifest=dev,
         train_cases=(), eval_max_steps=cfg.eval_max_steps,
         promotion_policy=PromotionPolicy(screen_episodes=cfg.screen_episodes, expanded_episodes=cfg.expanded_episodes),
@@ -446,7 +441,7 @@ def pen_spin_orchestrator_run(cfg, log_dir: str, seed: int, dev, probe, demo, fo
         lane_plan=load_plateau_repair_plan(cfg.plateau_repair), fit_seed=seed, demonstration_manifest=demo,
         demonstration_env=None, plateau_fork=fork,
     )
-    best = orchestrator.run(client=OpenAI(api_key=api_key), envs=envs, demo_buffer=None, args=llm_args,
+    best = orchestrator.run(client=client, envs=envs, demo_buffer=None, args=llm_args,
                             logger=TrainingLogger(log_dir=log_dir, task_name=cfg.env_name))
     inc = {"candidate_id": orchestrator._incumbent_id, **tags, "fixed_action_scale": cfg.fixed_action_scale,
            "isaac_processes": sum(e.calls for e in (envs.development, envs.gif, envs.probe)),
@@ -460,7 +455,36 @@ def pen_spin_orchestrator_run(cfg, log_dir: str, seed: int, dev, probe, demo, fo
         json.dump(inc, f, indent=2)
 
 
-def run_pen_spin_study(cfg, cfg_path: str) -> None:
+def _print_summary(summary: dict) -> None:
+    print(json.dumps({k: v for k, v in summary.items() if k != "blocks"}, indent=2, default=str))
+
+
+def _stream_factory(cfg):
+    return lambda name, work: pen_spin_stream(cfg, name, work)
+
+
+def _check_study_overrides(block_seeds, study_dir, overrides: dict) -> None:
+    """Refuse a command whose --block-seeds or --output-dir disagree with the config (R-048, R-049)."""
+    if overrides.get("block_seeds") is not None:
+        want = [int(x) for x in str(overrides["block_seeds"]).split(",")]
+        if want != [int(x) for x in block_seeds]:
+            raise SystemExit(f"--block-seeds {want} != the config's {list(block_seeds)}")
+    if overrides.get("output_dir") is not None and os.path.normpath(overrides["output_dir"]) != os.path.normpath(
+            study_dir):
+        raise SystemExit(f"--output-dir {overrides['output_dir']} != the config's study_dir {study_dir}")
+
+
+def _study_block(cfg, study: "PenSpinStudy", overrides: dict, **extra) -> dict:
+    """The study's config block with the LLM settings (and ``extra``) folded in; refuses a missing block."""
+    block = dict(getattr(cfg, study.config_key, None) or {})
+    if not block:
+        raise SystemExit(f"--study {study.name} needs a {study.config_key} block in the config")
+    _check_study_overrides(block["block_seeds"], block["study_dir"], overrides)
+    block.update(model=cfg.model, reasoning_effort=cfg.reasoning_effort, **extra)
+    return block
+
+
+def run_pen_spin_study(cfg, cfg_path: str, overrides: dict) -> None:
     """The R-042 driver: parity gate, then per block the prefix, demonstrations (once), three arms, fresh cases."""
     import shutil
     import subprocess
@@ -473,7 +497,7 @@ def run_pen_spin_study(cfg, cfg_path: str) -> None:
     sdir = ps["study_dir"]
     os.makedirs(sdir, exist_ok=True)
     study.freeze_manifests(ps)
-    factory = lambda name, work: pen_spin_stream(cfg, name, work)  # noqa: E731
+    factory = _stream_factory(cfg)
     parity = study.parity_gate(ps, sdir, factory, ps["expert"]["protocol_config"])
     print("parity gate:", json.dumps(parity))
     if not parity["passes"]:
@@ -514,21 +538,17 @@ def run_pen_spin_study(cfg, cfg_path: str) -> None:
     summary["parity"] = parity
     with open(os.path.join(sdir, "summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
-    print(json.dumps({k: v for k, v in summary.items() if k != "blocks"}, indent=2))
+    _print_summary(summary)
 
 
-def run_pen_spin_dense_fit(cfg) -> None:
-    """R-045: dense expert-label fitting vs rollout search on the frozen R-042 prefix controllers."""
+def run_pen_spin_dense_fit(cfg, cfg_path: str, overrides: dict) -> None:
+    """R-045: dense expert-label fitting vs rollout search on the frozen R-042 prefix controllers (no LLM call)."""
     from lares.envs.isaac_pen_spin import dense_fit, study
 
-    dcfg = getattr(cfg, "dense_feedback_fit", None)
-    if dcfg is None:
-        raise SystemExit("--study dense_feedback_fit needs a dense_feedback_fit block in the config")
+    dcfg = _study_block(cfg, PEN_SPIN_STUDIES["dense_feedback_fit"], overrides)
     torch.manual_seed(int(dcfg["block_seeds"][0]))
-    factory = lambda name, work: pen_spin_stream(cfg, name, work)  # noqa: E731
-    summary = dense_fit.run_study(dcfg, factory, study.expert_actor(cfg.pen_spin), cfg.env_name,
-                                  cfg.fixed_action_scale)
-    print(json.dumps({k: v for k, v in summary.items() if k != "blocks"}, indent=2))
+    _print_summary(dense_fit.run_study(dcfg, _stream_factory(cfg), study.expert_actor(cfg.pen_spin), cfg.env_name,
+                                       cfg.fixed_action_scale))
 
 
 def run_gait_prefix(cfg, block: int) -> None:
@@ -543,7 +563,7 @@ def run_gait_prefix(cfg, block: int) -> None:
                               {"phase": "prefix", "arm": None, "study": "gait_preserving_repair"})
 
 
-def run_pen_spin_gait_study(cfg, cfg_path: str) -> None:
+def run_pen_spin_gait_study(cfg, cfg_path: str, overrides: dict) -> None:
     """R-046: parity, then per block the cold prefix (own process), expert traces and the three scaffold arms."""
     import subprocess
 
@@ -551,15 +571,8 @@ def run_pen_spin_gait_study(cfg, cfg_path: str) -> None:
     from lares.envs.isaac_pen_spin import gait_repair
     from lares.envs.isaac_pen_spin.pipeline_backend import IsaacExpertActor
 
-    gcfg = dict(getattr(cfg, "gait_preserving_repair", None) or {})
-    if not gcfg:
-        raise SystemExit("--study gait_preserving_repair needs a gait_preserving_repair block in the config")
-    gcfg.update(model=cfg.model, reasoning_effort=cfg.reasoning_effort, isaac_env=cfg.pen_spin["isaac_env"])
-    api_key = os.environ.get("OPENAI_API_KEY", "")
-    if len(api_key) < 10:
-        raise SystemExit("OPENAI_API_KEY is not set")
-    from openai import OpenAI
-
+    gcfg = _study_block(cfg, PEN_SPIN_STUDIES["gait_preserving_repair"], overrides, isaac_env=cfg.pen_spin["isaac_env"])
+    client = openai_client()
     me = [sys.executable, "-u", os.path.abspath(__file__), "--config", cfg_path]
 
     def run_prefix(block, roles, log_dir):
@@ -571,128 +584,92 @@ def run_pen_spin_gait_study(cfg, cfg_path: str) -> None:
 
     e = cfg.pen_spin["expert"]
     expert = IsaacExpertActor(e["checkpoint"], e["checkpoint_sha256"], int(e["training_seed"]), shadow_gait=True)
-    factory = lambda name, work: pen_spin_stream(cfg, name, work)  # noqa: E731
-    summary = gait_repair.run_study(gcfg, factory, expert, run_prefix, OpenAI(api_key=api_key))
-    print(json.dumps({k: v for k, v in summary.items() if k != "blocks"}, indent=2, default=str))
+    _print_summary(gait_repair.run_study(gcfg, _stream_factory(cfg), expert, run_prefix, client))
 
 
-def _check_study_overrides(block_seeds, study_dir, overrides: dict) -> None:
-    """Refuse a command whose --block-seeds or --output-dir disagree with the config (R-048, R-049)."""
-    if overrides.get("block_seeds") is not None:
-        want = [int(x) for x in str(overrides["block_seeds"]).split(",")]
-        if want != [int(x) for x in block_seeds]:
-            raise SystemExit(f"--block-seeds {want} != the config's {list(block_seeds)}")
-    if overrides.get("output_dir") is not None and os.path.normpath(overrides["output_dir"]) != os.path.normpath(
-            study_dir):
-        raise SystemExit(f"--output-dir {overrides['output_dir']} != the config's study_dir {study_dir}")
-
-
-def run_pen_spin_two_channel(cfg, overrides: dict) -> None:
+def run_pen_spin_two_channel(cfg, cfg_path: str, overrides: dict) -> None:
     """R-049: per block the scored null incumbent, then the baseline and two-channel cold-search arms."""
     from lares.envs.isaac_pen_spin import two_channel
     from lares.envs.isaac_pen_spin.pipeline_backend import IsaacPenSpinStream
 
-    ccfg = dict(getattr(cfg, "two_channel_cold", None) or {})
-    if not ccfg:
-        raise SystemExit("--study two_channel_cold needs a two_channel_cold block in the config")
-    _check_study_overrides(ccfg["block_seeds"], ccfg["study_dir"], overrides)
-    ccfg.update(model=cfg.model, reasoning_effort=cfg.reasoning_effort)
-    api_key = os.environ.get("OPENAI_API_KEY", "")
-    if len(api_key) < 10:
-        raise SystemExit("OPENAI_API_KEY is not set")
-    from openai import OpenAI
-
+    ccfg = _study_block(cfg, PEN_SPIN_STUDIES["two_channel_cold"], overrides)
+    client = openai_client()
     isaac_env = cfg.pen_spin["isaac_env"]
     factory = lambda stage, name, work: IsaacPenSpinStream(stage, work, name, isaac_env=isaac_env)  # noqa: E731
-    summary = two_channel.run_study(ccfg, factory, OpenAI(api_key=api_key))
-    print(json.dumps({k: v for k, v in summary.items() if k != "blocks"}, indent=2, default=str))
+    _print_summary(two_channel.run_study(ccfg, factory, client))
 
 
-def run_pen_spin_self_trace(cfg, overrides: dict) -> None:
+def run_pen_spin_self_trace(cfg, cfg_path: str, overrides: dict) -> None:
     """R-054: per block the parent, then the self-trace and expert-trace repair arms, then fresh final incumbents."""
     from lares.envs.isaac_pen_spin import self_trace
 
-    scfg = dict(getattr(cfg, "self_trace_source", None) or {})
-    if not scfg:
-        raise SystemExit("--study self_trace_source needs a self_trace_source block in the config")
-    _check_study_overrides(scfg["block_seeds"], scfg["study_dir"], overrides)
-    scfg.update(model=cfg.model, reasoning_effort=cfg.reasoning_effort)
-    api_key = os.environ.get("OPENAI_API_KEY", "")
-    if len(api_key) < 10:
-        raise SystemExit("OPENAI_API_KEY is not set")
-    from openai import OpenAI
-
-    factory = lambda name, work: pen_spin_stream(cfg, name, work)  # noqa: E731
-    summary = self_trace.run_study(scfg, factory, OpenAI(api_key=api_key))
-    print(json.dumps({k: v for k, v in summary.items() if k != "blocks"}, indent=2, default=str))
+    scfg = _study_block(cfg, PEN_SPIN_STUDIES["self_trace_source"], overrides)
+    client = openai_client()
+    _print_summary(self_trace.run_study(scfg, _stream_factory(cfg), client))
 
 
-def run_pen_spin_local_feedback(cfg, overrides: dict) -> None:
+def run_pen_spin_local_feedback(cfg, cfg_path: str, overrides: dict) -> None:
     """R-048: per block the gait parent, expert queries at its states, and the raw-label and sensitivity arms."""
     from lares.envs.isaac_pen_spin import local_feedback
     from lares.envs.isaac_pen_spin.pipeline_backend import IsaacExpertActor
 
-    lcfg = dict(getattr(cfg, "local_feedback_evidence", None) or {})
-    if not lcfg:
-        raise SystemExit("--study local_feedback_evidence needs a local_feedback_evidence block in the config")
-    _check_study_overrides(lcfg["block_seeds"], lcfg["study_dir"], overrides)
-    lcfg.update(model=cfg.model, reasoning_effort=cfg.reasoning_effort)
-    api_key = os.environ.get("OPENAI_API_KEY", "")
-    if len(api_key) < 10:
-        raise SystemExit("OPENAI_API_KEY is not set")
-    from openai import OpenAI
-
+    lcfg = _study_block(cfg, PEN_SPIN_STUDIES["local_feedback_evidence"], overrides)
+    client = openai_client()
     e = cfg.pen_spin["expert"]
     expert = IsaacExpertActor(e["checkpoint"], e["checkpoint_sha256"], int(e["training_seed"]))
-    factory = lambda name, work: pen_spin_stream(cfg, name, work)  # noqa: E731
-    summary = local_feedback.run_study(lcfg, factory, expert, OpenAI(api_key=api_key))
-    print(json.dumps({k: v for k, v in summary.items() if k != "blocks"}, indent=2, default=str))
+    _print_summary(local_feedback.run_study(lcfg, _stream_factory(cfg), expert, client))
+
+
+@dataclass(frozen=True)
+class PenSpinStudy:
+    """One ``--study`` of the pen-spin pipeline: its config block, how to freeze its manifests, how to run it.
+
+    Adding a study is one module under ``lares/envs/isaac_pen_spin`` exposing ``freeze_manifests(block)`` plus one
+    entry below; ``--study`` choices, ``--freeze-manifests`` and the dispatch in ``main`` all read this table.
+    """
+
+    name: str
+    config_key: str
+    module: str
+    run: Callable
+    #: extra module functions whose output ``--freeze-manifests`` also prints (self_trace freezes evidence packets)
+    freeze_extra: tuple = ()
+
+    def freeze(self, block: dict) -> list:
+        import importlib
+
+        mod = importlib.import_module(f"lares.envs.isaac_pen_spin.{self.module}")
+        return [mod.freeze_manifests(block)] + [getattr(mod, fn)(block) for fn in self.freeze_extra]
+
+
+#: Insertion order is the ``--study`` choice order and the ``--freeze-manifests`` print order.
+PEN_SPIN_STUDIES = {s.name: s for s in (
+    PenSpinStudy("keyframe_repair", "pen_spin", "study", run_pen_spin_study),
+    PenSpinStudy("dense_feedback_fit", "dense_feedback_fit", "dense_fit", run_pen_spin_dense_fit),
+    PenSpinStudy("gait_preserving_repair", "gait_preserving_repair", "gait_repair", run_pen_spin_gait_study),
+    PenSpinStudy("local_feedback_evidence", "local_feedback_evidence", "local_feedback", run_pen_spin_local_feedback),
+    PenSpinStudy("two_channel_cold", "two_channel_cold", "two_channel", run_pen_spin_two_channel),
+    PenSpinStudy("self_trace_source", "self_trace_source", "self_trace", run_pen_spin_self_trace,
+                 freeze_extra=("build_evidence",)),
+)}
 
 
 def main() -> None:
     cfg_path, seed_override, log_dir_override, overrides = parse_args()
     cfg = apply_overrides(load_config(cfg_path), overrides)
     if getattr(cfg, "pen_spin", None) is not None:
-        from lares.envs.isaac_pen_spin import study
-
         if overrides.get("freeze_manifests"):
-            print(json.dumps(study.freeze_manifests(cfg.pen_spin), indent=2))
-            if getattr(cfg, "dense_feedback_fit", None) is not None:
-                from lares.envs.isaac_pen_spin import dense_fit
-
-                print(json.dumps(dense_fit.freeze_manifests(cfg.dense_feedback_fit), indent=2))
-            if getattr(cfg, "gait_preserving_repair", None) is not None:
-                from lares.envs.isaac_pen_spin import gait_repair
-
-                print(json.dumps(gait_repair.freeze_manifests(cfg.gait_preserving_repair), indent=2))
-            if getattr(cfg, "local_feedback_evidence", None) is not None:
-                from lares.envs.isaac_pen_spin import local_feedback
-
-                print(json.dumps(local_feedback.freeze_manifests(cfg.local_feedback_evidence), indent=2))
-            if getattr(cfg, "two_channel_cold", None) is not None:
-                from lares.envs.isaac_pen_spin import two_channel
-
-                print(json.dumps(two_channel.freeze_manifests(cfg.two_channel_cold), indent=2))
-            if getattr(cfg, "self_trace_source", None) is not None:
-                from lares.envs.isaac_pen_spin import self_trace
-
-                print(json.dumps(self_trace.freeze_manifests(cfg.self_trace_source), indent=2))
-                print(json.dumps(self_trace.build_evidence(cfg.self_trace_source), indent=2))
-        elif overrides.get("study") == "dense_feedback_fit":
-            run_pen_spin_dense_fit(cfg)
-        elif overrides.get("study") == "gait_preserving_repair":
-            run_pen_spin_gait_study(cfg, cfg_path)
-        elif overrides.get("study") == "local_feedback_evidence":
-            run_pen_spin_local_feedback(cfg, overrides)
-        elif overrides.get("study") == "two_channel_cold":
-            run_pen_spin_two_channel(cfg, overrides)
-        elif overrides.get("study") == "self_trace_source":
-            run_pen_spin_self_trace(cfg, overrides)
-        elif overrides.get("gait_block") is not None:
+            # Every study whose block the config declares, in registry order; no LLM call and no episode.
+            for study in PEN_SPIN_STUDIES.values():
+                block = getattr(cfg, study.config_key, None)
+                if block is not None:
+                    for payload in study.freeze(block):
+                        print(json.dumps(payload, indent=2))
+        elif overrides.get("gait_block") is not None:  # R-046 child, spawned without --study
             run_gait_prefix(cfg, int(overrides["gait_block"]))
         elif overrides.get("study"):
-            run_pen_spin_study(cfg, cfg_path)
-        elif overrides.get("block") is not None:
+            PEN_SPIN_STUDIES[overrides["study"]].run(cfg, cfg_path, overrides)
+        elif overrides.get("block") is not None:  # R-042 child, spawned without --study
             run_pen_spin_block(cfg, cfg_path, int(overrides["block"]), overrides.get("phase"), overrides.get("arm"))
         else:
             raise SystemExit("a pen_spin config runs with --freeze-manifests, --study or --block")
@@ -770,12 +747,12 @@ def main() -> None:
     # One env per stream. Collection, evaluation, probing and recording must not
     # be able to disturb each other's placements.
     collect_env = make_env(cfg, train_pool) if train_manifest is not None else None
-    rl_env = make_env(cfg, train_pool) if train_manifest is not None else None
     demo_env = make_env(cfg, demo_pool) if demo_manifest is not None else None
     dev_env = make_env(cfg, dev_pool)
     gif_env = make_env(cfg, dev_pool)
     probe_env = make_env(cfg, dev_pool)
-    envs = PipelineEnvs(development=dev_env, rl=rl_env, gif=gif_env, probe=probe_env)
+    # No RL stream: the orchestrator refuses rl_iterations > 0, so an RL env would only be built and closed.
+    envs = PipelineEnvs(development=dev_env, rl=None, gif=gif_env, probe=probe_env)
 
     obs_dim, action_dim = policy_space_dims(dev_env)
     print(f"  obs_dim={obs_dim}, action_dim={action_dim}")
@@ -848,19 +825,12 @@ def main() -> None:
     # -----------------------------------------------------------------------
     #  OpenAI client
     # -----------------------------------------------------------------------
-    api_key = os.environ.get("OPENAI_API_KEY", "")
-    if not api_key or len(api_key) < 10:
-        print("\nERROR: OPENAI_API_KEY environment variable is not set. Aborting.")
-        sys.exit(1)
-
-    from openai import OpenAI
-
-    client = OpenAI(api_key=api_key)
+    client = openai_client()
     llm_args = SimpleNamespace(
         model=cfg.model,
         reasoning_effort=cfg.reasoning_effort,
-        policy_gen_two_phase=getattr(cfg, "policy_gen_two_phase", False),
-        policy_impl_mode=getattr(cfg, "policy_impl_mode", "batched"),
+        policy_gen_two_phase=cfg.policy_gen_two_phase,
+        policy_impl_mode=cfg.policy_impl_mode,
     )
     print(f"\n  LLM model      : {cfg.model} (reasoning effort {cfg.reasoning_effort})")
     print(f"  Generations    : {cfg.num_generations}")

@@ -51,6 +51,9 @@ sys.path.insert(0, _PROJECT_ROOT)
 import numpy as np  # noqa: E402
 
 from lares.eval.stats import t_interval, win_loss_tie  # noqa: E402
+from lares.utils.cli import load_yaml  # noqa: E402
+from lares.utils.clock import now_iso as now  # noqa: E402
+from lares.utils.gitstate import rel  # noqa: E402
 from lares.utils.hashing import sha256_file  # noqa: E402
 from lares.utils.seeds import SEED_LEDGER, read_ledger, reserve_seeds, seed_conflicts  # noqa: E402
 
@@ -58,14 +61,6 @@ LANE_FITTABLE = "fittable"
 FIT_KEYS = ("objective", "sampling", "budget_gradient_steps", "batch_size", "lr", "clip_grad_norm",
             "checkpoint_steps", "fixed_action_scale", "val_fraction", "split_seed")
 DEMO_BUFFER = "logs/baseline_lock/demo_push-v2.pkl"
-
-
-def rel(path: str) -> str:
-    return os.path.relpath(os.path.abspath(path), _PROJECT_ROOT)
-
-
-def now() -> str:
-    return time.strftime("%Y-%m-%dT%H:%M:%S")
 
 
 def _records(run_dir: str) -> list:
@@ -625,8 +620,6 @@ def seed_robustness_analysis(child, parent, child_step0, parent_step0, rule) -> 
 def run_seed_robustness(args) -> int:
     import multiprocessing as mp
 
-    import yaml
-
     pairs = {q["child_id"]: q for q in discover_pairs(args.run)}
     if args.child not in pairs:
         raise SystemExit(f"{args.child} is not an evaluated fittable-lane child of {args.run}: {sorted(pairs)}")
@@ -645,8 +638,8 @@ def run_seed_robustness(args) -> int:
     probe, probe_path = fresh_manifest(args.env_name, args.probe_seed, 10, args.horizon, args.out_dir, role="probe")
     conf, conf_path = fresh_manifest(args.env_name, args.heldout_seed, 50 * len(args.heldout_seed), args.horizon,
                                      args.out_dir, role="confirmation", also_disjoint_from=[probe])
-    with open(os.path.join(_PROJECT_ROOT, "config", "fittable_bank", "qualification_v2.yaml"), encoding="utf-8") as f:
-        rule = yaml.safe_load(f)["qualification_rule"]["enters_fittable_seed_bank_if"]
+    rule = load_yaml(os.path.join(_PROJECT_ROOT, "config", "fittable_bank", "qualification_v2.yaml")
+                     )["qualification_rule"]["enters_fittable_seed_bank_if"]
     common = {"env_name": args.env_name, "horizon": args.horizon, "fitting": fitting,
               "out_dir": os.path.abspath(args.out_dir), "demo_buffer": os.path.join(_PROJECT_ROOT, args.demo_buffer),
               "probe_manifest": os.path.abspath(probe_path), "evaluate": {"confirmation": os.path.abspath(conf_path)}}

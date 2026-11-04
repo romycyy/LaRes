@@ -51,6 +51,8 @@ import os
 import time
 from typing import Any, Optional
 
+from lares.utils.clock import run_stamp
+
 
 class TrainingLogger:
     """Unified structured metric logger for BC, RL, and evolution stages.
@@ -68,7 +70,7 @@ class TrainingLogger:
         tensorboard_writer: Optional[Any] = None,
     ):
         self.log_dir = log_dir
-        self.run_id = run_id or time.strftime("%Y%m%d_%H%M%S")
+        self.run_id = run_id or run_stamp()
         self.task_name = task_name or ""
         self.global_step = 0
         self.start_time = time.time()

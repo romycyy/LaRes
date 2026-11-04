@@ -13,11 +13,12 @@ repair prompt, and :mod:`lares.vision.merge` is where it meets the numbers.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import re
 import os
 from dataclasses import asdict, dataclass, field
+
+from lares.utils.hashing import short_hash_text
 
 #: Bumped whenever the prompt changes, so an analysis can be tied to the words
 #: that produced it. Recorded on every analysis.
@@ -189,9 +190,7 @@ def parse_analysis(text: str, candidate_id: str, case_id: str, model_id: str,
     video.
     """
     payload = _json_object(text)
-    analysis_id = hashlib.sha256(
-        f"{candidate_id}:{case_id}:{model_id}:{text}".encode("utf-8")
-    ).hexdigest()[:16]
+    analysis_id = short_hash_text(f"{candidate_id}:{case_id}:{model_id}:{text}")
     return VisualFailureAnalysis(
         analysis_id=analysis_id,
         candidate_id=candidate_id,

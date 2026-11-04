@@ -8,11 +8,10 @@ names exact code.
 
 from __future__ import annotations
 
-import json
 import os
 
 from lares.utils import seeds as seeds_module
-from lares.utils.gitstate import git, worktree_state  # noqa: F401  (re-exported)
+from lares.utils.gitstate import worktree_state
 from lares.research.schemas import (
     STATUS_APPROVED,
     STATUS_RUNNING,

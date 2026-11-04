@@ -69,36 +69,15 @@ def manifest_file(seed: int) -> str:
 
 
 def freeze_manifests(lcfg: dict) -> dict:
-    from lares.eval.manifest import EvaluationManifest
-
-    built, hashes = {}, {}
-    for b, seed in enumerate(lcfg["block_seeds"]):
-        m = cases.build_manifest(STAGE, int(seed), BLOCK_CASES, label=LABEL)
-        path = manifest_file(int(seed))
-        if os.path.exists(path):
-            if EvaluationManifest.load(path).to_dict() != m.to_dict():
-                raise ValueError(f"{path} exists and differs from the manifest this study builds")
-        else:
-            m.save(path)
-        for c in m.episodes:
-            if c.task_hash in hashes:
-                raise ValueError(f"block{b} shares placement {c.task_hash} with {hashes[c.task_hash]}")
-            hashes[c.task_hash] = f"block{b}"
-        built[f"block{b}"] = path
-    return built
+    return cases.freeze_manifest_set(
+        (manifest_file(int(seed)), cases.build_manifest(STAGE, int(seed), BLOCK_CASES, label=LABEL), f"block{b}")
+        for b, seed in enumerate(lcfg["block_seeds"]))
 
 
 def block_roles(seed: int) -> dict:
     from lares.eval.manifest import EvaluationManifest
 
-    m = EvaluationManifest.load(manifest_file(seed))
-    if len(m) != BLOCK_CASES:
-        raise ValueError(f"block manifest for seed {seed} has {len(m)} cases, not {BLOCK_CASES}")
-    out = {}
-    for role, (a, b) in ROLES.items():
-        out[role] = EvaluationManifest(manifest_id=f"{m.manifest_id}:{role}", environment=m.environment, pool=m.pool,
-                                       split=m.split, episodes=list(m.episodes[a:b]))
-    return out
+    return cases.role_manifests(EvaluationManifest.load(manifest_file(seed)), ROLES, expected_cases=BLOCK_CASES)
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -453,7 +432,7 @@ def run_queries(lcfg: dict, roles: dict, parent: dict, bdir: str, stream_factory
     h = step_sizes(demo_obs)
     trace = np.load(parent["trace_path"])
     episodes = select_states({"episodes": parent["screen_rows"]})
-    obs, gait, ev_idx, ex_idx, n = [], [], [], [], 0
+    obs, gait, n = [], [], 0
     for e in episodes:
         steps = e["evidence_steps"] + e["extra_steps"]
         obs.append(trace["obs"][e["episode"], steps])
@@ -577,7 +556,7 @@ def _parent_result(parent: dict, manifest):
 
 
 def summarise(blocks: list[dict]) -> dict:
-    from lares.eval.stats import t_summary
+    from lares.eval.stats import block_contrast
 
     out = {"blocks": blocks, "n_blocks": len(blocks)}
     pairs = [PRIMARY, ("sensitivity", "parent"), ("raw_labels", "parent")]
@@ -589,7 +568,7 @@ def summarise(blocks: list[dict]) -> dict:
                 y = blk["parent"]["fresh"] if b == "parent" else blk["arms"][b].get(key)
                 if x is not None and y is not None:
                     d.append(x["success"] - y["success"])
-            out[f"{a}_minus_{b}_{key}"] = {"per_block": d, **(t_summary(d) if len(d) >= 2 else {"n": len(d)})}
+            out[f"{a}_minus_{b}_{key}"] = block_contrast(d)
     out["paired_success_difference"] = out["sensitivity_minus_raw_labels_fresh_incumbent"].get("mean")
     out["promoted"] = {a: sum(bool(blk["arms"][a].get("promoted")) for blk in blocks) for a in ARMS}
     return out

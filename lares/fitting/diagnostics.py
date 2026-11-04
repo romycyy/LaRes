@@ -11,13 +11,18 @@ from __future__ import annotations
 import torch
 
 
+def per_axis_mse_from_mean(mean, target):
+    """MSE between ``tanh(mean)`` and the expert action, per action axis, from one forward pass."""
+    with torch.no_grad():
+        per_axis = ((torch.tanh(mean) - target) ** 2).mean(dim=0)
+    return [float(x) for x in per_axis]
+
+
 def per_axis_mse(policy, obs_np, actions_np):
     """MSE between ``tanh(mean)`` and the expert action, per action axis."""
     with torch.no_grad():
         mean, _ = policy(torch.tensor(obs_np, dtype=torch.float32))
-        target = torch.tensor(actions_np, dtype=torch.float32)
-        per_axis = ((torch.tanh(mean) - target) ** 2).mean(dim=0)
-    return [float(x) for x in per_axis]
+    return per_axis_mse_from_mean(mean, torch.tensor(actions_np, dtype=torch.float32))
 
 
 def bound_activity(policy, atol=1e-6):
@@ -57,13 +62,21 @@ def loss_by_phase(policy, obs_np, actions_np, threshold=0.5):
     if not callable(reset_diagnostics):
         return None
     reset_diagnostics()
-    obs_t = torch.tensor(obs_np, dtype=torch.float32)
-    target = torch.tensor(actions_np, dtype=torch.float32)
     with torch.no_grad():
-        mean, _ = policy(obs_t)
-        gates = dict(getattr(policy, "last_gates", {}) or {})
-        if not gates:
-            return None
+        mean, _ = policy(torch.tensor(obs_np, dtype=torch.float32))
+    gates = dict(getattr(policy, "last_gates", {}) or {})
+    return loss_by_phase_from_mean(mean, gates, torch.tensor(actions_np, dtype=torch.float32), threshold)
+
+
+def loss_by_phase_from_mean(mean, gates: dict, target, threshold=0.5):
+    """:func:`loss_by_phase` from a forward pass the caller already ran.
+
+    ``gates`` is the policy's ``last_gates`` after that pass (``reset_diagnostics``
+    called before it); an empty dict means the policy exposes no gate.
+    """
+    if not gates:
+        return None
+    with torch.no_grad():
         error = ((torch.tanh(mean) - target) ** 2).mean(dim=-1)
     out = {}
     for name, value in gates.items():

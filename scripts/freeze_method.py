@@ -18,7 +18,6 @@ Usage (from the project root)::
 """
 
 import argparse
-import json
 import os
 import sys
 
@@ -26,8 +25,8 @@ _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
 sys.path.insert(0, _PROJECT_ROOT)
 
-import yaml  # noqa: E402
 
+from lares.utils.cli import load_yaml  # noqa: E402
 from lares.eval.freeze import (  # noqa: E402
     build_freeze,
     hash_directory,
@@ -102,8 +101,7 @@ def main():
               "frozen method.")
         return 1
 
-    with open(args.config, encoding="utf-8") as f:
-        cfg = yaml.safe_load(f) or {}
+    cfg = load_yaml(args.config) or {}
 
     from lares.eval.promotion import PromotionPolicy
     from lares.fitting.benchmark import SELECTION_RULE

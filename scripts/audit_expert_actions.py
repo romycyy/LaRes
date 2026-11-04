@@ -26,7 +26,6 @@ import argparse
 import json
 import os
 import sys
-import time
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
@@ -34,13 +33,14 @@ sys.path.insert(0, _PROJECT_ROOT)
 
 import numpy as np  # noqa: E402
 
+from lares.utils.clock import now_iso, run_stamp  # noqa: E402
+from lares.utils.cli import separator  # noqa: E402
 from lares.core.obs_schema import get_obs_schema  # noqa: E402
 from lares.core.training_pipeline import (  # noqa: E402
     ensure_mujoco_headless_gl,
     get_expert_policy,
 )
 from lares.eval import EvaluationManifest, make_manifest_env  # noqa: E402
-from lares.eval.manifest import SPLIT_TRAIN  # noqa: E402
 
 AXES = ("dx", "dy", "dz", "gripper")
 
@@ -58,10 +58,6 @@ def parse_args():
         "--out-dir", default=os.path.join(_PROJECT_ROOT, "logs", "expert_audit")
     )
     return p.parse_args()
-
-
-def separator(title):
-    print(f"\n{'=' * 76}\n  {title}\n{'=' * 76}")
 
 
 def main():
@@ -161,9 +157,9 @@ def main():
         "fraction_censored_any_axis": any_censored,
         "max_raw_magnitude": float(np.abs(raw).max()),
         "phase_counts": counts,
-        "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "recorded_at": now_iso(),
     }
-    path = os.path.join(args.out_dir, f"expert_audit_{time.strftime('%Y%m%d_%H%M%S')}.json")
+    path = os.path.join(args.out_dir, f"expert_audit_{run_stamp()}.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, default=str)
     print(f"\n  report: {path}")

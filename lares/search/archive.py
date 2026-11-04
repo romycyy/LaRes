@@ -136,15 +136,13 @@ class Archive:
     def __init__(self, competitive_margin: float = COMPETITIVE_SUCCESS_MARGIN):
         self.competitive_margin = float(competitive_margin)
         self.entries: list[ArchiveEntry] = []
+        self._by_id: dict[str, ArchiveEntry] = {}
 
     def __len__(self) -> int:
         return len(self.entries)
 
     def get(self, candidate_id: str) -> ArchiveEntry | None:
-        for entry in self.entries:
-            if entry.candidate_id == candidate_id:
-                return entry
-        return None
+        return self._by_id.get(candidate_id)
 
     def add(self, candidate_id, generation, report, num_parameters, source_hash,
             intervention: bool = False, scope: str = SCOPE_SCREEN) -> ArchiveEntry:
@@ -169,6 +167,7 @@ class Archive:
                 intervention=bool(intervention),
             )
             self.entries.append(entry)
+            self._by_id[candidate_id] = entry
         elif entry.source_hash != str(source_hash):
             raise ValueError(
                 f"{candidate_id} is archived with source {entry.source_hash}, not {source_hash}; "

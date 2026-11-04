@@ -11,7 +11,6 @@ gain in ``[0.1, 10]`` and a threshold in ``[0.01, 0.3]`` are comparable.
 
 from __future__ import annotations
 
-import numpy as np
 import torch
 
 #: Perturbation applied to each parameter, as a fraction of its declared range.

@@ -89,12 +89,6 @@ class GaitActor:
     def act(self, obs):  # pragma: no cover - never stepped in this process
         raise RuntimeError("the gait scaffold runs only inside a pen-spin child process")
 
-    def reset(self, case):  # pragma: no cover - the child drives the expert
-        pass
-
-    def act(self, obs):  # pragma: no cover - never stepped in this process
-        raise RuntimeError("the Isaac expert runs only inside a pen-spin child process")
-
 
 def actor_spec(actor) -> tuple[dict, bytes | None]:
     """``(spec, state bytes)`` for a request: a symbolic policy by source and state, or the PPO expert."""
@@ -158,7 +152,7 @@ class IsaacPenSpinStream:
         self.device = device
         #: ``runner(request_path) -> None`` writes the response; the default starts the Isaac child. Tests inject one.
         self._runner = runner or self._run_child
-        self.observation_space = SimpleNamespace(shape=(157,), low=-np.inf, high=np.inf)
+        self.observation_space = SimpleNamespace(shape=(cases.OBS_DIM,), low=-np.inf, high=np.inf)
         self.action_space = SimpleNamespace(shape=(cases.NUM_ACTIONS,), low=-np.ones(cases.NUM_ACTIONS),
                                             high=np.ones(cases.NUM_ACTIONS))
         self.calls = 0

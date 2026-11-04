@@ -34,19 +34,18 @@ from __future__ import annotations
 import json
 import os
 import re
-import time
 from dataclasses import asdict, dataclass, field
 from typing import Iterable, Sequence
 
+from lares.utils.clock import now_iso
 from lares.utils.env_ids import (  # noqa: F401  (re-exported)
     ENV_ID_MAPPING_RULE,
     ENV_ID_MAPPING_VERSION,
     resolve_registry_env_id,
 )
-from lares.utils.hashing import sha256_bytes, sha256_file, sha256_text  # noqa: F401  (re-exported)
+from lares.utils.hashing import sha256_bytes, sha256_file
 
 from lares.search.schemas import (  # noqa: F401  (lineage constants re-exported)
-    EXPLORATION_LABEL,
     EXPLORATION_LABELS,
     FITTABLE_LABEL,
     LANE_EXPLORATION,
@@ -56,10 +55,6 @@ from lares.search.schemas import (  # noqa: F401  (lineage constants re-exported
     TRACE_REPAIR_LABEL,
     LINEAGE_COMPLETE,
     LINEAGE_FAILED_VALIDATION,
-    LINEAGE_LEGACY_MISSING,
-    LINEAGE_PARTIAL_RECOVERY,
-    LINEAGE_STATUSES,
-    PRE_IDEA_STAGES,
     MODE_CROSSOVER,
     MODE_EXPLORATION,
     MODE_FITTABLE_MUTATION,
@@ -383,7 +378,7 @@ class LLMCallLedger:
             purpose=str(purpose),
             generation=generation,
             attempt_ids=[str(a) for a in attempt_ids],
-            timestamp=time.strftime("%Y-%m-%dT%H:%M:%S"),
+            timestamp=now_iso(),
         )
         record.validate()
         with open(self.path, "a", encoding="utf-8") as f:

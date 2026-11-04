@@ -36,6 +36,16 @@ def t_summary(values, level: float = 0.95) -> dict:
     return out
 
 
+def block_contrast(values) -> dict:
+    """``{"per_block": [...], **t_summary}`` for a per-block paired contrast.
+
+    Below two blocks only ``n`` is reported beside the values: a one-block study has no interval, and the
+    recorded ``summary.json`` files of completed studies carry exactly this shape.
+    """
+    d = [float(v) for v in values]
+    return {"per_block": d, **(t_summary(d) if len(d) >= 2 else {"n": len(d)})}
+
+
 def t_interval(values, level: float = 0.95) -> dict:
     """Mean, median, t interval and p-value: the stage-report shape."""
     arr = np.asarray(values, dtype=float)

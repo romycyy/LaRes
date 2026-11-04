@@ -28,11 +28,11 @@ from __future__ import annotations
 import json
 import os
 import re
-import time
 from dataclasses import asdict, dataclass, field
-from typing import Any, Sequence
+from typing import Sequence
 
-from lares.utils.hashing import sha256_text  # noqa: F401  (re-exported)
+from lares.utils.clock import now_iso
+from lares.utils.jsonl import append_jsonl, read_jsonl
 
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 RESEARCH_ROOT = os.path.join(_PROJECT_ROOT, "research")
@@ -111,7 +111,7 @@ def _require(condition, message):
 
 
 def now() -> str:
-    return time.strftime("%Y-%m-%dT%H:%M:%S")
+    return now_iso()
 
 
 def _measurable() -> set[str]:
@@ -372,11 +372,7 @@ def next_idea_id(root: str = RESEARCH_ROOT) -> str:
 
 
 def load_decisions(root: str = RESEARCH_ROOT) -> list:
-    path = os.path.join(root, DECISIONS_FILE)
-    if not os.path.isfile(path):
-        return []
-    with open(path, "r", encoding="utf-8") as f:
-        return [json.loads(line) for line in f if line.strip()]
+    return read_jsonl(os.path.join(root, DECISIONS_FILE))
 
 
 def append_decision(decision: Decision, root: str = RESEARCH_ROOT) -> str:
@@ -486,11 +482,7 @@ def set_direction(text: str, root: str = RESEARCH_ROOT, by: str = SOURCE_USER) -
 
 
 def _append_jsonl(root: str, name: str, entry: dict) -> str:
-    os.makedirs(root, exist_ok=True)
-    path = os.path.join(root, name)
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-    return path
+    return append_jsonl(os.path.join(root, name), [entry], ensure_ascii=False)
 
 
 def log_proposal(root: str, call_id: str, briefing_sha256: str, direction: str, index: int,
@@ -503,11 +495,7 @@ def log_proposal(root: str, call_id: str, briefing_sha256: str, direction: str, 
 
 
 def load_jsonl(root: str, name: str) -> list:
-    path = os.path.join(root, name)
-    if not os.path.isfile(path):
-        return []
-    with open(path, "r", encoding="utf-8") as f:
-        return [json.loads(line) for line in f if line.strip()]
+    return read_jsonl(os.path.join(root, name))
 
 
 # ---------------------------------------------------------------------------

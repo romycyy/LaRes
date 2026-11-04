@@ -33,8 +33,14 @@ _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
 sys.path.insert(0, _PROJECT_ROOT)
 
+from lares.eval.manifest import unique_manifests  # noqa: E402
 from lares.repair import correction as sf  # noqa: E402
-from lares.utils.gitstate import worktree_state  # noqa: E402
+from lares.utils.cli import load_yaml as load_config  # noqa: E402
+from lares.utils.cli import openai_client, require_api_key  # noqa: E402
+from lares.utils.clock import now_iso, run_stamp  # noqa: E402
+from lares.utils.gitstate import rel, require_clean_worktree, worktree_state  # noqa: E402
+from lares.utils.hashing import sha256_file, sha256_text  # noqa: E402
+from lares.utils.seeds import read_ledger, reserve_seeds, seed_conflicts  # noqa: E402
 
 MANIFESTS = os.path.join(_PROJECT_ROOT, "config", "manifests")
 CONFIG_PATH = os.path.join(_PROJECT_ROOT, "config", "stage_f", "stage_f.yaml")
@@ -159,12 +165,8 @@ def run(args, structures=None, extra_meta=None) -> int:
     llm_args = SimpleNamespace(model=args.model or DEFAULT_LLM_MODEL,
                                reasoning_effort=args.reasoning_effort or DEFAULT_REASONING_EFFORT)
     if uses_llm:
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if not api_key:
-            raise SystemExit("the LLM arms need OPENAI_API_KEY")
-        from openai import OpenAI
 
-        client = OpenAI(api_key=api_key)
+        client = openai_client()
 
     data = prepare_data(DemoBuffer.load(args.buffer), split_seed=0)
     if structures is None:
@@ -175,7 +177,7 @@ def run(args, structures=None, extra_meta=None) -> int:
     held_out_env = make_manifest_env(held_out, held_out.resolve_pool(), 200)
     prompts = load_policy_prompt_assets(args.env_name)
 
-    run_dir = os.path.join(args.out_dir, time.strftime("%Y%m%d_%H%M%S"))
+    run_dir = os.path.join(args.out_dir, run_stamp())
     os.makedirs(run_dir, exist_ok=True)
     meta = {"arms": list(args.arms), "structures": list(args.structures), "seeds": list(args.seeds),
             "budget": budget.to_dict(), "acceptance_rule": sf.ACCEPTANCE_RULE,
@@ -288,17 +290,6 @@ def vision_summary(replicates, resamples: int = 10_000, seed: int = 0) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def load_config(path):
-    import yaml
-
-    with open(path, encoding="utf-8") as f:
-        return yaml.safe_load(f)
-
-
-def rel(path):
-    return os.path.relpath(path, _PROJECT_ROOT)
-
-
 def evolved_rank_key(record, progress):
     """Promotion-set success (absent ranks lowest), then screen success, then screen progress."""
     expanded = record.evaluation.get("expanded_success_rate")
@@ -319,7 +310,6 @@ def screen_progress(run_dir, record):
 
 def cmd_select(args) -> int:
     from lares.search import STATUS_INVALID, load_records
-    from lares.search.generation import sha256_text
     from lares.search.provenance import reconstruct_record
 
     cfg = load_config(args.config)
@@ -367,9 +357,7 @@ def cmd_select(args) -> int:
                              "source_sha256": digest, "rank_key": entry["rank_key"],
                              "expanded_success_rate": entry["expanded_success_rate"],
                              "screen_success_rate": entry["screen_success_rate"]})
-    import stage_e
-
-    payload = {"selected_at": stage_e.now(), "selected_before_held_out_manifest": True, "rule": ev["rule"],
+    payload = {"selected_at": now_iso(), "selected_before_held_out_manifest": True, "rule": ev["rule"],
                "source_run": ev["source_run"], "selected": selected, "considered": considered}
     with open(selection_path, "x", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)
@@ -378,7 +366,6 @@ def cmd_select(args) -> int:
 
 
 def cmd_build_manifest(args) -> int:
-    import stage_e
     from lares.eval.manifest import SPLIT_DEVELOPMENT, EvaluationManifest, assert_disjoint, build_manifest
 
     cfg = load_config(args.config)
@@ -390,26 +377,26 @@ def cmd_build_manifest(args) -> int:
         raise SystemExit(f"{rel(out_path)} exists and is immutable")
     pool_seed = int(cfg["seeds"]["held_out_pool_seed"])
     replicate_seeds = [int(s) for s in cfg["seeds"]["replicate_seeds"]]
-    conflicts = stage_e.seed_conflicts([pool_seed], replicate_seeds)
+    conflicts = seed_conflicts([pool_seed], replicate_seeds)
     if conflicts:
         raise SystemExit("seeds already used:\n  " + "\n  ".join(conflicts))
     manifest, _ = build_manifest(cfg["env_name"], SPLIT_DEVELOPMENT, [pool_seed], horizon=int(cfg["horizon"]),
                                  num_episodes=int(held["episodes"]), manifest_id=held["manifest_id"])
-    known = stage_e.unique_manifests(
+    known = unique_manifests(
         [EvaluationManifest.load(p) for p in sorted(glob.glob(os.path.join(_PROJECT_ROOT, "config", "**", "*.yaml"),
                                                                recursive=True)) if _is_manifest(p)])
     assert_disjoint(known + [manifest])
     manifest.save(out_path)
-    stamp = stage_e.now()
-    stage_e.reserve_seeds(
+    stamp = now_iso()
+    reserve_seeds(
         [{"seed": pool_seed, "namespace": "mt1_pool", "use": "Stage F held-out manifest", "artifact": rel(out_path),
           "recorded_at": stamp, "backfilled": False}]
         + [{"seed": s, "namespace": "fitting", "use": "Stage F replicate seeds", "artifact": rel(args.config),
             "recorded_at": stamp, "backfilled": False} for s in replicate_seeds])
     provenance = {"manifest_id": manifest.manifest_id, "manifest_path": rel(out_path),
-                  "manifest_sha256": stage_e.sha256_file(out_path), "pool_seed": pool_seed,
+                  "manifest_sha256": sha256_file(out_path), "pool_seed": pool_seed,
                   "episodes": len(manifest), "built_at": stamp, "disjoint_from": [m.manifest_id for m in known],
-                  "selection_sha256": stage_e.sha256_file(os.path.join(_PROJECT_ROOT,
+                  "selection_sha256": sha256_file(os.path.join(_PROJECT_ROOT,
                                                                        cfg["structures"]["evolved"]["selection_file"]))}
     with open(os.path.join(os.path.dirname(out_path), "manifest_provenance.json"), "x", encoding="utf-8") as f:
         json.dump(provenance, f, indent=2)
@@ -437,7 +424,6 @@ class _Spec:
 
 def selected_structures(cfg, schema) -> list:
     """The frozen evolved selection, hash-checked."""
-    from lares.search.generation import sha256_text
 
     with open(os.path.join(_PROJECT_ROOT, cfg["structures"]["evolved"]["selection_file"]), encoding="utf-8") as f:
         selection = json.load(f)
@@ -452,7 +438,6 @@ def selected_structures(cfg, schema) -> list:
 
 
 def run_from_config(path) -> int:
-    import stage_e
     from lares.core.obs_schema import get_obs_schema
 
     cfg = load_config(path)
@@ -460,13 +445,13 @@ def run_from_config(path) -> int:
         schema = get_obs_schema(cfg["env_name"])
         bank = [_Spec(s.structure_id, s.source, schema) for s in load_structures(cfg["structures"]["bank"], schema)]
         return run_cells(cfg, path, bank + selected_structures(cfg, schema))
-    sha = stage_e.require_clean_worktree()
+    sha = require_clean_worktree("Stage F")
     schema = get_obs_schema(cfg["env_name"])
     held = cfg["manifests"]["held_out"]
     prov_path = os.path.join(_PROJECT_ROOT, os.path.dirname(held["path"]), "manifest_provenance.json")
     with open(prov_path, encoding="utf-8") as f:
         prov = json.load(f)
-    if stage_e.sha256_file(os.path.join(_PROJECT_ROOT, held["path"])) != prov["manifest_sha256"]:
+    if sha256_file(os.path.join(_PROJECT_ROOT, held["path"])) != prov["manifest_sha256"]:
         raise SystemExit(f"{held['path']} no longer matches its frozen hash")
     structures = [_Spec(s.structure_id, s.source, schema) for s in load_structures(cfg["structures"]["bank"], schema)]
     with open(os.path.join(_PROJECT_ROOT, cfg["structures"]["evolved"]["selection_file"]), encoding="utf-8") as f:
@@ -474,7 +459,6 @@ def run_from_config(path) -> int:
     for s in selection["selected"]:
         with open(os.path.join(_PROJECT_ROOT, s["source_path"]), encoding="utf-8") as f:
             source = f.read()
-        from lares.search.generation import sha256_text
 
         if sha256_text(source) != s["source_sha256"]:
             raise SystemExit(f"{s['source_path']} no longer matches its frozen hash")
@@ -488,7 +472,7 @@ def run_from_config(path) -> int:
         max_substitutions=int(b["max_substitutions"]), max_llm_calls=int(b["max_llm_calls"]),
         max_steps=int(cfg["horizon"]), model=llm["model"], reasoning_effort=llm["reasoning_effort"],
         out_dir=os.path.join(_PROJECT_ROOT, "logs", "stage_f"))
-    extra = {"config": rel(path), "config_sha256": stage_e.sha256_file(path), "frozen_git_sha": sha,
+    extra = {"config": rel(path), "config_sha256": sha256_file(path), "frozen_git_sha": sha,
              "selection_sha256": prov["selection_sha256"], "held_out_manifest_sha256": prov["manifest_sha256"]}
     return run(args, structures=structures, extra_meta=extra)
 
@@ -508,28 +492,26 @@ def cell_seeds(cfg) -> dict:
 
 def cmd_reserve(args) -> int:
     """Reserve a cell protocol's seeds in the ledger (run locally, before the GPU box touches it)."""
-    import stage_e
-
     cfg = load_config(args.config)
     seeds, artifact = cell_seeds(cfg), rel(os.path.abspath(args.config))
-    mine = {(int(e["seed"]), e["namespace"]) for e in stage_e.read_ledger() if e.get("artifact") == artifact}
+    mine = {(int(e["seed"]), e["namespace"]) for e in read_ledger() if e.get("artifact") == artifact}
     wanted = {(s, ns) for s in seeds["cells"] for ns in ("fitting", "mt1_pool")} | {(seeds["held_out"], "mt1_pool")}
     if mine == wanted:
         print(f"  seeds already reserved for {artifact}")
         return 0
     if mine:
         raise SystemExit(f"the ledger holds a partial reservation for {artifact}")
-    conflicts = stage_e.seed_conflicts(seeds["cells"] + [seeds["held_out"]], seeds["cells"])
+    conflicts = seed_conflicts(seeds["cells"] + [seeds["held_out"]], seeds["cells"])
     if conflicts:
         raise SystemExit("seeds already used:\n  " + "\n  ".join(conflicts))
-    stamp, use = stage_e.now(), cfg.get("study", "cell protocol")
+    stamp, use = now_iso(), cfg.get("study", "cell protocol")
     entries = [{"seed": s, "namespace": "fitting", "use": f"{use}: cell demo sample, split and fitting seed",
                 "artifact": artifact, "recorded_at": stamp, "backfilled": False} for s in seeds["cells"]]
     entries += [{"seed": s, "namespace": "mt1_pool", "use": f"{use}: cell probe manifest", "artifact": artifact,
                  "recorded_at": stamp, "backfilled": False} for s in seeds["cells"]]
     entries.append({"seed": seeds["held_out"], "namespace": "mt1_pool", "use": f"{use}: held-out manifest",
                     "artifact": artifact, "recorded_at": stamp, "backfilled": False})
-    stage_e.reserve_seeds(entries)
+    reserve_seeds(entries)
     print(f"  reserved {len(entries)} seed uses for {artifact}")
     return 0
 
@@ -540,11 +522,10 @@ def probe_path(cfg, seed) -> str:
 
 def build_cell_manifests(cfg, config_path) -> int:
     """Held-out and per-cell probe manifests; refuses unless the seeds were reserved for this config."""
-    import stage_e
     from lares.eval.manifest import SPLIT_DEVELOPMENT, EvaluationManifest, assert_disjoint, build_manifest
 
     seeds, artifact = cell_seeds(cfg), rel(os.path.abspath(config_path))
-    reserved = {int(e["seed"]) for e in stage_e.read_ledger() if e.get("artifact") == artifact}
+    reserved = {int(e["seed"]) for e in read_ledger() if e.get("artifact") == artifact}
     missing = sorted(set(seeds["cells"] + [seeds["held_out"]]) - reserved)
     if missing:
         raise SystemExit(f"seeds {missing} are not reserved for {artifact}; run `stage_f.py reserve` locally first")
@@ -559,7 +540,7 @@ def build_cell_manifests(cfg, config_path) -> int:
                                 num_episodes=int(cfg["bundle"]["probe_episodes"]),
                                 manifest_id=f"{env_name}:cell_probe:s{s}:n{cfg['bundle']['probe_episodes']}")[0]
               for s in seeds["cells"]}
-    known = stage_e.unique_manifests(
+    known = unique_manifests(
         [EvaluationManifest.load(p) for p in sorted(glob.glob(os.path.join(_PROJECT_ROOT, "config", "**", "*.yaml"),
                                                                recursive=True)) if _is_manifest(p)])
     assert_disjoint(known + [held_out] + list(probes.values()))
@@ -569,12 +550,12 @@ def build_cell_manifests(cfg, config_path) -> int:
         os.makedirs(os.path.dirname(probe_path(cfg, s)), exist_ok=True)
         m.save(probe_path(cfg, s))
     provenance = {"manifest_id": held_out.manifest_id, "manifest_path": rel(out_path),
-                  "manifest_sha256": stage_e.sha256_file(out_path), "pool_seed": seeds["held_out"],
-                  "episodes": len(held_out), "built_at": stage_e.now(),
+                  "manifest_sha256": sha256_file(out_path), "pool_seed": seeds["held_out"],
+                  "episodes": len(held_out), "built_at": now_iso(),
                   "probes": {str(s): {"manifest_id": m.manifest_id, "path": rel(probe_path(cfg, s)),
-                                      "sha256": stage_e.sha256_file(probe_path(cfg, s))} for s, m in probes.items()},
+                                      "sha256": sha256_file(probe_path(cfg, s))} for s, m in probes.items()},
                   "disjoint_from": [m.manifest_id for m in known],
-                  "selection_sha256": stage_e.sha256_file(os.path.join(_PROJECT_ROOT,
+                  "selection_sha256": sha256_file(os.path.join(_PROJECT_ROOT,
                                                                        cfg["structures"]["evolved"]["selection_file"]))}
     with open(os.path.join(os.path.dirname(out_path), "manifest_provenance.json"), "x", encoding="utf-8") as f:
         json.dump(provenance, f, indent=2)
@@ -642,13 +623,12 @@ def cmd_vlm_smoke(args) -> int:
 
 def run_cells(cfg, config_path, structures) -> int:
     """Run a cell protocol: each cell fits and probes on its own bundle; screen and held-out are shared."""
-    import stage_e
     from lares.core.obs_schema import get_obs_schema
     from lares.core.training_pipeline import DemoBuffer, ensure_mujoco_headless_gl, load_policy_prompt_assets
     from lares.eval import EvaluationManifest, make_manifest_env
     from lares.fitting.replicates import ReplicateBundle, sample_demonstration_episodes, split_episodes
 
-    sha = stage_e.require_clean_worktree()
+    sha = require_clean_worktree("Stage F")
     ensure_mujoco_headless_gl()
     env_name, horizon = cfg["env_name"], int(cfg["horizon"])
     schema = get_obs_schema(env_name)
@@ -656,14 +636,14 @@ def run_cells(cfg, config_path, structures) -> int:
     with open(os.path.join(_PROJECT_ROOT, os.path.dirname(held["path"]), "manifest_provenance.json"),
               encoding="utf-8") as f:
         prov = json.load(f)
-    if stage_e.sha256_file(os.path.join(_PROJECT_ROOT, held["path"])) != prov["manifest_sha256"]:
+    if sha256_file(os.path.join(_PROJECT_ROOT, held["path"])) != prov["manifest_sha256"]:
         raise SystemExit(f"{held['path']} no longer matches its frozen hash")
     for s, p in prov["probes"].items():
-        if stage_e.sha256_file(os.path.join(_PROJECT_ROOT, p["path"])) != p["sha256"]:
+        if sha256_file(os.path.join(_PROJECT_ROOT, p["path"])) != p["sha256"]:
             raise SystemExit(f"{p['path']} no longer matches its frozen hash")
     b = cfg["bundle"]
     demo_path = os.path.join(_PROJECT_ROOT, b["demonstrations"])
-    if stage_e.sha256_file(demo_path) != b["demonstrations_sha256"]:
+    if sha256_file(demo_path) != b["demonstrations_sha256"]:
         raise SystemExit("the demonstration buffer does not match its declared hash")
     buffer = DemoBuffer.load(demo_path)
     arms = list(cfg["arms"])
@@ -681,11 +661,8 @@ def run_cells(cfg, config_path, structures) -> int:
     client = None
     llm_args = SimpleNamespace(model=llm["model"], reasoning_effort=llm["reasoning_effort"])
     if any(a in sf.LLM_ARM_EVIDENCE for a in arms):
-        if not os.environ.get("OPENAI_API_KEY"):
-            raise SystemExit("the LLM arms need OPENAI_API_KEY")
-        from openai import OpenAI
 
-        client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+        client = openai_client()
     vision_fn = None
     if sf.ARM_LLM_VISION in arms:
         vision_fn = sf.vision_evidence(make_analyst(cfg), schema, limit=int(cfg["vision"]["episodes_per_packet"]))
@@ -693,13 +670,13 @@ def run_cells(cfg, config_path, structures) -> int:
     env = make_manifest_env(development, development.resolve_pool(), 200)
     held_out_env = make_manifest_env(held_out, held_out.resolve_pool(), 200)
     prompts = load_policy_prompt_assets(env_name)
-    run_dir = os.path.join(_PROJECT_ROOT, cfg["out_dir"], time.strftime("%Y%m%d_%H%M%S"))
+    run_dir = os.path.join(_PROJECT_ROOT, cfg["out_dir"], run_stamp())
     os.makedirs(run_dir, exist_ok=True)
     meta = {"study": cfg.get("study"), "arms": arms, "cells": cfg["cells"], "budget": budget.to_dict(),
             "acceptance_rule": sf.ACCEPTANCE_RULE, "llm": llm, "vision": cfg.get("vision"),
             "manifests": {"screen": screen.manifest_id, "held_out": held_out.manifest_id,
                           "probes": {k: v["manifest_id"] for k, v in prov["probes"].items()}},
-            "config": rel(os.path.abspath(config_path)), "config_sha256": stage_e.sha256_file(config_path),
+            "config": rel(os.path.abspath(config_path)), "config_sha256": sha256_file(config_path),
             "frozen_git_sha": sha, **git_state(), "held_out_manifest_sha256": prov["manifest_sha256"],
             "selection_sha256": prov["selection_sha256"]}
     with open(os.path.join(run_dir, "run.json"), "w", encoding="utf-8") as f:
@@ -950,7 +927,6 @@ def select_by_order(scores: dict, order) -> str:
 def pooled_job(job) -> dict:
     import copy
 
-    import numpy as np
     import torch
 
     torch.set_num_threads(1)
@@ -1108,7 +1084,7 @@ def cmd_pooled_optimizer(args) -> int:
     frozen = os.path.join(args.out_dir, "subjects.json")
     if not os.path.exists(frozen):
         with open(frozen, "w", encoding="utf-8") as f:
-            json.dump({"frozen_at": time.strftime("%Y-%m-%dT%H:%M:%S"), "before_rollouts": True,
+            json.dump({"frozen_at": now_iso(), "before_rollouts": True,
                        "subjects": [{k: v for k, v in s.items() if k != "source"} for s in subjects]}, f, indent=2)
     print(f"  subjects {[s['structure_id'] for s in subjects]}; seeds: {status}")
     if args.reserve_only:
@@ -1167,7 +1143,6 @@ def transfer_plan(parent_ids, per_scope: int):
     """A fittable-only plan: per parent, ``per_scope`` slots of each scope, geometry first, all code-only."""
     from lares.search.lanes import MutationScope, ReferenceStructure, SlotSpec, TwoLanePlan
     from lares.search.schemas import LANE_FITTABLE
-    from lares.utils.hashing import sha256_file
 
     with open(os.path.join(_PROJECT_ROOT, "config", "fittable_bank", "seed_bank.json"), encoding="utf-8") as f:
         members = json.load(f)["members"]
@@ -1202,16 +1177,14 @@ def transfer_generate(plan, args, out_dir) -> list:
     if os.path.exists(children_path):
         with open(children_path, encoding="utf-8") as f:
             return json.load(f)
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise SystemExit("R-012 generation needs OPENAI_API_KEY")
-    from openai import OpenAI
+    require_api_key()
 
     os.makedirs(gen_dir, exist_ok=True)
     data_pkl = os.path.join(gen_dir, "data.pkl")
     with open(data_pkl, "wb") as f:
         pickle.dump([{"obs": np.zeros(39)}], f)
     candidates = generate_two_lane_candidates(
-        OpenAI(api_key=os.environ["OPENAI_API_KEY"]), SimpleNamespace(model=args.model, reasoning_effort=args.reasoning_effort),
+        openai_client(), SimpleNamespace(model=args.model, reasoning_effort=args.reasoning_effort),
         gen_dir, 39, 4, "push-v2", load_policy_prompt_assets("push-v2"), plan, data_pkl, LLMCallLedger(gen_dir),
         llm_transcript_path=os.path.join(gen_dir, "llm_transcript.jsonl"),
         max_total_calls=plan.n + 1, max_repair_per_candidate=0,
@@ -1437,7 +1410,6 @@ def bounds_summary(cells) -> dict:
 
 
 def cmd_bounds_only(args) -> int:
-    import copy
 
     import numpy as np
     import torch
@@ -1462,9 +1434,7 @@ def cmd_bounds_only(args) -> int:
     print(f"  cells {[(p, k) for p in args.parents for k in args.fit_seeds]}; seeds: {status}")
     if args.reserve_only:
         return 0
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise SystemExit("R-009 needs OPENAI_API_KEY")
-    from openai import OpenAI
+    require_api_key()
 
     ensure_mujoco_headless_gl()
     torch.set_num_threads(1)
@@ -1479,7 +1449,7 @@ def cmd_bounds_only(args) -> int:
     with open(os.path.join(_PROJECT_ROOT, "config", "fittable_bank", "seed_bank.json"), encoding="utf-8") as f:
         members = json.load(f)["members"]
     llm_dir = os.path.join(args.out_dir, "llm")
-    session = _LLMSession(OpenAI(api_key=os.environ["OPENAI_API_KEY"]), args.model, LLMCallLedger(llm_dir),
+    session = _LLMSession(openai_client(), args.model, LLMCallLedger(llm_dir),
                           os.path.join(llm_dir, "transcript.jsonl"), 0, len(args.parents) * len(args.fit_seeds),
                           reasoning_effort=args.reasoning_effort)
     range_rngs = np.random.SeedSequence(int(args.range_seed)).spawn(len(args.parents) * len(args.fit_seeds))

@@ -24,6 +24,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from lares.envs.isaac_pen_spin.layout import OBS_LAYOUT, VEL_OBS_SCALE  # noqa: F401  (no-import module)
 from lares.eval.manifest import (
     SPLIT_DEVELOPMENT,
     EnvironmentSpec,
@@ -31,11 +32,13 @@ from lares.eval.manifest import (
     EvaluationManifest,
     TaskPoolSpec,
     _hash_rand_vec,
+    assert_disjoint,
 )
 
 BENCHMARK = "IsaacPenSpin"
 NUM_HAND_DOFS = 24
 NUM_ACTIONS = 20
+OBS_DIM = sum(size for _, size, _ in OBS_LAYOUT)  # 157: the "full" observation
 PLACEMENT_DIM = 3 + 2 + NUM_HAND_DOFS
 HORIZON = 360  # max_episode_length: 6 s at dt 1/120, decimation 2; time-out fires at step HORIZON - 1
 SUSTAIN_WINDOW = 60  # one second of control
@@ -161,11 +164,51 @@ def manifest_path(stage: int, label: str, pool_seed: int, root: str = "config/ma
     return os.path.join(root, f"pen_spin_stage{stage}_{label}_s{pool_seed}.yaml")
 
 
+def freeze_manifest(path: str, manifest: EvaluationManifest) -> bool:
+    """Save ``manifest`` at ``path`` unless an identical one is already there; refuse a different one.
+
+    Returns True when the file was written. Every pen-spin protocol freezes its manifests this way,
+    so a second ``--freeze-manifests`` (or a rerun) verifies rather than overwrites.
+    """
+    if os.path.exists(path):
+        if EvaluationManifest.load(path).to_dict() != manifest.to_dict():
+            raise ValueError(f"{path} exists and differs from the manifest this study builds")
+        return False
+    manifest.save(path)
+    return True
+
+
+def freeze_manifest_set(specs) -> dict:
+    """Freeze ``(path, manifest, role)`` triples and refuse a placement shared between any two roles.
+
+    Returns ``{role: path}`` in the given order, which is what each study's ``freeze_manifests`` prints.
+    """
+    specs = list(specs)
+    for path, manifest, _ in specs:
+        freeze_manifest(path, manifest)
+    assert_disjoint([m for _, m, _ in specs])
+    return {role: path for path, _, role in specs}
+
+
+def role_manifests(manifest: EvaluationManifest, roles: dict, *, expected_cases: int | None = None,
+                   stage: int | None = None) -> dict:
+    """``{role: cases[a:b]}`` of a block manifest, each under an id naming the role.
+
+    The id is ``"<block id>:<role>"`` rather than ``slice``'s ``#sliceA-B``, so a role's own ``head``/``slice``
+    stays unambiguous; recorded results name manifests this way.
+    """
+    if expected_cases is not None and len(manifest) != expected_cases:
+        raise ValueError(f"block manifest {manifest.manifest_id} has {len(manifest)} cases, not {expected_cases}")
+    if stage is not None and stage_of(manifest) != stage:
+        raise ValueError(f"block manifest {manifest.manifest_id} is not a stage-{stage} one")
+    return {role: EvaluationManifest(manifest_id=f"{manifest.manifest_id}:{role}", environment=manifest.environment,
+                                     pool=manifest.pool, split=manifest.split, episodes=list(manifest.episodes[a:b]))
+            for role, (a, b) in roles.items()}
+
+
 # ---------------------------------------------------------------------------
 #  Observation layout ("full", 157 dims; InHandManipulationEnv.compute_full_observations)
 # ---------------------------------------------------------------------------
-
-from lares.envs.isaac_pen_spin.layout import OBS_LAYOUT, VEL_OBS_SCALE  # noqa: E402,F401  (no-import module)
 
 
 def obs_slices() -> dict:
@@ -173,7 +216,7 @@ def obs_slices() -> dict:
     for name, size, _ in OBS_LAYOUT:
         out[name] = slice(start, start + size)
         start += size
-    assert start == 157, start
+    assert start == OBS_DIM, start
     return out
 
 

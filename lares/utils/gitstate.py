@@ -13,6 +13,11 @@ import subprocess
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
+def rel(path: str) -> str:
+    """``path`` relative to the project root, as every record stores file references."""
+    return os.path.relpath(os.path.abspath(path), PROJECT_ROOT)
+
+
 def git(*args, cwd: str = PROJECT_ROOT) -> str:
     return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True).stdout
 

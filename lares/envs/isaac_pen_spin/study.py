@@ -56,23 +56,8 @@ def manifest_file(label: str, seed: int) -> str:
 
 def freeze_manifests(ps: dict) -> dict:
     """Build (or verify) every manifest; refuse a placement shared between any two."""
-    from lares.eval.manifest import EvaluationManifest
-
-    built, hashes = {}, {}
-    for label, seed, n, role in manifest_specs(ps):
-        m = cases.build_manifest(STAGE, seed, n, label=label)
-        path = manifest_file(label, seed)
-        if os.path.exists(path):
-            if EvaluationManifest.load(path).to_dict() != m.to_dict():
-                raise ValueError(f"{path} exists and differs from the manifest this study builds")
-        else:
-            m.save(path)
-        for c in m.episodes:
-            if c.task_hash in hashes:
-                raise ValueError(f"{role} shares placement {c.task_hash} with {hashes[c.task_hash]}")
-            hashes[c.task_hash] = role
-        built[role] = path
-    return built
+    return cases.freeze_manifest_set((manifest_file(label, seed), cases.build_manifest(STAGE, seed, n, label=label), role)
+                                     for label, seed, n, role in manifest_specs(ps))
 
 
 def load(label: str, seed: int):
@@ -222,7 +207,7 @@ def rebuild_incumbent(run_dir: str, inc: dict, env_id: str):
     ns: dict = {}
     exec(GENERATED_IMPORTS + source, ns)
     with active_schema(get_obs_schema(env_id)):
-        policy = ns["GeneratedPolicy"](157, cases.NUM_ACTIONS)
+        policy = ns["GeneratedPolicy"](cases.OBS_DIM, cases.NUM_ACTIONS)
     policy.fixed_action_scale = float(inc["fixed_action_scale"])
     policy.load_state_dict(torch.load(os.path.join(run_dir, inc["state_path"]), weights_only=True))
     policy._generated_source = source
@@ -231,13 +216,12 @@ def rebuild_incumbent(run_dir: str, inc: dict, env_id: str):
 
 
 def summarise(blocks: list[dict]) -> dict:
-    from lares.eval.stats import t_summary
+    from lares.eval.stats import block_contrast
 
     eligible = [b for b in blocks if b.get("eligible")]
     out = {"blocks": blocks, "eligible_blocks": len(eligible), "min_eligible_blocks": MIN_ELIGIBLE_BLOCKS}
     for a, b in (PRIMARY,) + SECONDARY:
-        d = [blk["fresh"][a]["success"] - blk["fresh"][b]["success"] for blk in eligible]
-        out[f"{a}_minus_{b}"] = {"per_block": d, **(t_summary(d) if len(d) >= 2 else {"n": len(d)})}
+        out[f"{a}_minus_{b}"] = block_contrast(blk["fresh"][a]["success"] - blk["fresh"][b]["success"] for blk in eligible)
     out["paired_success_difference"] = out[f"{PRIMARY[0]}_minus_{PRIMARY[1]}"].get("mean")
     out["conclusive"] = len(eligible) >= MIN_ELIGIBLE_BLOCKS
     return out

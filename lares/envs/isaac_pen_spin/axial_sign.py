@@ -21,12 +21,12 @@ import json
 import os
 import re
 
-import numpy as np
 
 from lares.envs.isaac_pen_spin import cases
 from lares.envs.isaac_pen_spin.feedback_ablation import _arm_summary
 from lares.envs.isaac_pen_spin.feedback_lesions import failure_split
 from lares.envs.isaac_pen_spin.learner_recovery import _load, check_learner, identity_gate, make_learner
+from lares.envs.isaac_pen_spin.protocols import build_single_manifest
 
 LEARNER_AXIAL_SIGN = "learner_axial_sign"
 STAGE = 3
@@ -101,19 +101,10 @@ def manifest_path(protocol_cfg: dict) -> str:
 
 
 def build_manifests(protocol_cfg: dict) -> list[str]:
-    from lares.eval.manifest import EvaluationManifest
-
-    path = manifest_path(protocol_cfg)
-    m = cases.build_manifest(STAGE, int(protocol_cfg["pool_seed"]), int(protocol_cfg["cases"]), label="axial_sign")
-    if os.path.exists(path):
-        if EvaluationManifest.load(path).to_dict() != m.to_dict():
-            raise ValueError(f"{path} exists and differs from the manifest this protocol builds")
-        return []
-    m.save(path)
-    return [path]
+    return build_single_manifest(protocol_cfg, "axial_sign", STAGE)
 
 
-def make_controller(arm: str, protocol_cfg: dict):
+def make_controller(arm: str, protocol_cfg: dict, out_dir: str | None = None):
     if arm not in ARMS:
         raise ValueError(f"unknown arm {arm!r}; one of {ARMS}")
     learner = make_learner(protocol_cfg)
@@ -176,5 +167,7 @@ def run_learner_axial_sign(protocol_cfg: dict, config_path: str, out_dir: str) -
     return summary
 
 
-__all__ = ["ARMS", "AxialSignController", "LEARNER_AXIAL_SIGN", "aggregate", "build_manifests", "reflect_axial",
+run = run_learner_axial_sign
+
+__all__ = ["ARMS", "AxialSignController", "LEARNER_AXIAL_SIGN", "aggregate", "build_manifests", "reflect_axial", "run",
            "run_learner_axial_sign", "source_audit"]

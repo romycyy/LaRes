@@ -36,6 +36,9 @@ sys.path.insert(0, _PROJECT_ROOT)
 
 import numpy as np  # noqa: E402
 
+from lares.utils.cli import openai_client, require_api_key  # noqa: E402
+from lares.utils.clock import run_stamp  # noqa: E402
+from lares.utils.cli import separator  # noqa: E402
 from lares.core.policy_generation import (  # noqa: E402
     DEFAULT_LLM_MODEL,
     DEFAULT_REASONING_EFFORT,
@@ -100,7 +103,6 @@ def parse_transcript(path):
 
 def run_one(mode, replicate, args, prompts, out_dir):
     """One generation in one mode. Returns the row for the comparison table."""
-    from openai import OpenAI
 
     run_dir = os.path.join(out_dir, f"{mode}_r{replicate}")
     os.makedirs(run_dir, exist_ok=True)
@@ -119,7 +121,7 @@ def run_one(mode, replicate, args, prompts, out_dir):
     )
     t0 = time.time()
     candidates = get_symbolic_policies(
-        client=OpenAI(api_key=os.environ["OPENAI_API_KEY"]),
+        client=openai_client(),
         dir_path=run_dir,
         llm_iter=replicate,
         args=llm_args,
@@ -196,7 +198,6 @@ def generate_one(prompts, contract, run_dir, args, generator="single_phase", max
     generator: one ideas call, then one per-idea implementation."""
     import pickle
 
-    from openai import OpenAI
 
     os.makedirs(run_dir, exist_ok=True)
     data_pkl = os.path.join(run_dir, "data.pkl")
@@ -204,7 +205,7 @@ def generate_one(prompts, contract, run_dir, args, generator="single_phase", max
         pickle.dump([{"obs": np.zeros(args.obs_dim)}], f)
     two_phase = generator == "two_phase"
     candidates = get_symbolic_policies(
-        client=OpenAI(api_key=os.environ["OPENAI_API_KEY"]), dir_path=run_dir, llm_iter=0,
+        client=openai_client(), dir_path=run_dir, llm_iter=0,
         args=SimpleNamespace(model=args.model, reasoning_effort=args.reasoning_effort, policy_gen_two_phase=two_phase,
                              policy_impl_mode=POLICY_IMPL_PER_IDEA),
         obs_dim=args.obs_dim, action_dim=args.action_dim, initial_system=prompts["initial_system"],
@@ -323,8 +324,7 @@ def run_seedless_searchability(args) -> int:
     print(f"  blocks {args.generation_seeds} x {[a[0] for a in arms]}; search seeds {args.search_seeds}; seeds: {status}")
     if args.reserve_only:
         return 0
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise SystemExit("R-015 needs OPENAI_API_KEY")
+    require_api_key()
     from lares.core.training_pipeline import ensure_mujoco_headless_gl
 
     ensure_mujoco_headless_gl()
@@ -514,8 +514,7 @@ def run_pick_place_suite(args) -> int:
     print(f"  pick-place suite: seeds {cvp.ensure_entries_reserved(entries, args.out_dir)}")
     if args.reserve_only:
         return 0
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise SystemExit("the suite needs OPENAI_API_KEY")
+    require_api_key()
     from lares.core.training_pipeline import ensure_mujoco_headless_gl
 
     ensure_mujoco_headless_gl()
@@ -683,8 +682,7 @@ def run_hard_scan(args) -> int:
     print(f"  hard scan over {list(HARD_TASKS)}; seeds: {cvp.ensure_entries_reserved(entries, args.out_dir)}")
     if args.reserve_only:
         return 0
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise SystemExit("the hard scan needs OPENAI_API_KEY")
+    require_api_key()
     from lares.core.training_pipeline import ensure_mujoco_headless_gl
 
     ensure_mujoco_headless_gl()
@@ -1026,9 +1024,7 @@ def run_assembly_targeted_edit(args) -> int:
     print(f"  seeds: {status}")
     if args.reserve_only:
         return 0
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise SystemExit("R-027 needs OPENAI_API_KEY")
-    from openai import OpenAI
+    require_api_key()
 
     from lares.core.training_pipeline import ensure_mujoco_headless_gl
 
@@ -1049,7 +1045,7 @@ def run_assembly_targeted_edit(args) -> int:
         with open(data_pkl, "wb") as f:
             pickle.dump([{"obs": np.zeros(39)}], f)
         validate = _SlotValidator(edit_dir, data_pkl, 39, 4, task, forbid_scale_parameters=False)
-        session = _LLMSession(OpenAI(api_key=os.environ["OPENAI_API_KEY"]), args.model, LLMCallLedger(edit_dir),
+        session = _LLMSession(openai_client(), args.model, LLMCallLedger(edit_dir),
                               os.path.join(edit_dir, "transcript.jsonl"), 0, 2, reasoning_effort=args.reasoning_effort)
         fmt = dict(task=prompts["task_description"], obs_dim=39, action_dim=4, obs_description=prompts["obs_description"],
                    input_dict_string=prompts["input_dict_string"])
@@ -1154,8 +1150,7 @@ def run_assembly_breadth_depth(args) -> int:
     print(f"  seeds: {cvp.ensure_entries_reserved(entries, args.out_dir)}")
     if args.reserve_only:
         return 0
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise SystemExit("R-028 needs OPENAI_API_KEY")
+    require_api_key()
     from lares.core.training_pipeline import ensure_mujoco_headless_gl
 
     ensure_mujoco_headless_gl()
@@ -1274,7 +1269,6 @@ def make_edit(request, edit_dir, args, task="assembly-v2", allow_correction=Fals
     record)``. Cached on disk."""
     import pickle
 
-    from openai import OpenAI
 
     from lares.core.policy_generation import _build_error_feedback, _extract_code_string, _LLMSession, _SlotValidator
     from lares.core.training_pipeline import load_policy_prompt_assets as assets
@@ -1290,7 +1284,7 @@ def make_edit(request, edit_dir, args, task="assembly-v2", allow_correction=Fals
     data_pkl = os.path.join(edit_dir, "data.pkl")
     with open(data_pkl, "wb") as f:
         pickle.dump([{"obs": np.zeros(39)}], f)
-    session = _LLMSession(OpenAI(api_key=os.environ["OPENAI_API_KEY"]), args.model, LLMCallLedger(edit_dir),
+    session = _LLMSession(openai_client(), args.model, LLMCallLedger(edit_dir),
                           os.path.join(edit_dir, "transcript.jsonl"), 0, 2 if allow_correction else 1,
                           reasoning_effort=args.reasoning_effort)
     fmt = dict(task=prompts["task_description"], obs_dim=39, action_dim=4, obs_description=prompts["obs_description"],
@@ -1359,8 +1353,7 @@ def run_assembly_trace_edits(args) -> int:
     print(f"  seeds: {cvp.ensure_entries_reserved(entries, args.out_dir)}")
     if args.reserve_only:
         return 0
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise SystemExit("R-029 needs OPENAI_API_KEY")
+    require_api_key()
     from lares.core.training_pipeline import ensure_mujoco_headless_gl
 
     ensure_mujoco_headless_gl()
@@ -1461,7 +1454,6 @@ def welch_contrast(impact_rates_cases, insertion_cases, level=0.95) -> dict:
 def run_contact_regime_scan(args) -> int:
     sys.path.insert(0, _SCRIPT_DIR)
     import compare_child_vs_parent as cvp
-    from lares.core.obs_schema import get_obs_schema
     from lares.core.training_pipeline import load_policy_prompt_assets as assets
     from lares.eval import ExpertActor, make_manifest_env
     from lares.eval.runner import evaluate_manifest
@@ -1502,8 +1494,7 @@ def run_contact_regime_scan(args) -> int:
             json.dump(summary, f, indent=2)
         print(f"  {summary['outcome']}")
         return 0
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise SystemExit("R-030 needs OPENAI_API_KEY")
+    require_api_key()
     learner = {}
     for task, p in plan.items():
         task_args = SimpleNamespace(**{**vars(args), "env_name": task})
@@ -1600,8 +1591,7 @@ def run_assembly_expert_traces(args) -> int:
     print(f"  seeds: {cvp.ensure_entries_reserved(entries, args.out_dir)}")
     if args.reserve_only:
         return 0
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise SystemExit("R-032 needs OPENAI_API_KEY")
+    require_api_key()
     from lares.core.training_pipeline import ensure_mujoco_headless_gl
 
     ensure_mujoco_headless_gl()
@@ -1701,8 +1691,7 @@ def run_hammer_transfer(args) -> int:
     print(f"  seeds: {cvp.ensure_entries_reserved(entries, args.out_dir)}")
     if args.reserve_only:
         return 0
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise SystemExit("R-033 needs OPENAI_API_KEY")
+    require_api_key()
     from lares.core.training_pipeline import ensure_mujoco_headless_gl
 
     ensure_mujoco_headless_gl()
@@ -1843,8 +1832,7 @@ def run_assembly_parent_transfer(args) -> int:
     print(f"  seeds: {cvp.ensure_entries_reserved(entries, args.out_dir)}")
     if args.reserve_only:
         return 0
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise SystemExit("R-034 needs OPENAI_API_KEY")
+    require_api_key()
     from lares.core.training_pipeline import ensure_mujoco_headless_gl
 
     ensure_mujoco_headless_gl()
@@ -1962,8 +1950,7 @@ def run_recoverable_plateau_scan(args) -> int:
     print(f"  seeds: {cvp.ensure_entries_reserved(entries, args.out_dir)}")
     if args.reserve_only:
         return 0
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise SystemExit("R-035 needs OPENAI_API_KEY")
+    require_api_key()
     from lares.core.training_pipeline import ensure_mujoco_headless_gl
 
     ensure_mujoco_headless_gl()
@@ -2078,8 +2065,7 @@ def run_plateau_repair_pipeline(args) -> int:
     print(f"  seeds: {cvp.ensure_entries_reserved(entries, args.out_dir)}")
     if args.reserve_only:
         return 0
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise SystemExit("R-036 needs OPENAI_API_KEY")
+    require_api_key()
     from lares.core.training_pipeline import ensure_mujoco_headless_gl
 
     ensure_mujoco_headless_gl()
@@ -2196,7 +2182,6 @@ def run_task_scan(args) -> int:
 
     sys.path.insert(0, _SCRIPT_DIR)
     import compare_child_vs_parent as cvp
-    from lares.eval import EvaluationManifest
 
     os.makedirs(args.out_dir, exist_ok=True)
     entries = [(g, "generation_block", f"R-022 task scan: {task} generation block") for task, (g, _) in SCAN_TASKS.items()]
@@ -2204,8 +2189,7 @@ def run_task_scan(args) -> int:
     print(f"  task scan over {list(SCAN_TASKS)}; seeds: {cvp.ensure_entries_reserved(entries, args.out_dir)}")
     if args.reserve_only:
         return 0
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise SystemExit("the task scan needs OPENAI_API_KEY")
+    require_api_key()
     from lares.core.training_pipeline import ensure_mujoco_headless_gl
 
     ensure_mujoco_headless_gl()
@@ -2307,10 +2291,6 @@ def parse_args():
     return p.parse_args()
 
 
-def separator(title):
-    print(f"\n{'=' * 82}\n  {title}\n{'=' * 82}")
-
-
 def main():
     args = parse_args()
     if args.assembly_study == "reciprocal-handoff":
@@ -2344,7 +2324,7 @@ def main():
     if not os.environ.get("OPENAI_API_KEY"):
         print("OPENAI_API_KEY is not set; this comparison makes live calls.")
         return 1
-    stamp = time.strftime("%Y%m%d_%H%M%S")
+    stamp = run_stamp()
     out_dir = os.path.join(args.out_dir, stamp)
     os.makedirs(out_dir, exist_ok=True)
     prompts = load_policy_prompt_assets(args.env_name)

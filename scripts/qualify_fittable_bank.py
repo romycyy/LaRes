@@ -23,7 +23,6 @@ Subcommands, in order (from the project root)::
 from __future__ import annotations
 
 import argparse
-import datetime as _dt
 import glob
 import json
 import os
@@ -36,29 +35,28 @@ sys.path.insert(0, _PROJECT_ROOT)
 sys.path.insert(0, _SCRIPT_DIR)
 
 import numpy as np  # noqa: E402
-import yaml  # noqa: E402
 
-from stage_e import (  # noqa: E402
-    LEDGER_PATH,
-    _outcome,
-    now,
-    read_ledger,
-    rel,
-    require_clean_worktree,
-    reserve_seeds,
-    seed_conflicts,
-    sha256_file,
-    t_interval,
-    unique_manifests,
-)
+from lares.eval.manifest import unique_manifests  # noqa: E402
+from lares.eval.stats import t_interval  # noqa: E402
+from lares.utils.cli import load_yaml  # noqa: E402
+from lares.utils.clock import now_iso as now, run_stamp  # noqa: E402
+from lares.utils.gitstate import rel  # noqa: E402
+from lares.utils.gitstate import require_clean_worktree as _require_clean_worktree  # noqa: E402
+from lares.utils.hashing import sha256_file  # noqa: E402
+from lares.utils.seeds import SEED_LEDGER as LEDGER_PATH  # noqa: E402
+from lares.utils.seeds import read_ledger, reserve_seeds, seed_conflicts  # noqa: E402
+from stage_e import _outcome  # noqa: E402
 
 CONFIG_PATH = os.path.join(_PROJECT_ROOT, "config", "fittable_bank", "qualification.yaml")
 FITTING_REJECTED = "fitting rejected"
 
 
 def load_config(path: str = CONFIG_PATH) -> dict:
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+    return load_yaml(path)
+
+
+def require_clean_worktree(cwd=_PROJECT_ROOT) -> str:
+    return _require_clean_worktree("Fittable-bank qualification", cwd=cwd)
 
 
 # ---------------------------------------------------------------------------
@@ -336,7 +334,7 @@ def cmd_run(args) -> int:
         s = variants[v["id"]]
         specs.append({"structure_id": v["id"], "role": "variant", "parent": v["parent"], "axis": v["axis"],
                       "source": s.source, "source_path": rel(s.path), "source_sha256": sha256_file(s.path)})
-    run_id = _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_id = run_stamp()
     out_dir = os.path.join(_PROJECT_ROOT, "logs", "fittable_bank", run_id)
     os.makedirs(out_dir)
     with open(os.path.join(out_dir, "run.json"), "w", encoding="utf-8") as f:

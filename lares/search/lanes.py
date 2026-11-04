@@ -33,6 +33,7 @@ from dataclasses import dataclass, field
 
 import yaml
 
+from lares.utils.gitstate import rel
 from lares.utils.hashing import sha256_file
 from lares.search.schemas import (
     EXPLORATION_LABEL,
@@ -94,16 +95,8 @@ class LanePlanError(ValueError):
     """A two-lane plan that does not match the decided shape."""
 
 
-def _rel(path: str) -> str:
-    return os.path.relpath(path, _PROJECT_ROOT)
-
-
 def _abs(path: str) -> str:
     return path if os.path.isabs(path) else os.path.join(_PROJECT_ROOT, path)
-
-
-def _sha256_file(path: str) -> str:
-    return sha256_file(path)
 
 
 # ---------------------------------------------------------------------------
@@ -411,7 +404,7 @@ def load_two_lane_plan(block: dict) -> TwoLanePlan:
         path = _abs(entry["source_path"])
         with open(path, "r", encoding="utf-8") as f:
             source = f.read()
-        reference = ReferenceStructure(sid, entry.get("family", ""), entry["source_path"], _sha256_file(path), source)
+        reference = ReferenceStructure(sid, entry.get("family", ""), entry["source_path"], sha256_file(path), source)
         slots.append(SlotSpec(slot=index, lane=LANE_FITTABLE, reference=reference, scope=scopes[scope_id]))
     if len(slots) != FITTABLE_SLOTS and not problems:
         problems.append(f"fittable_lane.slots must declare {FITTABLE_SLOTS} slots, got {len(slots)}")
@@ -436,10 +429,10 @@ def load_two_lane_plan(block: dict) -> TwoLanePlan:
         checkpoint_steps=steps,
         max_parameter_changes=int(lane.get("max_parameter_changes", 3)),
         min_parent_parameters_kept=float(lane.get("min_parent_parameters_kept", 0.5)),
-        seed_bank_path=_rel(_abs(seed_bank_path)),
-        seed_bank_sha256=_sha256_file(_abs(seed_bank_path)),
-        roles_path=_rel(_abs(roles_path)),
-        roles_sha256=_sha256_file(_abs(roles_path)),
+        seed_bank_path=rel(_abs(seed_bank_path)),
+        seed_bank_sha256=sha256_file(_abs(seed_bank_path)),
+        roles_path=rel(_abs(roles_path)),
+        roles_sha256=sha256_file(_abs(roles_path)),
         controls=control_ids(roles),
     )
 

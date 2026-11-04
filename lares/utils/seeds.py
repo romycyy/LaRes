@@ -8,12 +8,14 @@ any saved manifest under ``config/`` or ``logs/``.
 from __future__ import annotations
 
 import glob
-import json
 import os
 
 import yaml
 
 from lares.utils.gitstate import PROJECT_ROOT
+from lares.utils.jsonl import append_jsonl, read_jsonl
+
+_YAML_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
 
 SEED_LEDGER = os.path.join(PROJECT_ROOT, "config", "experiment_seed_ledger.jsonl")
 MANIFEST_SEED_GLOBS = (
@@ -23,10 +25,7 @@ MANIFEST_SEED_GLOBS = (
 
 
 def read_ledger(path: str = SEED_LEDGER) -> list:
-    if not os.path.isfile(path):
-        return []
-    with open(path, "r", encoding="utf-8") as f:
-        return [json.loads(line) for line in f if line.strip()]
+    return read_jsonl(path)
 
 
 def manifest_pool_seeds(manifest_globs=None) -> dict:
@@ -40,7 +39,7 @@ def manifest_pool_seeds(manifest_globs=None) -> dict:
         for path in sorted(glob.glob(pattern, recursive=True)):
             try:
                 with open(path, "r", encoding="utf-8") as f:
-                    doc = yaml.safe_load(f)
+                    doc = yaml.load(f, Loader=_YAML_LOADER)
                 seeds = doc["pool"]["seeds"]
             except Exception:
                 continue
@@ -74,6 +73,4 @@ def seed_conflicts(pool_seeds, fitting_seeds=(), ledger_path: str = SEED_LEDGER,
 
 
 def reserve_seeds(entries, ledger_path: str = SEED_LEDGER) -> None:
-    with open(ledger_path, "a", encoding="utf-8") as f:
-        for entry in entries:
-            f.write(json.dumps(entry) + "\n")
+    append_jsonl(ledger_path, entries)

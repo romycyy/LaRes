@@ -24,7 +24,6 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import asdict, dataclass, field
-from typing import Any, Sequence
 
 from lares.utils.hashing import short_hash_text
 

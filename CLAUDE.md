@@ -42,6 +42,17 @@ prefix length is a stored format), `lares/utils/gitstate.py` (`git`, `worktree_s
 comparison scripts), `lares/fitting/diagnostics.py` (`per_axis_mse`, `bound_activity`, `loss_by_phase`, so
 `fitting` no longer imports them from the pipeline module) and `structure_bank.load_structures(ids)`.
 `lares/utils/__init__.py` resolves the MetaWorld builders lazily so these import without MetaWorld.
+Added 2026-11-03 (repo-wide simplification pass): `lares/utils/jsonl.py` (`read_jsonl`, `append_jsonl`: every ledger
+reader/appender delegates here), `lares/utils/clock.py` (`now_iso`, `run_stamp`: the two timestamp formats), `lares/utils/cli.py`
+(`separator`, `load_yaml`, `require_api_key`, `openai_client`: what every `scripts/*.py` used to carry its own copy of),
+`gitstate.rel` (path relative to the project root), `lares.eval.manifest.unique_manifests`, `lares.eval.stats.block_contrast`
+(the per-block paired contrast every pen-spin study summarises), and in `lares/envs/isaac_pen_spin/`: `cases.OBS_DIM`
+(derived from the layout; no more literal 157), `cases.freeze_manifest` / `freeze_manifest_set` / `role_manifests` (the
+build-or-load-and-refuse-if-different idiom, placement disjointness through `assert_disjoint`, role slices keeping the
+`<id>:<role>` manifest id), `protocols.child_cell`, `protocols.build_single_manifest`, `protocols.aggregate_vs_expert`.
+Scripts import helpers from `lares`, never from another script (`stage_e._outcome` is the one remaining exception).
+`lares.fitting.objectives.EXECUTIONS` is the execution-contract registry (`execute()` is a lookup), and
+`lares.core.policy_generation.DEFAULT_POLICY_IMPL_MODE` / `normalise_impl_mode` is the one `policy_impl_mode` rule.
 
 ## Common commands
 
@@ -563,6 +574,13 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   learner's grasp; self evidence does not, but it did not improve on the parent either. Session summary:
   `docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md`.
 - **Code extraction.** Generated code keeps only the class, so module-level constants in a reply are dropped.
+- **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
+  registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
+  `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override
+  check, model/effort, client, stream factory). `scripts/run_shadowhand_spin_stages.py` does the same with a module dict:
+  every feedback-study module exposes `run(protocol_cfg, config_path, out_dir)` and `make_controller(name, protocol_cfg,
+  out_dir)`. A new study is one module plus one registry entry; the `--block/--phase/--arm/--gait-block` child argv
+  contracts are unchanged.
 
 **Isaac Lab ShadowHandSpin.** A second, parallel stack merged in from the Isaac branch:
 `scripts/run_shadowhand_spin_stages.py` → `lares/envs/isaac_lab_adapter.py`
@@ -687,8 +705,9 @@ round: advisor decision and reasoning, Claude's position and reasoning, outcome)
   2 candidate 0, which its run reported at 402.76 reward and 0.30 success on 10 unmatched episodes.
   Re-scored on the development manifest it gets ~105 reward and 0.000 success. Treat 0.00 as the
   incumbent; see `RESEARCH_HANDOFF.md`.
-- **`config/shadowhand_spin_stages.yaml` has dead keys** — `stage1_task`/`stage2_task` are never
-  read, and all three "stages" run against the one env named by `pipeline_task`.
+- **`config/shadowhand_spin_stages.yaml` names one env.** All three "stages" run against the env named by
+  `pipeline_task` (the old `stage1_task`/`stage2_task` keys are gone). The script reads `cfg.enable_cameras`, which the
+  yaml never sets, so it always takes the default.
 
 ## Logging
 

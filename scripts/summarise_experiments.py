@@ -29,6 +29,7 @@ _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
 sys.path.insert(0, _PROJECT_ROOT)
 
+from lares.utils.cli import separator  # noqa: E402
 from lares.search import (  # noqa: E402
     LINEAGE_STATUSES,
     STATUS_INVALID,
@@ -54,10 +55,6 @@ def parse_args():
         help="Skip rebuilding each policy. Reconstruction is then reported incomplete.",
     )
     return p.parse_args()
-
-
-def separator(title):
-    print(f"\n{'=' * 76}\n  {title}\n{'=' * 76}")
 
 
 def _attempt(record) -> int:

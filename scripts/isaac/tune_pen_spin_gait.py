@@ -17,6 +17,7 @@ import time
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
+from lares.utils.clock import now_iso  # noqa: E402
 from lares.envs.isaac_lab_adapter import close_isaac_app, launch_isaac_app  # noqa: E402
 
 DEBUG_SEED = 4098
@@ -33,7 +34,6 @@ args = p.parse_args()
 launch_isaac_app(headless=True)
 try:
     import numpy as np
-    import torch
 
     from lares.envs.isaac_pen_spin import cases
     from lares.envs.isaac_pen_spin.runner import PenSpinBatchRunner, reduce_episodes
@@ -127,7 +127,7 @@ try:
     os.makedirs(os.path.dirname(args.budget_log), exist_ok=True)
     with open(args.budget_log, "a", encoding="utf-8") as f:
         f.write(json.dumps({"stage": args.stage, "seed": DEBUG_SEED, "episodes": len(eps), "settings": S,
-                            "cases": n, "at": time.strftime("%Y-%m-%dT%H:%M:%S")}) + "\n")
+                            "cases": n, "at": now_iso()}) + "\n")
     if args.out:
         with open(args.out, "w", encoding="utf-8") as f:
             json.dump(out, f, indent=1)

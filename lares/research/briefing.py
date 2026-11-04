@@ -25,9 +25,9 @@ from lares.research.schemas import (
     load_direction,
     load_ideas,
     now,
-    sha256_text,
 )
 from lares.research.protocol import spent_seeds
+from lares.utils.hashing import sha256_text
 
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_CHAR_BUDGET = 60_000

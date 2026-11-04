@@ -51,18 +51,27 @@ EXECUTION_DESCRIPTION = {
 }
 
 
+def _noise(mean, std, generator):
+    return std * torch.randn(mean.shape, generator=generator)
+
+
+#: contract -> ``fn(mean, std, generator) -> action``. A new contract is one entry here
+#: and one line in ``EXECUTION_DESCRIPTION``; the deterministic ones draw no noise.
+EXECUTIONS = {
+    EXEC_DETERMINISTIC_TANH: lambda mean, std, g: torch.tanh(mean),
+    EXEC_CLIPPED_DETERMINISTIC: lambda mean, std, g: torch.clamp(mean, -1.0, 1.0),
+    EXEC_TANH_GAUSSIAN: lambda mean, std, g: torch.tanh(mean + _noise(mean, std, g)),
+    EXEC_CLIPPED_GAUSSIAN: lambda mean, std, g: torch.clamp(mean + _noise(mean, std, g), -1.0, 1.0),
+}
+
+
 def execute(mean, std, contract: str, generator=None):
     """Produce the action a contract prescribes, given ``(mean, std)``."""
-    if contract == EXEC_DETERMINISTIC_TANH:
-        return torch.tanh(mean)
-    if contract == EXEC_CLIPPED_DETERMINISTIC:
-        return torch.clamp(mean, -1.0, 1.0)
-    eps = torch.randn(mean.shape, generator=generator)
-    if contract == EXEC_TANH_GAUSSIAN:
-        return torch.tanh(mean + std * eps)
-    if contract == EXEC_CLIPPED_GAUSSIAN:
-        return torch.clamp(mean + std * eps, -1.0, 1.0)
-    raise ValueError(f"unknown execution contract {contract!r}; expected one of {EXECUTION_CONTRACTS}")
+    try:
+        fn = EXECUTIONS[contract]
+    except KeyError:
+        raise ValueError(f"unknown execution contract {contract!r}; expected one of {EXECUTION_CONTRACTS}") from None
+    return fn(mean, std, generator)
 
 
 # ---------------------------------------------------------------------------
