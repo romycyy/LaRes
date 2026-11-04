@@ -30,7 +30,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The fresh paired interval's upper bound is below +0.10. An interval spanning the threshold is inconclusive. A success gain accompanied by more drops is not an adoptable repair.",
   "cost_estimate": {
@@ -50,17 +50,414 @@
     "round": 2,
     "note": "I accept the implementer's corrected partition, exact-zero identity branch and frozen normalization constants; these resolve the previous revision within 340 simulator episodes and zero LLM calls. Within-cycle shaping tests a distinct repair mechanism on the adopted parent: amplitude scaling and com"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-11-04T08:30:04",
+    "git_sha": "0058950f1ecd42250ff8dae7a1c5afa5bd875ab6",
+    "dirty_worktree": false,
+    "log_dir": "logs/pen_spin/r086_phase_warp",
+    "finished_at": "2026-11-04T08:33:21"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.0875,
+      "paired_success_difference_ci95": [
+        0.01498813990448733,
+        0.16001186009551266
+      ],
+      "fresh_winner_minus_parent": {
+        "success": {
+          "n": 80,
+          "mean": 0.0875,
+          "se": 0.03642987889012764,
+          "low": 0.01498813990448733,
+          "high": 0.16001186009551266,
+          "p_value": 0.018659354160998246
+        },
+        "win_loss_tie": {
+          "wins": 8,
+          "losses": 1,
+          "ties": 71
+        },
+        "drops": {
+          "n": 80,
+          "mean": 0.0,
+          "se": 0.0,
+          "low": 0.0,
+          "high": 0.0,
+          "p_value": 1.0
+        },
+        "drop_counts": [
+          3,
+          3
+        ],
+        "promotes": true
+      },
+      "promotion_winner_minus_parent": {
+        "success": {
+          "n": 30,
+          "mean": 0.1,
+          "se": 0.05570860145311555,
+          "low": -0.013936883013668883,
+          "high": 0.2139368830136689,
+          "p_value": 0.08307466551442907
+        },
+        "win_loss_tie": {
+          "wins": 3,
+          "losses": 0,
+          "ties": 27
+        },
+        "drops": {
+          "n": 30,
+          "mean": 0.0,
+          "se": 0.0,
+          "low": 0.0,
+          "high": 0.0,
+          "p_value": 1.0
+        },
+        "drop_counts": [
+          4,
+          4
+        ],
+        "promotes": false
+      },
+      "winner": "warp_-0.35",
+      "screens": {
+        "warp_-0.35": {
+          "index": 0,
+          "cases": 40,
+          "successes": 17,
+          "drops": 3,
+          "tail_hit_fraction": 0.4533749931254468,
+          "mean_abs_spin": 5.392320016026497
+        },
+        "warp_+0.35": {
+          "index": 1,
+          "cases": 40,
+          "successes": 13,
+          "drops": 3,
+          "tail_hit_fraction": 0.37936358754027927,
+          "mean_abs_spin": 4.78815837725997
+        },
+        "parent": {
+          "index": 2,
+          "cases": 40,
+          "successes": 16,
+          "drops": 3,
+          "tail_hit_fraction": 0.42381431313205875,
+          "mean_abs_spin": 5.13191310018301
+        }
+      },
+      "controllers": {
+        "parent": {
+          "promotion": {
+            "n": 30,
+            "successes": 7,
+            "success": 0.23333333333333334,
+            "drops": 4,
+            "tail_failures": 19,
+            "off_centre": 0,
+            "slow_spin": 19,
+            "mean_abs_spin": 5.223017451167107,
+            "drive_saturated_fraction": 0.9400444115470022,
+            "action_saturated_fraction": 0.09854076345564132,
+            "channels": {
+              "steps": 9457,
+              "sin_mean": [
+                -0.630396745773595,
+                0.4726313190513248,
+                0.630396745773595,
+                -0.4726313190513248,
+                0.630396745773595
+              ],
+              "sin_rms": [
+                0.7806405901766977,
+                0.6249802148616971,
+                0.7806405901766977,
+                0.6249802148616972,
+                0.7806405901766977
+              ],
+              "cos_mean": [
+                0.4726313190513248,
+                0.630396745773595,
+                -0.4726313190513248,
+                -0.630396745773595,
+                -0.4726313190513248
+              ],
+              "cos_rms": [
+                0.6249802148616972,
+                0.7806405901766977,
+                0.6249802148616972,
+                0.7806405901766977,
+                0.6249802148616972
+              ]
+            }
+          },
+          "fresh": {
+            "n": 80,
+            "successes": 25,
+            "success": 0.3125,
+            "drops": 3,
+            "tail_failures": 52,
+            "off_centre": 5,
+            "slow_spin": 47,
+            "mean_abs_spin": 4.0386894036084415,
+            "drive_saturated_fraction": 0.9328339395685527,
+            "action_saturated_fraction": 0.09345265963193719,
+            "channels": {
+              "steps": 27767,
+              "sin_mean": [
+                -0.6288637096268845,
+                0.49799428009365226,
+                0.6288637096268845,
+                -0.49799428009365226,
+                0.6288637096268845
+              ],
+              "sin_rms": [
+                0.7912189115139979,
+                0.61153301960124,
+                0.7912189115139979,
+                0.61153301960124,
+                0.7912189115139979
+              ],
+              "cos_mean": [
+                0.49799428009365226,
+                0.6288637096268845,
+                -0.49799428009365215,
+                -0.6288637096268845,
+                -0.49799428009365215
+              ],
+              "cos_rms": [
+                0.61153301960124,
+                0.7912189115139979,
+                0.61153301960124,
+                0.7912189115139978,
+                0.61153301960124
+              ]
+            }
+          }
+        },
+        "winner": {
+          "promotion": {
+            "n": 30,
+            "successes": 10,
+            "success": 0.3333333333333333,
+            "drops": 4,
+            "tail_failures": 16,
+            "off_centre": 0,
+            "slow_spin": 16,
+            "mean_abs_spin": 5.2398187011480335,
+            "drive_saturated_fraction": 0.9554052626017119,
+            "action_saturated_fraction": 0.10678960160625595,
+            "channels": {
+              "steps": 9463,
+              "sin_mean": [
+                -0.5835378196798682,
+                0.5023326226337522,
+                0.5835378196798685,
+                -0.5023326226337522,
+                0.5835378196798685
+              ],
+              "sin_rms": [
+                0.7379368477382794,
+                0.6004640352360224,
+                0.7379368477382794,
+                0.6004640352360224,
+                0.7379368477382794
+              ],
+              "cos_mean": [
+                0.5023326226337522,
+                0.5835378196798685,
+                -0.5023326226337523,
+                -0.5835378196798682,
+                -0.5023326226337523
+              ],
+              "cos_rms": [
+                0.6004640352360224,
+                0.7379368477382794,
+                0.6004640352360225,
+                0.7379368477382794,
+                0.6004640352360225
+              ]
+            }
+          },
+          "fresh": {
+            "n": 80,
+            "successes": 32,
+            "success": 0.4,
+            "drops": 3,
+            "tail_failures": 45,
+            "off_centre": 6,
+            "slow_spin": 39,
+            "mean_abs_spin": 4.379536356776953,
+            "drive_saturated_fraction": 0.9337247415625113,
+            "action_saturated_fraction": 0.09660699492129814,
+            "channels": {
+              "steps": 27763,
+              "sin_mean": [
+                -0.5542029686482601,
+                0.5183129180973209,
+                0.5542029686482604,
+                -0.518312918097321,
+                0.5542029686482604
+              ],
+              "sin_rms": [
+                0.7406070976190282,
+                0.5897646322621717,
+                0.7406070976190282,
+                0.5897646322621717,
+                0.7406070976190282
+              ],
+              "cos_mean": [
+                0.518312918097321,
+                0.5542029686482601,
+                -0.5183129180973214,
+                -0.5542029686482601,
+                -0.5183129180973214
+              ],
+              "cos_rms": [
+                0.5897646322621717,
+                0.7406070976190282,
+                0.5897646322621718,
+                0.7406070976190282,
+                0.5897646322621718
+              ]
+            }
+          }
+        }
+      },
+      "constants": {
+        "-0.35": {
+          "sha256": "fde6cf2a8c8e6aa3ddbe0ab8e4c288fcdfc2d0b8ab12dde0500acccd3f30bb0b",
+          "sin_mean": [
+            0.07554377203391936,
+            0.15489393347775304,
+            -0.07554377203391942,
+            -0.15489393347775304,
+            -0.07554377203391942
+          ],
+          "sin_rms": [
+            0.6941922178859168,
+            0.7197896669351623,
+            0.6941922178859168,
+            0.7197896669351623,
+            0.6941922178859168
+          ]
+        },
+        "+0.35": {
+          "sha256": "f47aef54c4cb0fae9ebb9bd3cb5983a0f198eb6aa6cadd223425391aabe2d223",
+          "sin_mean": [
+            -0.07554377203391877,
+            -0.15489393347775357,
+            0.07554377203391875,
+            0.15489393347775357,
+            0.07554377203391875
+          ],
+          "sin_rms": [
+            0.6941922178859172,
+            0.7197896669351619,
+            0.6941922178859172,
+            0.7197896669351619,
+            0.6941922178859172
+          ]
+        }
+      },
+      "prediction": {
+        "threshold": 0.1,
+        "supported": false,
+        "refuted": false
+      },
+      "adopts": false,
+      "identity_gate": {
+        "passes": true
+      },
+      "episodes": 340,
+      "llm_calls": 0
+    },
+    "controls": {
+      "parent": "the D-058 incumbent (hashes checked) on the screen, promotion and fresh panels in its own processes",
+      "identity_gate": "epsilon 0 reproduced the incumbent bit for bit on all 23,484 archived D-050 observations before any episode",
+      "winner_frozen": "winner.json after the 40-case screen and before any confirmation episode (rule: successes, fewer drops, candidate order)",
+      "normalisation": "per-finger channel means and RMS matched to the unwarped channels on a 3600-point roll-angle grid; constants frozen with hashes before any episode"
+    },
+    "artifacts": [
+      "logs/pen_spin/r086_phase_warp/summary.json",
+      "logs/pen_spin/r086_phase_warp/winner.json",
+      "logs/pen_spin/r086_phase_warp/constants.json",
+      "logs/pen_spin/r086_phase_warp/identity_gate.json",
+      "logs/pen_spin/r086_phase_warp/phase_warp_source.py",
+      "logs/pen_spin/r086_phase_warp/screen/warp_-0.35.json",
+      "logs/pen_spin/r086_phase_warp/screen/warp_+0.35.json",
+      "logs/pen_spin/r086_phase_warp/screen/parent.json",
+      "logs/pen_spin/r086_phase_warp/confirmation/parent_promotion.json",
+      "logs/pen_spin/r086_phase_warp/confirmation/parent_fresh.json",
+      "logs/pen_spin/r086_phase_warp/confirmation/winner_promotion.json",
+      "logs/pen_spin/r086_phase_warp/confirmation/winner_fresh.json",
+      "config/manifests/pen_spin_stage3_r086_block_s4690.yaml"
+    ],
+    "notes": [
+      "Primary, predeclared (80 fresh pairs): winner (epsilon -0.35) minus parent +0.0875 [+0.015, +0.160] (32/80 vs 25/80; 8 wins, 1 loss, 71 ties). The lower bound is above zero but the mean is below +0.10 and the upper bound above it: inconclusive for the predicted magnitude; an improvement of some size is established on this panel. Drops 3 vs 3.",
+      "Promotion (30 pairs): +0.1000 [-0.014, +0.214] (10 vs 7; 3 wins, 0 losses, 27 ties), drops 4 vs 4. The strict rule's lower bound is -0.014, so the warp is NOT adopted on this run by the predeclared rule, although it meets the fresh condition and the drop condition. Screens: warp -0.35 17/40, parent 16/40, warp +0.35 13/40 (drops 3 each).",
+      "Mechanism: the negative warp slows the stroke's phase around the roll angle's zero and speeds it around +-pi (h(phi) = phi - 0.35 sin phi), so the loaded stroke dwells where sin(phi) is small; the positive warp did the opposite and screened worse than the parent. Realised per-finger sin-channel RMS on recorded steps is 0.74 / 0.59 for the warp against 0.79 / 0.61 for the parent (the pen's roll angle is not uniform in time, so the grid normalisation does not land exactly on the realised cycle). In-play |spin| 4.38 vs 4.04 fresh; slow-spin tail failures 39 vs 47; off-centre 6 vs 5.",
+      "Pattern: as with the zero-curl clamp (D-052, D-054, D-055, D-056), a fresh panel favours the candidate while the 30-pair promotion panel lands just short of the strict lower bound (-0.014); the fresh lower bound (+0.015) is what a larger instrument would resolve.",
+      "Saturation: drive above 0.99 on 95-99% of recorded in-play steps in both arms; executed-action saturation 8-9% of components. Recorded in-play steps only.",
+      "Accounting: 340 Isaac episodes in seven fresh processes, 0 LLM calls, about 7 min wall time. No deviation from the approved protocol. Final-test split untouched."
+    ]
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.0875,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.8,
+      "reasoning": "Predicted at least +0.10 fresh success for the selected warp over the D-058 incumbent; observed +0.0875 [+0.015, +0.160] on 80 pairs (32 vs 25; 8 wins, 1 loss, 71 ties) for epsilon -0.35: the lower bound is above zero but the mean is below +0.10 and the upper bound above it, so the predicted magnitude is neither established nor refuted; an improvement of some size is established on this panel, with equal drops. Promotion +0.100 [-0.014, +0.214] (10 vs 7; 3 wins, 0 losses) misses the strict lower bound by 0.014, so by the predeclared rule the warp is not adopted. This is the fourth time a candidate on this learner has shown a positive fresh panel while a 30-pair promotion panel landed just short; for the clamp the 90-pair instrument (D-057) settled it. Confidence 0.8: identity gate exact, prospective screen and confirmation, but one block and a magnitude near the threshold.",
+      "cited_artifacts": [],
+      "next_experiment": "The negative warp is the first stroke-shape change with an established fresh gain on the adopted incumbent (and the only candidate besides the fixed gain to win against it). Qualify it the way the clamp was qualified: one predeclared 90-pair instrument (three cases-10-39 panels) under the standing rule, 180 episodes, then adopt or not. If it qualifies, it becomes the incumbent and the warp magnitude could be swept open-loop (one more screen) before any further mechanism work; if not, the incumbent stands and the sequence is complete.",
+      "recorded_at": "2026-11-04T08:33:23",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 0.99,
+      "reasoning": "Against the named D-058 incumbent control, fresh paired_success_difference was +0.0875 with a 95% interval of [+0.01499, +0.16001] [logs/pen_spin/r086_phase_warp/summary.json]. This establishes a positive difference on the fresh panel, but the mean misses the predicted +0.10 threshold and the interval spans it, so the prediction is neither supported nor refuted [logs/pen_spin/r086_phase_warp/summary.json]. Promotion yielded +0.1000 with interval [-0.01394, +0.21394], which includes zero and fails the strict adoption gate; retain the incumbent [logs/pen_spin/r086_phase_warp/summary.json]. Observed drops were equal on both panels—3 versus 3 fresh and 4 versus 4 promotion—but this does not rescue the failed promotion gate [logs/pen_spin/r086_phase_warp/summary.json]. The run consumed 340 simulator episodes and zero LLM calls [logs/pen_spin/r086_phase_warp/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r086_phase_warp/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-04T08:33:49",
+      "call_id": "call_00173"
+    }
+  ],
+  "decision_id": "D-062",
   "history": [
     {
       "at": "2026-11-04T08:26:06",
       "from": "proposed",
       "to": "approved",
       "note": "triage round 2: both say approve"
+    },
+    {
+      "at": "2026-11-04T08:30:04",
+      "from": "approved",
+      "to": "running",
+      "note": "git 0058950f1e"
+    },
+    {
+      "at": "2026-11-04T08:33:21",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-04T08:34:07",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-062: inconclusive"
     }
   ],
   "created_at": "2026-11-04T08:20:48",
