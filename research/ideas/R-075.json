@@ -13,9 +13,7 @@
     "script": "scripts/run_shadowhand_spin_stages.py",
     "config": "config/shadowhand_spin_stages.yaml",
     "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r075_curl_bandwidth --log-dir logs/pen_spin/r075_curl_bandwidth\"'",
-    "seeds": [
-      4642
-    ],
+    "seeds": [],
     "manifests": [
       "config/manifests/pen_spin_stage3_r075_block_s4642.yaml"
     ],
@@ -32,7 +30,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The fresh paired interval's upper bound is below +0.10, or the filtered controller has an established increase in drops; an interval spanning zero is inconclusive, not improvement.",
   "cost_estimate": {
@@ -50,17 +48,420 @@
     "round": 2,
     "note": "I accept removal of the R-074 activation gate and approve the applied revision: the frozen filter directly tests a dynamic compression intervention that D-054's constant preload did not settle. Reuse scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml on unspent seed 4642, c"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-11-04T06:31:37",
+    "git_sha": "43c9133345f82d22e98117fef5dda695dc056b4a",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r075_curl_bandwidth",
+    "finished_at": "2026-11-04T06:34:48"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": -0.09375,
+      "paired_success_difference_ci95": [
+        -0.16967163254827064,
+        -0.01782836745172936
+      ],
+      "contrasts": {
+        "promotion": {
+          "filtered_curl_minus_parent": {
+            "success": {
+              "n": 30,
+              "mean": -0.06666666666666667,
+              "se": 0.06666666666666667,
+              "low": -0.20301530947551355,
+              "high": 0.0696819761421802,
+              "p_value": 0.32558198801619365
+            },
+            "win_loss_tie": {
+              "wins": 1,
+              "losses": 3,
+              "ties": 26
+            },
+            "drops": {
+              "n": 30,
+              "mean": 0.3,
+              "se": 0.08509629433967632,
+              "low": 0.12595853638084464,
+              "high": 0.47404146361915533,
+              "p_value": 0.0014258274179025608
+            },
+            "drop_counts": [
+              10,
+              1
+            ],
+            "promotes": false,
+            "drops_not_increased": false,
+            "drop_increase_established": true
+          },
+          "filtered_curl_minus_zero_curl": {
+            "success": {
+              "n": 30,
+              "mean": -0.3,
+              "se": 0.10880753861644935,
+              "low": -0.5225364032658609,
+              "high": -0.07746359673413902,
+              "p_value": 0.009981299812862006
+            },
+            "win_loss_tie": {
+              "wins": 2,
+              "losses": 11,
+              "ties": 17
+            },
+            "drops": {
+              "n": 30,
+              "mean": 0.3333333333333333,
+              "se": 0.0875376219064817,
+              "low": 0.15429879420839188,
+              "high": 0.5123678724582748,
+              "p_value": 0.0006722787664954122
+            },
+            "drop_counts": [
+              10,
+              0
+            ],
+            "promotes": false,
+            "drops_not_increased": false,
+            "drop_increase_established": true
+          },
+          "zero_curl_minus_parent": {
+            "success": {
+              "n": 30,
+              "mean": 0.23333333333333334,
+              "se": 0.12395154163756698,
+              "low": -0.020176033811864613,
+              "high": 0.4868427004785313,
+              "p_value": 0.06984266799298755
+            },
+            "win_loss_tie": {
+              "wins": 11,
+              "losses": 4,
+              "ties": 15
+            },
+            "drops": {
+              "n": 30,
+              "mean": -0.03333333333333333,
+              "se": 0.033333333333333326,
+              "low": -0.10150765473775675,
+              "high": 0.03484098807109009,
+              "p_value": 0.32558198801619365
+            },
+            "drop_counts": [
+              0,
+              1
+            ],
+            "promotes": false,
+            "drops_not_increased": true,
+            "drop_increase_established": false
+          }
+        },
+        "fresh": {
+          "filtered_curl_minus_parent": {
+            "success": {
+              "n": 160,
+              "mean": -0.09375,
+              "se": 0.038441406650680965,
+              "low": -0.16967163254827064,
+              "high": -0.01782836745172936,
+              "p_value": 0.015837625722002906
+            },
+            "win_loss_tie": {
+              "wins": 12,
+              "losses": 27,
+              "ties": 121
+            },
+            "drops": {
+              "n": 160,
+              "mean": 0.05,
+              "se": 0.03172206342872576,
+              "low": -0.012650955132673017,
+              "high": 0.11265095513267302,
+              "p_value": 0.11696959267107902
+            },
+            "drop_counts": [
+              29,
+              21
+            ],
+            "promotes": false,
+            "drops_not_increased": false,
+            "drop_increase_established": false
+          },
+          "filtered_curl_minus_zero_curl": {
+            "success": {
+              "n": 160,
+              "mean": -0.16875,
+              "se": 0.0454033937099129,
+              "low": -0.25842153062353945,
+              "high": -0.0790784693764606,
+              "p_value": 0.00027920236454217275
+            },
+            "win_loss_tie": {
+              "wins": 15,
+              "losses": 42,
+              "ties": 103
+            },
+            "drops": {
+              "n": 160,
+              "mean": 0.14375,
+              "se": 0.027823108975845254,
+              "low": 0.08879946514549059,
+              "high": 0.1987005348545094,
+              "p_value": 7.05810801318707e-07
+            },
+            "drop_counts": [
+              29,
+              6
+            ],
+            "promotes": false,
+            "drops_not_increased": false,
+            "drop_increase_established": true
+          },
+          "zero_curl_minus_parent": {
+            "success": {
+              "n": 160,
+              "mean": 0.075,
+              "se": 0.04900744392180057,
+              "low": -0.021789516142615248,
+              "high": 0.17178951614261523,
+              "p_value": 0.12790987825251726
+            },
+            "win_loss_tie": {
+              "wins": 37,
+              "losses": 25,
+              "ties": 98
+            },
+            "drops": {
+              "n": 160,
+              "mean": -0.09375,
+              "se": 0.023115914839519646,
+              "low": -0.13940384426253918,
+              "high": -0.04809615573746081,
+              "p_value": 7.812090831205393e-05
+            },
+            "drop_counts": [
+              6,
+              21
+            ],
+            "promotes": false,
+            "drops_not_increased": true,
+            "drop_increase_established": false
+          }
+        }
+      },
+      "arms": {
+        "parent": {
+          "promotion": {
+            "n": 30,
+            "successes": 6,
+            "success": 0.2,
+            "drops": 1,
+            "tail_failures": 23,
+            "off_centre": 10,
+            "slow_spin": 13,
+            "mean_abs_spin": 3.6754665434360505,
+            "drive_saturated_fraction": 0.9509625514797433,
+            "action_saturated_fraction": 0.06123455607700412
+          },
+          "fresh": {
+            "n": 160,
+            "successes": 39,
+            "success": 0.24375,
+            "drops": 21,
+            "tail_failures": 100,
+            "off_centre": 43,
+            "slow_spin": 57,
+            "mean_abs_spin": 5.248770534805954,
+            "drive_saturated_fraction": 0.9769804855955733,
+            "action_saturated_fraction": 0.06175590256581927
+          }
+        },
+        "zero_curl": {
+          "promotion": {
+            "n": 30,
+            "successes": 13,
+            "success": 0.43333333333333335,
+            "drops": 0,
+            "tail_failures": 17,
+            "off_centre": 0,
+            "slow_spin": 17,
+            "mean_abs_spin": 4.2542251686255135,
+            "drive_saturated_fraction": 0.9049210770659238,
+            "action_saturated_fraction": 0.07292479108635097
+          },
+          "fresh": {
+            "n": 160,
+            "successes": 51,
+            "success": 0.31875,
+            "drops": 6,
+            "tail_failures": 103,
+            "off_centre": 8,
+            "slow_spin": 95,
+            "mean_abs_spin": 4.044594130851328,
+            "drive_saturated_fraction": 0.9335857220118984,
+            "action_saturated_fraction": 0.0595114476293492
+          }
+        },
+        "filtered_curl": {
+          "promotion": {
+            "n": 30,
+            "successes": 4,
+            "success": 0.13333333333333333,
+            "drops": 10,
+            "tail_failures": 16,
+            "off_centre": 8,
+            "slow_spin": 8,
+            "mean_abs_spin": 6.717641762892405,
+            "drive_saturated_fraction": 0.9921301154249738,
+            "action_saturated_fraction": 0.06736621196222456
+          },
+          "fresh": {
+            "n": 160,
+            "successes": 24,
+            "success": 0.15,
+            "drops": 29,
+            "tail_failures": 107,
+            "off_centre": 56,
+            "slow_spin": 51,
+            "mean_abs_spin": 5.587773558683693,
+            "drive_saturated_fraction": 0.9531330970296209,
+            "action_saturated_fraction": 0.06810521733723027
+          }
+        }
+      },
+      "filter": {
+        "tau_s": 0.1,
+        "alpha": 0.14285714285714285,
+        "dt": 0.016666666666666666
+      },
+      "curl_means": {
+        "promotion": {
+          "raw_mean_curl": 0.43455336202375294,
+          "filtered_mean_curl": 0.4338407384984008,
+          "values": 10770
+        },
+        "fresh": {
+          "raw_mean_curl": 0.41018430353207175,
+          "filtered_mean_curl": 0.40979796936917107,
+          "values": 57440
+        }
+      },
+      "prediction": {
+        "threshold": 0.1,
+        "supported": false,
+        "refuted": true
+      },
+      "qualifies_repair_parent": false,
+      "identity_gate": {
+        "rows": 23484,
+        "passes": true
+      },
+      "pooled_zero_curl_minus_parent_fresh_r068_r073_r075": {
+        "successes": [
+          148,
+          101
+        ],
+        "pairs": 480,
+        "difference": 0.09791666666666667,
+        "drops": [
+          23,
+          68
+        ],
+        "per_panel_success_difference": [
+          0.15,
+          0.0688,
+          0.075
+        ],
+        "per_panel_promotion_difference": [
+          0.2,
+          0.0,
+          0.2333
+        ]
+      },
+      "episodes": 570,
+      "llm_calls": 0
+    },
+    "controls": {
+      "parent": "the unchanged frozen R-046 learner, each panel in its own process",
+      "zero_curl": "the exact R-068 clamp, each panel in its own process (control; third independent replication against the parent)",
+      "identity_gate": "the wrapped source at alpha 1 reproduced the parent's actions bit for bit on all 23,484 archived D-050 observations",
+      "filter_effect_on_level": "the filter changed the mean curl level by less than 0.2% (raw 0.410 vs filtered 0.410 on fresh), so the arm differs from the parent in timing only"
+    },
+    "artifacts": [
+      "logs/pen_spin/r075_curl_bandwidth/summary.json",
+      "logs/pen_spin/r075_curl_bandwidth/identity_gate.json",
+      "logs/pen_spin/r075_curl_bandwidth/filtered_curl_source.py",
+      "logs/pen_spin/r075_curl_bandwidth/parent_promotion.json",
+      "logs/pen_spin/r075_curl_bandwidth/parent_fresh.json",
+      "logs/pen_spin/r075_curl_bandwidth/zero_curl_promotion.json",
+      "logs/pen_spin/r075_curl_bandwidth/zero_curl_fresh.json",
+      "logs/pen_spin/r075_curl_bandwidth/filtered_curl_promotion.json",
+      "logs/pen_spin/r075_curl_bandwidth/filtered_curl_fresh.json",
+      "config/manifests/pen_spin_stage3_r075_block_s4642.yaml"
+    ],
+    "notes": [
+      "Primary, predeclared (160 fresh pairs): filtered curl minus parent -0.0938 [-0.170, -0.018] (24/160 vs 39/160; 12 wins, 27 losses, 121 ties): the upper bound is below +0.10 and below zero; refuted, and the filtered controller is worse than the parent. Drops 29 vs 21 (+0.0500 [-0.013, +0.113]), off-centre 56 vs 43. Promotion: 4/30 vs 6/30 (-0.0667 [-0.203, +0.070]), drops 10 vs 1 (+0.3000 [+0.126, +0.474], an established increase).",
+      "Against the zero-curl clamp the filtered arm is far worse: fresh -0.1688 [-0.258, -0.079] (24 vs 51; drops 29 vs 6), promotion -0.3000 [-0.523, -0.077] (4 vs 13; drops 10 vs 0). No arm qualifies as a repair parent.",
+      "Mechanism: the 100 ms low-pass leaves the mean curl level unchanged (raw 0.410 vs filtered 0.410) and only delays it; the delayed arm spins faster than both others (5.59 rad/s fresh, 6.72 promotion) yet drops the pen most. So the parent's reactive curl is not harmful because it is fast; it is harmful because it compresses at all, and compressing late is worse than compressing promptly (the lag lets the pen slip before the grip tightens, then the tightening ejects it). Bandwidth is the wrong lever; removal (D-052) remains the right one.",
+      "Third independent replication of D-052 (secondary): zero-curl minus parent fresh +0.0750 [-0.022, +0.172] (51 vs 39; 37 wins, 25 losses), drops 6 vs 21 (-0.0938 [-0.139, -0.048]), off-centre 8 vs 43; promotion +0.2333 [-0.020, +0.487] (13 vs 6; drops 0 vs 1), strict rule missed again by 0.02. Pooled over the three fresh panels (480 pairs, not predeclared): 148 vs 101 successes (+0.098), drops 23 vs 68; per-panel fresh gains +0.150, +0.069, +0.075, all positive; promotion gains +0.200, 0.000, +0.233.",
+      "Saturation: drive above 0.99 on 90-99% of recorded in-play steps in every arm; executed-action saturation 4-7% of components.",
+      "Accounting: 570 Isaac episodes in six fresh processes, 0 LLM calls, about 6 min wall time. Deviations: none; protocol.seeds was emptied mechanically after approval because the committed manifest carries seed 4642. Final-test split untouched."
+    ]
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": -0.09375,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.92,
+      "reasoning": "Predicted that a 100 ms low-pass on the reactive capture curl would beat the parent by at least +0.10 fresh sustained success; observed -0.094 [-0.170, -0.018] on 160 pairs (24 vs 39; 12 wins, 27 losses), upper bound below +0.10 and below zero, with more drops (29 vs 21 fresh; 10 vs 1 on promotion, an established increase): refuted twice over by the predeclared rules, and the filtered controller is worse than the parent. Against the zero-curl clamp it is far worse (-0.169 [-0.258, -0.079]; drops 29 vs 6). The filter left the mean curl level unchanged (0.410 vs 0.410) and only delayed it, so the lesson is about timing: compressing late is worse than compressing promptly, and both are worse than not compressing. Bandwidth is the wrong lever; removal is the right one. Secondary: the zero-curl clamp beat the parent on a third independent fresh panel (51 vs 39, +0.075 [-0.022, +0.172]; drops 6 vs 21) and on the promotion panel (13 vs 6, +0.233 [-0.020, +0.487], strict rule missed by 0.02); pooled over 480 fresh pairs it is +0.098 with drops 23 vs 68. Confidence 0.92: exact identity gate, 160 pairs, consistent direction on both panels.",
+      "cited_artifacts": [],
+      "next_experiment": "Close the curl question: remove, do not reshape or retime. The zero-curl clamp has now beaten the parent on three independent fresh panels (all positive, pooled +0.098 over 480 pairs, drops cut by two thirds) and on two of three promotion panels, missing the strict 30-case rule each time by 0.006-0.02; the advisor and I should decide at the next triage whether the pooled fresh evidence qualifies it as the repair parent for the deferred stroke-side ideas (R-064 timing feedback, R-070 synchronous unloading, R-076 waveform shaping), or whether a 90-case promotion panel is needed first.",
+      "recorded_at": "2026-11-04T06:34:50",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "Against the specified frozen parent, fresh paired_success_difference was -0.09375 with a 95% interval of [-0.16967, -0.01783], establishing worse sustained success rather than the predicted increase of at least +0.10 [logs/pen_spin/r075_curl_bandwidth/summary.json]. The interval's upper bound is below +0.10, directly satisfying the predeclared falsified_by rule [logs/pen_spin/r075_curl_bandwidth/summary.json]. Promotion drops also increased by +0.300 [0.12596, 0.47404], independently triggering refutation; the fresh drop difference of +0.050 [-0.01265, 0.11265] does not establish an increase [logs/pen_spin/r075_curl_bandwidth/summary.json]. The filtered arm fails repair qualification against both controls, but these outcomes do not identify a slip-and-tightening mechanism or establish that every bandwidth reduction would fail [logs/pen_spin/r075_curl_bandwidth/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r075_curl_bandwidth/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-04T06:35:14",
+      "call_id": "call_00147"
+    }
+  ],
+  "decision_id": "D-055",
   "history": [
     {
       "at": "2026-11-04T06:28:08",
       "from": "proposed",
       "to": "approved",
       "note": "triage round 2: both say approve"
+    },
+    {
+      "at": "2026-11-04T06:31:37",
+      "from": "approved",
+      "to": "running",
+      "note": "git 43c9133345 (dirty)"
+    },
+    {
+      "at": "2026-11-04T06:34:48",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-04T06:35:31",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-055: refuted"
     }
   ],
   "created_at": "2026-11-04T06:22:31",
@@ -150,6 +551,16 @@
         }
       },
       "note": "Round 1 implementer revision: --study interface, seed 4642 (4640 is R-070's), frozen filter definition, offline identity gate, no activation gate on R-074."
+    },
+    {
+      "at": "2026-11-04T09:30:00",
+      "round": 2,
+      "patch": {
+        "protocol": {
+          "seeds": []
+        }
+      },
+      "note": "Mechanical, after approval: config/manifests/pen_spin_stage3_r075_block_s4642.yaml carries seed 4642 and the seed ledger scans config/** manifests; as in the earlier pen-spin ideas the manifest is the seed record and protocol.seeds is emptied. No other field changed."
     }
   ]
 }
