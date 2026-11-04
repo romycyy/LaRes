@@ -13,9 +13,7 @@
     "script": "scripts/run_shadowhand_spin_stages.py",
     "config": "config/shadowhand_spin_stages.yaml",
     "command": "gpu run 'bash -lc \"source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study r065_channel_lesions --log-dir logs/pen_spin/r065_channel_lesions\"'",
-    "seeds": [
-      4610
-    ],
+    "seeds": [],
     "manifests": [
       "config/manifests/pen_spin_stage3_r065_diagnostic_s4610.yaml"
     ],
@@ -32,7 +30,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The paired interval for stabilization-lesion minus parent lies entirely above -0.10; an interval crossing -0.10 is inconclusive, and a success loss explained only by additional drops does not establish the proposed spin mechanism.",
   "cost_estimate": {
@@ -53,17 +51,271 @@
     "round": 2,
     "note": "I accept the implementer's distinction between rotation correction and centering, and the shared-parent design: adding centering and capture-curl lesions incorporates R-066's question without another diagnostic protocol. Reusing scripts/run_shadowhand_spin_stages.py, config/shadowhand_spin_stages.ya"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-11-04T05:40:54",
+    "git_sha": "b6ec5a58a4abba7b1d1754f62c092e9cf57117c8",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r065_channel_lesions",
+    "finished_at": "2026-11-04T05:43:18"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.0375,
+      "paired_success_difference_ci95": [
+        -0.037141882883629816,
+        0.1121418828836298
+      ],
+      "primary_arm": "rotation_correction_lesion",
+      "arms": {
+        "rotation_correction_lesion": {
+          "minus_parent": {
+            "n": 80,
+            "mean": 0.0375,
+            "se": 0.037500000000000006,
+            "low": -0.037141882883629816,
+            "high": 0.1121418828836298,
+            "p_value": 0.3203637152607319
+          },
+          "win_loss_tie": {
+            "wins": 6,
+            "losses": 3,
+            "ties": 71
+          },
+          "drops_minus_parent": {
+            "n": 80,
+            "mean": 0.0,
+            "se": 0.0177892016741205,
+            "low": -0.0354085202120793,
+            "high": 0.0354085202120793,
+            "p_value": 1.0
+          },
+          "successes": 17,
+          "drops": 13,
+          "tail_failures": 50,
+          "off_centre": 18,
+          "slow_spin": 32,
+          "mean_abs_spin": 6.24036230891943,
+          "mean_abs_spin_on_parent_sustained_cases": 7.635648122855595,
+          "successes_on_parent_sustained_cases": 11,
+          "drive_saturated_fraction": 0.9219518140819892,
+          "action_saturated_fraction": 0.06319627838946898,
+          "interpretation": {
+            "threshold": 0.1,
+            "loss_at_least_threshold": false,
+            "loss_established": false,
+            "loss_not_carried_by_drops": true,
+            "spin_below_stage_threshold": false,
+            "spin_channel": false,
+            "retention_channel": false,
+            "prediction_refuted": true
+          }
+        },
+        "centering_clamp": {
+          "minus_parent": {
+            "n": 80,
+            "mean": -0.0625,
+            "se": 0.032529198179131545,
+            "low": -0.12724774935426988,
+            "high": 0.0022477493542698845,
+            "p_value": 0.05829438147071478
+          },
+          "win_loss_tie": {
+            "wins": 1,
+            "losses": 6,
+            "ties": 73
+          },
+          "drops_minus_parent": {
+            "n": 80,
+            "mean": 0.0125,
+            "se": 0.02174179606662089,
+            "low": -0.030775962551586124,
+            "high": 0.05577596255158612,
+            "p_value": 0.566972768874684
+          },
+          "successes": 9,
+          "drops": 14,
+          "tail_failures": 57,
+          "off_centre": 24,
+          "slow_spin": 33,
+          "mean_abs_spin": 5.510413444787264,
+          "mean_abs_spin_on_parent_sustained_cases": 5.033021275486265,
+          "successes_on_parent_sustained_cases": 8,
+          "drive_saturated_fraction": 0.9652184676321327,
+          "action_saturated_fraction": 0.06877707637083798,
+          "interpretation": {
+            "threshold": 0.1,
+            "loss_at_least_threshold": false,
+            "loss_established": false,
+            "loss_not_carried_by_drops": true,
+            "spin_below_stage_threshold": false,
+            "spin_channel": false,
+            "retention_channel": false,
+            "prediction_refuted": false
+          }
+        },
+        "curl_clamp": {
+          "minus_parent": {
+            "n": 80,
+            "mean": 0.125,
+            "se": 0.06975318149815049,
+            "low": -0.013840234777213939,
+            "high": 0.26384023477721397,
+            "p_value": 0.07695652214292477
+          },
+          "win_loss_tie": {
+            "wins": 21,
+            "losses": 11,
+            "ties": 48
+          },
+          "drops_minus_parent": {
+            "n": 80,
+            "mean": -0.1,
+            "se": 0.038153587020510214,
+            "low": -0.17594281530600805,
+            "high": -0.024057184693991956,
+            "p_value": 0.010512739373772999
+          },
+          "successes": 24,
+          "drops": 5,
+          "tail_failures": 51,
+          "off_centre": 3,
+          "slow_spin": 48,
+          "mean_abs_spin": 4.1598043136298655,
+          "mean_abs_spin_on_parent_sustained_cases": 3.2757080793380737,
+          "successes_on_parent_sustained_cases": 3,
+          "drive_saturated_fraction": 0.9480064853710664,
+          "action_saturated_fraction": 0.058265163239737634,
+          "interpretation": {
+            "threshold": 0.1,
+            "loss_at_least_threshold": false,
+            "loss_established": false,
+            "loss_not_carried_by_drops": true,
+            "spin_below_stage_threshold": true,
+            "spin_channel": false,
+            "retention_channel": false,
+            "prediction_refuted": true
+          }
+        }
+      },
+      "parent": {
+        "successes": 14,
+        "drops": 13,
+        "tail_failures": 53,
+        "off_centre": 18,
+        "slow_spin": 35,
+        "mean_abs_spin": 5.743321419507265,
+        "mean_abs_spin_on_own_sustained_cases": 7.059937749590192
+      },
+      "parent_drive_saturated_fraction": 0.9602896899666369,
+      "parent_action_saturated_fraction": 0.063436813410367,
+      "identity_gate": {
+        "archive": "logs/pen_spin/r062_stroke_lesion/parent.npz",
+        "cases": 80,
+        "lesions": {
+          "rotation_correction_lesion": {
+            "rows": 23484,
+            "mismatch_cases": [],
+            "passes": true
+          },
+          "centering_clamp": {
+            "rows": 23484,
+            "mismatch_cases": [],
+            "passes": true
+          },
+          "curl_clamp": {
+            "rows": 23484,
+            "mismatch_cases": [],
+            "passes": true
+          }
+        },
+        "passes": true
+      },
+      "episodes": 320,
+      "llm_calls": 0
+    },
+    "controls": {
+      "parent": "the unchanged frozen R-046 learner on the same 80 cases in its own process",
+      "identity_gate": "each lesion at factor 1.0 reproduced the parent's actions bit for bit (torch.equal) on all 23,484 archived in-play observations of D-050's parent run, before any episode",
+      "source_audit": "all eight structural patterns matched exactly once; the three lesioned sources are saved beside the results"
+    },
+    "artifacts": [
+      "logs/pen_spin/r065_channel_lesions/summary.json",
+      "logs/pen_spin/r065_channel_lesions/source_audit.json",
+      "logs/pen_spin/r065_channel_lesions/identity_gate.json",
+      "logs/pen_spin/r065_channel_lesions/parent.json",
+      "logs/pen_spin/r065_channel_lesions/rotation_correction_lesion.json",
+      "logs/pen_spin/r065_channel_lesions/centering_clamp.json",
+      "logs/pen_spin/r065_channel_lesions/curl_clamp.json",
+      "logs/pen_spin/r065_channel_lesions/rotation_correction_lesion_source.py",
+      "logs/pen_spin/r065_channel_lesions/centering_clamp_source.py",
+      "logs/pen_spin/r065_channel_lesions/curl_clamp_source.py",
+      "config/manifests/pen_spin_stage3_r065_diagnostic_s4610.yaml"
+    ],
+    "notes": [
+      "Primary, predeclared (rotation-correction lesion minus parent): +0.0375 [-0.037, +0.112] on 80 paired cases (17/80 vs 14/80; 6 wins, 3 losses, 71 ties); the lower bound is above -0.10, the predeclared refutation. Drops identical (13 vs 13), in-play |spin| on the parent-sustained cases 7.64 vs 7.06. The tilt and swing-damping corrections contribute nothing measurable to this learner's success or spin.",
+      "Secondary, centering clamp (R-066's question): -0.0625 [-0.127, +0.002] (9/80 vs 14/80; 1 win, 6 losses, 73 ties): a loss trend whose interval crosses -0.10 and just includes zero, inconclusive by the rule. Drops 14 vs 13 (+0.013 [-0.031, +0.056]); off-centre tail failures 24 vs 18; |spin| on parent-sustained cases 5.03 vs 7.06, still above the 4 rad/s threshold, and 8 of the parent's 14 sustained cases survive. Centering is a partial centring-and-spin channel, not the residual spin source on its own.",
+      "Secondary, capture-curl clamp, unpredicted: +0.1250 [-0.014, +0.264] (24/80 vs 14/80; 21 wins, 11 losses, 48 ties), a gain trend whose interval just includes zero, with an established reduction in drops (5 vs 13; -0.100 per case [-0.176, -0.024]) and far fewer off-centre tail failures (3 vs 18), while slow-spin tail failures rise (48 vs 33), overall in-play |spin| falls (4.16 vs 5.74) and only 3 of the parent's 14 sustained cases survive (|spin| on them 3.28). Removing the capture curl, the term that tightens the grasp when contact or centring deteriorates, changes the failure mode from drops and off-centre to slow spin: the parent's reactive curl is what loses the pen, and its spin on the cases it does sustain comes with that curl. The arm is a diagnostic lesion selected on this manifest; it is not a promotion and no success improvement is established.",
+      "Saturation: drive above 0.99 on 92-97% of recorded in-play steps in every arm (parent 96%); executed-action saturation 5-8% of components; recorded in-play steps only.",
+      "Localisation after D-050 and this panel: of the four channels lesioned on this learner, only the periodic stroke (D-050, about half the successes) and, weakly, centring carry success; rotation correction carries nothing; the capture curl is net harmful to retention. The spin that survives the stroke lesion is therefore not attributable to rotation correction; centring and the grasp-curl interaction remain the candidates, and single-channel lesions cannot exclude redundancy (the predeclared limitation).",
+      "Accounting: 320 Isaac episodes in four fresh processes, 0 LLM calls, about 4 min wall time; the offline identity gates ran on the CPU. Deviations: none; protocol.seeds was emptied mechanically after approval because the committed manifest carries seed 4610 (as R-053/R-058/R-060/R-062). Final-test split untouched."
+    ]
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.0375,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.85,
+      "reasoning": "Predicted that zeroing the rotation correction would cost at least 0.10 sustained success; observed +0.0375 [-0.037, +0.112] on 80 paired cases (17 vs 14; drops identical at 13; spin on the parent-sustained cases 7.64 vs 7.06). The lower bound is above -0.10, the predeclared refutation: the tilt and swing-damping terms carry neither success nor spin for this learner. The secondary arms localise the rest. Centring clamp: -0.0625 [-0.127, +0.002], a loss trend (9 vs 14, 1 win 6 losses) with more off-centre failures (24 vs 18) and spin on the parent-sustained cases down to 5.03, inconclusive by the rule and at most a partial channel. Capture-curl clamp, unpredicted: +0.125 [-0.014, +0.264] (24 vs 14, 21 wins 11 losses) with an established drop reduction (5 vs 13, -0.100 [-0.176, -0.024]) and off-centre failures 18 to 3, at the price of slower spin (48 slow-spin failures vs 33; |spin| 4.16 vs 5.74). The reactive curl is what loses the pen; without it the learner retains the pen and fails by spinning slowly. Confidence 0.85 because 80 pairs resolve the primary cleanly but leave the two secondary intervals touching zero.",
+      "cited_artifacts": [],
+      "next_experiment": "The capture-curl clamp is the first intervention on this learner with a success gain trend and fewer drops; it is a selected diagnostic, so the next step is a predeclared confirmation of exactly that one-line change against the parent on fresh paired cases under the strict promotion rule (promotion cases 10-39 plus fresh cases, prediction +0.10, drops not increased), which is what the direction asks before any repair. The residual spin after the stroke lesion is not the rotation correction; centring and the grasp-curl interaction remain candidates.",
+      "recorded_at": "2026-11-04T05:43:32",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.98,
+      "reasoning": "The named frozen parent was measured on the same paired cases, and the exact-action identity gates passed [logs/pen_spin/r065_channel_lesions/summary.json] [logs/pen_spin/r065_channel_lesions/identity_gate.json]. Rotation-correction lesion minus parent paired_success_difference was +0.0375, with a 95% interval of [-0.03714, +0.11214], wholly above the predeclared -0.10 refutation boundary [logs/pen_spin/r065_channel_lesions/summary.json]. This refutes the predicted decrease of at least 0.10 versus config/pen_spin/r046_block3_incumbent, but the interval includes zero, so it does not establish an improvement or prove the channel has no effect [logs/pen_spin/r065_channel_lesions/summary.json]. The lesion's mean absolute spin on parent-sustained cases was 7.64 rad/s, above the protocol's 4 rad/s mechanism criterion, so the proposed spin-channel mechanism is not established either [logs/pen_spin/r065_channel_lesions/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r065_channel_lesions/summary.json",
+        "logs/pen_spin/r065_channel_lesions/identity_gate.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-04T05:44:00",
+      "call_id": "call_00130"
+    }
+  ],
+  "decision_id": "D-051",
   "history": [
     {
       "at": "2026-11-04T05:37:36",
       "from": "proposed",
       "to": "approved",
       "note": "triage round 2: both say approve"
+    },
+    {
+      "at": "2026-11-04T05:40:54",
+      "from": "approved",
+      "to": "running",
+      "note": "git b6ec5a58a4 (dirty)"
+    },
+    {
+      "at": "2026-11-04T05:43:18",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-04T05:44:15",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-051: refuted"
     }
   ],
   "created_at": "2026-11-04T05:32:48",
@@ -154,6 +406,16 @@
         }
       },
       "note": "Round 1 implementer revision: rotation-correction lesion made unambiguous, centering-clamp and curl-clamp arms added on the same manifest (320 episodes, seed 4610), real --study/--log-dir interface, offline bit-identical identity gate on D-050's archived observations."
+    },
+    {
+      "at": "2026-11-04T07:05:00",
+      "round": 2,
+      "patch": {
+        "protocol": {
+          "seeds": []
+        }
+      },
+      "note": "Mechanical, after approval: config/manifests/pen_spin_stage3_r065_diagnostic_s4610.yaml now carries seed 4610 and the seed ledger scans config/** manifests; as in R-053/R-058/R-060/R-062 the manifest is the seed record and protocol.seeds is emptied. No other field changed."
     }
   ]
 }
