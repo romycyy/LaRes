@@ -34,7 +34,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The fresh paired interval for feedback winner minus constant-offset winner has an upper bound below +0.10; an interval including zero supplies no evidence of improvement. Failed strict promotion against the parent, or more observed drops, blocks adoption of either winner.",
   "cost_estimate": {
@@ -52,11 +52,507 @@
     "round": 3,
     "note": "I accept the implementer's correction: this parent has roll-locked phase, not tempo, so phase-lead modulation preserves its structure and tests a channel distinct from D-058's failed amplitude feedback; D-050 supplies the stroke prerequisite, and D-060 completes the required R-043 branch. The 850 si"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-11-04T08:10:06",
+    "git_sha": "d80d13a90675f0cd65c2417ce96472296f3f4aa7",
+    "dirty_worktree": false,
+    "log_dir": "logs/pen_spin/r064_lead_feedback",
+    "finished_at": "2026-11-04T08:17:22"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": -0.025,
+      "paired_success_difference_ci95": [
+        -0.11155192510317224,
+        0.06155192510317225
+      ],
+      "contrasts": {
+        "promotion": {
+          "feedback_minus_constant": {
+            "success": {
+              "n": 30,
+              "mean": 0.03333333333333333,
+              "se": 0.058394877222439266,
+              "low": -0.08609760051069926,
+              "high": 0.1527642671773659,
+              "p_value": 0.5725145639415321
+            },
+            "win_loss_tie": {
+              "wins": 2,
+              "losses": 1,
+              "ties": 27
+            },
+            "drops": {
+              "n": 30,
+              "mean": 0.0,
+              "se": 0.0,
+              "low": 0.0,
+              "high": 0.0,
+              "p_value": 1.0
+            },
+            "drop_counts": [
+              2,
+              2
+            ],
+            "promotes": false
+          },
+          "feedback_minus_parent": {
+            "success": {
+              "n": 30,
+              "mean": 0.06666666666666667,
+              "se": 0.095090197149179,
+              "low": -0.12781462321907688,
+              "high": 0.2611479565524102,
+              "p_value": 0.48883556981941534
+            },
+            "win_loss_tie": {
+              "wins": 5,
+              "losses": 3,
+              "ties": 22
+            },
+            "drops": {
+              "n": 30,
+              "mean": 0.0,
+              "se": 0.0,
+              "low": 0.0,
+              "high": 0.0,
+              "p_value": 1.0
+            },
+            "drop_counts": [
+              2,
+              2
+            ],
+            "promotes": false
+          },
+          "constant_minus_parent": {
+            "success": {
+              "n": 30,
+              "mean": 0.03333333333333333,
+              "se": 0.07555668243468873,
+              "low": -0.1211974332432994,
+              "high": 0.18786409990996605,
+              "p_value": 0.6623617732700398
+            },
+            "win_loss_tie": {
+              "wins": 3,
+              "losses": 2,
+              "ties": 25
+            },
+            "drops": {
+              "n": 30,
+              "mean": 0.0,
+              "se": 0.0,
+              "low": 0.0,
+              "high": 0.0,
+              "p_value": 1.0
+            },
+            "drop_counts": [
+              2,
+              2
+            ],
+            "promotes": false
+          }
+        },
+        "fresh": {
+          "feedback_minus_constant": {
+            "success": {
+              "n": 80,
+              "mean": -0.025,
+              "se": 0.04348359213324178,
+              "low": -0.11155192510317224,
+              "high": 0.06155192510317225,
+              "p_value": 0.566972768874684
+            },
+            "win_loss_tie": {
+              "wins": 5,
+              "losses": 7,
+              "ties": 68
+            },
+            "drops": {
+              "n": 80,
+              "mean": 0.025,
+              "se": 0.017565429223263183,
+              "low": -0.009963112290226638,
+              "high": 0.05996311229022664,
+              "p_value": 0.15860095656486017
+            },
+            "drop_counts": [
+              7,
+              5
+            ],
+            "promotes": false
+          },
+          "feedback_minus_parent": {
+            "success": {
+              "n": 80,
+              "mean": -0.0875,
+              "se": 0.05092110427670921,
+              "low": -0.1888559227127261,
+              "high": 0.013855922712726135,
+              "p_value": 0.08965080789540575
+            },
+            "win_loss_tie": {
+              "wins": 5,
+              "losses": 12,
+              "ties": 63
+            },
+            "drops": {
+              "n": 80,
+              "mean": 0.0125,
+              "se": 0.012499999999999997,
+              "low": -0.012380627627876596,
+              "high": 0.0373806276278766,
+              "p_value": 0.3203637152607317
+            },
+            "drop_counts": [
+              7,
+              6
+            ],
+            "promotes": false
+          },
+          "constant_minus_parent": {
+            "success": {
+              "n": 80,
+              "mean": -0.0625,
+              "se": 0.04112250146309534,
+              "low": -0.14435229168240687,
+              "high": 0.019352291682406875,
+              "p_value": 0.1325412342559726
+            },
+            "win_loss_tie": {
+              "wins": 3,
+              "losses": 8,
+              "ties": 69
+            },
+            "drops": {
+              "n": 80,
+              "mean": -0.0125,
+              "se": 0.012499999999999997,
+              "low": -0.0373806276278766,
+              "high": 0.012380627627876596,
+              "p_value": 0.3203637152607317
+            },
+            "drop_counts": [
+              5,
+              6
+            ],
+            "promotes": false
+          }
+        }
+      },
+      "controllers": {
+        "parent": {
+          "promotion": {
+            "n": 30,
+            "successes": 10,
+            "success": 0.3333333333333333,
+            "drops": 2,
+            "tail_failures": 18,
+            "off_centre": 3,
+            "slow_spin": 15,
+            "mean_abs_spin": 4.464770372708639,
+            "drive_saturated_fraction": 0.9277964095482344,
+            "action_saturated_fraction": 0.09728250147958177,
+            "offset_activity": null
+          },
+          "fresh": {
+            "n": 80,
+            "successes": 33,
+            "success": 0.4125,
+            "drops": 6,
+            "tail_failures": 41,
+            "off_centre": 4,
+            "slow_spin": 37,
+            "mean_abs_spin": 4.591620960459113,
+            "drive_saturated_fraction": 0.9301423991649892,
+            "action_saturated_fraction": 0.09506635353761277,
+            "offset_activity": null
+          }
+        },
+        "feedback": {
+          "promotion": {
+            "n": 30,
+            "successes": 12,
+            "success": 0.4,
+            "drops": 2,
+            "tail_failures": 16,
+            "off_centre": 2,
+            "slow_spin": 14,
+            "mean_abs_spin": 4.581422390540441,
+            "drive_saturated_fraction": 0.9630031570639306,
+            "action_saturated_fraction": 0.10268843725335439,
+            "offset_activity": {
+              "mean_offset": 0.40090079303128695,
+              "at_clip_fraction": 0.38421541318477254,
+              "mean_filtered_rate": 0.6834955385274764,
+              "values": 10770
+            }
+          },
+          "fresh": {
+            "n": 80,
+            "successes": 26,
+            "success": 0.325,
+            "drops": 7,
+            "tail_failures": 47,
+            "off_centre": 6,
+            "slow_spin": 41,
+            "mean_abs_spin": 4.464589887484908,
+            "drive_saturated_fraction": 0.9770917462354228,
+            "action_saturated_fraction": 0.10049816960410612,
+            "offset_activity": {
+              "mean_offset": 0.38943861414131015,
+              "at_clip_fraction": 0.34171309192200555,
+              "mean_filtered_rate": 1.2628085169409373,
+              "values": 28720
+            }
+          }
+        },
+        "constant": {
+          "promotion": {
+            "n": 30,
+            "successes": 11,
+            "success": 0.36666666666666664,
+            "drops": 2,
+            "tail_failures": 17,
+            "off_centre": 3,
+            "slow_spin": 14,
+            "mean_abs_spin": 4.666900652647018,
+            "drive_saturated_fraction": 0.9277465205803967,
+            "action_saturated_fraction": 0.10183101372026454,
+            "offset_activity": {
+              "mean_offset": 0.19999998410542805,
+              "at_clip_fraction": 0.0,
+              "mean_filtered_rate": null,
+              "values": 10770
+            }
+          },
+          "fresh": {
+            "n": 80,
+            "successes": 28,
+            "success": 0.35,
+            "drops": 5,
+            "tail_failures": 47,
+            "off_centre": 6,
+            "slow_spin": 41,
+            "mean_abs_spin": 4.397833912447095,
+            "drive_saturated_fraction": 0.9291858962525383,
+            "action_saturated_fraction": 0.0997729370500277,
+            "offset_activity": {
+              "mean_offset": 0.2,
+              "at_clip_fraction": 0.0,
+              "mean_filtered_rate": null,
+              "values": 28720
+            }
+          }
+        }
+      },
+      "screens": {
+        "fb_t4_g+0.1": {
+          "family": "feedback",
+          "index": 0,
+          "successes": 15,
+          "drops": 5,
+          "tail_hit_fraction": 0.4221746482683983
+        },
+        "fb_t4_g-0.1": {
+          "family": "feedback",
+          "index": 1,
+          "successes": 13,
+          "drops": 4,
+          "tail_hit_fraction": 0.3913087985618696
+        },
+        "fb_t6_g+0.1": {
+          "family": "feedback",
+          "index": 2,
+          "successes": 16,
+          "drops": 5,
+          "tail_hit_fraction": 0.4516023284313725
+        },
+        "fb_t6_g-0.1": {
+          "family": "feedback",
+          "index": 3,
+          "successes": 11,
+          "drops": 4,
+          "tail_hit_fraction": 0.32310436874953
+        },
+        "fb_t8_g+0.1": {
+          "family": "feedback",
+          "index": 4,
+          "successes": 13,
+          "drops": 5,
+          "tail_hit_fraction": 0.4068229166666667
+        },
+        "fb_t8_g-0.1": {
+          "family": "feedback",
+          "index": 5,
+          "successes": 11,
+          "drops": 4,
+          "tail_hit_fraction": 0.31768770208286334
+        },
+        "const_-0.4": {
+          "family": "constant",
+          "index": 0,
+          "successes": 12,
+          "drops": 4,
+          "tail_hit_fraction": 0.3443047409579668
+        },
+        "const_-0.2": {
+          "family": "constant",
+          "index": 1,
+          "successes": 12,
+          "drops": 4,
+          "tail_hit_fraction": 0.39470925058122636
+        },
+        "const_-0.1": {
+          "family": "constant",
+          "index": 2,
+          "successes": 12,
+          "drops": 5,
+          "tail_hit_fraction": 0.3568177855274629
+        },
+        "const_+0.1": {
+          "family": "constant",
+          "index": 3,
+          "successes": 13,
+          "drops": 5,
+          "tail_hit_fraction": 0.378168682795699
+        },
+        "const_+0.2": {
+          "family": "constant",
+          "index": 4,
+          "successes": 14,
+          "drops": 5,
+          "tail_hit_fraction": 0.4054166666666667
+        },
+        "const_+0.4": {
+          "family": "constant",
+          "index": 5,
+          "successes": 13,
+          "drops": 5,
+          "tail_hit_fraction": 0.3889441287878788
+        },
+        "parent": {
+          "family": "parent",
+          "index": -1,
+          "successes": 13,
+          "drops": 5,
+          "tail_hit_fraction": 0.37289305434466724
+        }
+      },
+      "winners": {
+        "feedback": "fb_t6_g+0.1",
+        "constant": "const_+0.2"
+      },
+      "filter": {
+        "tau_s": 0.25,
+        "alpha": 0.0625,
+        "clip": 0.6,
+        "targets": [
+          4.0,
+          6.0,
+          8.0
+        ],
+        "gains": [
+          0.1,
+          -0.1
+        ],
+        "offsets": [
+          -0.4,
+          -0.2,
+          -0.1,
+          0.1,
+          0.2,
+          0.4
+        ]
+      },
+      "prediction": {
+        "threshold": 0.1,
+        "supported": false,
+        "refuted": true
+      },
+      "adoption": {
+        "feedback": false,
+        "constant": false
+      },
+      "identity_gate": {
+        "passes": true
+      },
+      "episodes": 850,
+      "llm_calls": 0
+    },
+    "controls": {
+      "parent": "the D-058 incumbent (hashes checked) on the screen, promotion and fresh panels in its own processes",
+      "constant_family": "six fixed lead offsets {-0.4, -0.2, -0.1, +0.1, +0.2, +0.4} rad, the open-loop controls, screened like the feedback family",
+      "identity_gate": "offset exactly 0.0 reproduced the incumbent bit for bit on all 23,484 archived D-050 observations before any episode",
+      "winners_frozen": "winners.json after screening and before any confirmation episode; rule: sustained successes, fewer drops, index"
+    },
+    "artifacts": [
+      "logs/pen_spin/r064_lead_feedback/summary.json",
+      "logs/pen_spin/r064_lead_feedback/winners.json",
+      "logs/pen_spin/r064_lead_feedback/identity_gate.json",
+      "logs/pen_spin/r064_lead_feedback/lead_feedback_source.py",
+      "logs/pen_spin/r064_lead_feedback/screen/fb_t4_g+0.1.json",
+      "logs/pen_spin/r064_lead_feedback/screen/fb_t4_g-0.1.json",
+      "logs/pen_spin/r064_lead_feedback/screen/fb_t6_g+0.1.json",
+      "logs/pen_spin/r064_lead_feedback/screen/fb_t6_g-0.1.json",
+      "logs/pen_spin/r064_lead_feedback/screen/fb_t8_g+0.1.json",
+      "logs/pen_spin/r064_lead_feedback/screen/fb_t8_g-0.1.json",
+      "logs/pen_spin/r064_lead_feedback/screen/const_-0.4.json",
+      "logs/pen_spin/r064_lead_feedback/screen/const_-0.2.json",
+      "logs/pen_spin/r064_lead_feedback/screen/const_-0.1.json",
+      "logs/pen_spin/r064_lead_feedback/screen/const_+0.1.json",
+      "logs/pen_spin/r064_lead_feedback/screen/const_+0.2.json",
+      "logs/pen_spin/r064_lead_feedback/screen/const_+0.4.json",
+      "logs/pen_spin/r064_lead_feedback/screen/parent.json",
+      "logs/pen_spin/r064_lead_feedback/confirmation/parent_promotion.json",
+      "logs/pen_spin/r064_lead_feedback/confirmation/parent_fresh.json",
+      "logs/pen_spin/r064_lead_feedback/confirmation/feedback_promotion.json",
+      "logs/pen_spin/r064_lead_feedback/confirmation/feedback_fresh.json",
+      "logs/pen_spin/r064_lead_feedback/confirmation/constant_promotion.json",
+      "logs/pen_spin/r064_lead_feedback/confirmation/constant_fresh.json",
+      "config/manifests/pen_spin_stage3_r064_screen_s4580.yaml",
+      "config/manifests/pen_spin_stage3_r064_confirmation_s4581.yaml"
+    ],
+    "notes": [
+      "Primary, predeclared (80 fresh pairs): feedback winner (target 6 rad/s, gain +0.10) minus constant winner (+0.2 rad) -0.0250 [-0.112, +0.062] (26/80 vs 28/80; 5 wins, 7 losses, 68 ties); the upper bound is below +0.10: refuted. Promotion 12/30 vs 11/30 (+0.0333 [-0.086, +0.153]).",
+      "Neither family beats the D-058 parent, and both trend below it on fresh: feedback -0.0875 [-0.189, +0.014] (26 vs 33; 5 wins, 12 losses), constant -0.0625 [-0.144, +0.019] (28 vs 33); promotion feedback 12 vs 10, constant 11 vs 10, neither passes the strict rule. Drops 7 / 5 / 6 of 80. No adoption; the incumbent stands.",
+      "Screens (40 cases): the twelve lead settings scored 11-16 successes against the parent's 13, with drops 4-5 throughout; the phase lead is a flat direction for this controller in both open-loop and feedback form, the result scalar tuning (D-048, D-049) already implied for phase_lead.",
+      "Feedback activity: the offset averaged +0.39 rad with 34-38% of in-play steps at the +0.6 clip; the filtered signed axial rate averaged only 0.7-1.3 rad/s against an in-play |spin| of about 4.5, which means the parent's roll direction is not the same on every case, so a signed-rate target drives the lead to its clip on the cases that roll the other way. A rate target for this learner would have to be on |spin| or on the case's own established direction; noted for any future feedback design, not a reason to rerun.",
+      "Saturation: drive above 0.99 on 95-99% of recorded in-play steps in every arm; executed-action saturation 5-9% of components.",
+      "Accounting: 850 Isaac episodes in 19 fresh processes, 0 LLM calls, about 17 min wall time. No deviation from the approved protocol. Final-test split untouched."
+    ]
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": -0.025,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.9,
+      "reasoning": "Predicted at least +0.10 fresh success for the phase-lead feedback winner over the constant-offset winner; observed -0.025 [-0.112, +0.062] on 80 pairs (26 vs 28), upper bound below +0.10: refuted. Neither family beats the D-058 parent (feedback -0.088 [-0.189, +0.014], constant -0.063 [-0.144, +0.019] on fresh; promotion 12 and 11 vs 10, neither strict), so no adoption. The twelve lead settings screened flat (11-16 of 40 against the parent's 13), which says the phase lead is not a lever for this controller in either open-loop or feedback form. The feedback was active (offset +0.39 rad, a third of steps at the clip) but its signed-rate target is ill-posed here: the filtered signed rate averaged about 1 rad/s against |spin| 4.5, because the parent's roll direction differs across cases. Confidence 0.9: identity gate exact, prospective screening and confirmation, consistent direction on both panels.",
+      "cited_artifacts": [],
+      "next_experiment": "The stroke's amplitude (D-058's fixed gain) was the one lever that moved this learner; its phase lead is not one, and instantaneous or filtered signed-rate feedback has now failed on both. Any further feedback on this learner must use an unsigned or per-case-direction rate. With R-043 (D-060) and this, every mechanism the direction named has been run on the adopted incumbent; the direction's sequence is complete unless the user extends it.",
+      "recorded_at": "2026-11-04T08:17:24",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "The named control was measured: on 80 fresh pairs, the selected feedback policy achieved 26 successes versus 28 for the selected constant-offset control, giving paired_success_difference −0.025 with 95% interval [−0.1116, +0.0616] [logs/pen_spin/r064_lead_feedback/summary.json]. Its upper bound is below the predicted +0.10 increase, satisfying the predeclared falsification criterion [logs/pen_spin/r064_lead_feedback/summary.json]. Because the interval includes zero, this refutes the specified improvement without establishing that feedback is worse than the control [logs/pen_spin/r064_lead_feedback/summary.json]. Neither finalist passed strict promotion against the parent; feedback also recorded more fresh drops than the parent, so neither should be adopted [logs/pen_spin/r064_lead_feedback/summary.json]. The recorded feedback activity establishes that the intervention activated, but does not establish why it failed to improve success [logs/pen_spin/r064_lead_feedback/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r064_lead_feedback/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-04T08:17:45",
+      "call_id": "call_00169"
+    }
+  ],
+  "decision_id": "D-061",
   "history": [
     {
       "at": "2026-11-04T05:20:34",
@@ -75,6 +571,24 @@
       "from": "proposed",
       "to": "approved",
       "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-04T08:10:06",
+      "from": "approved",
+      "to": "running",
+      "note": "git d80d13a906"
+    },
+    {
+      "at": "2026-11-04T08:17:22",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-04T08:18:01",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-061: refuted"
     }
   ],
   "created_at": "2026-11-04T05:18:13",
