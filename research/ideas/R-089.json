@@ -34,7 +34,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "A paired interval upper bound below +0.05 refutes the predicted magnitude. An interval including zero is inconclusive and does not qualify the warp; more observed drops blocks adoption.",
   "cost_estimate": {
@@ -52,17 +52,316 @@
     "round": 2,
     "note": "I accept the implementer's config-driven interface revision: it preserves the agreed instrument and exact-source provenance checks. D-062 left qualification unresolved, making this one-shot 180-episode, zero-LLM comparison using the existing script/config and unspent seeds 4700–4702 the right next s"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-11-04T08:44:14",
+    "git_sha": "cd9aef04f787864099ce3e468179f4518549ce16",
+    "dirty_worktree": false,
+    "log_dir": "logs/pen_spin/r089_warp_qualification_90",
+    "finished_at": "2026-11-04T08:47:00"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": -0.022222222222222223,
+      "paired_success_difference_ci95": [
+        -0.10515964167280464,
+        0.06071519722836019
+      ],
+      "pairs": 90,
+      "warp_minus_parent_pooled": {
+        "n": 90,
+        "mean": -0.022222222222222223,
+        "se": 0.041740467309081104,
+        "low": -0.10515964167280464,
+        "high": 0.06071519722836019,
+        "p_value": 0.595782331169322
+      },
+      "win_loss_tie": {
+        "wins": 6,
+        "losses": 8,
+        "ties": 76
+      },
+      "drops_minus_parent_pooled": {
+        "n": 90,
+        "mean": 0.022222222222222223,
+        "se": 0.015624956651347832,
+        "low": -0.008824233824714908,
+        "high": 0.053268678269159354,
+        "p_value": 0.1584558867969
+      },
+      "drop_counts_warp_parent": [
+        6,
+        4
+      ],
+      "qualifies": false,
+      "adopts": false,
+      "prediction": {
+        "threshold": 0.05,
+        "supported": false,
+        "refuted": false
+      },
+      "arms_pooled": {
+        "parent": {
+          "n": 90,
+          "successes": 31,
+          "success": 0.34444444444444444,
+          "drops": 4,
+          "tail_failures": 55,
+          "off_centre": 6,
+          "slow_spin": 49,
+          "mean_abs_spin": 3.8315471195512347,
+          "drive_saturated_fraction": 0.9642834096921986,
+          "action_saturated_fraction": 0.08792669548944956
+        },
+        "warp": {
+          "n": 90,
+          "successes": 29,
+          "success": 0.32222222222222224,
+          "drops": 6,
+          "tail_failures": 55,
+          "off_centre": 1,
+          "slow_spin": 54,
+          "mean_abs_spin": 3.928077546424336,
+          "drive_saturated_fraction": 0.9528150309866544,
+          "action_saturated_fraction": 0.09969669147785029
+        }
+      },
+      "per_panel": {
+        "s4700": {
+          "success": {
+            "n": 30,
+            "mean": -0.03333333333333333,
+            "se": 0.07555668243468874,
+            "low": -0.18786409990996608,
+            "high": 0.12119743324329943,
+            "p_value": 0.6623617732700398
+          },
+          "win_loss_tie": {
+            "wins": 2,
+            "losses": 3,
+            "ties": 25
+          },
+          "successes_warp_parent": [
+            8,
+            9
+          ],
+          "drop_counts_warp_parent": [
+            3,
+            1
+          ]
+        },
+        "s4701": {
+          "success": {
+            "n": 30,
+            "mean": 0.0,
+            "se": 0.09589266029707681,
+            "low": -0.19612251130254327,
+            "high": 0.19612251130254327,
+            "p_value": 1.0
+          },
+          "win_loss_tie": {
+            "wins": 4,
+            "losses": 4,
+            "ties": 22
+          },
+          "successes_warp_parent": [
+            13,
+            13
+          ],
+          "drop_counts_warp_parent": [
+            2,
+            2
+          ]
+        },
+        "s4702": {
+          "success": {
+            "n": 30,
+            "mean": -0.03333333333333333,
+            "se": 0.033333333333333326,
+            "low": -0.10150765473775675,
+            "high": 0.03484098807109009,
+            "p_value": 0.32558198801619365
+          },
+          "win_loss_tie": {
+            "wins": 0,
+            "losses": 1,
+            "ties": 29
+          },
+          "successes_warp_parent": [
+            8,
+            9
+          ],
+          "drop_counts_warp_parent": [
+            1,
+            1
+          ]
+        }
+      },
+      "candidate": {
+        "epsilon": -0.35,
+        "constants": {
+          "eps": -0.35,
+          "lead": 0.453769713640213,
+          "grid": 3600,
+          "sin_mean": [
+            0.07554377203391936,
+            0.15489393347775304,
+            -0.07554377203391942,
+            -0.15489393347775304,
+            -0.07554377203391942
+          ],
+          "sin_rms": [
+            0.6941922178859168,
+            0.7197896669351623,
+            0.6941922178859168,
+            0.7197896669351623,
+            0.6941922178859168
+          ],
+          "sin_rms0": [
+            0.7071067811865479,
+            0.707106781186547,
+            0.7071067811865479,
+            0.707106781186547,
+            0.7071067811865479
+          ],
+          "cos_mean": [
+            0.15489393347775304,
+            -0.07554377203391936,
+            -0.15489393347775285,
+            0.07554377203391936,
+            -0.15489393347775285
+          ],
+          "cos_rms": [
+            0.7197896669351623,
+            0.6941922178859168,
+            0.7197896669351623,
+            0.6941922178859168,
+            0.7197896669351623
+          ],
+          "cos_rms0": [
+            0.707106781186547,
+            0.7071067811865479,
+            0.707106781186547,
+            0.7071067811865479,
+            0.707106781186547
+          ],
+          "sin_mean0": [
+            -1.1957410370497555e-15,
+            -9.277763742450892e-16,
+            1.1748009972241865e-15,
+            8.960424994578867e-16,
+            1.1748009972241865e-15
+          ],
+          "cos_mean0": [
+            -9.277455347166273e-16,
+            1.1825725583965626e-15,
+            8.962892156855812e-16,
+            -1.2658392852434494e-15,
+            8.962892156855812e-16
+          ],
+          "sha256": "fde6cf2a8c8e6aa3ddbe0ab8e4c288fcdfc2d0b8ab12dde0500acccd3f30bb0b"
+        },
+        "source_sha256": "5ed21027fbbf8abf472dd5912d79009eca3987064e2acbd464e3a7bc38144f74",
+        "constants_sha256": "70e4416afb5b6326c4691cbb8428e9edd283e01a4fd1ccc9bdd5cf301155ec4a"
+      },
+      "identity_gate": {
+        "passes": true
+      },
+      "episodes": 180,
+      "llm_calls": 0,
+      "d062_fresh_for_reference": {
+        "successes": [
+          32,
+          25
+        ],
+        "difference": 0.0875,
+        "low": 0.015,
+        "high": 0.16
+      }
+    },
+    "controls": {
+      "parent": "the D-058 incumbent (hashes checked) on every panel in its own process",
+      "candidate_provenance": "the archived R-086 substituted source and constants, hash-checked against the frozen values; the warp was never reconstructed",
+      "identity_gate": "epsilon 0 reproduced the incumbent bit for bit on all 23,484 archived D-050 observations before any episode",
+      "instrument": "three independent 40-case manifests (seeds 4700-4702), cases 10-39 of each, one paired t interval over the 90 declared differences; no extension, retry or historical pooling"
+    },
+    "artifacts": [
+      "logs/pen_spin/r089_warp_qualification_90/summary.json",
+      "logs/pen_spin/r089_warp_qualification_90/qualification.json",
+      "logs/pen_spin/r089_warp_qualification_90/identity_gate.json",
+      "logs/pen_spin/r089_warp_qualification_90/parent_promotion_s4700.json",
+      "logs/pen_spin/r089_warp_qualification_90/warp_promotion_s4700.json",
+      "logs/pen_spin/r089_warp_qualification_90/parent_promotion_s4701.json",
+      "logs/pen_spin/r089_warp_qualification_90/warp_promotion_s4701.json",
+      "logs/pen_spin/r089_warp_qualification_90/parent_promotion_s4702.json",
+      "logs/pen_spin/r089_warp_qualification_90/warp_promotion_s4702.json",
+      "config/manifests/pen_spin_stage3_r089_block_s4700.yaml",
+      "config/manifests/pen_spin_stage3_r089_block_s4701.yaml",
+      "config/manifests/pen_spin_stage3_r089_block_s4702.yaml"
+    ],
+    "notes": [
+      "Primary, predeclared (90 pairs): warp minus parent -0.0222 [-0.1052, +0.0607] (29/90 vs 31/90; 6 wins, 8 losses, 76 ties). The interval includes zero and its upper bound is not below +0.05: inconclusive for the predicted magnitude, and the warp does not qualify (lower bound below zero); drops 6 vs 4 (+0.0222 [-0.0088, +0.0533]), so it would not be adoptable either. The incumbent stands.",
+      "Per panel: s4700 -0.033 (8 vs 9), s4701 0.000 (13 vs 13), s4702 -0.033 (8 vs 9); no panel favoured the warp. D-062's fresh gain (+0.0875 [+0.015, +0.160], 32 vs 25) did not replicate on 90 new pairs; the two measurements are compatible only at the low end of D-062's interval.",
+      "Pooled arms: warp 29/90, parent 31/90; off-centre tail failures 1 vs 6 and slow-spin 54 vs 49, in-play |spin| 3.93 vs 3.83: the negative warp still trades a few off-centre failures for slow-spin ones, as in D-062, without a net gain here.",
+      "Saturation: drive above 0.99 on 95-99% of recorded in-play steps in both arms; executed-action saturation 10.0% (warp) vs 8.8% (parent) of components.",
+      "Accounting: 180 Isaac episodes in six fresh processes, 0 LLM calls, about 4 min wall time. No deviation from the approved protocol; R-090 is cancelled by its own condition. Final-test split untouched."
+    ]
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": -0.022222222222222223,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.85,
+      "reasoning": "Predicted at least +0.05 for the frozen D-062 warp over the D-058 incumbent on one prospectively declared 90-pair instrument; observed -0.022 [-0.105, +0.061] (29 vs 31; 6 wins, 8 losses, 76 ties), with drops 6 vs 4. The interval includes zero and its upper bound is not below +0.05, so the magnitude is neither established nor refuted by the predeclared rule, but the qualification question is answered: the warp does not qualify (lower bound below zero) and would not be adoptable (more drops), and no panel favoured it. D-062's fresh gain did not replicate; the honest reading is that it was at the high end of what a single 80-pair panel can show. The incumbent stands. Confidence 0.85 in the label; 0.95 that the warp is not an improvement of the size D-062 suggested.",
+      "cited_artifacts": [],
+      "next_experiment": "R-090 cancels by its own condition. With this, every stroke-side mechanism re-nominated after the direction's named branches (lead feedback D-061, waveform shape D-062/this) has failed to qualify on the adopted incumbent; the incumbent (zero-curl clamp, stroke x 1.408) stands at about 0.35-0.44 fresh success with few drops and slow spin as its failure mode. Unless the advisor can name a mechanism these results do not already predict, the direction's sequence is complete and the loop should stop and report.",
+      "recorded_at": "2026-11-04T08:47:02",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 0.99,
+      "reasoning": "The named incumbent control was measured: the warp achieved 29/90 successes versus 31/90 for the parent [logs/pen_spin/r089_warp_qualification_90/summary.json]. The paired_success_difference was -0.0222 with a 95% interval of [-0.1052, +0.0607], which includes zero and provides no evidence of a success difference [logs/pen_spin/r089_warp_qualification_90/summary.json]. Its upper bound exceeds +0.05, so the predicted magnitude is neither supported nor refuted, while the nonpositive lower bound fails strict qualification [logs/pen_spin/r089_warp_qualification_90/qualification.json]. Observed drops were 6 versus 4, independently blocking adoption under the no-more-drops rule, although the drop-difference interval also includes zero and does not establish increased drop risk [logs/pen_spin/r089_warp_qualification_90/summary.json]. The incumbent therefore stands [logs/pen_spin/r089_warp_qualification_90/qualification.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r089_warp_qualification_90/summary.json",
+        "logs/pen_spin/r089_warp_qualification_90/qualification.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-04T08:47:22",
+      "call_id": "call_00177"
+    }
+  ],
+  "decision_id": "D-063",
   "history": [
     {
       "at": "2026-11-04T08:40:32",
       "from": "proposed",
       "to": "approved",
       "note": "triage round 2: both say approve"
+    },
+    {
+      "at": "2026-11-04T08:44:14",
+      "from": "approved",
+      "to": "running",
+      "note": "git cd9aef04f7"
+    },
+    {
+      "at": "2026-11-04T08:47:00",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-04T08:47:42",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-063: inconclusive"
     }
   ],
   "created_at": "2026-11-04T08:36:25",
