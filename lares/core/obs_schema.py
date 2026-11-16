@@ -43,16 +43,19 @@ class ObsSchema:
     fields: tuple[ObsField, ...]
 
     def __post_init__(self):
-        seen = set()
+        by_name: dict[str, ObsField] = {}
         for f in self.fields:
-            if f.name in seen:
+            if f.name in by_name:
                 raise ValueError(f"duplicate observation field {f.name!r}")
-            seen.add(f.name)
+            by_name[f.name] = f
             if not (0 <= f.start < f.stop <= self.obs_dim):
                 raise ValueError(
                     f"field {f.name!r} slice [{f.start}:{f.stop}] is outside "
                     f"an observation of {self.obs_dim} dimensions"
                 )
+        # Frozen dataclass: the lookup table is derived state, set once here so ``field`` is a dict lookup
+        # rather than a scan of the tuple on every named access.
+        object.__setattr__(self, "_by_name", by_name)
 
     # -- lookup -----------------------------------------------------------
 
@@ -65,9 +68,10 @@ class ObsSchema:
         return tuple(f.name for f in self.fields if f.required)
 
     def field(self, name: str) -> ObsField:
-        for f in self.fields:
-            if f.name == name:
-                return f
+        try:
+            return self._by_name[name]
+        except KeyError:
+            pass
         raise KeyError(
             f"{name!r} is not a field of the {self.env_id} observation schema. "
             f"Available: {', '.join(self.names)}"
@@ -224,34 +228,24 @@ def _pen_spin_schema(stage: int) -> ObsSchema:
     return ObsSchema(STAGE_TASK_IDS[stage], start, tuple(fields))
 
 
-def _gait_scaffold_schema() -> ObsSchema:
-    """R-046: the Stage-3 layout plus ``gait_action`` (177-d); ``gait_action`` is readable but not required."""
-    from lares.envs.isaac_pen_spin.layout import GAIT_FIELD, GAIT_SCAFFOLD_TASK_ID
+def _register_scaffold_schemas() -> None:
+    """The 177-d layouts: Stage 3 plus one readable, not required, action field (R-046 ``gait_action``, R-084
+    ``parent_action``)."""
+    from lares.envs.isaac_pen_spin.layout import (
+        GAIT_FIELD, GAIT_SCAFFOLD_TASK_ID, PARENT_FIELD, PARENT_SCAFFOLD_TASK_ID, STAGE_TASK_IDS,
+    )
 
-    base = _pen_spin_schema(3)
-    name, size, description = GAIT_FIELD
-    fields = tuple(base.fields) + (ObsField(name, base.obs_dim, base.obs_dim + size, description, required=False),)
-    return ObsSchema(GAIT_SCAFFOLD_TASK_ID, base.obs_dim + size, fields)
+    base = OBS_SCHEMAS[STAGE_TASK_IDS[3]]
+    for (name, size, description), task_id in ((GAIT_FIELD, GAIT_SCAFFOLD_TASK_ID), (PARENT_FIELD, PARENT_SCAFFOLD_TASK_ID)):
+        extra = ObsField(name, base.obs_dim, base.obs_dim + size, description, required=False)
+        OBS_SCHEMAS[task_id] = ObsSchema(task_id, base.obs_dim + size, tuple(base.fields) + (extra,))
 
 
 for _stage in (1, 2, 3):
     _s = _pen_spin_schema(_stage)
     OBS_SCHEMAS[_s.env_id] = _s
 del _stage, _s
-OBS_SCHEMAS[_gait_scaffold_schema().env_id] = _gait_scaffold_schema()
-
-
-def _parent_scaffold_schema() -> ObsSchema:
-    """R-084: the Stage-3 layout plus ``parent_action`` (177-d); ``parent_action`` is readable but not required."""
-    from lares.envs.isaac_pen_spin.layout import PARENT_FIELD, PARENT_SCAFFOLD_TASK_ID
-
-    base = _pen_spin_schema(3)
-    name, size, description = PARENT_FIELD
-    fields = tuple(base.fields) + (ObsField(name, base.obs_dim, base.obs_dim + size, description, required=False),)
-    return ObsSchema(PARENT_SCAFFOLD_TASK_ID, base.obs_dim + size, fields)
-
-
-OBS_SCHEMAS[_parent_scaffold_schema().env_id] = _parent_scaffold_schema()
+_register_scaffold_schemas()
 
 
 def get_obs_schema(env_id: str) -> ObsSchema:

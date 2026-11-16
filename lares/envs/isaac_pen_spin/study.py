@@ -20,11 +20,11 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 
 import numpy as np
 
 from lares.envs.isaac_pen_spin import cases
+from lares.envs.isaac_pen_spin.protocols import diverged_envs, isaac_shell, load_cell
 
 STAGE = 3
 ARMS = ("no_trace", "uniform", "event")
@@ -81,10 +81,7 @@ def expert_actor(ps: dict):
 def compare_cells(a: dict, b: dict, batch: int) -> dict:
     """Outcome flips and diverged environments between two traces of the same cases."""
     flips = sum(bool(x["sustained"]) != bool(y["sustained"]) for x, y in zip(a["rows"], b["rows"]))
-    diverged = set()
-    for key in ("spin_rate", "center_dist"):
-        x, y = np.nan_to_num(a[key], nan=-1e9), np.nan_to_num(b[key], nan=-1e9)
-        diverged |= {int(i) for i in np.nonzero((np.abs(x - y) > 0).any(axis=0))[0]}
+    diverged = diverged_envs(a, b, "spin_rate") | diverged_envs(a, b, "center_dist")
     diverged |= {i for i, (x, y) in enumerate(zip(a["rows"], b["rows"])) if x["length"] != y["length"]}
     allowed = batch // 10
     return {"batch": batch, "sustained_outcome_flips": int(flips), "diverged_envs": len(diverged),
@@ -95,12 +92,11 @@ def compare_cells(a: dict, b: dict, batch: int) -> dict:
 def run_cell_reference(ps: dict, manifest_path: str, out: str, config_path: str) -> dict:
     """The expert through ``protocols.run_cell`` (R-040's evaluator), its own Isaac process."""
     if not os.path.exists(out):
-        cmd = (f"source {ps['isaac_env']} >/dev/null 2>&1 && python -u scripts/isaac/train_pen_spin_expert.py "
-               f"--config {config_path} --phase cell --cell-manifest {manifest_path} "
-               f"--checkpoint {ps['expert']['checkpoint']} --out {out}")
-        subprocess.run(["bash", "-c", cmd], check=True)
-    data = np.load(out.replace(".json", ".npz"))
-    return {"rows": json.load(open(out))["episodes"], "spin_rate": data["spin_rate"], "center_dist": data["center_dist"]}
+        isaac_shell(ps["isaac_env"], f"python -u scripts/isaac/train_pen_spin_expert.py --config {config_path} "
+                                     f"--phase cell --cell-manifest {manifest_path} "
+                                     f"--checkpoint {ps['expert']['checkpoint']} --out {out}")
+    data, rows = load_cell(out)
+    return {"rows": rows, "spin_rate": data["spin_rate"], "center_dist": data["center_dist"]}
 
 
 def parity_gate(ps: dict, study_dir: str, stream_factory, expert_config: str) -> dict:
@@ -200,19 +196,11 @@ def fresh_evaluation(run_dir: str, manifest, stream_factory, env_id: str) -> dic
 def rebuild_incumbent(run_dir: str, inc: dict, env_id: str):
     import torch
 
-    from lares.core.obs_schema import active_schema, get_obs_schema
-    from lares.core.policy_generation import GENERATED_IMPORTS
+    from lares.envs.isaac_pen_spin.dense_fit import build_policy
 
     source = open(os.path.join(run_dir, inc["code_path"]), encoding="utf-8").read()
-    ns: dict = {}
-    exec(GENERATED_IMPORTS + source, ns)
-    with active_schema(get_obs_schema(env_id)):
-        policy = ns["GeneratedPolicy"](cases.OBS_DIM, cases.NUM_ACTIONS)
-    policy.fixed_action_scale = float(inc["fixed_action_scale"])
-    policy.load_state_dict(torch.load(os.path.join(run_dir, inc["state_path"]), weights_only=True))
-    policy._generated_source = source
-    policy.eval()
-    return policy
+    state = torch.load(os.path.join(run_dir, inc["state_path"]), weights_only=True)
+    return build_policy(source, state, env_id, inc["fixed_action_scale"])
 
 
 def summarise(blocks: list[dict]) -> dict:

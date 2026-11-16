@@ -19,9 +19,10 @@ import numpy as np
 from lares.envs.isaac_pen_spin import cases
 from lares.envs.isaac_pen_spin import channel_lesions as cl
 from lares.envs.isaac_pen_spin import scalar_tuning as st
-from lares.envs.isaac_pen_spin.learner_recovery import _load, check_learner, make_learner
-from lares.envs.isaac_pen_spin.protocols import arm_summary, child_cell, failure_split
-from lares.eval.manifest import EvaluationManifest
+from lares.envs.isaac_pen_spin.learner_recovery import learner_source, make_learner
+from lares.envs.isaac_pen_spin.protocols import (actions_match, arm_summary, build_single_manifest, cached_json,
+                                                 failure_split, learner_drive_params, load_cell, manifest_path, roles,
+                                                 study_cell)
 
 STUDY = "r075_curl_bandwidth"
 STAGE = 3
@@ -77,16 +78,7 @@ class FilteredCurlController:
     name = "filtered_curl"
 
     def __init__(self, protocol_cfg: dict, alpha: float, name: str):
-        from lares.envs.isaac_pen_spin.layout import OBS_LAYOUT
-        from lares.envs.isaac_pen_spin.pipeline_child import SymbolicController
-
-        lc = check_learner(protocol_cfg)
-        with open(lc["source"], encoding="utf-8") as f:
-            source = f.read()
-        self.inner = SymbolicController({"source": substituted_source(source), "state_path": lc["state"],
-                                         "obs_dim": sum(size for _, size, _ in OBS_LAYOUT), "action_dim": cases.NUM_ACTIONS,
-                                         "fixed_action_scale": float(lc["fixed_action_scale"]),
-                                         "execution": "clamp(mean, -1, 1)"}, cases.STAGES[STAGE].task_id)
+        self.inner = make_learner(protocol_cfg, substituted_source)
         self.filter = CurlFilter(alpha)
         self.inner.policy._curl_filter = self.filter
         self.name = name
@@ -110,22 +102,8 @@ class FilteredCurlController:
         return {"raw_mean_curl": self.filter.raw_sum / n, "filtered_mean_curl": self.filter.filtered_sum / n, "values": n}
 
 
-def manifest_path(protocol_cfg: dict) -> str:
-    return protocol_cfg["manifest"]
-
-
-def roles(protocol_cfg: dict) -> dict:
-    return {k: (int(v[0]), int(v[1])) for k, v in protocol_cfg["roles"].items()}
-
-
 def build_manifests(protocol_cfg: dict) -> list[str]:
-    from lares.eval.manifest import assert_disjoint
-
-    path = manifest_path(protocol_cfg)
-    m = cases.build_manifest(STAGE, int(protocol_cfg["pool_seed"]), int(protocol_cfg["cases"]), label="r075_block")
-    written = cases.freeze_manifest(path, m)
-    assert_disjoint([m] + [EvaluationManifest.load(p) for p in protocol_cfg.get("disjoint_from", [])])
-    return [path] if written else []
+    return build_single_manifest(protocol_cfg, "r075_block", STAGE)
 
 
 def make_controller(arm: str, protocol_cfg: dict, out_dir: str | None = None):
@@ -138,26 +116,12 @@ def make_controller(arm: str, protocol_cfg: dict, out_dir: str | None = None):
     raise ValueError(f"unknown arm {arm!r}; one of {ARMS}")
 
 
-def offline_identity_gate(protocol_cfg: dict, archive_npz: str, max_steps: int | None = None) -> dict:
-    import torch
-
+def offline_identity_gate(protocol_cfg: dict, archive_npz: str) -> dict:
     data = np.load(archive_npz)
-    obs, length = data["obs"], data["length"]
     parent = make_learner(protocol_cfg)
     ident = FilteredCurlController(protocol_cfg, 1.0, "identity")
-    mism, rows = [], 0
-    for i in range(obs.shape[0]):
-        L = int(min(length[i], obs.shape[1]))
-        if max_steps:
-            L = min(L, int(max_steps))
-        if L <= 0:
-            continue
-        ident.reset(None)
-        o = torch.as_tensor(obs[i, :L], dtype=torch.float32)
-        rows += L
-        if not torch.equal(parent(o, 0, None), ident(o, 0, None)):
-            mism.append(i)
-    return {"archive": archive_npz, "rows": rows, "mismatch_cases": mism, "passes": not mism}
+    gate = actions_match(parent, ident, data["obs"], data["length"], before_case=lambda: ident.reset(None))
+    return {"archive": archive_npz, **gate}
 
 
 def _panel(rows_a, rows_b) -> dict:
@@ -190,50 +154,30 @@ def aggregate(rows: dict, sats: dict) -> dict:
     return out
 
 
-def _child(config_path: str, manifest: str, arm: str, out_path: str) -> None:
-    child_cell(config_path, manifest, arm, out_path, study=STUDY, record_obs=True, skip_existing=True)
-
-
 def run_curl_bandwidth(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
-    from lares.utils.hashing import sha256_file
-
-    lc = check_learner(protocol_cfg)
+    source = learner_source(protocol_cfg)
     os.makedirs(out_dir, exist_ok=True)
-    with open(lc["source"], encoding="utf-8") as f:
-        source = f.read()
     audit = cl.source_audit(source)
     if not audit["passes"]:
         raise SystemExit(f"source audit failed, no episode run: {audit}")
     with open(os.path.join(out_dir, "filtered_curl_source.py"), "w", encoding="utf-8") as f:
         f.write(substituted_source(source))
     alpha = alpha_for(float(protocol_cfg["filter_tau_s"]))
-    gate_path = os.path.join(out_dir, "identity_gate.json")
-    if os.path.exists(gate_path):
-        with open(gate_path, encoding="utf-8") as f:
-            gate = json.load(f)
-    else:
-        gate = offline_identity_gate(protocol_cfg, protocol_cfg["identity_archive"])
-        with open(gate_path, "w", encoding="utf-8") as f:
-            json.dump(gate, f, indent=2)
+    gate = cached_json(os.path.join(out_dir, "identity_gate.json"),
+                       lambda: offline_identity_gate(protocol_cfg, protocol_cfg["identity_archive"]))
     if not gate["passes"]:
         raise SystemExit(f"offline identity gate failed, no episode run: {gate}")
     mpath = manifest_path(protocol_cfg)
-    if not os.path.exists(mpath):
-        raise SystemExit(f"frozen manifest {mpath} missing; build and commit it before the run")
-    m = EvaluationManifest.load(mpath)
+    m = cases.load_frozen(mpath)
     role = cases.role_manifests(m, roles(protocol_cfg), expected_cases=int(protocol_cfg["cases"]), stage=STAGE)
-    paths = {}
-    for p, rm in role.items():
-        paths[p] = os.path.join(out_dir, f"{p}.yaml")
-        cases.freeze_manifest(paths[p], rm)
-    sd = make_learner(protocol_cfg).policy.state_dict()
-    params = {"spin_target": float(sd["spin_target"]), "speed_gain": float(sd["speed_gain"])}
+    paths = cases.freeze_roles(role, out_dir)
+    params = learner_drive_params(protocol_cfg)
     rows, sats = {a: {} for a in ARMS}, {a: {} for a in ARMS}
     for p in PANELS:
         for a in ARMS:
             cell = os.path.join(out_dir, f"{a}_{p}.json")
-            _child(config_path, paths[p], a, cell)
-            trace, rows[a][p] = _load(cell)
+            study_cell(protocol_cfg, config_path, paths[p], a, cell)
+            trace, rows[a][p] = load_cell(cell)
             sats[a][p] = st.saturation(trace, params)
     summary = aggregate(rows, sats)
     summary["filter"] = {"tau_s": float(protocol_cfg["filter_tau_s"]), "alpha": alpha, "dt": CONTROL_DT}
@@ -244,7 +188,7 @@ def run_curl_bandwidth(protocol_cfg: dict, config_path: str, out_dir: str) -> di
     summary["curl_means"] = curl
     summary["identity_gate"] = gate
     summary["source_audit"] = audit
-    summary["manifest"] = {"path": mpath, "sha256": sha256_file(mpath), "id": m.manifest_id}
+    summary["manifest"] = cases.manifest_record(mpath, m)
     summary["episodes"] = len(ARMS) * sum(len(role[p]) for p in PANELS)
     summary["decision"] = {"repair_parent": ({"controller": "filtered_curl", "alpha": alpha,
                                               "source": os.path.join(out_dir, "filtered_curl_source.py")}

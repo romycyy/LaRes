@@ -20,7 +20,7 @@ import torch  # noqa: E402
 from lares.core.obs_schema import get_obs_schema  # noqa: E402
 from lares.core.policy_validator import validate_policy  # noqa: E402
 from lares.core.training_pipeline import DemoBuffer  # noqa: E402
-from lares.fitting import (  # noqa: E402
+from lares.fitting.optimizers import (  # noqa: E402
     ADAM_BASELINE,
     ADAM_SCALED,
     CHECKPOINT_BEST_VALIDATION,
@@ -28,18 +28,22 @@ from lares.fitting import (  # noqa: E402
     DIFFERENTIAL_EVOLUTION,
     METHODS,
     MULTISTART_ADAM,
-    action_sensitivity,
     bc_objective,
-    check_port_equivalence,
-    dead_parameters,
     fit,
+    perturb_within_ranges,
+    prepare_data,
+)
+from lares.fitting.sensitivity import (  # noqa: E402
+    action_sensitivity,
+    dead_parameters,
     gradient_sensitivity,
+    summarise_sensitivity,
+)
+from lares.fitting.structure_bank import (  # noqa: E402
+    check_port_equivalence,
     instantiate_source,
     load_bank,
-    perturb_within_ranges,
     port_raw_indices,
-    prepare_data,
-    summarise_sensitivity,
 )
 from lares.fitting.benchmark import (  # noqa: E402
     LOSS_BASED_CHECKPOINT_RULES,

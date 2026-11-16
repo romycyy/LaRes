@@ -5,7 +5,7 @@ the policy is executed by sampling from the distribution that objective assumes.
 Every objective therefore carries an execution contract, and evaluation reads it
 rather than defaulting to whatever the pipeline happened to do before.
 
-What the audit in ``scripts/audit_expert_actions.py`` established:
+What the audit in ``deprecated/scripts/audit_expert_actions.py`` established:
 
 * MetaWorld's expert is an unbounded proportional controller with gain 10. It
   does not clip. Our Stage 1 clips before storing, so 18.8% of stored targets sit

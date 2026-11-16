@@ -22,9 +22,9 @@ import numpy as np
 
 from lares.envs.isaac_pen_spin import cases
 from lares.envs.isaac_pen_spin import scalar_tuning as st
-from lares.envs.isaac_pen_spin.learner_recovery import check_learner
-from lares.envs.isaac_pen_spin.protocols import arm_summary, child_cell, failure_split
-from lares.eval.manifest import EvaluationManifest
+from lares.envs.isaac_pen_spin.learner_recovery import check_learner, learner_source
+from lares.envs.isaac_pen_spin.protocols import (arm_summary, disjoint_from, failure_split, freeze_json, in_play,
+                                                 load_cell, roles, study_cell)
 
 STUDY = "r060_archive_rescreen"
 STAGE = 3
@@ -96,10 +96,6 @@ def manifest_path(protocol_cfg: dict, seed: int) -> str:
     return protocol_cfg["manifest_pattern"].format(seed=int(seed))
 
 
-def roles(protocol_cfg: dict) -> dict:
-    return {k: (int(v[0]), int(v[1])) for k, v in protocol_cfg["roles"].items()}
-
-
 def build_manifests(protocol_cfg: dict) -> list[str]:
     """One 110-case block manifest per seed, disjoint across blocks and from every manifest in ``disjoint_from``."""
     from lares.eval.manifest import assert_disjoint
@@ -109,8 +105,7 @@ def build_manifests(protocol_cfg: dict) -> list[str]:
              for s in protocol_cfg["seeds"]]
     before = {p for p, _, _ in specs if os.path.exists(p)}
     cases.freeze_manifest_set(specs)
-    others = [EvaluationManifest.load(p) for p in protocol_cfg.get("disjoint_from", [])]
-    assert_disjoint([m for _, m, _ in specs] + others)
+    assert_disjoint([m for _, m, _ in specs] + disjoint_from(protocol_cfg))
     return [p for p, _, _ in specs if p not in before]
 
 
@@ -232,15 +227,12 @@ def instrumented_policy(protocol_cfg: dict, params: dict):
     from lares.envs.isaac_pen_spin.learner_recovery import make_learner
 
     learner = make_learner(protocol_cfg)
-    with open(check_learner(protocol_cfg)["source"], encoding="utf-8") as f:
-        src = f.read()
+    src = learner_source(protocol_cfg)
     if not _DRIVE_RE.search(src) or not _CLIP_RE.search(src):
         raise SystemExit("the parent source no longer matches the drive law / final clamp this diagnostic instruments")
     src = _DRIVE_RE.sub("drive = 0.25 + 0.75 * torch.tanh(self.speed_gain * (self.spin_target - spin)) + self._drive_delta",
                         src)
     src = _CLIP_RE.sub("mean = mean", src)
-    import torch
-
     from lares.core.obs_schema import active_schema, get_obs_schema
     from lares.core.policy_generation import GENERATED_IMPORTS
 
@@ -255,8 +247,7 @@ def instrumented_policy(protocol_cfg: dict, params: dict):
     return policy
 
 
-def clipping_diagnostic(protocol_cfg: dict, traces: list, params_per_trace: list, delta: float = 0.10,
-                        max_steps: int | None = None) -> dict:
+def clipping_diagnostic(protocol_cfg: dict, traces: list, params_per_trace: list, delta: float = 0.10) -> dict:
     """Per axis, mean |a(d+delta) - a(d-delta)| before and after the final clamp, paired per episode.
 
     ``traces`` are recorded ``(obs, length)`` pairs (an ``.npz`` of a promotion or fresh cell); the reduction
@@ -270,12 +261,7 @@ def clipping_diagnostic(protocol_cfg: dict, traces: list, params_per_trace: list
     for trace, params in zip(traces, params_per_trace):
         policy = instrumented_policy(protocol_cfg, params)
         obs, length = np.asarray(trace["obs"]), np.asarray(trace["length"])
-        for i in range(obs.shape[0]):
-            L = int(min(length[i], obs.shape[1]))
-            if max_steps:
-                L = min(L, int(max_steps))
-            if L <= 0:
-                continue
+        for i, L in in_play(obs, length):
             o = torch.as_tensor(obs[i, :L], dtype=torch.float32)
             with torch.no_grad():
                 policy._drive_delta = -float(delta)
@@ -304,25 +290,14 @@ def clipping_diagnostic(protocol_cfg: dict, traces: list, params_per_trace: list
 # ---------------------------------------------------------------------------------------------------------------------
 
 
-def _cell(config_path: str, manifest: str, controller: str, out_path: str, record_obs: bool) -> None:
-    child_cell(config_path, manifest, controller, out_path, study=STUDY, record_obs=record_obs, skip_existing=True)
-
-
 def run_block(seed: int, protocol_cfg: dict, config_path: str, out_dir: str, space: st.ParameterSpace) -> dict:
-    from lares.utils.hashing import sha256_file
-
     a = protocol_cfg["archive"]
     bdir = os.path.join(out_dir, f"block_s{seed}")
     os.makedirs(bdir, exist_ok=True)
     mpath = manifest_path(protocol_cfg, seed)
-    if not os.path.exists(mpath):
-        raise SystemExit(f"frozen manifest {mpath} missing; build and commit it before the run")
-    m = EvaluationManifest.load(mpath)
+    m = cases.load_frozen(mpath)
     role = cases.role_manifests(m, roles(protocol_cfg), expected_cases=int(protocol_cfg["cases"]), stage=STAGE)
-    paths = {}
-    for r, rm in role.items():
-        paths[r] = os.path.join(bdir, f"{r}.yaml")
-        cases.freeze_manifest(paths[r], rm)
+    paths = cases.freeze_roles(role, bdir)
     per_proc = int(protocol_cfg["rescreen_candidates_per_process"])
     n_short = int(protocol_cfg["shortlist"])
     if n_short % per_proc:
@@ -336,7 +311,7 @@ def run_block(seed: int, protocol_cfg: dict, config_path: str, out_dir: str, spa
         adir = os.path.join(bdir, arm)
         os.makedirs(adir, exist_ok=True)
         sl = shortlist(load_archive_arm(a["log_dir"], archive_seed, arm, int(a["generations"]), int(a["popsize"])), n_short)
-        st._freeze_json(os.path.join(adir, "shortlist.json"), sl, "shortlist")  # before any episode
+        freeze_json(os.path.join(adir, "shortlist.json"), sl, "shortlist")  # before any episode
         metrics = []
         for p in range(n_short // per_proc):
             chunk = sl["params"][p * per_proc:(p + 1) * per_proc]
@@ -344,8 +319,8 @@ def run_block(seed: int, protocol_cfg: dict, config_path: str, out_dir: str, spa
             st.write_candidates(cpath, f"{arm}:s{seed}:rescreen{p}", chunk,
                                 {"shortlist_indices": sl["indices"][p * per_proc:(p + 1) * per_proc]})
             cell = os.path.join(adir, f"rescreen{p}.json")
-            _cell(config_path, tiled_path, f"candidates:{st._rel(out_dir, cpath)}", cell, False)
-            metrics += [st.screen_metrics(r) for r in st.split_rows(st._rows(cell), per_proc)]
+            study_cell(protocol_cfg, config_path, tiled_path, f"candidates:{st._rel(out_dir, cpath)}", cell, record_obs=False)
+            metrics += [st.screen_metrics(r) for r in st.split_rows(load_cell(cell)[1], per_proc)]
         ranks = st.rank_candidates(metrics)
         best = ranks.index(0)
         rescreen[arm] = {"metrics": metrics, "ranks": ranks, "archive_indices": sl["indices"],
@@ -356,7 +331,7 @@ def run_block(seed: int, protocol_cfg: dict, config_path: str, out_dir: str, spa
                         "original_shortlist_position": 0}
         if sl["indices"][0] != sl["original_winner_index"]:
             raise SystemExit("shortlist position 0 is not the original winner")
-    st._freeze_json(os.path.join(bdir, "winners.json"), winners, "winners")  # frozen before promotion or fresh
+    freeze_json(os.path.join(bdir, "winners.json"), winners, "winners")  # frozen before promotion or fresh
 
     files = {}
     for c in CONTROLLERS:
@@ -368,23 +343,24 @@ def run_block(seed: int, protocol_cfg: dict, config_path: str, out_dir: str, spa
         files[c] = os.path.join(bdir, f"{c}_params.json")
         st.write_candidates(files[c], f"{c}:s{seed}", [params])
     pcell = os.path.join(bdir, "parent_rescreen.json")
-    _cell(config_path, paths["rescreen"], f"candidates:{st._rel(out_dir, files['parent'])}", pcell, False)
-    rescreen["parent"] = st.screen_metrics(st._rows(pcell))
+    study_cell(protocol_cfg, config_path, paths["rescreen"], f"candidates:{st._rel(out_dir, files['parent'])}", pcell,
+               record_obs=False)
+    rescreen["parent"] = st.screen_metrics(load_cell(pcell)[1])
 
     rows, sats = {c: {} for c in CONTROLLERS}, {c: {} for c in CONTROLLERS}
     parent_full = space.params(space.normalise(space.parent))
     for r in ("promotion", "fresh"):
         for c in CONTROLLERS:
             cell = os.path.join(bdir, f"{c}_{r}.json")
-            _cell(config_path, paths[r], f"candidates:{st._rel(out_dir, files[c])}", cell, True)
-            rows[c][r] = st._rows(cell)
+            study_cell(protocol_cfg, config_path, paths[r], f"candidates:{st._rel(out_dir, files[c])}", cell)
+            trace, rows[c][r] = load_cell(cell)
             with open(files[c], encoding="utf-8") as f:
                 over = json.load(f)["candidates"][0]
-            sats[c][r] = st.saturation(st._trace(cell), {**parent_full, **over})
+            sats[c][r] = st.saturation(trace, {**parent_full, **over})
 
     summary = block_summary(rows, sats, rescreen, winners)
     summary["seed"] = int(seed)
-    summary["manifest"] = {"path": mpath, "sha256": sha256_file(mpath), "id": m.manifest_id}
+    summary["manifest"] = cases.manifest_record(mpath, m)
     summary["episodes"] = (2 * n_short * len(role["rescreen"]) + len(role["rescreen"])
                            + len(CONTROLLERS) * (len(role["promotion"]) + len(role["fresh"])))
     with open(os.path.join(bdir, "summary.json"), "w", encoding="utf-8") as f:
@@ -408,9 +384,9 @@ def run_study(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
                            int(protocol_cfg["shortlist"]))
             preflight[f"s{s}:{arm}"] = {"archive_block_seed": bs, "indices": sl["indices"],
                                         "original_winner_index": sl["original_winner_index"]}
-    st._freeze_json(os.path.join(out_dir, "preflight.json"),
-                    {"archive": a, "shortlist": int(protocol_cfg["shortlist"]), "parent": lc, "space": space.to_dict(),
-                     "blocks": preflight, "ranking": st.RANKING}, "preflight")
+    freeze_json(os.path.join(out_dir, "preflight.json"),
+                {"archive": a, "shortlist": int(protocol_cfg["shortlist"]), "parent": lc, "space": space.to_dict(),
+                 "blocks": preflight, "ranking": st.RANKING}, "preflight")
     blocks = [run_block(int(s), protocol_cfg, config_path, out_dir, space) for s in protocol_cfg["seeds"]]
     summary = summarise(blocks)
     summary["episodes"] = int(sum(b["episodes"] for b in blocks))

@@ -65,11 +65,8 @@ except Exception as e:
     sys.exit(1)
 
 try:
-    from lares.core.policy_generation import (
-        obs_description_dict,
-        input_dict_for_policy,
-        get_symbolic_policies,
-    )
+    from lares.core.obs_schema import get_obs_schema as _schema_for
+    from lares.core.policy_generation import generate_candidates, input_dict_for_policy
 
     check("import policy_generation", True)
 except Exception as e:
@@ -401,12 +398,12 @@ TASKS = [
     "drawer-open-v2",
 ]
 
-# --- 2.1 obs_description_dict coverage ---
+# --- 2.1 the observation layout the prompt carries comes from the schema ---
 for task in TASKS:
-    check(
-        f"2.1  obs_description_dict['{task}'] exists",
-        task in obs_description_dict and len(obs_description_dict[task]) > 50,
-    )
+    try:
+        check(f"2.1  obs schema for '{task}' describes itself", len(_schema_for(task).describe()) > 50)
+    except Exception as e:
+        check(f"2.1  obs schema for '{task}' describes itself", False, str(e))
 
 # --- 2.2 input_dict_for_policy coverage ---
 for task in TASKS:
@@ -436,7 +433,7 @@ try:
         task="Control the robotic arm to close the window",
         obs_dim=39,
         action_dim=4,
-        obs_description=obs_description_dict["window-close-v2"],
+        obs_description=_schema_for("window-close-v2").describe(),
         input_dict_string=input_dict_for_policy["window-close-v2"],
     )
     ok = (
@@ -528,10 +525,10 @@ if extracted:
         class_code = "\n".join(lines[class_start:])
         check("2.7c Class code starts with 'class'", class_code.startswith("class"))
 
-# --- 2.8 get_symbolic_policies callable ---
+# --- 2.8 generate_candidates callable ---
 check(
-    "2.8  get_symbolic_policies is callable",
-    callable(get_symbolic_policies),
+    "2.8  generate_candidates is callable",
+    callable(generate_candidates),
 )
 
 # --- 2.9 End-to-end: exec a valid policy in-process ---

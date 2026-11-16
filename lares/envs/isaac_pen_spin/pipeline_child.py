@@ -26,17 +26,10 @@ class SymbolicController:
     def __init__(self, spec: dict, env_id: str):
         import torch
 
-        from lares.core.obs_schema import active_schema, get_obs_schema
-        from lares.core.policy_generation import GENERATED_IMPORTS
+        from lares.envs.isaac_pen_spin.dense_fit import build_policy
 
-        namespace: dict = {}
-        exec(GENERATED_IMPORTS + spec["source"], namespace)
-        with active_schema(get_obs_schema(env_id)):
-            policy = namespace["GeneratedPolicy"](int(spec["obs_dim"]), int(spec["action_dim"]))
-        policy.fixed_action_scale = float(spec["fixed_action_scale"])
-        policy.load_state_dict(torch.load(spec["state_path"], weights_only=True))
-        policy.eval()
-        self.policy = policy
+        self.policy = build_policy(spec["source"], torch.load(spec["state_path"], weights_only=True), env_id,
+                                   spec["fixed_action_scale"], obs_dim=spec["obs_dim"], action_dim=spec["action_dim"])
         self.params = {"execution": spec["execution"]}
 
     def reset(self, ctx):

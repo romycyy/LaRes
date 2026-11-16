@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-04T08:50:55 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-09T17:17:40 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -93,6 +93,6 @@ Resume Shadow Hand pen spinning from docs/SESSION_2026-10-27_PEN_SPIN_SUMMARY.md
 ## Pointers
 
 - Narrative findings: `RESEARCH_HANDOFF.md` (appended once per decision)
-- Frozen history: `IMPLEMENTATION_PROGRESS.md`, `DEBUG_PROGRESS.md`
+- Current pipeline: `docs/PIPELINE_STATE.md`; frozen history: `docs/deprecated/`
 - Every proposal: `research/proposals.jsonl`; every triage round: `research/triage.jsonl`
 - Advisor calls: `research/llm_calls.jsonl`; briefings: `research/briefings/`

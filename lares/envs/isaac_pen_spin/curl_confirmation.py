@@ -14,9 +14,9 @@ import os
 from lares.envs.isaac_pen_spin import cases
 from lares.envs.isaac_pen_spin import channel_lesions as cl
 from lares.envs.isaac_pen_spin import scalar_tuning as st
-from lares.envs.isaac_pen_spin.learner_recovery import _load, check_learner, make_learner
-from lares.envs.isaac_pen_spin.protocols import arm_summary, child_cell, failure_split
-from lares.eval.manifest import EvaluationManifest
+from lares.envs.isaac_pen_spin.learner_recovery import learner_source, make_learner
+from lares.envs.isaac_pen_spin.protocols import (arm_summary, build_single_manifest, cached_json, failure_split,
+                                                 learner_drive_params, load_cell, manifest_path, roles, study_cell)
 
 STUDY = "r068_capture_curl_confirmation"
 STAGE = 3
@@ -26,23 +26,8 @@ PANELS = ("promotion", "fresh")
 GAIN_THRESHOLD = 0.10
 
 
-def manifest_path(protocol_cfg: dict) -> str:
-    return protocol_cfg["manifest"]
-
-
-def roles(protocol_cfg: dict) -> dict:
-    return {k: (int(v[0]), int(v[1])) for k, v in protocol_cfg["roles"].items()}
-
-
 def build_manifests(protocol_cfg: dict) -> list[str]:
-    from lares.eval.manifest import assert_disjoint
-
-    path = manifest_path(protocol_cfg)
-    m = cases.build_manifest(STAGE, int(protocol_cfg["pool_seed"]), int(protocol_cfg["cases"]), label="r068_block")
-    written = cases.freeze_manifest(path, m)
-    others = [EvaluationManifest.load(p) for p in protocol_cfg.get("disjoint_from", [])]
-    assert_disjoint([m] + others)
-    return [path] if written else []
+    return build_single_manifest(protocol_cfg, "r068_block", STAGE)
 
 
 def make_controller(arm: str, protocol_cfg: dict, out_dir: str | None = None):
@@ -79,16 +64,8 @@ def aggregate(rows: dict, sats: dict) -> dict:
     return out
 
 
-def _child(config_path: str, manifest: str, arm: str, out_path: str) -> None:
-    child_cell(config_path, manifest, arm, out_path, study=STUDY, record_obs=True, skip_existing=True)
-
-
 def run_confirmation(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
-    from lares.utils.hashing import sha256_file
-
-    lc = check_learner(protocol_cfg)
-    with open(lc["source"], encoding="utf-8") as f:
-        source = f.read()
+    source = learner_source(protocol_cfg)
     audit = cl.source_audit(source)
     os.makedirs(out_dir, exist_ok=True)
     with open(os.path.join(out_dir, "source_audit.json"), "w", encoding="utf-8") as f:
@@ -97,39 +74,26 @@ def run_confirmation(protocol_cfg: dict, config_path: str, out_dir: str) -> dict
         raise SystemExit(f"source audit failed, no episode run: {audit}")
     with open(os.path.join(out_dir, "zero_curl_source.py"), "w", encoding="utf-8") as f:
         f.write(cl.substituted_source(source, LESION, 0.0))
-    gate_path = os.path.join(out_dir, "identity_gate.json")
-    if os.path.exists(gate_path):
-        with open(gate_path, encoding="utf-8") as f:
-            gate = json.load(f)
-    else:
-        gate = cl.offline_identity_gate(protocol_cfg, protocol_cfg["identity_archive"])
-        with open(gate_path, "w", encoding="utf-8") as f:
-            json.dump(gate, f, indent=2)
+    gate = cached_json(os.path.join(out_dir, "identity_gate.json"),
+                       lambda: cl.offline_identity_gate(protocol_cfg, protocol_cfg["identity_archive"]))
     if not gate["lesions"][LESION]["passes"]:
         raise SystemExit(f"offline identity gate failed for {LESION}, no episode run: {gate}")
     mpath = manifest_path(protocol_cfg)
-    if not os.path.exists(mpath):
-        raise SystemExit(f"frozen manifest {mpath} missing; build and commit it before the run")
-    m = EvaluationManifest.load(mpath)
+    m = cases.load_frozen(mpath)
     role = cases.role_manifests(m, roles(protocol_cfg), expected_cases=int(protocol_cfg["cases"]), stage=STAGE)
-    paths = {}
-    for p, rm in role.items():
-        paths[p] = os.path.join(out_dir, f"{p}.yaml")
-        cases.freeze_manifest(paths[p], rm)
-    learner = make_learner(protocol_cfg)
-    sd = learner.policy.state_dict()
-    params = {"spin_target": float(sd["spin_target"]), "speed_gain": float(sd["speed_gain"])}
+    paths = cases.freeze_roles(role, out_dir)
+    params = learner_drive_params(protocol_cfg)
     rows, sats = {a: {} for a in ARMS}, {a: {} for a in ARMS}
     for p in PANELS:
         for a in ARMS:
             cell = os.path.join(out_dir, f"{a}_{p}.json")
-            _child(config_path, paths[p], a, cell)
-            trace, rows[a][p] = _load(cell)
+            study_cell(protocol_cfg, config_path, paths[p], a, cell)
+            trace, rows[a][p] = load_cell(cell)
             sats[a][p] = st.saturation(trace, params)
     summary = aggregate(rows, sats)
     summary["identity_gate"] = gate["lesions"][LESION]
     summary["source_audit"] = audit
-    summary["manifest"] = {"path": mpath, "sha256": sha256_file(mpath), "id": m.manifest_id}
+    summary["manifest"] = cases.manifest_record(mpath, m)
     summary["episodes"] = len(ARMS) * sum(len(role[p]) for p in PANELS)
     summary["decision"] = {"repair_parent": ({"controller": "zero_curl", "source": os.path.join(out_dir, "zero_curl_source.py"),
                                               "fresh_success": summary["panels"]["fresh"]["arms"]["zero_curl"]["success"]}

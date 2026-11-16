@@ -378,7 +378,7 @@ class StudyRun:
             phase = args[3] if "--phase" in args else None
             arm = args[3] if "--arm" in args else None
             cfg_ = rfe.load_config(self.config_path)
-            rfe.run_pen_spin_block(cfg_, self.config_path, block, phase, arm)
+            rfe.run_pen_spin_block(cfg_, block, phase, arm)
             return SimpleNamespace(returncode=0)
 
         argv = ["run_full_evolution.py", "--config", self.config_path, "--study", "keyframe_repair"]

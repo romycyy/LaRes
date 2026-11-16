@@ -18,9 +18,8 @@ import os
 import numpy as np
 
 from lares.envs.isaac_pen_spin import cases
-from lares.envs.isaac_pen_spin.protocols import arm_summary, child_cell
+from lares.envs.isaac_pen_spin.protocols import arm_summary, study_cell
 
-FEEDBACK_ABLATION = "feedback_ablation"
 STAGE = 3
 
 
@@ -99,25 +98,17 @@ def make_controller(name: str, protocol_cfg: dict, out_dir: str):
     raise ValueError(f"unknown controller {name!r}")
 
 
-def _child(config_path: str, manifest_path: str, controller: str, out_path: str, record_obs: bool = False):
-    child_cell(config_path, manifest_path, controller, out_path, study=FEEDBACK_ABLATION, record_obs=record_obs,
-               skip_existing=True)
-
-
 def reproducibility_gate(a_json: str, b_json: str) -> dict:
-    from lares.envs.isaac_pen_spin.protocols import MAX_DIVERGED_ENVS, _diverged_envs
+    from lares.envs.isaac_pen_spin.protocols import MAX_DIVERGED_ENVS, diverged_envs
 
     a, b = (np.load(p.replace(".json", ".npz")) for p in (a_json, b_json))
     ra, rb = (json.load(open(p))["episodes"] for p in (a_json, b_json))
-    union = (_diverged_envs(a, b, "spin_rate") | _diverged_envs(a, b, "center_dist")
+    union = (diverged_envs(a, b, "spin_rate") | diverged_envs(a, b, "center_dist")
              | {i for i in range(len(ra)) if ra[i]["length"] != rb[i]["length"]})
     flips = sum(x["sustained"] != y["sustained"] for x, y in zip(ra, rb))
     return {"union_diverged_envs": len(union), "sustained_outcome_flips": int(flips),
             "max_diverged_envs": MAX_DIVERGED_ENVS,
             "passes": bool(flips == 0 and len(union) <= MAX_DIVERGED_ENVS)}
-
-
-_arm_summary = arm_summary  # kept name: the sibling studies import it from here
 
 
 def aggregate(closed_rows: list[dict], tape_rows: list[dict]) -> dict:
@@ -130,7 +121,7 @@ def aggregate(closed_rows: list[dict], tape_rows: list[dict]) -> dict:
     t = t_summary(d)
     return {
         "paired_success_difference": t["mean"], "paired_t": t,
-        "closed_loop": _arm_summary(closed_rows), "action_tape": _arm_summary(tape_rows),
+        "closed_loop": arm_summary(closed_rows), "action_tape": arm_summary(tape_rows),
     }
 
 
@@ -142,7 +133,7 @@ def run_feedback_ablation(protocol_cfg: dict, config_path: str, out_dir: str) ->
     os.makedirs(out_dir, exist_ok=True)
     m = manifest_paths(protocol_cfg)
     demo_out = os.path.join(out_dir, "demonstration_ppo_expert.json")
-    _child(config_path, m["demo"], "ppo_expert", demo_out, record_obs=True)
+    study_cell(protocol_cfg, config_path, m["demo"], "ppo_expert", demo_out, record_obs=True)
     if not os.path.exists(os.path.join(out_dir, "tape.npy")):
         rows = json.load(open(demo_out))["episodes"]
         idx, tape = select_demonstration(rows, np.load(demo_out.replace(".json", ".npz"))["actions"])
@@ -156,18 +147,18 @@ def run_feedback_ablation(protocol_cfg: dict, config_path: str, out_dir: str) ->
             json.dump(meta, f, indent=2)
     closed = [os.path.join(out_dir, f"diagnostic_ppo_expert_{r}.json") for r in "ab"]
     for p in closed:
-        _child(config_path, m["diagnostic"], "ppo_expert", p)
+        study_cell(protocol_cfg, config_path, m["diagnostic"], "ppo_expert", p, record_obs=False)
     gate = reproducibility_gate(*closed)
     if not gate["passes"]:
         with open(os.path.join(out_dir, "gate_failed.json"), "w") as f:
             json.dump(gate, f, indent=2)
         raise SystemExit(f"reproducibility gate failed, replay not run: {gate}")
     tape_out = os.path.join(out_dir, "diagnostic_action_tape.json")
-    _child(config_path, m["diagnostic"], ActionTape.name, tape_out)
+    study_cell(protocol_cfg, config_path, m["diagnostic"], ActionTape.name, tape_out, record_obs=False)
     summary = aggregate(json.load(open(closed[0]))["episodes"], json.load(open(tape_out))["episodes"])
     summary["reproducibility_control"] = gate
     summary["tape"] = json.load(open(os.path.join(out_dir, "tape.json")))
-    summary["demonstration"] = _arm_summary(json.load(open(demo_out))["episodes"])
+    summary["demonstration"] = arm_summary(json.load(open(demo_out))["episodes"])
     with open(os.path.join(out_dir, "summary.json"), "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
     return summary

@@ -23,10 +23,10 @@ import os
 import numpy as np
 
 from lares.envs.isaac_pen_spin import cases
-from lares.envs.isaac_pen_spin.feedback_ablation import _arm_summary, check_checkpoint, reproducibility_gate
-from lares.envs.isaac_pen_spin.protocols import aggregate_vs_expert, build_single_manifest, child_cell, failure_split
+from lares.envs.isaac_pen_spin.feedback_ablation import check_checkpoint, reproducibility_gate
+from lares.envs.isaac_pen_spin.protocols import (aggregate_vs_expert, arm_summary, build_single_manifest,
+                                                 failure_split, manifest_path, study_cell)
 
-FEEDBACK_LESIONS = "feedback_lesions"
 STAGE = 3
 LESIONS = {
     "pen_state_clamped": ("obj_pos", "obj_rot", "obj_linvel", "obj_angvel", "rel_rot"),
@@ -73,10 +73,6 @@ class LesionedController:
         return self.inner(lesioned, t, ctx)
 
 
-def manifest_path(protocol_cfg: dict) -> str:
-    return protocol_cfg["manifest"]
-
-
 def build_manifests(protocol_cfg: dict) -> list[str]:
     return build_single_manifest(protocol_cfg, "lesion", STAGE)
 
@@ -90,10 +86,6 @@ def make_controller(arm: str, protocol_cfg: dict, out_dir: str | None = None):
     return LesionedController(expert, arm)
 
 
-def _child(config_path: str, manifest: str, arm: str, out_path: str, study: str = FEEDBACK_LESIONS) -> None:
-    child_cell(config_path, manifest, arm, out_path, study=study, skip_existing=True)
-
-
 def aggregate(rows: dict) -> dict:
     """Per-arm summaries and each lesion minus the expert, paired by case."""
     return aggregate_vs_expert(rows, LESIONS, "pen_state_clamped")
@@ -101,27 +93,25 @@ def aggregate(rows: dict) -> dict:
 
 def run_feedback_lesions(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
     """Driver: expert twice, the gate, the two lesions, aggregate. Nothing is rerun if its output exists."""
-    from lares.utils.hashing import sha256_file
-
     check_checkpoint(protocol_cfg)
     os.makedirs(out_dir, exist_ok=True)
     m = manifest_path(protocol_cfg)
     out = {arm: os.path.join(out_dir, f"{arm}.json") for arm in ARMS}
     for arm in ("expert", "expert_repeat"):
-        _child(config_path, m, arm, out[arm])
+        study_cell(protocol_cfg, config_path, m, arm, out[arm], record_obs=False)
     gate = reproducibility_gate(out["expert"], out["expert_repeat"])
     if not gate["passes"]:
         with open(os.path.join(out_dir, "gate_failed.json"), "w") as f:
             json.dump(gate, f, indent=2)
         raise SystemExit(f"reproducibility gate failed, lesions not run: {gate}")
     for arm in LESIONS:
-        _child(config_path, m, arm, out[arm])
+        study_cell(protocol_cfg, config_path, m, arm, out[arm], record_obs=False)
     rows = {arm: json.load(open(out[arm]))["episodes"] for arm in ARMS}
     summary = aggregate({a: rows[a] for a in ("expert",) + tuple(LESIONS)})
-    summary["arms"]["expert_repeat"] = {**_arm_summary(rows["expert_repeat"]), **failure_split(rows["expert_repeat"])}
+    summary["arms"]["expert_repeat"] = {**arm_summary(rows["expert_repeat"]), **failure_split(rows["expert_repeat"])}
     summary["reproducibility_control"] = gate
     summary["lesions"] = {k: list(v) for k, v in LESIONS.items()}
-    summary["manifest"] = {"path": m, "sha256": sha256_file(m)}
+    summary["manifest"] = cases.manifest_record(m)
     summary["episodes"] = sum(len(r) for r in rows.values())
     with open(os.path.join(out_dir, "summary.json"), "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
@@ -130,5 +120,5 @@ def run_feedback_lesions(protocol_cfg: dict, config_path: str, out_dir: str) -> 
 
 run = run_feedback_lesions
 
-__all__ = ["ARMS", "FEEDBACK_LESIONS", "LESIONS", "LesionedController", "aggregate", "build_manifests",
-           "failure_split", "lesion_index", "run", "run_feedback_lesions"]
+__all__ = ["ARMS", "LESIONS", "LesionedController", "aggregate", "build_manifests", "lesion_index", "run",
+           "run_feedback_lesions"]

@@ -29,7 +29,7 @@ import numpy as np  # noqa: E402
 import torch  # noqa: E402
 import torch.nn as nn  # noqa: E402
 
-from lares.utils.gitstate import git  # noqa: E402
+from lares.utils.gitstate import git, worktree_state  # noqa: E402
 from lares.utils.clock import run_stamp  # noqa: E402
 from lares.utils.cli import separator  # noqa: E402
 from lares.core.symbolic_policy import SymbolicPolicy  # noqa: E402
@@ -101,6 +101,14 @@ def _git(*args):
         return "unknown"
 
 
+def _worktree():
+    """``worktree_state()`` (HEAD SHA and dirty files), or the "unknown" shape outside a checkout."""
+    try:
+        return worktree_state()
+    except Exception:
+        return {"git_sha": "unknown", "dirty": False, "dirty_files": []}
+
+
 def version_lock():
     """Everything that has to be pinned for a number to mean the same thing twice."""
     import importlib
@@ -118,11 +126,12 @@ def version_lock():
                 )
             except Exception:
                 versions[mod] = "missing"
+    tree = _worktree()
     return {
         "recorded_at": datetime.now(timezone.utc).isoformat(),
-        "git_commit": _git("rev-parse", "HEAD"),
-        "git_branch": _git("rev-parse", "--abbrev-ref", "HEAD"),
-        "git_dirty_files": len([ln for ln in _git("status", "--porcelain").splitlines() if ln]),
+        "git_commit": tree["git_sha"],
+        "git_branch": _git("rev-parse", "--abbrev-ref", "HEAD"),  # gitstate has no branch reader
+        "git_dirty_files": len(tree["dirty_files"]),
         "python": platform.python_version(),
         "platform": platform.platform(),
         "packages": versions,

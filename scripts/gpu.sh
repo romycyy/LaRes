@@ -65,13 +65,17 @@ do_sync() {
     | while IFS= read -r -d '' f; do [ -e "$f" ] && printf '%s\0' "$f"; done \
     | COPYFILE_DISABLE=1 tar --no-xattrs --no-mac-metadata --null -T - -czf - \
     | ssh "${SSH_OPTS[@]}" "$h" "tar -xzf - -C $REMOTE_DIR"
-  local deleted; deleted="$(git ls-files -d)"
+  # Removed locally = in the server's HEAD (or the index) but no longer on disk here. `git ls-files -d` alone
+  # misses a staged rename or deletion, which left archived tests and scripts behind on the server.
+  local deleted
+  deleted="$({ git ls-files -d; git diff --no-renames --name-only --diff-filter=D "$remote_head"; } \
+             | sort -u | while IFS= read -r f; do [ -e "$f" ] || printf '%s\n' "$f"; done)"
   if [ -n "$deleted" ]; then
     printf '%s\n' "$deleted" | rsh "cd $REMOTE_DIR && xargs -d '\n' rm -f --"
   fi
 
   # Record what the server now holds, for the next sync's guard.
-  rsh "cd $REMOTE_DIR && git ls-files -co --exclude-standard -z | xargs -0 md5sum > $MANIFEST"
+  rsh "cd $REMOTE_DIR && git ls-files -co --exclude-standard -z | perl -0 -ne 'chomp; print \"\$_\\0\" if -e' | xargs -0 md5sum > $MANIFEST"
   echo "synced $(git rev-parse --short HEAD)$(git diff --quiet HEAD || echo '+dirty') -> $h:$REMOTE_DIR"
 }
 

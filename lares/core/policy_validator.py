@@ -44,28 +44,6 @@ GATE_NOT_A_LEVER = "gate_not_a_lever"
 #: A parameter that moves only the scale. An error only where generation forbids it.
 SCALE_PARAMETER = "scale_parameter"
 
-ALL_CATEGORIES = (
-    GATE_NOT_A_LEVER,
-    SCALE_PARAMETER,
-    RAW_OBS_INDEXING,
-    MISSING_SCHEMA,
-    FORBIDDEN_MODULE,
-    UNDECLARED_PARAMETER,
-    UNKNOWN_RANGE_ENTRY,
-    INVALID_RANGE,
-    INIT_OUT_OF_RANGE,
-    RANGES_NOT_A_DICT,
-    FORWARD_RAISED,
-    WRONG_SHAPE,
-    NON_FINITE,
-    NON_POSITIVE_STD,
-    BATCH_COUPLING,
-    INSENSITIVE_INPUT,
-    NO_GRADIENT,
-    GATE_TELEMETRY,
-    SERIALIZATION,
-)
-
 
 @dataclass(frozen=True)
 class ValidationError:
@@ -237,6 +215,20 @@ def _check_parameters(policy, report: ValidationReport) -> None:
                 )
 
 
+def _has_nan(report: ValidationReport, context: str, *tensors) -> bool:
+    """True, with one ``NON_FINITE`` error, if any tensor holds NaN.
+
+    ``allclose(nan, nan)`` is false, so without this a policy that emits NaN would also be told it couples the
+    batch or is not reproducible, and its one correction would chase a defect it does not have. Only NaN: equal
+    infinities compare close, so an Inf here is judged exactly as before.
+    """
+    if not any(bool(torch.isnan(t).any()) for t in tensors):
+        return False
+    if NON_FINITE not in report.categories:
+        report.add(NON_FINITE, f"{context} contains NaN")
+    return True
+
+
 def _forward(policy, obs, report: ValidationReport, context: str):
     try:
         return policy(obs)
@@ -300,6 +292,8 @@ def _check_batch_independence(
             if single is None:
                 return
             mean_s, std_s = single
+            if _has_nan(report, f"output at observation scale {scale}", mean_b, std_b, mean_s, std_s):
+                return
             if not torch.allclose(mean_b[i : i + 1], mean_s, atol=1e-5, rtol=1e-4):
                 report.add(
                     BATCH_COUPLING,
@@ -411,7 +405,9 @@ def _check_gate_telemetry(policy, obs_dim, action_dim, report: ValidationReport)
     if second is None:
         return
     mean_b, std_b = second
-    if not (torch.allclose(mean_a, mean_b) and torch.allclose(std_a, std_b)):
+    if _has_nan(report, "gate telemetry output", mean_a, std_a, mean_b, std_b):
+        pass  # a NaN is its own defect, not irreproducible telemetry; the checks below still run
+    elif not (torch.allclose(mean_a, mean_b) and torch.allclose(std_a, std_b)):
         report.add(
             GATE_TELEMETRY,
             "forward() is not reproducible across calls on the same observation; "
@@ -488,18 +484,20 @@ def _check_gate_levers(policy, obs_dim, schema, report: ValidationReport) -> Non
     names = set()
     try:
         with torch.no_grad():
+            # The discovery pass runs under the caller's overrides, so its outputs are the baseline every
+            # gate is compared against; computing them once here saves a forward per gate per batch.
+            bases = []
             for obs in batches:
                 policy.reset_diagnostics()
-                if _forward(policy, obs, report, "gate discovery") is None:
+                policy.gate_overrides = dict(previous)
+                base = _forward(policy, obs, report, "gate discovery")
+                if base is None:
                     return
+                bases.append(base)
                 names |= set(getattr(policy, "last_gates", {}) or {})
             for name in sorted(names):
                 lever = False
-                for obs in batches:
-                    policy.gate_overrides = dict(previous)
-                    base = _forward(policy, obs, report, f"gate {name} baseline")
-                    if base is None:
-                        return
+                for obs, base in zip(batches, bases):
                     for value in (0.0, 1.0):
                         policy.gate_overrides = {**previous, name: value}
                         forced = _forward(policy, obs, report, f"gate {name} forced to {value}")
@@ -539,6 +537,11 @@ def _check_scale_parameters(policy, obs_dim, report: ValidationReport, forbid: b
                for scale in PROBE_SCALES]
     scale_only = []
     with torch.no_grad():
+        try:
+            # The unperturbed outputs are the same for every parameter: one pass, not one per parameter.
+            bases = [policy(obs) for obs in batches]
+        except Exception:
+            return
         for name, param in policy.named_parameters():
             bounds = ranges.get(name)
             if not (isinstance(bounds, (tuple, list)) and len(bounds) == 2):
@@ -547,8 +550,7 @@ def _check_scale_parameters(policy, obs_dim, report: ValidationReport, forbid: b
             moved_mean = moved_std = False
             original = param.detach().clone()
             try:
-                for obs in batches:
-                    base = policy(obs)
+                for obs, base in zip(batches, bases):
                     param.add_(step)
                     shifted = policy(obs)
                     param.copy_(original)

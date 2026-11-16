@@ -120,75 +120,6 @@ TASK_NOTES["Isaac-ShadowHandSpin-Stage3-ParentScaffold-v0"] = (
     "from the same observation. last_action is the action actually executed."
 )
 
-# Legacy index-based layout text. Superseded by ObsSchema.describe(); kept because
-# older artefacts and tests reference it, and it documents what the LLM used to see.
-obs_description_dict = {
-    "push-v2": """The 39-dimensional observation vector contains:
-  obs[0:3]   - End-effector (gripper/TCP) position (x, y, z)
-  obs[3]     - Normalized gripper opening (1.0 = fully open)
-  obs[4:7]   - Puck position (x, y, z) - the object to push
-  obs[7:11]  - Puck quaternion orientation (4 values)
-  obs[11:18] - Second object slot (unused for push; always zeros)
-  obs[18:36] - Previous timestep's obs[0:18] (so obs[18:21] is the previous
-               end-effector position and obs[22:25] the previous puck position;
-               finite-difference these against obs[0:3] / obs[4:7] for velocity)
-  obs[36:39] - Goal position (x, y, z) - where the puck must end up
-Actions are 4-dimensional: (dx, dy, dz, gripper) controlling movement and gripper.
-The task requires reaching the puck and pushing it along the table to the goal.
-The gripper stays closed on the puck; this is a planar push, not a pick-and-place.""",
-    "window-close-v2": """The 39-dimensional observation vector contains:
-  obs[0:3]   - End-effector (gripper/TCP) position (x, y, z)
-  obs[3]     - Normalized gripper opening distance
-  obs[4:7]   - Window handle position (x, y, z) — the object to manipulate
-  obs[7:11]  - Window handle quaternion orientation (4 values)
-  obs[18:21] - Previous end-effector position (x, y, z)
-  obs[36:39] - Goal/target position (x, y, z) — where the window should move to
-Actions are 4-dimensional: (dx, dy, dz, gripper) controlling movement and gripper.
-The task requires moving the gripper to the window handle and pushing it to close.""",
-    "window-open-v2": """The 39-dimensional observation vector contains:
-  obs[0:3]   - End-effector (gripper/TCP) position (x, y, z)
-  obs[3]     - Normalized gripper opening distance
-  obs[4:7]   - Window handle position (x, y, z) — the object to manipulate
-  obs[7:11]  - Window handle quaternion orientation (4 values)
-  obs[18:21] - Previous end-effector position (x, y, z)
-  obs[36:39] - Goal/target position (x, y, z) — where the window should move to
-Actions are 4-dimensional: (dx, dy, dz, gripper) controlling movement and gripper.
-The task requires moving the gripper to the window handle and pulling it to open.""",
-    "button-press-v2": """The 39-dimensional observation vector contains:
-  obs[0:3]   - End-effector (gripper/TCP) position (x, y, z)
-  obs[3]     - Normalized gripper opening distance
-  obs[4:7]   - Button position (x, y, z) — the current button location
-  obs[7:11]  - Button quaternion orientation (4 values)
-  obs[36:39] - Goal/target position (x, y, z) — where the button should be pressed to
-Actions are 4-dimensional: (dx, dy, dz, gripper) controlling movement and gripper.
-The task requires moving the gripper above the button and pressing downward.""",
-    "door-close-v2": """The 39-dimensional observation vector contains:
-  obs[0:3]   - End-effector (gripper/TCP) position (x, y, z)
-  obs[3]     - Normalized gripper opening distance
-  obs[4:7]   - Door handle position (x, y, z)
-  obs[7:11]  - Door quaternion orientation (4 values)
-  obs[36:39] - Goal/target position (x, y, z) — target door position (closed)
-Actions are 4-dimensional: (dx, dy, dz, gripper) controlling movement and gripper.
-The task requires moving the gripper to the door and pushing it closed.""",
-    "drawer-open-v2": """The 39-dimensional observation vector contains:
-  obs[0:3]   - End-effector (gripper/TCP) position (x, y, z)
-  obs[3]     - Normalized gripper opening distance
-  obs[4:7]   - Drawer handle position (x, y, z)
-  obs[7:11]  - Drawer handle quaternion orientation (4 values)
-  obs[36:39] - Goal/target position (x, y, z) — target drawer position (open)
-Actions are 4-dimensional: (dx, dy, dz, gripper) controlling movement and gripper.
-The task requires grasping the drawer handle and pulling it open.""",
-    "reach-v2": """The 39-dimensional observation vector contains:
-  obs[0:3]   - End-effector (gripper/TCP) position (x, y, z)
-  obs[3]     - Normalized gripper opening distance
-  obs[4:7]   - Target/goal marker position (x, y, z) — the point to reach
-  obs[7:11]  - Target marker quaternion orientation (4 values, unused for reach)
-  obs[18:21] - Previous end-effector position (x, y, z)
-  obs[36:39] - Goal/target position (x, y, z) — same as obs[4:7] for reach
-Actions are 4-dimensional: (dx, dy, dz, gripper) controlling movement and gripper.
-The task is simply to move the end-effector to the target position. No grasping needed.""",
-}
-
 # Reuse the existing input_dict strings so the LLM understands variable names
 input_dict_for_policy = {
     "push-v2": """{
@@ -258,6 +189,25 @@ def check_reasoning_effort(value):
 # OpenAI chat.completions `n` is capped per model (often 8 for recent models).
 _OPENAI_CHAT_N_MAX = 8
 
+# Attempts per request on a transient error (on top of the SDK's own two retries), with exponential backoff.
+_LLM_MAX_ATTEMPTS = 8
+# Error codes no retry can fix: the call fails at once instead of looping (a spent credit balance is a 429 too).
+_FATAL_LLM_CODES = (
+    "insufficient_quota", "credit_balance_exhausted", "billing_hard_limit_reached",
+    "invalid_api_key", "model_not_found", "context_length_exceeded",
+)
+
+
+def _retryable_llm_error(exc) -> bool:
+    """True for a rate limit, a connection failure or a server error; false for anything a retry cannot fix."""
+    try:
+        import openai
+    except ImportError:
+        return False
+    if any(code in f"{getattr(exc, 'code', '')} {exc}" for code in _FATAL_LLM_CODES):
+        return False
+    return isinstance(exc, (openai.RateLimitError, openai.APIConnectionError, openai.InternalServerError))
+
 
 def _usage_to_dict(usage):
     if usage is None:
@@ -305,7 +255,7 @@ def _call_llm(
     transcript_label="completion",
     reasoning_effort=None,
 ):
-    """Call the OpenAI chat completion API with retry logic.
+    """Call the OpenAI chat completion API, retrying transient errors only; any other failure raises.
 
     ``reasoning_effort`` is sent only when set, so models without the parameter still work.
     """
@@ -314,14 +264,11 @@ def _call_llm(
     total_token = 0
     total_completion_token = 0
     prompt_tokens = 0
-    chunk_size = min(sample_size, _OPENAI_CHAT_N_MAX)
     responses = []
 
     while total_samples < sample_size:
-        need = sample_size - total_samples
-        response_cur = None
-        for attempt in range(1000):
-            this_n = min(chunk_size, need, _OPENAI_CHAT_N_MAX)
+        this_n = min(sample_size - total_samples, _OPENAI_CHAT_N_MAX)
+        for attempt in range(_LLM_MAX_ATTEMPTS):
             try:
                 response_cur = client.chat.completions.create(
                     model=model,
@@ -330,17 +277,13 @@ def _call_llm(
                     n=this_n,
                     **extra,
                 )
-                total_samples += this_n
                 break
             except Exception as e:
-                if attempt >= 10:
-                    chunk_size = max(int(chunk_size / 2), 1)
-                    print("Current Chunk Size", chunk_size)
+                if attempt == _LLM_MAX_ATTEMPTS - 1 or not _retryable_llm_error(e):
+                    raise RuntimeError(f"LLM call failed after {attempt + 1} attempt(s): {e}") from e
                 print(f"Attempt {attempt + 1} failed with error: {e}")
-                time.sleep(1)
-        if response_cur is None:
-            print("Code terminated due to too many failed attempts!")
-            exit()
+                time.sleep(min(60, 2 ** attempt))
+        total_samples += this_n
 
         if transcript_path and transcript_counter is not None:
             transcript_counter[0] += 1
@@ -485,6 +428,10 @@ def _build_error_feedback(code_string, error_output):
     )
 
 
+# Wall-clock cap on one harness subprocess; generous because sixteen workers may be importing torch at once.
+VALIDATION_TIMEOUT_S = 600
+
+
 def _run_policy_validation_subprocess(
     code_str,
     dir_path,
@@ -511,31 +458,23 @@ def _run_policy_validation_subprocess(
         f.write(test_code)
 
     filter_filepath = os.path.join(dir_path, f"Policy_{response_log_idx}_response.txt")
+    # sys.executable, not "python": the venv is usually invoked by absolute path rather than activated, so bare
+    # "python" is not on PATH and every candidate fails validation with ENOENT.
+    argv = [
+        sys.executable, "-u", temp_file_path, data_pkl_path,
+        "--obs_dim", str(obs_dim), "--action_dim", str(action_dim), "--env_name", str(env_name),
+    ]
+    timed_out = False
     with open(filter_filepath, "w") as f:
-        process = subprocess.Popen(
-            [
-                # sys.executable, not "python": the venv is usually invoked by
-                # absolute path rather than activated, so bare "python" is not
-                # on PATH and every candidate fails validation with ENOENT.
-                sys.executable,
-                "-u",
-                temp_file_path,
-                data_pkl_path,
-                "--obs_dim",
-                str(obs_dim),
-                "--action_dim",
-                str(action_dim),
-                "--env_name",
-                str(env_name),
-            ],
-            stdout=f,
-            stderr=f,
-        )
-    process.communicate()
+        try:
+            subprocess.run(argv, stdout=f, stderr=f, timeout=VALIDATION_TIMEOUT_S)
+        except subprocess.TimeoutExpired:  # generated code that never returns is a harness failure, not a dead run
+            timed_out = True
+            f.write(f"\nError: validation timed out after {VALIDATION_TIMEOUT_S} s\n")
 
     with open(filter_filepath, "r") as f:
         stdout_str = f.read()
-    return "Success!" in stdout_str, stdout_str, full_code
+    return (not timed_out) and "Success!" in stdout_str, stdout_str, full_code
 
 
 def instantiate_generated_policy(
@@ -569,26 +508,6 @@ def instantiate_generated_policy(
         forbid_scale_parameters=forbid_scale_parameters,
     )
     return policy, report
-
-
-def _extract_n_policy_codes(response_text, n):
-    """Extract up to ``n`` ``GeneratedPolicy`` code strings from ordered fenced blocks."""
-    blocks = re.findall(r"```python\s*(.*?)```", response_text, re.DOTALL | re.IGNORECASE)
-    if len(blocks) < n:
-        for m in re.finditer(r"```\s*(\w*)\s*(.*?)```", response_text, re.DOTALL):
-            inner = m.group(2).strip()
-            if inner and inner not in blocks:
-                blocks.append(inner)
-            if len(blocks) >= n * 2:
-                break
-    out = []
-    for raw in blocks:
-        code = _extract_code_string(raw.strip())
-        if code and "GeneratedPolicy" in code:
-            out.append(code)
-        if len(out) >= n:
-            break
-    return out[:n]
 
 
 _DESIGN_LABEL = re.compile(r"^\s*#\s*idea:\s*(\S+)", re.MULTILINE)
@@ -768,12 +687,28 @@ class _LLMSession:
         return texts, record
 
 
+def validation_batch_path(dir_path, obs_dim):
+    """The one-row observation pickle the subprocess harness loads (a shape check only), written into ``dir_path``."""
+    import pickle
+
+    import numpy as np
+
+    os.makedirs(dir_path, exist_ok=True)
+    path = os.path.join(dir_path, "data.pkl")
+    with open(path, "wb") as f:
+        pickle.dump([{"obs": np.zeros(int(obs_dim))}], f)
+    return path
+
+
 class _SlotValidator:
-    """Subprocess harness, in-process validation and the idea contract, in that order."""
+    """Subprocess harness, in-process validation and the idea contract, in that order.
+
+    ``data_pkl_path=None`` writes the harness's observation batch into ``dir_path`` itself.
+    """
 
     def __init__(self, dir_path, data_pkl_path, obs_dim, action_dim, env_name, forbid_scale_parameters):
         self.dir_path = dir_path
-        self.data_pkl_path = data_pkl_path
+        self.data_pkl_path = data_pkl_path if data_pkl_path is not None else validation_batch_path(dir_path, obs_dim)
         self.obs_dim = obs_dim
         self.action_dim = action_dim
         self.env_name = env_name
@@ -909,6 +844,38 @@ def _request_structured(session, messages, parse, n, kind, attempt_ids, transcri
     return None, call_ids, problems, texts
 
 
+def _correct_until_valid(session, allocator, make, attach, cid, slot, current, base_messages, prompts, *,
+                         max_repair, mode, transcript_label, design_calls=(), require_code=True, **make_kw):
+    """The one linked-correction loop: at most ``max_repair`` corrections of ``current``, each a new attempt.
+
+    Every correction shows the LLM ``base_messages`` plus its last code and the validation errors, is one
+    ``LABEL_CORRECTION`` ledger entry, and is validated by ``attach``. ``mode`` is the recorded mapping mode.
+    Returns the corrected attempts in order (``current`` itself is not included).
+    """
+    from lares.search.generation import LABEL_CORRECTION, attempt_id_for
+
+    out, corrections = [], 0
+    while (not current.valid and (current.code or not require_code) and corrections < max_repair
+           and not session.exhausted):
+        corrections += 1
+        attempt = allocator.next_attempt(cid)
+        aid = attempt_id_for(cid, attempt)
+        repair = base_messages + [
+            {"role": "assistant", "content": f"```python\n{current.code or ''}\n```"},
+            {"role": "user", "content": _build_error_feedback(current.code or "", "\n".join(current.validation.get("errors", [])))
+             + "\n" + prompts["code_output_tip"]},
+        ]
+        fixes, record = session.call(LABEL_CORRECTION, repair, purpose="validation_repair", attempt_ids=[aid],
+                                     transcript_label=transcript_label)
+        text = fixes[0] if fixes else ""
+        current = attach(make(cid, slot, attempt, code=_extract_code_string(text), response=text,
+                              llm_call_ids=list(design_calls) + [record.call_id], previous_attempt_id=current.attempt_id,
+                              mapping={"mode": mode, "call_id": record.call_id, "corrects": current.attempt_id},
+                              **make_kw))
+        out.append(current)
+    return out
+
+
 class _SlotImplementer:
     """One implementation call per parsed slot and at most ``max_repair`` linked corrections."""
 
@@ -928,45 +895,25 @@ class _SlotImplementer:
     def _brief(self, sp, make_kw):
         return implementation_brief(sp.idea, sp.proposal, self.parent_sources, make_kw.get("lane_metadata"))
 
-    def implement(self, cid, slot, sp, response, code, design_calls, call_ids, mapping, extra_check=None, **make_kw):
-        from lares.search.generation import LABEL_CORRECTION, attempt_id_for
+    def _messages(self, sp, make_kw):
+        return [
+            {"role": "system", "content": self.prompts["initial_system"]},
+            {"role": "user", "content": self.user_content + "\n\n" + self._brief(sp, make_kw) + "\n\n"
+             + self.prompts["code_output_tip"]},
+        ]
 
-        brief = self._brief(sp, make_kw)
-        current = self.make(cid, slot, 0, code=code, response=response, idea=sp.idea, proposal=sp.proposal,
-                            llm_call_ids=list(design_calls) + list(call_ids), mapping=mapping, **make_kw)
-        current.policy, current.validation = self.validate(code, sp.idea, current.attempt_id, extra_check)
-        attempts = [current]
-        corrections = 0
-        while not current.valid and corrections < self.max_repair and not self.session.exhausted:
-            corrections += 1
-            attempt = self.allocator.next_attempt(cid)
-            aid = attempt_id_for(cid, attempt)
-            messages = [
-                {"role": "system", "content": self.prompts["initial_system"]},
-                {"role": "user", "content": self.user_content + "\n\n" + brief + "\n\n" + self.prompts["code_output_tip"]},
-                {"role": "assistant", "content": f"```python\n{current.code or ''}\n```"},
-                {
-                    "role": "user",
-                    "content": _build_error_feedback(current.code or "", "\n".join(current.validation.get("errors", [])))
-                    + "\n" + self.prompts["code_output_tip"],
-                },
-            ]
-            replies, record = self.session.call(
-                LABEL_CORRECTION, messages, purpose="validation_repair", attempt_ids=[aid],
-                transcript_label=f"policy_correction_{slot}",
-            )
-            text = replies[0] if replies else ""
-            corrected = self.make(
-                cid, slot, attempt, code=_extract_code_string(text), response=text, idea=sp.idea,
-                proposal=sp.proposal, llm_call_ids=list(design_calls) + [record.call_id],
-                previous_attempt_id=current.attempt_id,
-                mapping={"mode": "correction", "call_id": record.call_id, "corrects": current.attempt_id},
-                **make_kw,
-            )
-            corrected.policy, corrected.validation = self.validate(corrected.code, sp.idea, aid, extra_check)
-            attempts.append(corrected)
-            current = corrected
-        return attempts
+    def implement(self, cid, slot, sp, response, code, design_calls, call_ids, mapping, extra_check=None, **make_kw):
+        def attach(candidate):
+            candidate.policy, candidate.validation = self.validate(candidate.code, sp.idea, candidate.attempt_id, extra_check)
+            return candidate
+
+        current = attach(self.make(cid, slot, 0, code=code, response=response, idea=sp.idea, proposal=sp.proposal,
+                                   llm_call_ids=list(design_calls) + list(call_ids), mapping=mapping, **make_kw))
+        # A reply with no extractable code is still corrected: the brief names the idea the code must implement.
+        return [current] + _correct_until_valid(
+            self.session, self.allocator, self.make, attach, cid, slot, current, self._messages(sp, make_kw),
+            self.prompts, max_repair=self.max_repair, mode="correction", transcript_label=f"policy_correction_{slot}",
+            design_calls=design_calls, require_code=False, idea=sp.idea, proposal=sp.proposal, **make_kw)
 
     def fill(self, cid, slot, sp, reason, design_calls, extra_check=None, **make_kw):
         from lares.search.generation import LABEL_GENERATION, attempt_id_for
@@ -977,14 +924,9 @@ class _SlotImplementer:
                                           "errors": [f"LLM budget exhausted: {self.session.calls_made}/{self.max_total_calls} calls, "
                                                      f"{self.session.tokens_used}/{self.max_total_tokens or 'unlimited'} tokens ({reason})"]},
                               **make_kw)]
-        brief = self._brief(sp, make_kw)
-        messages = [
-            {"role": "system", "content": self.prompts["initial_system"]},
-            {"role": "user", "content": self.user_content + "\n\n" + brief + "\n\n" + self.prompts["code_output_tip"]},
-        ]
         purpose = "per_idea" if reason == "per_idea" else "fill"
         replies, record = self.session.call(
-            LABEL_GENERATION, messages, purpose=purpose, attempt_ids=[attempt_id_for(cid, 0)],
+            LABEL_GENERATION, self._messages(sp, make_kw), purpose=purpose, attempt_ids=[attempt_id_for(cid, 0)],
             transcript_label=f"policy_implement_{slot}",
         )
         text = replies[0] if replies else ""
@@ -1347,8 +1289,8 @@ def generate_two_lane_candidates(
 
     if single_phase_exploration:
         candidates.extend(_single_phase_exploration(
-            session, prompts, user_content, allocator, make, exploration, ids, dir_path, data_pkl_path, obs_dim,
-            action_dim, env_name, max_repair_per_candidate))
+            session, prompts, user_content, allocator, make, [spec.slot for spec in exploration], ids, dir_path,
+            data_pkl_path, obs_dim, action_dim, env_name, max_repair_per_candidate))
 
     candidates.sort(key=lambda c: (c.slot, c.attempt))
     for c in candidates:
@@ -1356,15 +1298,15 @@ def generate_two_lane_candidates(
     return candidates
 
 
-def _single_phase_exploration(session, prompts, user_content, allocator, make, specs, ids, dir_path, data_pkl_path,
+def _single_phase_exploration(session, prompts, user_content, allocator, make, slots, ids, dir_path, data_pkl_path,
                               obs_dim, action_dim, env_name, max_repair_per_candidate) -> list:
-    """R-018's exploration lane: one single-phase code request per slot and at most one linked correction.
+    """R-018's exploration lane: one single-phase code request per slot in ``slots`` and at most one linked correction.
 
     The generator states no design, so a valid policy gets a code-derived idea (:func:`idea_from_code`). Scale
     parameters are allowed here, as in the protocol D-014 tested: this lane is never fitted, and actions are
     deterministic, so a scale parameter cannot change what is executed.
     """
-    from lares.search.generation import LABEL_CORRECTION, LABEL_GENERATION, attempt_id_for
+    from lares.search.generation import LABEL_GENERATION, attempt_id_for
     from lares.search.schemas import idea_from_code
 
     validate = _SlotValidator(dir_path, data_pkl_path, obs_dim, action_dim, env_name, forbid_scale_parameters=False)
@@ -1379,37 +1321,22 @@ def _single_phase_exploration(session, prompts, user_content, allocator, make, s
                                             f"single-phase exploration {candidate.slot}")
         return candidate
 
-    for spec in specs:
-        cid = ids[spec.slot]
+    for slot in slots:
+        cid = ids[slot]
         if session.exhausted:
-            out.append(make(cid, spec.slot, 0, validation={"passed": False, "stage": STAGE_BUDGET,
-                                                           "errors": ["the LLM call budget is spent"]}))
+            out.append(make(cid, slot, 0, validation={"passed": False, "stage": STAGE_BUDGET,
+                                                      "errors": ["the LLM call budget is spent"]}))
             continue
         replies, record = session.call(LABEL_GENERATION, messages, purpose="single_phase_exploration",
                                        attempt_ids=[attempt_id_for(cid, 0)], transcript_label="policy_generation")
         text = replies[0] if replies else ""
-        current = attach(make(cid, spec.slot, 0, code=_extract_code_string(text), response=text,
+        current = attach(make(cid, slot, 0, code=_extract_code_string(text), response=text,
                               llm_call_ids=[record.call_id],
                               mapping={"mode": MAPPING_SINGLE_PHASE, "call_id": record.call_id, "choice_index": 0}))
         out.append(current)
-        corrections = 0
-        while not current.valid and current.code and corrections < max_repair_per_candidate and not session.exhausted:
-            corrections += 1
-            attempt = allocator.next_attempt(cid)
-            aid = attempt_id_for(cid, attempt)
-            repair = messages + [
-                {"role": "assistant", "content": f"```python\n{current.code}\n```"},
-                {"role": "user", "content": _build_error_feedback(current.code, "\n".join(current.validation.get("errors", [])))
-                 + "\n" + prompts["code_output_tip"]},
-            ]
-            fixes, fix_record = session.call(LABEL_CORRECTION, repair, purpose="validation_repair", attempt_ids=[aid],
-                                             transcript_label="policy_repair")
-            text = fixes[0] if fixes else ""
-            current = attach(make(cid, spec.slot, attempt, code=_extract_code_string(text), response=text,
-                                  llm_call_ids=[fix_record.call_id], previous_attempt_id=current.attempt_id,
-                                  mapping={"mode": MAPPING_SINGLE_PHASE, "call_id": fix_record.call_id,
-                                           "corrects": current.attempt_id}))
-            out.append(current)
+        out.extend(_correct_until_valid(session, allocator, make, attach, cid, slot, current, messages, prompts,
+                                        max_repair=max_repair_per_candidate, mode=MAPPING_SINGLE_PHASE,
+                                        transcript_label="policy_repair"))
     return out
 
 
@@ -1423,18 +1350,23 @@ class PlateauSlotGenerator:
     every call goes through one session, so the run's call budget covers both slots.
     """
 
-    def __init__(self, client, args, dir_path, obs_dim, action_dim, env_name, prompts, plan, data_pkl_path, ledger,
-                 llm_transcript_path=None, max_total_calls=50, max_repair_per_candidate=1, max_total_tokens=None):
+    def __init__(self, client, args, dir_path, obs_dim, action_dim, env_name, prompts, n_slots, ledger,
+                 llm_transcript_path=None, max_total_calls=50, max_repair_per_candidate=1, max_total_tokens=None,
+                 slot_metadata=None, data_pkl_path=None):
+        """``n_slots`` structure slots; ``slot_metadata(slot) -> dict`` is the lane metadata an :meth:`exploration`
+        records (``{}`` when ``None``); ``data_pkl_path=None`` writes the harness batch into ``dir_path``."""
         from lares.search.generation import CandidateAllocator
 
         if not env_name:
             raise ValueError("PlateauSlotGenerator requires env_name to bind the observation schema")
         os.makedirs(dir_path, exist_ok=True)
         self.dir_path, self.obs_dim, self.action_dim, self.env_name = dir_path, obs_dim, action_dim, env_name
-        self.prompts, self.plan, self.data_pkl_path = prompts, plan, data_pkl_path
+        self.prompts = prompts
+        self.slot_metadata = slot_metadata if slot_metadata is not None else (lambda slot: {})
+        self.data_pkl_path = data_pkl_path if data_pkl_path is not None else validation_batch_path(dir_path, obs_dim)
         self.max_repair_per_candidate = int(max_repair_per_candidate)
         self.allocator = CandidateAllocator(0)
-        self.ids = {slot: cid for cid, slot in self.allocator.allocate_slots(plan.n)}
+        self.ids = {slot: cid for cid, slot in self.allocator.allocate_slots(int(n_slots))}
         for cid in self.ids.values():
             self.allocator.next_attempt(cid)
         self.session = _LLMSession(client, args.model, ledger, llm_transcript_path, 0, max_total_calls,
@@ -1462,16 +1394,15 @@ class PlateauSlotGenerator:
         """A searched single-phase exploration in ``slot``; every attempt, failures included."""
         from lares.search.schemas import LANE_EXPLORATION
 
-        spec = self.plan.slot(slot)
         out = _single_phase_exploration(
-            self.session, self.prompts, self.user_content, self.allocator, self._make(LANE_EXPLORATION, spec.lane_metadata()),
-            [spec], self.ids, self.dir_path, self.data_pkl_path, self.obs_dim, self.action_dim, self.env_name,
-            self.max_repair_per_candidate)
+            self.session, self.prompts, self.user_content, self.allocator,
+            self._make(LANE_EXPLORATION, self.slot_metadata(slot)), [slot], self.ids, self.dir_path,
+            self.data_pkl_path, self.obs_dim, self.action_dim, self.env_name, self.max_repair_per_candidate)
         return self._finish(out)
 
     def trace_repair(self, slot: int, edited: dict, request: str, lane_metadata: dict) -> list:
         """One whole-controller edit of ``edited`` from ``request`` (parent code and traces), plus linked corrections."""
-        from lares.search.generation import LABEL_CORRECTION, LABEL_REPAIR, attempt_id_for
+        from lares.search.generation import LABEL_REPAIR, attempt_id_for
         from lares.search.schemas import LANE_TRACE_REPAIR, idea_from_code
 
         cid, prompts = self.ids[slot], self.prompts
@@ -1498,191 +1429,9 @@ class PlateauSlotGenerator:
         text = replies[0] if replies else ""
         current = attach(make(cid, slot, 0, code=_extract_code_string(text), response=text, llm_call_ids=[record.call_id],
                               mapping={"mode": "trace_repair", "call_id": record.call_id, "choice_index": 0}))
-        out, corrections = [current], 0
-        while (not current.valid and current.code and corrections < self.max_repair_per_candidate
-               and not self.session.exhausted):
-            corrections += 1
-            attempt = self.allocator.next_attempt(cid)
-            aid = attempt_id_for(cid, attempt)
-            repair = messages + [
-                {"role": "assistant", "content": f"```python\n{current.code}\n```"},
-                {"role": "user", "content": _build_error_feedback(current.code, "\n".join(current.validation.get("errors", [])))
-                 + "\n" + prompts["code_output_tip"]},
-            ]
-            fixes, fix_record = self.session.call(LABEL_CORRECTION, repair, purpose="validation_repair", attempt_ids=[aid],
-                                                  transcript_label="trace_repair_correction")
-            text = fixes[0] if fixes else ""
-            current = attach(make(cid, slot, attempt, code=_extract_code_string(text), response=text,
-                                  llm_call_ids=[fix_record.call_id], previous_attempt_id=current.attempt_id,
-                                  mapping={"mode": "trace_repair", "call_id": fix_record.call_id,
-                                           "corrects": current.attempt_id}))
-            out.append(current)
-        return self._finish(out)
-
-
-def _generate_single_phase(client, args, dir_path, generation, obs_dim, action_dim, env_name, prompts, n,
-                           data_pkl_path, ledger, code_feedback, llm_transcript_path, max_total_calls,
-                           max_repair_per_candidate):
-    """Legacy one-shot generation: ``n`` samples of one request, sample ``k`` to slot ``k``.
-
-    No idea and no proposal exist, so these candidates can never carry complete
-    lineage. The orchestrator refuses this path; it remains for scripts and tests.
-    """
-    from lares.search.generation import (
-        LABEL_CORRECTION,
-        LABEL_GENERATION,
-        CandidateAllocator,
-        GeneratedCandidate,
-        attempt_id_for,
-    )
-
-    allocator = CandidateAllocator(generation)
-    slots = allocator.allocate_slots(n)
-    for cid, _ in slots:
-        allocator.next_attempt(cid)
-    session = _LLMSession(client, args.model, ledger, llm_transcript_path, generation, max_total_calls,
-                          reasoning_effort=getattr(args, "reasoning_effort", None))
-    validate = _SlotValidator(dir_path, data_pkl_path, obs_dim, action_dim, env_name, forbid_scale_parameters=False)
-    fmt = dict(
-        task=prompts["task_description"], obs_dim=obs_dim, action_dim=action_dim,
-        obs_description=prompts["obs_description"], input_dict_string=prompts["input_dict_string"],
-    )
-    user_content = prompts["initial_user"].format(**fmt)
-    base_user = user_content + ("\n" + code_feedback if code_feedback else "") + "\n" + prompts["code_output_tip"]
-    messages = [{"role": "system", "content": prompts["initial_system"]}, {"role": "user", "content": base_user}]
-    replies, record = session.call(
-        LABEL_GENERATION, messages, purpose="single_phase", attempt_ids=[attempt_id_for(c, 0) for c, _ in slots],
-        transcript_label="policy_generation", n=n,
-    )
-    candidates = []
-    for cid, slot in slots:
-        text = replies[slot] if slot < len(replies) else None
-        current = GeneratedCandidate(
-            candidate_id=cid, generation=generation, slot=slot, attempt=0,
-            code=_extract_code_string(text) if text is not None else None, response=text,
-            llm_call_ids=[record.call_id],
-            mapping={"mode": MAPPING_SINGLE_PHASE, "call_id": record.call_id, "choice_index": slot},
-        )
-        current.policy, current.validation = validate(current.code, None, current.attempt_id)
-        candidates.append(current)
-        corrections = 0
-        while not current.valid and current.code and corrections < max_repair_per_candidate and not session.exhausted:
-            corrections += 1
-            attempt = allocator.next_attempt(cid)
-            aid = attempt_id_for(cid, attempt)
-            repair_messages = messages + [
-                {"role": "assistant", "content": f"```python\n{current.code}\n```"},
-                {"role": "user", "content": _build_error_feedback(current.code, "\n".join(current.validation.get("errors", [])))
-                 + "\n" + prompts["code_output_tip"]},
-            ]
-            fixes, fix_record = session.call(
-                LABEL_CORRECTION, repair_messages, purpose="validation_repair", attempt_ids=[aid],
-                transcript_label="policy_repair",
-            )
-            text = fixes[0] if fixes else ""
-            corrected = GeneratedCandidate(
-                candidate_id=cid, generation=generation, slot=slot, attempt=attempt,
-                code=_extract_code_string(text), response=text, llm_call_ids=[fix_record.call_id],
-                previous_attempt_id=current.attempt_id,
-                mapping={"mode": MAPPING_SINGLE_PHASE, "call_id": fix_record.call_id, "corrects": current.attempt_id},
-            )
-            corrected.policy, corrected.validation = validate(corrected.code, None, aid)
-            candidates.append(corrected)
-            current = corrected
-    for c in candidates:
-        _save_attempt(dir_path, c)
-    return candidates
-
-
-def get_symbolic_policies(
-    client,
-    dir_path,
-    llm_iter,
-    args,
-    obs_dim,
-    action_dim,
-    initial_system,
-    initial_user,
-    task_description,
-    obs_description,
-    input_dict_string,
-    code_output_tip,
-    data_pkl_path,
-    env_name="",
-    provided_response=None,
-    code_feedback=None,
-    real_num=5,
-    max_total_attempts=50,
-    max_repair_per_candidate=1,
-    llm_transcript_path=None,
-    ideas_system=None,
-    ideas_user=None,
-    proposals_user=None,
-    code_feedback_tmpl=None,
-    ledger=None,
-    feedback_bundle=None,
-    parent_sources=None,
-):
-    """Generate and validate symbolic policies via the LLM.
-
-    Returns a list of :class:`~lares.search.generation.GeneratedCandidate`, one
-    per attempt and failures included. Use :func:`valid_policies` for the policies
-    that passed.
-
-    If ``args.policy_gen_two_phase`` is true, runs structured design generation
-    then implementation (``args.policy_impl_mode``: ``"per_idea"`` or
-    ``"batched"``). ``llm_iter`` is the generation index; generation 1 and later
-    need ``feedback_bundle`` and take ``code_feedback`` as its exact text.
-
-    Otherwise runs the legacy single-phase path, whose candidates carry no idea
-    and so can never have complete lineage.
-
-    ``max_total_attempts`` caps the number of LLM calls. ``provided_response`` is
-    accepted for compatibility and ignored: a bounded edit is now shown its
-    parent's source, not the previous transcript.
-    """
-    from lares.search.generation import LLMCallLedger
-
-    if not env_name:
-        raise ValueError(
-            "get_symbolic_policies requires env_name: it selects the observation schema "
-            "the generated policy reads through. Without it every candidate raises on its "
-            "first self.obs_field(...) call and the population comes back empty."
-        )
-    ledger = ledger if ledger is not None else LLMCallLedger(dir_path)
-    prompts = {
-        "initial_system": initial_system,
-        "initial_user": initial_user,
-        "code_output_tip": code_output_tip,
-        "task_description": task_description,
-        "obs_description": obs_description,
-        "input_dict_string": input_dict_string,
-    }
-
-    if bool(getattr(args, "policy_gen_two_phase", False)):
-        if ideas_system is None or ideas_user is None:
-            raise ValueError(
-                "args.policy_gen_two_phase requires ideas_system and ideas_user "
-                "(from load_policy_prompt_assets)."
-            )
-        impl_mode = normalise_impl_mode(getattr(args, "policy_impl_mode", None))
-        prompts.update(
-            ideas_system=ideas_system,
-            ideas_user=ideas_user,
-            proposals_user=proposals_user if proposals_user is not None else _read_template("proposals_user.txt"),
-            code_feedback_tmpl=code_feedback_tmpl if code_feedback_tmpl is not None else _read_template("code_feedback.txt"),
-        )
-        return generate_candidates(
-            client, args, dir_path, int(llm_iter), obs_dim, action_dim, env_name, prompts, real_num,
-            data_pkl_path, ledger, feedback_bundle=feedback_bundle, feedback_text=code_feedback,
-            parent_sources=parent_sources, llm_transcript_path=llm_transcript_path, impl_mode=impl_mode,
-            max_total_calls=max_total_attempts, max_repair_per_candidate=max_repair_per_candidate,
-        )
-
-    return _generate_single_phase(
-        client, args, dir_path, int(llm_iter), obs_dim, action_dim, env_name, prompts, real_num,
-        data_pkl_path, ledger, code_feedback, llm_transcript_path, max_total_attempts, max_repair_per_candidate,
-    )
+        return self._finish([current] + _correct_until_valid(
+            self.session, self.allocator, make, attach, cid, slot, current, messages, prompts,
+            max_repair=self.max_repair_per_candidate, mode="trace_repair", transcript_label="trace_repair_correction"))
 
 
 def final_attempts(candidates):
@@ -1692,9 +1441,3 @@ def final_attempts(candidates):
         if c.candidate_id not in last or c.attempt > last[c.candidate_id].attempt:
             last[c.candidate_id] = c
     return [last[k] for k in sorted(last, key=lambda cid: last[cid].slot)]
-
-
-def valid_policies(candidates):
-    """``(policies, codes, responses)`` for slots whose final attempt passed."""
-    ok = [c for c in final_attempts(candidates) if c.valid]
-    return [c.policy for c in ok], [c.code for c in ok], [c.response for c in ok]

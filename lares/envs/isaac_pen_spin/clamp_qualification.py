@@ -15,9 +15,9 @@ from lares.envs.isaac_pen_spin import cases
 from lares.envs.isaac_pen_spin import channel_lesions as cl
 from lares.envs.isaac_pen_spin import curl_confirmation as cc
 from lares.envs.isaac_pen_spin import scalar_tuning as st
-from lares.envs.isaac_pen_spin.learner_recovery import _load, check_learner, make_learner
-from lares.envs.isaac_pen_spin.protocols import child_cell
-from lares.eval.manifest import EvaluationManifest
+from lares.envs.isaac_pen_spin.learner_recovery import learner_source
+from lares.envs.isaac_pen_spin.protocols import (cached_json, disjoint_from, learner_drive_params, load_cell,
+                                                 manifest_path, roles, study_cell)
 
 STUDY = "r077_clamp_qualification"
 STUDY_90 = "r080_zero_curl_qualification_90"
@@ -27,23 +27,15 @@ PANEL = "promotion"
 GAIN_THRESHOLD = 0.05
 
 
-def manifest_path(protocol_cfg: dict) -> str:
-    return protocol_cfg["manifest"]
-
-
 def manifest_paths(protocol_cfg: dict) -> list[str]:
     """R-077 names one manifest; R-080 names several (one per seed), each contributing its cases 10-39."""
     if "manifests" in protocol_cfg:
         return list(protocol_cfg["manifests"])
-    return [protocol_cfg["manifest"]]
+    return [manifest_path(protocol_cfg)]
 
 
 def pool_seeds(protocol_cfg: dict) -> list[int]:
     return [int(s) for s in protocol_cfg["pool_seeds"]] if "pool_seeds" in protocol_cfg else [int(protocol_cfg["pool_seed"])]
-
-
-def roles(protocol_cfg: dict) -> dict:
-    return {k: (int(v[0]), int(v[1])) for k, v in protocol_cfg["roles"].items()}
 
 
 def build_manifests(protocol_cfg: dict) -> list[str]:
@@ -53,7 +45,7 @@ def build_manifests(protocol_cfg: dict) -> list[str]:
     specs = [(path, cases.build_manifest(STAGE, seed, int(protocol_cfg["cases"]), label=label))
              for path, seed in zip(manifest_paths(protocol_cfg), pool_seeds(protocol_cfg))]
     written = [path for path, m in specs if cases.freeze_manifest(path, m)]
-    assert_disjoint([m for _, m in specs] + [EvaluationManifest.load(p) for p in protocol_cfg.get("disjoint_from", [])])
+    assert_disjoint([m for _, m in specs] + disjoint_from(protocol_cfg))
     return written
 
 
@@ -72,15 +64,6 @@ def aggregate(parent_rows, clamp_rows, parent_sat, clamp_sat, per_panel: dict | 
             "repair_parent_eligible": bool(panel["promotes"] and panel["drops_not_increased"])}
 
 
-def _child(config_path: str, manifest: str, arm: str, out_path: str) -> None:
-    child_cell(config_path, manifest, arm, out_path, study=_study_name(config_path, out_path), record_obs=True, skip_existing=True)
-
-
-def _study_name(config_path: str, out_path: str) -> str:
-    """Which registry name re-executes this cell: the R-080 study for its log dir, else R-077's."""
-    return STUDY_90 if "r080" in out_path else STUDY
-
-
 def _merge_saturation(parts: list[dict]) -> dict:
     """Step-weighted merge of per-panel saturation summaries into one."""
     steps = sum(p["in_play_steps"] for p in parts)
@@ -96,35 +79,22 @@ def _merge_saturation(parts: list[dict]) -> dict:
 
 
 def run_qualification(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
-    from lares.utils.hashing import sha256_file
-
-    lc = check_learner(protocol_cfg)
+    source = learner_source(protocol_cfg)
     os.makedirs(out_dir, exist_ok=True)
-    with open(lc["source"], encoding="utf-8") as f:
-        source = f.read()
     audit = cl.source_audit(source)
     if not audit["passes"]:
         raise SystemExit(f"source audit failed, no episode run: {audit}")
     with open(os.path.join(out_dir, "zero_curl_source.py"), "w", encoding="utf-8") as f:
         f.write(cl.substituted_source(source, cc.LESION, 0.0))
-    gate_path = os.path.join(out_dir, "identity_gate.json")
-    if os.path.exists(gate_path):
-        with open(gate_path, encoding="utf-8") as f:
-            gate = json.load(f)
-    else:
-        gate = cl.offline_identity_gate(protocol_cfg, protocol_cfg["identity_archive"])
-        with open(gate_path, "w", encoding="utf-8") as f:
-            json.dump(gate, f, indent=2)
+    gate = cached_json(os.path.join(out_dir, "identity_gate.json"),
+                       lambda: cl.offline_identity_gate(protocol_cfg, protocol_cfg["identity_archive"]))
     if not gate["lesions"][cc.LESION]["passes"]:
         raise SystemExit(f"offline identity gate failed for {cc.LESION}, no episode run: {gate}")
-    sd = make_learner(protocol_cfg).policy.state_dict()
-    params = {"spin_target": float(sd["spin_target"]), "speed_gain": float(sd["speed_gain"])}
+    params = learner_drive_params(protocol_cfg)
     rows, sats_parts, manifests, per_panel = {a: [] for a in ARMS}, {a: [] for a in ARMS}, [], {}
     episodes = 0
     for mpath in manifest_paths(protocol_cfg):
-        if not os.path.exists(mpath):
-            raise SystemExit(f"frozen manifest {mpath} missing; build and commit it before the run")
-        m = EvaluationManifest.load(mpath)
+        m = cases.load_frozen(mpath)
         role = cases.role_manifests(m, roles(protocol_cfg), expected_cases=int(protocol_cfg["cases"]), stage=STAGE)
         tag = f"s{m.pool.seeds[0]}"
         ppath = os.path.join(out_dir, f"{PANEL}_{tag}.yaml")
@@ -132,12 +102,12 @@ def run_qualification(protocol_cfg: dict, config_path: str, out_dir: str) -> dic
         prow = {}
         for a in ARMS:
             cell = os.path.join(out_dir, f"{a}_{PANEL}_{tag}.json")
-            _child(config_path, ppath, a, cell)
-            trace, prow[a] = _load(cell)
+            study_cell(protocol_cfg, config_path, ppath, a, cell)
+            trace, prow[a] = load_cell(cell)
             rows[a] += prow[a]
             sats_parts[a].append(st.saturation(trace, params))
         per_panel[tag] = cc.panel_contrast(prow["parent"], prow["zero_curl"], sats_parts["parent"][-1], sats_parts["zero_curl"][-1])
-        manifests.append({"path": mpath, "sha256": sha256_file(mpath), "id": m.manifest_id, "panel": list(roles(protocol_cfg)[PANEL])})
+        manifests.append({**cases.manifest_record(mpath, m), "panel": list(roles(protocol_cfg)[PANEL])})
         episodes += len(ARMS) * len(role[PANEL])
     sats = {a: _merge_saturation(sats_parts[a]) for a in ARMS}
     summary = aggregate(rows["parent"], rows["zero_curl"], sats["parent"], sats["zero_curl"], per_panel)

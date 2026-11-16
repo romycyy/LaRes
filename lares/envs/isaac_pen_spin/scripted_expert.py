@@ -3,7 +3,7 @@
 Reads the observation only through the named layout (``cases.obs_slices``). Action indices follow the
 order Isaac Lab actually uses: ``InHandManipulationEnv`` *sorts* ``actuated_dof_indices``, so action i
 drives the i-th actuated joint in ``hand.joint_names`` order (verified on the box 2026-10-27 with
-``scripts/isaac/tune_pen_spin_gait.py --describe``), not ``cfg.actuated_joint_names`` order.
+``deprecated/scripts/isaac/tune_pen_spin_gait.py --describe``), not ``cfg.actuated_joint_names`` order.
 
 The gait: every long finger's MCP and PIP flexion follow a sinusoid around a flexion bias, PIP lagging
 MCP so the fingertip traces an ellipse (a stroke in contact, a return out of contact), with a phase

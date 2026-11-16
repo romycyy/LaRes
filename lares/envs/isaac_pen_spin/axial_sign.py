@@ -23,12 +23,10 @@ import re
 
 
 from lares.envs.isaac_pen_spin import cases
-from lares.envs.isaac_pen_spin.feedback_ablation import _arm_summary
-from lares.envs.isaac_pen_spin.feedback_lesions import failure_split
-from lares.envs.isaac_pen_spin.learner_recovery import _load, check_learner, identity_gate, make_learner
-from lares.envs.isaac_pen_spin.protocols import build_single_manifest
+from lares.envs.isaac_pen_spin.learner_recovery import identity_gate, learner_source, make_learner
+from lares.envs.isaac_pen_spin.protocols import (arm_summary, build_single_manifest, failure_split, load_cell,
+                                                 manifest_path, study_cell)
 
-LEARNER_AXIAL_SIGN = "learner_axial_sign"
 STAGE = 3
 ARMS = ("learner", "learner_identity", "axial_reversed")
 
@@ -86,18 +84,13 @@ class AxialSignController:
 
 def source_audit(protocol_cfg: dict) -> dict:
     """Static check, before any episode, that the learner reads ``obj_angvel`` and uses its axial projection."""
-    with open(check_learner(protocol_cfg)["source"], encoding="utf-8") as f:
-        src = f.read()
+    src = learner_source(protocol_cfg)
     reads = sorted(set(re.findall(r'obs_field\(obs, "(\w+)"\)', src)))
     lines = [ln.strip() for ln in src.splitlines() if re.search(r"\bomega\b|\bspin\b", ln)]
     return {"fields_read": reads, "reads_obj_angvel": "obj_angvel" in reads,
             "axial_projection": any(re.search(r"omega \* axis", ln) for ln in lines),
             "axial_drive": any("spin_target - spin" in ln for ln in lines),
             "lines": lines[:12]}
-
-
-def manifest_path(protocol_cfg: dict) -> str:
-    return protocol_cfg["manifest"]
 
 
 def build_manifests(protocol_cfg: dict) -> list[str]:
@@ -111,12 +104,6 @@ def make_controller(arm: str, protocol_cfg: dict, out_dir: str | None = None):
     return AxialSignController(learner, "reverse" if arm == "axial_reversed" else "identity", arm)
 
 
-def _child(config_path: str, manifest: str, arm: str, out_path: str) -> None:
-    from lares.envs.isaac_pen_spin import learner_recovery
-
-    learner_recovery._child(config_path, manifest, arm, out_path, study=LEARNER_AXIAL_SIGN)
-
-
 def aggregate(base_rows, rev_rows) -> dict:
     from lares.eval.stats import t_summary, win_loss_tie
 
@@ -126,39 +113,35 @@ def aggregate(base_rows, rev_rows) -> dict:
     t = t_summary(d)
     return {"paired_success_difference": t["mean"], "reversed_minus_learner": t,
             "win_loss_tie": win_loss_tie(d),
-            "arms": {"learner": {**_arm_summary(base_rows), **failure_split(base_rows)},
-                     "axial_reversed": {**_arm_summary(rev_rows), **failure_split(rev_rows)}}}
+            "arms": {"learner": {**arm_summary(base_rows), **failure_split(base_rows)},
+                     "axial_reversed": {**arm_summary(rev_rows), **failure_split(rev_rows)}}}
 
 
 def run_learner_axial_sign(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
     """Driver: audit, learner, identity repeat, Gate 1, reversal, aggregate. Nothing is rerun if its output exists."""
-    from lares.utils.hashing import sha256_file
-
     audit = source_audit(protocol_cfg)
     os.makedirs(out_dir, exist_ok=True)
     with open(os.path.join(out_dir, "source_audit.json"), "w") as f:
         json.dump(audit, f, indent=2)
     if not (audit["reads_obj_angvel"] and audit["axial_projection"]):
         raise SystemExit(f"source audit: the learner does not use the axial angular velocity, no episode run: {audit}")
-    m = manifest_path(protocol_cfg)
-    if not os.path.exists(m):
-        raise SystemExit(f"frozen manifest {m} missing; build and commit it before the run")
+    m = cases.require_frozen(manifest_path(protocol_cfg))
     out = {arm: os.path.join(out_dir, f"{arm}.json") for arm in ARMS}
     for arm in ("learner", "learner_identity"):
-        _child(config_path, m, arm, out[arm])
-    base, base_rows = _load(out["learner"])
-    ident, ident_rows = _load(out["learner_identity"])
+        study_cell(protocol_cfg, config_path, m, arm, out[arm])
+    base, base_rows = load_cell(out["learner"])
+    ident, ident_rows = load_cell(out["learner_identity"])
     gate = identity_gate(base, base_rows, ident, ident_rows)
     if not gate["passes"]:
         with open(os.path.join(out_dir, "gate_failed.json"), "w") as f:
             json.dump(gate, f, indent=2)
         raise SystemExit(f"identity gate failed, reversal not run: {gate}")
-    _child(config_path, m, "axial_reversed", out["axial_reversed"])
-    rev, rev_rows = _load(out["axial_reversed"])
+    study_cell(protocol_cfg, config_path, m, "axial_reversed", out["axial_reversed"])
+    rev, rev_rows = load_cell(out["axial_reversed"])
     summary = aggregate(base_rows, rev_rows)
     summary["identity_gate"] = gate
     summary["source_audit"] = audit
-    summary["manifest"] = {"path": m, "sha256": sha256_file(m)}
+    summary["manifest"] = cases.manifest_record(m)
     summary["episodes"] = len(ARMS) * int(protocol_cfg["cases"])
     summary["limitation"] = ("sign reversal measures dependence under an observation shift for this learner; it does not "
                              "establish that the feedback stabilises spin, nor anything about other controllers")
@@ -169,5 +152,5 @@ def run_learner_axial_sign(protocol_cfg: dict, config_path: str, out_dir: str) -
 
 run = run_learner_axial_sign
 
-__all__ = ["ARMS", "AxialSignController", "LEARNER_AXIAL_SIGN", "aggregate", "build_manifests", "reflect_axial", "run",
+__all__ = ["ARMS", "AxialSignController", "aggregate", "build_manifests", "reflect_axial", "run",
            "run_learner_axial_sign", "source_audit"]

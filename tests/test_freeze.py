@@ -26,7 +26,6 @@ from lares.eval.freeze import (  # noqa: E402
     FinalTestLocked,
     FreezeRecord,
     final_test_session,
-    hash_text,
     ledger_entries,
     load_freeze,
     record_final_test,
@@ -43,6 +42,7 @@ from lares.eval.runner import (  # noqa: E402
     ManifestResult,
     evaluate_manifest,
 )
+from lares.utils.hashing import short_hash_text as hash_text  # noqa: E402
 
 OBS_DIM = 39
 ACT_DIM = 4

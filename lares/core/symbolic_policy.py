@@ -131,14 +131,11 @@ class SymbolicPolicy(nn.Module):
         Only takes effect where the generated code uses the value ``record_gate``
         returns, which is why the contract asks policies to write
         ``g = self.record_gate("g", g)``. An override on a gate whose return value
-        is discarded changes the telemetry but not the action, and
-        :func:`lares.repair.interventions.gate_override_is_effective` checks for
-        exactly that rather than letting a null intervention look like evidence.
+        is discarded changes the telemetry but not the action, and the validator
+        (``policy_validator``, ``GATE_NOT_A_LEVER``) checks for exactly that rather
+        than letting a null intervention look like evidence.
         """
         self.gate_overrides[str(name)] = value
-
-    def clear_gate_overrides(self):
-        self.gate_overrides = {}
 
     def record_gate(self, name, value):
         """Expose a phase gate for diagnostics, and allow it to be forced.

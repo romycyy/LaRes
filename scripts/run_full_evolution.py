@@ -56,7 +56,7 @@ from lares.eval import (  # noqa: E402
     evaluate_manifest,
 )
 from lares.eval.manifest import SPLIT_DEVELOPMENT, SPLIT_TRAIN  # noqa: E402
-from lares.utils.cli import load_yaml, openai_client, separator  # noqa: E402
+from lares.utils.cli import load_yaml, openai_client, self_argv, separator  # noqa: E402
 
 DEFAULT_CONFIG_PATH = os.path.join(_PROJECT_ROOT, "config", "run_full_evolution.yaml")
 MANIFEST_DIR = os.path.join(_PROJECT_ROOT, "config", "manifests")
@@ -68,8 +68,6 @@ _REQUIRED_KEYS = (
     "dataset_episodes",
     "eval_episodes",
     "bc_steps",
-    "rl_iterations",
-    "rl_episodes",
     "model",
     "num_generations",
     "pop_size",
@@ -103,19 +101,25 @@ def load_config(path: str) -> SimpleNamespace:
         raw["use_mt1"] = bool(raw["use_mt1"])
     # Every LLM call uses the model and reasoning effort named here (gpt-6.1-sol, high; 2026-10-13).
     from lares.core.policy_generation import (
-        DEFAULT_POLICY_IMPL_MODE,
         DEFAULT_REASONING_EFFORT,
         POLICY_IMPL_MODES,
         POLICY_IMPL_PER_IDEA,
         check_reasoning_effort,
+        normalise_impl_mode,
     )
+    from lares.core.training_pipeline import DEFAULT_BC_BATCH_SIZE, DEFAULT_BC_LR
 
     raw["reasoning_effort"] = check_reasoning_effort(raw.get("reasoning_effort", DEFAULT_REASONING_EFFORT))
     raw["policy_gen_two_phase"] = bool(raw.get("policy_gen_two_phase", False))
-    # Validated once here, against the library's one default; every later reader takes the value as is.
-    raw["policy_impl_mode"] = str(raw.get("policy_impl_mode", DEFAULT_POLICY_IMPL_MODE)).strip().lower().replace("-", "_")
-    if raw["policy_impl_mode"] not in POLICY_IMPL_MODES:
+    # Normalised once here by the library's one rule; a misspelt mode is refused rather than defaulted.
+    spelled = raw.get("policy_impl_mode")
+    raw["policy_impl_mode"] = normalise_impl_mode(spelled)
+    if spelled is not None and normalise_impl_mode(spelled, default=None) is None:
         raise ValueError(f"{path}: policy_impl_mode must be one of {sorted(POLICY_IMPL_MODES)}")
+    raw["config_path"] = os.path.abspath(path)
+    # The fitter's mini-batch and learning rate; the orchestrator's defaults, so the freeze records what ran.
+    raw.setdefault("bc_batch_size", DEFAULT_BC_BATCH_SIZE)
+    raw.setdefault("bc_lr", DEFAULT_BC_LR)
     raw.setdefault("eval_max_steps", 150)
     raw["eval_max_steps"] = int(raw["eval_max_steps"])
     # Staged development budget (spec.md section 12). ``eval_episodes`` is kept as
@@ -139,10 +143,10 @@ def load_config(path: str) -> SimpleNamespace:
     raw.setdefault("max_llm_tokens_per_generation", None)
     raw.setdefault("promotion_challengers", 1)
     raw.setdefault("param_budget", [6, 10])
-    if int(raw["rl_iterations"]) != 0:
+    if int(raw.get("rl_iterations", 0) or 0) != 0:
         raise ValueError(
-            f"{path}: rl_iterations must be 0; RL after checkpoint selection would break the "
-            f"link between a record's selected state and the evaluated policy"
+            f"{path}: rl_iterations must be 0 (the key may be omitted); RL after checkpoint selection would "
+            f"break the link between a record's selected state and the evaluated policy"
         )
     if not raw["policy_gen_two_phase"]:
         raise ValueError(f"{path}: policy_gen_two_phase must be true so candidates carry lineage")
@@ -389,7 +393,39 @@ def pen_spin_stream(cfg, name: str, work_dir: str):
     return IsaacPenSpinStream(int(ps["stage"]), work_dir, name, isaac_env=ps["isaac_env"])
 
 
-def run_pen_spin_block(cfg, cfg_path: str, block: int, phase: str | None, arm: str | None) -> None:
+def orchestrator_from_config(cfg, log_dir: str, dev, probe, lane_plan, **overrides) -> EvolutionOrchestrator:
+    """The :class:`EvolutionOrchestrator` a config describes; ``overrides`` are the caller's per-run differences."""
+    kwargs = dict(
+        env_name=cfg.env_name,
+        num_generations=cfg.num_generations,
+        pop_size=cfg.pop_size,
+        elite_num=cfg.elite_num,
+        bc_steps=cfg.bc_steps,
+        log_dir=log_dir,
+        record_demo_gif=cfg.record_demo_gif,
+        dev_manifest=dev,
+        eval_max_steps=cfg.eval_max_steps,
+        promotion_policy=PromotionPolicy(screen_episodes=cfg.screen_episodes, expanded_episodes=cfg.expanded_episodes),
+        rollout_checkpoint_probes=cfg.rollout_checkpoint_probes,
+        objective=cfg.objective,
+        checkpoint_steps=cfg.checkpoint_steps,
+        fixed_action_scale=cfg.fixed_action_scale,
+        probe_manifest=probe,
+        bc_batch_size=cfg.bc_batch_size,
+        bc_lr=cfg.bc_lr,
+        fit_seed=int(getattr(cfg, "fit_seed", 0)),
+        max_repair_per_candidate=cfg.max_repair_per_candidate,
+        max_llm_calls_per_generation=cfg.max_llm_calls_per_generation,
+        param_budget=tuple(cfg.param_budget),
+        max_llm_tokens_per_generation=cfg.max_llm_tokens_per_generation,
+        promotion_challengers=cfg.promotion_challengers,
+        lane_plan=lane_plan,
+    )
+    kwargs.update(overrides)
+    return EvolutionOrchestrator(**kwargs)
+
+
+def run_pen_spin_block(cfg, block: int, phase: str | None, arm: str | None) -> None:
     """One orchestrator run of a block: its prefix (slot 0 and the trigger) or one continuation arm."""
     from lares.core.training_pipeline import PREFIX_STATE
     from lares.envs.isaac_pen_spin import study
@@ -410,6 +446,15 @@ def run_pen_spin_block(cfg, cfg_path: str, block: int, phase: str | None, arm: s
                               {"phase": phase or "continuation", "arm": arm})
 
 
+def _save_best(log_dir: str, best: dict) -> tuple:
+    """Write the run's best policy as ``best_policy_code.py`` and ``best_policy.pt``; returns the two paths."""
+    code_path, model_path = os.path.join(log_dir, "best_policy_code.py"), os.path.join(log_dir, "best_policy.pt")
+    with open(code_path, "w", encoding="utf-8") as f:
+        f.write(best["code"])
+    torch.save(best["policy"].state_dict(), model_path)
+    return code_path, model_path
+
+
 def pen_spin_orchestrator_run(cfg, log_dir: str, seed: int, dev, probe, demo, fork: dict, incumbent_file: str,
                               tags: dict) -> None:
     """One plateau-repair orchestrator run on Isaac streams (R-042's prefix or continuation; R-046's prefix)."""
@@ -427,19 +472,13 @@ def pen_spin_orchestrator_run(cfg, log_dir: str, seed: int, dev, probe, demo, fo
     client = openai_client()
     llm_args = SimpleNamespace(model=cfg.model, reasoning_effort=cfg.reasoning_effort, policy_gen_two_phase=True,
                                policy_impl_mode=cfg.policy_impl_mode)
-    orchestrator = EvolutionOrchestrator(
-        env_name=cfg.env_name, obs_dim=get_obs_schema(cfg.env_name).obs_dim, action_dim=cases.NUM_ACTIONS,
-        num_generations=1, pop_size=2, elite_num=1, bc_steps=0,
-        rl_iterations=0, rl_episodes_per_iter=0, log_dir=log_dir, record_demo_gif=False, dev_manifest=dev,
-        train_cases=(), eval_max_steps=cfg.eval_max_steps,
-        promotion_policy=PromotionPolicy(screen_episodes=cfg.screen_episodes, expanded_episodes=cfg.expanded_episodes),
-        rollout_checkpoint_probes=0, objective=cfg.objective, checkpoint_steps=[],
-        fixed_action_scale=cfg.fixed_action_scale, probe_manifest=probe,
-        max_repair_per_candidate=cfg.max_repair_per_candidate,
-        max_llm_calls_per_generation=cfg.max_llm_calls_per_generation, param_budget=tuple(cfg.param_budget),
-        max_llm_tokens_per_generation=cfg.max_llm_tokens_per_generation, promotion_challengers=1,
-        lane_plan=load_plateau_repair_plan(cfg.plateau_repair), fit_seed=seed, demonstration_manifest=demo,
-        demonstration_env=None, plateau_fork=fork,
+    # Isaac streams: no GIF, no probing of checkpoints (nothing is fitted), one challenger; the generation seed is
+    # the run's fit seed so the prefix's rollout search is reproducible per block.
+    orchestrator = orchestrator_from_config(
+        cfg, log_dir, dev, probe, load_plateau_repair_plan(cfg.plateau_repair),
+        obs_dim=get_obs_schema(cfg.env_name).obs_dim, action_dim=cases.NUM_ACTIONS, record_demo_gif=False,
+        rollout_checkpoint_probes=0, checkpoint_steps=[], promotion_challengers=1, fit_seed=seed,
+        demonstration_manifest=demo, demonstration_env=None, plateau_fork=fork,
     )
     best = orchestrator.run(client=client, envs=envs, demo_buffer=None, args=llm_args,
                             logger=TrainingLogger(log_dir=log_dir, task_name=cfg.env_name))
@@ -447,9 +486,7 @@ def pen_spin_orchestrator_run(cfg, log_dir: str, seed: int, dev, probe, demo, fo
            "isaac_processes": sum(e.calls for e in (envs.development, envs.gif, envs.probe)),
            "isaac_episodes": sum(e.episodes for e in (envs.development, envs.gif, envs.probe))}
     if best is not None and best.get("policy") is not None:
-        with open(os.path.join(log_dir, "best_policy_code.py"), "w", encoding="utf-8") as f:
-            f.write(best["code"])
-        torch.save(best["policy"].state_dict(), os.path.join(log_dir, "best_policy.pt"))
+        _save_best(log_dir, best)
         inc.update(code_path="best_policy_code.py", state_path="best_policy.pt")
     with open(os.path.join(log_dir, incumbent_file), "w") as f:
         json.dump(inc, f, indent=2)
@@ -484,7 +521,7 @@ def _study_block(cfg, study: "PenSpinStudy", overrides: dict, **extra) -> dict:
     return block
 
 
-def run_pen_spin_study(cfg, cfg_path: str, overrides: dict) -> None:
+def run_pen_spin_study(cfg, overrides: dict) -> None:
     """The R-042 driver: parity gate, then per block the prefix, demonstrations (once), three arms, fresh cases."""
     import shutil
     import subprocess
@@ -503,7 +540,7 @@ def run_pen_spin_study(cfg, cfg_path: str, overrides: dict) -> None:
     if not parity["passes"]:
         raise SystemExit(f"R-042 parity gate failed; no LLM call is made: {parity}")
     plan = load_plateau_repair_plan(cfg.plateau_repair)
-    me = [sys.executable, "-u", os.path.abspath(__file__), "--config", cfg_path]
+    me = self_argv(cfg.config_path, __file__)
     blocks = []
     for b, blk in enumerate(ps["blocks"]):
         bdir = os.path.join(sdir, f"block{b}")
@@ -541,7 +578,7 @@ def run_pen_spin_study(cfg, cfg_path: str, overrides: dict) -> None:
     _print_summary(summary)
 
 
-def run_pen_spin_dense_fit(cfg, cfg_path: str, overrides: dict) -> None:
+def run_pen_spin_dense_fit(cfg, overrides: dict) -> None:
     """R-045: dense expert-label fitting vs rollout search on the frozen R-042 prefix controllers (no LLM call)."""
     from lares.envs.isaac_pen_spin import dense_fit, study
 
@@ -563,7 +600,7 @@ def run_gait_prefix(cfg, block: int) -> None:
                               {"phase": "prefix", "arm": None, "study": "gait_preserving_repair"})
 
 
-def run_pen_spin_gait_study(cfg, cfg_path: str, overrides: dict) -> None:
+def run_pen_spin_gait_study(cfg, overrides: dict) -> None:
     """R-046: parity, then per block the cold prefix (own process), expert traces and the three scaffold arms."""
     import subprocess
 
@@ -573,7 +610,7 @@ def run_pen_spin_gait_study(cfg, cfg_path: str, overrides: dict) -> None:
 
     gcfg = _study_block(cfg, PEN_SPIN_STUDIES["gait_preserving_repair"], overrides, isaac_env=cfg.pen_spin["isaac_env"])
     client = openai_client()
-    me = [sys.executable, "-u", os.path.abspath(__file__), "--config", cfg_path]
+    me = self_argv(cfg.config_path, __file__)
 
     def run_prefix(block, roles, log_dir):
         if not os.path.isfile(os.path.join(log_dir, PREFIX_STATE)):
@@ -587,7 +624,7 @@ def run_pen_spin_gait_study(cfg, cfg_path: str, overrides: dict) -> None:
     _print_summary(gait_repair.run_study(gcfg, _stream_factory(cfg), expert, run_prefix, client))
 
 
-def run_pen_spin_two_channel(cfg, cfg_path: str, overrides: dict) -> None:
+def run_pen_spin_two_channel(cfg, overrides: dict) -> None:
     """R-049: per block the scored null incumbent, then the baseline and two-channel cold-search arms."""
     from lares.envs.isaac_pen_spin import two_channel
     from lares.envs.isaac_pen_spin.pipeline_backend import IsaacPenSpinStream
@@ -599,7 +636,7 @@ def run_pen_spin_two_channel(cfg, cfg_path: str, overrides: dict) -> None:
     _print_summary(two_channel.run_study(ccfg, factory, client))
 
 
-def run_pen_spin_self_trace(cfg, cfg_path: str, overrides: dict) -> None:
+def run_pen_spin_self_trace(cfg, overrides: dict) -> None:
     """R-054: per block the parent, then the self-trace and expert-trace repair arms, then fresh final incumbents."""
     from lares.envs.isaac_pen_spin import self_trace
 
@@ -608,7 +645,7 @@ def run_pen_spin_self_trace(cfg, cfg_path: str, overrides: dict) -> None:
     _print_summary(self_trace.run_study(scfg, _stream_factory(cfg), client))
 
 
-def run_pen_spin_coordinate_repair(cfg, cfg_path: str, overrides: dict) -> None:
+def run_pen_spin_coordinate_repair(cfg, overrides: dict) -> None:
     """R-084: anatomical versus joint residual coordinates for LLM repair of the D-058 incumbent (one block)."""
     from lares.envs.isaac_pen_spin import coordinate_repair
 
@@ -617,7 +654,7 @@ def run_pen_spin_coordinate_repair(cfg, cfg_path: str, overrides: dict) -> None:
     _print_summary(coordinate_repair.run_study(rcfg, _stream_factory(cfg), client))
 
 
-def run_pen_spin_local_feedback(cfg, cfg_path: str, overrides: dict) -> None:
+def run_pen_spin_local_feedback(cfg, overrides: dict) -> None:
     """R-048: per block the gait parent, expert queries at its states, and the raw-label and sensitivity arms."""
     from lares.envs.isaac_pen_spin import local_feedback
     from lares.envs.isaac_pen_spin.pipeline_backend import IsaacExpertActor
@@ -678,9 +715,9 @@ def main() -> None:
         elif overrides.get("gait_block") is not None:  # R-046 child, spawned without --study
             run_gait_prefix(cfg, int(overrides["gait_block"]))
         elif overrides.get("study"):
-            PEN_SPIN_STUDIES[overrides["study"]].run(cfg, cfg_path, overrides)
+            PEN_SPIN_STUDIES[overrides["study"]].run(cfg, overrides)
         elif overrides.get("block") is not None:  # R-042 child, spawned without --study
-            run_pen_spin_block(cfg, cfg_path, int(overrides["block"]), overrides.get("phase"), overrides.get("arm"))
+            run_pen_spin_block(cfg, int(overrides["block"]), overrides.get("phase"), overrides.get("arm"))
         else:
             raise SystemExit("a pen_spin config runs with --freeze-manifests, --study or --block")
         return
@@ -738,10 +775,6 @@ def main() -> None:
     else:
         train_manifest, train_pool = load_split(cfg, SPLIT_TRAIN)
         dev_manifest_full, dev_pool = load_split(cfg, SPLIT_DEVELOPMENT)
-    promotion = PromotionPolicy(
-        screen_episodes=cfg.screen_episodes,
-        expanded_episodes=cfg.expanded_episodes,
-    )
     # The orchestrator carves the screen (first cases) and the disjoint promotion set
     # (the next `expanded_episodes`) out of this. The checkpoint probe scores the tail,
     # so screening, checkpoint selection and promotion evidence share no case.
@@ -772,8 +805,8 @@ def main() -> None:
         print(f"  demonstration manifest: {demo_manifest.manifest_id} ({len(demo_manifest)} cases, disjoint placements)")
     print(f"  development manifest: {dev_manifest.manifest_id} ({len(dev_manifest)} cases)")
     print(f"  probe manifest      : {probe_manifest.manifest_id} ({len(probe_manifest)} cases, disjoint)")
-    print(f"  development budget  : screen {promotion.screen_episodes}, "
-          f"promotion set {promotion.expanded_episodes} (disjoint from the screen and the probe)")
+    print(f"  development budget  : screen {cfg.screen_episodes}, "
+          f"promotion set {cfg.expanded_episodes} (disjoint from the screen and the probe)")
     print(f"  metaworld           : {dev_manifest.environment.version_or_commit}")
     print(f"  success rule        : {dev_manifest.environment.success_rule}")
 
@@ -847,7 +880,6 @@ def main() -> None:
     print(f"  Pop size       : {cfg.pop_size}")
     print(f"  Elite num      : {cfg.elite_num}")
     print(f"  BC steps       : {cfg.bc_steps}")
-    print(f"  RL iterations  : {cfg.rl_iterations}  ×  {cfg.rl_episodes} episodes")
     print(f"  Record demo GIF: {cfg.record_demo_gif}")
     print(f"  Policy two-phase: {llm_args.policy_gen_two_phase}")
     print(f"  Policy impl mode: {llm_args.policy_impl_mode}")
@@ -882,36 +914,9 @@ def main() -> None:
               f"{budget['total']['bc_gradient_steps']} gradient steps, ~{budget['llm']['expected_calls']} LLM calls "
               f"(max {budget['llm']['max_calls']})")
 
-    orchestrator = EvolutionOrchestrator(
-        env_name=cfg.env_name,
-        obs_dim=obs_dim,
-        action_dim=action_dim,
-        num_generations=cfg.num_generations,
-        pop_size=cfg.pop_size,
-        elite_num=cfg.elite_num,
-        bc_steps=cfg.bc_steps,
-        rl_iterations=cfg.rl_iterations,
-        rl_episodes_per_iter=cfg.rl_episodes,
-        log_dir=log_dir,
-        record_demo_gif=cfg.record_demo_gif,
-        dev_manifest=dev_manifest,
-        train_cases=train_manifest.episodes if train_manifest is not None else (),
-        eval_max_steps=cfg.eval_max_steps,
-        promotion_policy=promotion,
-        rollout_checkpoint_probes=cfg.rollout_checkpoint_probes,
-        objective=cfg.objective,
-        checkpoint_steps=cfg.checkpoint_steps,
-        fixed_action_scale=cfg.fixed_action_scale,
-        probe_manifest=probe_manifest,
-        max_repair_per_candidate=cfg.max_repair_per_candidate,
-        max_llm_calls_per_generation=cfg.max_llm_calls_per_generation,
-        param_budget=tuple(cfg.param_budget),
-        max_llm_tokens_per_generation=cfg.max_llm_tokens_per_generation,
-        promotion_challengers=cfg.promotion_challengers,
-        lane_plan=lane_plan,
-        fit_seed=int(getattr(cfg, "fit_seed", 0)),
-        demonstration_manifest=demo_manifest,
-        demonstration_env=demo_env,
+    orchestrator = orchestrator_from_config(
+        cfg, log_dir, dev_manifest, probe_manifest, lane_plan, obs_dim=obs_dim, action_dim=action_dim,
+        demonstration_manifest=demo_manifest, demonstration_env=demo_env,
     )
 
     t0 = time.time()
@@ -935,13 +940,8 @@ def main() -> None:
         print(f"  Score          : {best['score']:.2f}")
         print(f"  Parameters     : {best['policy'].count_parameters()}")
 
-        code_path = os.path.join(log_dir, "best_policy_code.py")
-        with open(code_path, "w", encoding="utf-8") as f:
-            f.write(best["code"])
+        code_path, model_path = _save_best(log_dir, best)
         print(f"\n  Best policy code    saved: {code_path}")
-
-        model_path = os.path.join(log_dir, "best_policy.pt")
-        torch.save(best["policy"].state_dict(), model_path)
         print(f"  Best policy weights saved: {model_path}")
 
         print("\n  Comparison:")

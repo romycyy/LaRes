@@ -461,20 +461,6 @@ class TestTraceSource(unittest.TestCase):
         with self.assertRaises(trace_source.UnsupportedTraceTask):
             trace_source.trace_rule("not-a-task-v2")
 
-    def test_the_assembly_request_is_byte_identical_to_r036(self):
-        import compare_generation_modes as cgm
-
-        rows = [{"t": t, "tcp": [0.1, 0.2, 0.3], "gripper": 0.5, "obj": [0.0, 0.6, 0.05], "goal": [0.0, 0.8, 0.1],
-                 "action": [0.1, -0.2, 0.3, 1.0]} for t in range(12)]
-        episodes = [{"case": f"c{i}", "success": 1.0, "rows": rows} for i in range(3)]
-        selected = trace_source.select_traces({"episodes": episodes})
-        ours = trace_source.repair_request("assembly-v2", "class GeneratedPolicy: pass\n", 10, 10, selected)
-        block = cgm.trace_block({"episodes": episodes}).replace(
-            "Successful expert continuations after your lift", "Successful expert episodes after the expert lifted the nut")
-        theirs = cgm.WHOLE_CONTROLLER_REQUEST.replace("{successes}", "10").replace("{episodes}", "10").replace(
-            "{parent}", "class GeneratedPolicy: pass") + "\n" + block
-        self.assertEqual(ours, theirs)
-
     def test_the_plan_refuses_other_shapes(self):
         with open(CONFIG, encoding="utf-8") as f:
             block = yaml.safe_load(f)["plateau_repair"]

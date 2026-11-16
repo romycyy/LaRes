@@ -21,8 +21,9 @@ import numpy as np
 
 from lares.envs.isaac_pen_spin import cases
 from lares.envs.isaac_pen_spin import scalar_tuning as st
-from lares.envs.isaac_pen_spin.learner_recovery import _load, check_learner, identity_gate, make_learner
-from lares.envs.isaac_pen_spin.protocols import arm_summary, build_single_manifest, child_cell, failure_split
+from lares.envs.isaac_pen_spin.learner_recovery import identity_gate, learner_source, make_learner
+from lares.envs.isaac_pen_spin.protocols import (arm_summary, build_single_manifest, failure_split,
+                                                 learner_drive_params, load_cell, manifest_path, study_cell)
 
 STUDY = "r062_stroke_lesion"
 STAGE = 3
@@ -59,24 +60,11 @@ def substituted_source(source: str, factor: float) -> str:
 
 def lesioned_learner(protocol_cfg: dict, factor: float, name: str):
     """The parent with the gait term scaled by ``factor`` (1.0 is the identity), same state, same execution."""
-    from lares.envs.isaac_pen_spin.layout import OBS_LAYOUT
-    from lares.envs.isaac_pen_spin.pipeline_child import SymbolicController
-
-    lc = check_learner(protocol_cfg)
-    with open(lc["source"], encoding="utf-8") as f:
-        source = f.read()
-    ctrl = SymbolicController({"source": substituted_source(source, factor), "state_path": lc["state"],
-                               "obs_dim": sum(size for _, size, _ in OBS_LAYOUT), "action_dim": cases.NUM_ACTIONS,
-                               "fixed_action_scale": float(lc["fixed_action_scale"]),
-                               "execution": "clamp(mean, -1, 1)"}, cases.STAGES[STAGE].task_id)
+    ctrl = make_learner(protocol_cfg, lambda source: substituted_source(source, factor))
     ctrl.name = name
     ctrl.params = {**ctrl.params, "arm": name, "gait_factor": float(factor),
                    "substitution": "+ rolling * gait -> + <factor> * rolling * gait"}
     return ctrl
-
-
-def manifest_path(protocol_cfg: dict) -> str:
-    return protocol_cfg["manifest"]
 
 
 def build_manifests(protocol_cfg: dict) -> list[str]:
@@ -89,10 +77,6 @@ def make_controller(arm: str, protocol_cfg: dict, out_dir: str | None = None):
     if arm in FACTORS:
         return lesioned_learner(protocol_cfg, FACTORS[arm], arm)
     raise ValueError(f"unknown arm {arm!r}; one of {ARMS}")
-
-
-def _child(config_path: str, manifest: str, arm: str, out_path: str) -> None:
-    child_cell(config_path, manifest, arm, out_path, study=STUDY, record_obs=True, skip_existing=True)
 
 
 def aggregate(parent_rows, lesion_rows, parent_sat: dict, lesion_sat: dict) -> dict:
@@ -128,11 +112,7 @@ def aggregate(parent_rows, lesion_rows, parent_sat: dict, lesion_sat: dict) -> d
 
 def run_stroke_lesion(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
     """Driver: audit, parent, identity (gate), lesion, aggregate. Nothing is rerun if its output exists."""
-    from lares.utils.hashing import sha256_file
-
-    lc = check_learner(protocol_cfg)
-    with open(lc["source"], encoding="utf-8") as f:
-        source = f.read()
+    source = learner_source(protocol_cfg)
     audit = source_audit(source)
     os.makedirs(out_dir, exist_ok=True)
     with open(os.path.join(out_dir, "source_audit.json"), "w", encoding="utf-8") as f:
@@ -141,28 +121,24 @@ def run_stroke_lesion(protocol_cfg: dict, config_path: str, out_dir: str) -> dic
         raise SystemExit(f"source audit failed, no episode run: {audit}")
     with open(os.path.join(out_dir, "stroke_lesion_source.py"), "w", encoding="utf-8") as f:
         f.write(substituted_source(source, 0.0))
-    m = manifest_path(protocol_cfg)
-    if not os.path.exists(m):
-        raise SystemExit(f"frozen manifest {m} missing; build and commit it before the run")
+    m = cases.require_frozen(manifest_path(protocol_cfg))
     out = {arm: os.path.join(out_dir, f"{arm}.json") for arm in ARMS}
     for arm in ("parent", "parent_identity"):
-        _child(config_path, m, arm, out[arm])
-    base, base_rows = _load(out["parent"])
-    ident, ident_rows = _load(out["parent_identity"])
+        study_cell(protocol_cfg, config_path, m, arm, out[arm])
+    base, base_rows = load_cell(out["parent"])
+    ident, ident_rows = load_cell(out["parent_identity"])
     gate = identity_gate(base, base_rows, ident, ident_rows)
     if not gate["passes"]:
         with open(os.path.join(out_dir, "gate_failed.json"), "w") as f:
             json.dump(gate, f, indent=2)
         raise SystemExit(f"identity gate failed, lesion not run: {gate}")
-    _child(config_path, m, "stroke_lesion", out["stroke_lesion"])
-    les, les_rows = _load(out["stroke_lesion"])
-    learner = make_learner(protocol_cfg)
-    sd = learner.policy.state_dict()
-    params = {"spin_target": float(sd["spin_target"]), "speed_gain": float(sd["speed_gain"])}
+    study_cell(protocol_cfg, config_path, m, "stroke_lesion", out["stroke_lesion"])
+    les, les_rows = load_cell(out["stroke_lesion"])
+    params = learner_drive_params(protocol_cfg)
     summary = aggregate(base_rows, les_rows, st.saturation(base, params), st.saturation(les, params))
     summary["identity_gate"] = gate
     summary["source_audit"] = audit
-    summary["manifest"] = {"path": m, "sha256": sha256_file(m)}
+    summary["manifest"] = cases.manifest_record(m)
     summary["episodes"] = len(ARMS) * int(protocol_cfg["cases"])
     summary["limitation"] = ("a lesion measures dependence of this learner's success on its periodic stroke; it does not "
                              "say how the stroke should be changed, nor anything about other controllers")

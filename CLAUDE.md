@@ -2,6 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**Start with `docs/PIPELINE_STATE.md`**: the current pipeline structure, what is verified, and where the research
+stands (written 2026-11-09). Superseded plans and progress logs are in `docs/deprecated/`.
+
 ## Environment setup
 
 Two environment specs exist and have diverged — pick by pipeline:
@@ -19,23 +22,23 @@ export OPENAI_API_KEY=...               # required for any LLM/Stage-4 path
 
 **LLM model (decided 2026-10-13): `gpt-6.1-sol` with `reasoning_effort: high` for every LLM call** —
 ideation, implementation and correction in `run_full_evolution.py`, the two-generation smoke config,
-`scripts/compare_generation_modes.py` and Tier 3 of `tests/test_training_pipeline.py`. The defaults live in
+`scripts/research.py` (the advisor) and Tier 3 of `tests/test_training_pipeline.py`. The defaults live in
 `lares/core/policy_generation.py` (`DEFAULT_LLM_MODEL`, `DEFAULT_REASONING_EFFORT`); configs name both
 explicitly, and every ledger entry records the effort in `decoding`. The model accepts only temperature 1
 (checked against the API on 2026-10-13, as are `reasoning_effort` and `n>1`). From 2026-09-14 to 2026-10-13
 the model was gpt-5.6-sol (`logs/baseline_gpt56_sol_high`). No token cap on LLM runs for now.
 Runs completed before 2026-09-14 (`logs/evolution_debug_full`, `logs/debug_smoke_two_generation`, Tier 3
-notes) used gpt-5 or gpt-4o-mini, so their token caps and results do not transfer. The vision analyst
-(`lares/vision/`) is a local Qwen by design and is not an OpenAI call; it stays blocked with E10.
+notes) used gpt-5 or gpt-4o-mini, so their token caps and results do not transfer. The archived vision analyst
+(`deprecated/lares/vision/`) was a local Qwen by design, not an OpenAI call.
 
 `pyproject.toml` exists (setuptools, packages `lares*`) so `pip install -e .` works, but no environment
 has it installed yet: every script/test still does `sys.path.insert(0, _PROJECT_ROOT)`. **All commands
 must be run from the project root.**
 
 **Shared helpers (added 2026-10-14; one copy each, every older name re-exports them).** `lares/utils/hashing.py`
-(`sha256_bytes/text/file/json`, and the 16-character `short_hash_*` used by `freeze.py` and `source_hash`; the
+(`sha256_bytes/text/file`, and the 16-character `short_hash_*` used by `freeze.py` and `source_hash`; the
 prefix length is a stored format), `lares/utils/gitstate.py` (`git`, `worktree_state`, `require_clean_worktree`),
-`lares/utils/seeds.py` (ledger reader, `spent_seeds`, `seed_conflicts`, `reserve_seeds`; scans `config/**` *and*
+`lares/utils/seeds.py` (ledger reader, `spent_seeds`, `manifest_pool_seeds`; scans `config/**` *and*
 `logs/**` manifests for every caller, where the research ledger used to scan `config/` only),
 `lares/utils/env_ids.py` (`resolve_registry_env_id`, the v2→v3 rule), `lares/eval/stats.py` (`t_summary`,
 `t_interval`, `t_bounds`, `win_loss_tie`: the one Student-t rule behind promotion, Stage E/F reports and the
@@ -50,9 +53,57 @@ reader/appender delegates here), `lares/utils/clock.py` (`now_iso`, `run_stamp`:
 (derived from the layout; no more literal 157), `cases.freeze_manifest` / `freeze_manifest_set` / `role_manifests` (the
 build-or-load-and-refuse-if-different idiom, placement disjointness through `assert_disjoint`, role slices keeping the
 `<id>:<role>` manifest id), `protocols.child_cell`, `protocols.build_single_manifest`, `protocols.aggregate_vs_expert`.
-Scripts import helpers from `lares`, never from another script (`stage_e._outcome` is the one remaining exception).
+Scripts import helpers from `lares`, never from another script.
 `lares.fitting.objectives.EXECUTIONS` is the execution-contract registry (`execute()` is a lookup), and
-`lares.core.policy_generation.DEFAULT_POLICY_IMPL_MODE` / `normalise_impl_mode` is the one `policy_impl_mode` rule.
+`lares.core.policy_generation.DEFAULT_POLICY_IMPL_MODE` / `normalise_impl_mode` is the one `policy_impl_mode` rule
+(`load_config` calls it; the config loader no longer has its own spelling).
+Added 2026-11-09 (second simplification pass, `/simplify`): `lares/utils/cli.self_argv` (the interpreter + `-u` + script +
+`--config` prefix every one-rollout-per-process child is spawned with), `policy_generation._correct_until_valid` (the one
+linked-correction loop behind the per-idea implementer, the single-phase exploration and the trace-repair slot),
+`policy_generation.validation_batch_path` (the slot validator writes the harness's `data.pkl` itself when none is given;
+nothing else writes one), `training_pipeline.llm_evolution(plan=...)` (the one generation front-end; a `TwoLanePlan`
+selects the two-lane generator), `EvolutionOrchestrator._objective_config` / `_unfitted_fit` (the recorded fitting
+config and the fit-shaped result of an unfitted or searched candidate), `run_full_evolution.orchestrator_from_config`
+(the one orchestrator construction; callers pass overrides), `training_pipeline.DEFAULT_BC_BATCH_SIZE` / `DEFAULT_BC_LR`
+/ `FIT_VAL_FRACTION` / `FIT_SPLIT_SEED` (the fitter's constants, which `load_config` and `freeze_method.py` read),
+`lares.utils.seeds` memoises the manifest scan per process, `ObsSchema.field` is a
+dict lookup and `RolloutGeometry` slices numpy directly, and `record_episode_gif` runs the shared
+`lares.eval.runner.run_episode` with a frame-capturing observer. Pen-spin studies share their prologue:
+`protocols.roles` / `manifest_path` / `disjoint_from` / `cached_json` / `freeze_json` (was `scalar_tuning._freeze_json`)
+/ `learner_drive_params` / `load_cell` (was `learner_recovery._load`) / `isaac_shell` (the one
+`bash -c "source <isaac_env> && ..."` launcher) / `study_cell` (every module's `_child` wrapper; the study name comes
+from `protocol_cfg["study"]`, which `run_shadowhand_spin_stages.run_study` sets) / `diverged_envs`;
+`cases.require_frozen` / `load_frozen` / `manifest_record` / `freeze_roles`; and `block_study.py`
+(`make_slot_generator`, the one `PlateauSlotGenerator` construction for the LLM block studies, plus `parent_like`,
+`arm_needs_generation`, `started`, `screen_best`, `attempts_record`). `run_shadowhand_spin_stages.PEN_SPIN_STUDIES` is a
+module-level name-to-module dict resolved lazily by `study_module()`, so `--help` imports no study, and `isaac_app(cfg)`
+is its one launch/close context manager. Removed as dead: the legacy single-phase entry points
+(`get_symbolic_policies`, `_generate_single_phase`, `valid_policies`, `_extract_n_policy_codes`, `obs_description_dict`),
+`fit_with_objective`, `MutationProposal.bypasses_llm` / `check_outcome`, `SymbolicPolicy.clear_gate_overrides`,
+`sha256_json`, `freeze.hash_text`, `ALL_CATEGORIES`, `TrainingLogger.advance_step` and its W&B/TensorBoard mirrors, the
+orchestrator's `rl_iterations` / `rl_episodes_per_iter` / `train_cases` / `gif_case` / `sampling` / `val_fraction` /
+`split_seed` / `demonstration_actor` arguments, the `lares.fitting` / `lares.research` package re-exports (import
+the submodules), `cases.REDUCERS`, `gait_repair.role_manifest` and `clamp_qualification._study_name` (the
+``"r080" in out_path`` sniff). Archived code under `deprecated/` that used these names is listed in `deprecated/README.md`.
+Added 2026-11-14 (third pass, findings from six Opus reviewers after the OpenAI credit ran out): `_call_llm` retries
+only transient errors (rate limit, connection, 5xx; `_LLM_MAX_ATTEMPTS` = 8 with exponential backoff) and raises
+`RuntimeError` on anything else, so a spent credit balance or a bad key stops the run at once instead of looping
+1000 times and exiting 0; the validation harness subprocess has a wall-clock cap (`VALIDATION_TIMEOUT_S` = 600, a
+timeout is a harness failure that gets the slot's one correction); the validator reports a NaN output as `NON_FINITE`
+only (`_has_nan`), not also as batch coupling or irreproducible telemetry; `manifest_pool_seeds([])` scans nothing
+(it used to fall back to the whole repo, so research tests read real manifests); `training_pipeline._rank_cleared`,
+`EvolutionOrchestrator._score_on_promotion_set` and `_finish_plateau_log` are the one copy of the challenger ranking,
+the promotion-set scoring and the plateau log's closing; `obs_schema._register_scaffold_schemas` builds both 177-d
+layouts; `run_full_evolution._save_best` writes the best policy for both entry paths;
+`dense_fit.build_policy(obs_dim=, action_dim=)` is the one pen-spin policy rebuild (the Isaac child, a saved incumbent,
+a reloaded generation, the residual); `block_study.make_slot_generator` no longer writes its own `data.pkl`; pen-spin
+manifests are checked for disjointness before they are written. Removed as dead: `seeds.seed_conflicts` /
+`reserve_seeds` / `clear_manifest_cache`, `plateau_trigger(already_fired=)`, `PlateauRepairPlan.exploration_slots` /
+`reference_ids` / `parent_sources`, the orchestrator's `plateau_log` and `run_manifest_ref`,
+`pipeline_backend.make_temp_stream`, `cases.split_placement`, `protocols._child`.
+Archived 2026-11-15: the BC + GRPO smoke stages of `run_shadowhand_spin_stages.py` and `IsaacLabSingleEnvAdapter` (see
+"Isaac Lab ShadowHandSpin smoke stages" below). `behavioral_cloning`, `rl_finetune` and `_collect_trajectories` stay in
+`training_pipeline.py` because live tests exercise them; no entry point calls them.
 
 ## Common commands
 
@@ -63,64 +114,19 @@ python scripts/lock_baseline.py                      # reuse the committed manif
 python scripts/lock_baseline.py --build-manifests    # regenerate config/manifests/*.yaml
 python scripts/lock_baseline.py --collect-demos 150  # expert buffer with episode ids
 
-# Phase 3 fitting comparison: four optimizers on the frozen structure bank, matched budgets.
-python scripts/build_structure_bank.py               # regenerate lares/fitting/structures/
-python scripts/benchmark_fitting.py                  # full bank, 2000-evaluation budget
-python scripts/benchmark_fitting.py --family simple --budget 500 --no-rollouts
-
 # Regenerate the search summary from saved experiment records alone. Traceability is "complete"
 # only if every record's lineage, feedback, prompts, usage, states, manifests, resources and an
 # exact reconstruction verify; --no-reconstruct skips the rebuild (and reports it incomplete).
 python scripts/summarise_experiments.py --log-dir ./logs/evolution
-# Versioned provenance sidecar for a run recorded before lineage existed (raw records untouched).
-python scripts/recover_provenance.py --log-dir logs/evolution_review_20260913
-# Pair runs' best candidates on shared expanded development cases (selection-biased; see docstring).
-python scripts/compare_evolution_runs.py --baseline logs/evolution_review_20260913 --run logs/evolution_debug_full
 # Score saved policies, paired, on a fresh MT1 pool seed disjoint from every committed manifest.
 # A seed used here has been looked at; record it and pick a new one next time (2100 is spent).
 python scripts/evaluate_on_fresh_manifest.py --pool-seed <unused seed> --out-dir <dir> \
   --policy label=<policy_source.py>:<state.pt> --expert --reference label
 
-# Phase 5: expert semantics, objectives, sampling and learner-state imitation.
-python scripts/audit_expert_actions.py                              # clipping semantics, phases
-python scripts/compare_objectives.py --budget 2000 --family simple  # E7, sampling, E8
-
-# Phase 6: diagnose a policy by controlled substitution, then repair and validate it.
-python scripts/diagnose_repair.py --structures simple_standoff      # study + one bounded repair
-python scripts/ablate_repair.py --budget 200 --seeds 0 1            # AC-6 / E9, five arms
-python scripts/ablate_repair.py --summarise logs/repair_ablation/<run>.json  # re-print, no rollouts
-
 # Phase 7: freeze the method before any final-test episode runs, and check for drift.
 python scripts/freeze_method.py --freeze-id v1
 python scripts/freeze_method.py --verify             # non-zero exit if anything moved
 python scripts/final_report.py                       # aggregate report, from saved files only
-
-# FR-11: capture the selected frames for a candidate's worst failures, and merge with the numbers.
-python scripts/analyse_failures.py --structures simple_standoff      # no model: media + numbers only
-
-# Stage E (debug_spec.md): four fitting conditions on a frozen confirmation manifest.
-# Selection and manifest are frozen and committed before the run; `run` needs a clean worktree.
-python scripts/stage_e.py select            # choose and freeze the evolved structures
-python scripts/stage_e.py build-manifest    # check the seed ledger, reserve seeds, build the manifest
-python scripts/stage_e.py run               # records the Git SHA in every result
-python scripts/stage_e.py report --run <logs/stage_e/run_dir>
-
-# Fittable-bank qualification (decided 2026-09-14): 3 references + 6 predeclared variants, 5 seeds each.
-# Variants are frozen (structural checks only) and committed before the evaluation manifest exists.
-python scripts/qualify_fittable_bank.py validate
-python scripts/qualify_fittable_bank.py build-manifest
-python scripts/qualify_fittable_bank.py run          # clean worktree; records the Git SHA
-python scripts/qualify_fittable_bank.py report --run <logs/fittable_bank/run_dir>
-
-# Stage F (debug_spec.md, D10): correction-LLM repair vs matched-budget arms (lares/repair/correction.py).
-# Protocol frozen in config/stage_f/stage_f.yaml (decided 2026-10-13; held-out pool seed 2500, replicate seeds
-# 2500-2502). select and build-manifest run before the commit; run --config needs a clean worktree.
-python scripts/stage_f.py select
-python scripts/stage_f.py build-manifest
-python scripts/stage_f.py run --config config/stage_f/stage_f.yaml
-python scripts/stage_f.py run --structures <ids> --seeds 0 1 2 --held-out <fresh manifest.yaml>   # ad hoc
-python scripts/stage_f.py run ... --arms no_repair local_search global_search    # no LLM calls
-python scripts/stage_f.py report --run logs/stage_f/<run_dir>
 
 # Two-lane search (decided 2026-09-14; lares/search/lanes.py). Implemented and tested against mocks only.
 # Run the new-model baseline first. Both are live gpt-6.1-sol runs and need approval.
@@ -137,13 +143,19 @@ python scripts/run_full_evolution.py --config config/assembly_two_lane_repair.ya
 python scripts/run_full_evolution.py
 python scripts/run_full_evolution.py --config path/to/custom.yaml   # see config/run_full_evolution.yaml
 
-# Isaac Lab ShadowHandSpin 3-stage smoke run (needs IsaacLab at config's isaaclab_root, CUDA)
-python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml
+# Isaac-only pen-spin studies (needs IsaacLab at config's isaaclab_root, CUDA); a bare call with no --study is refused
+python scripts/run_shadowhand_spin_stages.py --study <name>      # names: PEN_SPIN_STUDIES in that script
 
-# Plots and expert-policy inspection
+# Plots
 python scripts/plot_training_dynamics.py --log-path ./logs/evolution/<run>/training_dynamics.jsonl
-python scripts/visualize_expert_policy.py --config config/run_full_evolution.yaml --episodes 10
+
+# Pen-spin incumbent: verify its hashes; render GIFs of it (numpy 1.x overlay, see "Things that will bite you")
+python scripts/isaac/adopt_fixed_stroke.py
+python scripts/isaac/record_pen_spin_gif.py --controller incumbent --manifest <frozen.yaml> --env-index 0 1 2 --out-dir <dir>
 ```
+
+Finished studies' scripts (Phase 3/5/6, Stage E/F, fittable-bank qualification, R-005 to R-036 comparisons, FR-11
+failure analysis, one-off pen-spin checks) are in `deprecated/scripts/`; see `deprecated/README.md`.
 
 ### Tests
 
@@ -159,10 +171,10 @@ python tests/test_env_action_response.py    # needs a working env from config/ru
 python -m unittest tests.test_record_episode_gif tests.test_two_phase_policy_generation
 python -m unittest tests.test_evaluation_manifest tests.test_manifest_runner \
   tests.test_policy_interface tests.test_evaluation_report tests.test_fitting \
-  tests.test_search tests.test_objectives tests.test_repair tests.test_freeze \
-  tests.test_final_report tests.test_vision tests.test_fitting_provenance tests.test_provenance \
-  tests.test_two_generation_mock tests.test_stage_e tests.test_fittable_bank tests.test_two_lane_search \
-  tests.test_replicate_bundles tests.test_stage_f tests.test_research tests.test_plateau_repair_mock \
+  tests.test_search tests.test_objectives tests.test_freeze \
+  tests.test_final_report tests.test_fitting_provenance tests.test_provenance \
+  tests.test_two_generation_mock tests.test_two_lane_search \
+  tests.test_research tests.test_plateau_repair_mock \
   tests.test_pen_spin tests.test_pen_spin_pipeline
 python -m unittest tests.test_record_episode_gif.TestRecordEpisodeGif.test_saves_gif_and_returns_metadata
 ```
@@ -189,8 +201,8 @@ in the codespace cleanup. Only symbolic-policy search remains. Look for it in gi
 | Stage | Function | What it does |
 |---|---|---|
 | 1 | `generate_dataset()` | MetaWorld expert policy (`EXPERT_POLICY_MAP`) over the *train* manifest → `DemoBuffer` |
-| 2 | `fit_policy_with_objective()` (`lares/fitting/optimizers.py`) | The orchestrator's fitter: the named objective (`deterministic_mse` by default), scale-only parameters frozen, `clip_params()` after each step, validation split **by episode**. Probes step 0 and each scheduled checkpoint, selects by the tie rule in `lares/fitting/checkpoints.py`, keeps `initial_state`/`final_state`/`selected_state` distinct and recomputes diagnostics after loading the selected one. `behavioral_cloning()` is the legacy `MSE + 0.01 * std.mean()` path, kept for the Isaac stack and old tests |
-| 3 | `rl_finetune()` | GRPO: advantages relative to the *group* mean return, + entropy bonus, + L2 KL toward the BC init. **Refused by `EvolutionOrchestrator`** (`rl_iterations` must be 0): RL after selection would break the record's selected-state link |
+| 2 | `fit_policy_with_objective()` (`lares/fitting/optimizers.py`) | The orchestrator's fitter: the named objective (`deterministic_mse` by default), scale-only parameters frozen, `clip_params()` after each step, validation split **by episode**. Probes step 0 and each scheduled checkpoint, selects by the tie rule in `lares/fitting/checkpoints.py`, keeps `initial_state`/`final_state`/`selected_state` distinct and recomputes diagnostics after loading the selected one. `behavioral_cloning()` is the legacy `MSE + 0.01 * std.mean()` path; since 2026-11-15 only tests call it |
+| 3 | `rl_finetune()` | GRPO: advantages relative to the *group* mean return, + entropy bonus, + L2 KL toward the BC init. **Not an orchestrator stage** (the orchestrator has no `rl_iterations`; `load_config` refuses a nonzero one): RL after selection would break the record's selected-state link. Since the Isaac smoke stages were archived (2026-11-15) only `tests/test_training_pipeline.py` calls it |
 | 4 | `EvolutionOrchestrator.run()` / `llm_evolution()` | Two-phase generation returns `GeneratedCandidate`s with lineage; each valid one is fitted, probed, screened and recorded; the next generation gets a hashed `FeedbackBundle` and proposes bounded edits of named parents |
 
 **The evaluation contract (`lares/eval/`).** Nothing scores a policy without a manifest.
@@ -256,7 +268,7 @@ score an objective under an execution it does not model, so an action-space regr
 reported as a likelihood. Scale parameters are found by *measuring* which parameters move the scale
 but not the executed action, not by matching a name like `log_std`.
 
-The expert audit (`scripts/audit_expert_actions.py`) settles which likelihood is right. MetaWorld's
+The expert audit (`deprecated/scripts/audit_expert_actions.py`) settles which likelihood is right. MetaWorld's
 expert is an unbounded proportional controller with gain 10 that does no clipping; the endpoint mass
 in the targets is ours. So the censored Gaussian is the matching model and needs clipped execution,
 and a tanh-Gaussian likelihood is wrong twice over.
@@ -275,7 +287,7 @@ fittable lane: checkpoints {0, 500, 1000}, selected on a probe manifest (step 0 
 "fitting rejected"), evaluated on a separate manifest. Probe scores select parameters and are never promotion
 evidence. Step-0 strength and fittability are classified separately (`performance_incumbent` versus
 `fittable_incumbent`). `lares/fitting/fittable_variants/` holds six predeclared single-change variants of the
-three references, qualified by `scripts/qualify_fittable_bank.py`; the frozen Phase 3 bank is unchanged. The
+three references, qualified by `deprecated/scripts/qualify_fittable_bank.py`; the frozen Phase 3 bank is unchanged. The
 fittable seed bank (`config/fittable_bank/seed_bank.json`, run `logs/fittable_bank/20260914_040245`) is
 `simple_reach_push_sharp_gate`, `simple_damped_push`, `simple_reach_push`, `simple_reach_push_damped` and
 `simple_reach_push_shared_gain`. Seeds 2300-2304 are spent.
@@ -321,27 +333,11 @@ builds development (screen/promotion/probe) and demonstration manifests for any 
 demonstration hashes, continuation, final incumbent, episode and call accounting). Mocked gate:
 `tests/test_plateau_repair_mock.py`.
 
-**Replicate bundles (`lares/fitting/replicates.py`).** Future qualification varies data, not minibatch order:
-each replicate draws its own demonstration sample, trajectory-level split, probe manifest and qualification
-manifest, and every structure in a replicate shares that bundle (`run_replicate_qualification` refuses
-otherwise). Protocol predeclared, not run: `config/fittable_bank/qualification_v2.yaml` (seeds 2400-2424, unused
-and unreserved on 2026-09-14).
-
 **Baseline under the new model (`config/run_full_evolution.yaml`).** One generation of nine unseeded zero-shot
 candidates on the same manifests, fitting disabled, no token cap. Ran under gpt-5.6-sol on 2026-09-23
 (`logs/baseline_gpt56_sol_high`: 10 calls, 100,786 tokens, best 0.333 on the promotion set); the config's log
 dir is now `logs/baseline_gpt61_sol_high` for a gpt-6.1-sol rerun. No token cap on LLM runs for now (decided
 2026-09-23); tokens are recorded in the ledger, not capped.
-
-**Stage F repair ablation (`lares/repair/correction.py`, `scripts/stage_f.py`).** Six arms per replicate from
-one common preprocessing (rollout-selected fit, then one screen run): `no_repair`, three correction-LLM arms
-differing only in the evidence packet (none / numeric / numeric + substitution study), `local_search`,
-`global_search`. An LLM repair is one `repair`-mode proposal tied to the parent and the packet's feedback id,
-one implementation plus at most one correction, then the parent's preprocessing again. Every arm is capped at
-the same repair-evaluation episodes (`StageFBudget.repair_episode_cap`) and replaces the parent only if strictly
-better on the screen by the checkpoint tie rule. Chains land in `<run>/<structure>_s<seed>/<arm>/chain.json`;
-`verify_chain` rechecks them. Manifests are compared by placement hash (`task_hash`), not case id: case ids are
-per-manifest indices and collide across manifests.
 
 **Behavioural cloning is non-monotonic in gradient steps.** Development success peaks around 1000
 steps and collapses to zero by 3000, while validation loss falls the whole way. Measured on two
@@ -361,24 +357,20 @@ branches, so `expert_phase_labels` is ground truth rather than inferred from a l
 gives each occupied phase an equal share of a minibatch, which matters because the expert spends
 75% of its steps in the push phase.
 
-**Learner-state imitation (`lares/fitting/dagger.py`).** Rolls out on training placements only,
-counts every expert query and environment step, and validates each label by branching the simulator,
-applying the label, measuring the distance to the expert's own desired position, and rewinding.
-About a third of labels fail that test, so the scripted expert is not a reliable recovery controller.
-
 **Fitting comparison (`lares/fitting/`).** `structure_bank.py` owns a frozen bank under
 `lares/fitting/structures/`: fifteen candidates ported from the 2026-08-28 search plus three
 hand-written simple-family references. The ported ones had their raw observation slices rewritten to
 named accessors by `port_raw_indices`, with `check_port_equivalence` proving the outputs are
-identical. Rebuild with `scripts/build_structure_bank.py`. `optimizers.py` implements four methods
+identical. It was built by `deprecated/scripts/build_structure_bank.py` and is frozen. `optimizers.py` implements four methods
 behind one `fit(method, structure, data)` call: `adam_baseline` reproduces the live path exactly,
 `adam_scaled` gives each parameter a step proportional to its declared range plus a cosine schedule,
 `multistart_adam` splits the same budget across perturbed restarts and picks on validation loss, and
 `differential_evolution` is derivative-free via scipy. All four optimise the identical objective and
 receive the same objective-evaluation count; wall time and transitions are reported too, because
 equal evaluation counts are not equal compute. `sensitivity.py` measures how much each parameter
-moves the executed action, in units of that parameter's own range. Run the comparison with
-`scripts/benchmark_fitting.py`; the selection rule is declared in `benchmark.py` before any run.
+moves the executed action, in units of that parameter's own range. The comparison ran from
+`deprecated/scripts/benchmark_fitting.py`; the selection rule declared in `benchmark.py` stays live because
+`freeze_method.py` digests it.
 
 **The final-test split is locked (`lares/eval/freeze.py`).** FR-4 requires that winner selection
 and final estimation use different data, and nothing enforced it: any call could score a candidate
@@ -394,28 +386,6 @@ hash twice is refused unless the caller passes `allow_rescore=True`, and that ad
 into the entry. The ledger is the record of how many times the held-out data was actually looked at,
 which is what a selection-effect argument needs.
 
-**VLM-assisted failure analysis (`lares/vision/`).** Optional throughout, and built so the contract,
-the media rule and the merge are all testable without a model. `schema.py` holds
-`VisualFailureAnalysis`: every claim must cite a frame that was actually shown and a timestep inside
-that frame's span, and every recommended follow-up must name a metric the reports measure, the same
-rule `MutationProposal` applies to predictions. An analysis that fails either check is dropped and the
-reason recorded, never repaired into shape.
-
-`media.py` owns the fixed selection rule, declared before any analysis runs: episode start, closest
-approach, first gate crossing of 0.5, largest single-step object movement, termination. A moment the
-episode cannot supply is named in `unavailable` rather than replaced by a nearby frame. Capture hangs
-off a new `observer` hook on `run_episode`, so it is not a sixth copy of the rollout loop, and it
-refuses the final-test split outright because FR-11 says that media must never reach the search loop.
-
-`merge.py` runs the recommended checks against the episode record and marks disagreement between the
-model's reported stage and the geometry's failure label. It never picks a winner. `analyst.py` puts
-the model behind an interface: `ScriptedAnalyst` is the test double and the numeric-only arm of E10,
-and `QwenAnalyst` refuses to invent a checkpoint, because which Qwen and which quantization are open
-decisions that would otherwise get frozen into that comparison by default.
-
-Run it with `scripts/analyse_failures.py`. Without `--model` it still captures and saves the selected
-frames and reports which moments were unavailable, which is the half of FR-11 that needs no download.
-
 **The aggregate report (`lares/eval/final_report.py`).** AC-7 asks that one documented command
 regenerate the report from saved artifacts. `scripts/final_report.py` reads four streams and runs
 nothing: experiment records, repair studies, ablation runs and the freeze directory. Ablation runs at
@@ -424,52 +394,17 @@ AC-7 requires that no artifact carries are listed in `unavailable` with the fiel
 from, so the gap names its own fix; today that is fourteen of fifteen, most of them LLM and timing
 instrumentation the pipeline does not yet record.
 
-**Intervention-guided repair (`lares/repair/`).** A failure label says what went wrong, not which
-part is responsible. `interventions.py` answers that by replacing exactly one part with a known-good
-source and re-running the same cases: one or more action axes from the scripted expert, the whole
-action during a named phase, an expert prefix, or a phase gate clamped open. `InterventionActor`
-goes through the same manifest runner as everything else, so an intervention pairs case-for-case
-with the unmodified control. `SymbolicPolicy.set_gate_override` makes the gate lever real, and
-`gate_override_is_effective` checks it bites: a policy that calls `record_gate` without using the
-returned value has telemetry but no lever, and forcing such a gate would produce a null result that
-reads as evidence.
-
-`hypotheses.py` finds recurrent failure clusters (a label needs `MIN_CLUSTER_SIZE` = 3 episodes),
-gives each at least two competing explanations that blame *different* components, and marks one
-supported only when its substitution moves the predicted metric in the predicted direction on the
-same cases. Rejected explanations are stored beside accepted ones.
-
-`repair.py` turns a supported explanation into a bounded edit. The component becomes a scope of
-action axes and expert phases; the parameters inside it are found by *measuring* which ones move the
-scoped axes (or the named gate), never by matching a name; and `bounded_change` re-reads the policy
-afterwards, so "only this component changed" is checked rather than asserted. Two operators:
-`apply_repair` refits the in-scope parameters against the expert on the scope's phases, and
-`search_repair` searches them directly against the focused metric, which is the one that can move a
-geometry term the expert data itself produced. `accept_repair` adds the guard the success threshold
-needs on this task: when no case succeeded, no repair can fail a success-regression check, so the
-protected cases are held to a continuous progress check instead.
-
-**The AC-6 ablation does not support the repair loop.** Five arms, six replicates, 200
-development-screen episodes each: optimizer-only reaches 0.650 held-out success against the full
-loop's 0.517, a paired +0.133 whose interval excludes zero. The controlled substitution changed the
-chosen component in two of six replicates and the outcome in one, for 10% of the budget. Localisation
-does look worth something, beating an unlocalised search by 0.150 and a randomly chosen component by
-0.083, but both intervals include zero over six runs. Optimizer-only wins because its rollout probe
-recovers the pre-collapse checkpoint, which is the Phase 5 finding rather than anything about repair.
-Read `RESEARCH_HANDOFF.md` before building on this module.
-
-Run one diagnosis and repair with `scripts/diagnose_repair.py`, and the AC-6 ablation with
-`scripts/ablate_repair.py`. Every arm of that ablation gets the identical budget of
-development-screen episodes and is scored on `manifest.tail(...)`, which no arm sees. `records_from_study`
-writes one `ExperimentRecord` per substitution, each marked `intervention=True`, so the rollouts are
-visible to `summarise_experiments.py` and can never be ranked as fitness; the repair itself is
-recorded as an ordinary rankable candidate, because no expert helped it.
+**Archived side studies (`deprecated/`, 2026-11-09).** The intervention-guided repair loop (`hypotheses`,
+`interventions`, `repair`, `study`; the AC-6 ablation found optimizer-only 0.650 against the full loop's 0.517), the
+Stage F correction-LLM (`correction.py`), the Qwen failure analyst (`lares/vision/`; D-003 found it added nothing), DAgger and
+replicate bundles moved to `deprecated/`, with the scripts and tests that drove them. `deprecated/README.md` lists every
+moved file and keeps what this file used to say about them. `lares/repair/` now holds only the two trace modules.
 
 Prompts in `lares/utils/policy_prompts/` (seven templates; `ideas_user.txt` and `proposals_user.txt`
 demand strict JSON). Generation lives in `lares/core/policy_generation.py`.
 
 **Generation provenance (`lares/search/generation.py`, `resources.py`, `provenance.py`;
-`debug_spec.md`, progress in `DEBUG_PROGRESS.md`).** `generate_candidates` returns one
+`docs/deprecated/debug_spec.md`, progress in `docs/deprecated/DEBUG_PROGRESS.md`).** `generate_candidates` returns one
 `GeneratedCandidate` per *attempt*; slot and attempt ids (`gen<g>_cand<s>_a<k>`) are allocated before
 any call. Generation 0 parses `PolicyIdea`s strictly (no padding: a wrong count raises, a bad entry fails
 its slot); generation 1+ parses `MutationProposal` + idea, with repair/simplification = one parent,
@@ -546,7 +481,7 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
 - **R-048 result (D-043, inconclusive, closed before any arm ran).** The PPO expert is **bang-bang**: 99.98% of its
   executed action components are exactly +/-1, so clamped finite differences of it are zero almost everywhere, and
   its executed action switches sign in only 2.8% of state-coordinate-action triples within one demonstration range
-  at the gait's states (`local_feedback.py`, `scripts/isaac/audit_expert_switches.py`). Expert-label evidence shows
+  at the gait's states (`local_feedback.py`, `deprecated/scripts/isaac/audit_expert_switches.py`). Expert-label evidence shows
   only saturated values. `IsaacPenSpinStream.query_actions` queries an actor at given observations with no episode.
 - **R-049 result (D-044, refuted).** Requiring separate retention and spin-feedback components in the cold prompt
   (`two_channel.py`, `--study two_channel_cold`, 4 slots per arm, Stages 1 and 2, neutral pose as a *scored* null
@@ -606,14 +541,14 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   out_dir)`. A new study is one module plus one registry entry; the `--block/--phase/--arm/--gait-block` child argv
   contracts are unchanged.
 
-**Isaac Lab ShadowHandSpin.** A second, parallel stack merged in from the Isaac branch:
-`scripts/run_shadowhand_spin_stages.py` → `lares/envs/isaac_lab_adapter.py`
-(`IsaacLabSingleEnvAdapter`, `launch_isaac_app`), configured by `config/shadowhand_spin_stages.yaml`.
-The adapter turns a batched Isaac env into the same 4-tuple `step` / `(obs, info)` `reset` /
-`info["success"]` shape the MetaWorld `env_wrapper` provides, but the stage orchestration is
-*copied*, not shared: that script has its own GIF recorder, dataset collector and action-squashing
-helper duplicating `training_pipeline.record_episode_gif` / `generate_dataset`. Changes to the
-action or rollout convention must be made in both. Design notes: `docs/PIPELINE_REFINEMENT_SPEC.md`.
+**Isaac Lab ShadowHandSpin smoke stages (archived 2026-11-15).** `scripts/run_shadowhand_spin_stages.py` used to run
+a three-stage smoke pipeline when called with no `--study`: a scripted dataset, legacy BC and GRPO on a toy policy,
+through `IsaacLabSingleEnvAdapter`. Nothing used it after the pen-spin stack (`lares/envs/isaac_pen_spin/`) replaced
+it. The stages are now `deprecated/scripts/run_shadowhand_spin_stages.py`, the adapter class is
+`deprecated/lares/envs/isaac_lab_adapter.py`, and the smoke config keys are `deprecated/config/shadowhand_spin_smoke.yaml`.
+The live script only dispatches `--study` / `--research-protocol` (a bare call exits with an argparse error), the live
+`lares/envs/isaac_lab_adapter.py` holds only `launch_isaac_app` / `close_isaac_app` / `_ensure_isaaclab_on_path`, and
+`config/shadowhand_spin_stages.yaml` keeps `isaaclab_root`, `device` and the unchanged `research_protocols` block.
 
 ### The `SymbolicPolicy` contract
 
@@ -652,12 +587,13 @@ serialization. Probes run at several observation scales because a distance gate 
 threshold is fully closed at unit scale, which would make both the coupling and sensitivity checks
 measure nothing. `GateAggregator` turns per-step gates into the statistics AC-2 asks for.
 
-Generation flow in `get_symbolic_policies()`: format prompts → LLM call → regex-extract code block →
-find `class GeneratedPolicy` → write temp file (`imports + generated_code + tests/test_generate_policy.py`)
-→ run as subprocess and require `"Success!"` → only then `exec()` in-process and `validate()`.
-Failures are fed back to the LLM as repair feedback. Two-phase mode (`policy_gen_two_phase: true`)
-first asks for JSON design ideas (`ideas_*.txt`), then implementations (`policy_impl_mode:
-batched | per_idea`).
+Generation flow in `generate_candidates()` (two-phase, the only path the orchestrator runs; the single-phase
+exploration and trace-repair slots share its validator and correction loop): format prompts → LLM call →
+regex-extract code block → find `class GeneratedPolicy` → write temp file
+(`imports + generated_code + tests/test_generate_policy.py`) → run as subprocess and require `"Success!"` → only
+then `exec()` in-process and `validate()`. Failures are fed back to the LLM as one linked correction per slot
+(`_correct_until_valid`). `policy_gen_two_phase: true` is required: it first asks for JSON design ideas
+(`ideas_*.txt`), then implementations (`policy_impl_mode: batched | per_idea`).
 
 ## Development Workflow
 
@@ -686,7 +622,7 @@ only after the round cap (5) is the idea `escalated` for the user to `rule` (tri
 
 Inspection logs: `research/proposals.jsonl` (every proposal, parsed or not), `research/triage.jsonl` (every
 round: advisor decision and reasoning, Claude's position and reasoning, outcome), `research/llm_calls.jsonl`.
-`IMPLEMENTATION_PROGRESS.md` and `DEBUG_PROGRESS.md` are frozen history (2026-10-13); do not add to them.
+`docs/deprecated/IMPLEMENTATION_PROGRESS.md` and `docs/deprecated/DEBUG_PROGRESS.md` are frozen history (2026-10-13); do not add to them.
 `RESEARCH_HANDOFF.md` receives only the decision blocks `research.py` appends.
 
 ## Things that will bite you
@@ -701,7 +637,7 @@ round: advisor decision and reasoning, Claude's position and reasoning, outcome)
   `seeded_rand_vec = True` so its placement draw also follows the case seed.
 - **Every reset names its case.** `env_wrapper.reset()` with no argument raises. That is deliberate:
   it is what makes an episode a function of its case rather than of how much work preceded it.
-  Mocks and the Isaac Lab adapter accept `case=None`; use `lares.eval.manifest.synthetic_cases()`
+  Mocks accept `case=None`; use `lares.eval.manifest.synthetic_cases()`
   for backends with no placements to name.
 - **`get_dict()`**: env state is read through `env._env.get_dict()`, which MetaWorld V3 does not
   provide. `_patch_get_dict()` in `lares/utils/metaworld_env.py` attaches a picklable `_GetDict`
@@ -713,25 +649,28 @@ round: advisor decision and reasoning, Claude's position and reasoning, outcome)
   "No frames captured" rather than raising.
 - **`lares/core/training_pipeline.py` has no `__main__`** — it is a library; drive it through
   `scripts/run_full_evolution.py`.
-- **Rollout logic is still duplicated, now four ways** — `generate_dataset`,
-  `_collect_trajectories` and `record_episode_gif` in `training_pipeline.py`, plus
-  `lares/eval/runner.run_episode`, which `evaluate_policy` and
-  `run_full_evolution.evaluate_expert_policy` both delegate to. The Isaac stack adds a fifth,
-  `run_shadowhand_spin_stages.evaluate_stage_policy`, whose `_policy_action` omits the
-  `action_space.high *` scaling the others apply. Change one, check all five.
-- **`best_policy_code.py`, `best_policy.pt`, `data.pkl`** are *runtime outputs* written into
+- **Rollout logic is still duplicated, three ways** — `generate_dataset` and `_collect_trajectories` in
+  `training_pipeline.py`, plus `lares/eval/runner.run_episode`, which `evaluate_policy`,
+  `run_full_evolution.evaluate_expert_policy`, the expert-trace collector and (since 2026-11-09)
+  `record_episode_gif` all go through. Change one, check all three. (The fourth copy, the Isaac smoke stages'
+  `evaluate_stage_policy`, was archived on 2026-11-15.)
+- **`best_policy_code.py`, `best_policy.pt`, `gen_<N>/data.pkl`** are *runtime outputs* written into
   `log_dir`, not repo files. `logs/` and `*.pkl` are gitignored. `config/manifests/*.yaml` is the
   exception: manifests are committed because they define the evaluation contract.
-- **Phase 7 is blocked until Stages A–F of `debug_spec.md` are complete**, not merely the Stage D smoke
+- **Phase 7 is blocked until Stages A–F of `docs/deprecated/debug_spec.md` are complete**, not merely the Stage D smoke
   test. Stage F tests the main repair hypothesis, so a final evaluation before it would freeze an
   incomplete method. Do not open the final-test split or run Qwen/E10 before then.
 - **The saved incumbent scores 0.00, not 0.30.** `logs/evolution/best_policy_code.py` is generation
   2 candidate 0, which its run reported at 402.76 reward and 0.30 success on 10 unmatched episodes.
   Re-scored on the development manifest it gets ~105 reward and 0.000 success. Treat 0.00 as the
   incumbent; see `RESEARCH_HANDOFF.md`.
-- **`config/shadowhand_spin_stages.yaml` names one env.** All three "stages" run against the env named by
-  `pipeline_task` (the old `stage1_task`/`stage2_task` keys are gone). The script reads `cfg.enable_cameras`, which the
-  yaml never sets, so it always takes the default.
+- **Rendering pen spin needs numpy 1.x.** The box's Isaac venv has numpy 2.4.3, and Isaac Sim 5.1's camera annotators
+  fail under it ("Unable to write from unknown dtype"). `scripts/isaac/record_pen_spin_gif.py` runs with
+  `PYTHONPATH=/home/ubuntu/np126_overlay` (numpy 1.26.4 installed with `pip install --target`); the venv is unchanged.
+  Protocols never render.
+- **`config/shadowhand_spin_stages.yaml` is a protocol file now.** Its top level is `isaaclab_root`, `device` and
+  `research_protocols`; the smoke keys (`pipeline_task`, `bc_steps`, `rl_iterations`, the GIF keys) went to
+  `deprecated/config/shadowhand_spin_smoke.yaml` on 2026-11-15.
 
 ## Logging
 
@@ -740,8 +679,8 @@ use those constants, never string literals, so `plot_training_dynamics.py` keeps
 `TrainingLogger` appends JSONL to `<log_dir>/<run_id>.jsonl` (`run_id` defaults to a `%Y%m%d_%H%M%S`
 timestamp). `run_full_evolution.py` writes flat into `log_dir` (default `./logs/evolution`):
 `demo_<env>.pkl`, `best_policy_code.py`, `best_policy.pt`, per-generation LLM responses and code, and
-optional demo GIFs under `gen_<N>/`. `run_shadowhand_spin_stages.py` instead creates a timestamped run
-dir holding `config.yaml`, `summary.json`, `training_dynamics.jsonl`, the demo pickle, and `*_policy.pt`.
+optional demo GIFs under `gen_<N>/`. `run_shadowhand_spin_stages.py` studies write under their protocol's `log_dir`
+(`logs/pen_spin/<study>/`).
 
 ## Remote GPU server
 

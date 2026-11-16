@@ -32,7 +32,6 @@ from lares.fitting.checkpoints import (  # noqa: E402
 from lares.fitting.objectives import DETERMINISTIC_MSE, LEGACY_MSE_STD_PENALTY, objective_loss  # noqa: E402
 from lares.fitting.optimizers import (  # noqa: E402
     fit_policy_with_objective,
-    fit_with_objective,
     prepare_data,
     state_parameters_sha256,
 )
@@ -240,14 +239,14 @@ class TestRolloutScore(unittest.TestCase):
         self.assertEqual(default_checkpoint_steps(2000, 0), ())
 
 
-class TestCompatibilityWrapper(unittest.TestCase):
-    def test_fit_with_objective_still_fits_a_bank_structure_with_a_float_probe(self):
+class TestBankStructureFit(unittest.TestCase):
+    def test_a_bank_structure_fits_with_a_float_probe(self):
         data = prepare_data(make_buffer(), val_fraction=0.25, split_seed=0)
         structure = next(s for s in load_bank(family="simple") if s.structure_id == "simple_standoff")
         scores = iter([0.1, 0.4, 0.4, 0.2])
-        result = fit_with_objective(
-            structure, data, DETERMINISTIC_MSE, budget=40, batch_size=16, schema=SCHEMA,
-            rollout_probe=lambda p: next(scores), rollout_every=10,
+        result = fit_policy_with_objective(
+            structure.build(SCHEMA), data, DETERMINISTIC_MSE, budget=40, batch_size=16,
+            rollout_probe=lambda p: next(scores), rollout_every=10, structure_id=structure.structure_id,
         )
         self.assertEqual(result.best_rollout_step, 20)
         self.assertEqual(result.best_rollout_score, 0.4)

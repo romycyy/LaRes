@@ -51,8 +51,7 @@ FROZEN_MODULES = (
     "lares/eval/diagnostics.py",
     "lares/fitting/optimizers.py",
     "lares/fitting/objectives.py",
-    "lares/repair/repair.py",
-    "lares/repair/hypotheses.py",
+    "lares/repair/traces.py",
     "lares/search/archive.py",
     "lares/search/feedback.py",
     "lares/search/lanes.py",
@@ -103,7 +102,8 @@ def main():
 
     cfg = load_yaml(args.config) or {}
 
-    from lares.eval.promotion import PromotionPolicy
+    from lares.core.training_pipeline import DEFAULT_BC_BATCH_SIZE, DEFAULT_BC_LR
+    from lares.eval.promotion import PROMOTION_RULE, PromotionPolicy
     from lares.fitting.benchmark import SELECTION_RULE
 
     policy = PromotionPolicy()
@@ -123,8 +123,8 @@ def main():
             "objective": "deterministic_mse",
             "method": "adam_baseline",
             "bc_steps": cfg.get("bc_steps", "unset"),
-            "batch_size": cfg.get("bc_batch_size", "unset"),
-            "learning_rate": cfg.get("bc_lr", "unset"),
+            "batch_size": cfg.get("bc_batch_size", DEFAULT_BC_BATCH_SIZE),
+            "learning_rate": cfg.get("bc_lr", DEFAULT_BC_LR),
             "checkpoint_rule": "best rollout probe, then final",
             "rollout_checkpoint_probes": cfg.get("rollout_checkpoint_probes", 4),
             "benchmark_selection_rule": SELECTION_RULE,
@@ -133,7 +133,7 @@ def main():
             "screen_episodes": policy.screen_episodes,
             "expanded_episodes": policy.expanded_episodes,
             "fallback_top_k": policy.fallback_top_k,
-            "promotion": __import__("lares.eval.promotion", fromlist=["PROMOTION_RULE"]).PROMOTION_RULE,
+            "promotion": PROMOTION_RULE,
             "promotion_challengers": cfg.get("promotion_challengers", 1),
             "tie_break": "none for promotion; return and progress only rank and admit to the archive",
         },

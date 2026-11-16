@@ -389,24 +389,6 @@ def split_buffer_by_episode(demo_buffer, val_fraction=0.2, seed=0):
     )
 
 
-def _per_axis_mse(policy, obs_np, actions_np):
-    from lares.fitting.diagnostics import per_axis_mse
-
-    return per_axis_mse(policy, obs_np, actions_np)
-
-
-def _bound_activity(policy, atol=1e-6):
-    from lares.fitting.diagnostics import bound_activity
-
-    return bound_activity(policy, atol)
-
-
-def _loss_by_phase(policy, obs_np, actions_np, threshold=0.5):
-    from lares.fitting.diagnostics import loss_by_phase
-
-    return loss_by_phase(policy, obs_np, actions_np, threshold)
-
-
 def behavioral_cloning(
     policy,
     demo_buffer,
@@ -493,13 +475,17 @@ def behavioral_cloning(
     if val_idx is not None and len(val_idx) > 0:
         val_obs, val_actions = demo_buffer.take(val_idx)
     train_obs, train_actions = demo_buffer.take(train_idx)
+    if val_obs is not None:
+        val_obs_t = torch.tensor(val_obs, dtype=torch.float32)
+        val_actions_t = torch.tensor(val_actions, dtype=torch.float32)
     halfway = max(1, num_steps // 2)
 
     policy.train()
     for step in range(num_steps):
-        obs_np, actions_np, _, _, _ = demo_buffer.sample(batch_size, indices=train_idx)
-        obs_t = torch.tensor(obs_np, dtype=torch.float32)
-        actions_t = torch.tensor(actions_np, dtype=torch.float32)
+        # The same draw ``DemoBuffer.sample(indices=train_idx)`` makes, on the arrays already stacked above.
+        batch = np.random.randint(0, len(train_obs), size=batch_size)
+        obs_t = torch.tensor(train_obs[batch], dtype=torch.float32)
+        actions_t = torch.tensor(train_actions[batch], dtype=torch.float32)
 
         mean, std = policy(obs_t)
 
@@ -548,10 +534,8 @@ def behavioral_cloning(
         if val_obs is not None and val_interval > 0 and (step + 1) % val_interval == 0:
             policy.eval()
             with torch.no_grad():
-                v_mean, _ = policy(torch.tensor(val_obs, dtype=torch.float32))
-                v_loss = nn.functional.mse_loss(
-                    torch.tanh(v_mean), torch.tensor(val_actions, dtype=torch.float32)
-                )
+                v_mean, _ = policy(val_obs_t)
+                v_loss = nn.functional.mse_loss(torch.tanh(v_mean), val_actions_t)
             stats["val_loss"].append((step, float(v_loss)))
             policy.train()
 
@@ -587,13 +571,15 @@ def behavioral_cloning(
 
     # Fitting diagnostics. Training loss alone cannot separate "this structure
     # cannot express the expert" from "these constants were badly tuned".
+    from lares.fitting.diagnostics import bound_activity, loss_by_phase, per_axis_mse
+
     policy.eval()
     axes = [f"axis_{i}" for i in range(policy.action_dim)]
     stats["train_loss_by_axis"] = dict(
-        zip(axes, _per_axis_mse(policy, train_obs, train_actions))
+        zip(axes, per_axis_mse(policy, train_obs, train_actions))
     )
     if val_obs is not None:
-        val_by_axis = _per_axis_mse(policy, val_obs, val_actions)
+        val_by_axis = per_axis_mse(policy, val_obs, val_actions)
         stats["validation_loss_by_axis"] = dict(zip(axes, val_by_axis))
         stats["validation_loss_end"] = float(np.mean(val_by_axis))
     else:
@@ -612,8 +598,8 @@ def behavioral_cloning(
         if grad_norms
         else None
     )
-    stats["bound_activity"] = _bound_activity(policy)
-    stats["loss_by_phase"] = _loss_by_phase(policy, train_obs, train_actions)
+    stats["bound_activity"] = bound_activity(policy)
+    stats["loss_by_phase"] = loss_by_phase(policy, train_obs, train_actions)
     policy.train()
     return stats
 
@@ -1030,18 +1016,28 @@ def _unwrap_env_leaf(env):
     return cur
 
 
-def _grab_frame_from_env(env_leaf):
-    """Return RGB uint8 array from ``env_leaf`` or ``None`` if no valid frame."""
-    leaf = _unwrap_env_leaf(env_leaf)
-    render_fn = getattr(leaf, "render", None)
-    if not callable(render_fn):
+#: MetaWorld's offscreen ``rgb_array`` render (camera 2, MuJoCo 3) comes out upside down: floor at the top.
+#: Seen on the R-006 smoke frame (2026-10-22). Frames are flipped back before anyone sees them.
+FLIP_RENDER_VERTICALLY = True
+
+
+class _FrameGrabber:
+    """``render`` of the innermost env, with its keyword attempts resolved once per episode rather than per frame."""
+
+    def __init__(self, env):
+        leaf = _unwrap_env_leaf(env)
+        self.render_fn = getattr(leaf, "render", None)
+        self.attempts = _render_kw_attempts(self.render_fn) if callable(self.render_fn) else []
+
+    def __call__(self):
+        """RGB uint8 array, flipped upright, or ``None`` when no attempt returned a frame."""
+        if not callable(self.render_fn):
+            return None
+        for kwargs in self.attempts:
+            arr = _coerce_rgb_hwc_uint8(self.render_fn(**kwargs))
+            if arr is not None:
+                return np.ascontiguousarray(arr[::-1]) if FLIP_RENDER_VERTICALLY else arr
         return None
-    for kwargs in _render_kw_attempts(render_fn):
-        frame = render_fn(**kwargs)
-        arr = _coerce_rgb_hwc_uint8(frame)
-        if arr is not None:
-            return arr
-    return None
 
 
 def record_episode_gif(
@@ -1054,22 +1050,19 @@ def record_episode_gif(
     verbose=True,
     deterministic=False,
 ):
-    """Run one named episode and save it as a GIF.
+    """Run one named episode through the shared rollout and save its frames as a GIF.
 
-    Unwraps to the innermost env before calling ``render``, so OpenAI Gym
-    ``Wrapper`` layers (e.g. ``TimeLimit``) are skipped — their ``render`` passes
-    ``mode`` positionally and breaks Gymnasium MetaWorld envs.
+    The episode is :func:`lares.eval.runner.run_episode` with a :class:`~lares.eval.runner.PolicyActor`, so the
+    recorded controller is exactly the one whose score is reported alongside the GIF; frame capture hangs off the
+    rollout's ``observer`` hook. Frames come from the innermost env's ``render`` (OpenAI Gym ``Wrapper`` layers
+    pass ``mode`` positionally and break Gymnasium MetaWorld envs), with keyword attempts chosen by signature.
+    If every attempt returns a non-array or ``None``, no GIF is written.
 
-    Uses signature-based kwargs (Gymnasium: ``render()`` with ``render_mode`` set at
-    construction; classic Gym: ``mode='rgb_array'``). If every attempt returns a
-    non-array or ``None``, no GIF is written.
-
-    Calls :func:`ensure_mujoco_headless_gl` at entry so SSH runs pick EGL before the
-    first frame. MuJoCo / OpenGL errors from ``render`` propagate to the caller unless
-    a caller (e.g. :class:`EvolutionOrchestrator`) catches them.
+    Calls :func:`ensure_mujoco_headless_gl` at entry so SSH runs pick EGL before the first frame. MuJoCo / OpenGL
+    errors from ``render`` propagate to the caller unless a caller (e.g. :class:`EvolutionOrchestrator`) catches them.
 
     Args:
-        policy: Trained policy (will be placed in eval mode).
+        policy: Trained policy (placed in eval mode by the actor).
         env: MetaWorld environment (raw or wrapped), dedicated to recording so
             capturing frames cannot shift a later evaluation case.
         path: Destination ``.gif`` file path.
@@ -1078,9 +1071,7 @@ def record_episode_gif(
         fps: Playback frame rate of the saved GIF (converted to per-frame
             ``duration`` in ms for imageio/Pillow; must be > 0).
         verbose: If True, print capture/write diagnostics (set False in unit tests).
-        deterministic: If True, use the policy mean as the action (clipped to
-            ``[-1, 1]``) with no Gaussian sampling. Matches Stage 1 expert rollout
-            when the policy forward returns expert actions in that range.
+        deterministic: If True, execute ``tanh(mean)``; otherwise sample with the case's policy seed.
 
     Returns:
         dict with keys ``episode_reward`` (float), ``success`` (bool),
@@ -1089,79 +1080,37 @@ def record_episode_gif(
     """
     import imageio
 
+    from lares.eval.runner import PolicyActor, run_episode
+
     ensure_mujoco_headless_gl()
-
+    grab = _FrameGrabber(env)
     frames = []
-    policy.eval()
-    reset_diagnostics = getattr(policy, "reset_diagnostics", None)
-    if callable(reset_diagnostics):
-        reset_diagnostics()
 
-    obs, _ = env.reset(case)
+    def observe(step):
+        if not step["final"]:
+            frame = grab()
+            if frame is not None:
+                frames.append(frame)
 
-    episode_reward = 0.0
-    success = False
-
-    # MetaWorld's offscreen render is upside down; the vision recorder declares the flip once.
-    from lares.vision.media import FLIP_RENDER_VERTICALLY
-
-    for _ in range(max_steps):
-        frame = _grab_frame_from_env(env)
-        if frame is not None:
-            frames.append(np.ascontiguousarray(frame[::-1]) if FLIP_RENDER_VERTICALLY else frame)
-
-        obs_t = torch.tensor(obs, dtype=torch.float32).unsqueeze(0)
-        with torch.no_grad():
-            mean, std = policy(obs_t)
-            # Must match evaluate_policy / _collect_trajectories: the policy's
-            # output is a pre-tanh Gaussian, so the executed action is tanh(...).
-            # Clipping the pre-tanh value instead records a different controller
-            # than the one whose score is reported alongside the GIF.
-            if deterministic:
-                action = (
-                    torch.tanh(mean)
-                    .squeeze(0)
-                    .detach()
-                    .cpu()
-                    .numpy()
-                    .astype(np.float32, copy=False)
-                )
-            else:
-                dist = torch.distributions.Normal(mean, std)
-                pretanh_action = dist.sample()
-                action = torch.tanh(pretanh_action).squeeze(0).numpy()
-        try:
-            next_obs, reward, done, info = env.step(env.action_space.high * action)
-        except Exception as e:
-            if verbose:
-                print(f"  [record_gif] step failed: {e!r}; action={action!r}")
-            break
-
-        episode_reward += reward
-        if info.get("success", 0) > 0:
-            success = True
-        obs = next_obs
-        if done:
-            break
+    record = run_episode(PolicyActor(policy, deterministic=deterministic), env, case, max_steps=max_steps,
+                         observer=observe)
 
     saved = False
     if frames:
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
         try:
             # Pillow plugin deprecated ``fps``; duration is ms per frame.
-            duration_ms = 1000.0 / float(fps)
-            imageio.mimsave(path, frames, duration=duration_ms)
+            imageio.mimsave(path, frames, duration=1000.0 / float(fps))
             saved = True
         except Exception as exc:
             if verbose:
                 print(f"  [record_gif] Failed to write {path}: {exc}")
-    else:
-        if verbose:
-            print("  [record_gif] No frames captured — check render mode support.")
+    elif verbose:
+        print("  [record_gif] No frames captured — check render mode support.")
 
     return {
-        "episode_reward": episode_reward,
-        "success": success,
+        "episode_reward": float(record.episode_return),
+        "success": bool(record.success > 0),
         "num_frames": len(frames),
         "saved": saved,
     }
@@ -1251,6 +1200,7 @@ def llm_evolution(
     max_repair_per_candidate=1,
     param_budget=None,
     max_total_tokens=None,
+    plan=None,
 ):
     """Propose one population of candidate structures, with lineage, via the LLM.
 
@@ -1258,12 +1208,14 @@ def llm_evolution(
     objects and generation 1 and later proposes ``MutationProposal`` edits of
     parents drawn from ``feedback_bundle``. The feedback text is read back from
     the bundle's hashed file, so the generator sees exactly what the records say
-    it saw. Training and evaluation are the caller's job.
+    it saw. With a :class:`~lares.search.lanes.TwoLanePlan` as ``plan`` the one
+    generation is the two-lane search's (:func:`~lares.core.policy_generation.generate_two_lane_candidates`),
+    each candidate carrying its lane. Training and evaluation are the caller's job.
 
     Returns:
         ``list[GeneratedCandidate]``, one per attempt, failures included.
     """
-    from lares.core.policy_generation import generate_candidates
+    from lares.core.policy_generation import final_attempts, generate_candidates, generate_two_lane_candidates
     from lares.search.generation import LLMCallLedger
 
     if not bool(getattr(args, "policy_gen_two_phase", False)):
@@ -1274,92 +1226,23 @@ def llm_evolution(
     os.makedirs(log_dir, exist_ok=True)
     prompts = load_policy_prompt_assets(env_name)
     ledger = ledger if ledger is not None else LLMCallLedger(log_dir)
-    feedback_text = feedback_bundle.read_text(log_dir) if feedback_bundle is not None else None
-
-    data_pkl_path = os.path.join(log_dir, "data.pkl")
-    with open(data_pkl_path, "wb") as f:
-        pickle.dump([{"obs": np.zeros(obs_dim)}], f)
-
     gen_dir = os.path.join(log_dir, f"gen_{generation}")
-    os.makedirs(gen_dir, exist_ok=True)
-
-    candidates = generate_candidates(
-        client,
-        args,
-        gen_dir,
-        generation,
-        obs_dim,
-        action_dim,
-        env_name,
-        prompts,
-        pop_size,
-        data_pkl_path,
-        ledger,
-        feedback_bundle=feedback_bundle,
-        feedback_text=feedback_text,
-        parent_sources=parent_sources,
-        llm_transcript_path=llm_transcript_path,
-        impl_mode=_impl_mode(args),
-        max_total_calls=max_total_calls,
-        max_repair_per_candidate=max_repair_per_candidate,
-        param_budget=param_budget,
-        max_total_tokens=max_total_tokens,
-    )
+    common = dict(llm_transcript_path=llm_transcript_path, impl_mode=_impl_mode(args), max_total_calls=max_total_calls,
+                  max_repair_per_candidate=max_repair_per_candidate, param_budget=param_budget,
+                  max_total_tokens=max_total_tokens)
+    if plan is not None:
+        candidates = generate_two_lane_candidates(client, args, gen_dir, obs_dim, action_dim, env_name, prompts, plan,
+                                                  None, ledger, **common)
+    else:
+        feedback_text = feedback_bundle.read_text(log_dir) if feedback_bundle is not None else None
+        candidates = generate_candidates(client, args, gen_dir, generation, obs_dim, action_dim, env_name, prompts,
+                                         pop_size, None, ledger, feedback_bundle=feedback_bundle,
+                                         feedback_text=feedback_text, parent_sources=parent_sources, **common)
 
     if logger is not None:
-        from lares.core.policy_generation import final_attempts
-
         logger.log_metrics(
             stage="evolutionary",
             update=generation,
-            metrics={
-                "evo/candidates_generated": float(sum(1 for c in final_attempts(candidates) if c.valid))
-            },
-            task_name=env_name,
-        )
-    return candidates
-
-
-def two_lane_generation(
-    client,
-    env_name,
-    obs_dim,
-    action_dim,
-    args,
-    plan,
-    log_dir="./logs/evolution",
-    logger=None,
-    llm_transcript_path=None,
-    ledger=None,
-    max_total_calls=50,
-    max_repair_per_candidate=1,
-    param_budget=None,
-    max_total_tokens=None,
-):
-    """Generation 0 of the two-lane search (:mod:`lares.search.lanes`), with lineage.
-
-    Returns ``list[GeneratedCandidate]``, one per attempt, failures included; each carries its lane.
-    """
-    from lares.core.policy_generation import final_attempts, generate_two_lane_candidates
-    from lares.search.generation import LLMCallLedger
-
-    if not bool(getattr(args, "policy_gen_two_phase", False)):
-        raise ValueError("two_lane_generation needs policy_gen_two_phase: true so candidates carry lineage")
-    os.makedirs(log_dir, exist_ok=True)
-    prompts = load_policy_prompt_assets(env_name)
-    ledger = ledger if ledger is not None else LLMCallLedger(log_dir)
-    data_pkl_path = os.path.join(log_dir, "data.pkl")
-    with open(data_pkl_path, "wb") as f:
-        pickle.dump([{"obs": np.zeros(obs_dim)}], f)
-    candidates = generate_two_lane_candidates(
-        client, args, os.path.join(log_dir, "gen_0"), obs_dim, action_dim, env_name, prompts, plan,
-        data_pkl_path, ledger, llm_transcript_path=llm_transcript_path, impl_mode=_impl_mode(args),
-        max_total_calls=max_total_calls, max_repair_per_candidate=max_repair_per_candidate,
-        param_budget=param_budget, max_total_tokens=max_total_tokens,
-    )
-    if logger is not None:
-        logger.log_metrics(
-            stage="evolutionary", update=0,
             metrics={"evo/candidates_generated": float(sum(1 for c in final_attempts(candidates) if c.valid))},
             task_name=env_name,
         )
@@ -1384,6 +1267,21 @@ def parameter_values(policy) -> dict:
 ARM_NO_TRACE, ARM_UNIFORM, ARM_EVENT = "no_trace", "uniform", "event"
 PLATEAU_ARMS = (ARM_NO_TRACE, ARM_UNIFORM, ARM_EVENT)
 PREFIX_STATE = os.path.join("gen_0", "prefix_state.json")
+
+
+#: The fitter's mini-batch and learning rate: the orchestrator's defaults, the config's (``bc_batch_size``, ``bc_lr``)
+#: and what :mod:`scripts.freeze_method` records when a config leaves them unset.
+DEFAULT_BC_BATCH_SIZE = 256
+DEFAULT_BC_LR = 1e-3
+#: The by-episode train/validation split every fit uses (:func:`lares.fitting.optimizers.prepare_data`).
+FIT_VAL_FRACTION = 0.2
+FIT_SPLIT_SEED = 0
+
+
+def _rank_cleared(decisions):
+    """The screening decisions that cleared, best first: success, then progress, then return."""
+    return sorted((d for d in decisions if d["promoted"]),
+                  key=lambda d: (d["success_rate"], d["progress"], d["mean_return"]), reverse=True)
 
 
 class EvolutionOrchestrator:
@@ -1419,13 +1317,9 @@ class EvolutionOrchestrator:
         pop_size=5,
         elite_num=2,
         bc_steps=3000,
-        rl_iterations=0,
-        rl_episodes_per_iter=10,
         log_dir="./logs/evolution",
         record_demo_gif=True,
         dev_manifest=None,
-        train_cases=(),
-        gif_case=None,
         eval_max_steps=150,
         promotion_policy=None,
         rollout_checkpoint_probes=4,
@@ -1433,12 +1327,9 @@ class EvolutionOrchestrator:
         checkpoint_steps=None,
         fixed_action_scale=None,
         probe_manifest=None,
-        bc_batch_size=256,
-        bc_lr=1e-3,
+        bc_batch_size=DEFAULT_BC_BATCH_SIZE,
+        bc_lr=DEFAULT_BC_LR,
         fit_seed=0,
-        val_fraction=0.2,
-        split_seed=0,
-        sampling="uniform",
         max_repair_per_candidate=1,
         max_llm_calls_per_generation=50,
         param_budget=None,
@@ -1447,7 +1338,6 @@ class EvolutionOrchestrator:
         lane_plan=None,
         demonstration_manifest=None,
         demonstration_env=None,
-        demonstration_actor=None,
         plateau_fork=None,
     ):
         from lares.core.symbolic_policy import SymbolicPolicy
@@ -1456,15 +1346,9 @@ class EvolutionOrchestrator:
         from lares.fitting.objectives import DETERMINISTIC_MSE, spec
         from lares.search.generation import PARAMETER_BUDGET
 
-        if int(rl_iterations) > 0:
-            raise ValueError(
-                "rl_iterations > 0 is not supported by the provenance-tracked fitter: RL would "
-                "change the parameters after the checkpoint was selected, so the selected state, "
-                "its diagnostics and its record would no longer describe the evaluated policy."
-            )
+        # No RL stage: RL after checkpoint selection would change the parameters the selected state, its
+        # diagnostics and its record describe, so the orchestrator has no ``rl_iterations`` at all.
         self.dev_manifest = dev_manifest
-        self.train_cases = list(train_cases)
-        self.gif_case = gif_case
         self.eval_max_steps = int(eval_max_steps)
         # Declared before any generation runs, and stored with the results, so a
         # promotion can be read back against the threshold that justified it.
@@ -1486,9 +1370,6 @@ class EvolutionOrchestrator:
         self.bc_batch_size = int(bc_batch_size)
         self.bc_lr = float(bc_lr)
         self.fit_seed = int(fit_seed)
-        self.val_fraction = float(val_fraction)
-        self.split_seed = int(split_seed)
-        self.sampling = sampling
         self.max_repair_per_candidate = int(max_repair_per_candidate)
         self.max_llm_calls_per_generation = int(max_llm_calls_per_generation)
         self.max_llm_tokens_per_generation = (
@@ -1507,20 +1388,16 @@ class EvolutionOrchestrator:
         self.pop_size = pop_size
         self.elite_num = elite_num
         self.bc_steps = bc_steps
-        self.rl_iterations = 0
-        self.rl_episodes_per_iter = rl_episodes_per_iter
         self.log_dir = log_dir
         self.record_demo_gif = record_demo_gif
         #: A :class:`~lares.search.lanes.TwoLanePlan`, or ``None`` for the single-lane search.
         self.lane_plan = lane_plan
         #: R-037: a two-slot plateau-repair plan rather than the nine-slot two-lane search.
         self.plateau = getattr(lane_plan, "kind", "") == "plateau_repair"
-        #: Expert-only demonstrations for the trace-repair slot: a manifest disjoint from every learner manifest, its
-        #: own env, and (for tests) the actor; ``None`` means the task's scripted expert.
+        #: Expert-only demonstrations for the trace-repair slot: a manifest disjoint from every learner manifest and
+        #: its own env; the actor is the task's scripted expert.
         self.demonstration_manifest = demonstration_manifest
         self.demonstration_env = demonstration_env
-        self.demonstration_actor = demonstration_actor
-        self.plateau_log: dict = {}
         #: R-042: ``None`` runs the whole plateau generation; otherwise ``{"phase": "prefix"}`` stops after slot 0 and
         #: writes ``gen_0/prefix_state.json``, and ``{"phase": "continuation", "arm": ..., "demonstrations": path}``
         #: runs slot 1 alone in a copy of a prefix run (see :meth:`_plateau_generation`).
@@ -1614,8 +1491,10 @@ class EvolutionOrchestrator:
             )
         return self.dev_manifest.slice(start, stop)
 
-    #: Kept for callers that still say "expanded": the expanded evaluation *is* the promotion set.
-    expanded_manifest = promotion_manifest
+    @property
+    def has_fittable_lane(self) -> bool:
+        """True when the plan fits anything (the two-lane search); a plateau plan and the single lane never do."""
+        return self.lane_plan is not None and bool(self.lane_plan.fittable_slots)
 
     @property
     def probe_manifest(self):
@@ -1669,8 +1548,6 @@ class EvolutionOrchestrator:
         return write_artifact(self.log_dir, rel_path, data)
 
     def _tensor_artifact(self, rel_path, value):
-        import io
-
         buffer = io.BytesIO()
         torch.save(value, buffer)
         return self._artifact(rel_path, buffer.getvalue())
@@ -1679,8 +1556,6 @@ class EvolutionOrchestrator:
         probe = getattr(envs, "probe", None)
         if probe is not None:
             return probe, "probe"
-        if getattr(envs, "allow_shared", False):
-            return envs.gif, "gif (shared; allow_shared=True)"
         raise ValueError(
             "EvolutionOrchestrator needs PipelineEnvs(probe=...): the checkpoint probe gets its "
             "own environment rather than borrowing the GIF stream."
@@ -1712,8 +1587,8 @@ class EvolutionOrchestrator:
         self.probe_batch_ref = self._tensor_artifact("reconstruction_probe_batch.pt", self.probe_batch)
 
     def _write_run_manifest(self, args, probe_stream):
+        from lares.eval.promotion import PROMOTION_RULE
         from lares.fitting.checkpoints import CHECKPOINT_TIE_RULE
-        from lares.fitting.optimizers import objective_config
         from lares.search.generation import env_identity
 
         manifests = {
@@ -1726,11 +1601,7 @@ class EvolutionOrchestrator:
             "model": getattr(args, "model", ""),
             "reasoning_effort": getattr(args, "reasoning_effort", None),
             "policy_impl_mode": _impl_mode(args),
-            "objective_config": objective_config(
-                self.objective, self.sampling, self.bc_steps, self.bc_batch_size, self.bc_lr, 1.0,
-                self.fit_seed, self.checkpoint_steps, self.fixed_action_scale,
-                val_fraction=self.val_fraction, split_seed=self.split_seed,
-            ),
+            "objective_config": self._objective_config(self.bc_steps, self.checkpoint_steps),
             "fixed_action_scale": self.fixed_action_scale,
             "action_mode": "deterministic",
             "checkpoint_steps": list(self.checkpoint_steps),
@@ -1742,7 +1613,7 @@ class EvolutionOrchestrator:
                 for name, m in manifests.items()
             },
             "promotion_policy": self.promotion_policy.to_dict(),
-            "promotion_rule": __import__("lares.eval.promotion", fromlist=["PROMOTION_RULE"]).PROMOTION_RULE,
+            "promotion_rule": PROMOTION_RULE,
             "promotion_challengers": self.promotion_challengers,
             "max_llm_tokens_per_generation": self.max_llm_tokens_per_generation,
             "param_budget": list(self.param_budget),
@@ -1757,8 +1628,7 @@ class EvolutionOrchestrator:
                 if self.demonstration_manifest is not None else None
             ),
         }
-        self.run_manifest_ref = self._artifact("run_manifest.json", json.dumps(payload, indent=2, default=str))
-        return payload
+        self._artifact("run_manifest.json", json.dumps(payload, indent=2, default=str))
 
     def _write_run_totals(self):
         from lares.search.provenance import reconcile_resources
@@ -1960,9 +1830,28 @@ class EvolutionOrchestrator:
         return probe
 
     def _save_report(self, report, rel_name, gen):
-        from lares.search.generation import write_artifact
+        return self._artifact(os.path.join(f"gen_{gen}", "reports", rel_name), report.to_json())
 
-        return write_artifact(self.log_dir, os.path.join(f"gen_{gen}", "reports", rel_name), report.to_json())
+    def _score_on_promotion_set(self, r, envs, expanded, gen):
+        """Score one screened challenger's fitted state on the promotion set and file the evidence on its result.
+
+        Returns ``(result, report, seconds)``; ``seconds`` covers the rollouts only, not the report write.
+        """
+        from lares.eval.report import CHECKPOINT_FITTED
+
+        cid = r["candidate_id"]
+        started = time.time()
+        exp_result, exp_report = self._evaluate_checkpoint(
+            r["policy"], envs.development, expanded, cid, CHECKPOINT_FITTED, bc_stats=r["bc_stats"]
+        )
+        r["resources"].add_episodes("expanded", exp_result)
+        seconds = time.time() - started
+        r["report_refs"]["fitted_expanded"] = self._save_report(exp_report, f"{cid}_expanded.json", gen)
+        self.archive.confirm(cid, exp_report)
+        r["expanded_record"], r["expanded_report"] = exp_result, exp_report
+        r["eval"] = exp_result.fitness_dict()
+        r["score"] = self._score(r["eval"])
+        return exp_result, exp_report, seconds
 
     def _report_fitting_stats(self, fit):
         """The fitting section of the fitted report, taken from the selected state only."""
@@ -2029,30 +1918,34 @@ class EvolutionOrchestrator:
             return int(self.lane_plan.fittable_budget), tuple(self.lane_plan.checkpoint_steps), candidate.lane
         return 0, (), candidate.lane
 
-    def _zero_shot_fit(self, policy):
-        """The fitting block of a candidate that is never fitted: no data, no gradient, no probe."""
+    def _objective_config(self, budget, checkpoint_steps):
+        """The recorded fitting configuration for ``budget`` gradient steps: one place names the clip norm and split."""
+        from lares.fitting.optimizers import SAMPLING_UNIFORM, objective_config
+
+        return objective_config(
+            self.objective, SAMPLING_UNIFORM, budget, self.bc_batch_size, self.bc_lr, 1.0, self.fit_seed,
+            checkpoint_steps, self.fixed_action_scale, val_fraction=FIT_VAL_FRACTION, split_seed=FIT_SPLIT_SEED,
+        )
+
+    def _unfitted_fit(self, initial_state, selected_state, reason, **extra):
+        """A fit-shaped result for a candidate no objective was evaluated on: step 0, no history, no gradient."""
         from types import SimpleNamespace
 
-        from lares.fitting.optimizers import objective_config, state_parameters_sha256
+        from lares.fitting.optimizers import state_parameters_sha256
 
-        state = copy.deepcopy(policy.state_dict())
-        diagnostics = {
-            "computed": False,
-            "reason": "exploration lane: evaluated at its initial values; no fitting data was read",
-            "parameters_sha256": state_parameters_sha256(state),
-            "train_loss": None,
-            "validation_loss": None,
-        }
+        diagnostics = {"computed": False, "reason": reason, "parameters_sha256": state_parameters_sha256(selected_state),
+                       "train_loss": None, "validation_loss": None}
         return SimpleNamespace(
-            initial_state=state, final_state=state, selected_state=state, selected_step=0,
-            checkpoint_history=[], bc_gradient_steps=0, objective_evaluations=0, history=[],
-            gradient_norms=None, frozen_parameters=[], final_diagnostics=diagnostics,
-            selected_diagnostics=dict(diagnostics),
-            objective_config=objective_config(
-                self.objective, self.sampling, 0, self.bc_batch_size, self.bc_lr, 1.0, self.fit_seed, [],
-                self.fixed_action_scale, val_fraction=self.val_fraction, split_seed=self.split_seed,
-            ),
+            initial_state=initial_state, final_state=selected_state, selected_state=selected_state, selected_step=0,
+            checkpoint_history=[], bc_gradient_steps=0, objective_evaluations=0, history=[], gradient_norms=None,
+            frozen_parameters=[], final_diagnostics=diagnostics, selected_diagnostics=dict(diagnostics),
+            objective_config=self._objective_config(0, []), **extra,
         )
+
+    def _zero_shot_fit(self, policy):
+        """The fitting block of a candidate that is never fitted: no data, no gradient, no probe."""
+        state = copy.deepcopy(policy.state_dict())
+        return self._unfitted_fit(state, state, "exploration lane: evaluated at its initial values; no fitting data was read")
 
     def _search_fit(self, policy, probe_env, resources, slot):
         """R-018: the exploration lane's treatment. Score 24 independent candidates on the probe, keep the best.
@@ -2060,9 +1953,6 @@ class EvolutionOrchestrator:
         The search seed is derived from the run's fit seed and the slot, so a run is reproducible and slots differ.
         The returned object has the shape of a fit (states, step 0, no checkpoint history) plus ``search``.
         """
-        from types import SimpleNamespace
-
-        from lares.fitting.optimizers import objective_config, state_parameters_sha256
         from lares.search import rollout_search
 
         initial = copy.deepcopy(policy.state_dict())
@@ -2071,18 +1961,8 @@ class EvolutionOrchestrator:
         found = rollout_search.search(policy, self._rollout_probe(probe_env, self.probe_manifest, resources), seed)
         resources.add_wall_time("evaluation", time.time() - started)
         policy.load_state_dict(found["policy"].state_dict())
-        selected = copy.deepcopy(policy.state_dict())
-        diagnostics = {"computed": False, "reason": "rollout search: no imitation objective was evaluated",
-                       "parameters_sha256": state_parameters_sha256(selected), "train_loss": None,
-                       "validation_loss": None}
-        return SimpleNamespace(
-            initial_state=initial, final_state=selected, selected_state=selected, selected_step=0,
-            checkpoint_history=[], bc_gradient_steps=0, objective_evaluations=0, history=[], gradient_norms=None,
-            frozen_parameters=[], final_diagnostics=diagnostics, selected_diagnostics=dict(diagnostics),
-            objective_config=objective_config(
-                self.objective, self.sampling, 0, self.bc_batch_size, self.bc_lr, 1.0, self.fit_seed, [],
-                self.fixed_action_scale, val_fraction=self.val_fraction, split_seed=self.split_seed,
-            ),
+        return self._unfitted_fit(
+            initial, copy.deepcopy(policy.state_dict()), "rollout search: no imitation objective was evaluated",
             search={"sampler": rollout_search.SAMPLER, "candidates": rollout_search.CANDIDATES, "seed": seed,
                     "probe_manifest_id": self.probe_manifest.manifest_id,
                     "selected_index": int(found["selected_index"]), "trace": found["trace"]},
@@ -2092,7 +1972,7 @@ class EvolutionOrchestrator:
         """Fit one valid candidate, choose its checkpoint, screen it and record it."""
         from lares.eval.report import CHECKPOINT_FITTED, CHECKPOINT_INTERMEDIATE, CHECKPOINT_ZERO_SHOT
         from lares.fitting.checkpoints import CHECKPOINT_TIE_RULE
-        from lares.fitting.optimizers import fit_policy_with_objective, state_parameters_sha256
+        from lares.fitting.optimizers import SAMPLING_UNIFORM, fit_policy_with_objective, state_parameters_sha256
         from lares.search import STATUS_EVALUATED, ExperimentRecord, source_hash
         from lares.search.generation import env_identity
         from lares.search.resources import ResourceLedger
@@ -2156,7 +2036,7 @@ class EvolutionOrchestrator:
                 batch_size=min(self.bc_batch_size, int(self.data.train_obs.shape[0])),
                 lr=self.bc_lr,
                 seed=self.fit_seed,
-                sampling=self.sampling,
+                sampling=SAMPLING_UNIFORM,
                 rollout_probe=probe,
                 checkpoint_steps=steps if probe is not None else None,
                 checkpoint_callback=capture,
@@ -2341,7 +2221,7 @@ class EvolutionOrchestrator:
         also the performance challenger) and at its own step-0 state, and
         :func:`~lares.search.lanes.decide_fittable_incumbent` applies both strict paired tests.
         """
-        from lares.eval.report import CHECKPOINT_FITTED, CHECKPOINT_ZERO_SHOT
+        from lares.eval.report import CHECKPOINT_ZERO_SHOT
         from lares.search.lanes import NOT_BEST_FITTABLE_CHALLENGER, decide_fittable_incumbent, fittable_eligibility
 
         decisions, eligible = {}, []
@@ -2361,8 +2241,7 @@ class EvolutionOrchestrator:
         screened = self.promotion_policy.screen(
             [{"candidate_id": r["candidate_id"], "report": r["screen_report"], "valid": True} for r in eligible]
         )
-        cleared = sorted((d for d in screened if d["promoted"]),
-                         key=lambda d: (d["success_rate"], d["progress"], d["mean_return"]), reverse=True)
+        cleared = _rank_cleared(screened)
         challenger = cleared[0] if cleared else None
         by_id = {r["candidate_id"]: r for r in eligible}
         for d in screened:
@@ -2381,15 +2260,7 @@ class EvolutionOrchestrator:
         r = by_id[cid]
         started = time.time()
         if r["expanded_record"] is None:
-            exp_result, exp_report = self._evaluate_checkpoint(
-                r["policy"], envs.development, expanded, cid, CHECKPOINT_FITTED, bc_stats=r["bc_stats"]
-            )
-            r["resources"].add_episodes("expanded", exp_result)
-            r["report_refs"]["fitted_expanded"] = self._save_report(exp_report, f"{cid}_expanded.json", gen)
-            self.archive.confirm(cid, exp_report)
-            r["expanded_record"], r["expanded_report"] = exp_result, exp_report
-            r["eval"] = exp_result.fitness_dict()
-            r["score"] = self._score(r["eval"])
+            self._score_on_promotion_set(r, envs, expanded, gen)
         step0 = copy.deepcopy(r["policy"])
         step0.load_state_dict(r["fit"].initial_state)
         step0_result, step0_report = self._evaluate_checkpoint(step0, envs.development, expanded, cid, CHECKPOINT_ZERO_SHOT)
@@ -2534,14 +2405,12 @@ class EvolutionOrchestrator:
         from lares.search import lanes
 
         plan = self.lane_plan
-        data_pkl_path = os.path.join(self.log_dir, "data.pkl")
-        with open(data_pkl_path, "wb") as f:
-            pickle.dump([{"obs": np.zeros(self.obs_dim)}], f)
         generator = PlateauSlotGenerator(
             client, args, gen_dir, self.obs_dim, self.action_dim, self.env_name,
-            load_policy_prompt_assets(self.env_name), plan, data_pkl_path, self.ledger,
+            load_policy_prompt_assets(self.env_name), plan.n, self.ledger,
             llm_transcript_path=llm_transcript_path, max_total_calls=self.max_llm_calls_per_generation,
             max_repair_per_candidate=self.max_repair_per_candidate, max_total_tokens=self.max_llm_tokens_per_generation,
+            slot_metadata=lambda slot: plan.slot(slot).lane_metadata(),
         )
         log = {"plan": plan.to_dict(), "slot_ids": dict(generator.ids), "demonstrations": None, "edited_candidate": None}
 
@@ -2573,11 +2442,8 @@ class EvolutionOrchestrator:
                              selected_parameters=parameter_values(best["policy"]))
             log["prefix_state"] = state
             log["outcome"] = "prefix only (R-042 fork point)"
-            log["final_incumbent"] = self._incumbent_id
-            log["accounting"] = self._plateau_accounting(log)
-            self.plateau_log = log
             self._artifact(PREFIX_STATE, json.dumps(state, indent=2, default=str))
-            self._artifact(os.path.join("gen_0", "plateau_repair.json"), json.dumps(log, indent=2, default=str))
+            self._finish_plateau_log(log, "plateau_repair.json")
             return c0, r0, d0, f0
 
         produce, continuation = (lambda: generator.exploration(1)), lanes.CONTINUATION_EXPLORATION
@@ -2605,10 +2471,7 @@ class EvolutionOrchestrator:
             c1, r1, d1, f1 = run_slot(produce)
         log["outcome"] = ("inconclusive: expert demonstrations did not qualify" if continuation == lanes.CONTINUATION_STOPPED
                           else "triggered" if trigger["fired"] else "not triggered")
-        log["final_incumbent"] = self._incumbent_id
-        log["accounting"] = self._plateau_accounting(log)
-        self.plateau_log = log
-        self._artifact(os.path.join("gen_0", "plateau_repair.json"), json.dumps(log, indent=2, default=str))
+        self._finish_plateau_log(log, "plateau_repair.json")
         return c0 + c1, r0 + r1, d0 + d1, f0 + f1
 
     def _plateau_continuation(self, generator, log, run_slot, fork):
@@ -2646,11 +2509,14 @@ class EvolutionOrchestrator:
         print(f"\n  Plateau repair: continuation slot ({continuation}, arm {arm}) from {path}")
         c1, r1, d1, f1 = run_slot(produce)
         log["outcome"] = f"continuation arm {arm}"
+        self._finish_plateau_log(log, f"plateau_repair_{arm}.json")
+        return c1, r1, d1, f1
+
+    def _finish_plateau_log(self, log: dict, name: str) -> None:
+        """Close a plateau-repair log (final incumbent, accounting) and write it under ``gen_0``."""
         log["final_incumbent"] = self._incumbent_id
         log["accounting"] = self._plateau_accounting(log)
-        self.plateau_log = log
-        self._artifact(os.path.join("gen_0", f"plateau_repair_{arm}.json"), json.dumps(log, indent=2, default=str))
-        return c1, r1, d1, f1
+        self._artifact(os.path.join("gen_0", name), json.dumps(log, indent=2, default=str))
 
     def _collect_demonstrations(self) -> dict:
         """Expert-only episodes on the demonstration manifest, the qualification gate and the two traces shown."""
@@ -2661,7 +2527,7 @@ class EvolutionOrchestrator:
         started = time.time()
         traces = trace_source.collect_expert_traces(
             self.env_name, self.demonstration_manifest, self.demonstration_env, get_obs_schema(self.env_name),
-            actor=self.demonstration_actor, max_steps=self.eval_max_steps,
+            max_steps=self.eval_max_steps,
         )
         self.run_resources.add_wall_time("evaluation", time.time() - started)
         gate = trace_source.qualify(traces, plan.min_demo_successes)
@@ -2695,7 +2561,7 @@ class EvolutionOrchestrator:
         """
         from lares.core.policy_generation import final_attempts
         from lares.eval.promotion import NOT_BEST_SCREENED_CHALLENGER, holm_promotion, summarise_decisions
-        from lares.eval.report import CHECKPOINT_FITTED
+        from lares.search.resources import ResourceLedger
 
         final_by_slot = {c.candidate_id: c for c in final_attempts(candidates)}
         failures = [c for c in final_by_slot.values() if not c.valid]
@@ -2713,11 +2579,7 @@ class EvolutionOrchestrator:
             lane_note = f"{c.lane} lane; " if c.lane else ""
             print(f"\n  --- {c.attempt_id} ({lane_note}{c.mode or 'idea'}; parents {c.parent_ids}) ---")
             result = self._fit_and_screen(c, envs, probe_env, args, feedback_bundle)
-            self.run_resources.merge(
-                __import__("lares.search.resources", fromlist=["ResourceLedger"]).ResourceLedger(
-                    wall_time_seconds=dict(result["resources"].wall_time_seconds)
-                )
-            )
+            self.run_resources.merge(ResourceLedger(wall_time_seconds=dict(result["resources"].wall_time_seconds)))
             gen_results.append(result)
             # Only candidate identity is read back (``_write_incumbents``); keeping the
             # whole result would hold every report, state and policy for the run's lifetime.
@@ -2743,11 +2605,7 @@ class EvolutionOrchestrator:
             print(f"\n  Screening on {len(screen)} cases (rule declared before the generation ran):")
             print("    " + summarise_decisions(decisions).replace("\n", "\n    "))
             by_id = {r["candidate_id"]: r for r in gen_results}
-            cleared = sorted(
-                (d for d in decisions if d["promoted"]),
-                key=lambda d: (d["success_rate"], d["progress"], d["mean_return"]),
-                reverse=True,
-            )
+            cleared = _rank_cleared(decisions)
             challengers = cleared[: self.promotion_challengers]
             for d in decisions:
                 d["generation"] = gen
@@ -2760,23 +2618,9 @@ class EvolutionOrchestrator:
             tested = []
             for d in challengers:
                 r = by_id[d["candidate_id"]]
-                started = time.time()
-                exp_result, exp_report = self._evaluate_checkpoint(
-                    r["policy"], envs.development, expanded, r["candidate_id"],
-                    CHECKPOINT_FITTED, bc_stats=r["bc_stats"],
-                )
-                r["resources"].add_episodes("expanded", exp_result)
-                elapsed = time.time() - started
+                exp_result, exp_report, elapsed = self._score_on_promotion_set(r, envs, expanded, gen)
                 r["resources"].add_wall_time("evaluation", elapsed)
                 self.run_resources.add_wall_time("evaluation", elapsed)
-                r["report_refs"]["fitted_expanded"] = self._save_report(
-                    exp_report, f"{r['candidate_id']}_expanded.json", gen
-                )
-                self.archive.confirm(r["candidate_id"], exp_report)
-                r["expanded_record"] = exp_result
-                r["expanded_report"] = exp_report
-                r["eval"] = exp_result.fitness_dict()
-                r["score"] = self._score(r["eval"])
                 print(f"    promotion set {exp_report.headline()}")
                 tested.append((d, r, exp_result, exp_report))
 
@@ -2810,7 +2654,7 @@ class EvolutionOrchestrator:
                         "report": exp_report,
                     }
             fittable_decisions = {}
-            if self.lane_plan is not None and not self.plateau:
+            if self.has_fittable_lane:
                 fittable_decisions = self._fittable_promotion(gen_results, envs, expanded, screen, gen)
             self.promotion_log.extend(decisions)
             self._update_records_after_promotion(decisions, by_id, expanded, fittable_decisions)
@@ -2874,7 +2718,7 @@ class EvolutionOrchestrator:
         if demo_buffer is None:
             # Nothing is fitted (R-037), so no demonstration buffer exists; the reconstruction batch is read off the
             # screen cases' reset observations on the GIF stream, which every later episode resets anyway.
-            if int(self.bc_steps) or (self.lane_plan is not None and self.lane_plan.fittable_slots):
+            if int(self.bc_steps) or self.has_fittable_lane:
                 raise ValueError("demo_buffer=None is allowed only when no candidate can be fitted (bc_steps 0, no fittable lane)")
             existing = os.path.join(self.log_dir, "reconstruction_probe_batch.pt")
             if (self.plateau_fork or {}).get("phase") == "continuation" and os.path.isfile(existing):
@@ -2886,7 +2730,7 @@ class EvolutionOrchestrator:
             else:
                 self._write_probe_batch_from_resets(envs.gif)
         else:
-            self.data = prepare_data(demo_buffer, val_fraction=self.val_fraction, split_seed=self.split_seed)
+            self.data = prepare_data(demo_buffer, val_fraction=FIT_VAL_FRACTION, split_seed=FIT_SPLIT_SEED)
             self._write_probe_batch(demo_buffer)
         self._write_run_manifest(args, probe_stream)
         self.check_manifest_isolation()
@@ -2904,41 +2748,20 @@ class EvolutionOrchestrator:
             os.makedirs(gen_dir, exist_ok=True)
 
             # --- Structure search: typed candidates with lineage -------------
-            started = time.time()
             if self.plateau:
                 candidates, gen_results, decisions, failures = self._plateau_generation(
                     client, args, llm_transcript_path, envs, probe_env, parent_sources, gen_dir
                 )
-            elif self.lane_plan is not None:
-                candidates = two_lane_generation(
-                    client=client, env_name=self.env_name, obs_dim=self.obs_dim, action_dim=self.action_dim,
-                    args=args, plan=self.lane_plan, log_dir=self.log_dir, logger=logger,
-                    llm_transcript_path=llm_transcript_path, ledger=self.ledger,
-                    max_total_calls=self.max_llm_calls_per_generation,
-                    max_repair_per_candidate=self.max_repair_per_candidate, param_budget=self.param_budget,
-                    max_total_tokens=self.max_llm_tokens_per_generation,
-                )
             else:
-              candidates = llm_evolution(
-                client=client,
-                env_name=self.env_name,
-                obs_dim=self.obs_dim,
-                action_dim=self.action_dim,
-                args=args,
-                pop_size=self.pop_size,
-                generation=gen,
-                log_dir=self.log_dir,
-                logger=logger,
-                llm_transcript_path=llm_transcript_path,
-                ledger=self.ledger,
-                feedback_bundle=feedback_bundle,
-                parent_sources=parent_sources,
-                max_total_calls=self.max_llm_calls_per_generation,
-                max_repair_per_candidate=self.max_repair_per_candidate,
-                param_budget=self.param_budget,
-                max_total_tokens=self.max_llm_tokens_per_generation,
-              )
-            if not self.plateau:
+                started = time.time()
+                candidates = llm_evolution(
+                    client=client, env_name=self.env_name, obs_dim=self.obs_dim, action_dim=self.action_dim,
+                    args=args, pop_size=self.pop_size, generation=gen, log_dir=self.log_dir, logger=logger,
+                    llm_transcript_path=llm_transcript_path, ledger=self.ledger, feedback_bundle=feedback_bundle,
+                    parent_sources=parent_sources, max_total_calls=self.max_llm_calls_per_generation,
+                    max_repair_per_candidate=self.max_repair_per_candidate, param_budget=self.param_budget,
+                    max_total_tokens=self.max_llm_tokens_per_generation, plan=self.lane_plan,
+                )
                 self.run_resources.add_wall_time("generation", time.time() - started)
                 gen_results, decisions, failures = self._process_attempts(
                     candidates, gen, envs, probe_env, args, feedback_bundle, parent_sources
@@ -2982,7 +2805,7 @@ class EvolutionOrchestrator:
                     )
 
                 if self.record_demo_gif:
-                    gif_case = self.gif_case or self.dev_manifest.episodes[0]
+                    gif_case = self.dev_manifest.episodes[0]
                     gif_path = os.path.join(gen_dir, f"gen_{gen}_best.gif")
                     print(f"\n  Recording demo GIF ({gif_case.case_id}) → {gif_path}")
                     try:

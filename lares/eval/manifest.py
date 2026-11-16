@@ -523,9 +523,10 @@ def unique_manifests(manifests: Iterable[EvaluationManifest]) -> list:
 
 def assert_disjoint(manifests: Sequence[EvaluationManifest]) -> None:
     """Raise if any two manifests share a placement (AC-0 non-overlap check)."""
+    hashes = [m.task_hashes() for m in manifests]
     for i, a in enumerate(manifests):
-        for b in manifests[i + 1 :]:
-            shared = a.task_hashes() & b.task_hashes()
+        for j, b in enumerate(manifests[i + 1 :], i + 1):
+            shared = hashes[i] & hashes[j]
             if shared:
                 raise ValueError(
                     f"manifests {a.manifest_id} and {b.manifest_id} share "

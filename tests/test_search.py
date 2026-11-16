@@ -271,22 +271,8 @@ class TestMutationProposal(unittest.TestCase):
         with self.assertRaises(SchemaError):
             good_proposal(mode="vibes").validate()
 
-    def test_parameter_only_search_bypasses_the_generator(self):
-        proposal = good_proposal(mode=MODE_PARAMETER_ONLY)
-        self.assertTrue(proposal.validate())
-        self.assertTrue(proposal.bypasses_llm)
-        self.assertFalse(good_proposal().bypasses_llm)
-
-    def test_the_outcome_check_can_report_the_prediction_was_wrong(self):
-        proposal = good_proposal()
-        wrong = proposal.check_outcome(before=0.05, after=0.09)
-        self.assertTrue(wrong["measurable"])
-        self.assertFalse(wrong["as_predicted"])
-        right = proposal.check_outcome(before=0.09, after=0.05)
-        self.assertTrue(right["as_predicted"])
-
-    def test_an_unmeasurable_outcome_says_so(self):
-        self.assertFalse(good_proposal().check_outcome(None, 0.1)["measurable"])
+    def test_parameter_only_search_is_a_valid_mode(self):
+        self.assertTrue(good_proposal(mode=MODE_PARAMETER_ONLY).validate())
 
     def test_measurable_metrics_come_from_the_report_itself(self):
         metrics = measurable_metrics()

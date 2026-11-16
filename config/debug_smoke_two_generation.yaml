@@ -1,7 +1,7 @@
 # ============================================================
 #  debug_spec.md Stage D — live two-generation smoke test
 #
-#  Development partition only. Run, then check every item in DEBUG_PROGRESS.md:
+#  Development partition only. Run, then check every item in docs/deprecated/DEBUG_PROGRESS.md:
 #    MUJOCO_GL=egl .venv-metaworld/bin/python scripts/run_full_evolution.py \
 #        --config config/debug_smoke_two_generation.yaml
 #    .venv-metaworld/bin/python scripts/summarise_experiments.py \

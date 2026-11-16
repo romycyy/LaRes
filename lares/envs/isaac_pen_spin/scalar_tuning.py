@@ -29,14 +29,13 @@ import numpy as np
 
 from lares.envs.isaac_pen_spin import cases
 from lares.envs.isaac_pen_spin.learner_recovery import check_learner, make_learner
-from lares.envs.isaac_pen_spin.protocols import arm_summary, child_cell, failure_split
+from lares.envs.isaac_pen_spin.protocols import arm_summary, failure_split, freeze_json, load_cell, roles, study_cell
 from lares.eval.manifest import EpisodeCase, EvaluationManifest
 
 STUDY = "r058_scalar_cma_vs_random"
 STAGE = 3
 ARMS = ("cma", "random")
 CONTROLLERS = ("cma_winner", "random_winner", "parent")
-ROLES = ("screen", "promotion", "fresh")
 WHITELIST = {
     "spin": ("stroke_amp", "lift_amp", "spin_target", "speed_gain", "phase_lead", "stance_sharpness"),
     "centering": ("center_gain", "center_length", "safe_radius", "position_sharpness", "tilt_gain", "swing_damping"),
@@ -222,10 +221,6 @@ def split_rows(rows: list[dict], tile: int) -> list[list[dict]]:
 
 def manifest_path(protocol_cfg: dict, seed: int) -> str:
     return protocol_cfg["manifest_pattern"].format(seed=int(seed))
-
-
-def roles(protocol_cfg: dict) -> dict:
-    return {k: (int(v[0]), int(v[1])) for k, v in protocol_cfg["roles"].items()}
 
 
 def build_manifests(protocol_cfg: dict) -> list[str]:
@@ -493,35 +488,12 @@ def decision_artifact(summary: dict, blocks: list[dict]) -> dict:
 # ---------------------------------------------------------------------------------------------------------------------
 
 
-def _cell(config_path: str, manifest: str, controller: str, out_path: str, record_obs: bool) -> None:
-    child_cell(config_path, manifest, controller, out_path, study=STUDY, record_obs=record_obs, skip_existing=True)
-
-
-def _rows(out_path: str) -> list[dict]:
-    with open(out_path, encoding="utf-8") as f:
-        return json.load(f)["episodes"]
-
-
-def _trace(out_path: str):
-    return np.load(out_path.replace(".json", ".npz"))
-
-
 def _rel(out_dir: str, path: str) -> str:
     return os.path.relpath(path, out_dir)
 
 
-def _freeze_json(path: str, payload: dict, what: str) -> None:
-    if os.path.exists(path):
-        with open(path, encoding="utf-8") as f:
-            if json.load(f) != json.loads(json.dumps(payload)):
-                raise SystemExit(f"{path} exists and differs from the {what} this run produces")
-        return
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(payload, f, indent=1)
-
-
 def run_arm(arm: str, space: ParameterSpace, opts: dict, seed: int, bdir: str, tiled_path: str, config_path: str,
-            out_dir: str) -> dict:
+            out_dir: str, protocol_cfg: dict) -> dict:
     """One arm's 8 generations on the block's tiled screen; returns the frozen winner and the per-generation log."""
     adir = os.path.join(bdir, arm)
     os.makedirs(adir, exist_ok=True)
@@ -538,8 +510,8 @@ def run_arm(arm: str, space: ParameterSpace, opts: dict, seed: int, bdir: str, t
         write_candidates(cand_path, f"{arm}:s{seed}:gen{g}", candidates,
                          {"normalised": xs.tolist(), "sampler": sampler.state()})
         cell = os.path.join(adir, f"gen{g}.json")
-        _cell(config_path, tiled_path, f"candidates:{_rel(out_dir, cand_path)}", cell, False)
-        per = [screen_metrics(r) for r in split_rows(_rows(cell), opts["popsize"])]
+        study_cell(protocol_cfg, config_path, tiled_path, f"candidates:{_rel(out_dir, cand_path)}", cell, record_obs=False)
+        per = [screen_metrics(r) for r in split_rows(load_cell(cell)[1], opts["popsize"])]
         ranks = rank_candidates(per)
         sampler.tell(ranks)
         base = len(all_metrics)
@@ -554,30 +526,23 @@ def run_arm(arm: str, space: ParameterSpace, opts: dict, seed: int, bdir: str, t
     winner = {"arm": arm, "index": best, "generation": best // opts["popsize"], "params": all_params[best],
               "screen": all_metrics[best], "candidates": len(all_params), "duplicate_candidates": dup,
               "invalid_candidates": 0, "ranking": RANKING}
-    _freeze_json(os.path.join(adir, "winner.json"), winner, "winner")
+    freeze_json(os.path.join(adir, "winner.json"), winner, "winner")
     return {"winner": winner, "generations": generations}
 
 
 def run_block(seed: int, protocol_cfg: dict, config_path: str, out_dir: str, space: ParameterSpace, opts: dict) -> dict:
-    from lares.utils.hashing import sha256_file
-
     bdir = os.path.join(out_dir, f"block_s{seed}")
     os.makedirs(bdir, exist_ok=True)
     mpath = manifest_path(protocol_cfg, seed)
-    if not os.path.exists(mpath):
-        raise SystemExit(f"frozen manifest {mpath} missing; build and commit it before the run")
-    m = EvaluationManifest.load(mpath)
+    m = cases.load_frozen(mpath)
     role = cases.role_manifests(m, roles(protocol_cfg), expected_cases=int(protocol_cfg["cases"]), stage=STAGE)
-    paths = {}
-    for r, rm in role.items():
-        paths[r] = os.path.join(bdir, f"{r}.yaml")
-        cases.freeze_manifest(paths[r], rm)
+    paths = cases.freeze_roles(role, bdir)
     tiled_path = os.path.join(bdir, f"screen_tiled{opts['popsize']}.yaml")
     cases.freeze_manifest(tiled_path, tiled_manifest(role["screen"], opts["popsize"]))
 
-    arms = {arm: run_arm(arm, space, opts, seed, bdir, tiled_path, config_path, out_dir) for arm in ARMS}
+    arms = {arm: run_arm(arm, space, opts, seed, bdir, tiled_path, config_path, out_dir, protocol_cfg) for arm in ARMS}
     winners = {arm: arms[arm]["winner"] for arm in ARMS}
-    _freeze_json(os.path.join(bdir, "winners.json"), winners, "winners")  # frozen before any promotion or fresh episode
+    freeze_json(os.path.join(bdir, "winners.json"), winners, "winners")  # frozen before any promotion or fresh episode
 
     files = {}
     for c in CONTROLLERS:
@@ -588,17 +553,18 @@ def run_block(seed: int, protocol_cfg: dict, config_path: str, out_dir: str, spa
     for r in ("promotion", "fresh"):
         for c in CONTROLLERS:
             cell = os.path.join(bdir, f"{c}_{r}.json")
-            _cell(config_path, paths[r], f"candidates:{_rel(out_dir, files[c])}", cell, True)
-            rows[c][r] = _rows(cell)
+            study_cell(protocol_cfg, config_path, paths[r], f"candidates:{_rel(out_dir, files[c])}", cell)
+            trace, rows[c][r] = load_cell(cell)
             full = {**space.params(space.normalise(space.parent)), **({} if c == "parent" else winners[c.replace("_winner", "")]["params"])}
-            sats[c][r] = saturation(_trace(cell), full)
+            sats[c][r] = saturation(trace, full)
     pcell = os.path.join(bdir, "parent_screen.json")
-    _cell(config_path, paths["screen"], f"candidates:{_rel(out_dir, files['parent'])}", pcell, False)
-    parent_screen = screen_metrics(_rows(pcell))
+    study_cell(protocol_cfg, config_path, paths["screen"], f"candidates:{_rel(out_dir, files['parent'])}", pcell,
+               record_obs=False)
+    parent_screen = screen_metrics(load_cell(pcell)[1])
 
     summary = block_summary(rows, sats, winners, parent_screen, {arm: arms[arm]["generations"] for arm in ARMS})
     summary["seed"] = int(seed)
-    summary["manifest"] = {"path": mpath, "sha256": sha256_file(mpath), "id": m.manifest_id}
+    summary["manifest"] = cases.manifest_record(mpath, m)
     summary["episodes"] = (2 * opts["generations"] * opts["popsize"] * len(role["screen"]) + len(role["screen"])
                            + 3 * len(role["promotion"]) + 3 * len(role["fresh"]))
     with open(os.path.join(bdir, "summary.json"), "w", encoding="utf-8") as f:
@@ -616,11 +582,11 @@ def run_study(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
     os.makedirs(out_dir, exist_ok=True)
     space = parameter_space(protocol_cfg)
     opts = cma_options(protocol_cfg)
-    _freeze_json(os.path.join(out_dir, "space.json"),
-                 {"space": space.to_dict(), "whitelist": protocol_cfg.get("whitelist") or WHITELIST, "optimizer": opts,
-                  "pycma_version": cma.__version__, "ranking": RANKING,
-                  "random_arm": "fresh pycma instance per generation, identical options, asked once, never told",
-                  "parent": lc}, "parameter space")
+    freeze_json(os.path.join(out_dir, "space.json"),
+                {"space": space.to_dict(), "whitelist": protocol_cfg.get("whitelist") or WHITELIST, "optimizer": opts,
+                 "pycma_version": cma.__version__, "ranking": RANKING,
+                 "random_arm": "fresh pycma instance per generation, identical options, asked once, never told",
+                 "parent": lc}, "parameter space")
     blocks = [run_block(int(s), protocol_cfg, config_path, out_dir, space, opts) for s in protocol_cfg["seeds"]]
     summary = summarise(blocks)
     summary["episodes"] = int(sum(b["episodes"] for b in blocks))
@@ -643,5 +609,5 @@ run = run_study
 __all__ = ["ARMS", "CONTROLLERS", "CMASampler", "FreshInstanceSampler", "ParameterSpace", "RANKING", "STUDY",
            "TiledCandidates", "WHITELIST", "apply_params", "block_summary", "build_manifests", "contrast",
            "decision_artifact", "drive_from_obs", "feedback_contrast", "make_controller", "make_sampler",
-           "parameter_space", "rank_candidates", "rank_key", "run", "run_study", "saturation", "screen_metrics",
-           "split_rows", "summarise", "tiled_manifest", "whitelist_names"]
+           "parameter_space", "rank_candidates", "rank_key", "roles", "run", "run_study", "saturation",
+           "screen_metrics", "split_rows", "summarise", "tiled_manifest", "whitelist_names"]

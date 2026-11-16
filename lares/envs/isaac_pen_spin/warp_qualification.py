@@ -17,9 +17,8 @@ from lares.envs.isaac_pen_spin import clamp_qualification as cq
 from lares.envs.isaac_pen_spin import coordinate_repair as cr
 from lares.envs.isaac_pen_spin import phase_warp as pw
 from lares.envs.isaac_pen_spin import scalar_tuning as st
-from lares.envs.isaac_pen_spin.learner_recovery import _load
-from lares.envs.isaac_pen_spin.protocols import arm_summary, child_cell, failure_split
-from lares.eval.manifest import EvaluationManifest
+from lares.envs.isaac_pen_spin.protocols import (arm_summary, cached_json, disjoint_from, drive_params, failure_split,
+                                                 load_cell, roles, study_cell)
 
 STUDY = "r089_warp_qualification_90"
 STAGE = 3
@@ -67,17 +66,13 @@ def manifest_paths(protocol_cfg: dict) -> list[str]:
     return list(protocol_cfg["manifests"])
 
 
-def roles(protocol_cfg: dict) -> dict:
-    return {k: (int(v[0]), int(v[1])) for k, v in protocol_cfg["roles"].items()}
-
-
 def build_manifests(protocol_cfg: dict) -> list[str]:
     from lares.eval.manifest import assert_disjoint
 
     specs = [(path, cases.build_manifest(STAGE, int(seed), int(protocol_cfg["cases"]), label="r089_block"))
              for path, seed in zip(manifest_paths(protocol_cfg), protocol_cfg["pool_seeds"])]
     written = [path for path, m in specs if cases.freeze_manifest(path, m)]
-    assert_disjoint([m for _, m in specs] + [EvaluationManifest.load(p) for p in protocol_cfg.get("disjoint_from", [])])
+    assert_disjoint([m for _, m in specs] + disjoint_from(protocol_cfg))
     return written
 
 
@@ -100,36 +95,21 @@ def aggregate(parent_rows, warp_rows, parent_sat, warp_sat, per_panel: dict | No
             "qualifies": bool(panel["promotes"]), "adopts": bool(panel["promotes"] and panel["drops_not_increased"])}
 
 
-def _child(config_path: str, manifest: str, arm: str, out_path: str) -> None:
-    child_cell(config_path, manifest, arm, out_path, study=STUDY, record_obs=True, skip_existing=True)
-
-
 def run_warp_qualification(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
-    from lares.utils.hashing import sha256_file
-
     asset = protocol_cfg["incumbent_asset"]
     inc = cr.check_asset(asset)
     cand = check_candidate(protocol_cfg)
     os.makedirs(out_dir, exist_ok=True)
-    gate_path = os.path.join(out_dir, "identity_gate.json")
-    if os.path.exists(gate_path):
-        with open(gate_path, encoding="utf-8") as f:
-            gate = json.load(f)
-    else:
-        gate = pw.offline_identity_gate(protocol_cfg, protocol_cfg["identity_archive"])
-        with open(gate_path, "w", encoding="utf-8") as f:
-            json.dump(gate, f, indent=2)
+    gate = cached_json(os.path.join(out_dir, "identity_gate.json"),
+                       lambda: pw.offline_identity_gate(protocol_cfg, protocol_cfg["identity_archive"]))
     if not gate["passes"]:
         raise SystemExit(f"offline identity gate failed, no episode run: {gate}")
     import torch
 
-    sd = torch.load(os.path.join(asset, "state.pt"), weights_only=True)
-    params = {"spin_target": float(sd["spin_target"]), "speed_gain": float(sd["speed_gain"])}
+    params = drive_params(torch.load(os.path.join(asset, "state.pt"), weights_only=True))
     rows, sats_parts, manifests, per_panel, episodes = {a: [] for a in ARMS}, {a: [] for a in ARMS}, [], {}, 0
     for mpath in manifest_paths(protocol_cfg):
-        if not os.path.exists(mpath):
-            raise SystemExit(f"frozen manifest {mpath} missing; build and commit it before the run")
-        m = EvaluationManifest.load(mpath)
+        m = cases.load_frozen(mpath)
         role = cases.role_manifests(m, roles(protocol_cfg), expected_cases=int(protocol_cfg["cases"]), stage=STAGE)
         tag = f"s{m.pool.seeds[0]}"
         ppath = os.path.join(out_dir, f"{PANEL}_{tag}.yaml")
@@ -137,12 +117,12 @@ def run_warp_qualification(protocol_cfg: dict, config_path: str, out_dir: str) -
         prow = {}
         for a in ARMS:
             cell = os.path.join(out_dir, f"{a}_{PANEL}_{tag}.json")
-            _child(config_path, ppath, a, cell)
-            trace, prow[a] = _load(cell)
+            study_cell(protocol_cfg, config_path, ppath, a, cell)
+            trace, prow[a] = load_cell(cell)
             rows[a] += prow[a]
             sats_parts[a].append(st.saturation(trace, params))
         per_panel[tag] = _panel(prow["parent"], prow["warp"], sats_parts["parent"][-1], sats_parts["warp"][-1])
-        manifests.append({"path": mpath, "sha256": sha256_file(mpath), "id": m.manifest_id, "panel": list(roles(protocol_cfg)[PANEL])})
+        manifests.append({**cases.manifest_record(mpath, m), "panel": list(roles(protocol_cfg)[PANEL])})
         episodes += len(ARMS) * len(role[PANEL])
     sats = {a: cq._merge_saturation(sats_parts[a]) for a in ARMS}
     summary = aggregate(rows["parent"], rows["warp"], sats["parent"], sats["warp"], per_panel)

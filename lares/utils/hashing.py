@@ -9,7 +9,6 @@ The prefix length is a stored format; do not change it.
 from __future__ import annotations
 
 import hashlib
-import json
 
 SHORT_HASH_LENGTH = 16
 
@@ -28,11 +27,6 @@ def sha256_file(path: str) -> str:
         for chunk in iter(lambda: f.read(1 << 16), b""):
             h.update(chunk)
     return h.hexdigest()
-
-
-def sha256_json(payload) -> str:
-    """Digest of a JSON-serialisable payload with sorted keys."""
-    return sha256_text(json.dumps(payload, sort_keys=True, default=str))
 
 
 def short_hash_text(text: str) -> str:

@@ -21,11 +21,12 @@ from __future__ import annotations
 import json
 import os
 
-from lares.envs.isaac_pen_spin.feedback_ablation import _arm_summary, check_checkpoint, reproducibility_gate
-from lares.envs.isaac_pen_spin.feedback_lesions import LESIONS, _child, failure_split, lesion_index
-from lares.envs.isaac_pen_spin.protocols import aggregate_vs_expert, build_single_manifest
+from lares.envs.isaac_pen_spin import cases
+from lares.envs.isaac_pen_spin.feedback_ablation import check_checkpoint, reproducibility_gate
+from lares.envs.isaac_pen_spin.feedback_lesions import LESIONS, lesion_index
+from lares.envs.isaac_pen_spin.protocols import (aggregate_vs_expert, arm_summary, build_single_manifest,
+                                                 failure_split, manifest_path, study_cell)
 
-FEEDBACK_DELAY = "feedback_delay"
 STAGE = 3
 DELAY_STEPS = 4
 DELAYS = {
@@ -76,10 +77,6 @@ class DelayedController:
         return self.inner(out, t, ctx)
 
 
-def manifest_path(protocol_cfg: dict) -> str:
-    return protocol_cfg["manifest"]
-
-
 def build_manifests(protocol_cfg: dict) -> list[str]:
     return build_single_manifest(protocol_cfg, "delay", STAGE)
 
@@ -100,30 +97,26 @@ def aggregate(rows: dict) -> dict:
 
 def run_feedback_delay(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
     """Driver: expert twice, the gate, the two delays, aggregate. Nothing is rerun if its output exists."""
-    from lares.utils.hashing import sha256_file
-
     check_checkpoint(protocol_cfg)
     os.makedirs(out_dir, exist_ok=True)
-    m = manifest_path(protocol_cfg)
-    if not os.path.exists(m):
-        raise SystemExit(f"frozen manifest {m} missing; build and commit it before the run")
+    m = cases.require_frozen(manifest_path(protocol_cfg))
     out = {arm: os.path.join(out_dir, f"{arm}.json") for arm in ARMS}
     for arm in ("expert", "expert_repeat"):
-        _child(config_path, m, arm, out[arm], study=FEEDBACK_DELAY)
+        study_cell(protocol_cfg, config_path, m, arm, out[arm], record_obs=False)
     gate = reproducibility_gate(out["expert"], out["expert_repeat"])
     if not gate["passes"]:
         with open(os.path.join(out_dir, "gate_failed.json"), "w") as f:
             json.dump(gate, f, indent=2)
         raise SystemExit(f"reproducibility gate failed, delays not run: {gate}")
     for arm in DELAYS:
-        _child(config_path, m, arm, out[arm], study=FEEDBACK_DELAY)
+        study_cell(protocol_cfg, config_path, m, arm, out[arm], record_obs=False)
     rows = {arm: json.load(open(out[arm]))["episodes"] for arm in ARMS}
     summary = aggregate({a: rows[a] for a in ("expert",) + tuple(DELAYS)})
-    summary["arms"]["expert_repeat"] = {**_arm_summary(rows["expert_repeat"]), **failure_split(rows["expert_repeat"])}
+    summary["arms"]["expert_repeat"] = {**arm_summary(rows["expert_repeat"]), **failure_split(rows["expert_repeat"])}
     summary["reproducibility_control"] = gate
     summary["delays"] = {k: list(v) for k, v in DELAYS.items()}
     summary["delay_steps"] = int(protocol_cfg.get("delay_steps", DELAY_STEPS))
-    summary["manifest"] = {"path": m, "sha256": sha256_file(m)}
+    summary["manifest"] = cases.manifest_record(m)
     summary["episodes"] = sum(len(r) for r in rows.values())
     summary["limitation"] = ("a delayed group beside live groups is a temporal joint-distribution shift; this measures "
                              "the checkpoint's sensitivity, not a feedback-bandwidth requirement for any controller")
@@ -134,5 +127,5 @@ def run_feedback_delay(protocol_cfg: dict, config_path: str, out_dir: str) -> di
 
 run = run_feedback_delay
 
-__all__ = ["ARMS", "DELAYS", "DELAY_STEPS", "DelayedController", "FEEDBACK_DELAY", "aggregate", "build_manifests",
+__all__ = ["ARMS", "DELAYS", "DELAY_STEPS", "DelayedController", "aggregate", "build_manifests",
            "run", "run_feedback_delay"]

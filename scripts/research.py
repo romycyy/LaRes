@@ -77,6 +77,7 @@ from lares.research.schemas import (  # noqa: E402
     verdict_rounds,
 )
 from lares.research.state import loop_guard, write_state  # noqa: E402
+from lares.utils.cli import openai_client  # noqa: E402
 
 HANDOFF = os.path.join(_PROJECT_ROOT, "RESEARCH_HANDOFF.md")
 
@@ -89,15 +90,11 @@ def _advisor(args):
         return ADVISOR_FACTORY(args)
     from lares.core.policy_generation import DEFAULT_LLM_MODEL, DEFAULT_REASONING_EFFORT
 
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        raise SystemExit("OPENAI_API_KEY is not set; the advisor cannot be called")
-    from openai import OpenAI
-
+    client = openai_client()  # exits cleanly when OPENAI_API_KEY is missing
     model = args.model or DEFAULT_LLM_MODEL
     effort = args.reasoning_effort or DEFAULT_REASONING_EFFORT
     print(f"advisor: {model} (reasoning_effort={effort})")
-    return Advisor(openai_call(OpenAI(api_key=api_key), model, effort), args.root)
+    return Advisor(openai_call(client, model, effort), args.root)
 
 
 def _finish(args, message=""):

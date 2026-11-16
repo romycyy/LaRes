@@ -75,11 +75,6 @@ def placements(pool_seed: int, n: int) -> np.ndarray:
     return rng.uniform(-1.0, 1.0, size=(int(n), PLACEMENT_DIM))
 
 
-def split_placement(vec) -> dict:
-    vec = np.asarray(vec, dtype=np.float64)
-    return {"pos": vec[0:3], "rot": vec[3:5], "dof_pos": vec[5:5 + NUM_HAND_DOFS]}
-
-
 def _task_id(stage: int, pool_seed: int, i: int) -> str:
     return f"{BENCHMARK}:stage{stage}:s{pool_seed}:{i:03d}"
 
@@ -184,10 +179,41 @@ def freeze_manifest_set(specs) -> dict:
     Returns ``{role: path}`` in the given order, which is what each study's ``freeze_manifests`` prints.
     """
     specs = list(specs)
+    assert_disjoint([m for _, m, _ in specs])  # before any write: a refused set never reaches disk
     for path, manifest, _ in specs:
         freeze_manifest(path, manifest)
-    assert_disjoint([m for _, m, _ in specs])
     return {role: path for path, _, role in specs}
+
+
+def require_frozen(path: str) -> str:
+    """``path`` if the frozen manifest is there; a study never builds one at run time."""
+    if not os.path.exists(path):
+        raise SystemExit(f"frozen manifest {path} missing; build and commit it before the run")
+    return path
+
+
+def load_frozen(path: str) -> EvaluationManifest:
+    """The committed manifest at ``path`` (:func:`require_frozen`, then load)."""
+    return EvaluationManifest.load(require_frozen(path))
+
+
+def manifest_record(path: str, manifest: EvaluationManifest | None = None) -> dict:
+    """``{"path", "sha256"[, "id"]}``: how every study summary names the manifest it ran on."""
+    from lares.utils.hashing import sha256_file
+
+    out = {"path": path, "sha256": sha256_file(path)}
+    if manifest is not None:
+        out["id"] = manifest.manifest_id
+    return out
+
+
+def freeze_roles(role_manifests_by_name: dict, out_dir: str) -> dict:
+    """Freeze each role manifest at ``<out_dir>/<role>.yaml`` (refusing a different one); returns ``{role: path}``."""
+    paths = {}
+    for role, rm in role_manifests_by_name.items():
+        paths[role] = os.path.join(out_dir, f"{role}.yaml")
+        freeze_manifest(paths[role], rm)
+    return paths
 
 
 def role_manifests(manifest: EvaluationManifest, roles: dict, *, expected_cases: int | None = None,
@@ -268,9 +294,6 @@ def sustained(pred, length: int, completed: bool, window: int = SUSTAIN_WINDOW) 
         return False
     tail = np.asarray(pred[: int(length)], dtype=bool)[-int(window):]
     return bool(tail.size == int(window) and tail.all())
-
-
-REDUCERS = {"any_hit": any_hit, "sustained": sustained}
 
 
 def reduce_episodes(trace: dict) -> list[dict]:

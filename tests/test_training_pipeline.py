@@ -69,14 +69,17 @@ from lares.core.training_pipeline import (
     _compute_grpo_advantages,
 )
 
+from lares.core.obs_schema import get_obs_schema  # noqa: E402
 from lares.core.policy_generation import (  # noqa: E402
     DEFAULT_LLM_MODEL,
     DEFAULT_REASONING_EFFORT,
-    get_symbolic_policies,
-    obs_description_dict,
+    final_attempts,
+    generate_candidates,
     input_dict_for_policy,
 )
+from lares.core.training_pipeline import load_policy_prompt_assets  # noqa: E402
 from lares.eval import PipelineEnvs, PromotionPolicy  # noqa: E402
+from lares.search.generation import LLMCallLedger  # noqa: E402
 from lares.eval.manifest import synthetic_cases, synthetic_manifest  # noqa: E402
 
 if HAS_METAWORLD:
@@ -537,7 +540,7 @@ for pf in [
     check(f"Prompt: '{pf}' exists", os.path.isfile(path))
 
 for task in EXPECTED_TASKS:
-    check(f"obs_desc: '{task}'", task in obs_description_dict and len(obs_description_dict[task]) > 50)
+    check(f"obs_desc: '{task}'", len(get_obs_schema(task).describe()) > 50)
     check(f"input_dict: '{task}'", task in input_dict_for_policy and len(input_dict_for_policy[task]) > 20)
 
 try:
@@ -758,39 +761,21 @@ if HAS_OPENAI_KEY:
 
     gen_dir = os.path.join(ROOT, "_test_llm_gen")
     os.makedirs(gen_dir, exist_ok=True)
-    data_pkl = os.path.join(gen_dir, "data.pkl")
-    with open(data_pkl, "wb") as f:
-        pickle.dump([{"obs": np.zeros(OBS_DIM)}], f)
-
-    def _read_prompt(name):
-        with open(os.path.join(prompt_dir, name), "r") as f:
-            return f.read()
 
     class _NoValidPolicy(Exception):
         """Raised to skip the policy checks when bounded generation produced none."""
 
     policy_pop = []
     try:
-        generated = get_symbolic_policies(
-            client=llm_client,
-            dir_path=gen_dir,
-            llm_iter=0,
-            args=llm_args,
-            obs_dim=OBS_DIM,
-            action_dim=ACT_DIM,
-            env_name="window-close-v2",
-            initial_system=_read_prompt("initial_system.txt"),
-            initial_user=_read_prompt("new_initial_user.txt"),
-            task_description="Control the robotic arm to close the window",
-            obs_description=obs_description_dict["window-close-v2"],
-            input_dict_string=input_dict_for_policy["window-close-v2"],
-            code_output_tip=_read_prompt("new_code_output_tip.txt"),
-            data_pkl_path=data_pkl,
-            real_num=1,
+        # The live generation path: two-phase design + implementation, one slot, one linked correction; the
+        # validator writes its own observation batch into gen_dir.
+        generated = generate_candidates(
+            llm_client, make_test_args(policy_gen_two_phase=True, policy_impl_mode="per_idea"), gen_dir, 0,
+            OBS_DIM, ACT_DIM, "window-close-v2", load_policy_prompt_assets("window-close-v2"), 1, None,
+            LLMCallLedger(gen_dir), impl_mode="per_idea", max_repair_per_candidate=1,
         )
-        from lares.core.policy_generation import valid_policies  # noqa: E402
-
-        policy_pop, code_pop, resp_list = valid_policies(generated)
+        ok_final = [c for c in final_attempts(generated) if c.valid]
+        policy_pop, code_pop, resp_list = [c.policy for c in ok_final], [c.code for c in ok_final], [c.response for c in ok_final]
         check("LLM gen: every attempt is a typed candidate", all(hasattr(c, "attempt_id") for c in generated))
         check(
             "LLM gen: one slot, at most one linked correction",
@@ -905,13 +890,11 @@ if HAS_OPENAI_KEY:
             pop_size=1,
             elite_num=1,
             bc_steps=100,
-            rl_iterations=0,
             log_dir=evo_dir,
             record_demo_gif=False,
             # Five mock cases: a 2-case screen and a disjoint 3-case promotion set.
             dev_manifest=MOCK_MANIFEST,
             promotion_policy=PromotionPolicy(screen_episodes=2, expanded_episodes=3),
-            train_cases=MOCK_CASES,
             checkpoint_steps=(0, 50, 100),
         )
 

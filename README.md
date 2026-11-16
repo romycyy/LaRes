@@ -11,7 +11,7 @@
 
 This repository runs a **symbolic policy evolution** pipeline for MetaWorld manipulation tasks. An LLM proposes candidate policy structures; each candidate is trained with behavioral cloning (BC) and GRPO-style RL fine-tuning, then ranked across evolutionary generations.
 
-The main entry point is **`scripts/run_full_evolution.py`**. See [`docs/run_full_evolution_overview.md`](docs/run_full_evolution_overview.md) for architecture details.
+The main entry point is **`scripts/run_full_evolution.py`**. **This README predates most of the current pipeline (it still describes BC + GRPO training). For what the pipeline is and what has been established, read [`docs/PIPELINE_STATE.md`](docs/PIPELINE_STATE.md); older design documents are in [`docs/deprecated/`](docs/deprecated/).**
 
 ## Table of Contents
 
@@ -70,7 +70,7 @@ Key config fields (see YAML for defaults):
 |-----|---------|
 | `env_name` | MetaWorld task (e.g. `push-v2`) |
 | `dataset_episodes` | Expert demos for Stage 1 |
-| `bc_steps`, `rl_iterations`, `rl_episodes` | Inner training loop per candidate |
+| `bc_steps` | Imitation-fitting budget per candidate (0 by default: candidates are evaluated zero-shot; there is no RL stage) |
 | `num_generations`, `pop_size`, `elite_num` | Evolution outer loop |
 | `model` | OpenAI model for policy generation |
 | `log_dir` | Output directory for logs, checkpoints, GIFs |
@@ -82,23 +82,24 @@ Outputs under `log_dir` include `demo_<task>.pkl`, JSONL training logs, `best_po
 | Script | Purpose |
 |--------|---------|
 | [`scripts/plot_training_dynamics.py`](scripts/plot_training_dynamics.py) | Plot BC/RL/evolution metrics from JSONL logs |
-| [`scripts/visualize_expert_policy.py`](scripts/visualize_expert_policy.py) | Record expert-policy GIF rollouts |
-| [`scripts/run_shadowhand_spin_stages.py`](scripts/run_shadowhand_spin_stages.py) | Isaac Lab ShadowHandSpin 3-stage run (`--config config/shadowhand_spin_stages.yaml`) |
+| [`scripts/isaac/record_pen_spin_gif.py`](scripts/isaac/record_pen_spin_gif.py) | Render pen-spin rollouts of a controller to GIFs |
+| [`scripts/run_shadowhand_spin_stages.py`](scripts/run_shadowhand_spin_stages.py) | Isaac-only pen-spin studies and protocols (`--study <name>`; config `config/shadowhand_spin_stages.yaml`) |
+
+Finished studies' scripts are archived in [`deprecated/`](deprecated/README.md).
 
 ## Isaac Lab pipeline
 
-A second environment backend runs the same Stage 1→3 recipe on Isaac Lab's `ShadowHandSpin`
-instead of MetaWorld. It needs a CUDA machine with Isaac Lab installed at the config's
-`isaaclab_root`:
+The Shadow Hand pen-spin stack (`lares/envs/isaac_pen_spin/`) runs on Isaac Lab. It needs a CUDA machine with
+Isaac Lab installed at the config's `isaaclab_root`. Isaac-only studies run through:
 
 ```bash
-python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml
+python scripts/run_shadowhand_spin_stages.py --study <name>     # names: PEN_SPIN_STUDIES in the script
 ```
 
-[`lares/envs/isaac_lab_adapter.py`](lares/envs/isaac_lab_adapter.py) (`IsaacLabSingleEnvAdapter`)
-presents Isaac's batched vector env with the same `reset() -> (obs, info)` / 4-tuple `step()` /
-`info["success"]` contract the MetaWorld wrapper provides. Design notes and open issues:
-[`docs/PIPELINE_REFINEMENT_SPEC.md`](docs/PIPELINE_REFINEMENT_SPEC.md).
+LLM studies on pen spin run through `scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study <name>`.
+The old three-stage BC + GRPO smoke run and `IsaacLabSingleEnvAdapter` were archived on 2026-11-15
+(see [`deprecated/README.md`](deprecated/README.md)); [`lares/envs/isaac_lab_adapter.py`](lares/envs/isaac_lab_adapter.py)
+now only launches and closes the Isaac app.
 
 ## Project Structure
 
@@ -106,23 +107,30 @@ presents Isaac's batched vector env with the same `reset() -> (obs, info)` / 4-t
 LaRes/
 ├── scripts/
 │   ├── run_full_evolution.py       # Main entry (MetaWorld)
-│   ├── run_shadowhand_spin_stages.py  # Isaac Lab ShadowHandSpin entry
+│   ├── run_shadowhand_spin_stages.py  # Isaac-only pen-spin studies
 │   ├── plot_training_dynamics.py
-│   └── visualize_expert_policy.py
+│   └── isaac/                      # pen-spin incumbent tools (adopt_fixed_stroke, record_pen_spin_gif)
 ├── config/
 │   ├── run_full_evolution.yaml
 │   ├── shadowhand_spin_stages.yaml
 │   └── environment.yaml
 ├── lares/
 │   ├── core/                       # training_pipeline, policy_generation,
-│   │                               #   symbolic_policy, training_logger
+│   │                               #   symbolic_policy, policy_validator, obs_schema
+│   ├── eval/                       # manifests, runner, promotion, freeze
+│   ├── search/                     # generation provenance, lanes, records, archive
+│   ├── fitting/                    # objectives, optimizers, structure bank
+│   ├── repair/                     # expert-trace evidence for plateau repair
+│   ├── research/                   # research-idea ledger and advisor
 │   ├── utils/
 │   │   ├── metaworld_env.py        # MetaWorld env factory + wrapper
 │   │   └── policy_prompts/         # LLM prompt templates
 │   └── envs/
-│       ├── isaac_lab_adapter.py    # Isaac Lab single-env adapter
+│       ├── isaac_lab_adapter.py    # Isaac app launch/close      
+│       ├── isaac_pen_spin/         # Shadow Hand pen-spin env, protocols, studies
 │       └── rlkit/                  # Gym wrappers
 ├── tests/
+├── deprecated/                     # archived scripts, modules and tests (see its README)
 └── docs/
 ```
 

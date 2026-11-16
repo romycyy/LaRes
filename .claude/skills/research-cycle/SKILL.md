@@ -6,7 +6,7 @@ description: Run the LaRes auto-research loop (propose -> triage with the adviso
 # Research cycle
 
 The ledger under `research/` is the record. `RESEARCH_HANDOFF.md` is narrative only and is appended
-by `research.py decide --handoff`. `IMPLEMENTATION_PROGRESS.md` and `DEBUG_PROGRESS.md` are frozen
+by `research.py decide --handoff`. `docs/deprecated/IMPLEMENTATION_PROGRESS.md` and `docs/deprecated/DEBUG_PROGRESS.md` are frozen
 history; never add to them. `research/STATE.md` is generated; never hand-edit it.
 
 ## Roles

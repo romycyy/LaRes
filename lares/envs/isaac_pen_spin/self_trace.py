@@ -36,11 +36,12 @@ from __future__ import annotations
 
 import json
 import os
-from types import SimpleNamespace
 
 import numpy as np
 
 from lares.envs.isaac_pen_spin import cases
+from lares.envs.isaac_pen_spin.block_study import (arm_needs_generation, attempts_record, make_slot_generator,
+                                                   parent_like, screen_best, started)
 from lares.envs.isaac_pen_spin.gait_repair import public, score
 
 LABEL = "self_trace_source"
@@ -239,34 +240,14 @@ def repair_request(arm: str, parent_source: str, params: dict, screen: dict, evi
 def generate(arm: str, request: str, packet: dict, adir: str, client, model: str, reasoning_effort: str,
              max_calls_per_slot: int = 2) -> dict:
     """``SLOTS`` independent repairs of the parent from one request (each one call plus at most one correction)."""
-    import pickle
-
-    from lares.core.policy_generation import PlateauSlotGenerator
-    from lares.core.training_pipeline import load_policy_prompt_assets
-    from lares.search.generation import LLMCallLedger
-
-    os.makedirs(adir, exist_ok=True)
-    data_pkl = os.path.join(adir, "data.pkl")
-    with open(data_pkl, "wb") as f:
-        pickle.dump([{"obs": np.zeros(cases.OBS_DIM)}], f)
-    env_id = cases.STAGES[STAGE].task_id
-    ledger = LLMCallLedger(adir)
-    gen = PlateauSlotGenerator(client, SimpleNamespace(model=model, reasoning_effort=reasoning_effort),
-                               os.path.join(adir, "gen_0"), cases.OBS_DIM, cases.NUM_ACTIONS, env_id,
-                               load_policy_prompt_assets(env_id), SimpleNamespace(n=SLOTS), data_pkl, ledger,
-                               llm_transcript_path=os.path.join(adir, "llm_transcript.log"),
-                               max_total_calls=SLOTS * int(max_calls_per_slot), max_repair_per_candidate=1)
+    gen, ledger = make_slot_generator(adir, cases.STAGES[STAGE].task_id, client, model, reasoning_effort, SLOTS,
+                                      int(max_calls_per_slot))
     slots = []
     for k in range(SLOTS):
         attempts = gen.trace_repair(k, {"candidate_id": "r051_learner"}, request,
                                     {"lane": "self_trace_source", "arm": arm, "slot": k, "parent": "r051_learner",
                                      **packet})
-        final = attempts[-1]
-        slots.append({"slot": k, "attempts": [{"attempt_id": c.attempt_id, "valid": c.valid,
-                                               "validation": c.validation, "llm_call_ids": c.llm_call_ids}
-                                              for c in attempts],
-                      "valid": bool(final.valid), "policy": final.policy if final.valid else None,
-                      "code": final.code if final.valid else None})
+        slots.append({"slot": k, **attempts_record(attempts)})
     return {"slots": slots, "llm_calls": len(ledger), "llm_tokens": ledger.totals()["llm_total_tokens"]}
 
 
@@ -275,21 +256,13 @@ def generate(arm: str, request: str, packet: dict, adir: str, client, model: str
 # ---------------------------------------------------------------------------------------------------------------------
 
 
-def _started(bdir: str, name: str) -> None:
-    started = os.path.join(bdir, f"{name}.started")
-    if os.path.exists(started):
-        raise SystemExit(f"{started}: this evaluation was interrupted earlier; its cases are never rerun")
-    os.makedirs(bdir, exist_ok=True)
-    open(started, "w").close()
-
-
 def run_parent(parent, roles: dict, bdir: str, stream_factory) -> dict:
     from lares.eval.runner import PolicyActor
 
     path = os.path.join(bdir, "parent.json")
     if os.path.exists(path):
         return json.load(open(path))
-    _started(bdir, "parent")
+    started(bdir, "parent")
     stream = stream_factory("parent", os.path.join(bdir, "parent"))
     actor = PolicyActor(parent, deterministic=True, name="r051_learner")
     out = {}
@@ -302,29 +275,6 @@ def run_parent(parent, roles: dict, bdir: str, stream_factory) -> dict:
     with open(path, "w") as f:
         json.dump(out, f, indent=2, default=str)
     return out
-
-
-def _parent_like(record: dict, manifest, returns: list[float]):
-    from lares.eval.runner import ManifestResult
-
-    if record["manifest_id"] != manifest.manifest_id:
-        raise ValueError("the saved record is for another manifest")
-    res = ManifestResult(actor_name="r051_learner", manifest_id=manifest.manifest_id, action_mode="deterministic",
-                         schema_id=manifest.environment.env_id)
-    for case, ok, ret in zip(manifest.episodes, record["per_case"], returns):
-        res.episodes.append(SimpleNamespace(case_id=case.case_id, task_hash=case.task_hash, success=bool(ok),
-                                            episode_return=float(ret), signed_goal_progress=None))
-    return res
-
-
-def arm_needs_generation(bdir: str, arm: str) -> bool:
-    """False once the arm is finished; refuses an arm interrupted after spending episodes (never rerun)."""
-    adir = os.path.join(bdir, arm)
-    if os.path.exists(os.path.join(adir, "arm.json")):
-        return False
-    if os.path.exists(os.path.join(adir, "isaac")):
-        raise SystemExit(f"{adir} was interrupted after spending episodes; an interrupted arm is not rerun")
-    return True
 
 
 def generate_arm(arm: str, scfg: dict, parent_rec: dict, parent_source: str, params: dict, evidence: dict,
@@ -347,7 +297,6 @@ def run_arm(arm: str, scfg: dict, roles: dict, parent_rec: dict, parent_source: 
     """Generate (unless ``generated`` is given), screen, promote against the parent. Fresh scoring is ``run_fresh``."""
     from lares.eval.promotion import compare_to_incumbent
     from lares.eval.runner import PolicyActor
-    from lares.fitting.checkpoints import RolloutScore, is_better_checkpoint
 
     adir = os.path.join(bdir, arm)
     path = os.path.join(adir, "arm.json")
@@ -365,15 +314,9 @@ def run_arm(arm: str, scfg: dict, roles: dict, parent_rec: dict, parent_source: 
         return out
     stream = stream_factory(arm, os.path.join(adir, "isaac"))
     actors = {k: PolicyActor(p, deterministic=True, name=f"{arm}:slot{k}") for k, p in valid}
-    screens, best, best_k = {}, None, None
-    for k, _ in valid:
-        s = score(actors[k], roles["screen"], stream)
-        screens[str(k)] = public(s)
-        r = RolloutScore(s["success"], s["tail_hit_fraction"])
-        if is_better_checkpoint(r, best):
-            best, best_k = r, k
+    screens, best_k = screen_best(actors, roles["screen"], stream)
     promo = score(actors[best_k], roles["promotion"], stream)
-    incumbent = _parent_like(parent_rec["promotion"], roles["promotion"], parent_rec["promotion_returns"])
+    incumbent = parent_like(parent_rec["promotion"], roles["promotion"], parent_rec["promotion_returns"], "r051_learner")
     decision = compare_to_incumbent(promo["_result"], incumbent, f"{arm}:slot{best_k}", "r051_learner",
                                     excluded_manifest_ids=[roles["screen"].manifest_id])
     chosen = dict(valid)[best_k]
@@ -406,7 +349,7 @@ def run_fresh(arms: dict, parent, roles: dict, bdir: str, stream_factory) -> dic
     path = os.path.join(bdir, "fresh.json")
     if os.path.exists(path):
         return json.load(open(path))
-    _started(bdir, "fresh")
+    started(bdir, "fresh")
     stream = stream_factory("fresh", os.path.join(bdir, "fresh"))
     out, parent_fresh = {}, None
     for arm in ARMS:
@@ -501,5 +444,5 @@ def run_study(scfg: dict, stream_factory, client) -> dict:
     return summary
 
 
-__all__ = ["ARMS", "LABEL", "ROLES", "SOURCE_TEXT", "block_roles", "build_evidence", "freeze_manifests",
-           "load_evidence", "repair_request", "run_study", "summarise"]
+__all__ = ["ARMS", "LABEL", "ROLES", "SOURCE_TEXT", "arm_needs_generation", "block_roles", "build_evidence",
+           "freeze_manifests", "load_evidence", "repair_request", "run_study", "summarise"]

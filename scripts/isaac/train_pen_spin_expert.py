@@ -32,7 +32,7 @@ _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, _ROOT)
 
 
-from lares.utils.cli import load_yaml  # noqa: E402
+from lares.utils.cli import load_yaml, self_argv  # noqa: E402
 from lares.utils.clock import now_iso  # noqa: E402
 from lares.envs.isaac_pen_spin.ppo_expert import PPOController, build_runner, make_agent_cfg  # noqa: E402,F401
 
@@ -44,7 +44,7 @@ def load_protocol(config_path: str) -> dict:
 
 
 def _self_cmd(args, *extra) -> list:
-    return [sys.executable, "-u", os.path.abspath(__file__), "--config", args.config, *extra]
+    return self_argv(args.config, __file__) + list(extra)
 
 
 # ---------------------------------------------------------------------------
@@ -256,7 +256,7 @@ def phase_evaluate(args, proto):
             _ppo_child(args, m, ck, o)
         a, b = (np.load(o.replace(".json", ".npz")) for o in outs)
         ra, rb = (json.load(open(o))["episodes"] for o in outs)
-        union = protocols._diverged_envs(a, b, "spin_rate") | protocols._diverged_envs(a, b, "center_dist")
+        union = protocols.diverged_envs(a, b, "spin_rate") | protocols.diverged_envs(a, b, "center_dist")
         flips = sum(x["sustained"] != y["sustained"] for x, y in zip(ra, rb))
         control[f"stage{stage}/ppo_expert"] = {"union_diverged_envs": len(union), "sustained_outcome_flips": int(flips),
                                                "passes": bool(flips == 0 and len(union) <= protocols.MAX_DIVERGED_ENVS)}

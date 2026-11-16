@@ -23,9 +23,8 @@ from lares.envs.isaac_pen_spin import cases
 from lares.envs.isaac_pen_spin import channel_lesions as cl
 from lares.envs.isaac_pen_spin import coordinate_repair as cr
 from lares.envs.isaac_pen_spin import scalar_tuning as st
-from lares.envs.isaac_pen_spin.learner_recovery import _load
-from lares.envs.isaac_pen_spin.protocols import arm_summary, child_cell, failure_split
-from lares.eval.manifest import EvaluationManifest
+from lares.envs.isaac_pen_spin.protocols import (actions_match, arm_summary, cached_json, disjoint_from, drive_params,
+                                                 failure_split, freeze_json, load_cell, roles, study_cell)
 
 STUDY = "r064_lead_feedback"
 STAGE = 3
@@ -145,33 +144,15 @@ def make_controller(arm: str, protocol_cfg: dict, out_dir: str | None = None):
                           float(protocol_cfg["clip"]))
 
 
-def offline_identity_gate(protocol_cfg: dict, archive_npz: str, max_steps: int | None = None) -> dict:
-    import torch
-
+def offline_identity_gate(protocol_cfg: dict, archive_npz: str) -> dict:
     data = np.load(archive_npz)
-    obs, length = data["obs"], data["length"]
     parent = cr.incumbent_controller(protocol_cfg["incumbent_asset"])
     ident = LeadController(protocol_cfg["incumbent_asset"], "identity", {"mode": "identity"}, 1.0, 0.6)
-    mism, rows = [], 0
-    for i in range(obs.shape[0]):
-        L = int(min(length[i], obs.shape[1]))
-        if max_steps:
-            L = min(L, int(max_steps))
-        if L <= 0:
-            continue
-        o = torch.as_tensor(obs[i, :L], dtype=torch.float32)
-        rows += L
-        if not torch.equal(parent(o, 0, None), ident(o, 0, None)):
-            mism.append(i)
-    return {"archive": archive_npz, "rows": rows, "mismatch_cases": mism, "passes": not mism}
+    return {"archive": archive_npz, **actions_match(parent, ident, data["obs"], data["length"])}
 
 
 def manifest_files(protocol_cfg: dict) -> dict:
     return {"screen": protocol_cfg["screen_manifest"], "confirmation": protocol_cfg["confirmation_manifest"]}
-
-
-def roles(protocol_cfg: dict) -> dict:
-    return {k: (int(v[0]), int(v[1])) for k, v in protocol_cfg["roles"].items()}
 
 
 def build_manifests(protocol_cfg: dict) -> list[str]:
@@ -182,7 +163,7 @@ def build_manifests(protocol_cfg: dict) -> list[str]:
              (files["confirmation"], cases.build_manifest(STAGE, int(protocol_cfg["confirmation_seed"]), int(protocol_cfg["confirmation_cases"]), label="r064_confirmation"), "confirmation")]
     before = {p for p, _, _ in specs if os.path.exists(p)}
     cases.freeze_manifest_set(specs)
-    assert_disjoint([m for _, m, _ in specs] + [EvaluationManifest.load(p) for p in protocol_cfg.get("disjoint_from", [])])
+    assert_disjoint([m for _, m, _ in specs] + disjoint_from(protocol_cfg))
     return [p for p, _, _ in specs if p not in before]
 
 
@@ -220,43 +201,27 @@ def aggregate(rows: dict, sats: dict, screens: dict, winners: dict, activity: di
     return out
 
 
-def _child(config_path: str, manifest: str, arm: str, out_path: str, record: bool) -> None:
-    child_cell(config_path, manifest, arm, out_path, study=STUDY, record_obs=record, skip_existing=True)
-
-
 def _activity(cell: str):
     with open(cell, encoding="utf-8") as f:
         return (json.load(f).get("controller_params") or {}).get("offset_activity")
 
 
 def run_lead_feedback(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
-    from lares.utils.hashing import sha256_file
-
     asset = protocol_cfg["incumbent_asset"]
     inc = cr.check_asset(asset)
     os.makedirs(out_dir, exist_ok=True)
     with open(os.path.join(out_dir, "lead_feedback_source.py"), "w", encoding="utf-8") as f:
         f.write(substituted_source(cr.incumbent_spec(asset)["source"]))
-    gate_path = os.path.join(out_dir, "identity_gate.json")
-    if os.path.exists(gate_path):
-        with open(gate_path, encoding="utf-8") as f:
-            gate = json.load(f)
-    else:
-        gate = offline_identity_gate(protocol_cfg, protocol_cfg["identity_archive"])
-        with open(gate_path, "w", encoding="utf-8") as f:
-            json.dump(gate, f, indent=2)
+    gate = cached_json(os.path.join(out_dir, "identity_gate.json"),
+                       lambda: offline_identity_gate(protocol_cfg, protocol_cfg["identity_archive"]))
     if not gate["passes"]:
         raise SystemExit(f"offline identity gate failed, no episode run: {gate}")
     files = manifest_files(protocol_cfg)
     for p in files.values():
-        if not os.path.exists(p):
-            raise SystemExit(f"frozen manifest {p} missing; build and commit it before the run")
-    conf = EvaluationManifest.load(files["confirmation"])
+        cases.require_frozen(p)
+    conf = cases.load_frozen(files["confirmation"])
     role = cases.role_manifests(conf, roles(protocol_cfg), expected_cases=int(protocol_cfg["confirmation_cases"]), stage=STAGE)
-    paths = {"screen": files["screen"]}
-    for p, rm in role.items():
-        paths[p] = os.path.join(out_dir, f"{p}.yaml")
-        cases.freeze_manifest(paths[p], rm)
+    paths = {"screen": files["screen"], **cases.freeze_roles(role, out_dir)}
     names = candidate_names(protocol_cfg)
 
     # Screening: twelve candidates and the parent, one process each on the 40 screen cases.
@@ -265,28 +230,27 @@ def run_lead_feedback(protocol_cfg: dict, config_path: str, out_dir: str) -> dic
         for i, arm in enumerate(names[fam]):
             cell = os.path.join(out_dir, "screen", f"{arm}.json")
             os.makedirs(os.path.dirname(cell), exist_ok=True)
-            _child(config_path, paths["screen"], arm, cell, False)
-            rows = _load(cell)[1]
+            study_cell(protocol_cfg, config_path, paths["screen"], arm, cell, record_obs=False)
+            rows = load_cell(cell)[1]
             screens[arm] = {"family": fam, "index": i, **st.screen_metrics(rows), "offset_activity": _activity(cell)}
     pcell = os.path.join(out_dir, "screen", "parent.json")
-    _child(config_path, paths["screen"], "parent", pcell, False)
-    screens["parent"] = {"family": "parent", "index": -1, **st.screen_metrics(_load(pcell)[1])}
+    study_cell(protocol_cfg, config_path, paths["screen"], "parent", pcell, record_obs=False)
+    screens["parent"] = {"family": "parent", "index": -1, **st.screen_metrics(load_cell(pcell)[1])}
     winners = {fam: min(names[fam], key=lambda a: screen_key(screens[a], screens[a]["index"])) for fam in FAMILIES}
     wpath = os.path.join(out_dir, "winners.json")
-    st._freeze_json(wpath, {fam: {"arm": winners[fam], "screen": {k: v for k, v in screens[winners[fam]].items() if k != "offset_activity"},
-                                  "rule": "sustained successes, then fewer drops, then index"} for fam in FAMILIES}, "winners")
+    freeze_json(wpath, {fam: {"arm": winners[fam], "screen": {k: v for k, v in screens[winners[fam]].items() if k != "offset_activity"},
+                              "rule": "sustained successes, then fewer drops, then index"} for fam in FAMILIES}, "winners")
 
     # Confirmation: both winners and the parent on promotion and fresh, traces recorded.
-    sd_state = __import__("torch").load(os.path.join(asset, "state.pt"), weights_only=True)
-    params = {"spin_target": float(sd_state["spin_target"]), "speed_gain": float(sd_state["speed_gain"])}
+    params = drive_params(__import__("torch").load(os.path.join(asset, "state.pt"), weights_only=True))
     rows, sats, activity = {}, {}, {}
     for c, arm in (("parent", "parent"), ("feedback", winners["feedback"]), ("constant", winners["constant"])):
         rows[c], sats[c], activity[c] = {}, {}, {}
         for p in PANELS:
             cell = os.path.join(out_dir, "confirmation", f"{c}_{p}.json")
             os.makedirs(os.path.dirname(cell), exist_ok=True)
-            _child(config_path, paths[p], arm, cell, True)
-            trace, rows[c][p] = _load(cell)
+            study_cell(protocol_cfg, config_path, paths[p], arm, cell)
+            trace, rows[c][p] = load_cell(cell)
             sats[c][p] = st.saturation(trace, params)
             activity[c][p] = _activity(cell)
     summary = aggregate(rows, sats, screens, {fam: winners[fam] for fam in FAMILIES}, activity)
@@ -295,7 +259,7 @@ def run_lead_feedback(protocol_cfg: dict, config_path: str, out_dir: str) -> dic
     summary["filter"] = {"tau_s": float(protocol_cfg["filter_tau_s"]), "alpha": alpha_for(float(protocol_cfg["filter_tau_s"])),
                          "clip": float(protocol_cfg["clip"]), "targets": list(protocol_cfg["targets"]), "gains": list(protocol_cfg["gains"]),
                          "offsets": list(protocol_cfg["offsets"])}
-    summary["manifests"] = {k: {"path": v, "sha256": sha256_file(v)} for k, v in files.items()}
+    summary["manifests"] = {k: cases.manifest_record(v) for k, v in files.items()}
     summary["episodes"] = int((len(names["feedback"]) + len(names["constant"]) + 1) * int(protocol_cfg["screen_cases"])
                               + 3 * sum(len(role[p]) for p in PANELS))
     summary["decision"] = {"adopt": [f for f in FAMILIES if summary["adoption"][f]],

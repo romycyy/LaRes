@@ -7,12 +7,15 @@ constant with its exact float, and ``incumbent.json`` with every file's sha256).
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, ROOT)
+
+from lares.utils.hashing import sha256_file  # noqa: E402
+
 ASSET = os.path.join(ROOT, "config", "pen_spin", "d058_fixed_stroke_incumbent")
 
 
@@ -21,8 +24,7 @@ def verify() -> dict:
         inc = json.load(f)
     bad = {}
     for name, expected in inc["files"].items():
-        with open(os.path.join(ASSET, name), "rb") as f:
-            got = hashlib.sha256(f.read()).hexdigest()
+        got = sha256_file(os.path.join(ASSET, name))
         if got != expected:
             bad[name] = (expected, got)
     with open(os.path.join(ASSET, "constant_gain.json"), encoding="utf-8") as f:

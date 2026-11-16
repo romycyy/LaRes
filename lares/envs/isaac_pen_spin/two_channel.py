@@ -24,11 +24,12 @@ from __future__ import annotations
 
 import json
 import os
-from types import SimpleNamespace
 
 import numpy as np
 
 from lares.envs.isaac_pen_spin import cases
+from lares.envs.isaac_pen_spin.block_study import (arm_needs_generation, attempts_record, make_slot_generator,
+                                                   parent_like, screen_best, started)
 from lares.envs.isaac_pen_spin.gait_repair import public, score
 
 LABEL = "two_channel_cold"
@@ -84,31 +85,13 @@ def block_roles(stage: int, seed: int) -> dict:
 # ---------------------------------------------------------------------------------------------------------------------
 
 
-def _parent_like(record: dict, manifest, returns: list[float]):
-    """A saved per-case record rebuilt as a ManifestResult (paired by case id)."""
-    from lares.eval.runner import ManifestResult
-
-    if record["manifest_id"] != manifest.manifest_id:
-        raise ValueError("the saved record is for another manifest")
-    res = ManifestResult(actor_name="neutral_pose", manifest_id=manifest.manifest_id, action_mode="deterministic",
-                         schema_id=manifest.environment.env_id)
-    for case, ok, ret in zip(manifest.episodes, record["per_case"], returns):
-        res.episodes.append(SimpleNamespace(case_id=case.case_id, task_hash=case.task_hash, success=bool(ok),
-                                            episode_return=float(ret), signed_goal_progress=None))
-    return res
-
-
 def run_null(roles: dict, bdir: str, stream_factory, stage: int) -> dict:
     from lares.envs.isaac_pen_spin.pipeline_backend import NeutralActor
 
     path = os.path.join(bdir, "null.json")
     if os.path.exists(path):
         return json.load(open(path))
-    started = os.path.join(bdir, "null.started")
-    if os.path.exists(started):
-        raise SystemExit(f"{started}: the null incumbent's evaluation was interrupted; it is never rerun")
-    os.makedirs(bdir, exist_ok=True)
-    open(started, "w").close()
+    started(bdir, "null")
     stream = stream_factory(stage, "null", os.path.join(bdir, "null"))
     actor = NeutralActor()
     out = {}
@@ -126,53 +109,21 @@ def run_null(roles: dict, bdir: str, stream_factory, stage: int) -> dict:
 def generate_slots(arm: str, env_id: str, adir: str, client, model: str, reasoning_effort: str,
                    max_calls_per_slot: int = 2) -> dict:
     """Four single-phase exploration slots from one prompt; the treatment's task description carries the requirement."""
-    import pickle
-
-    from lares.core.policy_generation import PlateauSlotGenerator
     from lares.core.training_pipeline import load_policy_prompt_assets
-    from lares.search.generation import LLMCallLedger
     from lares.utils.hashing import sha256_text
 
-    os.makedirs(adir, exist_ok=True)
-    data_pkl = os.path.join(adir, "data.pkl")
-    with open(data_pkl, "wb") as f:
-        pickle.dump([{"obs": np.zeros(cases.OBS_DIM)}], f)
     prompts = dict(load_policy_prompt_assets(env_id))
     if arm == "two_channel":
         prompts["task_description"] = prompts["task_description"] + "\n" + TWO_CHANNEL_REQUIREMENT
     elif arm != "baseline":
         raise ValueError(f"unknown arm {arm!r}")
-    specs = {k: SimpleNamespace(slot=k, lane_metadata=lambda k=k: {"study": LABEL, "arm": arm, "slot": k})
-             for k in range(SLOTS)}
-    plan = SimpleNamespace(n=SLOTS, slot=lambda k: specs[k])
-    ledger = LLMCallLedger(adir)
-    gen = PlateauSlotGenerator(client, SimpleNamespace(model=model, reasoning_effort=reasoning_effort),
-                               os.path.join(adir, "gen_0"), cases.OBS_DIM, cases.NUM_ACTIONS, env_id, prompts, plan, data_pkl,
-                               ledger, llm_transcript_path=os.path.join(adir, "llm_transcript.log"),
-                               max_total_calls=SLOTS * int(max_calls_per_slot), max_repair_per_candidate=1)
+    gen, ledger = make_slot_generator(adir, env_id, client, model, reasoning_effort, SLOTS, int(max_calls_per_slot),
+                                      prompts=prompts, slot_metadata=lambda k: {"study": LABEL, "arm": arm, "slot": k})
     with open(os.path.join(adir, "user_prompt.txt"), "w", encoding="utf-8") as f:
         f.write(gen.user_content)
-    slots = []
-    for k in range(SLOTS):
-        attempts = gen.exploration(k)
-        final = attempts[-1]
-        slots.append({"slot": k, "attempts": [{"attempt_id": c.attempt_id, "valid": c.valid,
-                                               "validation": c.validation, "llm_call_ids": c.llm_call_ids}
-                                              for c in attempts],
-                      "valid": bool(final.valid), "policy": final.policy if final.valid else None,
-                      "code": final.code if final.valid else None})
+    slots = [{"slot": k, **attempts_record(gen.exploration(k))} for k in range(SLOTS)]
     return {"slots": slots, "llm_calls": len(ledger), "llm_tokens": ledger.totals()["llm_total_tokens"],
             "prompt_sha256": sha256_text(gen.user_content)}
-
-
-def arm_needs_generation(bdir: str, arm: str) -> bool:
-    """False once the arm is finished; refuses an arm interrupted after spending episodes (never rerun)."""
-    adir = os.path.join(bdir, arm)
-    if os.path.exists(os.path.join(adir, "arm.json")):
-        return False
-    if os.path.exists(os.path.join(adir, "isaac")):
-        raise SystemExit(f"{adir} was interrupted after spending episodes; an interrupted arm is not rerun")
-    return True
 
 
 def generate_arm(arm: str, ccfg: dict, stage: int, bdir: str, client) -> dict:
@@ -190,7 +141,6 @@ def run_arm(arm: str, ccfg: dict, stage: int, roles: dict, null: dict, bdir: str
             generated: dict | None = None) -> dict:
     from lares.eval.promotion import compare_to_incumbent
     from lares.eval.runner import PolicyActor
-    from lares.fitting.checkpoints import RolloutScore, is_better_checkpoint
 
     adir = os.path.join(bdir, arm)
     path = os.path.join(adir, "arm.json")
@@ -212,17 +162,11 @@ def run_arm(arm: str, ccfg: dict, stage: int, roles: dict, null: dict, bdir: str
         return out
     stream = stream_factory(stage, arm, os.path.join(adir, "isaac"))
     actors = {k: PolicyActor(p, deterministic=True, name=f"{arm}:slot{k}") for k, p in valid}
-    screens, best, best_k = {}, None, None
-    for k, _ in valid:
-        s = score(actors[k], roles["screen"], stream)
-        screens[str(k)] = public(s)
-        r = RolloutScore(s["success"], s["tail_hit_fraction"])
-        if is_better_checkpoint(r, best):
-            best, best_k = r, k
+    screens, best_k = screen_best(actors, roles["screen"], stream)
     actor = actors[best_k]
     probe = score(actor, roles["probe"], stream)
     promo = score(actor, roles["promotion"], stream)
-    incumbent = _parent_like(null["promotion"], roles["promotion"], null["promotion_returns"])
+    incumbent = parent_like(null["promotion"], roles["promotion"], null["promotion_returns"], "neutral_pose")
     decision = compare_to_incumbent(promo["_result"], incumbent, f"{arm}:slot{best_k}", "neutral_pose",
                                     excluded_manifest_ids=[roles["screen"].manifest_id, roles["probe"].manifest_id])
     fresh = score(actor, roles["fresh"], stream)
@@ -275,9 +219,9 @@ def summarise(blocks: list[dict]) -> dict:
                         "plateau_blocks": sum(s["plateau"] for s in st),
                         "candidates_with_screen_success": sum(s["candidates_with_screen_success"] for s in st),
                         "valid_candidates": sum(s["valid_candidates"] for s in st)}
-        d = [blk["arms"]["two_channel"]["fresh_incumbent"]["success"] - blk["arms"]["baseline"]["fresh_incumbent"]["success"]
-             for blk in sb]
-        row["two_channel_minus_baseline"] = {"per_block": d, "mean": float(np.mean(d))}
+        row["two_channel_minus_baseline"] = block_contrast(
+            blk["arms"]["two_channel"]["fresh_incumbent"]["success"] - blk["arms"]["baseline"]["fresh_incumbent"]["success"]
+            for blk in sb)
         by_stage[f"stage{stage}"] = row
     out["by_stage"] = by_stage
     return out
@@ -315,5 +259,5 @@ def run_study(ccfg: dict, stream_factory, client) -> dict:
     return summary
 
 
-__all__ = ["ARMS", "LABEL", "ROLES", "TWO_CHANNEL_REQUIREMENT", "block_roles", "block_stages", "freeze_manifests",
-           "generate_slots", "run_study", "summarise"]
+__all__ = ["ARMS", "LABEL", "ROLES", "TWO_CHANNEL_REQUIREMENT", "arm_needs_generation", "block_roles", "block_stages",
+           "freeze_manifests", "generate_slots", "run_study", "summarise"]

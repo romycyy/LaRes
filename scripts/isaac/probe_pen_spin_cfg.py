@@ -17,7 +17,7 @@ if "--neutral" in sys.argv:
     env.close()
     app.close()
     sys.exit(0)
-import isaaclab_tasks  # noqa: F401
+import isaaclab_tasks  # noqa: F401  (registration side effect: Isaac Lab's own task ids)
 import lares.envs.isaac_pen_spin as p
 print("added", p.register())
 from lares.envs.isaac_pen_spin.shadow_hand_spin_env_cfg import ShadowHandSpinStage3EnvCfg

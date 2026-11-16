@@ -19,9 +19,10 @@ import numpy as np
 from lares.envs.isaac_pen_spin import cases
 from lares.envs.isaac_pen_spin import channel_lesions as cl
 from lares.envs.isaac_pen_spin import scalar_tuning as st
-from lares.envs.isaac_pen_spin.learner_recovery import _load, check_learner, make_learner
-from lares.envs.isaac_pen_spin.protocols import arm_summary, child_cell, failure_split
-from lares.eval.manifest import EvaluationManifest
+from lares.envs.isaac_pen_spin.learner_recovery import check_learner, learner_source, make_learner
+from lares.envs.isaac_pen_spin.protocols import (actions_match, arm_summary, build_single_manifest, cached_json,
+                                                 failure_split, in_play, learner_drive_params, load_cell, manifest_path,
+                                                 roles, study_cell)
 
 STUDY = "r081_stroke_feedback"
 STAGE = 3
@@ -83,24 +84,19 @@ class StrokeGain:
                 "values": self.count, "band": list(ACTIVE_BAND)}
 
 
+def _clamp(source: str) -> str:
+    return cl.substituted_source(source, "curl_clamp", 0.0)
+
+
 def clamp_source(protocol_cfg: dict) -> str:
-    lc = check_learner(protocol_cfg)
-    with open(lc["source"], encoding="utf-8") as f:
-        return cl.substituted_source(f.read(), "curl_clamp", 0.0)
+    return _clamp(learner_source(protocol_cfg))
 
 
 class StrokeFeedbackController:
     name = "stroke_feedback"
 
     def __init__(self, protocol_cfg: dict, mode: str, name: str, constant: float | None = None):
-        from lares.envs.isaac_pen_spin.layout import OBS_LAYOUT
-        from lares.envs.isaac_pen_spin.pipeline_child import SymbolicController
-
-        lc = check_learner(protocol_cfg)
-        self.inner = SymbolicController({"source": substituted_source(clamp_source(protocol_cfg)), "state_path": lc["state"],
-                                         "obs_dim": sum(size for _, size, _ in OBS_LAYOUT), "action_dim": cases.NUM_ACTIONS,
-                                         "fixed_action_scale": float(lc["fixed_action_scale"]),
-                                         "execution": "clamp(mean, -1, 1)"}, cases.STAGES[STAGE].task_id)
+        self.inner = make_learner(protocol_cfg, lambda source: substituted_source(_clamp(source)))
         self.gain = StrokeGain(mode, constant)
         self.inner.policy._stroke_gain = self.gain
         self.name = name
@@ -118,19 +114,14 @@ class StrokeFeedbackController:
         return self.inner(obs, t, ctx)
 
 
-def archived_gain_mean(protocol_cfg: dict, archives: list[str], max_steps: int | None = None) -> dict:
+def archived_gain_mean(protocol_cfg: dict, archives: list[str]) -> dict:
     """The feedback gain's arithmetic mean over the clamp's archived in-play steps (its own axial rate from the observations)."""
     vals = []
+    sl = cases.obs_slices()
     for path in archives:
         data = np.load(path)
         obs, length = data["obs"], data["length"]
-        sl = cases.obs_slices()
-        for i in range(obs.shape[0]):
-            L = int(min(length[i], obs.shape[1]))
-            if max_steps:
-                L = min(L, int(max_steps))
-            if L <= 0:
-                continue
+        for i, L in in_play(obs, length):
             o = obs[i, :L].astype(np.float64)
             omega = 5.0 * o[:, sl["obj_angvel"]]
             q = o[:, sl["obj_rot"]]
@@ -177,22 +168,8 @@ def preflight(protocol_cfg: dict) -> dict:
     return q
 
 
-def manifest_path(protocol_cfg: dict) -> str:
-    return protocol_cfg["manifest"]
-
-
-def roles(protocol_cfg: dict) -> dict:
-    return {k: (int(v[0]), int(v[1])) for k, v in protocol_cfg["roles"].items()}
-
-
 def build_manifests(protocol_cfg: dict) -> list[str]:
-    from lares.eval.manifest import assert_disjoint
-
-    path = manifest_path(protocol_cfg)
-    m = cases.build_manifest(STAGE, int(protocol_cfg["pool_seed"]), int(protocol_cfg["cases"]), label="r081_block")
-    written = cases.freeze_manifest(path, m)
-    assert_disjoint([m] + [EvaluationManifest.load(p) for p in protocol_cfg.get("disjoint_from", [])])
-    return [path] if written else []
+    return build_single_manifest(protocol_cfg, "r081_block", STAGE)
 
 
 def make_controller(arm: str, protocol_cfg: dict, out_dir: str):
@@ -207,25 +184,11 @@ def make_controller(arm: str, protocol_cfg: dict, out_dir: str):
     raise ValueError(f"unknown arm {arm!r}; one of {ARMS}")
 
 
-def offline_identity_gate(protocol_cfg: dict, archive_npz: str, max_steps: int | None = None) -> dict:
-    import torch
-
+def offline_identity_gate(protocol_cfg: dict, archive_npz: str) -> dict:
     data = np.load(archive_npz)
-    obs, length = data["obs"], data["length"]
     clamp = cl.lesioned_learner(protocol_cfg, "curl_clamp", 0.0, "clamp")
     ident = StrokeFeedbackController(protocol_cfg, "identity", "identity")
-    mism, rows = [], 0
-    for i in range(obs.shape[0]):
-        L = int(min(length[i], obs.shape[1]))
-        if max_steps:
-            L = min(L, int(max_steps))
-        if L <= 0:
-            continue
-        o = torch.as_tensor(obs[i, :L], dtype=torch.float32)
-        rows += L
-        if not torch.equal(clamp(o, 0, None), ident(o, 0, None)):
-            mism.append(i)
-    return {"archive": archive_npz, "rows": rows, "mismatch_cases": mism, "passes": not mism,
+    return {"archive": archive_npz, **actions_match(clamp, ident, data["obs"], data["length"]),
             "reference": "the qualified zero-curl clamp"}
 
 
@@ -258,46 +221,28 @@ def aggregate(rows: dict, sats: dict, activity: dict | None = None) -> dict:
     return out
 
 
-def _child(config_path: str, manifest: str, arm: str, out_path: str) -> None:
-    child_cell(config_path, manifest, arm, out_path, study=STUDY, record_obs=True, skip_existing=True)
-
-
 def run_stroke_feedback(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
-    from lares.utils.hashing import sha256_file
-
     q = preflight(protocol_cfg)
     check_learner(protocol_cfg)
     os.makedirs(out_dir, exist_ok=True)
     with open(os.path.join(out_dir, "stroke_feedback_source.py"), "w", encoding="utf-8") as f:
         f.write(substituted_source(clamp_source(protocol_cfg)))
     constant = freeze_constant(protocol_cfg, out_dir)
-    gate_path = os.path.join(out_dir, "identity_gate.json")
-    if os.path.exists(gate_path):
-        with open(gate_path, encoding="utf-8") as f:
-            gate = json.load(f)
-    else:
-        gate = offline_identity_gate(protocol_cfg, protocol_cfg["identity_archive"])
-        with open(gate_path, "w", encoding="utf-8") as f:
-            json.dump(gate, f, indent=2)
+    gate = cached_json(os.path.join(out_dir, "identity_gate.json"),
+                       lambda: offline_identity_gate(protocol_cfg, protocol_cfg["identity_archive"]))
     if not gate["passes"]:
         raise SystemExit(f"offline identity gate failed, no episode run: {gate}")
     mpath = manifest_path(protocol_cfg)
-    if not os.path.exists(mpath):
-        raise SystemExit(f"frozen manifest {mpath} missing; build and commit it before the run")
-    m = EvaluationManifest.load(mpath)
+    m = cases.load_frozen(mpath)
     role = cases.role_manifests(m, roles(protocol_cfg), expected_cases=int(protocol_cfg["cases"]), stage=STAGE)
-    paths = {}
-    for p, rm in role.items():
-        paths[p] = os.path.join(out_dir, f"{p}.yaml")
-        cases.freeze_manifest(paths[p], rm)
-    sd = make_learner(protocol_cfg).policy.state_dict()
-    params = {"spin_target": float(sd["spin_target"]), "speed_gain": float(sd["speed_gain"])}
+    paths = cases.freeze_roles(role, out_dir)
+    params = learner_drive_params(protocol_cfg)
     rows, sats, activity = {a: {} for a in ARMS}, {a: {} for a in ARMS}, {a: {} for a in ARMS}
     for p in PANELS:
         for a in ARMS:
             cell = os.path.join(out_dir, f"{a}_{p}.json")
-            _child(config_path, paths[p], a, cell)
-            trace, rows[a][p] = _load(cell)
+            study_cell(protocol_cfg, config_path, paths[p], a, cell)
+            trace, rows[a][p] = load_cell(cell)
             sats[a][p] = st.saturation(trace, params)
             with open(cell, encoding="utf-8") as f:
                 activity[a][p] = (json.load(f).get("controller_params") or {}).get("gain_activity")
@@ -305,7 +250,7 @@ def run_stroke_feedback(protocol_cfg: dict, config_path: str, out_dir: str) -> d
     summary["constant_gain"] = constant
     summary["qualification"] = q
     summary["identity_gate"] = gate
-    summary["manifest"] = {"path": mpath, "sha256": sha256_file(mpath), "id": m.manifest_id}
+    summary["manifest"] = cases.manifest_record(mpath, m)
     summary["episodes"] = len(ARMS) * sum(len(role[p]) for p in PANELS)
     summary["decision"] = {"adopt": summary["adopts_stroke_feedback"],
                            "route": ("adopt stroke feedback as the new incumbent" if summary["adopts_stroke_feedback"] else

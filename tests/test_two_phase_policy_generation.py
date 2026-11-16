@@ -322,13 +322,7 @@ class TestProposalParentRules(unittest.TestCase):
         self.assertFalse(parsed[0].ok)
 
 
-class TestExtractNPolicyCodes(unittest.TestCase):
-    def test_two_fences(self):
-        text = f"Intro\n{fence(POLICY_A)}\n\n{fence(POLICY_A)}\n"
-        codes = pg._extract_n_policy_codes(text, 2)
-        self.assertEqual(len(codes), 2)
-        self.assertIn("class GeneratedPolicy", codes[0])
-
+class TestExtractLabelledPolicyCodes(unittest.TestCase):
     def test_labelled_fences_map_by_label_not_by_position(self):
         text = f"{fence(POLICY_B, 'gen0_idea1')}\n{fence(POLICY_A, 'gen0_idea0')}"
         codes, mode, found = pg._extract_labelled_policy_codes(text, ["gen0_idea0", "gen0_idea1"])
@@ -595,28 +589,23 @@ class TestLaterGenerations(GenerationCase):
             self.generate({}, generation=1, bundle=bundle, text="something else")
 
 
-class TestLegacyEntryPoint(GenerationCase):
-    def test_get_symbolic_policies_two_phase_returns_candidates(self):
-        args = SimpleNamespace(model="stub-model", policy_gen_two_phase=True, policy_impl_mode=pg.POLICY_IMPL_PER_IDEA)
+class TestValidatorBatch(GenerationCase):
+    def test_the_generator_writes_the_harness_batch_itself_when_none_is_given(self):
+        """``data_pkl_path=None`` makes the slot validator write ``data.pkl`` into the generation directory."""
         llm = ScriptedLLM({
             "policy_ideas": [json.dumps({"ideas": [idea_dict("A", PARAMS_A), idea_dict("B", PARAMS_B)]})],
             "policy_implement": [fence(POLICY_A), fence(POLICY_B)],
         })
-        p = self.prompts
         with patch.object(pg, "_call_llm", side_effect=llm), patch.object(
             pg, "_run_policy_validation_subprocess", return_value=(True, "Success!", "full")
         ):
-            candidates = pg.get_symbolic_policies(
-                client=MagicMock(), dir_path=self.gen_dir, llm_iter=0, args=args, obs_dim=39, action_dim=4,
-                env_name="push-v2", initial_system=p["initial_system"], initial_user=p["initial_user"],
-                task_description=p["task_description"], obs_description=p["obs_description"],
-                input_dict_string=p["input_dict_string"], code_output_tip=p["code_output_tip"],
-                data_pkl_path=self.data_pkl, real_num=2, ideas_system=p["ideas_system"], ideas_user=p["ideas_user"],
+            candidates = pg.generate_candidates(
+                MagicMock(), SimpleNamespace(model="stub-model"), self.gen_dir, 0, 39, 4, "push-v2", self.prompts, 2,
+                None, self.ledger, impl_mode=pg.POLICY_IMPL_PER_IDEA,
             )
-        policies, codes, responses = pg.valid_policies(candidates)
-        self.assertEqual(len(policies), 2)
-        self.assertEqual(len(codes), 2)
-        self.assertTrue(os.path.isfile(os.path.join(self.gen_dir, "llm_calls.jsonl")))
+        self.assertEqual(sum(1 for c in pg.final_attempts(candidates) if c.valid), 2)
+        self.assertTrue(os.path.isfile(os.path.join(self.gen_dir, "data.pkl")))
+        self.assertTrue(os.path.isfile(os.path.join(self.root, "llm_calls.jsonl")))
 
 
 if __name__ == "__main__":

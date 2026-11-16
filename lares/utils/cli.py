@@ -30,3 +30,14 @@ def openai_client(**kwargs):
     from openai import OpenAI
 
     return OpenAI(api_key=require_api_key(), **kwargs)
+
+
+def self_argv(config_path: str, script: str | None = None) -> list[str]:
+    """The argv prefix that re-runs the current entry point as a child: interpreter, ``-u``, script, ``--config``.
+
+    Every one-rollout-per-process protocol spawns the script it is running in; this is the one spelling of that
+    prefix. ``script`` defaults to the running script (``sys.argv[0]``) as an absolute path.
+    """
+    import sys
+
+    return [sys.executable, "-u", os.path.abspath(script or sys.argv[0]), "--config", config_path]

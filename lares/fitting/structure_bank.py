@@ -179,7 +179,7 @@ def load_bank(
     if not os.path.isdir(directory):
         raise FileNotFoundError(
             f"no structure bank at {directory}. Build one with "
-            f"scripts/build_structure_bank.py"
+            f"deprecated/scripts/build_structure_bank.py (archived; restore it to scripts/ first)"
         )
     schema = get_obs_schema(env_id)
     paths = sorted(

@@ -24,9 +24,9 @@ from lares.envs.isaac_pen_spin import cases
 from lares.envs.isaac_pen_spin import channel_lesions as cl
 from lares.envs.isaac_pen_spin import coordinate_repair as cr
 from lares.envs.isaac_pen_spin import scalar_tuning as st
-from lares.envs.isaac_pen_spin.learner_recovery import _load
-from lares.envs.isaac_pen_spin.protocols import arm_summary, child_cell, failure_split
-from lares.eval.manifest import EvaluationManifest
+from lares.envs.isaac_pen_spin.protocols import (actions_match, arm_summary, build_single_manifest, cached_json,
+                                                 drive_params, failure_split, freeze_json, in_play, load_cell,
+                                                 manifest_path, roles, study_cell)
 
 STUDY = "r086_phase_warp"
 STAGE = 3
@@ -177,36 +177,18 @@ def make_controller(arm: str, protocol_cfg: dict, out_dir: str | None = None):
     return WarpController(protocol_cfg["incumbent_asset"], arm, eps, constants)
 
 
-def offline_identity_gate(protocol_cfg: dict, archive_npz: str, max_steps: int | None = None) -> dict:
-    import torch
-
+def offline_identity_gate(protocol_cfg: dict, archive_npz: str) -> dict:
     data = np.load(archive_npz)
-    obs, length = data["obs"], data["length"]
     parent = cr.incumbent_controller(protocol_cfg["incumbent_asset"])
     ident = WarpController(protocol_cfg["incumbent_asset"], "identity", 0.0, None)
-    mism, rows = [], 0
-    for i in range(obs.shape[0]):
-        L = int(min(length[i], obs.shape[1]))
-        if max_steps:
-            L = min(L, int(max_steps))
-        if L <= 0:
-            continue
-        o = torch.as_tensor(obs[i, :L], dtype=torch.float32)
-        rows += L
-        if not torch.equal(parent(o, 0, None), ident(o, 0, None)):
-            mism.append(i)
-    return {"archive": archive_npz, "rows": rows, "mismatch_cases": mism, "passes": not mism}
+    return {"archive": archive_npz, **actions_match(parent, ident, data["obs"], data["length"])}
 
 
 def realised_channels(trace: dict, eps: float, lead: float, constants: dict | None) -> dict:
     """The per-finger phase channels' mean and RMS on recorded in-play steps, from the observed quaternion twist."""
     sl = cases.obs_slices()["obj_rot"]
     obs, length = np.asarray(trace["obs"]), np.asarray(trace["length"])
-    rows = []
-    for i in range(obs.shape[0]):
-        L = int(min(length[i], obs.shape[1]))
-        if L > 0:
-            rows.append(obs[i, :L, sl].astype(np.float64))
+    rows = [obs[i, :L, sl].astype(np.float64) for i, L in in_play(obs, length)]
     q = np.concatenate(rows) if rows else np.zeros((0, 4))
     q = q / (np.linalg.norm(q, axis=1, keepdims=True) + 1e-8)
     tw, tx = q[:, 0], q[:, 1]
@@ -224,22 +206,8 @@ def realised_channels(trace: dict, eps: float, lead: float, constants: dict | No
             "cos_mean": cp.mean(axis=0).tolist(), "cos_rms": np.sqrt((cp * cp).mean(axis=0)).tolist()}
 
 
-def manifest_path(protocol_cfg: dict) -> str:
-    return protocol_cfg["manifest"]
-
-
-def roles(protocol_cfg: dict) -> dict:
-    return {k: (int(v[0]), int(v[1])) for k, v in protocol_cfg["roles"].items()}
-
-
 def build_manifests(protocol_cfg: dict) -> list[str]:
-    from lares.eval.manifest import assert_disjoint
-
-    path = manifest_path(protocol_cfg)
-    m = cases.build_manifest(STAGE, int(protocol_cfg["pool_seed"]), int(protocol_cfg["cases"]), label="r086_block")
-    written = cases.freeze_manifest(path, m)
-    assert_disjoint([m] + [EvaluationManifest.load(p) for p in protocol_cfg.get("disjoint_from", [])])
-    return [path] if written else []
+    return build_single_manifest(protocol_cfg, "r086_block", STAGE)
 
 
 def screen_key(m: dict, index: int) -> tuple:
@@ -270,52 +238,35 @@ def aggregate(rows: dict, sats: dict, screens: dict, winner: str, channels: dict
     return out
 
 
-def _child(config_path: str, manifest: str, arm: str, out_path: str, record: bool) -> None:
-    child_cell(config_path, manifest, arm, out_path, study=STUDY, record_obs=record, skip_existing=True)
-
-
 def run_phase_warp(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
-    from lares.utils.hashing import sha256_file
-
     asset = protocol_cfg["incumbent_asset"]
     inc = cr.check_asset(asset)
     os.makedirs(out_dir, exist_ok=True)
     with open(os.path.join(out_dir, "phase_warp_source.py"), "w", encoding="utf-8") as f:
         f.write(substituted_source(cr.incumbent_spec(asset)["source"]))
     constants = freeze_constants(protocol_cfg, out_dir)
-    gate_path = os.path.join(out_dir, "identity_gate.json")
-    if os.path.exists(gate_path):
-        with open(gate_path, encoding="utf-8") as f:
-            gate = json.load(f)
-    else:
-        gate = offline_identity_gate(protocol_cfg, protocol_cfg["identity_archive"])
-        with open(gate_path, "w", encoding="utf-8") as f:
-            json.dump(gate, f, indent=2)
+    gate = cached_json(os.path.join(out_dir, "identity_gate.json"),
+                       lambda: offline_identity_gate(protocol_cfg, protocol_cfg["identity_archive"]))
     if not gate["passes"]:
         raise SystemExit(f"offline identity gate failed, no episode run: {gate}")
     mpath = manifest_path(protocol_cfg)
-    if not os.path.exists(mpath):
-        raise SystemExit(f"frozen manifest {mpath} missing; build and commit it before the run")
-    m = EvaluationManifest.load(mpath)
+    m = cases.load_frozen(mpath)
     role = cases.role_manifests(m, roles(protocol_cfg), expected_cases=int(protocol_cfg["cases"]), stage=STAGE)
-    paths = {}
-    for p, rm in role.items():
-        paths[p] = os.path.join(out_dir, f"{p}.yaml")
-        cases.freeze_manifest(paths[p], rm)
+    paths = cases.freeze_roles(role, out_dir)
     names = candidate_names(protocol_cfg)
     screens = {}
     for i, arm in enumerate(names + ["parent"]):
         cell = os.path.join(out_dir, "screen", f"{arm}.json")
         os.makedirs(os.path.dirname(cell), exist_ok=True)
-        _child(config_path, paths["screen"], arm, cell, False)
-        screens[arm] = {"index": i, **st.screen_metrics(_load(cell)[1])}
+        study_cell(protocol_cfg, config_path, paths["screen"], arm, cell, record_obs=False)
+        screens[arm] = {"index": i, **st.screen_metrics(load_cell(cell)[1])}
     winner = min(names, key=lambda a: screen_key(screens[a], screens[a]["index"]))
-    st._freeze_json(os.path.join(out_dir, "winner.json"), {"arm": winner, "screen": screens[winner],
-                                                           "rule": "sustained successes, then fewer drops, then candidate order"}, "winner")
+    freeze_json(os.path.join(out_dir, "winner.json"), {"arm": winner, "screen": screens[winner],
+                                                       "rule": "sustained successes, then fewer drops, then candidate order"}, "winner")
     import torch
 
     sd = torch.load(os.path.join(asset, "state.pt"), weights_only=True)
-    params = {"spin_target": float(sd["spin_target"]), "speed_gain": float(sd["speed_gain"])}
+    params = drive_params(sd)
     lead = float(sd["phase_lead"])
     rows, sats, channels = {}, {}, {}
     for c, arm in (("parent", "parent"), ("winner", winner)):
@@ -324,15 +275,15 @@ def run_phase_warp(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
         for p in PANELS:
             cell = os.path.join(out_dir, "confirmation", f"{c}_{p}.json")
             os.makedirs(os.path.dirname(cell), exist_ok=True)
-            _child(config_path, paths[p], arm, cell, True)
-            trace, rows[c][p] = _load(cell)
+            study_cell(protocol_cfg, config_path, paths[p], arm, cell)
+            trace, rows[c][p] = load_cell(cell)
             sats[c][p] = st.saturation(trace, params)
             channels[c][p] = realised_channels(trace, eps, lead, constants.get(f"{eps:+g}") if eps else None)
     summary = aggregate(rows, sats, screens, winner, channels)
     summary["identity_gate"] = gate
     summary["constants"] = {k: {"sha256": v["sha256"], "sin_mean": v["sin_mean"], "sin_rms": v["sin_rms"]} for k, v in constants.items()}
     summary["incumbent"] = {"asset": asset, "constant": inc["constant"], "files": inc["files"], "phase_lead": lead}
-    summary["manifest"] = {"path": mpath, "sha256": sha256_file(mpath), "id": m.manifest_id}
+    summary["manifest"] = cases.manifest_record(mpath, m)
     summary["episodes"] = int((len(names) + 1) * len(role["screen"]) + 2 * sum(len(role[p]) for p in PANELS))
     summary["decision"] = {"adopt": summary["adopts"], "route": f"adopt {winner}" if summary["adopts"] else "keep the D-058 incumbent",
                            "rule": "strict promotion against the parent on cases 10-39, fresh lower bound above zero, no more observed drops"}

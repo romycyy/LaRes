@@ -34,6 +34,7 @@ import os
 import numpy as np
 
 from lares.envs.isaac_pen_spin import cases, gait_scaffold
+from lares.envs.isaac_pen_spin.block_study import arm_needs_generation, parent_like, screen_best, started
 from lares.envs.isaac_pen_spin.gait_repair import (EXECUTION_RULE, gait_source, generate, public, scaffolded,
                                                    score)
 
@@ -373,25 +374,15 @@ def request_for(arm: str, block_text: str, bound: float) -> tuple[str, dict]:
 # ---------------------------------------------------------------------------------------------------------------------
 
 
-def _once(path: str, started: str):
-    if os.path.exists(path):
-        return json.load(open(path))
-    if os.path.exists(started):
-        raise SystemExit(f"{started}: this step was interrupted after spending episodes; it is never rerun")
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    open(started, "w").close()
-    return None
-
-
 def run_parent(lcfg: dict, roles: dict, bdir: str, stream_factory) -> dict:
     """The gait on screen (traced), probe, promotion (against null, recorded) and fresh."""
     from lares.envs.isaac_pen_spin.pipeline_backend import GaitActor
     from lares.eval.promotion import compare_to_incumbent
 
     path = os.path.join(bdir, "parent.json")
-    done = _once(path, os.path.join(bdir, "parent.started"))
-    if done is not None:
-        return done
+    if os.path.exists(path):
+        return json.load(open(path))
+    started(bdir, "parent")
     gait = GaitActor(lcfg["gait_sha256"])
     stream = stream_factory("parent", os.path.join(bdir, "parent"))
     tr = stream.collect_traces(gait, roles["screen"])
@@ -472,14 +463,11 @@ def _evidence(meta: dict, data) -> dict:
 def run_arm(arm: str, lcfg: dict, roles: dict, parent: dict, text: str, bdir: str, stream_factory, client) -> dict:
     from lares.eval.promotion import compare_to_incumbent
     from lares.eval.runner import PolicyActor
-    from lares.fitting.checkpoints import RolloutScore, is_better_checkpoint
 
     adir = os.path.join(bdir, arm)
     path = os.path.join(adir, "arm.json")
-    if os.path.exists(path):
+    if not arm_needs_generation(bdir, arm):
         return json.load(open(path))
-    if os.path.exists(os.path.join(adir, "isaac")):
-        raise SystemExit(f"{adir} was interrupted after spending episodes; an interrupted arm is not rerun")
     os.makedirs(adir, exist_ok=True)
     bound = float(lcfg["residual_bound"])
     request, packet = request_for(arm, text, bound)
@@ -504,22 +492,16 @@ def run_arm(arm: str, lcfg: dict, roles: dict, parent: dict, text: str, bdir: st
         return out
     stream = stream_factory(arm, os.path.join(adir, "isaac"))
     actors = {k: PolicyActor(p, deterministic=True, name=f"{arm}:slot{k}") for k, p in valid}
-    screens, best, best_k = {}, None, None
-    for k, _ in valid:
-        s = score(actors[k], roles["screen"], stream)
-        screens[k] = public(s)
-        r = RolloutScore(s["success"], s["tail_hit_fraction"])
-        if is_better_checkpoint(r, best):
-            best, best_k = r, k
+    screens, best_k = screen_best(actors, roles["screen"], stream)
     actor = actors[best_k]
     probe = score(actor, roles["probe"], stream)
     promo = score(actor, roles["promotion"], stream)
-    parent_promo = _parent_result(parent, roles["promotion"])
+    parent_promo = parent_like(parent["promotion"], roles["promotion"], parent["promotion_returns"], "frozen_gait")
     decision = compare_to_incumbent(promo["_result"], parent_promo, f"{arm}:slot{best_k}", "frozen_gait",
                                     excluded_manifest_ids=[roles["screen"].manifest_id, roles["probe"].manifest_id])
     fresh = score(actor, roles["fresh"], stream)
     promoted = bool(decision.promoted)
-    out.update(valid=True, screens={str(k): v for k, v in screens.items()}, selected_slot=best_k,
+    out.update(valid=True, screens=screens, selected_slot=best_k,
                probe=public(probe), promotion=public(promo), promotion_decision=decision.to_dict(),
                promoted=promoted, fresh_selected=public(fresh),
                fresh_incumbent={"success": fresh["success"] if promoted else parent_fresh["success"],
@@ -532,22 +514,6 @@ def run_arm(arm: str, lcfg: dict, roles: dict, parent: dict, text: str, bdir: st
         json.dump(out, f, indent=2, default=str)
     return out
 
-
-def _parent_result(parent: dict, manifest):
-    """The parent's promotion ManifestResult rebuilt from its saved per-case scores (paired by case)."""
-    from types import SimpleNamespace
-
-    from lares.eval.runner import ManifestResult
-
-    p = parent["promotion"]
-    if p["manifest_id"] != manifest.manifest_id:
-        raise ValueError("the parent's promotion record is for another manifest")
-    res = ManifestResult(actor_name="frozen_gait", manifest_id=manifest.manifest_id, action_mode="deterministic",
-                         schema_id=cases.STAGES[STAGE].task_id)
-    for case, ok, ret in zip(manifest.episodes, p["per_case"], parent["promotion_returns"]):
-        res.episodes.append(SimpleNamespace(case_id=case.case_id, task_hash=case.task_hash, success=bool(ok),
-                                            episode_return=float(ret), signed_goal_progress=None))
-    return res
 
 
 # ---------------------------------------------------------------------------------------------------------------------

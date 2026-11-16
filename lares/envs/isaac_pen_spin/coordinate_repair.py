@@ -17,18 +17,18 @@ from __future__ import annotations
 
 import json
 import os
-from types import SimpleNamespace
 
 import numpy as np
 
 from lares.envs.isaac_pen_spin import cases
+from lares.envs.isaac_pen_spin.block_study import attempts_record, make_slot_generator, started
 from lares.envs.isaac_pen_spin.layout import PARENT_SCAFFOLD_TASK_ID
-from lares.envs.isaac_pen_spin.protocols import arm_summary, failure_split
+from lares.envs.isaac_pen_spin.protocols import (actions_match, arm_summary, cached_json, disjoint_from, drive_params,
+                                                 failure_split, freeze_json, in_play)
 
 LABEL = "r084_coordinate_repair"
 STAGE = 3
 ARMS = ("joint", "anatomical")
-PRIMARY = ("anatomical", "joint")
 SLOTS = 8
 RESIDUAL_BOUND = 0.15
 ROLES = {"promotion": (10, 40), "fresh": (40, 120)}
@@ -238,7 +238,7 @@ def residual_policy(policy, arm: str, decoders: dict, asset_dir: str, bound: flo
     return policy
 
 
-def offline_identity_gate(asset_dir: str, archive_npz: str, max_steps: int | None = None) -> dict:
+def offline_identity_gate(asset_dir: str, archive_npz: str) -> dict:
     """The zero residual (both decoders) reproduces the incumbent's actions bit for bit on archived observations."""
     import torch
 
@@ -253,18 +253,7 @@ def offline_identity_gate(asset_dir: str, archive_npz: str, max_steps: int | Non
     for arm in ARMS:
         D, _ = decoder_for(arm)
         ctrl = ParentResidualController(incumbent_controller(asset_dir), zero_mean, D, RESIDUAL_BOUND, arm)
-        mism, rows = [], 0
-        for i in range(obs.shape[0]):
-            L = int(min(length[i], obs.shape[1]))
-            if max_steps:
-                L = min(L, int(max_steps))
-            if L <= 0:
-                continue
-            o = torch.as_tensor(obs[i, :L], dtype=torch.float32)
-            rows += L
-            if not torch.equal(parent(o, 0, None), ctrl(o, 0, None)):
-                mism.append(i)
-        out["arms"][arm] = {"rows": rows, "mismatch_cases": mism, "passes": not mism}
+        out["arms"][arm] = actions_match(parent, ctrl, obs, length)
     out["passes"] = all(v["passes"] for v in out["arms"].values())
     return out
 
@@ -280,14 +269,14 @@ def manifest_files(rcfg: dict) -> dict:
 
 
 def freeze_manifests(rcfg: dict) -> dict:
-    from lares.eval.manifest import EvaluationManifest, assert_disjoint
+    from lares.eval.manifest import assert_disjoint
 
     files = manifest_files(rcfg)
     specs = [(files["screen"], cases.build_manifest(STAGE, int(rcfg["screen_seed"]), SCREEN_CASES, label="r084_screen"), "screen"),
              (files["confirmation"], cases.build_manifest(STAGE, int(rcfg["confirmation_seed"]), CONFIRMATION_CASES,
                                                           label="r084_confirmation"), "confirmation")]
     out = cases.freeze_manifest_set(specs)
-    assert_disjoint([m for _, m, _ in specs] + [EvaluationManifest.load(p) for p in rcfg.get("disjoint_from", [])])
+    assert_disjoint([m for _, m, _ in specs] + disjoint_from(rcfg))
     return out
 
 
@@ -353,31 +342,11 @@ def repair_request(parent_source: str, evidence: dict) -> tuple[str, dict]:
 def generate_slot(arm: str, slot: int, request: str, packet: dict, adir: str, client, model: str,
                   reasoning_effort: str, max_calls: int = 2) -> dict:
     """One slot: one call plus at most one linked correction, its own generator, ledger and directory."""
-    import pickle
-
-    from lares.core.policy_generation import PlateauSlotGenerator
-    from lares.core.training_pipeline import load_policy_prompt_assets
-    from lares.search.generation import LLMCallLedger
-
-    sdir = os.path.join(adir, f"slot{slot}")
-    os.makedirs(sdir, exist_ok=True)
-    data_pkl = os.path.join(sdir, "data.pkl")
-    with open(data_pkl, "wb") as f:
-        pickle.dump([{"obs": np.zeros(cases.OBS_DIM + cases.NUM_ACTIONS)}], f)
-    ledger = LLMCallLedger(sdir)
-    gen = PlateauSlotGenerator(client, SimpleNamespace(model=model, reasoning_effort=reasoning_effort),
-                               os.path.join(sdir, "gen_0"), cases.OBS_DIM + cases.NUM_ACTIONS, cases.NUM_ACTIONS,
-                               PARENT_SCAFFOLD_TASK_ID, load_policy_prompt_assets(PARENT_SCAFFOLD_TASK_ID),
-                               SimpleNamespace(n=1), data_pkl, ledger,
-                               llm_transcript_path=os.path.join(sdir, "llm_transcript.log"),
-                               max_total_calls=int(max_calls), max_repair_per_candidate=1)
+    gen, ledger = make_slot_generator(os.path.join(adir, f"slot{slot}"), PARENT_SCAFFOLD_TASK_ID, client, model,
+                                      reasoning_effort, 1, int(max_calls), obs_dim=cases.OBS_DIM + cases.NUM_ACTIONS)
     attempts = gen.trace_repair(0, {"candidate_id": "d058_fixed_stroke_incumbent"}, request,
                                 {"lane": LABEL, "arm": arm, "slot": slot, "parent": "d058_fixed_stroke_incumbent", **packet})
-    final = attempts[-1]
-    return {"slot": slot, "attempts": [{"attempt_id": c.attempt_id, "valid": c.valid, "validation": c.validation,
-                                       "llm_call_ids": c.llm_call_ids} for c in attempts],
-            "valid": bool(final.valid), "policy": final.policy if final.valid else None,
-            "code": final.code if final.valid else None, "llm_calls": len(ledger),
+    return {"slot": slot, **attempts_record(attempts), "llm_calls": len(ledger),
             "llm_tokens": ledger.totals()["llm_total_tokens"]}
 
 
@@ -387,18 +356,9 @@ def slot_dir(sdir: str, arm: str, slot: int) -> str:
 
 def build_residual_policy(source: str, state: dict):
     """A generated residual policy on the 177-d parent-scaffold schema, rebuilt from its source and state."""
-    from lares.core.obs_schema import active_schema, get_obs_schema
-    from lares.core.policy_generation import GENERATED_IMPORTS
+    from lares.envs.isaac_pen_spin.dense_fit import build_policy
 
-    ns: dict = {}
-    exec(GENERATED_IMPORTS + source, ns)
-    with active_schema(get_obs_schema(PARENT_SCAFFOLD_TASK_ID)):
-        policy = ns["GeneratedPolicy"](cases.OBS_DIM + cases.NUM_ACTIONS, cases.NUM_ACTIONS)
-    policy.fixed_action_scale = 0.1
-    policy.load_state_dict(state)
-    policy._generated_source = source
-    policy.eval()
-    return policy
+    return build_policy(source, state, PARENT_SCAFFOLD_TASK_ID, 0.1, obs_dim=cases.OBS_DIM + cases.NUM_ACTIONS)
 
 
 def generated_slot(sdir: str, arm: str, slot: int, request: str, packet: dict, rcfg: dict, client) -> dict:
@@ -465,10 +425,7 @@ def residual_norms(asset_dir: str, trace: dict) -> dict:
     parent = incumbent_controller(asset_dir)
     obs, actions, length = np.asarray(trace["obs"]), np.asarray(trace["actions"]), np.asarray(trace["length"])
     norms = []
-    for i in range(obs.shape[0]):
-        L = int(min(length[i], obs.shape[1]))
-        if L <= 0:
-            continue
+    for i, L in in_play(obs, length):
         with torch.no_grad():
             g = parent(torch.as_tensor(obs[i, :L], dtype=torch.float32), 0, None).numpy()
         norms.append(np.linalg.norm(actions[i, :L] - g, axis=1))
@@ -509,14 +466,6 @@ def aggregate(rows: dict, sats: dict, screens: dict, finalists: dict, norms: dic
 # ---------------------------------------------------------------------------------------------------------------------
 
 
-def _started(path_dir: str, name: str) -> None:
-    started = os.path.join(path_dir, f"{name}.started")
-    if os.path.exists(started):
-        raise SystemExit(f"{started}: this evaluation was interrupted earlier; its cases are never rerun")
-    os.makedirs(path_dir, exist_ok=True)
-    open(started, "w").close()
-
-
 def run_study(rcfg: dict, stream_factory, client) -> dict:
     from lares.envs.isaac_pen_spin import llm_pool
     from lares.envs.isaac_pen_spin import scalar_tuning as st
@@ -529,14 +478,8 @@ def run_study(rcfg: dict, stream_factory, client) -> dict:
     inc = check_asset(asset)
     freeze_manifests(rcfg)
     decoders = freeze_decoders(sdir)
-    gate_path = os.path.join(sdir, "identity_gate.json")
-    if os.path.exists(gate_path):
-        with open(gate_path, encoding="utf-8") as f:
-            gate = json.load(f)
-    else:
-        gate = offline_identity_gate(asset, rcfg["identity_archive"])
-        with open(gate_path, "w", encoding="utf-8") as f:
-            json.dump(gate, f, indent=2)
+    gate = cached_json(os.path.join(sdir, "identity_gate.json"),
+                       lambda: offline_identity_gate(asset, rcfg["identity_archive"]))
     if not gate["passes"]:
         raise SystemExit(f"offline identity gate failed, no call and no episode: {gate}")
     manifests = load_manifests(rcfg)
@@ -570,7 +513,7 @@ def run_study(rcfg: dict, stream_factory, client) -> dict:
             with open(spath, encoding="utf-8") as f:
                 screens[arm] = json.load(f)
         else:
-            _started(adir, "screen")
+            started(adir, "screen")
             stream = stream_factory(f"{arm}_screen", os.path.join(adir, "isaac_screen"))
             screens[arm] = {}
             for k in range(SLOTS):
@@ -593,13 +536,7 @@ def run_study(rcfg: dict, stream_factory, client) -> dict:
             best = min(valid, key=lambda k: finalist_key(screens[arm][str(k)], k))
             finalists[arm] = {"slot": best, "screen": {k: v for k, v in screens[arm][str(best)].items() if k != "failure_labels"},
                               "rule": "sustained successes, then fewer drops, then slot order"}
-    if os.path.exists(fpath):
-        with open(fpath, encoding="utf-8") as f:
-            if json.load(f) != json.loads(json.dumps(finalists)):
-                raise SystemExit("finalists.json exists and differs from the selection this run makes")
-    else:
-        with open(fpath, "w", encoding="utf-8") as f:
-            json.dump(finalists, f, indent=1)  # frozen before any confirmation episode
+    if freeze_json(fpath, finalists, "finalist selection"):  # frozen before any confirmation episode
         import torch
 
         for arm in ARMS:
@@ -616,7 +553,7 @@ def run_study(rcfg: dict, stream_factory, client) -> dict:
         with open(cpath, encoding="utf-8") as f:
             conf = json.load(f)
     else:
-        _started(cdir, "confirmation")
+        started(cdir, "confirmation")
         stream = stream_factory("confirmation", os.path.join(cdir, "isaac"))
         conf = {"rows": {}, "traces": {}}
         for c in ("parent",) + ARMS:
@@ -642,8 +579,7 @@ def run_study(rcfg: dict, stream_factory, client) -> dict:
             conf["traces"][arm] = conf["traces"]["parent"]
     import torch
 
-    sd = torch.load(os.path.join(asset, "state.pt"), weights_only=True)
-    params = {"spin_target": float(sd["spin_target"]), "speed_gain": float(sd["speed_gain"])}
+    params = drive_params(torch.load(os.path.join(asset, "state.pt"), weights_only=True))
     sats, norms = {}, {}
     for c in ("parent",) + ARMS:
         sats[c], norms[c] = {}, {}
@@ -676,7 +612,7 @@ def run_study(rcfg: dict, stream_factory, client) -> dict:
     return summary
 
 
-__all__ = ["ACTION_ORDER", "ARMS", "GAIN_THRESHOLD", "LABEL", "PRIMARY", "RESIDUAL_BOUND", "ROLES", "SLOTS", "SYNERGIES",
+__all__ = ["ACTION_ORDER", "ARMS", "GAIN_THRESHOLD", "LABEL", "RESIDUAL_BOUND", "ROLES", "SLOTS", "SYNERGIES",
            "IncumbentActor", "ParentResidualController", "aggregate", "check_asset", "decoder_for", "failure_evidence",
            "finalist_key", "freeze_decoders", "freeze_manifests", "incumbent_controller", "incumbent_spec",
            "load_manifests", "offline_identity_gate", "repair_request", "residual_norms", "residual_policy", "run_study",

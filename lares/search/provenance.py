@@ -374,11 +374,11 @@ def reconcile_resources(records, ledger: LLMCallLedger | None, run_root: str | N
                 stream = REPORT_STREAMS.get(name)
                 if stream is None:
                     continue
-                if verify_artifact(run_root, ref):
+                try:
+                    report = json.loads(_read_artifact_bytes(run_root, ref))  # one read: verify the hash, then parse
+                except ValueError:
                     unreadable.append(f"{record.experiment_id}:{name}")
                     continue
-                with open(os.path.join(run_root, ref["path"]), "r", encoding="utf-8") as f:
-                    report = json.load(f)
                 rows = report.get("episodes") or []
                 from_reports[stream]["episodes"] += len(rows)
                 from_reports[stream]["environment_steps"] += int(sum(int(e.get("length") or 0) for e in rows))

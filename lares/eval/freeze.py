@@ -29,8 +29,8 @@ from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 
 from lares.utils.clock import now_iso
-from lares.utils.hashing import short_hash_file, short_hash_text
-from lares.utils.jsonl import read_jsonl
+from lares.utils.hashing import short_hash_file
+from lares.utils.jsonl import append_jsonl, read_jsonl
 
 FREEZE_FILENAME = "freeze.json"
 LEDGER_FILENAME = "final_test_ledger.jsonl"
@@ -38,11 +38,6 @@ LEDGER_FILENAME = "final_test_ledger.jsonl"
 
 class FinalTestLocked(RuntimeError):
     """Raised when the final-test manifest is evaluated outside a session."""
-
-
-def hash_text(text: str) -> str:
-    """The digest used for every frozen artifact."""
-    return short_hash_text(text)
 
 
 def hash_file(path: str) -> str:
@@ -233,9 +228,7 @@ def record_final_test(result, code_hash: str = "", allow_rescore: bool = False) 
         "rescore": bool(seen),
         "previous_looks": len(seen),
     }
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(entry) + "\n")
+    append_jsonl(path, [entry])
     return entry
 
 

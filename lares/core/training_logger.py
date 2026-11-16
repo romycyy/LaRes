@@ -2,10 +2,7 @@
 Lightweight append-only structured logging for the multi-stage training pipeline.
 
 Logs metrics to JSONL (one JSON object per line) for machine readability.
-Optional integration with Weights & Biases or TensorBoard if provided.
 """
-
-import json
 
 # ---------------------------------------------------------------------------
 #  Canonical metric names (shared by pipeline and plot_training_dynamics)
@@ -49,9 +46,10 @@ EVO_FITNESS_WORST = "evo/fitness_worst"
 EVO_FITNESS_ELITE_MEAN = "evo/fitness_elite_mean"
 import os
 import time
-from typing import Any, Optional
+from typing import Optional
 
 from lares.utils.clock import run_stamp
+from lares.utils.jsonl import append_jsonl
 
 
 class TrainingLogger:
@@ -66,16 +64,12 @@ class TrainingLogger:
         log_dir: str = "./logs/training_dynamics",
         run_id: Optional[str] = None,
         task_name: Optional[str] = None,
-        wandb_run: Optional[Any] = None,
-        tensorboard_writer: Optional[Any] = None,
     ):
         self.log_dir = log_dir
         self.run_id = run_id or run_stamp()
         self.task_name = task_name or ""
         self.global_step = 0
         self.start_time = time.time()
-        self.wandb_run = wandb_run
-        self.tensorboard_writer = tensorboard_writer
 
         os.makedirs(log_dir, exist_ok=True)
         self.log_path = os.path.join(log_dir, f"{self.run_id}.jsonl")
@@ -99,11 +93,7 @@ class TrainingLogger:
             return  # Skip invalid values; fail gracefully
 
         record = self._build_record(stage, task, metric_name, val, wall_time, update, epoch)
-
-        with open(self.log_path, "a") as f:
-            f.write(json.dumps(record) + "\n")
-
-        self._mirror(metric_name, metric_value)
+        append_jsonl(self.log_path, [record])
 
     def _build_record(self, stage, task, metric_name, val, wall_time, update, epoch):
         """Assemble one JSONL record, omitting None fields for cleaner output."""
@@ -118,23 +108,6 @@ class TrainingLogger:
             "metric_value": val,
         }
         return {k: v for k, v in record.items() if v is not None}
-
-    def _mirror(self, metric_name, metric_value) -> None:
-        """Mirror one metric to wandb / tensorboard if configured."""
-        if self.wandb_run is not None:
-            try:
-                self.wandb_run.log(
-                    {metric_name: metric_value, "global_step": self.global_step}
-                )
-            except Exception:
-                pass
-        if self.tensorboard_writer is not None:
-            try:
-                self.tensorboard_writer.add_scalar(
-                    metric_name.replace("/", "_"), metric_value, self.global_step
-                )
-            except Exception:
-                pass
 
     def log_metrics(
         self,
@@ -157,20 +130,11 @@ class TrainingLogger:
                 val = float(value)
             except (TypeError, ValueError):
                 continue  # Skip invalid values; fail gracefully
-            records.append(
-                (name, value, self._build_record(stage, task, name, val, wall_time, update, epoch))
-            )
+            records.append(self._build_record(stage, task, name, val, wall_time, update, epoch))
 
-        # One open() per update rather than one per metric — BC logs 5 metrics per
+        # One open() per update rather than one per metric: BC logs 5 metrics per
         # gradient step, so this is thousands of syscalls saved per run.
         if records:
-            with open(self.log_path, "a") as f:
-                f.write("".join(json.dumps(r) + "\n" for _, _, r in records))
-            for name, value, _ in records:
-                self._mirror(name, value)
+            append_jsonl(self.log_path, records)
 
         self.global_step += 1
-
-    def advance_step(self, n: int = 1) -> None:
-        """Advance global_step without logging (e.g. when skipping log_freq)."""
-        self.global_step += n

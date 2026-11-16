@@ -177,8 +177,8 @@ class Prediction:
 class Protocol:
     """How the idea is tested. Declared before any result exists."""
 
-    script: str                                 # e.g. scripts/stage_f.py
-    config: str = ""                            # e.g. config/stage_f/stage_f.yaml
+    script: str                                 # e.g. scripts/run_shadowhand_spin_stages.py
+    config: str = ""                            # e.g. config/shadowhand_spin_stages.yaml
     command: str = ""                           # the exact command, from the project root
     seeds: list = field(default_factory=list)   # seeds this protocol will spend (must be unspent)
     manifests: list = field(default_factory=list)
@@ -377,11 +377,7 @@ def load_decisions(root: str = RESEARCH_ROOT) -> list:
 
 def append_decision(decision: Decision, root: str = RESEARCH_ROOT) -> str:
     decision.validate()
-    os.makedirs(root, exist_ok=True)
-    path = os.path.join(root, DECISIONS_FILE)
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(decision.to_dict(), ensure_ascii=False) + "\n")
-    return path
+    return _append_jsonl(root, DECISIONS_FILE, decision.to_dict())
 
 
 def next_decision_id(root: str = RESEARCH_ROOT) -> str:

@@ -157,7 +157,7 @@ def render_state(root, recent: int = 5) -> str:
         lines.append(f"- Reserved seeds (an open idea's own frozen manifest): {dict(sorted(reserved.items()))}")
     lines += ["", "## Pointers", "",
               "- Narrative findings: `RESEARCH_HANDOFF.md` (appended once per decision)",
-              "- Frozen history: `IMPLEMENTATION_PROGRESS.md`, `DEBUG_PROGRESS.md`",
+              "- Current pipeline: `docs/PIPELINE_STATE.md`; frozen history: `docs/deprecated/`",
               f"- Every proposal: `research/{PROPOSALS_LOG}`; every triage round: `research/{TRIAGE_LOG}`",
               "- Advisor calls: `research/llm_calls.jsonl`; briefings: `research/briefings/`",
               ""]

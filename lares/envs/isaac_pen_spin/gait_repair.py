@@ -33,12 +33,13 @@ import copy
 import inspect
 import json
 import os
-from types import SimpleNamespace
 
 import numpy as np
 
 from lares.envs.isaac_pen_spin import cases, gait_scaffold
+from lares.envs.isaac_pen_spin.block_study import arm_needs_generation, attempts_record, make_slot_generator, started
 from lares.envs.isaac_pen_spin.layout import GAIT_SCAFFOLD_TASK_ID
+from lares.envs.isaac_pen_spin.protocols import isaac_shell, load_cell
 
 STAGE = 3
 #: Index ranges of a block manifest, role-disjoint by construction.
@@ -72,11 +73,6 @@ def freeze_manifests(gcfg: dict) -> dict:
                                      for label, seed, n, role in specs)
 
 
-def role_manifest(m, role: str):
-    """Cases ``ROLES[role]`` of a block manifest, under an id naming the role (so its own slices stay unambiguous)."""
-    return cases.role_manifests(m, {role: ROLES[role]})[role]
-
-
 def block_roles(seed: int) -> dict:
     from lares.eval.manifest import EvaluationManifest
 
@@ -94,15 +90,12 @@ def block_roles(seed: int) -> dict:
 
 def run_cell_gait(gcfg: dict, manifest_path: str, out: str, config_path: str) -> dict:
     """The frozen gait through ``protocols.run_cell`` (R-039's evaluator), its own Isaac process."""
-    import subprocess
-
     if not os.path.exists(out):
-        cmd = (f"source {gcfg['isaac_env']} >/dev/null 2>&1 && python -u scripts/run_shadowhand_spin_stages.py "
-               f"--config {config_path} --research-protocol scripted_expert_qualification "
-               f"--cell-manifest {manifest_path} --controller feedback_gait --cell-out {out}")
-        subprocess.run(["bash", "-c", cmd], check=True)
-    data = np.load(out.replace(".json", ".npz"))
-    return {"rows": json.load(open(out))["episodes"], "spin_rate": data["spin_rate"], "center_dist": data["center_dist"]}
+        isaac_shell(gcfg["isaac_env"], f"python -u scripts/run_shadowhand_spin_stages.py --config {config_path} "
+                                       f"--research-protocol scripted_expert_qualification "
+                                       f"--cell-manifest {manifest_path} --controller feedback_gait --cell-out {out}")
+    data, rows = load_cell(out)
+    return {"rows": rows, "spin_rate": data["spin_rate"], "center_dist": data["center_dist"]}
 
 
 def first_divergence(a: dict, b: dict) -> dict:
@@ -175,11 +168,7 @@ def expert_traces(bdir: str, roles: dict, stream_factory, expert) -> dict:
     path = os.path.join(bdir, "expert.json")
     if os.path.exists(path):
         return json.load(open(path))
-    started = os.path.join(bdir, "expert.started")
-    if os.path.exists(started):
-        raise SystemExit(f"{bdir}: the expert collection was interrupted earlier; its cases are never rerun")
-    os.makedirs(bdir, exist_ok=True)
-    open(started, "w").close()
+    started(bdir, "expert")
     got = stream_factory("expert", os.path.join(bdir, "expert")).collect_traces(expert, roles["expert"])
     if "gait_actions" not in got:
         raise ValueError("the expert traces carry no shadow gait actions")
@@ -284,30 +273,13 @@ def repair_request(arm: str, expert: dict, bound: float) -> tuple[str, dict]:
 def generate(arm: str, request: str, packet: dict, adir: str, client, model: str, reasoning_effort: str,
              max_calls: int = 2) -> dict:
     """The arm's generated correction (or why there is none). Calls are ledgered in ``<adir>/llm_calls.jsonl``."""
-    import pickle
-
-    from lares.core.policy_generation import PlateauSlotGenerator
-    from lares.core.training_pipeline import load_policy_prompt_assets
-    from lares.search.generation import LLMCallLedger
-
-    os.makedirs(adir, exist_ok=True)
-    data_pkl = os.path.join(adir, "data.pkl")
-    with open(data_pkl, "wb") as f:
-        pickle.dump([{"obs": np.zeros(177)}], f)
-    ledger = LLMCallLedger(adir)
-    gen = PlateauSlotGenerator(client, SimpleNamespace(model=model, reasoning_effort=reasoning_effort),
-                               os.path.join(adir, "gen_0"), 177, cases.NUM_ACTIONS, GAIT_SCAFFOLD_TASK_ID,
-                               load_policy_prompt_assets(GAIT_SCAFFOLD_TASK_ID), SimpleNamespace(n=2), data_pkl, ledger,
-                               llm_transcript_path=os.path.join(adir, "llm_transcript.log"), max_total_calls=max_calls,
-                               max_repair_per_candidate=1)
+    # Two plan slots (slot 0 is the prefix exploration's), 177-d gait-scaffold observations, ``max_calls`` in all.
+    gen, ledger = make_slot_generator(adir, GAIT_SCAFFOLD_TASK_ID, client, model, reasoning_effort, 2, max_calls,
+                                      obs_dim=cases.OBS_DIM + cases.NUM_ACTIONS, max_total_calls=max_calls)
     meta = {"lane": "gait_scaffold", "arm": arm, "parent": "frozen_r039_gait", **packet}
-    attempts = gen.trace_repair(1, {"candidate_id": "frozen_r039_gait"}, request, meta)
-    final = attempts[-1]
-    out = {"attempts": [{"attempt_id": c.attempt_id, "valid": c.valid, "validation": c.validation,
-                         "llm_call_ids": c.llm_call_ids} for c in attempts],
-           "valid": bool(final.valid), "llm_calls": len(ledger), "llm_tokens": ledger.totals()["llm_total_tokens"],
-           "policy": final.policy if final.valid else None, "code": final.code if final.valid else None}
-    return out
+    rec = attempts_record(gen.trace_repair(1, {"candidate_id": "frozen_r039_gait"}, request, meta))
+    return {"attempts": rec["attempts"], "valid": rec["valid"], "llm_calls": len(ledger),
+            "llm_tokens": ledger.totals()["llm_total_tokens"], "policy": rec["policy"], "code": rec["code"]}
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -336,12 +308,13 @@ def scaffolded(policy, arm: str, gcfg: dict):
     return policy
 
 
-def search_settings(policy, seed: int) -> list:
+def search_settings(policy, seed: int, order=SEARCH_ORDER) -> list:
+    """``[(label, policy)]``: the policy unchanged, then one ``rollout_search.perturb`` draw per later entry of ``order``."""
     from lares.search import rollout_search
 
     rng = np.random.default_rng(np.random.SeedSequence(int(seed)))
     out = []
-    for i, kind in enumerate(SEARCH_ORDER):
+    for i, kind in enumerate(order):
         p = copy.deepcopy(policy)
         if kind != "original":
             rollout_search.perturb(p, kind, rng)
@@ -388,10 +361,8 @@ def run_arm(arm: str, b: int, gcfg: dict, roles: dict, expert: dict, bdir: str, 
 
     adir = os.path.join(bdir, arm)
     path = os.path.join(adir, "arm.json")
-    if os.path.exists(path):
+    if not arm_needs_generation(bdir, arm):
         return json.load(open(path))
-    if os.path.exists(os.path.join(adir, "isaac")):
-        raise SystemExit(f"{adir} was interrupted after spending episodes; an interrupted arm is not rerun")
     os.makedirs(adir, exist_ok=True)
     seed = int(gcfg["block_seeds"][b])
     extra = {}

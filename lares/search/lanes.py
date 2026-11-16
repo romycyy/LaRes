@@ -418,7 +418,7 @@ def load_two_lane_plan(block: dict) -> TwoLanePlan:
         exploration["search_candidates"] = int(raw_mode.get("search_candidates", SEARCH_CANDIDATES))
         if exploration["search_candidates"] != SEARCH_CANDIDATES:
             problems.append(f"exploration_lane.search_candidates must be {SEARCH_CANDIDATES} (D-014's protocol)")
-    for i in range(counts[2] if counts[2] > 0 else 0):
+    for _ in range(counts[2]):
         slots.append(SlotSpec(slot=len(slots), lane=LANE_EXPLORATION,
                               exploration=None if exploration == DEFAULT_EXPLORATION else exploration))
     if problems:
@@ -758,21 +758,11 @@ class PlateauRepairPlan:
         return []
 
     @property
-    def exploration_slots(self) -> list:
-        return list(self.slots)
-
-    @property
     def exploration_mode(self) -> dict:
         return dict(self.slots[0].exploration)
 
     def slot(self, index: int) -> SlotSpec:
         return self.slots[int(index)]
-
-    def reference_ids(self) -> list:
-        return []
-
-    def parent_sources(self) -> dict:
-        return {}
 
     def repair_metadata(self, edited: dict, trigger: dict, demonstrations: dict, rule: dict) -> dict:
         """Lane metadata of the repair slot, allocated before its call."""
@@ -822,10 +812,8 @@ def load_plateau_repair_plan(block: dict) -> PlateauRepairPlan:
     return PlateauRepairPlan(repair=repair == "enabled", demo_episodes=episodes, min_demo_successes=minimum)
 
 
-def plateau_trigger(prefix_result, prefix_promoted: bool, already_fired: int = 0) -> dict:
+def plateau_trigger(prefix_result, prefix_promoted: bool) -> dict:
     """The trigger decision from the prefix's search trace and its promotion outcome."""
-    if already_fired:
-        return {"fired": False, "reason": "already fired once in this run", "rule": TRIGGER_RULE}
     if prefix_result is None:
         return {"fired": False, "reason": "the prefix produced no valid candidate, so nothing was searched",
                 "probe_successes": None, "prefix_promoted": bool(prefix_promoted), "rule": TRIGGER_RULE}

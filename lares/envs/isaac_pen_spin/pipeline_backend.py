@@ -21,8 +21,6 @@ import io
 import json
 import os
 import shlex
-import subprocess
-import tempfile
 from types import SimpleNamespace
 
 import numpy as np
@@ -164,15 +162,11 @@ class IsaacPenSpinStream:
 
     # -- process -------------------------------------------------------------------------------------------------
     def _run_child(self, request_path: str) -> None:
+        from lares.envs.isaac_pen_spin.protocols import isaac_shell
+
         root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-        cmd = (f"source {self.isaac_env} >/dev/null 2>&1 && cd {shlex.quote(root)} && "
-               f"python -u -m {CHILD_MODULE} {shlex.quote(request_path)}")
-        log = request_path.replace(".request.json", ".log")
-        with open(log, "w", encoding="utf-8") as f:
-            proc = subprocess.run(["bash", "-c", cmd], stdout=f, stderr=subprocess.STDOUT)
-        if proc.returncode != 0:
-            tail = open(log, encoding="utf-8", errors="replace").read()[-3000:]
-            raise RuntimeError(f"pen-spin child failed (exit {proc.returncode}); log {log}:\n{tail}")
+        isaac_shell(self.isaac_env, f"cd {shlex.quote(root)} && python -u -m {CHILD_MODULE} {shlex.quote(request_path)}",
+                    log=request_path.replace(".request.json", ".log"))
 
     def _call(self, actor, manifest, record: bool, mode: str = "evaluate", extra: dict | None = None) -> dict:
         if cases.stage_of(manifest) != self.stage:
@@ -215,7 +209,6 @@ class IsaacPenSpinStream:
                                 schema_id=self.spec.task_id)
         for row in response["episodes"]:
             result.episodes.append(_row_to_record(row, by_case[row["case_id"]].task_id))
-        result.process = {"request": response.get("request_path"), "response_sha256": response.get("sha256")}
         return result
 
     def collect_traces(self, actor, manifest) -> dict:
@@ -258,11 +251,6 @@ class IsaacPenSpinStream:
         pass
 
 
-def make_temp_stream(stage: int, name: str, runner=None) -> IsaacPenSpinStream:
-    """A stream writing under a fresh temporary directory (tests)."""
-    return IsaacPenSpinStream(stage, tempfile.mkdtemp(prefix=f"penspin_{name}_"), name, runner=runner)
-
-
 def rows_from_trace(trace: dict) -> list[dict]:
     """Pipeline rows from a runner trace: the reducer rows plus the fields the stream maps onto an EpisodeRecord."""
     rows = cases.reduce_episodes(trace)
@@ -276,5 +264,5 @@ def rows_from_trace(trace: dict) -> list[dict]:
     return rows
 
 
-__all__ = ["EXECUTION", "GaitActor", "IsaacExpertActor", "IsaacPenSpinStream", "actor_spec", "failure_label", "make_temp_stream",
+__all__ = ["EXECUTION", "GaitActor", "IsaacExpertActor", "IsaacPenSpinStream", "actor_spec", "failure_label",
            "rows_from_trace"]

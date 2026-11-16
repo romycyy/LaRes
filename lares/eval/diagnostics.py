@@ -55,18 +55,33 @@ class RolloutGeometry:
     _goal: list = field(default_factory=list, init=False)
     _actions: list = field(default_factory=list, init=False)
     _usable: bool = field(default=False, init=False)
+    _bounds: dict = field(default_factory=dict, init=False)
 
     def __post_init__(self):
         self._usable = self.schema is not None and all(
             name in self.schema.names for name in ("tcp", "obj", "goal")
         )
+        if self._usable:
+            # Resolved once: ``_row`` runs three times per step, and going through ``schema.slice`` would
+            # round-trip every numpy observation through torch for a fixed pair of indices.
+            self._bounds = {
+                name: (self.schema.field(name).start, self.schema.field(name).stop)
+                for name in ("tcp", "obj", "goal")
+            }
 
     @property
     def available(self) -> bool:
         return self._usable
 
     def _row(self, obs, name):
-        return np.asarray(self.schema.slice(obs, name), dtype=np.float64).reshape(-1)
+        arr = np.asarray(obs, dtype=np.float64)
+        if arr.shape[-1] != self.schema.obs_dim:
+            raise ValueError(
+                f"observation has {arr.shape[-1]} dimensions, schema {self.schema.env_id} "
+                f"expects {self.schema.obs_dim}"
+            )
+        start, stop = self._bounds[name]
+        return arr[..., start:stop].reshape(-1)
 
     def observe(self, obs, action=None) -> None:
         if action is not None:

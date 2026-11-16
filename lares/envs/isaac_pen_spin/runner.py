@@ -1,7 +1,7 @@
 """Batched, manifest-driven rollouts of the pen-spin task (R-038). Needs a launched Isaac app.
 
 One Isaac env holds one environment per case. After ``env.reset()`` each environment's state is
-overwritten with its case's placement (``cases.split_placement``) using the same formulas as the two
+overwritten with its case's placement using the same formulas as the two
 ``_reset_idx`` methods, so an episode is a function of its case rather than of Isaac's global RNG.
 Environments that end are auto-reset by ``DirectRLEnv``; the runner stops recording them at their
 first done.

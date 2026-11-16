@@ -23,8 +23,10 @@ import numpy as np
 
 from lares.envs.isaac_pen_spin import cases
 from lares.envs.isaac_pen_spin import scalar_tuning as st
-from lares.envs.isaac_pen_spin.learner_recovery import _load, check_learner, make_learner
-from lares.envs.isaac_pen_spin.protocols import arm_summary, build_single_manifest, child_cell, failure_split
+from lares.envs.isaac_pen_spin.learner_recovery import learner_source, make_learner
+from lares.envs.isaac_pen_spin.protocols import (actions_match, arm_summary, build_single_manifest, cached_json,
+                                                 failure_split, learner_drive_params, load_cell, manifest_path,
+                                                 study_cell)
 
 STUDY = "r065_channel_lesions"
 STAGE = 3
@@ -60,24 +62,11 @@ def substituted_source(source: str, lesion: str, factor: float) -> str:
 
 
 def lesioned_learner(protocol_cfg: dict, lesion: str, factor: float, name: str):
-    from lares.envs.isaac_pen_spin.layout import OBS_LAYOUT
-    from lares.envs.isaac_pen_spin.pipeline_child import SymbolicController
-
-    lc = check_learner(protocol_cfg)
-    with open(lc["source"], encoding="utf-8") as f:
-        source = f.read()
-    ctrl = SymbolicController({"source": substituted_source(source, lesion, factor), "state_path": lc["state"],
-                               "obs_dim": sum(size for _, size, _ in OBS_LAYOUT), "action_dim": cases.NUM_ACTIONS,
-                               "fixed_action_scale": float(lc["fixed_action_scale"]),
-                               "execution": "clamp(mean, -1, 1)"}, cases.STAGES[STAGE].task_id)
+    ctrl = make_learner(protocol_cfg, lambda source: substituted_source(source, lesion, factor))
     ctrl.name = name
     ctrl.params = {**ctrl.params, "arm": name, "lesion": lesion, "factor": float(factor),
                    "substitution": LESIONS[lesion][1]}
     return ctrl
-
-
-def manifest_path(protocol_cfg: dict) -> str:
-    return protocol_cfg["manifest"]
 
 
 def build_manifests(protocol_cfg: dict) -> list[str]:
@@ -92,29 +81,15 @@ def make_controller(arm: str, protocol_cfg: dict, out_dir: str | None = None):
     raise ValueError(f"unknown arm {arm!r}; one of {ARMS}")
 
 
-def offline_identity_gate(protocol_cfg: dict, archive_npz: str, max_steps: int | None = None) -> dict:
+def offline_identity_gate(protocol_cfg: dict, archive_npz: str) -> dict:
     """Each lesion at factor 1.0 must reproduce the parent's actions bit for bit on archived observations."""
-    import torch
-
     data = np.load(archive_npz)
     obs, length = data["obs"], data["length"]
     parent = make_learner(protocol_cfg)
     out = {"archive": archive_npz, "cases": int(obs.shape[0]), "lesions": {}}
     for lesion in LESIONS:
         ctrl = lesioned_learner(protocol_cfg, lesion, 1.0, f"{lesion}:identity")
-        mismatches, rows = [], 0
-        for i in range(obs.shape[0]):
-            L = int(min(length[i], obs.shape[1]))
-            if max_steps:
-                L = min(L, int(max_steps))
-            if L <= 0:
-                continue
-            o = torch.as_tensor(obs[i, :L], dtype=torch.float32)
-            a, b = parent(o, 0, None), ctrl(o, 0, None)
-            rows += L
-            if not torch.equal(a, b):
-                mismatches.append(i)
-        out["lesions"][lesion] = {"rows": rows, "mismatch_cases": mismatches, "passes": not mismatches}
+        out["lesions"][lesion] = actions_match(parent, ctrl, obs, length)
     out["passes"] = all(v["passes"] for v in out["lesions"].values())
     return out
 
@@ -167,17 +142,9 @@ def aggregate(rows: dict, sats: dict) -> dict:
     return out
 
 
-def _child(config_path: str, manifest: str, arm: str, out_path: str) -> None:
-    child_cell(config_path, manifest, arm, out_path, study=STUDY, record_obs=True, skip_existing=True)
-
-
 def run_channel_lesions(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
     """Driver: audit, offline identity gates, four arms, aggregate. Nothing is rerun if its output exists."""
-    from lares.utils.hashing import sha256_file
-
-    lc = check_learner(protocol_cfg)
-    with open(lc["source"], encoding="utf-8") as f:
-        source = f.read()
+    source = learner_source(protocol_cfg)
     audit = source_audit(source)
     os.makedirs(out_dir, exist_ok=True)
     with open(os.path.join(out_dir, "source_audit.json"), "w", encoding="utf-8") as f:
@@ -187,32 +154,22 @@ def run_channel_lesions(protocol_cfg: dict, config_path: str, out_dir: str) -> d
     for lesion in LESIONS:
         with open(os.path.join(out_dir, f"{lesion}_source.py"), "w", encoding="utf-8") as f:
             f.write(substituted_source(source, lesion, 0.0))
-    gate_path = os.path.join(out_dir, "identity_gate.json")
-    if os.path.exists(gate_path):
-        with open(gate_path, encoding="utf-8") as f:
-            gate = json.load(f)
-    else:
-        gate = offline_identity_gate(protocol_cfg, protocol_cfg["identity_archive"])
-        with open(gate_path, "w", encoding="utf-8") as f:
-            json.dump(gate, f, indent=2)
+    gate = cached_json(os.path.join(out_dir, "identity_gate.json"),
+                       lambda: offline_identity_gate(protocol_cfg, protocol_cfg["identity_archive"]))
     if not gate["passes"]:
         raise SystemExit(f"offline identity gate failed, no episode run: {gate}")
-    m = manifest_path(protocol_cfg)
-    if not os.path.exists(m):
-        raise SystemExit(f"frozen manifest {m} missing; build and commit it before the run")
+    m = cases.require_frozen(manifest_path(protocol_cfg))
     out = {arm: os.path.join(out_dir, f"{arm}.json") for arm in ARMS}
     rows, sats = {}, {}
-    learner = make_learner(protocol_cfg)
-    sd = learner.policy.state_dict()
-    params = {"spin_target": float(sd["spin_target"]), "speed_gain": float(sd["speed_gain"])}
+    params = learner_drive_params(protocol_cfg)
     for arm in ARMS:
-        _child(config_path, m, arm, out[arm])
-        trace, rows[arm] = _load(out[arm])
+        study_cell(protocol_cfg, config_path, m, arm, out[arm])
+        trace, rows[arm] = load_cell(out[arm])
         sats[arm] = st.saturation(trace, params)
     summary = aggregate(rows, sats)
     summary["identity_gate"] = gate
     summary["source_audit"] = audit
-    summary["manifest"] = {"path": m, "sha256": sha256_file(m)}
+    summary["manifest"] = cases.manifest_record(m)
     summary["episodes"] = len(ARMS) * int(protocol_cfg["cases"])
     summary["limitation"] = ("single-channel lesions of one learner; redundant or interacting channels cannot be excluded, "
                              "and a loss carried by drops is retention dependence, not spin generation")

@@ -44,6 +44,7 @@ from lares.utils.env_ids import (  # noqa: F401  (re-exported)
     resolve_registry_env_id,
 )
 from lares.utils.hashing import sha256_bytes, sha256_file
+from lares.utils.jsonl import append_jsonl, read_jsonl
 
 from lares.search.schemas import (  # noqa: F401  (lineage constants re-exported)
     EXPLORATION_LABELS,
@@ -381,8 +382,7 @@ class LLMCallLedger:
             timestamp=now_iso(),
         )
         record.validate()
-        with open(self.path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(record.to_dict()) + "\n")
+        append_jsonl(self.path, [record.to_dict()])
         self._records[call_id] = record
         return record
 
@@ -419,15 +419,7 @@ class LLMCallLedger:
 
     @staticmethod
     def load(path: str) -> list:
-        if not os.path.isfile(path):
-            return []
-        out = []
-        with open(path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    out.append(LLMCallRecord.from_dict(json.loads(line)))
-        return out
+        return [LLMCallRecord.from_dict(d) for d in read_jsonl(path)]
 
 
 # ---------------------------------------------------------------------------
@@ -540,9 +532,10 @@ class GeneratedCandidate:
         return LINEAGE_COMPLETE if not self.lineage_problems(feedback) else LINEAGE_FAILED_VALIDATION
 
     def lineage_dict(self, feedback: FeedbackBundle | None = None) -> dict:
+        problems = self.lineage_problems(feedback)
         return {
-            "status": self.lineage_status(feedback),
-            "problems": self.lineage_problems(feedback),
+            "status": LINEAGE_COMPLETE if self.valid and not problems else LINEAGE_FAILED_VALIDATION,
+            "problems": problems,
             "generation": self.generation,
             "slot": self.slot,
             "attempt": self.attempt,

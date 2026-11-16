@@ -85,14 +85,17 @@ def check_student(student: dict) -> None:
             raise ValueError(f"{student[key]}: sha256 {got} does not match the pinned {student[f'{key}_sha256']}")
 
 
-def build_policy(source: str, state: dict, env_id: str, scale: float):
+def build_policy(source: str, state: dict, env_id: str, scale: float, obs_dim: int = cases.OBS_DIM,
+                 action_dim: int = cases.NUM_ACTIONS):
+    """A generated policy rebuilt from its source and state under ``env_id``'s schema: the one rebuild every pen-spin
+    path uses (the Isaac child, a saved incumbent, a reloaded generation, the 177-d residual)."""
     from lares.core.obs_schema import active_schema, get_obs_schema
     from lares.core.policy_generation import GENERATED_IMPORTS
 
     ns: dict = {}
     exec(GENERATED_IMPORTS + source, ns)
     with active_schema(get_obs_schema(env_id)):
-        policy = ns["GeneratedPolicy"](cases.OBS_DIM, cases.NUM_ACTIONS)
+        policy = ns["GeneratedPolicy"](int(obs_dim), int(action_dim))
     policy.fixed_action_scale = float(scale)
     policy.load_state_dict(state)
     policy._generated_source = source
@@ -119,16 +122,9 @@ def parameter_snapshot(policy) -> dict:
 
 def search_settings(student, seed: int) -> list[tuple[str, object]]:
     """``[(label, policy)]``: the student unchanged, then local, global, local draws."""
-    from lares.search import rollout_search
+    from lares.envs.isaac_pen_spin import gait_repair
 
-    rng = np.random.default_rng(np.random.SeedSequence(int(seed)))
-    out = []
-    for i, kind in enumerate(SEARCH_ORDER):
-        p = copy.deepcopy(student)
-        if kind != "original":
-            rollout_search.perturb(p, kind, rng)
-        out.append((f"search{i}_{kind}", p))
-    return out
+    return gait_repair.search_settings(student, seed, order=SEARCH_ORDER)
 
 
 def expert_pairs(collected: dict) -> tuple[np.ndarray, np.ndarray]:
@@ -181,19 +177,11 @@ def fit_settings(student, obs: np.ndarray, actions: np.ndarray, seed: int,
 
 
 def score(policy, name: str, manifest, stream) -> dict:
-    """One manifest in one process: per-case success, tail-hit fraction and failure label."""
-    from lares.eval.runner import PolicyActor, evaluate_manifest
+    """One manifest in one process: ``gait_repair.score`` of the policy as a deterministic actor."""
+    from lares.envs.isaac_pen_spin import gait_repair
+    from lares.eval.runner import PolicyActor
 
-    res = evaluate_manifest(PolicyActor(policy, deterministic=True, name=name), manifest, stream)
-    eps = res.episodes
-    return {"manifest_id": manifest.manifest_id, "success": float(res.success_rate),
-            "tail_hit_fraction": float(np.mean([e.signed_goal_progress for e in eps])),
-            "per_case": [float(e.success) for e in eps], "failure_labels": [e.failure_label for e in eps],
-            "_result": res}
-
-
-def public(s: dict) -> dict:
-    return {k: v for k, v in s.items() if not k.startswith("_")}
+    return gait_repair.score(PolicyActor(policy, deterministic=True, name=name), manifest, stream)
 
 
 def select(scored: list[dict]) -> int:
@@ -212,6 +200,7 @@ def run_arm(arm: str, settings: list, slices: dict, stream_factory, adir: str, e
     """Probe every setting, select one, screen, promotion-test against the null incumbent, score on fresh cases."""
     import torch
 
+    from lares.envs.isaac_pen_spin.gait_repair import public
     from lares.eval.promotion import compare_to_incumbent
 
     path = os.path.join(adir, "arm.json")
@@ -280,11 +269,9 @@ def expert_labels(bdir: str, slices: dict, stream_factory, expert) -> tuple[dict
         data = np.load(meta["trace_path"])
         collected = {"episodes": meta["episodes"], "obs": data["obs"], "actions": data["actions"]}
         return meta, *expert_pairs(collected)
-    started = os.path.join(bdir, "expert.started")
-    if os.path.exists(started):
-        raise SystemExit(f"{bdir}: the expert collection was interrupted earlier; its cases are never rerun")
-    os.makedirs(bdir, exist_ok=True)
-    open(started, "w").close()
+    from lares.envs.isaac_pen_spin.block_study import started
+
+    started(bdir, "expert")
     collected = stream_factory("expert", os.path.join(bdir, "expert")).collect_traces(expert, slices["expert"])
     obs, act = expert_pairs(collected)
     meta = {"manifest_id": slices["expert"].manifest_id, "episodes": collected["episodes"],

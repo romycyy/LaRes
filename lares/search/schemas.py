@@ -431,27 +431,6 @@ class MutationProposal:
             )
         return True
 
-    @property
-    def bypasses_llm(self) -> bool:
-        """Parameter-only search is the numerical optimizer's job (FR-5)."""
-        return self.mode == MODE_PARAMETER_ONLY
-
-    def check_outcome(self, before, after) -> dict:
-        """Did the predicted metric move in the predicted direction?"""
-        if before is None or after is None:
-            return {"measurable": False, "reason": "metric unavailable on one side"}
-        delta = float(after) - float(before)
-        moved = delta > 0 if self.predicted_direction == "increase" else delta < 0
-        return {
-            "measurable": True,
-            "metric": self.predicted_metric,
-            "before": float(before),
-            "after": float(after),
-            "delta": delta,
-            "predicted_direction": self.predicted_direction,
-            "as_predicted": bool(moved),
-        }
-
     def to_dict(self) -> dict:
         return asdict(self)
 

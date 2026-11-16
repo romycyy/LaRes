@@ -403,7 +403,7 @@ class TestTwoGenerationRun(unittest.TestCase):
                 f.write(saved)
 
     def test_the_orchestrator_refuses_what_it_cannot_trace(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):  # there is no RL stage to ask for
             EvolutionOrchestrator(env_name="push-v2", rl_iterations=3)
         orchestrator = EvolutionOrchestrator(env_name="push-v2", dev_manifest=self.dev, log_dir=self.root)
         envs = PipelineEnvs(development=PushWorld(), rl=PushWorld(), gif=PushWorld(), probe=PushWorld())

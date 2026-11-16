@@ -28,11 +28,10 @@ import os
 import numpy as np
 
 from lares.envs.isaac_pen_spin import cases
-from lares.envs.isaac_pen_spin.feedback_ablation import _arm_summary, check_checkpoint
-from lares.envs.isaac_pen_spin.feedback_lesions import failure_split
-from lares.envs.isaac_pen_spin.protocols import build_single_manifest, child_cell
+from lares.envs.isaac_pen_spin.feedback_ablation import check_checkpoint
+from lares.envs.isaac_pen_spin.protocols import (arm_summary, build_single_manifest, failure_split, load_cell,
+                                                 manifest_path, study_cell)
 
-LEARNER_RECOVERY = "learner_recovery"
 STAGE = 3
 ARMS = ("donor", "learner_repeat", "takeover")
 WINDOW = (60, 120)
@@ -99,10 +98,6 @@ class HandoverController:
         return (a_expert * use + a_learner * ~use).clone()
 
 
-def manifest_path(protocol_cfg: dict) -> str:
-    return protocol_cfg["manifest"]
-
-
 def build_manifests(protocol_cfg: dict) -> list[str]:
     return build_single_manifest(protocol_cfg, "recovery", STAGE)
 
@@ -118,17 +113,26 @@ def check_learner(protocol_cfg: dict) -> dict:
     return lc
 
 
-def make_learner(protocol_cfg: dict):
-    """The frozen learner (hashes checked), executed as ``clamp(mean, -1, 1)`` like every pipeline evaluation."""
-    from lares.envs.isaac_pen_spin.layout import OBS_LAYOUT
+def learner_source(protocol_cfg: dict) -> str:
+    """The frozen learner's source text (hashes checked)."""
+    with open(check_learner(protocol_cfg)["source"], encoding="utf-8") as f:
+        return f.read()
+
+
+def make_learner(protocol_cfg: dict, transform=None):
+    """The frozen learner (hashes checked), executed as ``clamp(mean, -1, 1)`` like every pipeline evaluation.
+
+    ``transform(source) -> source`` is an audited substitution applied before the policy is built (same state).
+    """
     from lares.envs.isaac_pen_spin.pipeline_child import SymbolicController
 
     lc = check_learner(protocol_cfg)
     with open(lc["source"], encoding="utf-8") as f:
         source = f.read()
-    return SymbolicController({"source": source, "state_path": lc["state"],
-                               "obs_dim": sum(size for _, size, _ in OBS_LAYOUT), "action_dim": cases.NUM_ACTIONS,
-                               "fixed_action_scale": float(lc["fixed_action_scale"]),
+    if transform is not None:
+        source = transform(source)
+    return SymbolicController({"source": source, "state_path": lc["state"], "obs_dim": cases.OBS_DIM,
+                               "action_dim": cases.NUM_ACTIONS, "fixed_action_scale": float(lc["fixed_action_scale"]),
                                "execution": "clamp(mean, -1, 1)"}, cases.STAGES[STAGE].task_id)
 
 
@@ -147,14 +151,6 @@ def make_controller(arm: str, protocol_cfg: dict, out_dir: str):
     else:
         steps = [NEVER] * n
     return HandoverController(learner, expert, steps, arm)
-
-
-def _child(config_path: str, manifest: str, arm: str, out_path: str, study: str = LEARNER_RECOVERY) -> None:
-    child_cell(config_path, manifest, arm, out_path, study=study, record_obs=True, skip_existing=True)
-
-
-def _load(out_path: str):
-    return np.load(out_path.replace(".json", ".npz")), json.load(open(out_path))["episodes"]
 
 
 def identity_gate(a, ra, b, rb) -> dict:
@@ -211,8 +207,8 @@ def aggregate(donor_rows, take_rows, steps) -> dict:
     switched = [i for i, s in enumerate(steps) if s < NEVER]
     out = {
         "paired_success_difference": t["mean"], "takeover_minus_learner": t,
-        "arms": {"learner": {**_arm_summary(donor_rows), **failure_split(donor_rows)},
-                 "takeover": {**_arm_summary(take_rows), **failure_split(take_rows)}},
+        "arms": {"learner": {**arm_summary(donor_rows), **failure_split(donor_rows)},
+                 "takeover": {**arm_summary(take_rows), **failure_split(take_rows)}},
         "switched_cases": len(switched),
         "never_switched_cases": [i for i, s in enumerate(steps) if s >= NEVER],
         "branch_step_quartiles": (np.percentile([steps[i] for i in switched], [25, 50, 75]).tolist()
@@ -231,19 +227,15 @@ def aggregate(donor_rows, take_rows, steps) -> dict:
 
 def run_learner_recovery(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
     """Driver: donor, repeat, Gate 1, branch steps, takeover, Gate 2, aggregate. Nothing is rerun if its output exists."""
-    from lares.utils.hashing import sha256_file
-
     check_checkpoint(protocol_cfg)
     check_learner(protocol_cfg)
     os.makedirs(out_dir, exist_ok=True)
-    m = manifest_path(protocol_cfg)
-    if not os.path.exists(m):
-        raise SystemExit(f"frozen manifest {m} missing; build and commit it before the run")
+    m = cases.require_frozen(manifest_path(protocol_cfg))
     out = {arm: os.path.join(out_dir, f"{arm}.json") for arm in ARMS}
     for arm in ("donor", "learner_repeat"):
-        _child(config_path, m, arm, out[arm])
-    donor, donor_rows = _load(out["donor"])
-    rep, rep_rows = _load(out["learner_repeat"])
+        study_cell(protocol_cfg, config_path, m, arm, out[arm])
+    donor, donor_rows = load_cell(out["donor"])
+    rep, rep_rows = load_cell(out["learner_repeat"])
     gate1 = identity_gate(donor, donor_rows, rep, rep_rows)
     if not gate1["passes"]:
         with open(os.path.join(out_dir, "gate1_failed.json"), "w") as f:
@@ -260,8 +252,8 @@ def run_learner_recovery(protocol_cfg: dict, config_path: str, out_dir: str) -> 
     else:
         with open(bpath, "w") as f:
             json.dump(payload, f, indent=2)
-    _child(config_path, m, "takeover", out["takeover"])
-    take, take_rows = _load(out["takeover"])
+    study_cell(protocol_cfg, config_path, m, "takeover", out["takeover"])
+    take, take_rows = load_cell(out["takeover"])
     gate2 = prefix_gate(donor, take, steps)
     summary = aggregate(donor_rows, take_rows, steps) if gate2["passes"] else {"paired_success_difference": None}
     summary["gate1_identity"] = gate1
@@ -274,7 +266,7 @@ def run_learner_recovery(protocol_cfg: dict, config_path: str, out_dir: str) -> 
         summary["transitions"] = {"rows": int(len(tr["case"])),
                                   "expert_saturated_fraction": float(np.mean(np.abs(tr["expert_action"]) >= 1.0 - 1e-6)),
                                   "learner_saturated_fraction": float(np.mean(np.abs(tr["learner_action"]) >= 1.0 - 1e-6))}
-    summary["manifest"] = {"path": m, "sha256": sha256_file(m)}
+    summary["manifest"] = cases.manifest_record(m)
     summary["episodes"] = 3 * int(protocol_cfg["cases"])
     summary["limitation"] = ("takeover success qualifies recovery evidence for this learner/checkpoint pair only; it is "
                              "not a symbolic repair and says nothing about which individual labels are useful")
@@ -285,5 +277,5 @@ def run_learner_recovery(protocol_cfg: dict, config_path: str, out_dir: str) -> 
 
 run = run_learner_recovery
 
-__all__ = ["ARMS", "HandoverController", "LEARNER_RECOVERY", "NEVER", "aggregate", "branch_steps", "build_manifests", "run",
-           "identity_gate", "make_learner", "prefix_gate", "run_learner_recovery", "transitions"]
+__all__ = ["ARMS", "HandoverController", "NEVER", "aggregate", "branch_steps", "build_manifests", "check_learner", "run",
+           "identity_gate", "learner_source", "make_learner", "prefix_gate", "run_learner_recovery", "transitions"]
