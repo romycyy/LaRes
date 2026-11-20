@@ -2,7 +2,7 @@
 
 This is the one document to read first. It describes the pipeline as it exists on `staging` at commit `613fa84`, and
 separates what has been **verified** from what is only **built**, **assumed** or **open**. It covers 91 research ideas
-(R-001 to R-091) and 63 decisions (D-001 to D-063).
+(R-001 to R-091) and 63 decisions (D-001 to D-063); R-092 to R-094 and D-064 (2026-11-20) are in section 6.4b.
 
 Authoritative sources, in order (if this file disagrees with them, they win):
 
@@ -343,6 +343,18 @@ All of these started from the frozen **R-046 block-3 learner** (`config/pen_spin
 | LLM residuals in anonymous coordinates (R-043 branch) | −0.025. Residuals used about a tenth of their authority | D-060 |
 | Phase-lead feedback / constant lead offsets | Flat across 12 settings. Signed-rate targets are ill-posed (the roll direction differs by case) | D-061 |
 | Within-cycle phase warp of the stroke | +0.0875 [+0.015, +0.160] fresh, then **−0.022 [−0.105, +0.061]** on the 90-pair instrument | D-062, D-063 |
+
+### 6.4b Representation pilots (2026-11-20; direction: modular generation and contact-frame control)
+
+| Step | Result | Decision |
+|---|---|---|
+| **Contact-frame decoder gate** (R-093; capsule frames at the fingertips, Jacobian decoder, 30 directional pulse cells at steps 10-40, no LLM; `contact_control.py`, `contact_gate.py`) | Jacobian audit 0.004, coverage 40/40, median gain 0.53 and retention (0.775 vs 0.000 neutral) pass; **sign agreement 0.68 < 0.80, gate failed**. The pen is still settling at steps 10-40. Post hoc paired contrast: 0.94 sign agreement, gain 0.54 | D-064 (prediction supported, decoder not qualified) |
+| LLM contact-frame rules vs direct joint generation (R-094) | Deferred: needs a recorded gate pass | — |
+| Modular vs monolithic cold generation, searched (R-092; `module_contract.py`, `modular_cold.py`) | See the ledger | — |
+
+Found on the way: the PhysX Jacobian and the observed fingertip linear velocity refer to the distal links' centres of
+mass, the observed fingertip position to the link origins (15-16 mm apart). A closed reference posture (joint targets
+0.35 rad inside the limits) retains the pen in about 80% of Stage-3 cases where the neutral pose retains none.
 
 ### 6.5 The current pen-spin incumbent
 

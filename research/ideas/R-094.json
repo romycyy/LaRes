@@ -1,0 +1,97 @@
+{
+  "id": "R-094",
+  "title": "C2: Contact-frame velocity rules versus direct joint generation",
+  "hypothesis": "A validated contact-frame decoder lets cold-generated velocity rules express useful pen-relative control more effectively than direct joint targets under matched rollout search.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "baseline: direct_joint searched winners under the same four-block protocol",
+    "rationale": "Primary is fresh native sustained success, contact_rules minus direct_joint, after matched 24-draw search per arm. A five-percentage-point gain is the minimum useful effect; report the block-paired t interval and require its lower bound above zero before claiming a difference. Zero-shot winners are compared separately with zero-shot winners."
+  },
+  "protocol": {
+    "script": "scripts/run_full_evolution.py",
+    "config": "config/pen_spin_plateau_repair.yaml",
+    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study contact_rules'",
+    "seeds": [
+      4730,
+      4731,
+      4732,
+      4733
+    ],
+    "manifests": [
+      "config/manifests/shadowhand_spin_stage3_contact_rules_s4730.yaml",
+      "config/manifests/shadowhand_spin_stage3_contact_rules_s4731.yaml",
+      "config/manifests/shadowhand_spin_stage3_contact_rules_s4732.yaml",
+      "config/manifests/shadowhand_spin_stage3_contact_rules_s4733.yaml"
+    ],
+    "episodes": 3400,
+    "llm_calls": 64,
+    "code_changes": [
+      "lares/envs/isaac_pen_spin/contact_rules.py (new): implement the conditional study and contact_frame actor. GeneratedPolicy emits normalized (batch, 15) local-velocity requests; the frozen C1 decoder produces 20 joint targets. Refuse offline query_actions for this actor; generated code cannot access simulator internals.",
+      "scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml: refuse execution until a recorded C1 pass exists and verify the decoder hash. Use four independent blocks, four generation slots per arm, direct_joint and contact_rules, and the same 24-draw search budget per arm. Both arms remain monolithic and cold-generated, independently of R-092.",
+      "config/pen_spin_plateau_repair.yaml: inherit R-092's 80-case manifest roles, search allocation, selection rules, native sustained-success definition, and preregistered secondaries. Give both arms identical observations and trusted per-fingertip frame features; change only the output and decoder contract. Compare zero-shot with zero-shot and searched with searched; freeze winners before scoring promotion and fresh cases.",
+      "lares/envs/isaac_pen_spin/contact_rules.py: primary analysis uses four paired block-level fresh-success differences. Apply the standing strictly positive paired t-interval promotion rule on cases 10-39; never select using fresh outcomes. Add decoder residual, saturation, and joint-limit activity to diagnostics. Score one frozen hand-authored contact controller on all 80 cases once per block, diagnostic only and never ranked.",
+      "config/pen_spin_plateau_repair.yaml: use llm_pool with 16 workers, gpt-6.1-sol, high reasoning effort, temperature 1, and at most one linked correction per slot: 32 initial calls plus at most 32 corrections. No edit generations, fitting, reinforcement learning, or curriculum; Stage 3 only and one protocol on the box.",
+      "config/manifests/shadowhand_spin_stage3_contact_rules_s4730.yaml through config/manifests/shadowhand_spin_stage3_contact_rules_s4733.yaml (new): freeze four 80-case manifests before evaluation. Defer simulator and API spending until C1 is decided and passes."
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "An upper bound below +0.05 on the block-paired fresh-success interval refutes the predicted magnitude. An interval spanning zero and +0.05 is inconclusive; tied success is never improvement. Failure or an inconclusive decision on C1 prevents this experiment from running rather than supplying a C2 result.",
+  "cost_estimate": {
+    "episodes": 3400,
+    "llm_calls": 64,
+    "wall_time_minutes": 360
+  },
+  "open_question_refs": [
+    1
+  ],
+  "briefing_sha256": "5cd4bcee12b1afcaa0c0cc70ce45a9df5a4632729995b98f0cfedd0dc99ca86e",
+  "proposal_call_id": "call_00182",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-20T02:28:37",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-20T02:26:26",
+  "direction": "Test two representation changes for cold pen-spin generation on Stage 3, independently, native sustained success primary, final test locked: (M1) LLM-generated modular policies (MODULE_SPEC + named methods + generated composition inside GeneratedPolicy, no role hints) vs monolithic, same prompt otherwise, 24-draw search for both arms; (C1) a no-LLM contact-frame decoder gate (capsule frames, fingertip Jacobians, requested vs observed local motion); (C2, only if C1 passes) LLM contact-frame velocity rules vs direct joint generation at matched budget. No BC, RL, curriculum, or gradient fitting. One protocol at a time on the box.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "The matched-budget contact-output comparison fits the direction, but its 3,400 episodes and at most 64 LLM calls must wait for a recorded C1 pass with the exact decoder hash. Reuse scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml when that prerequisite is satisfied; M1's outcome is not a scientific prerequisite. Its weakest point is resolution with only four block-level differences, especially near a native-success floor. An upper confidence bound below +0.05 for paired_success_difference versus direct_joint refutes the predicted magnitude; C1 failure supplies no C2 result.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00183",
+          "briefing_sha256": "d9aac01604f2e0c7033fc10e33f2c3f9f1b79a44709ac424f6278aaa05bbb816",
+          "at": "2026-11-20T02:28:12"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Defer: its decoder does not exist until R-093 passes with a recorded decoder hash, and spending 3,400 episodes and 64 calls on an unqualified decoder would confound representation with tracking failure. The design (same observations including the trusted frame features in both arms, only the output and decoder contract changed, hand-authored controller as an unranked diagnostic, offline query refused) is what I would run; four blocks is thin near the floor, so on re-triage I would ask for eight.",
+          "changes_applied": [],
+          "at": "2026-11-20T02:28:37"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

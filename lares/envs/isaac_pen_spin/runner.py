@@ -104,6 +104,31 @@ class ControllerContext:
         self.upper = hi
         #: the action whose joint target is the default (zero) joint position
         self.neutral_action = ((2.0 * default - hi - lo) / (hi - lo)).clamp(-1.0, 1.0)
+        # R-093: what a *trusted* controller (never generated code) may read from the simulator besides limits.
+        self._env = env
+        self.joint_names = list(env.hand.joint_names)                  # all 24, simulator order
+        self.actuated_dof_indices = [int(i) for i in idx]              # sorted: action i drives joint_names[idx[i]]
+        self.lower_all = env.hand_dof_lower_limits                     # (num_envs, 24)
+        self.upper_all = env.hand_dof_upper_limits
+
+    def joint_pos(self):
+        """Measured positions of all 24 hand joints, radians, simulator order: ``(num_envs, 24)``."""
+        return self._env.hand.data.joint_pos
+
+    def fingertip_jacobians(self):
+        """Linear Jacobians of the five fingertip link *origins* (ff, mf, rf, lf, th) w.r.t. all 24 hand joints, world frame:
+        ``(num_envs, 5, 3, 24)``. The hand is fixed-base, so PhysX omits the root link and body ``b`` is row ``b - 1``
+        (checked on the box 2026-11-20: 26 bodies, Jacobian shape ``(N, 25, 6, 24)``)."""
+        hand = self._env.hand
+        if not hand.is_fixed_base:
+            raise RuntimeError("fingertip_jacobians assumes the fixed-base hand")
+        rows = [int(b) - 1 for b in self._env.finger_bodies]
+        J = hand.root_physx_view.get_jacobians()[:, rows]
+        # PhysX differentiates each link's centre of mass; the observed fingertip position is the link origin
+        # (found in the R-093 calibration). v_origin = v_com - w x r, r = com - origin in the world frame.
+        bodies = list(self._env.finger_bodies)
+        r = (hand.data.body_com_pos_w[:, bodies] - hand.data.body_link_pos_w[:, bodies]).unsqueeze(-1)
+        return J[:, :, :3, :] - torch.linalg.cross(J[:, :, 3:, :], r.expand_as(J[:, :, 3:, :]), dim=2)
 
 
 class PenSpinBatchRunner:

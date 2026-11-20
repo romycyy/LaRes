@@ -48,6 +48,8 @@ PEN_SPIN_STUDIES = {
     "r064_lead_feedback": "lead_feedback",                         # R-064
     "r086_phase_warp": "phase_warp",                               # R-086
     "r089_warp_qualification_90": "warp_qualification",            # R-089
+    "contact_decoder_calibration": "contact_gate",                 # R-093 (declared calibration, seed 4721)
+    "contact_decoder_gate": "contact_gate",                        # R-093 (the gate, seed 4720)
 }
 
 

@@ -538,6 +538,21 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   `lares-local`, not checked in. Seed bookkeeping: a frozen manifest *reserves* its seed for the idea that names it
   (`protocol.check_idea`, briefing and state distinguish reserved from consumed); the loop guard counts a zero-idea
   advisor reply as a propose call rejected in full.
+- **R-093 result (D-064; contact-frame decoder gate, 2026-11-20).** `contact_control.py` (no Isaac: capsule frames
+  `[normal, circumferential, axial]` at the fingertip link origins, a damped least-squares velocity decoder, the gate's
+  statistics) and `contact_gate.py` (`ContactFrameController`, `--study contact_decoder_calibration` / `contact_decoder_gate`
+  in `run_shadowhand_spin_stages.py`; constants in a hashed `frozen` block of the config). The registered retention
+  prediction held (zero-request hold 0.775 timeout rate vs 0.000 for the neutral pose) but **the gate failed**: sign
+  agreement 0.6825 < 0.80, because at steps 10-40 the pen is still settling and the fingers are closing (a common
+  relative motion of about 0.17 m/s against a 0.03 m/s pulse). Post hoc, the paired positive-minus-negative contrast
+  agrees in sign on 0.938 of pairs (gain 0.54). The decoder is not qualified; R-094 (LLM contact rules) stays deferred.
+  **Things this found that will bite you:** PhysX Jacobians (`root_physx_view.get_jacobians`) and the observation's
+  fingertip *linear velocity* are for each distal link's centre of mass, but the observed fingertip *position* is the
+  link origin, 15-16 mm away (`ControllerContext.fingertip_jacobians` and `contact_control.tip_origin_linvel` correct
+  both; uncorrected, a displacement audit is 20% off). The fixed-base hand's Jacobian has 25 link rows (body `b` is row
+  `b - 1`) and 24 joint columns; the four passive `J0` joints follow their `J1` at roughly 1:1; `act_moving_average` is
+  1.0; joint PD stiffness is 1.0 and damping 0.1. A trusted controller's `extra_trace()` is saved beside its cell as
+  `.extra.npz` (`protocols.run_cell`), and `protocols.isaac_shell` now times a child out after 30 minutes.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

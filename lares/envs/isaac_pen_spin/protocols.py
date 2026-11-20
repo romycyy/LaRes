@@ -111,6 +111,9 @@ def actions_match(reference, candidate, obs, length, before_case=None) -> dict:
     return {"rows": rows, "mismatch_cases": mism, "passes": not mism}
 
 
+ISAAC_CHILD_TIMEOUT_S = 1800
+
+
 def isaac_shell(isaac_env: str, command: str, *, log: str | None = None) -> None:
     """Run ``command`` in a bash that first sources Isaac Lab's environment script.
 
@@ -122,7 +125,10 @@ def isaac_shell(isaac_env: str, command: str, *, log: str | None = None) -> None
         subprocess.run(["bash", "-c", cmd], check=True)
         return
     with open(log, "w", encoding="utf-8") as f:
-        proc = subprocess.run(["bash", "-c", cmd], stdout=f, stderr=subprocess.STDOUT)
+        try:  # a child normally takes about 20 s; a hung one must not block an unattended study
+            proc = subprocess.run(["bash", "-c", cmd], stdout=f, stderr=subprocess.STDOUT, timeout=ISAAC_CHILD_TIMEOUT_S)
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(f"Isaac child timed out after {ISAAC_CHILD_TIMEOUT_S} s; log {log}") from None
     if proc.returncode != 0:
         with open(log, encoding="utf-8", errors="replace") as f:
             tail = f.read()[-3000:]
@@ -288,6 +294,9 @@ def run_cell(manifest_path: str, controller: str, out_path: str, device: str, re
     if record_obs:
         keys += ["obs", "actions"]
     np.savez_compressed(out_path.replace(".json", ".npz"), **{k: trace[k] for k in keys})
+    extra = getattr(ctrl, "extra_trace", None)
+    if callable(extra):  # R-093: a trusted controller's own per-step diagnostics, beside the cell
+        np.savez_compressed(out_path.replace(".json", ".extra.npz"), **extra())
     result = {
         "stage": cases.stage_of(manifest), "controller": ctrl.name, "manifest_id": manifest.manifest_id,
         "manifest_path": manifest_path, "manifest_sha256": sha256_file(manifest_path),

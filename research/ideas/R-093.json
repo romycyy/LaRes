@@ -1,0 +1,863 @@
+{
+  "id": "R-093",
+  "title": "C1: Contact-frame decoder gate",
+  "hypothesis": "Capsule-frame velocity requests decoded through fingertip Jacobians produce correctly directed local motion without materially degrading grasp retention.",
+  "prediction": {
+    "metric": "timeout_rate",
+    "direction": "increase",
+    "threshold": -0.1,
+    "against": "baseline: neutral-pose hold on the same 40 Stage-3 cases",
+    "rationale": "This is an engineering noninferiority prediction: zero-request hold minus neutral-hold retention must be at least -0.10, not a claim of improved task success. The gate also requires median Jacobian relative error <0.15, requested-sign agreement >=0.80, and median tracking gain in [0.3, 1.5] among unsaturated cell-case pairs."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study contact_decoder_gate'",
+    "seeds": [
+      4720,
+      4721
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_contact_decoder_gate_s4720.yaml",
+      "config/manifests/pen_spin_stage3_contact_decoder_calibration_s4721.yaml"
+    ],
+    "episodes": 2080,
+    "llm_calls": 0,
+    "code_changes": [
+      "lares/envs/isaac_pen_spin/contact_control.py (new): capsule nearest-surface frames at five fingertips, radius 0.012 m and half-length 0.07 m, with end-cap handling and deterministic singular-frame conventions; damped least-squares decoding from 15 local relative-velocity requests to 20 joint position targets, bounded by joint velocities and limits; wire a trusted fingertip-Jacobian accessor into the existing ControllerContext.",
+      "lares/envs/isaac_pen_spin/contact_gate.py (new): run 32 cells, each on all 40 cases in a fresh process: neutral hold, zero-request hold, and five fingertips x three axes x two signs. Pulse one local axis at 0.03 m/s over steps 10-40 from the reset grasp, then hold; keep other requests zero.",
+      "lares/envs/isaac_pen_spin/contact_gate.py: audit Jacobians against finite-difference fingertip displacement at matched reset configurations within these episodes; record requested versus observed local relative motion including pen translation and rotation, tracking residual, saturation, joint-limit activity, and unsaturated coverage. Freeze finite-difference settings, damping, bounds, and eligibility rules before running; no eligible tracking pairs means inconclusive, not pass. Coverage gate: every one of the 30 fingertip-axis-sign cells needs at least 20 of 40 eligible cases, else the gate is inconclusive and C2 stays blocked. Eligibility never uses observed motion: a (cell, case) pair is eligible if the pen has not fallen by step 40 and the decoder's velocity and joint-limit bounds were inactive on the commanded fingertip's chain in at least 80% of pulse steps 10-40; excluded pairs are counted per cell by reason. Observed relative velocity is fingertip velocity minus the pen-surface-point velocity (linear plus angular cross offset), projected on the frame at the pulse's first step. No retries or replacement cases.",
+      "scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml: register the study, freeze both manifests before any evaluation, and record all gate thresholds, decoder damping, velocity and joint bounds, position-target lookahead, finite-difference step and eligibility rules in the config (hashed) before the seed-4720 manifest is first stepped. Decoder constants are chosen from source inspection, kinematic unit tests and a declared calibration manifest (seed 4721, at most 20 whole-manifest cells = 800 episodes, recorded as calibration and never as gate evidence); no spent seed is stepped and seed 4720 is never used for calibration. Stage 3 only; retain native sustained-success reporting, but label these results engineering checks. No fitting, reinforcement learning, or curriculum; run alone on the box.",
+      "config/manifests/pen_spin_stage3_contact_decoder_gate_s4720.yaml (new): one frozen 40-case manifest shared by every gate cell. config/manifests/pen_spin_stage3_contact_decoder_calibration_s4721.yaml (new): one frozen 40-case calibration manifest, disjoint from it."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "decided",
+  "source": "advisor",
+  "falsified_by": "A zero-request hold timeout_rate more than 0.10 below neutral hold refutes the formal prediction. Median Jacobian error >=0.15, sign agreement <0.80, or median gain outside [0.3, 1.5] fails the decoder gate independently. Undefined tracking statistics make the gate inconclusive and block C2; retention ties are not improvements.",
+  "cost_estimate": {
+    "episodes": 1280,
+    "llm_calls": 0,
+    "wall_time_minutes": 180
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "5cd4bcee12b1afcaa0c0cc70ce45a9df5a4632729995b98f0cfedd0dc99ca86e",
+  "proposal_call_id": "call_00182",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-20T02:31:07",
+    "advisor_call_id": "call_00186",
+    "round": 3,
+    "note": "C1 can qualify or block C2 using scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, with a binding cap of 2,080 episodes and zero LLM calls; the 1,280-episode cost_estimate is stale. I accept the implementer's calibration argument: installed Jacobian indexing, coupled-join"
+  },
+  "run": {
+    "started_at": "2026-11-20T02:44:42",
+    "git_sha": "cf3201affdae026882e036f0ed166d6591de3669",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r093_contact_decoder_gate",
+    "finished_at": "2026-11-20T03:14:30"
+  },
+  "result": {
+    "metrics": {
+      "timeout_rate": 0.775,
+      "timeout_rate_neutral": 0.0,
+      "timeout_rate_difference": 0.775,
+      "gate_verdict": "fail",
+      "sign_agreement": 0.6825,
+      "gain_median": 0.5259855376296478,
+      "jacobian_rel_error_median": 0.004026245696581947,
+      "min_eligible_per_cell": 40,
+      "eligible_pairs": 1200,
+      "num_episodes": 2080,
+      "llm_calls": 0
+    },
+    "controls": {
+      "neutral_hold_timeout_rate": 0.0,
+      "hold_sustained": 0,
+      "per_cell": {
+        "ff_normal_pos": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 1.0,
+          "gain_median": 5.8313645434053285,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "ff_normal_neg": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.175,
+          "gain_median": -5.162800377389516,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "ff_circumferential_pos": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.95,
+          "gain_median": 2.7710685542309266,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "ff_circumferential_neg": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.325,
+          "gain_median": -1.5881810002734587,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "ff_axial_pos": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.65,
+          "gain_median": 0.133639141043462,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "ff_axial_neg": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.975,
+          "gain_median": 1.023600364429918,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "mf_normal_pos": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 1.0,
+          "gain_median": 6.089402630208076,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "mf_normal_neg": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.125,
+          "gain_median": -5.392482333661991,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "mf_circumferential_pos": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.95,
+          "gain_median": 2.962117116724428,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "mf_circumferential_neg": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.4,
+          "gain_median": -1.7005329768498632,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "mf_axial_pos": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.85,
+          "gain_median": 0.40953489229023143,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "mf_axial_neg": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.925,
+          "gain_median": 0.5900318913899435,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "rf_normal_pos": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 1.0,
+          "gain_median": 6.305066506056393,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "rf_normal_neg": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.175,
+          "gain_median": -5.375942121724224,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "rf_circumferential_pos": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.95,
+          "gain_median": 2.8402758551796206,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "rf_circumferential_neg": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.4,
+          "gain_median": -1.548655785463255,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "rf_axial_pos": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.95,
+          "gain_median": 0.7988985064703977,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "rf_axial_neg": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.9,
+          "gain_median": 0.3992981914331644,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "lf_normal_pos": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 1.0,
+          "gain_median": 5.796972844425721,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "lf_normal_neg": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.175,
+          "gain_median": -5.036204370005903,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "lf_circumferential_pos": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.925,
+          "gain_median": 3.4428704046671914,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "lf_circumferential_neg": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.3,
+          "gain_median": -3.204927309328105,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "lf_axial_pos": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.9,
+          "gain_median": 0.5315616984634599,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "lf_axial_neg": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.925,
+          "gain_median": 1.0918137500452059,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "th_normal_pos": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.575,
+          "gain_median": 0.1453605271923901,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "th_normal_neg": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.55,
+          "gain_median": 0.06553942936983805,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "th_circumferential_pos": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.475,
+          "gain_median": -1.1457911651441135,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "th_circumferential_neg": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.625,
+          "gain_median": 1.415307106977304,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "th_axial_pos": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.75,
+          "gain_median": 0.6935048189807409,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        },
+        "th_axial_neg": {
+          "cases": 40,
+          "eligible": 40,
+          "sign_agreement": 0.575,
+          "gain_median": 0.01821558085956281,
+          "excluded": {
+            "fell": 0,
+            "bounds_active": 0
+          }
+        }
+      },
+      "jacobian_samples": 21158,
+      "posthoc_differential_not_predeclared": {
+        "pairs": 600,
+        "differential_sign_agreement": 0.9383333333333334,
+        "differential_gain_median": 0.5418505841044903
+      },
+      "posthoc_per_tip_axis": {
+        "ff_normal": {
+          "differential_gain_median": 0.36042069097527873,
+          "differential_sign_agreement": 1.0,
+          "common_mode_velocity_median_m_s": 0.16491247381192264
+        },
+        "ff_circumferential": {
+          "differential_gain_median": 0.6931791187492966,
+          "differential_sign_agreement": 1.0,
+          "common_mode_velocity_median_m_s": 0.06699685453233878
+        },
+        "ff_axial": {
+          "differential_gain_median": 0.596838760342789,
+          "differential_sign_agreement": 1.0,
+          "common_mode_velocity_median_m_s": -0.013958921882973926
+        },
+        "mf_normal": {
+          "differential_gain_median": 0.3894274550649358,
+          "differential_sign_agreement": 1.0,
+          "common_mode_velocity_median_m_s": 0.172228274458051
+        },
+        "mf_circumferential": {
+          "differential_gain_median": 0.7051637972649176,
+          "differential_sign_agreement": 1.0,
+          "common_mode_velocity_median_m_s": 0.06994513026068994
+        },
+        "mf_axial": {
+          "differential_gain_median": 0.4857718282752669,
+          "differential_sign_agreement": 1.0,
+          "common_mode_velocity_median_m_s": -0.0033456632052201404
+        },
+        "rf_normal": {
+          "differential_gain_median": 0.45236345652253906,
+          "differential_sign_agreement": 1.0,
+          "common_mode_velocity_median_m_s": 0.17521512941670925
+        },
+        "rf_circumferential": {
+          "differential_gain_median": 0.70302570904006,
+          "differential_sign_agreement": 1.0,
+          "common_mode_velocity_median_m_s": 0.06583397460964313
+        },
+        "rf_axial": {
+          "differential_gain_median": 0.5895035805115696,
+          "differential_sign_agreement": 1.0,
+          "common_mode_velocity_median_m_s": 0.005557304801133836
+        },
+        "lf_normal": {
+          "differential_gain_median": 0.6355780066411989,
+          "differential_sign_agreement": 0.925,
+          "common_mode_velocity_median_m_s": 0.16236683873148883
+        },
+        "lf_circumferential": {
+          "differential_gain_median": 0.6225900464877665,
+          "differential_sign_agreement": 0.9,
+          "common_mode_velocity_median_m_s": 0.10253441452890455
+        },
+        "lf_axial": {
+          "differential_gain_median": 0.8544480499920302,
+          "differential_sign_agreement": 0.975,
+          "common_mode_velocity_median_m_s": -0.007971096177866555
+        },
+        "th_normal": {
+          "differential_gain_median": 0.10380442390528288,
+          "differential_sign_agreement": 0.625,
+          "common_mode_velocity_median_m_s": -0.00010299697360657004
+        },
+        "th_circumferential": {
+          "differential_gain_median": 0.19801517556873693,
+          "differential_sign_agreement": 0.725,
+          "common_mode_velocity_median_m_s": -0.040401469737265085
+        },
+        "th_axial": {
+          "differential_gain_median": 0.4287353067808901,
+          "differential_sign_agreement": 0.925,
+          "common_mode_velocity_median_m_s": 0.010262894672469308
+        }
+      },
+      "calibration_episodes": 800,
+      "calibration_cells": {
+        "neutral": {
+          "timeout_rate": 0.0,
+          "sustained": 0
+        },
+        "cal0": {
+          "eligible_pairs": 4,
+          "pairs": 40,
+          "sign_agreement": 1.0,
+          "gain_median": 0.8778430938056241,
+          "min_eligible_fraction": 0.0,
+          "timeout_rate": 0.3,
+          "bound_active_fraction": 0.94,
+          "residual_mean": 0.1705736666917801,
+          "jacobian_rel_error_median": 0.2027352136005507,
+          "jacobian_samples": 676
+        },
+        "cal1": {
+          "eligible_pairs": 4,
+          "pairs": 40,
+          "sign_agreement": 0.75,
+          "gain_median": 0.724733208592239,
+          "min_eligible_fraction": 0.0,
+          "timeout_rate": 0.2,
+          "bound_active_fraction": 0.8925,
+          "residual_mean": 0.14897212386131287,
+          "jacobian_rel_error_median": 0.21492978605455956,
+          "jacobian_samples": 644
+        },
+        "cal2": {
+          "eligible_pairs": 4,
+          "pairs": 40,
+          "sign_agreement": 1.0,
+          "gain_median": 0.8034658135415731,
+          "min_eligible_fraction": 0.0,
+          "timeout_rate": 0.225,
+          "bound_active_fraction": 0.9208333333333333,
+          "residual_mean": 0.16338586807250977,
+          "jacobian_rel_error_median": 0.2097087365283977,
+          "jacobian_samples": 665
+        },
+        "cal3": {
+          "eligible_pairs": 3,
+          "pairs": 40,
+          "sign_agreement": 1.0,
+          "gain_median": 1.3180810449608824,
+          "min_eligible_fraction": 0.0,
+          "timeout_rate": 0.25,
+          "bound_active_fraction": 0.9583333333333334,
+          "residual_mean": 0.2069730907678604,
+          "jacobian_rel_error_median": 0.21410859024551712,
+          "jacobian_samples": 866
+        },
+        "cal4": {
+          "eligible_pairs": 4,
+          "pairs": 40,
+          "sign_agreement": 0.75,
+          "gain_median": 0.38818093195027226,
+          "min_eligible_fraction": 0.0,
+          "timeout_rate": 0.2,
+          "bound_active_fraction": 0.7575,
+          "residual_mean": 0.0037970656994730234,
+          "jacobian_rel_error_median": 0.14747006777103094,
+          "jacobian_samples": 421
+        },
+        "cal5": {
+          "eligible_pairs": 4,
+          "pairs": 40,
+          "sign_agreement": 0.75,
+          "gain_median": 0.44814008358842533,
+          "min_eligible_fraction": 0.0,
+          "timeout_rate": 0.225,
+          "bound_active_fraction": 0.7691666666666667,
+          "residual_mean": 0.0038064883556216955,
+          "jacobian_rel_error_median": 0.16086973556040976,
+          "jacobian_samples": 420
+        },
+        "cal6": {
+          "eligible_pairs": 8,
+          "pairs": 40,
+          "sign_agreement": 0.875,
+          "gain_median": 0.6893790738369765,
+          "min_eligible_fraction": 0.0,
+          "timeout_rate": 0.275,
+          "bound_active_fraction": 0.8766666666666667,
+          "residual_mean": 0.17076390981674194,
+          "jacobian_rel_error_median": 0.21006482786899783,
+          "jacobian_samples": 656
+        },
+        "cal7": {
+          "eligible_pairs": 3,
+          "pairs": 40,
+          "sign_agreement": 1.0,
+          "gain_median": 1.1769974063974316,
+          "min_eligible_fraction": 0.0,
+          "timeout_rate": 0.375,
+          "bound_active_fraction": 0.9725,
+          "residual_mean": 0.19008803367614746,
+          "jacobian_rel_error_median": 0.1963245253521166,
+          "jacobian_samples": 839
+        },
+        "cal8": {
+          "eligible_pairs": 4,
+          "pairs": 40,
+          "sign_agreement": 1.0,
+          "gain_median": 0.8781559956127762,
+          "min_eligible_fraction": 0.0,
+          "timeout_rate": 0.275,
+          "bound_active_fraction": 0.9475,
+          "residual_mean": 0.1754617542028427,
+          "jacobian_rel_error_median": 0.2031953049565445,
+          "jacobian_samples": 678
+        },
+        "cal9": {
+          "eligible_pairs": 0,
+          "pairs": 40,
+          "sign_agreement": null,
+          "gain_median": null,
+          "min_eligible_fraction": 0.0,
+          "timeout_rate": 0.05,
+          "bound_active_fraction": 0.9766666666666667,
+          "residual_mean": 0.43716374039649963,
+          "jacobian_rel_error_median": 0.1012088410296055,
+          "jacobian_samples": 1235
+        },
+        "calhold10": {
+          "timeout_rate": 0.125,
+          "sustained": 0
+        },
+        "calhold11": {
+          "timeout_rate": 0.0,
+          "sustained": 0
+        },
+        "calhold12": {
+          "timeout_rate": 0.225,
+          "sustained": 0
+        },
+        "cal13": {
+          "eligible_pairs": 7,
+          "pairs": 40,
+          "sign_agreement": 0.8571428571428571,
+          "gain_median": 0.6421951240421538,
+          "min_eligible_fraction": 0.0,
+          "timeout_rate": 0.85,
+          "bound_active_fraction": 0.6658333333333334,
+          "residual_mean": 0.16102366149425507,
+          "jacobian_rel_error_median": 0.006375581450008924,
+          "jacobian_samples": 840
+        },
+        "calhold14": {
+          "timeout_rate": 0.825,
+          "sustained": 0
+        },
+        "cal15": {
+          "eligible_pairs": 15,
+          "pairs": 40,
+          "sign_agreement": 0.8666666666666667,
+          "gain_median": 0.6118209812394457,
+          "min_eligible_fraction": 0.0,
+          "timeout_rate": 0.875,
+          "bound_active_fraction": 0.5933333333333334,
+          "residual_mean": 0.1531115174293518,
+          "jacobian_rel_error_median": 0.006451956324424918,
+          "jacobian_samples": 834
+        },
+        "cal16": {
+          "eligible_pairs": 38,
+          "pairs": 40,
+          "sign_agreement": 0.7631578947368421,
+          "gain_median": 0.5182611345212196,
+          "min_eligible_fraction": 0.0,
+          "timeout_rate": 0.85,
+          "bound_active_fraction": 0.005,
+          "residual_mean": 0.002380835823714733,
+          "jacobian_rel_error_median": 0.004006749697199804,
+          "jacobian_samples": 689
+        },
+        "cal17": {
+          "eligible_pairs": 17,
+          "pairs": 40,
+          "sign_agreement": 0.8823529411764706,
+          "gain_median": 0.62420960758345,
+          "min_eligible_fraction": 0.0,
+          "timeout_rate": 0.725,
+          "bound_active_fraction": 0.44416666666666665,
+          "residual_mean": 0.17329096794128418,
+          "jacobian_rel_error_median": 0.0055320911235532755,
+          "jacobian_samples": 851
+        },
+        "cal18": {
+          "eligible_pairs": 8,
+          "pairs": 40,
+          "sign_agreement": 0.75,
+          "gain_median": 0.3365587886644447,
+          "min_eligible_fraction": 0.0,
+          "timeout_rate": 0.7,
+          "bound_active_fraction": 0.5308333333333334,
+          "residual_mean": 0.25676730275154114,
+          "jacobian_rel_error_median": 0.008412883733710855,
+          "jacobian_samples": 898
+        }
+      },
+      "gate0_incumbent_replay": "bit-identical to logs/pen_spin/r081_stroke_feedback/constant_gain_fresh (80 cases), hashes verified"
+    },
+    "artifacts": [
+      "logs/pen_spin/r093_contact_decoder_gate/summary.json",
+      "logs/pen_spin/r093_contact_decoder_gate/frozen.json",
+      "logs/pen_spin/r093_contact_decoder_gate/posthoc_differential.json",
+      "logs/pen_spin/r093_contact_decoder_calibration/summary.json"
+    ],
+    "notes": "Gate as pre-declared: FAIL. Jacobian audit passes (median 0.004 < 0.15, 21,158 samples), retention passes (zero-request hold 0.775 vs neutral 0.000 timeout rate; difference +0.775 >= -0.10), coverage passes (40/40 eligible in all 30 cells), median gain 0.526 in [0.3, 1.5], but pooled sign agreement is 0.6825 < 0.80. The failure is one-signed per axis: normal_pos cells have gain about +6 and normal_neg about -5 on four fingers, i.e. a common relative motion of about +0.17 m/s along the normal (and +0.07 m/s circumferential) that is independent of the request and five times the 0.03 m/s pulse: at steps 10-40 the pen is still settling after reset and the fingers are closing toward the reference posture, and the frozen setting does not follow the pen (the only calibrated setting with coverage). Post hoc, NOT pre-declared: the paired positive-minus-negative contrast per case removes that common motion and gives differential sign agreement 0.938 and median differential gain 0.54 over 600 pairs (thumb worst: 0.10-0.43). Constants frozen from calibration cell cal16 (hash a3517589...), all 20 declared calibration cells (800 episodes, seed 4721) spent before seed 4720 was stepped; gate 32 cells, 1,280 episodes, no retries. Engineering findings from calibration: (1) PhysX Jacobians and the observation's fingertip linear velocity are for each distal link's centre of mass, while the observed fingertip position is the link origin 15-16 mm away; uncorrected, the displacement audit error was 0.20, corrected 0.004-0.008 (ControllerContext.fingertip_jacobians and contact_control.tip_origin_linvel now correct both). (2) act_moving_average is 1.0 (no target smoothing); joint PD stiffness 1.0, damping 0.1. (3) The four passive distal joints follow their J1 at about 0.86-0.98. (4) A reference posture 0.35 rad inside the joint limits retains the pen in 0.775-0.875 of cases where the neutral pose retains none (no sustained spin in either). (5) Fingertip link origins are 4-6 cm from the pen surface at step 10 except the thumb (1.8 cm): proximity, not contact. Deviations: none from the approved protocol; the excursion beyond code_changes is protocols.run_cell saving a trusted controller's extra trace and a 30-minute timeout on Isaac children. Gate 0 (incumbent replay of a recorded manifest) was run at the user's instruction as a reproducibility check and produced no new outcome. C2 (R-094) stays deferred: no recorded C1 pass."
+  },
+  "prediction_outcome": {
+    "metric": "timeout_rate",
+    "before": null,
+    "after": 0.775,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.75,
+      "reasoning": "The gate was declared as a conjunction and it failed on its own terms: pooled sign agreement 0.6825 against the 0.80 minimum over 1,200 eligible pairs (40/40 eligible in every cell, so not a coverage artefact). The formal metric (timeout_rate, hold minus neutral +0.775 >= -0.10) and the Jacobian audit (0.004) pass, so what is refuted is the hypothesis's first clause as tested: at steps 10-40 from reset, a decoded 0.03 m/s request does not produce correctly directed relative motion, because a request-independent relative motion of about 0.17 m/s along the normal dominates it. The post hoc paired contrast (sign agreement 0.938, gain 0.54) says the decoder itself responds in the requested direction; it was not pre-declared and cannot rescue this gate. C2 stays blocked.",
+      "cited_artifacts": [],
+      "next_experiment": "A second gate, pre-declared on fresh seeds, that measures what C2 needs: pulses after the pen has settled in the closed reference posture (for example steps 120-150), pen-following on, and the paired positive-minus-negative contrast per case as the tracking statistic, with the thumb reported separately. If it passes, re-triage R-094.",
+      "recorded_at": "2026-11-20T03:14:31",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "supported",
+      "confidence": 0.99,
+      "reasoning": "The formal retention prediction held: zero-request timeout_rate was 0.775 versus the measured neutral-hold control's 0.000, yielding +0.775 against the required minimum of -0.10 [logs/pen_spin/r093_contact_decoder_gate/summary.json]. However, the decoder gate failed because requested-sign agreement was 0.6825, below 0.80 [logs/pen_spin/r093_contact_decoder_gate/summary.json]. Median Jacobian relative error of 0.00403, median gain of 0.526, and coverage of 40 eligible cases per cell passed their respective checks [logs/pen_spin/r093_contact_decoder_gate/summary.json]. Post hoc differential sign agreement of 0.9383 measures a different contrast and cannot replace the failed preregistered endpoint [logs/pen_spin/r093_contact_decoder_gate/posthoc_differential.json]. Thus support applies only to retention noninferiority, not decoder qualification or task-success improvement; the conditional contact-generation comparison remains blocked [logs/pen_spin/r093_contact_decoder_gate/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r093_contact_decoder_gate/summary.json",
+        "logs/pen_spin/r093_contact_decoder_gate/posthoc_differential.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-20T03:14:49",
+      "call_id": "call_00187"
+    },
+    {
+      "source": "implementer",
+      "verdict": "supported",
+      "confidence": 0.9,
+      "reasoning": "I change the label, not the reading. The ledger's verdict is on the pre-registered prediction, and that prediction was timeout_rate (zero-request hold minus neutral hold) of at least -0.10; it came out +0.775, so the prediction is supported, as the advisor says. My 'refuted' judged the hypothesis's tracking clause, which the prediction's metric does not carry. The decision text must therefore say both things without ambiguity: the retention prediction is supported, and the decoder gate FAILED (sign agreement 0.6825 < 0.80), so there is no recorded C1 pass, the decoder is not qualified, and R-094 stays deferred. The post hoc paired contrast is a design lead for a new pre-declared gate, not evidence for this one.",
+      "cited_artifacts": [],
+      "next_experiment": "Propose a second gate on fresh seeds: pulses after the pen has settled in the closed reference posture, pen-following on, the paired positive-minus-negative contrast per case as the pre-declared tracking statistic, thumb reported separately. R-094 is re-triaged only on a pass.",
+      "recorded_at": "2026-11-20T03:15:06",
+      "call_id": ""
+    }
+  ],
+  "decision_id": "D-064",
+  "history": [
+    {
+      "at": "2026-11-20T02:31:07",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-20T02:44:42",
+      "from": "approved",
+      "to": "running",
+      "note": "git cf3201affd (dirty)"
+    },
+    {
+      "at": "2026-11-20T03:14:30",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-20T03:15:08",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-064: supported"
+    }
+  ],
+  "created_at": "2026-11-20T02:26:26",
+  "direction": "Test two representation changes for cold pen-spin generation on Stage 3, independently, native sustained success primary, final test locked: (M1) LLM-generated modular policies (MODULE_SPEC + named methods + generated composition inside GeneratedPolicy, no role hints) vs monolithic, same prompt otherwise, 24-draw search for both arms; (C1) a no-LLM contact-frame decoder gate (capsule frames, fingertip Jacobians, requested vs observed local motion); (C2, only if C1 passes) LLM contact-frame velocity rules vs direct joint generation at matched budget. No BC, RL, curriculum, or gradient fitting. One protocol at a time on the box.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "This should be the first experiment because 1,280 episodes and zero LLM calls can qualify or block the more expensive C2 branch. Its weakest point is that the gate can currently pass on an arbitrarily small, selectively unsaturated subset, despite testing 30 directional cells. The existing timeout_rate and tracking falsifiers are useful, but undefined statistics alone do not protect against inadequate coverage.",
+          "suggested_changes": [
+            "Add a prospective coverage gate: require at least 20 of the 40 cases in every fingertip-axis-sign cell to provide eligible unsaturated tracking measurements; insufficient coverage makes C1 inconclusive and blocks C2.",
+            "Define eligibility without using observed tracking sign or gain, count saturated and otherwise excluded pairs explicitly by cell, and freeze these rules alongside damping and bounds before evaluation.",
+            "Keep scripts/run_shadowhand_spin_stages.py, config/shadowhand_spin_stages.yaml, seed 4720, the existing prediction and falsifiers, and the 1,280-episode, zero-LLM-call budget; do not add retries or replacement cases."
+          ],
+          "priority": 1,
+          "call_id": "call_00183",
+          "briefing_sha256": "d9aac01604f2e0c7033fc10e33f2c3f9f1b79a44709ac424f6278aaa05bbb816",
+          "at": "2026-11-20T02:28:12"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree with the advisor's coverage gate and eligibility rules; my own reading also requires two record fixes. (1) Accept: at least 20 of 40 cases eligible in every one of the 30 fingertip-axis-sign cells, else inconclusive and C2 blocked; eligibility is defined without the observed motion: a (cell, case) pair is eligible if the pen has not fallen by step 40 and, over the pulse steps 10-40, the decoder's velocity bound and joint-limit bound were inactive on the commanded fingertip's chain in at least 80% of steps; excluded pairs are counted per cell by reason. (2) Manifest path follows the pen-spin naming: config/manifests/pen_spin_stage3_contact_decoder_gate_s4720.yaml. (3) State the freezing order: decoder damping, velocity and joint bounds, the position-target lookahead, finite-difference step and all thresholds are written into config/shadowhand_spin_stages.yaml and hashed before the seed-4720 manifest is first stepped; they are chosen from an engineering probe on an already-spent manifest (non-evidence, recorded in the notes), never from seed 4720. Observed relative velocity is measured as fingertip velocity minus the pen-surface-point velocity (pen linear plus angular cross offset) projected on the frame at the pulse's first step. No retries, no replacement cases, 1,280 episodes, zero LLM calls.",
+          "changes_applied": [],
+          "at": "2026-11-20T02:28:36"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "This engineering gate can qualify or block C2 using scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml for 1,280 episodes and zero LLM calls. I accept the implementer's coverage gate, eligibility definition, relative-motion measurement and pre-evaluation hashing, but withdraw acceptance of the spent-manifest simulator probe: labeling it non-evidence does not override the prohibition on spent-seed reuse. Its weakest point remains tracking measured only on eligible pairs, so every directional cell must retain the coverage requirement. Retain timeout_rate, direction increase, threshold -0.10 for zero-request hold versus neutral hold; a difference below -0.10 falsifies retention noninferiority, and failed tracking thresholds or insufficient coverage block C2.",
+          "suggested_changes": [
+            "Replace the engineering rollout probe on an already-spent manifest with offline inspection of existing non-final-test recordings and analytic or kinematic checks that do not reset or step a simulator manifest.",
+            "Freeze all decoder constants, thresholds and eligibility rules and hash config/shadowhand_spin_stages.yaml before seed 4720 is first stepped; retain the 1,280-episode cap and no retries. If additional simulator calibration is indispensable, submit its fresh seed and additional episode cost for approval before running it."
+          ],
+          "priority": 2,
+          "call_id": "call_00185",
+          "briefing_sha256": "37d20d19f59153ee73061e0beb1e94fe0cf1420c49f9ca8ce9b863f11357f502",
+          "at": "2026-11-20T02:30:22"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "The advisor is right that a spent seed cannot be stepped again under any label; I withdraw that. Simulator calibration is nevertheless indispensable: the installed Isaac Jacobian accessor, its fixed-base indexing, the 24-DOF to 20-actuator mapping with coupled distal joints, and the position-target lookahead that makes a PD-tracked velocity request move at all cannot be established from recordings (no archived run stored Jacobians or commanded a decoder) or from source reading alone. So, as the advisor's second change allows, declare it: a second fresh 40-case Stage-3 manifest, seed 4721 (config/manifests/pen_spin_stage3_contact_decoder_calibration_s4721.yaml), used only to choose decoder constants; at most 20 whole-manifest cells = 800 episodes; its outcomes are recorded as calibration, never as gate evidence. Everything is then frozen and hashed before seed 4720 is first stepped; the gate stays 32 cells = 1,280 episodes on seed 4720 with no retries. Total 2,080 episodes, zero LLM calls. Source inspection and kinematic unit tests still come first and need no seed.",
+          "changes_applied": [],
+          "at": "2026-11-20T02:30:42"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "C1 can qualify or block C2 using scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, with a binding cap of 2,080 episodes and zero LLM calls; the 1,280-episode cost_estimate is stale. I accept the implementer's calibration argument: installed Jacobian indexing, coupled-joint mapping and PD lookahead warrant up to 800 calibration episodes on fresh seed 4721, separate from the 1,280 gate episodes on fresh seed 4720. The weakest point remains tracking conditional on eligibility, but the frozen exclusion rules and minimum 20/40 eligible cases in every directional cell adequately constrain this engineering gate. Retain the prediction of timeout_rate increase by at least -0.10 against paired neutral-pose hold; falsified_by is a difference below -0.10, while failed Jacobian or tracking thresholds fail the gate and insufficient coverage makes it inconclusive, with either outcome blocking C2 rather than supporting task-success improvement.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00186",
+          "briefing_sha256": "c592a540a27905bb169345a579b4bf9748c9936c79b6be886b687168207f5d1f",
+          "at": "2026-11-20T02:31:02"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve as revised: calibration on declared fresh seed 4721 (at most 800 episodes), gate on 4720 (1,280, no retries), constants and eligibility hashed before 4720 is stepped, coverage gate binding in every directional cell. The binding cap is 2,080 episodes.",
+          "changes_applied": [],
+          "at": "2026-11-20T02:31:07"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 3
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-20T02:29:48",
+      "round": 1,
+      "patch": {
+        "protocol": {
+          "manifests": [
+            "config/manifests/pen_spin_stage3_contact_decoder_gate_s4720.yaml"
+          ],
+          "code_changes": [
+            "lares/envs/isaac_pen_spin/contact_control.py (new): capsule nearest-surface frames at five fingertips, radius 0.012 m and half-length 0.07 m, with end-cap handling and deterministic singular-frame conventions; damped least-squares decoding from 15 local relative-velocity requests to 20 joint position targets, bounded by joint velocities and limits; wire a trusted fingertip-Jacobian accessor into the existing ControllerContext.",
+            "lares/envs/isaac_pen_spin/contact_gate.py (new): run 32 cells, each on all 40 cases in a fresh process: neutral hold, zero-request hold, and five fingertips x three axes x two signs. Pulse one local axis at 0.03 m/s over steps 10-40 from the reset grasp, then hold; keep other requests zero.",
+            "lares/envs/isaac_pen_spin/contact_gate.py: audit Jacobians against finite-difference fingertip displacement at matched reset configurations within these episodes; record requested versus observed local relative motion including pen translation and rotation, tracking residual, saturation, joint-limit activity, and unsaturated coverage. Freeze finite-difference settings, damping, bounds, and eligibility rules before running; no eligible tracking pairs means inconclusive, not pass. Coverage gate: every one of the 30 fingertip-axis-sign cells needs at least 20 of 40 eligible cases, else the gate is inconclusive and C2 stays blocked. Eligibility never uses observed motion: a (cell, case) pair is eligible if the pen has not fallen by step 40 and the decoder's velocity and joint-limit bounds were inactive on the commanded fingertip's chain in at least 80% of pulse steps 10-40; excluded pairs are counted per cell by reason. Observed relative velocity is fingertip velocity minus the pen-surface-point velocity (linear plus angular cross offset), projected on the frame at the pulse's first step. No retries or replacement cases.",
+            "scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml: register the study, freeze the seed-4720 manifest before evaluation, and record all gate thresholds, decoder damping, velocity and joint bounds, position-target lookahead, finite-difference step and eligibility rules in the config (hashed) before the seed-4720 manifest is first stepped; these constants come from an engineering probe on an already-spent manifest (non-evidence, noted in the result), never from seed 4720. Stage 3 only; retain native sustained-success reporting, but label these results engineering checks. No fitting, reinforcement learning, or curriculum; run alone on the box.",
+            "config/manifests/pen_spin_stage3_contact_decoder_gate_s4720.yaml (new): one frozen 40-case manifest shared by every cell."
+          ]
+        }
+      },
+      "note": "round 1 agreed revise: coverage gate, motion-blind eligibility, pen_spin manifest name, constants frozen from a spent-manifest probe"
+    },
+    {
+      "at": "2026-11-20T02:30:43",
+      "round": 2,
+      "patch": {
+        "protocol": {
+          "seeds": [
+            4720,
+            4721
+          ],
+          "episodes": 2080,
+          "manifests": [
+            "config/manifests/pen_spin_stage3_contact_decoder_gate_s4720.yaml",
+            "config/manifests/pen_spin_stage3_contact_decoder_calibration_s4721.yaml"
+          ],
+          "code_changes": [
+            "lares/envs/isaac_pen_spin/contact_control.py (new): capsule nearest-surface frames at five fingertips, radius 0.012 m and half-length 0.07 m, with end-cap handling and deterministic singular-frame conventions; damped least-squares decoding from 15 local relative-velocity requests to 20 joint position targets, bounded by joint velocities and limits; wire a trusted fingertip-Jacobian accessor into the existing ControllerContext.",
+            "lares/envs/isaac_pen_spin/contact_gate.py (new): run 32 cells, each on all 40 cases in a fresh process: neutral hold, zero-request hold, and five fingertips x three axes x two signs. Pulse one local axis at 0.03 m/s over steps 10-40 from the reset grasp, then hold; keep other requests zero.",
+            "lares/envs/isaac_pen_spin/contact_gate.py: audit Jacobians against finite-difference fingertip displacement at matched reset configurations within these episodes; record requested versus observed local relative motion including pen translation and rotation, tracking residual, saturation, joint-limit activity, and unsaturated coverage. Freeze finite-difference settings, damping, bounds, and eligibility rules before running; no eligible tracking pairs means inconclusive, not pass. Coverage gate: every one of the 30 fingertip-axis-sign cells needs at least 20 of 40 eligible cases, else the gate is inconclusive and C2 stays blocked. Eligibility never uses observed motion: a (cell, case) pair is eligible if the pen has not fallen by step 40 and the decoder's velocity and joint-limit bounds were inactive on the commanded fingertip's chain in at least 80% of pulse steps 10-40; excluded pairs are counted per cell by reason. Observed relative velocity is fingertip velocity minus the pen-surface-point velocity (linear plus angular cross offset), projected on the frame at the pulse's first step. No retries or replacement cases.",
+            "scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml: register the study, freeze both manifests before any evaluation, and record all gate thresholds, decoder damping, velocity and joint bounds, position-target lookahead, finite-difference step and eligibility rules in the config (hashed) before the seed-4720 manifest is first stepped. Decoder constants are chosen from source inspection, kinematic unit tests and a declared calibration manifest (seed 4721, at most 20 whole-manifest cells = 800 episodes, recorded as calibration and never as gate evidence); no spent seed is stepped and seed 4720 is never used for calibration. Stage 3 only; retain native sustained-success reporting, but label these results engineering checks. No fitting, reinforcement learning, or curriculum; run alone on the box.",
+            "config/manifests/pen_spin_stage3_contact_decoder_gate_s4720.yaml (new): one frozen 40-case manifest shared by every gate cell. config/manifests/pen_spin_stage3_contact_decoder_calibration_s4721.yaml (new): one frozen 40-case calibration manifest, disjoint from it."
+          ]
+        }
+      },
+      "note": "round 2 agreed revise: no spent-seed probe; declared calibration manifest seed 4721 (<=800 episodes), gate unchanged on 4720"
+    }
+  ]
+}

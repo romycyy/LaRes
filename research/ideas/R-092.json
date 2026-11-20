@@ -1,0 +1,187 @@
+{
+  "id": "R-092",
+  "title": "M1: Modular vs monolithic cold generation, searched",
+  "hypothesis": "Explicit, contract-validated decomposition chosen by the LLM makes cold-generated Stage-3 controllers more behaviorally effective after matched rollout search than monolithic generation.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "baseline: monolithic arm with identical generation and 24-draw search budgets",
+    "rationale": "Primary is modular-minus-monolithic fresh native sustained success of the final incumbents, paired over eight blocks. A mean gain >=0.05 with a block-paired t interval excluding zero supports the prediction; it does not establish a minimum effect of 0.05. Eight blocks and validity/tail diagnostics make this the strongest independent representation comparison per episode after C1."
+  },
+  "protocol": {
+    "script": "scripts/run_full_evolution.py",
+    "config": "config/pen_spin_plateau_repair.yaml",
+    "command": "gpu run 'nohup bash -lc \"source .venv-metaworld/bin/activate && python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study modular_cold\" > logs/r092_run.log 2>&1 &'",
+    "seeds": [
+      4710,
+      4711,
+      4712,
+      4713,
+      4714,
+      4715,
+      4716,
+      4717
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_modular_cold_s4710.yaml",
+      "config/manifests/pen_spin_stage3_modular_cold_s4711.yaml",
+      "config/manifests/pen_spin_stage3_modular_cold_s4712.yaml",
+      "config/manifests/pen_spin_stage3_modular_cold_s4713.yaml",
+      "config/manifests/pen_spin_stage3_modular_cold_s4714.yaml",
+      "config/manifests/pen_spin_stage3_modular_cold_s4715.yaml",
+      "config/manifests/pen_spin_stage3_modular_cold_s4716.yaml",
+      "config/manifests/pen_spin_stage3_modular_cold_s4717.yaml"
+    ],
+    "episodes": 6080,
+    "llm_calls": 128,
+    "code_changes": [
+      "lares/envs/isaac_pen_spin/modular_cold.py: clone two_channel.py and replace its hinted decomposition with four single-phase cold slots per arm and at most one linked correction per slot. Keep prompts identical except for the appended modular requirement; use no parent-controller code or role hints.",
+      "lares/core/module_contract.py: validate a class-level literal MODULE_SPEC declaring each module method's inputs (observation fields), outputs, units and dependencies (other modules); require at least two LLM-chosen module methods. Enforced by AST: declared methods exist and are called from forward; each method's obs_field reads equal its declared inputs and the module outputs it receives equal its declared dependencies; forward may not call self.obs_field and may use obs only as an argument to a declared module method (obs.shape excepted), so an undeclared observation-to-action bypass is a module_contract validation failure. A failure gets the slot's single linked correction; a slot still invalid is excluded from rollouts. No contract is applied to the monolithic arm.",
+      "scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml: register modular_cold; configure gpt-6.1-sol, high reasoning, temperature 1, llm_pool with 16 workers, bc_steps 0 and no gradient fitting. Freeze eight 80-case Stage-3 manifests with screen 0-9, promotion 10-39, probe 40-49 and fresh 50-79.",
+      "lares/envs/isaac_pen_spin/modular_cold.py: score neutral-pose null on all 80 cases per block; screen every valid slot on 10 cases, select by the existing checkpoint tie rule, then run lares.search.rollout_search.independent_candidates (the unchanged candidate plus 23 draws, seeded by the block seed), each candidate in a fresh process on the 10 probe cases; select by success, then tail-hit fraction, then earlier candidate. gait_repair.search_settings is not used. Freeze the selected state before promotion and fresh evaluation.",
+      "lares/envs/isaac_pen_spin/modular_cold.py: evaluate each searched winner on 30 promotion and 30 fresh cases. Promote against the scored null only for a strictly positive paired native sustained-success difference with paired t lower bound above zero; otherwise final-incumbent fresh scores remain the cached null scores. Never select using fresh outcomes.",
+      "lares/envs/isaac_pen_spin/modular_cold.py: preregister searched-winner fresh tail_hit_fraction, candidates with any screen success, slots_valid_within_one_correction, drops and slow-spin labels as secondaries. Preserve the frozen native sustained-success rule; never substitute tail hit fraction for success.",
+      "docs/MODULE_BASED_PIPELINE_PROPOSAL.md: record the distinction from R-049/D-044: Stage 3, matched 24-draw search, LLM-chosen rather than hinted decomposition, and AST-validated contracts. Independent of C1/C2: may run before C1, with exclusive use of the box; the orchestrator runs under .venv-metaworld and Isaac only in backend child processes."
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "running",
+  "source": "advisor",
+  "falsified_by": "An upper bound below +0.05 on the block-paired fresh-success interval refutes the predicted magnitude. An interval spanning both zero and +0.05 is inconclusive; tied success is never improvement. A success floor is reported with the preregistered secondaries, not replaced by a surrogate success claim.",
+  "cost_estimate": {
+    "episodes": 6080,
+    "llm_calls": 128,
+    "wall_time_minutes": 600
+  },
+  "open_question_refs": [
+    1,
+    3
+  ],
+  "briefing_sha256": "683b34e8f987ec57168c8e4f35ff601139ae529618b6c4bfbb619d8daeda34f4",
+  "proposal_call_id": "call_00181",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-20T02:30:40",
+    "advisor_call_id": "call_00185",
+    "round": 3,
+    "note": "This tests whether unhinted, contract-enforced modular composition improves cold generation after matched search, reusing scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml for at most 6,080 episodes and 128 LLM calls. I accept the implementer's enforced bypass rejection, correcte"
+  },
+  "run": {
+    "started_at": "2026-11-20T03:13:15",
+    "git_sha": "cf3201affdae026882e036f0ed166d6591de3669",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r092_modular_cold"
+  },
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-20T02:30:40",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-20T03:13:15",
+      "from": "approved",
+      "to": "running",
+      "note": "git cf3201affd (dirty)"
+    }
+  ],
+  "created_at": "2026-11-20T02:24:57",
+  "direction": "Test two representation changes for cold pen-spin generation on Stage 3, independently, native sustained success primary, final test locked: (M1) LLM-generated modular policies (MODULE_SPEC + named methods + generated composition inside GeneratedPolicy, no role hints) vs monolithic, same prompt otherwise, 24-draw search for both arms; (C1) a no-LLM contact-frame decoder gate (capsule frames, fingertip Jacobians, requested vs observed local motion); (C2, only if C1 passes) LLM contact-frame velocity rules vs direct joint generation at matched budget. No BC, RL, curriculum, or gradient fitting. One protocol at a time on the box.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "Approve the independent M1 comparison at up to 6,080 episodes and 128 LLM calls, reusing scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml after C1 finishes, regardless of C1's verdict. Matched 24-draw searches and unhinted, contract-validated composition distinguish this from the earlier hinted-decomposition test. Its weakest point is promotion-to-null censoring at a success floor: the primary measures final-incumbent performance, while searched-winner diagnostics remain secondary. An upper confidence bound below +0.05 for paired_success_difference versus monolithic refutes the predicted magnitude; an interval including zero establishes no difference.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00183",
+          "briefing_sha256": "d9aac01604f2e0c7033fc10e33f2c3f9f1b79a44709ac424f6278aaa05bbb816",
+          "at": "2026-11-20T02:28:12"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree on the design, budget and the distinction from R-049/D-044 (Stage 3, searched, unhinted, contract-validated). Revise three protocol details so the record matches what can run. (1) Driver: the recorded command sources Isaac's Python, which has no openai; LLM studies run the orchestrator under .venv-metaworld and reach Isaac through the pipeline backend in fresh child processes (as R-049, R-054, R-084). Command: gpu run 'nohup bash -lc \"source .venv-metaworld/bin/activate && python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study modular_cold\" > logs/r092_run.log 2>&1 &'. (2) Search: the 24-draw search is lares.search.rollout_search.independent_candidates (the unchanged candidate plus 23 draws, the R-017 standard), seeded by the block seed, each candidate one fresh process on the 10 probe cases; gait_repair.search_settings is a 6-setting variant and is not used. Selection on the probe by the checkpoint tie rule (success, then tail-hit fraction, then earlier). (3) Contract failures: a MODULE_SPEC violation is a validation failure of the modular arm and receives that slot's one linked correction like any other defect, so slots_valid_within_one_correction measures the contract's cost; the monolithic arm never sees the contract. A coordinator bypass (forward reading an observation field that feeds the action without passing through a module) is recorded per candidate, not rejected, because the proposal asks for it to be exposed. Scheduling, not design: M1 runs on the box before C1 because C1's decoder constants must be frozen after an engineering probe that is still being written; the two are independent and never share the box.",
+          "changes_applied": [],
+          "at": "2026-11-20T02:28:35"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "The matched, unhinted comparison tests modular composition after search, although promotion-to-null censoring may obscure differences at the success floor. I accept the corrected orchestration environment, unchanged-plus-23 search, one correction for contract failures, and M1-before-C1 scheduling because the studies are independent and C1 is not ready. I dispute allowing undeclared observation-to-action bypasses merely because they are logged: these contradict the required AST agreement with declared reads and dependencies and allow monolithic action generation inside the modular treatment. Retain the prediction of paired_success_difference increasing by at least 0.05 versus matched monolithic generation; falsified_by: a block-paired fresh-success interval upper bound below +0.05, while an interval including zero establishes no difference.",
+          "suggested_changes": [
+            "Replace the command with: gpu run 'nohup bash -lc \"source .venv-metaworld/bin/activate && python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study modular_cold\" > logs/r092_run.log 2>&1 &'; keep Isaac execution in backend child processes.",
+            "Specify lares.search.rollout_search.independent_candidates: unchanged candidate plus 23 draws, seeded by block, each candidate evaluated in a fresh process on the 10 probe cases; select by success, then tail-hit fraction, then earlier candidate. Do not use gait_repair.search_settings.",
+            "Treat undeclared observation-to-action bypasses as modular contract validation failures: record them, allow the slot's single linked correction, and exclude candidates still invalid afterward from rollouts. Keep ordinary declared composition valid; apply no module contract to the monolithic arm.",
+            "Update scheduling to permit M1 before C1, with exclusive box use and no C1 dependency. Retain the caps of 6080 simulator episodes and 128 LLM calls, seeds 4710-4717, frozen manifests, no fitting, no fresh-outcome selection, and no final-test access."
+          ],
+          "priority": 1,
+          "call_id": "call_00184",
+          "briefing_sha256": "7484678cd931cbeec804b5dcdefe35e25d66c92ac8211bbad0937ac478d85180",
+          "at": "2026-11-20T02:29:18"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "I change my position on the bypass: the advisor is right that a logged-but-permitted bypass lets the modular arm be monolithic in all but name, which would make the treatment unidentified. Enforced rule, AST-checkable: in the modular arm GeneratedPolicy.forward may not call self.obs_field and may use the name obs only as an argument to a declared module method (obs.shape excepted); every observation read happens inside a module method whose MODULE_SPEC inputs list equals the set of fields that method reads, and whose dependencies list equals the set of other module outputs it receives; forward composes module outputs. A violation is a module_contract validation failure, gets the slot's one linked correction, and a still-invalid slot is excluded from rollouts. All four changes accepted as written.",
+          "changes_applied": [],
+          "at": "2026-11-20T02:29:45"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This tests whether unhinted, contract-enforced modular composition improves cold generation after matched search, reusing scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml for at most 6,080 episodes and 128 LLM calls. I accept the implementer's enforced bypass rejection, corrected orchestration, unchanged-plus-23 search and M1-before-C1 scheduling; the applied revisions resolve our disagreement. The weakest point remains promotion-to-null censoring at the success floor. Retain paired_success_difference, direction increase, threshold 0.05 versus matched monolithic generation: a block-paired fresh interval upper bound below +0.05 falsifies the magnitude, while an interval including zero establishes no improvement.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00185",
+          "briefing_sha256": "37d20d19f59153ee73061e0beb1e94fe0cf1420c49f9ca8ce9b863f11357f502",
+          "at": "2026-11-20T02:30:22"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve as revised: command, search, enforced bypass rule and scheduling are now what will run. The floor risk stands and is covered by the pre-declared secondaries (searched-winner fresh tail-hit fraction, candidates with a screen success, validity, drops, slow-spin labels); none of them can substitute for the primary.",
+          "changes_applied": [],
+          "at": "2026-11-20T02:30:40"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 3
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-20T02:29:46",
+      "round": 2,
+      "patch": {
+        "protocol": {
+          "command": "gpu run 'nohup bash -lc \"source .venv-metaworld/bin/activate && python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study modular_cold\" > logs/r092_run.log 2>&1 &'",
+          "code_changes": [
+            "lares/envs/isaac_pen_spin/modular_cold.py: clone two_channel.py and replace its hinted decomposition with four single-phase cold slots per arm and at most one linked correction per slot. Keep prompts identical except for the appended modular requirement; use no parent-controller code or role hints.",
+            "lares/core/module_contract.py: validate a class-level literal MODULE_SPEC declaring each module method's inputs (observation fields), outputs, units and dependencies (other modules); require at least two LLM-chosen module methods. Enforced by AST: declared methods exist and are called from forward; each method's obs_field reads equal its declared inputs and the module outputs it receives equal its declared dependencies; forward may not call self.obs_field and may use obs only as an argument to a declared module method (obs.shape excepted), so an undeclared observation-to-action bypass is a module_contract validation failure. A failure gets the slot's single linked correction; a slot still invalid is excluded from rollouts. No contract is applied to the monolithic arm.",
+            "scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml: register modular_cold; configure gpt-6.1-sol, high reasoning, temperature 1, llm_pool with 16 workers, bc_steps 0 and no gradient fitting. Freeze eight 80-case Stage-3 manifests with screen 0-9, promotion 10-39, probe 40-49 and fresh 50-79.",
+            "lares/envs/isaac_pen_spin/modular_cold.py: score neutral-pose null on all 80 cases per block; screen every valid slot on 10 cases, select by the existing checkpoint tie rule, then run lares.search.rollout_search.independent_candidates (the unchanged candidate plus 23 draws, seeded by the block seed), each candidate in a fresh process on the 10 probe cases; select by success, then tail-hit fraction, then earlier candidate. gait_repair.search_settings is not used. Freeze the selected state before promotion and fresh evaluation.",
+            "lares/envs/isaac_pen_spin/modular_cold.py: evaluate each searched winner on 30 promotion and 30 fresh cases. Promote against the scored null only for a strictly positive paired native sustained-success difference with paired t lower bound above zero; otherwise final-incumbent fresh scores remain the cached null scores. Never select using fresh outcomes.",
+            "lares/envs/isaac_pen_spin/modular_cold.py: preregister searched-winner fresh tail_hit_fraction, candidates with any screen success, slots_valid_within_one_correction, drops and slow-spin labels as secondaries. Preserve the frozen native sustained-success rule; never substitute tail hit fraction for success.",
+            "docs/MODULE_BASED_PIPELINE_PROPOSAL.md: record the distinction from R-049/D-044: Stage 3, matched 24-draw search, LLM-chosen rather than hinted decomposition, and AST-validated contracts. Independent of C1/C2: may run before C1, with exclusive use of the box; the orchestrator runs under .venv-metaworld and Isaac only in backend child processes."
+          ]
+        }
+      },
+      "note": "round 2 agreed revise: .venv-metaworld driver, independent_candidates search, bypass is a contract failure, M1 may precede C1"
+    }
+  ]
+}

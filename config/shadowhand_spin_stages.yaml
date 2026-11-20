@@ -1094,3 +1094,77 @@ research_protocols:
       state: "config/pen_spin/r046_block3_incumbent/state.pt"
       state_sha256: "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22"
       fixed_action_scale: 0.1
+
+  # R-093 (approved 2026-11-20, advisor call_00186; C1): the contact-frame decoder gate, no LLM. Engineering checks,
+  # not learned-policy results. The gate is 32 whole-manifest cells on seed 4720 (neutral hold, zero-request hold,
+  # 5 fingertips x 3 local axes x 2 signs; 1,280 episodes, no retries). Its constants (the `frozen` block) are chosen
+  # only from source inspection, kinematic unit tests and the declared calibration manifest (seed 4721, at most 20
+  # cells = 800 episodes, never gate evidence), then hashed (`frozen_sha256`, over frozen + windows + thresholds +
+  # eligibility) before seed 4720 is first stepped; the gate refuses to run on a mismatch.
+  #   python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study contact_decoder_calibration
+  #   python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study contact_decoder_gate
+  contact_decoder_gate: &contact_decoder
+    log_dir: "logs/pen_spin/r093_contact_decoder_gate"
+    cases: 40
+    pool_seed: 4720
+    manifest: "config/manifests/pen_spin_stage3_contact_decoder_gate_s4720.yaml"
+    calibration_pool_seed: 4721
+    calibration_manifest: "config/manifests/pen_spin_stage3_contact_decoder_calibration_s4721.yaml"
+    windows:
+      pulse_start: 10               # request nonzero for control steps 10 <= t < 40
+      pulse_stop: 40                # observed on the observations at steps 11..40, projected on the frame at step 10
+      pulse_speed: 0.03             # m/s along one local axis of one fingertip
+      record_stop: 60
+      jacobian_steps: [12, 16, 20, 24, 28, 32, 36]
+      jacobian_min_displacement: 0.0002   # m over one control step; smaller fingertip moves are not audited
+    eligibility:
+      min_inactive_fraction: 0.8    # of pulse steps with no decoder bound active on the commanded fingertip's chain
+    thresholds:
+      expected_cells: 30
+      min_eligible_per_cell: 20
+      sign_agreement_min: 0.80
+      gain_median_min: 0.3
+      gain_median_max: 1.5
+      jacobian_rel_error_median_max: 0.15
+      retention_diff_min: -0.10
+    calibration:
+      base:
+        decoder: {damping: 0.0001, tip_weights: [1.0, 1.0, 1.0, 1.0, 1.0], max_joint_speed: 3.0,
+                  control_dt: 0.016666666666666666, lookahead: 0.1, joint_limit_margin: 0.02,
+                  request_scale: 0.05, max_request_speed: 0.05}
+        controller: {follow_pen: true, active_distance: 0.03, control_wrist: false, coupling: 1.0,
+                     max_reference_error: 0.3}
+      settings:                      # cell cal<i> (pulses, case i -> direction i mod 30) or calhold<i> (zero request)
+        - {}
+        - {decoder: {lookahead: 0.016666666666666666}}
+        - {decoder: {lookahead: 0.05}}
+        - {decoder: {lookahead: 0.2}}
+        - {controller: {follow_pen: false}}
+        - {controller: {follow_pen: false}, decoder: {lookahead: 0.2}}
+        - {decoder: {damping: 0.001}}
+        - {decoder: {damping: 0.00001}}
+        - {controller: {max_reference_error: 0.6}}
+        - {controller: {control_wrist: true}}
+        - {hold: true}
+        - {hold: true, decoder: {lookahead: 0.016666666666666666}}
+        - {hold: true, controller: {active_distance: 0.015}}
+        # round 2 (after the centre-of-mass correction; cells above ran with the uncorrected Jacobian and no margin)
+        - {controller: {reference_margin: 0.35, max_reference_error: 0.8}}
+        - {hold: true, controller: {reference_margin: 0.35, max_reference_error: 0.8}}
+        # round 3: the pen is still settling at steps 10-40 (median 0.10 m/s, 4-5 rad/s), so following it hits the speed bound
+        - {controller: {reference_margin: 0.35, max_reference_error: 0.8}, decoder: {max_joint_speed: 20.0}}
+        - {controller: {reference_margin: 0.35, max_reference_error: 0.8, follow_pen: false}}
+        - {controller: {reference_margin: 0.35, max_reference_error: 0.8}, decoder: {max_joint_speed: 20.0, damping: 0.001}}
+        # round 4 (the 20th and last declared cell): more room inside the limits
+        - {controller: {reference_margin: 0.6, max_reference_error: 1.2}, decoder: {max_joint_speed: 20.0, damping: 0.001}}
+    # Frozen 2026-11-20 from calibration cell cal16 (seed 4721; 800 calibration episodes spent, all 20 declared cells),
+    # before seed 4720 was stepped. It is the only calibrated setting with coverage (38 of 40 pairs eligible, pooled
+    # sign agreement 0.76, median gain 0.52); every pen-following setting left 60 to 90 percent of pairs ineligible
+    # because the pen is still settling at steps 10-40. Hash over frozen + windows + thresholds + eligibility.
+    frozen:
+      decoder: {"damping": 0.0001, "tip_weights": [1.0, 1.0, 1.0, 1.0, 1.0], "max_joint_speed": 3.0, "control_dt": 0.016666666666666666, "lookahead": 0.1, "joint_limit_margin": 0.02, "request_scale": 0.05, "max_request_speed": 0.05}
+      controller: {"follow_pen": false, "active_distance": 0.03, "control_wrist": false, "coupling": 1.0, "max_reference_error": 0.8, "reference_margin": 0.35}
+    frozen_sha256: "a3517589d3d49a60ba9fb9b08df040602418744f28093366cb48f718ff4e19d2"
+  contact_decoder_calibration:
+    <<: *contact_decoder
+    log_dir: "logs/pen_spin/r093_contact_decoder_calibration"
