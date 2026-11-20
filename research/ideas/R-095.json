@@ -1,0 +1,444 @@
+{
+  "id": "R-095",
+  "title": "C1b: settled-window paired-contrast contact decoder gate",
+  "hypothesis": "Late pulses with pen-following and within-case opposite-sign contrasts will separate decoder authority from request-independent settling drift, yielding reliable contact-frame tracking.",
+  "prediction": {
+    "metric": "timeout_rate",
+    "direction": "increase",
+    "threshold": -0.1,
+    "against": "baseline",
+    "rationale": "Baseline is the neutral-hold cell on the seed-4722 gate manifest; zero-request hold minus neutral-hold timeout rate must be at least -0.10. This is an engineering noninferiority check, not a success-improvement claim. The complete gate verdict, not this prediction alone, decides whether R-094 is re-triaged. D-064's early, unpaired tracking failed; its favorable post-hoc paired contrast does not establish a prospective settled-window pass."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study contact_settled_gate'",
+    "seeds": [
+      4722,
+      4723
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_contact_settled_calibration_s4723.yaml",
+      "config/manifests/pen_spin_stage3_contact_settled_gate_s4722.yaml"
+    ],
+    "episodes": 1760,
+    "llm_calls": 0,
+    "code_changes": [
+      "Add lares/envs/isaac_pen_spin/contact_settled_gate.py, reusing R-093's controller, capsule frames, fingertip Jacobians, displacement audit and motion-blind eligibility unchanged from contact_gate.py and contact_control.py; no learning or fitting.",
+      "Wire contact_settled_gate into scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml. Run Stage 3 only, as the sole protocol on the box.",
+      "Create the declared 40-case seed-4723 calibration manifest. Predeclare at most 12 whole-manifest cells and their selection rule before calibration: choose the 30-step pulse window from steps 120-150, 150-180 or 240-270, plus decoder damping, lookahead and speed bound. Use reference_margin 0.35 and pen-following on. Calibration costs at most 480 episodes and supplies no gate evidence.",
+      "Before stepping the seed-4722 gate manifest, freeze and hash the selected settings, decoder source and all gate thresholds. Beyond replacing early pulses with settled-window pen-following pulses and replacing unpaired tracking with paired contrasts, preserve R-093's procedure.",
+      "Create the declared 40-case seed-4722 gate manifest and evaluate exactly 32 whole-manifest cells: neutral hold, zero-request hold and five fingertips times three local axes times two request signs at 0.03 m/s, totaling 1280 episodes with no retries. Match the same cases across signs; a pair is eligible only when both cells are eligible. For each case compute d = (gain_pos + gain_neg)/2 using request-sign-normalized gains.",
+      "Record the joint gate: Jacobian displacement audit median relative error < 0.15; zero-request hold timeout rate minus neutral hold >= -0.10; at least 20 eligible pairs in each of 15 fingertip-axis contrasts, otherwise inconclusive; pooled paired sign agreement >= 0.80; pooled median paired gain in [0.3, 1.5]. Report per-fingertip paired statistics, including the thumb, and unpaired sign agreement as non-deciding secondaries. Only a pass qualifies this exact frozen decoder hash for R-094 re-triage; fail or inconclusive leaves R-094 deferred. Label this an engineering check, not a learned-policy result."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "decided",
+  "source": "advisor",
+  "falsified_by": "With adequate paired coverage, pooled paired sign agreement below 0.80 or pooled median paired gain outside [0.3, 1.5] refutes reliable tracking; audit error at least 0.15 or hold-minus-neutral timeout rate below -0.10 independently fails the gate. Fewer than 20 eligible pairs in any fingertip-axis contrast makes the gate inconclusive, not qualified.",
+  "cost_estimate": {
+    "episodes": 1760,
+    "llm_calls": 0,
+    "wall_time_minutes": 60
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "1cf74a5dc09301304a7849bd5f4fa2ec797d976f3fe99e2195a774841fdb2051",
+  "proposal_call_id": "call_00189",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-20T06:01:16",
+    "advisor_call_id": "call_00190",
+    "round": 1,
+    "note": "Settled-window pulses, pen-following, and prospectively declared opposite-sign contrasts address the drift confound left unresolved by D-064 rather than simply repeating its failed gate. The weakest point is pooling: differential authority can pass despite weak thumb response or residual absolute dr"
+  },
+  "run": {
+    "started_at": "2026-11-20T06:02:17",
+    "git_sha": "16588448d34c4560c3edb4b61c9760e636e724c5",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r095_contact_settled_gate",
+    "finished_at": "2026-11-20T06:17:36"
+  },
+  "result": {
+    "metrics": {
+      "timeout_rate": 0.725,
+      "timeout_rate_neutral": 0.025,
+      "timeout_rate_difference": 0.7,
+      "gate_verdict": "inconclusive",
+      "paired_sign_agreement": 1.0,
+      "paired_gain_median": 0.622534451165398,
+      "jacobian_rel_error_median": 0.004736288476496253,
+      "min_eligible_pairs": 16,
+      "contrasts_under_minimum": [
+        "lf_normal",
+        "th_normal"
+      ],
+      "eligible_pairs": 394,
+      "num_episodes": 1680,
+      "llm_calls": 0
+    },
+    "controls": {
+      "per_contrast": {
+        "ff_normal": {
+          "eligible_pairs": 29,
+          "sign_agreement": 1.0,
+          "gain_median": 0.38595076113701354,
+          "common_mode_median": -0.17815310208580074
+        },
+        "ff_circumferential": {
+          "eligible_pairs": 29,
+          "sign_agreement": 1.0,
+          "gain_median": 0.7994361850145486,
+          "common_mode_median": 0.04884517405758537
+        },
+        "ff_axial": {
+          "eligible_pairs": 29,
+          "sign_agreement": 1.0,
+          "gain_median": 0.6158154816386319,
+          "common_mode_median": -0.29036895251821965
+        },
+        "mf_normal": {
+          "eligible_pairs": 29,
+          "sign_agreement": 1.0,
+          "gain_median": 0.3884770809073212,
+          "common_mode_median": -0.17716524845326503
+        },
+        "mf_circumferential": {
+          "eligible_pairs": 29,
+          "sign_agreement": 1.0,
+          "gain_median": 0.7969415582018058,
+          "common_mode_median": 0.04710512422242136
+        },
+        "mf_axial": {
+          "eligible_pairs": 29,
+          "sign_agreement": 1.0,
+          "gain_median": 0.45136329011124154,
+          "common_mode_median": 0.07572994179692319
+        },
+        "rf_normal": {
+          "eligible_pairs": 29,
+          "sign_agreement": 1.0,
+          "gain_median": 0.537580922341673,
+          "common_mode_median": -0.32558889795029206
+        },
+        "rf_circumferential": {
+          "eligible_pairs": 29,
+          "sign_agreement": 1.0,
+          "gain_median": 0.7965206997512785,
+          "common_mode_median": 0.04467511008276259
+        },
+        "rf_axial": {
+          "eligible_pairs": 29,
+          "sign_agreement": 1.0,
+          "gain_median": 0.5630195578342978,
+          "common_mode_median": 0.3544609242325097
+        },
+        "lf_normal": {
+          "eligible_pairs": 16,
+          "sign_agreement": 1.0,
+          "gain_median": 0.5511256227589278,
+          "common_mode_median": -0.22933188487995582
+        },
+        "lf_circumferential": {
+          "eligible_pairs": 26,
+          "sign_agreement": 1.0,
+          "gain_median": 0.920765805680936,
+          "common_mode_median": 0.004886092702873962
+        },
+        "lf_axial": {
+          "eligible_pairs": 29,
+          "sign_agreement": 1.0,
+          "gain_median": 0.9393751454821111,
+          "common_mode_median": -0.005508471414172766
+        },
+        "th_normal": {
+          "eligible_pairs": 19,
+          "sign_agreement": 1.0,
+          "gain_median": 0.37740557159861254,
+          "common_mode_median": -0.06023324367182564
+        },
+        "th_circumferential": {
+          "eligible_pairs": 21,
+          "sign_agreement": 1.0,
+          "gain_median": 0.8981933155381335,
+          "common_mode_median": 0.033348456492333256
+        },
+        "th_axial": {
+          "eligible_pairs": 22,
+          "sign_agreement": 1.0,
+          "gain_median": 0.5998638515540755,
+          "common_mode_median": 0.08343530562895951
+        }
+      },
+      "by_fingertip": {
+        "ff": {
+          "pairs": 87,
+          "sign_agreement": 1.0,
+          "gain_median": 0.6147815198421757
+        },
+        "mf": {
+          "pairs": 87,
+          "sign_agreement": 1.0,
+          "gain_median": 0.4744343694946016
+        },
+        "rf": {
+          "pairs": 87,
+          "sign_agreement": 1.0,
+          "gain_median": 0.6050055088053389
+        },
+        "lf": {
+          "pairs": 71,
+          "sign_agreement": 1.0,
+          "gain_median": 0.9253460979717119
+        },
+        "th": {
+          "pairs": 62,
+          "sign_agreement": 1.0,
+          "gain_median": 0.6080019291086998
+        }
+      },
+      "unpaired": {
+        "eligible_pairs": 808,
+        "pairs": 1200,
+        "sign_agreement": 0.9987623762376238,
+        "gain_median": 0.7142626088429816,
+        "min_eligible_fraction": 0.425
+      },
+      "hold_cell": {
+        "timeout_rate": 0.725,
+        "sustained": 0,
+        "alive": 29,
+        "pen_speed_median": 0.0012008682824671268,
+        "pen_angular_speed_median": 0.04891645908355713
+      },
+      "frozen_sha256": "7219ec6d5075b4457a6642cb0199de17fdd9bea423a95b0eb17d20d885ede250",
+      "decoder_sha256": "fc568396d7fa159bf8c23738788a98383f8b81d8ed314fec3afd68095fba084d",
+      "calibration_episodes": 400,
+      "calibration_cells": {
+        "neutral": {
+          "timeout_rate": 0.0,
+          "sustained": 0
+        },
+        "cal0": {
+          "timeout_rate": 0.75,
+          "sustained": 0,
+          "alive": 31,
+          "pen_speed_median": 0.0014556889655068517,
+          "pen_angular_speed_median": 0.09405811876058578,
+          "eligible_pairs": 28,
+          "pairs": 40,
+          "sign_agreement": 1.0,
+          "gain_median": 0.7210985622567776,
+          "min_eligible_fraction": 0.0,
+          "bound_active_fraction": 0.12666666666666668,
+          "residual_mean": 0.011563649401068687,
+          "jacobian_rel_error_median": 0.004380628632204905
+        },
+        "cal1": {
+          "timeout_rate": 0.75,
+          "sustained": 0,
+          "alive": 31,
+          "pen_speed_median": 0.0013485124800354242,
+          "pen_angular_speed_median": 0.08351733535528183,
+          "eligible_pairs": 28,
+          "pairs": 40,
+          "sign_agreement": 1.0,
+          "gain_median": 0.724638868921471,
+          "min_eligible_fraction": 0.0,
+          "bound_active_fraction": 0.16166666666666665,
+          "residual_mean": 0.04306419938802719,
+          "jacobian_rel_error_median": 0.004268416911216606
+        },
+        "cal2": {
+          "timeout_rate": 0.75,
+          "sustained": 0,
+          "alive": 30,
+          "pen_speed_median": 0.0010738435667008162,
+          "pen_angular_speed_median": 0.0574411116540432,
+          "eligible_pairs": 27,
+          "pairs": 40,
+          "sign_agreement": 1.0,
+          "gain_median": 0.7690982010566642,
+          "min_eligible_fraction": 0.0,
+          "bound_active_fraction": 0.11083333333333334,
+          "residual_mean": 0.019313763827085495,
+          "jacobian_rel_error_median": 0.004357143349536014
+        },
+        "cal3": {
+          "timeout_rate": 0.75,
+          "sustained": 0,
+          "alive": 30,
+          "pen_speed_median": 0.0014056710060685873,
+          "pen_angular_speed_median": 0.07828910648822784,
+          "eligible_pairs": 24,
+          "pairs": 40,
+          "sign_agreement": 1.0,
+          "gain_median": 0.9110316555336828,
+          "min_eligible_fraction": 0.0,
+          "bound_active_fraction": 0.2025,
+          "residual_mean": 0.035578299313783646,
+          "jacobian_rel_error_median": 0.006757318392280436
+        },
+        "cal4": {
+          "timeout_rate": 0.875,
+          "sustained": 0,
+          "alive": 36,
+          "pen_speed_median": 0.0013159223599359393,
+          "pen_angular_speed_median": 0.06319086998701096,
+          "eligible_pairs": 30,
+          "pairs": 40,
+          "sign_agreement": 1.0,
+          "gain_median": 0.6329487702180556,
+          "min_eligible_fraction": 0.0,
+          "bound_active_fraction": 0.23916666666666667,
+          "residual_mean": 0.008946810849010944,
+          "jacobian_rel_error_median": 0.004010324111129367
+        },
+        "cal5": {
+          "timeout_rate": 0.85,
+          "sustained": 0,
+          "alive": 34,
+          "pen_speed_median": 0.0019150152802467346,
+          "pen_angular_speed_median": 0.07870324701070786,
+          "eligible_pairs": 30,
+          "pairs": 40,
+          "sign_agreement": 1.0,
+          "gain_median": 0.6323024004069764,
+          "min_eligible_fraction": 0.0,
+          "bound_active_fraction": 0.14666666666666667,
+          "residual_mean": 0.008142488077282906,
+          "jacobian_rel_error_median": 0.00303068996307571
+        },
+        "cal6": {
+          "timeout_rate": 0.9,
+          "sustained": 0,
+          "alive": 36,
+          "pen_speed_median": 0.0009903163881972432,
+          "pen_angular_speed_median": 0.06412462890148163,
+          "eligible_pairs": 36,
+          "pairs": 40,
+          "sign_agreement": 1.0,
+          "gain_median": 0.5878828829443936,
+          "min_eligible_fraction": 0.0,
+          "bound_active_fraction": 0.006666666666666667,
+          "residual_mean": 0.002231053076684475,
+          "jacobian_rel_error_median": 0.004291115657765535
+        },
+        "cal7": {
+          "timeout_rate": 0.9,
+          "sustained": 0,
+          "alive": 36,
+          "pen_speed_median": 0.0010098114144057035,
+          "pen_angular_speed_median": 0.06428097188472748,
+          "eligible_pairs": 35,
+          "pairs": 40,
+          "sign_agreement": 1.0,
+          "gain_median": 0.6838944306674811,
+          "min_eligible_fraction": 0.0,
+          "bound_active_fraction": 0.0225,
+          "residual_mean": 0.007630389649420977,
+          "jacobian_rel_error_median": 0.004747474632994892
+        },
+        "calhold8": {
+          "timeout_rate": 0.75,
+          "sustained": 0,
+          "alive": 31,
+          "pen_speed_median": 0.000979065545834601,
+          "pen_angular_speed_median": 0.05839313194155693
+        }
+      }
+    },
+    "artifacts": [
+      "logs/pen_spin/r095_contact_settled_gate/summary.json",
+      "logs/pen_spin/r095_contact_settled_gate/frozen.json",
+      "logs/pen_spin/r095_contact_settled_calibration/summary.json"
+    ],
+    "notes": "Gate as pre-declared: INCONCLUSIVE, on coverage alone. Two of the 15 fingertip-axis contrasts have fewer than 20 eligible pairs (lf_normal 16, th_normal 19); the other 13 have 21-29. The cap on pairs is retention: only 29 of 40 cases still hold the pen at step 180 in the hold cell (timeout rate 0.725), and a pair needs both sign cells eligible. Every measured check passes: Jacobian audit 0.0047 (< 0.15), retention 0.725 vs 0.025 neutral (+0.70 >= -0.10), pooled paired sign agreement 1.000 over 394 pairs (>= 0.80), pooled median paired gain 0.62 (in [0.3, 1.5]); every one of the 15 contrasts has sign agreement 1.00 and median gain 0.38-0.94, normal lowest; per fingertip 0.47-0.93 with the thumb at 0.61. Unpaired (secondary): sign agreement 0.999 over 808 eligible pairs, gain 0.71. The pen is at rest in the window (median 0.001 m/s, 0.05 rad/s). Constants frozen from calibration cell cal7 by the declared rule (hash 7219ec6d...), 10 calibration cells = 400 episodes on seed 4723 before seed 4722 was stepped; gate 32 cells = 1,280 episodes, no retries. By the declared rule an inconclusive gate does not qualify the decoder: R-094 stays deferred. No deviation from the protocol."
+  },
+  "prediction_outcome": {
+    "metric": "timeout_rate",
+    "before": null,
+    "after": 0.725,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "supported",
+      "confidence": 0.9,
+      "reasoning": "On the registered prediction (zero-request hold timeout rate minus neutral hold at least -0.10): +0.70 (0.725 vs 0.025), supported. The gate verdict, which is what decides R-094, is INCONCLUSIVE by its own coverage rule: lf_normal has 16 and th_normal 19 eligible pairs against the minimum of 20, so the decoder is not qualified and R-094 stays deferred. I do not read the tracking numbers as a pass, although every one of them clears its threshold with room (paired sign agreement 1.000 over 394 pairs, median paired gain 0.62, all 15 contrasts at 1.00): the coverage rule was declared to stop exactly this, a pass on a subset. What the result does establish is that the coverage shortfall is a sample-size limit set by retention (29 of 40 cases alive at step 180), not a tracking defect.",
+      "cited_artifacts": [],
+      "next_experiment": "Replicate the gate once with the identical frozen block (hash 7219ec6d...), no calibration, on a fresh 80-case manifest, keeping every threshold including the absolute minimum of 20 eligible pairs per contrast. A pass qualifies that exact decoder for R-094; a fail or inconclusive ends the contact branch for this direction.",
+      "recorded_at": "2026-11-20T06:17:37",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "supported",
+      "confidence": 0.99,
+      "reasoning": "The registered timeout-rate prediction held: zero-request hold measured 0.725 versus the measured neutral-hold baseline of 0.025, a difference of +0.700 exceeding the required -0.10 margin [logs/pen_spin/r095_contact_settled_gate/summary.json]. The Jacobian audit error of 0.00474, pooled paired sign agreement of 1.000, and pooled median paired gain of 0.623 also satisfy their declared checks [logs/pen_spin/r095_contact_settled_gate/summary.json]. However, the complete gate is inconclusive: lf_normal and th_normal provided only 16 and 19 eligible pairs, respectively, below the required 20 per contrast [logs/pen_spin/r095_contact_settled_gate/summary.json]. Thus the narrow engineering prediction is supported, but the decoder remains unqualified and R-094 stays deferred; this is not a sustained-success improvement result [logs/pen_spin/r095_contact_settled_gate/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r095_contact_settled_gate/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-20T06:17:55",
+      "call_id": "call_00191"
+    }
+  ],
+  "decision_id": "D-066",
+  "history": [
+    {
+      "at": "2026-11-20T06:01:16",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 1: both say approve"
+    },
+    {
+      "at": "2026-11-20T06:02:17",
+      "from": "approved",
+      "to": "running",
+      "note": "git 16588448d3 (dirty)"
+    },
+    {
+      "at": "2026-11-20T06:17:36",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-20T06:18:12",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-066: supported"
+    }
+  ],
+  "created_at": "2026-11-20T06:00:09",
+  "direction": "Test two representation changes for cold pen-spin generation on Stage 3, independently, native sustained success primary, final test locked: (M1) LLM-generated modular policies (MODULE_SPEC + named methods + generated composition inside GeneratedPolicy, no role hints) vs monolithic, same prompt otherwise, 24-draw search for both arms; (C1) a no-LLM contact-frame decoder gate (capsule frames, fingertip Jacobians, requested vs observed local motion); (C2, only if C1 passes) LLM contact-frame velocity rules vs direct joint generation at matched budget. No BC, RL, curriculum, or gradient fitting. One protocol at a time on the box.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "Settled-window pulses, pen-following, and prospectively declared opposite-sign contrasts address the drift confound left unresolved by D-064 rather than simply repeating its failed gate. The weakest point is pooling: differential authority can pass despite weak thumb response or residual absolute drift, so qualification must remain limited to the exact frozen decoder and cannot establish native sustained success. The capped 1,760 simulator episodes and zero LLM calls are justified before C2's larger spend, using the existing Stage-3 script and config with fresh seeds 4722 and 4723.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00190",
+          "briefing_sha256": "7a1419bdd935c100326af4efb4d4e231fded687f089a1e2d211966a62ba309bc",
+          "at": "2026-11-20T06:00:47"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve. It tests exactly what D-064 left open, prospectively: whether the decoder moves a fingertip in the requested local direction once the request-independent motion is removed by design (late window, pen-following) and by statistic (opposite-sign pairs on the same cases). I accept the advisor's limit: a pass qualifies only the exact frozen decoder hash and says nothing about sustained success; the thumb and the unpaired agreement are reported and do not decide. Calibration cells and the selection rule are written into the config before any calibration cell runs: among settings whose eligible fraction is at least 0.75, the highest unpaired sign agreement, ties to the median gain nearest 1; if none reaches 0.75, the highest eligible fraction.",
+          "changes_applied": [],
+          "at": "2026-11-20T06:01:16"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

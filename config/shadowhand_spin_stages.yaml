@@ -1168,3 +1168,63 @@ research_protocols:
   contact_decoder_calibration:
     <<: *contact_decoder
     log_dir: "logs/pen_spin/r093_contact_decoder_calibration"
+
+  # R-095 (approved 2026-11-20, advisor call_00190; C1b): the settled-window paired-contrast contact decoder gate, no LLM.
+  # R-093's controller, frames, Jacobian audit and motion-blind eligibility, with two pre-declared changes: the pulse is
+  # late (after the pen has settled in the closed reference posture) with pen-following on, and tracking is the paired
+  # contrast d = (gain_pos + gain_neg) / 2 per case over the cases eligible in both sign cells. Calibration: seed 4723,
+  # at most 12 whole-manifest cells (480 episodes), never gate evidence. Selection rule, declared before any calibration
+  # cell ran: among pulse settings whose eligible fraction is at least 0.75, the highest unpaired sign agreement, ties
+  # to the median gain nearest 1; if none reaches 0.75, the highest eligible fraction. Gate: seed 4722, 32 cells, 1,280
+  # episodes, no retries; `frozen_sha256` covers frozen (decoder, controller, windows) + thresholds + eligibility.
+  #   python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study contact_settled_calibration
+  #   python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --study contact_settled_gate
+  contact_settled_gate: &contact_settled
+    log_dir: "logs/pen_spin/r095_contact_settled_gate"
+    cases: 40
+    pool_seed: 4722
+    manifest: "config/manifests/pen_spin_stage3_contact_settled_gate_s4722.yaml"
+    calibration_pool_seed: 4723
+    calibration_manifest: "config/manifests/pen_spin_stage3_contact_settled_calibration_s4723.yaml"
+    windows: {pulse_start: 150, pulse_stop: 180, pulse_speed: 0.03, record_stop: 190,
+              jacobian_steps: [152, 156, 160, 164, 168, 172, 176], jacobian_min_displacement: 0.0002}
+    eligibility:
+      min_inactive_fraction: 0.8
+    thresholds:
+      expected_contrasts: 15
+      min_eligible_pairs: 20
+      paired_sign_agreement_min: 0.80
+      paired_gain_median_min: 0.3
+      paired_gain_median_max: 1.5
+      jacobian_rel_error_median_max: 0.15
+      retention_diff_min: -0.10
+    calibration:
+      max_cells: 12
+      base:
+        decoder: {damping: 0.0001, tip_weights: [1.0, 1.0, 1.0, 1.0, 1.0], max_joint_speed: 6.0,
+                  control_dt: 0.016666666666666666, lookahead: 0.1, joint_limit_margin: 0.02,
+                  request_scale: 0.05, max_request_speed: 0.05}
+        controller: {follow_pen: true, active_distance: 0.03, control_wrist: false, coupling: 1.0,
+                     max_reference_error: 0.8, reference_margin: 0.35}
+      settings:
+        - {windows: {pulse_start: 120, pulse_stop: 150, record_stop: 160, jacobian_steps: [122, 126, 130, 134, 138, 142, 146]}}
+        - {}
+        - {windows: {pulse_start: 240, pulse_stop: 270, record_stop: 280, jacobian_steps: [242, 246, 250, 254, 258, 262, 266]}}
+        - {decoder: {lookahead: 0.2}}
+        - {decoder: {lookahead: 0.05}}
+        - {decoder: {damping: 0.001}}
+        - {controller: {follow_pen: false}}
+        - {controller: {active_distance: 0.0}}
+        - {hold: true}
+    # Frozen 2026-11-20 from calibration cell cal7 (seed 4723; 10 cells = 400 calibration episodes), before seed 4722 was
+    # stepped. The declared rule: settings with eligible fraction >= 0.75 were cal4 (0.75), cal5 (0.75), cal6 (0.90) and
+    # cal7 (0.875); all four had unpaired sign agreement 1.00, so the tie went to the median gain nearest 1: cal7 0.684
+    # (cal4 0.633, cal5 0.632, cal6 0.588). Pen-following with only the commanded fingertip active, window 150-180.
+    frozen:
+      decoder: {"damping": 0.0001, "tip_weights": [1.0, 1.0, 1.0, 1.0, 1.0], "max_joint_speed": 6.0, "control_dt": 0.016666666666666666, "lookahead": 0.1, "joint_limit_margin": 0.02, "request_scale": 0.05, "max_request_speed": 0.05}
+      controller: {"follow_pen": true, "active_distance": 0.0, "control_wrist": false, "coupling": 1.0, "max_reference_error": 0.8, "reference_margin": 0.35}
+      windows: {"pulse_start": 150, "pulse_stop": 180, "pulse_speed": 0.03, "record_stop": 190, "jacobian_steps": [152, 156, 160, 164, 168, 172, 176], "jacobian_min_displacement": 0.0002}
+    frozen_sha256: "7219ec6d5075b4457a6642cb0199de17fdd9bea423a95b0eb17d20d885ede250"
+  contact_settled_calibration:
+    <<: *contact_settled
+    log_dir: "logs/pen_spin/r095_contact_settled_calibration"
