@@ -52,6 +52,7 @@ PEN_SPIN_STUDIES = {
     "contact_decoder_gate": "contact_gate",                        # R-093 (the gate, seed 4720)
     "contact_settled_calibration": "contact_settled_gate",         # R-095 (declared calibration, seed 4723)
     "contact_settled_gate": "contact_settled_gate",                # R-095 (the gate, seed 4722)
+    "contact_settled_gate_80": "contact_settled_gate",             # R-096 (80-case replication, seed 4724)
 }
 
 

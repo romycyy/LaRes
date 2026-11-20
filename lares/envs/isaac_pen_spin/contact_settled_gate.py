@@ -145,9 +145,11 @@ def build_manifests(protocol_cfg: dict) -> list[str]:
     from lares.eval.manifest import EvaluationManifest, assert_disjoint
 
     n = int(protocol_cfg["cases"])
-    mine = {protocol_cfg["manifest"]: cases.build_manifest(STAGE, int(protocol_cfg["pool_seed"]), n, label=LABELS[GATE]),
-            protocol_cfg["calibration_manifest"]: cases.build_manifest(
-                STAGE, int(protocol_cfg["calibration_pool_seed"]), n, label=LABELS[CALIBRATION])}
+    label = protocol_cfg.get("manifest_label", LABELS[GATE])   # R-096: the 80-case replication names its own
+    mine = {protocol_cfg["manifest"]: cases.build_manifest(STAGE, int(protocol_cfg["pool_seed"]), n, label=label)}
+    if protocol_cfg.get("calibration_manifest"):               # a replication of a frozen block has no calibration
+        mine[protocol_cfg["calibration_manifest"]] = cases.build_manifest(
+            STAGE, int(protocol_cfg["calibration_pool_seed"]), n, label=LABELS[CALIBRATION])
     others = [EvaluationManifest.load(p) for p in sorted(glob.glob("config/manifests/pen_spin_stage3_*.yaml"))
               if p not in mine]
     assert_disjoint(list(mine.values()) + others)
