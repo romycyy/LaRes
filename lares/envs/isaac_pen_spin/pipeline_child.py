@@ -169,9 +169,9 @@ def main(request_path: str) -> None:
             return
         ctrl = build_controller(req["actor"], cases.STAGES[stage].task_id)
         runner = PenSpinBatchRunner(stage, len(manifest), device=req.get("device", "cuda:0"))
-        if hasattr(ctrl, "attach"):
-            ctrl.attach(runner.env)
         try:
+            if hasattr(ctrl, "attach"):
+                ctrl.attach(runner.env)
             trace = runner.run(manifest, ctrl, record_obs=True)
         finally:
             runner.close()

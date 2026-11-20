@@ -103,11 +103,12 @@ def run_relative(path: str, run_root: str) -> str:
 def write_artifact(run_root: str, rel_path: str, data: bytes | str) -> dict:
     """Write one artifact under the run root and return its hashed reference."""
     abs_path = os.path.join(run_root, rel_path)
+    rel = run_relative(abs_path, run_root)  # refuses a path outside the run before anything is written
     os.makedirs(os.path.dirname(abs_path) or ".", exist_ok=True)
     payload = data.encode("utf-8") if isinstance(data, str) else data
     with open(abs_path, "wb") as f:
         f.write(payload)
-    return {"path": run_relative(abs_path, run_root), "sha256": sha256_bytes(payload)}
+    return {"path": rel, "sha256": sha256_bytes(payload)}
 
 
 def verify_artifact(run_root: str, ref: dict | None, read: bool = True) -> str | None:

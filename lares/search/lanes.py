@@ -475,11 +475,12 @@ def scale_parameter_names(policy) -> list:
 
 def parameter_table(policy, exclude=()) -> dict:
     ranges = policy.get_param_ranges()
+    exclude = set(exclude)
     return {
         name: (tuple(round(float(v), 12) for v in p.detach().reshape(-1).tolist()),
                tuple(float(x) for x in ranges.get(name, (None, None))))
         for name, p in policy.named_parameters()
-        if name not in set(exclude)
+        if name not in exclude
     }
 
 

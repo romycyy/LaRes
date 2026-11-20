@@ -175,7 +175,8 @@ def _check_parameters(policy, report: ValidationReport) -> None:
         return
 
     declared = set(ranges)
-    registered = {name for name, _ in policy.named_parameters()}
+    params = dict(policy.named_parameters())
+    registered = set(params)
 
     for name in sorted(registered - declared):
         report.add(
@@ -206,7 +207,7 @@ def _check_parameters(policy, report: ValidationReport) -> None:
             report.add(INVALID_RANGE, f"range for {name!r} has lo={lo} >= hi={hi}")
             continue
         if name in registered:
-            value = dict(policy.named_parameters())[name].detach()
+            value = params[name].detach()
             if bool((value < lo).any() or (value > hi).any()):
                 report.add(
                     INIT_OUT_OF_RANGE,

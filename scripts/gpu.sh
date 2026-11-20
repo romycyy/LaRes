@@ -47,11 +47,13 @@ do_sync() {
 
   # Refuse if the server holds anything the local side would clobber.
   local remote_head
-  remote_head="$(rsh "cd $REMOTE_DIR && git rev-parse HEAD")"
+  # One hostname lookup per sync: `rsh` asks AWS again on every call.
+  r() { ssh "${SSH_OPTS[@]}" "$h" "$@"; }
+  remote_head="$(r "cd $REMOTE_DIR && git rev-parse HEAD")"
   if ! git cat-file -e "$remote_head^{commit}" 2>/dev/null; then
     echo "server HEAD $remote_head is not in the local repo; run: gpu pull" >&2; exit 1
   fi
-  if ! rsh "cd $REMOTE_DIR && if [ -f $MANIFEST ]; then
+  if ! r "cd $REMOTE_DIR && if [ -f $MANIFEST ]; then
               md5sum --quiet -c $MANIFEST 2>/dev/null
             else
               test -z \"\$(git status --porcelain)\"
@@ -62,20 +64,21 @@ do_sync() {
 
   # Copy existing tracked + untracked-not-ignored files; delete files removed locally.
   git ls-files -co --exclude-standard -z \
-    | while IFS= read -r -d '' f; do [ -e "$f" ] && printf '%s\0' "$f"; done \
+    | while IFS= read -r -d '' f; do if [ -e "$f" ]; then printf '%s\0' "$f"; fi; done \
     | COPYFILE_DISABLE=1 tar --no-xattrs --no-mac-metadata --null -T - -czf - \
-    | ssh "${SSH_OPTS[@]}" "$h" "tar -xzf - -C $REMOTE_DIR"
+    | r "tar -xzf - -C $REMOTE_DIR"
   # Removed locally = in the server's HEAD (or the index) but no longer on disk here. `git ls-files -d` alone
   # misses a staged rename or deletion, which left archived tests and scripts behind on the server.
   local deleted
   deleted="$({ git ls-files -d; git diff --no-renames --name-only --diff-filter=D "$remote_head"; } \
              | sort -u | while IFS= read -r f; do [ -e "$f" ] || printf '%s\n' "$f"; done)"
   if [ -n "$deleted" ]; then
-    printf '%s\n' "$deleted" | rsh "cd $REMOTE_DIR && xargs -d '\n' rm -f --"
+    printf '%s\n' "$deleted" | r "cd $REMOTE_DIR && xargs -d '\n' rm -f --"
   fi
 
   # Record what the server now holds, for the next sync's guard.
-  rsh "cd $REMOTE_DIR && git ls-files -co --exclude-standard -z | perl -0 -ne 'chomp; print \"\$_\\0\" if -e' | xargs -0 md5sum > $MANIFEST"
+  # Written beside the manifest and moved into place, so a failed checksum run cannot leave a partial guard.
+  r "cd $REMOTE_DIR && git ls-files -co --exclude-standard -z | perl -0 -ne 'chomp; print \"\$_\\0\" if -e' | xargs -0 md5sum > $MANIFEST.tmp && mv $MANIFEST.tmp $MANIFEST"
   echo "synced $(git rev-parse --short HEAD)$(git diff --quiet HEAD || echo '+dirty') -> $h:$REMOTE_DIR"
 }
 

@@ -273,15 +273,17 @@ class ManifestResult:
             for e in self.episodes
             if e.terminal_obj_to_target is not None
         ]
+        success_rate, success_se = _mean_se([e.success for e in self.episodes])
+        mean_reward, reward_se = _mean_se([e.episode_return for e in self.episodes])
         return {
             "actor_name": self.actor_name,
             "manifest_id": self.manifest_id,
             "action_mode": self.action_mode,
             "num_episodes": len(self.episodes),
-            "success_rate": self.success_rate,
-            "success_se": self.success_se,
-            "mean_reward": self.mean_reward,
-            "reward_se": self.reward_se,
+            "success_rate": success_rate,
+            "success_se": success_se,
+            "mean_reward": mean_reward,
+            "reward_se": reward_se,
             "mean_terminal_obj_to_target": _mean_se(d2t)[0] if d2t else None,
             "timeout_rate": _mean_se([float(e.timed_out) for e in self.episodes])[0],
         }

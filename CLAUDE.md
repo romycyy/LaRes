@@ -104,6 +104,11 @@ manifests are checked for disjointness before they are written. Removed as dead:
 Archived 2026-11-15: the BC + GRPO smoke stages of `run_shadowhand_spin_stages.py` and `IsaacLabSingleEnvAdapter` (see
 "Isaac Lab ShadowHandSpin smoke stages" below). `behavioral_cloning`, `rl_finetune` and `_collect_trajectories` stay in
 `training_pipeline.py` because live tests exercise them; no entry point calls them.
+GPT review 2026-11-19 (gpt-6.1-sol, six packets): `protocols.load_cell` returns a plain dict of arrays, not a lazy
+`NpzFile`; `generation.write_artifact` refuses an outside-root path before writing; `run_cell` / `pipeline_child` attach
+the controller inside the runner's `try`; `gpu sync` resolves the host once, survives a deleted last path and writes its
+guard manifest atomically. Two sync guard gaps are open (server-side untracked additions are not detected; a synced
+untracked file deleted locally stays on the server); see `docs/PIPELINE_STATE.md`, "GPT review on 2026-11-19".
 
 ## Common commands
 

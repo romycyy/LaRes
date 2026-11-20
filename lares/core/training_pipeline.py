@@ -247,7 +247,7 @@ class DemoBuffer:
         buf.dones = list(data["dones"])
         # Buffers written before episode ids were recorded load with blanks, so
         # a trajectory-level split of them is refused rather than faked.
-        buf.episode_ids = [str(e) for e in data.get("episode_ids", [""] * len(buf.obs))]
+        buf.episode_ids = [str(e) for e in data["episode_ids"]] if "episode_ids" in data else [""] * len(buf.obs)
         return buf
 
 

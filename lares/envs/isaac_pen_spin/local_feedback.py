@@ -226,7 +226,8 @@ def choose_episodes(rows: list[dict]) -> list[int]:
 
 def spaced(length: int, n: int, exclude=()) -> list[int]:
     """``n`` uniformly spaced steps of ``range(length)``, avoiding ``exclude`` where the episode allows."""
-    pool = [t for t in range(int(length)) if t not in set(exclude)]
+    exclude = set(exclude)
+    pool = [t for t in range(int(length)) if t not in exclude]
     if len(pool) <= n:
         return pool
     return [pool[int(round(k * (len(pool) - 1) / (n - 1)))] for k in range(n)]
@@ -419,9 +420,11 @@ def run_queries(lcfg: dict, roles: dict, parent: dict, bdir: str, stream_factory
     if sha256_file(lcfg["demo_trace"]) != lcfg["demo_trace_sha256"]:
         raise SystemExit(f"{lcfg['demo_trace']} does not match its pinned SHA-256")
     demo = np.load(lcfg["demo_trace"])
-    demo_obs = np.concatenate([demo["obs"][i, :int(L)] for i, L in enumerate(demo["length"])], axis=0)
+    demo_all = demo["obs"]  # one decompression; an NpzFile reloads the member on every access
+    demo_obs = np.concatenate([demo_all[i, :int(L)] for i, L in enumerate(demo["length"])], axis=0)
     h = step_sizes(demo_obs)
     trace = np.load(parent["trace_path"])
+    trace = {"obs": trace["obs"], "actions": trace["actions"]}
     episodes = select_states({"episodes": parent["screen_rows"]})
     obs, gait, n = [], [], 0
     for e in episodes:
@@ -456,7 +459,7 @@ def run_queries(lcfg: dict, roles: dict, parent: dict, bdir: str, stream_factory
 def _evidence(meta: dict, data) -> dict:
     ev = dict(meta)
     ev.update(obs=data["obs"], gait=data["gait"], expert=data["expert"], sens=data["sens"])
-    ev["sens_evidence"] = data["sens"][meta["evidence_rows"]]
+    ev["sens_evidence"] = ev["sens"][meta["evidence_rows"]]
     return ev
 
 

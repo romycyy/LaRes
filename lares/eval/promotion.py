@@ -165,7 +165,8 @@ def paired_success_test(contender_result, incumbent_result=None, level: float = 
         diffs = [float(e.success) - by_case[e.case_id] for e in contender_result.episodes if e.case_id in by_case]
         if not diffs:
             raise ValueError("results share no cases; they are not paired")
-    at_level, at_95 = t_summary(diffs, level), t_summary(diffs, 0.95)
+    at_level = t_summary(diffs, level)
+    at_95 = at_level if level == 0.95 else t_summary(diffs, 0.95)
     n = at_level["n"]
     out = {
         "metric": "success",

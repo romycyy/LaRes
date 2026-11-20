@@ -1,4 +1,4 @@
-# LaRes pipeline: current structure and what has been established (2026-11-09; code notes updated 2026-11-15)
+# LaRes pipeline: current structure and what has been established (2026-11-09; code notes updated 2026-11-19)
 
 This is the one document to read first. It describes the pipeline as it exists on `staging` at commit `613fa84`, and
 separates what has been **verified** from what is only **built**, **assumed** or **open**. It covers 91 research ideas
@@ -194,6 +194,26 @@ only the `--study` / `--research-protocol` dispatcher (599 → 165 lines) and re
 `config/shadowhand_spin_stages.yaml` keeps `isaaclab_root`, `device` and an unchanged `research_protocols` block. This
 also removes the fourth copy of the rollout loop. Checked on the box: all live tests pass, and the R-044 expert cell
 replayed through the slimmed script is identical to the archived one (40 cases, 39 successes).
+
+**GPT review on 2026-11-19** (the round the 2026-11-14 pass could not run: six packets of live source to gpt-6.1-sol,
+`reasoning_effort: high`, 284,509 tokens, 28 findings; behaviour and recorded formats unchanged; all live tests pass
+locally and on the box, and the R-044 expert cell replays identically, 40 cases, 39 successes):
+
+- *Applied, defects.* `gpu sync` aborted after extraction, before deletions and the guard manifest, when the last
+  listed path had been deleted locally; its guard manifest is now written to a temporary file and moved into place;
+  `generation.write_artifact` checks that the path is inside the run root before writing, not after; `protocols.run_cell`
+  and `pipeline_child` close the Isaac runner when a controller's `attach` fails.
+- *Applied, efficiency.* `protocols.load_cell` returns a plain dict of arrays (an `NpzFile` decompressed a whole member
+  on every access, thousands of times in `learner_recovery.transitions`); the same in `local_feedback.run_queries`;
+  `gpu sync` looks the hostname up once instead of four or five times; `paired_success_test` computes the 95% summary
+  once; `ManifestResult.summary` computes each mean/SE pair once; `_check_parameters`, `parameter_table` and
+  `local_feedback.spaced` no longer rebuild a dict or set per item.
+- *Not applied.* Two `gpu sync` guard gaps are **known and open**: a new untracked file created on the server is not
+  seen by the checksum guard, and an untracked local file that was synced and later deleted locally stays on the server
+  (the manifest does not record which side a file came from, so automatic deletion is unsafe). Skipping observation
+  capture in non-recording pen-spin evaluations (touches the Isaac runner for a small gain), incremental padding in
+  `local_feedback.evidence_blocks` and lazy trace conversion in `gait_repair.expert_traces` (finished studies, prompt
+  text at risk), and bookkeeping that is quadratic only in a population of nine.
 
 **Archived on 2026-11-09** (`deprecated/`, index in `deprecated/README.md`; moved with `git mv`, not run or tested):
 intervention-guided repair and the Stage F correction-LLM (`lares/repair/` except the two trace modules), VLM failure

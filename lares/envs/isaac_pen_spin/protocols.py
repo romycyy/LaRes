@@ -80,7 +80,8 @@ def load_cell(out_path: str) -> tuple:
     """``(trace arrays, episode rows)`` of one saved cell: the ``.npz`` beside the ``.json`` and its ``episodes``."""
     with open(out_path, encoding="utf-8") as f:
         rows = json.load(f)["episodes"]
-    return np.load(out_path.replace(".json", ".npz")), rows
+    # A plain dict: an ``NpzFile`` decompresses a whole member again on every ``[...]`` access.
+    return dict(np.load(out_path.replace(".json", ".npz"))), rows
 
 
 def in_play(obs, length):
@@ -277,9 +278,9 @@ def run_cell(manifest_path: str, controller: str, out_path: str, device: str, re
     manifest = EvaluationManifest.load(manifest_path)
     ctrl = controller_factory(controller) if isinstance(controller, str) else controller
     runner = PenSpinBatchRunner(cases.stage_of(manifest), len(manifest), device=device)
-    if hasattr(ctrl, "attach"):  # a learned policy built against the live env's spaces
-        ctrl.attach(runner.env)
     try:
+        if hasattr(ctrl, "attach"):  # a learned policy built against the live env's spaces
+            ctrl.attach(runner.env)
         trace = runner.run(manifest, ctrl, record_obs=record_obs)
     finally:
         runner.close()
