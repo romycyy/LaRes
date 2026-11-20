@@ -404,6 +404,8 @@ STAGE_PROPOSAL = "proposal"
 STAGE_BUDGET = "budget_exhausted"
 #: A fittable-lane child that validated but does not differ from its parent exactly as declared.
 STAGE_MUTATION_CONTRACT = "mutation_contract"
+#: A candidate whose source fails an opt-in source check (R-092: ``lares.core.module_contract``, the modular arm).
+STAGE_MODULE_CONTRACT = "module_contract"
 
 #: How a single-phase sample was mapped to its slot. Such candidates have no
 #: idea, so their lineage is ``legacy_missing`` by construction.
@@ -703,10 +705,15 @@ def validation_batch_path(dir_path, obs_dim):
 class _SlotValidator:
     """Subprocess harness, in-process validation and the idea contract, in that order.
 
-    ``data_pkl_path=None`` writes the harness's observation batch into ``dir_path`` itself.
+    ``data_pkl_path=None`` writes the harness's observation batch into ``dir_path`` itself. ``source_check(code) ->
+    [defects]`` is an opt-in extra rule on the source text (R-092's module contract): a candidate that passes
+    everything else but has defects fails at ``module_contract``; one that fails earlier gets the defects appended to
+    its errors, so the slot's single correction sees both. ``None`` (every other path) changes nothing.
     """
 
-    def __init__(self, dir_path, data_pkl_path, obs_dim, action_dim, env_name, forbid_scale_parameters):
+    def __init__(self, dir_path, data_pkl_path, obs_dim, action_dim, env_name, forbid_scale_parameters,
+                 source_check=None):
+        self.source_check = source_check
         self.dir_path = dir_path
         self.data_pkl_path = data_pkl_path if data_pkl_path is not None else validation_batch_path(dir_path, obs_dim)
         self.obs_dim = obs_dim
@@ -718,6 +725,20 @@ class _SlotValidator:
             self.test_code = f.read()
 
     def __call__(self, code, idea, attempt_id, extra_check=None):
+        policy, validation = self._validate(code, idea, attempt_id, extra_check)
+        if self.source_check is None or not code:
+            return policy, validation
+        defects = list(self.source_check(code))
+        validation["source_check"] = defects
+        if not defects:
+            return policy, validation
+        if validation["passed"]:
+            validation.update(passed=False, stage=STAGE_MODULE_CONTRACT, errors=defects)
+        else:
+            validation["errors"] = defects + list(validation["errors"])  # first: the correction prompt shows 20 lines
+        return None, validation
+
+    def _validate(self, code, idea, attempt_id, extra_check=None):
         if not code or "GeneratedPolicy" not in code:
             return None, {"passed": False, "stage": STAGE_EXTRACTION,
                           "errors": ["the response contains no class GeneratedPolicy"]}
@@ -1299,7 +1320,7 @@ def generate_two_lane_candidates(
 
 
 def _single_phase_exploration(session, prompts, user_content, allocator, make, slots, ids, dir_path, data_pkl_path,
-                              obs_dim, action_dim, env_name, max_repair_per_candidate) -> list:
+                              obs_dim, action_dim, env_name, max_repair_per_candidate, source_check=None) -> list:
     """R-018's exploration lane: one single-phase code request per slot in ``slots`` and at most one linked correction.
 
     The generator states no design, so a valid policy gets a code-derived idea (:func:`idea_from_code`). Scale
@@ -1309,7 +1330,8 @@ def _single_phase_exploration(session, prompts, user_content, allocator, make, s
     from lares.search.generation import LABEL_GENERATION, attempt_id_for
     from lares.search.schemas import idea_from_code
 
-    validate = _SlotValidator(dir_path, data_pkl_path, obs_dim, action_dim, env_name, forbid_scale_parameters=False)
+    validate = _SlotValidator(dir_path, data_pkl_path, obs_dim, action_dim, env_name, forbid_scale_parameters=False,
+                              source_check=source_check)
     base_user = user_content + "\n" + prompts["code_output_tip"]
     messages = [{"role": "system", "content": prompts["initial_system"]}, {"role": "user", "content": base_user}]
     out = []
@@ -1352,9 +1374,10 @@ class PlateauSlotGenerator:
 
     def __init__(self, client, args, dir_path, obs_dim, action_dim, env_name, prompts, n_slots, ledger,
                  llm_transcript_path=None, max_total_calls=50, max_repair_per_candidate=1, max_total_tokens=None,
-                 slot_metadata=None, data_pkl_path=None):
+                 slot_metadata=None, data_pkl_path=None, extra_source_check=None):
         """``n_slots`` structure slots; ``slot_metadata(slot) -> dict`` is the lane metadata an :meth:`exploration`
-        records (``{}`` when ``None``); ``data_pkl_path=None`` writes the harness batch into ``dir_path``."""
+        records (``{}`` when ``None``); ``data_pkl_path=None`` writes the harness batch into ``dir_path``;
+        ``extra_source_check(code) -> [defects]`` is an opt-in source rule every slot must also pass (R-092)."""
         from lares.search.generation import CandidateAllocator
 
         if not env_name:
@@ -1365,6 +1388,7 @@ class PlateauSlotGenerator:
         self.slot_metadata = slot_metadata if slot_metadata is not None else (lambda slot: {})
         self.data_pkl_path = data_pkl_path if data_pkl_path is not None else validation_batch_path(dir_path, obs_dim)
         self.max_repair_per_candidate = int(max_repair_per_candidate)
+        self.extra_source_check = extra_source_check
         self.allocator = CandidateAllocator(0)
         self.ids = {slot: cid for cid, slot in self.allocator.allocate_slots(int(n_slots))}
         for cid in self.ids.values():
@@ -1397,7 +1421,8 @@ class PlateauSlotGenerator:
         out = _single_phase_exploration(
             self.session, self.prompts, self.user_content, self.allocator,
             self._make(LANE_EXPLORATION, self.slot_metadata(slot)), [slot], self.ids, self.dir_path,
-            self.data_pkl_path, self.obs_dim, self.action_dim, self.env_name, self.max_repair_per_candidate)
+            self.data_pkl_path, self.obs_dim, self.action_dim, self.env_name, self.max_repair_per_candidate,
+            source_check=self.extra_source_check)
         return self._finish(out)
 
     def trace_repair(self, slot: int, edited: dict, request: str, lane_metadata: dict) -> list:
@@ -1408,7 +1433,7 @@ class PlateauSlotGenerator:
         cid, prompts = self.ids[slot], self.prompts
         make = self._make(LANE_TRACE_REPAIR, lane_metadata, parents=[edited["candidate_id"]])
         validate = _SlotValidator(self.dir_path, self.data_pkl_path, self.obs_dim, self.action_dim, self.env_name,
-                                  forbid_scale_parameters=False)
+                                  forbid_scale_parameters=False, source_check=self.extra_source_check)
 
         def attach(candidate):
             candidate.policy, candidate.validation = validate(candidate.code, None, candidate.attempt_id)

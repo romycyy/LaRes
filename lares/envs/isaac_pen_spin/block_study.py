@@ -14,12 +14,15 @@ from lares.envs.isaac_pen_spin import cases
 
 def make_slot_generator(adir: str, env_id: str, client, model: str, reasoning_effort: str, n_slots: int,
                         max_calls_per_slot: int, *, obs_dim: int = cases.OBS_DIM, prompts: dict | None = None,
-                        slot_metadata=None, max_total_calls: int | None = None):
+                        slot_metadata=None, max_total_calls: int | None = None, extra_source_check=None,
+                        action_dim: int = cases.NUM_ACTIONS):
     """A ``PlateauSlotGenerator`` for one arm directory, plus its ``LLMCallLedger``.
 
     Ledgers calls in ``<adir>/llm_calls.jsonl`` and transcribes them to ``<adir>/llm_transcript.log``. ``prompts`` defaults to the
     task's prompt assets; ``slot_metadata(k) -> dict`` is the lane metadata an exploration in slot ``k`` records
-    (R-049). ``max_total_calls`` defaults to ``n_slots * max_calls_per_slot``.
+    (R-049). ``max_total_calls`` defaults to ``n_slots * max_calls_per_slot``. ``extra_source_check(code) -> [defects]``
+    is an opt-in source rule (R-092's module contract); a defect is a validation failure the slot's correction sees.
+    ``action_dim`` is the policy's output width (R-094's contact-rule arm emits 15 requests, not 20 joint targets).
     """
     from lares.core.policy_generation import PlateauSlotGenerator
     from lares.core.training_pipeline import load_policy_prompt_assets
@@ -32,10 +35,10 @@ def make_slot_generator(adir: str, env_id: str, client, model: str, reasoning_ef
         max_total_calls = int(n_slots) * int(max_calls_per_slot)
     ledger = LLMCallLedger(adir)
     gen = PlateauSlotGenerator(client, SimpleNamespace(model=model, reasoning_effort=reasoning_effort),
-                               os.path.join(adir, "gen_0"), int(obs_dim), cases.NUM_ACTIONS, env_id, prompts,
+                               os.path.join(adir, "gen_0"), int(obs_dim), int(action_dim), env_id, prompts,
                                int(n_slots), ledger, llm_transcript_path=os.path.join(adir, "llm_transcript.log"),
                                max_total_calls=int(max_total_calls), max_repair_per_candidate=1,
-                               slot_metadata=slot_metadata)
+                               slot_metadata=slot_metadata, extra_source_check=extra_source_check)
     return gen, ledger
 
 

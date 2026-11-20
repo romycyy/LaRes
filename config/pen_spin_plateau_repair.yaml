@@ -158,6 +158,41 @@ two_channel_cold:
   stage2_seeds: [4224, 4225, 4226, 4227]
   max_calls_per_slot: 2           # one call plus at most one linked correction; four slots per arm
 
+# R-092 (approved 2026-11-20, advisor call_00185): modular versus monolithic cold generation on Stage 3, both arms
+# searched; lares/envs/isaac_pen_spin/modular_cold.py. The modular arm's prompt adds MODULAR_REQUIREMENT and its slots
+# must pass lares/core/module_contract.py (a defect gets the slot's one correction). Per arm and block: 4 slots, every
+# valid one screened (10), the best searched with rollout_search.independent_candidates (24 candidates, seeded by the
+# block seed, one process each on the 10 probe cases), then promotion (30) against the neutral pose and fresh (30).
+# At most 6080 episodes and 128 LLM calls; gpt-6.1-sol, reasoning high (the file's model block); nothing is fitted.
+#   python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study modular_cold
+modular_cold:
+  study_dir: "logs/pen_spin/r092_modular_cold"
+  block_seeds: [4710, 4711, 4712, 4713, 4714, 4715, 4716, 4717]   # one 80-case Stage-3 manifest each
+  max_calls_per_slot: 2           # one call plus at most one linked correction; four slots per arm
+  llm_workers: 16
+
+# R-094 (deferred 2026-11-20; C2, conditional on a C1 decoder-gate pass): cold contact-frame velocity rules versus cold
+# direct joint targets on Stage 3, both arms searched; lares/envs/isaac_pen_spin/contact_rules.py. Both arms read the
+# same 182-d observation (157 + 25 trusted per-fingertip contact features, schema
+# Isaac-ShadowHandSpin-Stage3-ContactFrame-v0); the prompts differ only in the output-contract paragraph (20 joint
+# targets, or 15 local velocity requests decoded by the frozen C1 controller). Per block: the neutral-pose null (80),
+# one frozen hand-authored contact controller as a decoder diagnostic (80, never ranked), then per arm 4 slots, every
+# valid one screened (10; the best is the zero-shot result), 24 search candidates on the probe (10 each), promotion
+# (30) against the null and fresh (30). At most 840 episodes per block (3360 over four) and 64 LLM calls.
+# THE STUDY REFUSES TO RUN (and --freeze-manifests writes nothing for it) until `decoder` below names the block a
+# decoder gate froze, its contact_gate.frozen_sha256, and that gate's summary.json with "verdict": "pass" recording
+# the same frozen_sha256 and decoder_sha256. R-093's gate failed (D-064), so these stay null.
+#   python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study contact_rules
+contact_rules:
+  study_dir: "logs/pen_spin/r094_contact_rules"
+  block_seeds: [4730, 4731, 4732, 4733]   # one 80-case Stage-3 manifest each
+  max_calls_per_slot: 2           # one call plus at most one linked correction; four slots per arm
+  llm_workers: 16
+  decoder:
+    frozen: null                  # PLACEHOLDER: {decoder: {...}, controller: {...}, windows: {...}, ...} exactly as the passing gate's frozen.json "frozen"
+    frozen_sha256: null           # PLACEHOLDER: that gate's frozen.json "sha256" (= its summary.json "frozen_sha256")
+    gate_summary: null            # PLACEHOLDER: path of the passing gate's summary.json
+
 self_trace_source:
   # R-054 (approved 2026-10-27, advisor call_00110): repair evidence from the learner's own successes vs the expert's.
   study_dir: "logs/pen_spin_self_trace_source"

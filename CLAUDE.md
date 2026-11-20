@@ -553,6 +553,16 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   `b - 1`) and 24 joint columns; the four passive `J0` joints follow their `J1` at roughly 1:1; `act_moving_average` is
   1.0; joint PD stiffness is 1.0 and damping 0.1. A trusted controller's `extra_trace()` is saved beside its cell as
   `.extra.npz` (`protocols.run_cell`), and `protocols.isaac_shell` now times a child out after 30 minutes.
+- **R-092 result (D-065, refuted; modular vs monolithic cold generation, 2026-11-20).** `lares/core/module_contract.py`
+  (`MODULAR_REQUIREMENT`, `check_module_contract`: a literal class-level `MODULE_SPEC`, every `obs_field` read inside a
+  declared module whose `inputs` match, `forward` only composes module outputs) is an opt-in source check
+  (`PlateauSlotGenerator(extra_source_check=)`, `block_study.make_slot_generator(extra_source_check=)`, validation stage
+  `module_contract`, one linked correction like any defect). `modular_cold.py` (`run_full_evolution.py --study
+  modular_cold`) is the block-study template **with** the 24-candidate probe search (`probe_search`, one process per
+  candidate). 8 blocks: +0.0083 [-0.011, +0.028] fresh final-incumbent success against a predicted +0.05; searched
+  winner +0.025 [-0.011, +0.061]; 0 of 64 candidates had a screen success; 32/32 slots valid in both arms. Cold
+  Stage-3 search is at its floor for both representations (one promotion in 16 arms). The contract is syntactic: a
+  controller with one real module and a trivial second one passes.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

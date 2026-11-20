@@ -47,7 +47,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "An upper bound below +0.05 on the block-paired fresh-success interval refutes the predicted magnitude. An interval spanning both zero and +0.05 is inconclusive; tied success is never improvement. A success floor is reported with the preregistered secondaries, not replaced by a surrogate success claim.",
   "cost_estimate": {
@@ -72,12 +72,282 @@
     "started_at": "2026-11-20T03:13:15",
     "git_sha": "cf3201affdae026882e036f0ed166d6591de3669",
     "dirty_worktree": true,
-    "log_dir": "logs/pen_spin/r092_modular_cold"
+    "log_dir": "logs/pen_spin/r092_modular_cold",
+    "finished_at": "2026-11-20T05:58:23"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.008333333333333333,
+      "paired_interval_lower": -0.011371868763273204,
+      "paired_interval_upper": 0.028038535429939872,
+      "llm_calls": 82,
+      "llm_total_tokens": 1220413,
+      "num_episodes": 6080,
+      "wall_time_seconds": 9860,
+      "slots_valid_within_one_correction": {
+        "monolithic": 1.0,
+        "modular": 1.0
+      },
+      "promotion_success_rate": {
+        "monolithic": [
+          0.06666666666666667,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "modular": [
+          0.03333333333333333,
+          0.13333333333333333,
+          0.0,
+          0.03333333333333333,
+          0.1,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "controls": {
+      "null_fresh": 0.0,
+      "arms": {
+        "monolithic": {
+          "fresh_incumbent": 0.0,
+          "fresh_selected": 0.004166666666666667,
+          "fresh_selected_tail_hit_fraction": 0.198757696537108,
+          "blocks_with_a_searched_winner": 8,
+          "candidates_with_screen_success": 0,
+          "slots": 32,
+          "valid_slots": 32,
+          "slots_valid_within_one_correction": 1.0,
+          "first_attempt_valid_slots": 22,
+          "module_contract_defect_slots": 0,
+          "search_candidates_with_probe_success": 6,
+          "fresh_selected_drops": 147,
+          "fresh_selected_failure_labels": {
+            "dropped": 147,
+            "off_centre": 48,
+            "slow_spin": 44
+          },
+          "promoted_blocks": 0,
+          "plateau_blocks": 6,
+          "llm_calls": 42,
+          "llm_tokens": 600793,
+          "isaac_processes": 240,
+          "isaac_episodes": 2720
+        },
+        "modular": {
+          "fresh_incumbent": 0.008333333333333333,
+          "fresh_selected": 0.029166666666666667,
+          "fresh_selected_tail_hit_fraction": 0.169487185205237,
+          "blocks_with_a_searched_winner": 8,
+          "candidates_with_screen_success": 0,
+          "slots": 32,
+          "valid_slots": 32,
+          "slots_valid_within_one_correction": 1.0,
+          "first_attempt_valid_slots": 24,
+          "module_contract_defect_slots": 0,
+          "search_candidates_with_probe_success": 7,
+          "fresh_selected_drops": 116,
+          "fresh_selected_failure_labels": {
+            "dropped": 116,
+            "off_centre": 51,
+            "slow_spin": 66
+          },
+          "promoted_blocks": 1,
+          "plateau_blocks": 4,
+          "llm_calls": 40,
+          "llm_tokens": 619620,
+          "isaac_processes": 240,
+          "isaac_episodes": 2720
+        }
+      },
+      "fresh_selected_contrast": {
+        "per_block": [
+          0.1,
+          0.06666666666666667,
+          0.0,
+          0.03333333333333333,
+          0.03333333333333333,
+          0.0,
+          0.0,
+          -0.03333333333333333
+        ],
+        "n": 8,
+        "mean": 0.025,
+        "se": 0.015105449452916095,
+        "low": -0.010718712107574357,
+        "high": 0.06071871210757436,
+        "p_value": 0.14189160270147944
+      },
+      "tail_hit_fraction_contrast": {
+        "per_block": [
+          0.1543126004082938,
+          -0.01468756284308384,
+          -0.07780095204450269,
+          -0.15576446388574727,
+          -0.09964940269854093,
+          -0.15570332542716409,
+          0.07335120471625417,
+          0.04177781111952289
+        ],
+        "n": 8,
+        "mean": -0.029270511331870995,
+        "se": 0.0398185326936844,
+        "low": -0.12342637940219728,
+        "high": 0.0648853567384553,
+        "p_value": 0.4861725881766995
+      },
+      "drops_contrast": {
+        "per_block": [
+          4.0,
+          -4.0,
+          -11.0,
+          -10.0,
+          -6.0,
+          -12.0,
+          0.0,
+          8.0
+        ],
+        "n": 8,
+        "mean": -3.875,
+        "se": 2.5942071456006968,
+        "low": -10.009325130142702,
+        "high": 2.2593251301427015,
+        "p_value": 0.178892698187325
+      },
+      "probe_success_candidates_contrast": {
+        "per_block": [
+          -4.0,
+          2.0,
+          -1.0,
+          1.0,
+          3.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "n": 8,
+        "mean": 0.125,
+        "se": 0.7425222459389924,
+        "low": -1.6307861100944834,
+        "high": 1.8807861100944834,
+        "p_value": 0.871072626212533
+      },
+      "posthoc_selected_modular_module_counts": [
+        4,
+        4,
+        3,
+        4,
+        4,
+        4,
+        3,
+        4
+      ],
+      "posthoc_selected_modular_module_names": [
+        [
+          "grasp_controller",
+          "joint_state",
+          "object_state",
+          "roll_controller"
+        ],
+        [
+          "joint_servo",
+          "pen_state",
+          "retention",
+          "rolling"
+        ],
+        [
+          "contact_program",
+          "hand_state",
+          "pen_state"
+        ],
+        [
+          "joint_state",
+          "palm_state",
+          "retention",
+          "rolling_gait"
+        ],
+        [
+          "hand_state",
+          "pen_state",
+          "retention",
+          "rolling"
+        ],
+        [
+          "contact_commands",
+          "joint_state",
+          "object_geometry",
+          "phase_control"
+        ],
+        [
+          "hand_state",
+          "manipulation_targets",
+          "pen_state"
+        ],
+        [
+          "joint_state",
+          "object_geometry",
+          "retention",
+          "roll_drive"
+        ]
+      ]
+    },
+    "artifacts": [
+      "logs/pen_spin/r092_modular_cold/summary.json",
+      "logs/pen_spin/r092_modular_cold/block0/monolithic/arm.json",
+      "logs/pen_spin/r092_modular_cold/block0/modular/arm.json",
+      "logs/pen_spin/r092_modular_cold/block1/monolithic/arm.json",
+      "logs/pen_spin/r092_modular_cold/block1/modular/arm.json",
+      "logs/pen_spin/r092_modular_cold/block2/monolithic/arm.json",
+      "logs/pen_spin/r092_modular_cold/block2/modular/arm.json",
+      "logs/pen_spin/r092_modular_cold/block3/monolithic/arm.json",
+      "logs/pen_spin/r092_modular_cold/block3/modular/arm.json",
+      "logs/pen_spin/r092_modular_cold/block4/monolithic/arm.json",
+      "logs/pen_spin/r092_modular_cold/block4/modular/arm.json",
+      "logs/pen_spin/r092_modular_cold/block5/monolithic/arm.json",
+      "logs/pen_spin/r092_modular_cold/block5/modular/arm.json",
+      "logs/pen_spin/r092_modular_cold/block6/monolithic/arm.json",
+      "logs/pen_spin/r092_modular_cold/block6/modular/arm.json",
+      "logs/pen_spin/r092_modular_cold/block7/monolithic/arm.json",
+      "logs/pen_spin/r092_modular_cold/block7/modular/arm.json"
+    ],
+    "notes": "8 blocks (seeds 4710-4717), 4 slots per arm, 24-candidate probe search for the best screened slot, promotion against the scored neutral-pose null, fresh; 6,080 episodes in 512 Isaac processes, 82 LLM calls (42 monolithic, 40 modular), 1,220,413 tokens, 2 h 44 min wall (about 25 min generation with 16 workers). Primary (fresh final-incumbent success, modular minus monolithic, paired over blocks): +0.0083, t95 [-0.011, +0.028]; one modular promotion (block 1, promotion 4/30 vs null 0/30, fresh 2/30), no monolithic promotion. Pre-declared secondaries: searched winner on fresh +0.025 [-0.011, +0.061] (modular 0.029 vs monolithic 0.004 mean success); final-window hit fraction -0.029 [-0.123, +0.065] (0.169 vs 0.199); candidates with any screen success 0 vs 0 of 32; slots valid within one correction 32/32 vs 32/32 (first-attempt valid: see arms; zero module-contract defects survived correction); probe-search candidates with a success +0.125 [-1.63, +1.88] per block; drops of the searched winner on fresh -3.9 per block [-10.0, +2.3] (modular fewer). The task is at its floor for both arms: no screen success in 64 candidates, best probe score 1/10 or 2/10. Post hoc (not pre-declared): module counts of the selected modular controllers are listed in controls. Deviations: none from the protocol. Changes after the independent review, before launch: the contract allows obs.size/ndim/dim, the requirement text states that the base prompt's example reads observations in forward and must not be followed on that point, contract defects are listed first in a correction, Isaac children time out after 30 minutes."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.008333333333333333,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.85,
+      "reasoning": "The registered rule: an upper bound of the block-paired fresh interval below +0.05 refutes the predicted magnitude. Observed +0.0083 with t95 [-0.011, +0.028] over 8 blocks: the upper bound is below 0.05, so the predicted gain of final-incumbent success is refuted, and the interval includes zero, so no improvement is established. This is a floor result for both arms (0 screen successes in 64 candidates, one promotion in 16 arms), and the censoring by promotion-to-null that the advisor named is real: the uncensored searched-winner contrast is +0.025 [-0.011, +0.061], whose upper bound is not below 0.05, so on that secondary the magnitude is neither supported nor refuted. The other secondaries do not favour modular generation either way: final-window hit fraction -0.029 [-0.123, +0.065], probe-success candidates +0.125 [-1.6, +1.9], drops -3.9 per block [-10.0, +2.3]. The contract cost nothing in validity (32/32 both arms). Post hoc: left free, the model chose state-reader modules plus a retention and a rolling module in most selected controllers, i.e. the decomposition R-049 hinted, and it did not lift the base rate here either.",
+      "cited_artifacts": [],
+      "next_experiment": "Do not run conditions C and D on cold generation: with a base rate this low no structural treatment can be resolved in 8 blocks. The modular format is cheap and valid, so its value should be tested where the proposal expects it, in diagnosis and repair of a controller that already works (the D-058 incumbent), not in cold search.",
+      "recorded_at": "2026-11-20T05:58:34",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "Against the matched monolithic control, the primary paired_success_difference was +0.00833, with a block-paired interval of [-0.01137, +0.02804] [logs/pen_spin/r092_modular_cold/summary.json]. Its upper bound is below the preregistered +0.05 threshold, satisfying the stated falsification criterion for the predicted magnitude [logs/pen_spin/r092_modular_cold/summary.json]. Because the interval includes zero, this establishes neither an improvement nor harm from modular generation [logs/pen_spin/r092_modular_cold/summary.json]. The searched-winner fresh-success contrast was +0.025 with interval [-0.01072, +0.06072], which is inconclusive and cannot substitute for the primary endpoint [logs/pen_spin/r092_modular_cold/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r092_modular_cold/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-20T05:58:52",
+      "call_id": "call_00188"
+    }
+  ],
+  "decision_id": "D-065",
   "history": [
     {
       "at": "2026-11-20T02:30:40",
@@ -90,6 +360,18 @@
       "from": "approved",
       "to": "running",
       "note": "git cf3201affd (dirty)"
+    },
+    {
+      "at": "2026-11-20T05:58:23",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-20T05:59:10",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-065: refuted"
     }
   ],
   "created_at": "2026-11-20T02:24:57",

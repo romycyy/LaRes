@@ -289,7 +289,8 @@ def parse_args() -> tuple:
                         "R-046: gait_preserving_repair (scaffold continuation on the frozen R-039 gait); "
                         "R-048: local_feedback_evidence (expert sensitivities vs raw labels for a gait residual); "
                         "R-049: two_channel_cold (a two-channel structural requirement in cold search, Stages 1/2); "
-                        "R-054: self_trace_source (repair evidence from the learner's own successes vs the expert's)")
+                        "R-054: self_trace_source (repair evidence from the learner's own successes vs the expert's); "
+                        "R-092: modular_cold (contract-validated modular vs monolithic cold generation, Stage 3, searched)")
     p.add_argument("--block-seeds", default=None,
                    help="R-048/R-049/R-054: comma-separated block seeds the command expects; refused if the config declares others")
     p.add_argument("--output-dir", default=None, help="R-048/R-049/R-054: the study directory; refused if the config names another")
@@ -636,6 +637,18 @@ def run_pen_spin_two_channel(cfg, overrides: dict) -> None:
     _print_summary(two_channel.run_study(ccfg, factory, client))
 
 
+def run_pen_spin_modular_cold(cfg, overrides: dict) -> None:
+    """R-092: per block the scored null incumbent, then the monolithic and modular cold arms, both searched."""
+    from lares.envs.isaac_pen_spin import modular_cold
+    from lares.envs.isaac_pen_spin.pipeline_backend import IsaacPenSpinStream
+
+    ccfg = _study_block(cfg, PEN_SPIN_STUDIES["modular_cold"], overrides)
+    client = openai_client()
+    isaac_env = cfg.pen_spin["isaac_env"]
+    factory = lambda stage, name, work: IsaacPenSpinStream(stage, work, name, isaac_env=isaac_env)  # noqa: E731
+    _print_summary(modular_cold.run_study(ccfg, factory, client))
+
+
 def run_pen_spin_self_trace(cfg, overrides: dict) -> None:
     """R-054: per block the parent, then the self-trace and expert-trace repair arms, then fresh final incumbents."""
     from lares.envs.isaac_pen_spin import self_trace
@@ -698,6 +711,7 @@ PEN_SPIN_STUDIES = {s.name: s for s in (
     PenSpinStudy("self_trace_source", "self_trace_source", "self_trace", run_pen_spin_self_trace,
                  freeze_extra=("build_evidence",)),
     PenSpinStudy("r084_coordinate_repair", "r084_coordinate_repair", "coordinate_repair", run_pen_spin_coordinate_repair),
+    PenSpinStudy("modular_cold", "modular_cold", "modular_cold", run_pen_spin_modular_cold),
 )}
 
 

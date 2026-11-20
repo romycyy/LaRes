@@ -350,7 +350,7 @@ All of these started from the frozen **R-046 block-3 learner** (`config/pen_spin
 |---|---|---|
 | **Contact-frame decoder gate** (R-093; capsule frames at the fingertips, Jacobian decoder, 30 directional pulse cells at steps 10-40, no LLM; `contact_control.py`, `contact_gate.py`) | Jacobian audit 0.004, coverage 40/40, median gain 0.53 and retention (0.775 vs 0.000 neutral) pass; **sign agreement 0.68 < 0.80, gate failed**. The pen is still settling at steps 10-40. Post hoc paired contrast: 0.94 sign agreement, gain 0.54 | D-064 (prediction supported, decoder not qualified) |
 | LLM contact-frame rules vs direct joint generation (R-094) | Deferred: needs a recorded gate pass | — |
-| Modular vs monolithic cold generation, searched (R-092; `module_contract.py`, `modular_cold.py`) | See the ledger | — |
+| Modular vs monolithic cold generation, searched (R-092; `module_contract.py`, `modular_cold.py`; 8 blocks, 6,080 episodes, 82 calls) | **+0.0083 [-0.011, +0.028]** fresh final-incumbent success (predicted +0.05); searched winner +0.025 [-0.011, +0.061]; 0/64 screen successes; validity 32/32 both arms | D-065 (refuted) |
 
 Found on the way: the PhysX Jacobian and the observed fingertip linear velocity refer to the distal links' centres of
 mass, the observed fingertip position to the link origins (15-16 mm apart). A closed reference posture (joint targets
