@@ -178,20 +178,20 @@ modular_cold:
 # targets, or 15 local velocity requests decoded by the frozen C1 controller). Per block: the neutral-pose null (80),
 # one frozen hand-authored contact controller as a decoder diagnostic (80, never ranked), then per arm 4 slots, every
 # valid one screened (10; the best is the zero-shot result), 24 search candidates on the probe (10 each), promotion
-# (30) against the null and fresh (30). At most 840 episodes per block (3360 over four) and 64 LLM calls.
+# (30) against the null and fresh (30). At most 840 episodes per block (6720 over eight) and 128 LLM calls.
 # THE STUDY REFUSES TO RUN (and --freeze-manifests writes nothing for it) until `decoder` below names the block a
 # decoder gate froze, its contact_gate.frozen_sha256, and that gate's summary.json with "verdict": "pass" recording
-# the same frozen_sha256 and decoder_sha256. R-093's gate failed (D-064), so these stay null.
+# the same frozen_sha256 and decoder_sha256. R-093 failed (D-064), R-095 was inconclusive (D-066), R-096 passed (D-067).
 #   python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study contact_rules
 contact_rules:
   study_dir: "logs/pen_spin/r094_contact_rules"
-  block_seeds: [4730, 4731, 4732, 4733]   # one 80-case Stage-3 manifest each
+  block_seeds: [4730, 4731, 4732, 4733, 4734, 4735, 4736, 4737]   # one 80-case Stage-3 manifest each
   max_calls_per_slot: 2           # one call plus at most one linked correction; four slots per arm
   llm_workers: 16
-  decoder:
-    frozen: null                  # PLACEHOLDER: {decoder: {...}, controller: {...}, windows: {...}, ...} exactly as the passing gate's frozen.json "frozen"
-    frozen_sha256: null           # PLACEHOLDER: that gate's frozen.json "sha256" (= its summary.json "frozen_sha256")
-    gate_summary: null            # PLACEHOLDER: path of the passing gate's summary.json
+  decoder:                        # the decoder R-096's gate qualified (D-067); the study verifies hash and verdict
+    frozen: {"decoder": {"damping": 0.0001, "tip_weights": [1.0, 1.0, 1.0, 1.0, 1.0], "max_joint_speed": 6.0, "control_dt": 0.016666666666666666, "lookahead": 0.1, "joint_limit_margin": 0.02, "request_scale": 0.05, "max_request_speed": 0.05}, "controller": {"follow_pen": true, "active_distance": 0.0, "control_wrist": false, "coupling": 1.0, "max_reference_error": 0.8, "reference_margin": 0.35}, "windows": {"pulse_start": 150, "pulse_stop": 180, "pulse_speed": 0.03, "record_stop": 190, "jacobian_steps": [152, 156, 160, 164, 168, 172, 176], "jacobian_min_displacement": 0.0002}, "thresholds": {"expected_contrasts": 15, "min_eligible_pairs": 20, "paired_sign_agreement_min": 0.8, "paired_gain_median_min": 0.3, "paired_gain_median_max": 1.5, "jacobian_rel_error_median_max": 0.15, "retention_diff_min": -0.1}, "eligibility": {"min_inactive_fraction": 0.8}}
+    frozen_sha256: "7219ec6d5075b4457a6642cb0199de17fdd9bea423a95b0eb17d20d885ede250"
+    gate_summary: "logs/pen_spin/r096_contact_settled_gate_80/summary.json"
 
 self_trace_source:
   # R-054 (approved 2026-10-27, advisor call_00110): repair evidence from the learner's own successes vs the expert's.

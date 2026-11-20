@@ -563,6 +563,22 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   winner +0.025 [-0.011, +0.061]; 0 of 64 candidates had a screen success; 32/32 slots valid in both arms. Cold
   Stage-3 search is at its floor for both representations (one promotion in 16 arms). The contract is syntactic: a
   controller with one real module and a trivial second one passes.
+- **R-095 / R-096 / R-094 results (D-066, D-067, D-068; 2026-11-20).** `contact_settled_gate.py` pulses the R-093
+  controller at steps 150-180, after the pen has come to rest in the closed reference posture, with pen-following on
+  the commanded fingertip, and scores the **paired contrast** of the `+` and `-` pulse per case (`paired_contrast`,
+  `paired_verdict`). R-095 (40 cases) passed every tracking check but was inconclusive on coverage (16 and 19 of 20
+  pairs in two contrasts); R-096, one pre-declared 80-case replication of the same frozen block (hash `7219ec6d...`),
+  **passed**: paired sign agreement 1.000 over 901 pairs, median gain 0.615. That decoder then served R-094
+  (`contact_rules.py`, `run_full_evolution.py --study contact_rules`, 182-d schema
+  `Isaac-ShadowHandSpin-Stage3-ContactFrame-v0` = the 157-d layout + `contact_distance` / `contact_axial_coord` /
+  `contact_rel_vel`; policy attribute `_contact_actor` -> spec key `contact_actor`, kinds `contact_features` (20 joint
+  targets) and `contact_frame` (15 requests through `ContactFrameController(request_fn=)`); `query_actions` refuses a
+  `contact_frame` actor; the study refuses to run without a gate summary whose verdict is `pass` and whose hashes
+  match). **R-094 refuted:** contact rules minus direct joint targets 0.000 [0, 0] fresh final-incumbent success over 8
+  blocks (no promotion in either arm; searched winner -0.0125 [-0.054, +0.029]). In rollouts the decoder is far outside
+  the regime the gate qualified: residual 0.108 m/s against a 0.05 m/s request cap, a bound active on 97% of steps;
+  the hand-authored contact controller scored 0.02. A gate on small pulses with the pen at rest does not qualify a
+  decoder for rolling.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

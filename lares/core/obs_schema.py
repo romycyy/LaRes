@@ -241,11 +241,24 @@ def _register_scaffold_schemas() -> None:
         OBS_SCHEMAS[task_id] = ObsSchema(task_id, base.obs_dim + size, tuple(base.fields) + (extra,))
 
 
+def _register_contact_frame_schema() -> None:
+    """R-094's 182-d layout: Stage 3 plus the trusted per-fingertip contact-frame features (readable, not required)."""
+    from lares.envs.isaac_pen_spin.layout import CONTACT_FIELDS, CONTACT_FRAME_TASK_ID, STAGE_TASK_IDS
+
+    base = OBS_SCHEMAS[STAGE_TASK_IDS[3]]
+    fields, start = list(base.fields), base.obs_dim
+    for name, size, description in CONTACT_FIELDS:
+        fields.append(ObsField(name, start, start + size, description, required=False))
+        start += size
+    OBS_SCHEMAS[CONTACT_FRAME_TASK_ID] = ObsSchema(CONTACT_FRAME_TASK_ID, start, tuple(fields))
+
+
 for _stage in (1, 2, 3):
     _s = _pen_spin_schema(_stage)
     OBS_SCHEMAS[_s.env_id] = _s
 del _stage, _s
 _register_scaffold_schemas()
+_register_contact_frame_schema()
 
 
 def get_obs_schema(env_id: str) -> ObsSchema:

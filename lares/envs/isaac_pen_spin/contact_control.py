@@ -223,6 +223,23 @@ def local_to_world(u_local, frames: dict) -> torch.Tensor:
     return torch.einsum("bkij,bkj->bki", frames["R"], u_local)
 
 
+def contact_features(obs) -> torch.Tensor:
+    """R-094: the trusted per-fingertip features appended to the observation, ``(B, 157+)`` -> ``(B, 25)``.
+
+    In ``layout.CONTACT_FIELDS`` order: ``distance`` (5, m) and ``axial_coord`` (5, m) of :func:`capsule_frames` at
+    the five fingertip link origins, then :func:`relative_local_velocity` of the link-origin velocities
+    (:func:`tip_origin_linvel`), fingertip-major: 5 x [normal, circumferential, axial] (m/s). A pure function of the
+    first 157 observation columns (no ``prev`` frame, no simulator), so it is the same for every actor that reads
+    it; non-finite values are zero-filled.
+    """
+    obs = torch.nan_to_num(torch.as_tensor(obs).detach().float(), nan=0.0, posinf=0.0, neginf=0.0)
+    s = state_from_obs(obs[:, :cases.OBS_DIM])
+    frames = capsule_frames(s["pen_pos"], s["pen_quat"], s["tip_pos"])
+    rel = relative_local_velocity(tip_origin_linvel(s), frames, s["pen_pos"], s["pen_linvel"], s["pen_angvel"])
+    out = torch.cat([frames["distance"], frames["axial_coord"], rel.reshape(obs.shape[0], -1)], dim=-1)
+    return torch.nan_to_num(out, nan=0.0, posinf=0.0, neginf=0.0)
+
+
 # ---------------------------------------------------------------------------
 #  Decoder
 # ---------------------------------------------------------------------------

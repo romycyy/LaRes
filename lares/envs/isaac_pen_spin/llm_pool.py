@@ -90,8 +90,10 @@ def save_generation(adir: str, g: dict) -> None:
     os.replace(tmp, os.path.join(adir, GENERATED))
 
 
-def load_generation(adir: str, env_id: str) -> dict | None:
-    """The saved generation of a cell, policies rebuilt from source and state; ``None`` if there is none."""
+def load_generation(adir: str, env_id: str, **dims) -> dict | None:
+    """The saved generation of a cell, policies rebuilt from source and state; ``None`` if there is none.
+
+    ``dims`` (``obs_dim=``, ``action_dim=``) go to ``build_policy`` for a schema that is not the 157-d / 20-d one."""
     path = os.path.join(adir, GENERATED)
     if not os.path.exists(path):
         return None
@@ -104,15 +106,15 @@ def load_generation(adir: str, env_id: str) -> dict | None:
         s["policy"] = None
         if s["valid"]:
             state = torch.load(os.path.join(adir, s["state"]), weights_only=True)
-            s["policy"] = build_policy(s["code"], state, env_id, s["fixed_action_scale"])
+            s["policy"] = build_policy(s["code"], state, env_id, s["fixed_action_scale"], **dims)
         s.pop("state", None)
         s.pop("fixed_action_scale", None)
     return g
 
 
-def generate_once(adir: str, env_id: str, generate) -> dict:
+def generate_once(adir: str, env_id: str, generate, **dims) -> dict:
     """A cell's generation: the saved one if it exists, else ``generate()``, saved before it is returned."""
-    g = load_generation(adir, env_id)
+    g = load_generation(adir, env_id, **dims)
     if g is None:
         g = generate()
         save_generation(adir, g)

@@ -290,7 +290,8 @@ def parse_args() -> tuple:
                         "R-048: local_feedback_evidence (expert sensitivities vs raw labels for a gait residual); "
                         "R-049: two_channel_cold (a two-channel structural requirement in cold search, Stages 1/2); "
                         "R-054: self_trace_source (repair evidence from the learner's own successes vs the expert's); "
-                        "R-092: modular_cold (contract-validated modular vs monolithic cold generation, Stage 3, searched)")
+                        "R-092: modular_cold (contract-validated modular vs monolithic cold generation, Stage 3, searched); "
+                        "R-094: contact_rules (LLM contact-frame velocity rules vs direct joint targets; needs a decoder gate pass)")
     p.add_argument("--block-seeds", default=None,
                    help="R-048/R-049/R-054: comma-separated block seeds the command expects; refused if the config declares others")
     p.add_argument("--output-dir", default=None, help="R-048/R-049/R-054: the study directory; refused if the config names another")
@@ -649,6 +650,19 @@ def run_pen_spin_modular_cold(cfg, overrides: dict) -> None:
     _print_summary(modular_cold.run_study(ccfg, factory, client))
 
 
+def run_pen_spin_contact_rules(cfg, overrides: dict) -> None:
+    """R-094: per block the scored null, the hand-authored decoder diagnostic, then the direct-joint and contact-rule arms."""
+    from lares.envs.isaac_pen_spin import contact_rules
+    from lares.envs.isaac_pen_spin.pipeline_backend import IsaacPenSpinStream
+
+    ccfg = _study_block(cfg, PEN_SPIN_STUDIES["contact_rules"], overrides)
+    contact_rules.require_gate_pass(ccfg)  # refuse before the API client is built; run_study checks again
+    client = openai_client()
+    isaac_env = cfg.pen_spin["isaac_env"]
+    factory = lambda stage, name, work: IsaacPenSpinStream(stage, work, name, isaac_env=isaac_env)  # noqa: E731
+    _print_summary(contact_rules.run_study(ccfg, factory, client))
+
+
 def run_pen_spin_self_trace(cfg, overrides: dict) -> None:
     """R-054: per block the parent, then the self-trace and expert-trace repair arms, then fresh final incumbents."""
     from lares.envs.isaac_pen_spin import self_trace
@@ -712,6 +726,7 @@ PEN_SPIN_STUDIES = {s.name: s for s in (
                  freeze_extra=("build_evidence",)),
     PenSpinStudy("r084_coordinate_repair", "r084_coordinate_repair", "coordinate_repair", run_pen_spin_coordinate_repair),
     PenSpinStudy("modular_cold", "modular_cold", "modular_cold", run_pen_spin_modular_cold),
+    PenSpinStudy("contact_rules", "contact_rules", "contact_rules", run_pen_spin_contact_rules),
 )}
 
 

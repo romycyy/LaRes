@@ -6,63 +6,487 @@
     "metric": "paired_success_difference",
     "direction": "increase",
     "threshold": 0.05,
-    "against": "baseline: direct_joint searched winners under the same four-block protocol",
-    "rationale": "Primary is fresh native sustained success, contact_rules minus direct_joint, after matched 24-draw search per arm. A five-percentage-point gain is the minimum useful effect; report the block-paired t interval and require its lower bound above zero before claiming a difference. Zero-shot winners are compared separately with zero-shot winners."
+    "against": "baseline: direct_joint fresh final-incumbent native sustained success under the same eight-block protocol",
+    "rationale": "Primary is fresh final-incumbent native sustained success, contact_rules minus direct_joint, after the matched 24-candidate search per arm, as eight paired block-level differences (pool seeds 4730-4737). A five-percentage-point gain is the minimum useful effect. Searched-winner fresh success, the final-window hit fraction and the zero-shot contrasts are secondary and cannot substitute for the primary."
   },
   "protocol": {
     "script": "scripts/run_full_evolution.py",
     "config": "config/pen_spin_plateau_repair.yaml",
-    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study contact_rules'",
+    "command": "gpu run 'nohup bash -lc \"source .venv-metaworld/bin/activate && python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study contact_rules\" > logs/r094_run.log 2>&1 &'",
     "seeds": [
       4730,
       4731,
       4732,
-      4733
+      4733,
+      4734,
+      4735,
+      4736,
+      4737
     ],
     "manifests": [
-      "config/manifests/shadowhand_spin_stage3_contact_rules_s4730.yaml",
-      "config/manifests/shadowhand_spin_stage3_contact_rules_s4731.yaml",
-      "config/manifests/shadowhand_spin_stage3_contact_rules_s4732.yaml",
-      "config/manifests/shadowhand_spin_stage3_contact_rules_s4733.yaml"
+      "config/manifests/pen_spin_stage3_contact_rules_s4730.yaml",
+      "config/manifests/pen_spin_stage3_contact_rules_s4731.yaml",
+      "config/manifests/pen_spin_stage3_contact_rules_s4732.yaml",
+      "config/manifests/pen_spin_stage3_contact_rules_s4733.yaml",
+      "config/manifests/pen_spin_stage3_contact_rules_s4734.yaml",
+      "config/manifests/pen_spin_stage3_contact_rules_s4735.yaml",
+      "config/manifests/pen_spin_stage3_contact_rules_s4736.yaml",
+      "config/manifests/pen_spin_stage3_contact_rules_s4737.yaml"
     ],
-    "episodes": 3400,
-    "llm_calls": 64,
+    "episodes": 6720,
+    "llm_calls": 128,
     "code_changes": [
-      "lares/envs/isaac_pen_spin/contact_rules.py (new): implement the conditional study and contact_frame actor. GeneratedPolicy emits normalized (batch, 15) local-velocity requests; the frozen C1 decoder produces 20 joint targets. Refuse offline query_actions for this actor; generated code cannot access simulator internals.",
-      "scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml: refuse execution until a recorded C1 pass exists and verify the decoder hash. Use four independent blocks, four generation slots per arm, direct_joint and contact_rules, and the same 24-draw search budget per arm. Both arms remain monolithic and cold-generated, independently of R-092.",
-      "config/pen_spin_plateau_repair.yaml: inherit R-092's 80-case manifest roles, search allocation, selection rules, native sustained-success definition, and preregistered secondaries. Give both arms identical observations and trusted per-fingertip frame features; change only the output and decoder contract. Compare zero-shot with zero-shot and searched with searched; freeze winners before scoring promotion and fresh cases.",
-      "lares/envs/isaac_pen_spin/contact_rules.py: primary analysis uses four paired block-level fresh-success differences. Apply the standing strictly positive paired t-interval promotion rule on cases 10-39; never select using fresh outcomes. Add decoder residual, saturation, and joint-limit activity to diagnostics. Score one frozen hand-authored contact controller on all 80 cases once per block, diagnostic only and never ranked.",
-      "config/pen_spin_plateau_repair.yaml: use llm_pool with 16 workers, gpt-6.1-sol, high reasoning effort, temperature 1, and at most one linked correction per slot: 32 initial calls plus at most 32 corrections. No edit generations, fitting, reinforcement learning, or curriculum; Stage 3 only and one protocol on the box.",
-      "config/manifests/shadowhand_spin_stage3_contact_rules_s4730.yaml through config/manifests/shadowhand_spin_stage3_contact_rules_s4733.yaml (new): freeze four 80-case manifests before evaluation. Defer simulator and API spending until C1 is decided and passes."
+      "lares/envs/isaac_pen_spin/contact_rules.py (new): the study and the two actors. Both arms' generated policies read the same 182-d observation (the 157-d layout plus trusted per-fingertip contact features: distance to the pen surface, axial coordinate, relative velocity in local [normal, circumferential, axial] coordinates). direct_joint emits 20 joint targets executed as clamp(mean, -1, 1); contact_rules emits 15 normalised local-velocity requests that the frozen decoder qualified by R-096 (D-067, frozen_sha256 7219ec6d5075b4457a6642cb0199de17fdd9bea423a95b0eb17d20d885ede250; pen-following, wrist held, request scale 0.05 m/s) turns into the 20 joint targets. The child re-verifies the hash; generated code never touches the simulator; offline query_actions is refused for the contact actor.",
+      "scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml: register contact_rules; it refuses to run unless the config names the frozen block, its hash and logs/pen_spin/r096_contact_settled_gate_80/summary.json with verdict pass and the same hashes. Eight independent blocks (pool seeds 4730-4737, one frozen 80-case Stage-3 manifest each, config/manifests/pen_spin_stage3_contact_rules_s<seed>.yaml; screen 0-9, promotion 10-39, probe 40-49, fresh 50-79), four generation slots per arm with at most one linked correction, the same 24-candidate probe search per arm (rollout_search.independent_candidates, block seed). Both arms are monolithic and cold-generated; the orchestrator runs under .venv-metaworld and Isaac only in backend child processes.",
+      "Prompts are identical except the output-contract paragraph (and the output width the templates print, 20 vs 15): direct_joint keeps the Stage-3 joint-target paragraph verbatim; contact_rules states the request contract, the frame convention, the decoder's scales and that a zero request moves a fingertip with the pen surface. No controller, strategy or finger role is given to either arm.",
+      "Per block: the neutral-pose null on all 80 cases (the scored incumbent), one frozen hand-authored contact controller on all 80 cases as a decoder diagnostic (never ranked, searched or selected), then per arm every valid slot screened on 10 cases (the best slot's screen is the zero-shot result), the 24-candidate search on the 10 probe cases, the selected state on promotion (30, strict paired rule against the null) and fresh (30). Never select on fresh outcomes. At most 840 episodes per block, 6,720 in all, and 128 LLM calls.",
+      "Primary analysis: eight paired block-level differences of fresh final-incumbent native sustained success, contact_rules minus direct_joint. Zero-shot is compared with zero-shot (screen and unchanged-candidate probe) and searched with searched (searched winner on fresh, final-window hit fraction, probe-search successes, drops, failure labels). Decoder diagnostics recorded for the contact arm on screen, promotion and fresh runs: residual, bound-active fraction, request saturation, mean fingertip distance.",
+      "config/pen_spin_plateau_repair.yaml: llm_pool with 16 workers, gpt-6.1-sol, high reasoning effort, temperature 1. No edit generations, fitting, reinforcement learning or curriculum; Stage 3 only; one protocol on the box."
     ],
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "deferred",
+  "status": "decided",
   "source": "advisor",
-  "falsified_by": "An upper bound below +0.05 on the block-paired fresh-success interval refutes the predicted magnitude. An interval spanning zero and +0.05 is inconclusive; tied success is never improvement. Failure or an inconclusive decision on C1 prevents this experiment from running rather than supplying a C2 result.",
+  "falsified_by": "An upper bound below +0.05 on the primary block-paired interval (fresh final-incumbent success, contact_rules minus direct_joint, eight blocks) refutes the predicted magnitude. An interval spanning zero and +0.05 is inconclusive. Improvement requires a strictly positive lower bound; tied success is never improvement.",
   "cost_estimate": {
-    "episodes": 3400,
-    "llm_calls": 64,
-    "wall_time_minutes": 360
+    "episodes": 6720,
+    "llm_calls": 128,
+    "wall_time_minutes": 300
   },
   "open_question_refs": [
     1
   ],
   "briefing_sha256": "5cd4bcee12b1afcaa0c0cc70ce45a9df5a4632729995b98f0cfedd0dc99ca86e",
   "proposal_call_id": "call_00182",
-  "approval": {},
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-20T06:34:22",
+    "advisor_call_id": "call_00196",
+    "round": 3,
+    "note": "The qualified decoder makes this a matched-budget test of whether pen-relative velocity outputs improve cold Stage-3 generation over direct joint targets. I accept the implementer's eight-block estimator and corrected budget of 6,720 episodes and at most 128 LLM calls; D-067 satisfies the prerequisi"
+  },
+  "run": {
+    "started_at": "2026-11-20T06:40:14",
+    "git_sha": "6db912e6fbd7004ab9576863f6a00a7fdfa82951",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r094_contact_rules",
+    "finished_at": "2026-11-20T10:04:58"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.0,
+      "paired_interval_lower": 0.0,
+      "paired_interval_upper": 0.0,
+      "llm_calls": 75,
+      "llm_total_tokens": 1163650,
+      "num_episodes": 6720,
+      "wall_time_seconds": 12190,
+      "slots_valid_within_one_correction": {
+        "direct_joint": 1.0,
+        "contact_rules": 1.0
+      }
+    },
+    "controls": {
+      "null_fresh": 0.0,
+      "arms": {
+        "direct_joint": {
+          "fresh_incumbent": 0.0,
+          "fresh_selected": 0.020833333333333332,
+          "fresh_selected_tail_hit_fraction": 0.25000202906850116,
+          "zero_shot_screen_success": 0.0,
+          "zero_shot_screen_tail_hit_fraction": 0.09557494190858162,
+          "zero_shot_probe_success": 0.0,
+          "blocks_with_a_searched_winner": 8,
+          "candidates_with_screen_success": 0,
+          "slots": 32,
+          "valid_slots": 32,
+          "slots_valid_within_one_correction": 1.0,
+          "first_attempt_valid_slots": 30,
+          "search_candidates_with_probe_success": 4,
+          "fresh_selected_drops": 133,
+          "fresh_selected_failure_labels": {
+            "dropped": 133,
+            "off_centre": 48,
+            "slow_spin": 54
+          },
+          "fresh_selected_diagnostics": {
+            "residual_mean_mps": null,
+            "residual_p95_mps": null,
+            "bound_active_fraction": null,
+            "any_bound_step_fraction": null,
+            "output_saturation_fraction": 0.08625916959726924,
+            "distance_mean_m": null
+          },
+          "promoted_blocks": 0,
+          "plateau_blocks": 7,
+          "llm_calls": 34,
+          "llm_tokens": 545034,
+          "isaac_processes": 240,
+          "isaac_episodes": 2720
+        },
+        "contact_rules": {
+          "fresh_incumbent": 0.0,
+          "fresh_selected": 0.008333333333333333,
+          "fresh_selected_tail_hit_fraction": 0.21609448534055517,
+          "zero_shot_screen_success": 0.0125,
+          "zero_shot_screen_tail_hit_fraction": 0.28397383992471525,
+          "zero_shot_probe_success": 0.0,
+          "blocks_with_a_searched_winner": 8,
+          "candidates_with_screen_success": 1,
+          "slots": 32,
+          "valid_slots": 32,
+          "slots_valid_within_one_correction": 1.0,
+          "first_attempt_valid_slots": 23,
+          "search_candidates_with_probe_success": 11,
+          "fresh_selected_drops": 112,
+          "fresh_selected_failure_labels": {
+            "dropped": 112,
+            "off_centre": 25,
+            "slow_spin": 101
+          },
+          "fresh_selected_diagnostics": {
+            "residual_mean_mps": 0.10758347659203849,
+            "residual_p95_mps": 0.47684841603040695,
+            "bound_active_fraction": 0.4031023416224416,
+            "any_bound_step_fraction": 0.9688416074606305,
+            "output_saturation_fraction": 0.002873037457496747,
+            "distance_mean_m": 0.039876190727680824
+          },
+          "promoted_blocks": 0,
+          "plateau_blocks": 2,
+          "llm_calls": 41,
+          "llm_tokens": 618616,
+          "isaac_processes": 240,
+          "isaac_episodes": 2720
+        }
+      },
+      "hand_authored": {
+        "role": "decoder diagnostic: never ranked, never selected, never an incumbent",
+        "success_per_block": [
+          0.0,
+          0.0,
+          0.0375,
+          0.0125,
+          0.0125,
+          0.0125,
+          0.0375,
+          0.05
+        ],
+        "drops_per_block": [
+          15,
+          17,
+          22,
+          34,
+          21,
+          22,
+          21,
+          24
+        ],
+        "success": 0.020312499999999997,
+        "diagnostics": {
+          "residual_mean_mps": 0.10064857412030903,
+          "residual_p95_mps": 0.3023271835409105,
+          "bound_active_fraction": 0.548793830674903,
+          "any_bound_step_fraction": 0.9853892788279173,
+          "output_saturation_fraction": 0.262603120605302,
+          "distance_mean_m": 0.03520859503848371
+        }
+      },
+      "decoder_diagnostics": {
+        "contact_rules_fresh_selected": {
+          "residual_mean_mps": 0.10758347659203849,
+          "residual_p95_mps": 0.47684841603040695,
+          "bound_active_fraction": 0.4031023416224416,
+          "any_bound_step_fraction": 0.9688416074606305,
+          "output_saturation_fraction": 0.002873037457496747,
+          "distance_mean_m": 0.039876190727680824
+        },
+        "hand_authored": {
+          "residual_mean_mps": 0.10064857412030903,
+          "residual_p95_mps": 0.3023271835409105,
+          "bound_active_fraction": 0.548793830674903,
+          "any_bound_step_fraction": 0.9853892788279173,
+          "output_saturation_fraction": 0.262603120605302,
+          "distance_mean_m": 0.03520859503848371
+        }
+      },
+      "decoder": {
+        "frozen_sha256": "7219ec6d5075b4457a6642cb0199de17fdd9bea423a95b0eb17d20d885ede250",
+        "decoder_sha256": "fc568396d7fa159bf8c23738788a98383f8b81d8ed314fec3afd68095fba084d",
+        "gate_summary": "logs/pen_spin/r096_contact_settled_gate_80/summary.json",
+        "gate_summary_sha256": "f7242accc2d1d96297a886781970d1cefcc472f466e228186b9d4187ad8de6c2",
+        "gate_verdict": "pass"
+      },
+      "zero_shot_screen_success": {
+        "per_block": [
+          0.1,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "n": 8,
+        "mean": 0.0125,
+        "se": 0.0125,
+        "low": -0.017057803144909806,
+        "high": 0.04205780314490981,
+        "p_value": 0.3506166628202075
+      },
+      "zero_shot_screen_tail_hit_fraction": {
+        "per_block": [
+          0.07157109557109559,
+          0.1833829895594601,
+          0.05412588211930311,
+          0.1304983164983165,
+          0.2533770462917063,
+          0.4007802494101786,
+          0.1927304964539007,
+          0.2207251082251082
+        ],
+        "n": 8,
+        "mean": 0.18839889801613363,
+        "se": 0.03906207506847696,
+        "low": 0.09603176799167513,
+        "high": 0.28076602804059214,
+        "p_value": 0.0019146897492576171
+      },
+      "zero_shot_probe_success": {
+        "per_block": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "n": 8,
+        "mean": 0.0,
+        "se": 0.0,
+        "low": 0.0,
+        "high": 0.0,
+        "p_value": 1.0
+      },
+      "fresh_selected_tail_hit_fraction": {
+        "per_block": [
+          -0.24943922401243754,
+          -0.10770337283255432,
+          -0.10845181526546546,
+          0.07647247171530785,
+          0.06717786120251826,
+          0.02330765978188795,
+          -0.004140653715010989,
+          0.031516723302186356
+        ],
+        "n": 8,
+        "mean": -0.03390754372794599,
+        "se": 0.03970843893932756,
+        "low": -0.1278030814367712,
+        "high": 0.05998799398087922,
+        "p_value": 0.42141087160085844
+      },
+      "fresh_selected_drops": {
+        "per_block": [
+          -1.0,
+          -4.0,
+          -1.0,
+          -2.0,
+          1.0,
+          7.0,
+          -13.0,
+          -8.0
+        ],
+        "n": 8,
+        "mean": -2.625,
+        "se": 2.112357349367898,
+        "low": -7.619931416345584,
+        "high": 2.369931416345584,
+        "p_value": 0.2539936580920733
+      },
+      "candidates_with_screen_success": {
+        "per_block": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "n": 8,
+        "mean": 0.125,
+        "se": 0.125,
+        "low": -0.17057803144909806,
+        "high": 0.42057803144909806,
+        "p_value": 0.3506166628202075
+      },
+      "valid_slots": {
+        "per_block": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "n": 8,
+        "mean": 0.0,
+        "se": 0.0,
+        "low": 0.0,
+        "high": 0.0,
+        "p_value": 1.0
+      },
+      "search_candidates_with_probe_success": {
+        "per_block": [
+          1.0,
+          0.0,
+          0.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          2.0
+        ],
+        "n": 8,
+        "mean": 0.875,
+        "se": 0.2265817417937414,
+        "low": 0.33921931838638464,
+        "high": 1.4107806816136153,
+        "p_value": 0.006197520580834283
+      },
+      "fresh_incumbent": {
+        "per_block": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "n": 8,
+        "mean": 0.0,
+        "se": 0.0,
+        "low": 0.0,
+        "high": 0.0,
+        "p_value": 1.0
+      },
+      "fresh_selected": {
+        "per_block": [
+          -0.13333333333333333,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.03333333333333333
+        ],
+        "n": 8,
+        "mean": -0.0125,
+        "se": 0.01774768037604235,
+        "low": -0.05446659542670708,
+        "high": 0.02946659542670708,
+        "p_value": 0.5039855405717248
+      }
+    },
+    "artifacts": [
+      "logs/pen_spin/r094_contact_rules/summary.json",
+      "logs/pen_spin/r094_contact_rules/block0/direct_joint/arm.json",
+      "logs/pen_spin/r094_contact_rules/block0/contact_rules/arm.json",
+      "logs/pen_spin/r094_contact_rules/block1/direct_joint/arm.json",
+      "logs/pen_spin/r094_contact_rules/block1/contact_rules/arm.json",
+      "logs/pen_spin/r094_contact_rules/block2/direct_joint/arm.json",
+      "logs/pen_spin/r094_contact_rules/block2/contact_rules/arm.json",
+      "logs/pen_spin/r094_contact_rules/block3/direct_joint/arm.json",
+      "logs/pen_spin/r094_contact_rules/block3/contact_rules/arm.json",
+      "logs/pen_spin/r094_contact_rules/block4/direct_joint/arm.json",
+      "logs/pen_spin/r094_contact_rules/block4/contact_rules/arm.json",
+      "logs/pen_spin/r094_contact_rules/block5/direct_joint/arm.json",
+      "logs/pen_spin/r094_contact_rules/block5/contact_rules/arm.json",
+      "logs/pen_spin/r094_contact_rules/block6/direct_joint/arm.json",
+      "logs/pen_spin/r094_contact_rules/block6/contact_rules/arm.json",
+      "logs/pen_spin/r094_contact_rules/block7/direct_joint/arm.json",
+      "logs/pen_spin/r094_contact_rules/block7/contact_rules/arm.json"
+    ],
+    "notes": "8 blocks (seeds 4730-4737), 4 slots per arm, 24-candidate probe search, promotion against the scored neutral-pose null, fresh; 6,720 episodes in 544 Isaac processes, 75 LLM calls (34 direct_joint, 41 contact_rules), 1,163,650 tokens, 3 h 23 min wall. Primary (fresh final-incumbent success, contact_rules minus direct_joint): 0.000, t95 [0, 0]: no candidate of either arm was promoted over the null in any block. Searched (secondary): searched winner on fresh -0.0125 [-0.054, +0.029] (contact 0.008 vs direct 0.021 mean success), final-window hit fraction -0.034 [-0.128, +0.060] (0.216 vs 0.250), drops -2.6 per block [-7.6, +2.4]. Zero-shot (secondary, compared with zero-shot): screen success +0.0125 [-0.017, +0.042] (one contact candidate with a screen success in 64), screen final-window hit fraction +0.188 [+0.096, +0.281] (0.284 vs 0.096), unchanged-candidate probe success 0 vs 0. Probe-search candidates with a success: +0.875 per block [+0.34, +1.41] (11 vs 4 of 192 each), which did not carry to promotion or fresh. Validity 32/32 in both arms. Decoder diagnostics on the contact arm's searched winners (fresh): mean residual 0.108 m/s and p95 0.48 m/s against a request capped at 0.05 m/s, at least one decoder bound active on 97% of in-play steps, request saturation 0.3%, mean fingertip-origin distance to the pen surface 4.0 cm. The hand-authored contact controller (diagnostic only): 0.020 sustained success over 640 episodes, 15-34 drops of 80 per block, residual 0.101 m/s, bounds on 99% of steps. So during a rollout the decoder is nowhere near the regime the gate qualified (small pulses, pen at rest, bounds mostly inactive): once the pen moves, the surface-point velocity it follows exceeds what the bounded joints deliver, and requests are a small part of what is executed. No deviation from the protocol. Both arms read the same 182-d observation with the contact features, so this comparison isolates the output/decoder contract; whether the features themselves help direct generation is not tested here (R-092's monolithic arm used other blocks and cannot serve as a paired control)."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.0,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.85,
+      "reasoning": "By the registered rule the predicted magnitude is refuted: the primary is 0.000 with interval [0, 0] over eight blocks (upper bound below +0.05), because no candidate in either arm beat the null on promotion. The uncensored searched contrast agrees in direction and is itself inconclusive on magnitude (-0.0125 [-0.054, +0.029]). Two secondaries favour contact rules before selection pressure (zero-shot screen final-window hit fraction +0.188 [+0.096, +0.281]; probe-search candidates with a success +0.875 per block [+0.34, +1.41]) and neither survives to promotion or fresh, so they are leads, not results. The caveat both of us recorded at triage is what the diagnostics show: the decoder is not operating in its qualified regime during rollouts (residual 0.108 m/s against a 0.05 m/s request cap, a bound active on 97% of steps), and the hand-authored controller through the same decoder scores 0.02. So what is refuted is this decoder as an output contract for cold generation, not contact coordinates as such.",
+      "cited_artifacts": [],
+      "next_experiment": "Stop the contact-output branch under this direction. If contact coordinates are pursued, the decoder must first be qualified in the regime rollouts visit (pen moving, fingertips within a centimetre, bounds inactive), or the contact frame should be used as observation features only, tested with a paired no-feature control.",
+      "recorded_at": "2026-11-20T10:04:59",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "The named control was measured: both arms had zero fresh final-incumbent sustained success, and neither promoted a candidate in any block [logs/pen_spin/r094_contact_rules/summary.json]. The primary paired_success_difference was 0.000 with interval [0.000, 0.000], placing its upper bound below the preregistered +0.05 falsification threshold; tied success is not improvement [logs/pen_spin/r094_contact_rules/summary.json]. Searched-winner fresh success also showed no established difference: contact_rules minus direct_joint was -0.0125 with interval [-0.0545, +0.0295], which includes zero [logs/pen_spin/r094_contact_rules/summary.json]. The favorable zero-shot screen hit-fraction and probe-search results are secondary and cannot replace the failed primary outcome; this refutes the predicted gain for the tested procedure, not contact-frame representations generally [logs/pen_spin/r094_contact_rules/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r094_contact_rules/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-20T10:05:23",
+      "call_id": "call_00197"
+    }
+  ],
+  "decision_id": "D-068",
   "history": [
     {
       "at": "2026-11-20T02:28:37",
       "from": "proposed",
       "to": "deferred",
       "note": "triage round 1: both say defer"
+    },
+    {
+      "at": "2026-11-20T06:33:23",
+      "from": "deferred",
+      "to": "proposed",
+      "note": "re-triaged"
+    },
+    {
+      "at": "2026-11-20T06:34:22",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-20T06:40:14",
+      "from": "approved",
+      "to": "running",
+      "note": "git 6db912e6fb (dirty)"
+    },
+    {
+      "at": "2026-11-20T10:04:58",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-20T10:05:47",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-068: refuted"
     }
   ],
   "created_at": "2026-11-20T02:26:26",
@@ -87,11 +511,115 @@
           "at": "2026-11-20T02:28:37"
         },
         "outcome": "agreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "This isolates whether pen-relative velocity outputs make cold generation more effective than direct joint targets at matched search budget. I accept the implementer's qualification prerequisite and eight-block argument: D-067 qualifies the frozen decoder, so the earlier deferral no longer applies. The weakest point remains transfer from settled-pulse tracking to sustained spinning near the cold-generation success floor. Reuse scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml, but reconcile the budget and primary-estimand metadata before authorizing up to 6,720 episodes and 128 LLM calls.",
+          "suggested_changes": [
+            "Update cost_estimate to 6720 simulator episodes and 128 maximum LLM calls, matching protocol; replace the prediction's stale four-block reference with eight blocks using the already specified free seeds 4730-4737.",
+            "Align the prediction with the protocol's primary estimator: metric paired_success_difference, direction increase, threshold 0.05, comparing contact_rules fresh final-incumbent native sustained success against direct_joint fresh final-incumbent success across eight paired blocks. Keep searched-winner fresh success explicitly secondary. State falsified_by as the primary paired interval's upper bound below +0.05; an interval spanning zero and +0.05 is inconclusive, and improvement requires a strictly positive lower bound."
+          ],
+          "priority": 1,
+          "call_id": "call_00195",
+          "briefing_sha256": "8864aaf67536304828e4c6bab5f8cdb51d5fa8de8413dd184f4157f97fc0afc8",
+          "at": "2026-11-20T06:33:23"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree with both metadata corrections; they bring the record into line with what will run and change no design choice. Cost becomes 6,720 episodes and at most 128 calls; the prediction names the primary estimator explicitly (fresh final-incumbent native sustained success, contact_rules minus direct_joint, eight paired blocks, increase, threshold 0.05), with the searched winner secondary, and falsified_by states the three outcomes. The deferral reason is gone: R-096 qualified this exact decoder (D-067). My own caveat stands in the record: the gate measured small pulses with the pen at rest, so a null here may mean the decoder does not transfer to rolling, not that contact coordinates are useless; the hand-authored diagnostic and the decoder residuals are there to tell those apart.",
+          "changes_applied": [],
+          "at": "2026-11-20T06:33:42"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "The qualified decoder makes this a matched-budget test of whether pen-relative velocity outputs improve cold Stage-3 generation over direct joint targets. I accept the implementer's eight-block estimator and corrected budget of 6,720 episodes and at most 128 LLM calls; D-067 satisfies the prerequisite, and scripts/run_full_evolution.py with config/pen_spin_plateau_repair.yaml provides the existing execution path. The weakest point remains transfer from settled-pulse tracking to sustained rolling, so I accept that a null would not establish that contact coordinates are generally useless. The prediction is paired_success_difference increasing by at least 0.05 against direct_joint fresh final-incumbent native sustained success: an upper paired-interval bound below +0.05 refutes that magnitude, while improvement requires a strictly positive lower bound.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00196",
+          "briefing_sha256": "f986a6721a8b3d5a73c87029deeb7025e3bfc82b14f29ae81d27bb5a712d5331",
+          "at": "2026-11-20T06:34:02"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve as revised: the prerequisite is met by D-067 with the exact frozen hash, the record now states the eight-block primary estimator and the 6,720-episode / 128-call cap, and the transfer caveat is on record with the diagnostics that can speak to it.",
+          "changes_applied": [],
+          "at": "2026-11-20T06:34:22"
+        },
+        "outcome": "agreed"
       }
     ],
-    "outcome": "defer",
-    "agreed_round": 1
+    "outcome": "approve",
+    "agreed_round": 3
   },
   "escalation": {},
-  "revisions": []
+  "revisions": [
+    {
+      "at": "2026-11-20T06:32:47",
+      "round": 1,
+      "patch": {
+        "protocol": {
+          "script": "scripts/run_full_evolution.py",
+          "config": "config/pen_spin_plateau_repair.yaml",
+          "command": "gpu run 'nohup bash -lc \"source .venv-metaworld/bin/activate && python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study contact_rules\" > logs/r094_run.log 2>&1 &'",
+          "seeds": [
+            4730,
+            4731,
+            4732,
+            4733,
+            4734,
+            4735,
+            4736,
+            4737
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_contact_rules_s4730.yaml",
+            "config/manifests/pen_spin_stage3_contact_rules_s4731.yaml",
+            "config/manifests/pen_spin_stage3_contact_rules_s4732.yaml",
+            "config/manifests/pen_spin_stage3_contact_rules_s4733.yaml",
+            "config/manifests/pen_spin_stage3_contact_rules_s4734.yaml",
+            "config/manifests/pen_spin_stage3_contact_rules_s4735.yaml",
+            "config/manifests/pen_spin_stage3_contact_rules_s4736.yaml",
+            "config/manifests/pen_spin_stage3_contact_rules_s4737.yaml"
+          ],
+          "episodes": 6720,
+          "llm_calls": 128,
+          "code_changes": [
+            "lares/envs/isaac_pen_spin/contact_rules.py (new): the study and the two actors. Both arms' generated policies read the same 182-d observation (the 157-d layout plus trusted per-fingertip contact features: distance to the pen surface, axial coordinate, relative velocity in local [normal, circumferential, axial] coordinates). direct_joint emits 20 joint targets executed as clamp(mean, -1, 1); contact_rules emits 15 normalised local-velocity requests that the frozen decoder qualified by R-096 (D-067, frozen_sha256 7219ec6d5075b4457a6642cb0199de17fdd9bea423a95b0eb17d20d885ede250; pen-following, wrist held, request scale 0.05 m/s) turns into the 20 joint targets. The child re-verifies the hash; generated code never touches the simulator; offline query_actions is refused for the contact actor.",
+            "scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml: register contact_rules; it refuses to run unless the config names the frozen block, its hash and logs/pen_spin/r096_contact_settled_gate_80/summary.json with verdict pass and the same hashes. Eight independent blocks (pool seeds 4730-4737, one frozen 80-case Stage-3 manifest each, config/manifests/pen_spin_stage3_contact_rules_s<seed>.yaml; screen 0-9, promotion 10-39, probe 40-49, fresh 50-79), four generation slots per arm with at most one linked correction, the same 24-candidate probe search per arm (rollout_search.independent_candidates, block seed). Both arms are monolithic and cold-generated; the orchestrator runs under .venv-metaworld and Isaac only in backend child processes.",
+            "Prompts are identical except the output-contract paragraph (and the output width the templates print, 20 vs 15): direct_joint keeps the Stage-3 joint-target paragraph verbatim; contact_rules states the request contract, the frame convention, the decoder's scales and that a zero request moves a fingertip with the pen surface. No controller, strategy or finger role is given to either arm.",
+            "Per block: the neutral-pose null on all 80 cases (the scored incumbent), one frozen hand-authored contact controller on all 80 cases as a decoder diagnostic (never ranked, searched or selected), then per arm every valid slot screened on 10 cases (the best slot's screen is the zero-shot result), the 24-candidate search on the 10 probe cases, the selected state on promotion (30, strict paired rule against the null) and fresh (30). Never select on fresh outcomes. At most 840 episodes per block, 6,720 in all, and 128 LLM calls.",
+            "Primary analysis: eight paired block-level differences of fresh final-incumbent native sustained success, contact_rules minus direct_joint. Zero-shot is compared with zero-shot (screen and unchanged-candidate probe) and searched with searched (searched winner on fresh, final-window hit fraction, probe-search successes, drops, failure labels). Decoder diagnostics recorded for the contact arm on screen, promotion and fresh runs: residual, bound-active fraction, request saturation, mean fingertip distance.",
+            "config/pen_spin_plateau_repair.yaml: llm_pool with 16 workers, gpt-6.1-sol, high reasoning effort, temperature 1. No edit generations, fitting, reinforcement learning or curriculum; Stage 3 only; one protocol on the box."
+          ]
+        }
+      },
+      "note": "re-triage after D-067: the decoder qualified by R-096; eight blocks (seeds 4730-4737) instead of four; .venv-metaworld driver; pen_spin manifest names; code as implemented"
+    },
+    {
+      "at": "2026-11-20T06:33:43",
+      "round": 2,
+      "patch": {
+        "cost_estimate": {
+          "episodes": 6720,
+          "llm_calls": 128,
+          "wall_time_minutes": 300
+        },
+        "prediction": {
+          "metric": "paired_success_difference",
+          "direction": "increase",
+          "threshold": 0.05,
+          "against": "baseline: direct_joint fresh final-incumbent native sustained success under the same eight-block protocol",
+          "rationale": "Primary is fresh final-incumbent native sustained success, contact_rules minus direct_joint, after the matched 24-candidate search per arm, as eight paired block-level differences (pool seeds 4730-4737). A five-percentage-point gain is the minimum useful effect. Searched-winner fresh success, the final-window hit fraction and the zero-shot contrasts are secondary and cannot substitute for the primary."
+        },
+        "falsified_by": "An upper bound below +0.05 on the primary block-paired interval (fresh final-incumbent success, contact_rules minus direct_joint, eight blocks) refutes the predicted magnitude. An interval spanning zero and +0.05 is inconclusive. Improvement requires a strictly positive lower bound; tied success is never improvement."
+      },
+      "note": "round 2 agreed revise: cost 6,720 episodes / 128 calls; prediction and falsified_by name the eight-block primary estimator"
+    }
+  ]
 }

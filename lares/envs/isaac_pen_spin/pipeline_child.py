@@ -82,6 +82,10 @@ def build_controller(spec: dict, env_id: str):
         ctrl.name = spec.get("name", "d058_fixed_stroke_incumbent")
         ctrl.params = {**ctrl.params, "stroke_gain_constant": float(spec["stroke_gain_constant"])}
         return ctrl
+    if spec["kind"] == "symbolic" and spec.get("contact_actor"):  # R-094: contact features, either output contract
+        from lares.envs.isaac_pen_spin import contact_rules
+
+        return contact_rules.build_contact_controller(spec, SymbolicController(spec, spec.get("schema_env_id", env_id)))
     if spec["kind"] == "symbolic":
         return SymbolicController(spec, spec.get("schema_env_id", env_id))
     if spec["kind"] == "ppo":
@@ -114,6 +118,8 @@ def write_reset_observations(req: dict, manifest, stage: int) -> None:
 
 def write_queried_actions(req: dict, stage: int) -> None:
     """The actor's raw output at given observations (R-048): no placement, no step, no episode."""
+    if (req["actor"].get("contact_actor") or {}).get("kind") == "contact_frame":  # R-094
+        raise SystemExit("a contact_frame actor cannot be queried offline: its action depends on simulator Jacobians")
     import numpy as np
     import torch
 
@@ -180,6 +186,8 @@ def main(request_path: str) -> None:
                     "actor_kind": req["actor"]["kind"], "episodes": rows,
                     "reducer": f"sustained: time-out without a fall and the per-step predicate on all final "
                                f"{cases.SUSTAIN_WINDOW} steps (D-034)"}
+        if hasattr(ctrl, "pipeline_diagnostics"):  # R-094: optional per-run scalars of a trusted controller
+            response["controller_diagnostics"] = ctrl.pipeline_diagnostics(trace)
         if req.get("record"):
             path = req["response_path"].replace(".response.json", ".trace.npz")
             extra = {"gait_actions": ctrl.gait_actions()} if hasattr(ctrl, "gait_actions") else {}

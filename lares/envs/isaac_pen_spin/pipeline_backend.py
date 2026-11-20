@@ -114,7 +114,17 @@ def actor_spec(actor) -> tuple[dict, bytes | None]:
     if residual:
         spec.update(parent_residual=dict(residual), schema_env_id=residual["schema_env_id"],
                     execution=f"parent residual, bound {residual['bound']}, decoder {residual['decoder_name']}")
+    contact = getattr(policy, "_contact_actor", None)  # R-094: the 182-d contact-frame schema, either output contract
+    if contact:
+        spec.update(contact_actor=dict(contact), schema_env_id=contact["schema_env_id"],
+                    execution=contact["execution"])
     return spec, buf.getvalue()
+
+
+def is_contact_frame(actor) -> bool:
+    """True for R-094's ``contact_frame`` actor, whose action depends on simulator Jacobians and joint state."""
+    contact = getattr(getattr(actor, "policy", None), "_contact_actor", None)
+    return bool(contact) and contact.get("kind") == "contact_frame"
 
 
 def _row_to_record(row: dict, task_id: str):
@@ -159,6 +169,8 @@ class IsaacPenSpinStream:
                                             high=np.ones(cases.NUM_ACTIONS))
         self.calls = 0
         self.episodes = 0
+        #: The last child's optional ``controller_diagnostics`` (R-094: decoder residual, bounds, saturation), else None.
+        self.last_diagnostics = None
 
     # -- process -------------------------------------------------------------------------------------------------
     def _run_child(self, request_path: str) -> None:
@@ -190,6 +202,7 @@ class IsaacPenSpinStream:
         self._runner(request_path)
         with open(request["response_path"], encoding="utf-8") as f:
             response = json.load(f)
+        self.last_diagnostics = response.get("controller_diagnostics")
         if mode in ("reset_obs", "query"):
             return response
         if [r["case_id"] for r in response["episodes"]] != [c.case_id for c in manifest.episodes]:
@@ -234,7 +247,14 @@ class IsaacPenSpinStream:
 
     def query_actions(self, actor, obs: np.ndarray, manifest) -> np.ndarray:
         """The actor's raw (unclamped) output at each row of ``obs`` ``(N, 157)``, in a fresh Isaac process with no
-        episode (R-048). ``manifest`` only names the stage."""
+        episode (R-048). ``manifest`` only names the stage.
+
+        Refused for R-094's ``contact_frame`` actor: its executed action is decoded with the simulator's fingertip
+        Jacobians, measured joint positions and an integrated joint reference, none of which an observation carries,
+        so no observation-only query can reproduce it."""
+        if is_contact_frame(actor):
+            raise ValueError("a contact_frame actor cannot be queried offline: its action depends on simulator "
+                             "Jacobians and joint state, which an observation-only query does not have")
         os.makedirs(self.work_dir, exist_ok=True)
         qpath = os.path.join(self.work_dir, f"{self.name}_{self.calls + 1:04d}.query.npz")
         np.savez_compressed(qpath, obs=np.asarray(obs, dtype=np.float32))
@@ -265,4 +285,4 @@ def rows_from_trace(trace: dict) -> list[dict]:
 
 
 __all__ = ["EXECUTION", "GaitActor", "IsaacExpertActor", "IsaacPenSpinStream", "actor_spec", "failure_label",
-           "rows_from_trace"]
+           "is_contact_frame", "rows_from_trace"]
