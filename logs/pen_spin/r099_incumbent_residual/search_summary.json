@@ -1,0 +1,787 @@
+{
+  "study": "incumbent_residual",
+  "manifest": {
+    "path": "config/manifests/pen_spin_stage3_residual_probe_s4742.yaml",
+    "sha256": "6f8fe29778fd68a4e15e2530b228fda989af66b6ea0f291590f292d5b8bb3cd7"
+  },
+  "cells": {
+    "parent": {
+      "n": 80,
+      "successes": 31,
+      "success": 0.3875,
+      "completed": 0.9625,
+      "tail_hit_fraction": 0.4159963768115942,
+      "hit_fraction": 0.41199335916999713,
+      "mean_length": 347.2375,
+      "mean_abs_spin": 4.148478000611067,
+      "mean_transverse": 1.3451608108356594,
+      "drops": 3,
+      "tail_spin_failures": 46,
+      "median_fall_step": 46.0,
+      "tail_failures": 46,
+      "off_centre": 1,
+      "slow_spin": 45,
+      "unsigned_roll_rad": 22.334270477294922,
+      "residual_activity": null
+    },
+    "draw0": {
+      "n": 80,
+      "successes": 35,
+      "success": 0.4375,
+      "completed": 1.0,
+      "tail_hit_fraction": 0.4414583333333333,
+      "hit_fraction": 0.45334261838440104,
+      "mean_length": 359.0,
+      "mean_abs_spin": 4.292233600094915,
+      "mean_transverse": 1.3688590577803552,
+      "drops": 0,
+      "tail_spin_failures": 45,
+      "median_fall_step": null,
+      "tail_failures": 45,
+      "off_centre": 2,
+      "slow_spin": 43,
+      "unsigned_roll_rad": 25.681865692138672,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.01364632784822193,
+        "at_cap_fraction": 0.08675835654596101,
+        "clipped_by_action_clamp_fraction": 0.010755571030640669,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.015866939688579385,
+        "deadband": 0.11143159851833134,
+        "tau": 0.1553551774526793,
+        "cap": 0.10458128504665201
+      }
+    },
+    "draw1": {
+      "n": 80,
+      "successes": 34,
+      "success": 0.425,
+      "completed": 0.9875,
+      "tail_hit_fraction": 0.44598958333333333,
+      "hit_fraction": 0.4474299268802229,
+      "mean_length": 354.9125,
+      "mean_abs_spin": 4.411444717273116,
+      "mean_transverse": 1.1716668259352445,
+      "drops": 1,
+      "tail_spin_failures": 45,
+      "median_fall_step": 32.0,
+      "tail_failures": 45,
+      "off_centre": 6,
+      "slow_spin": 39,
+      "unsigned_roll_rad": 24.787776947021484,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.018948180406538558,
+        "at_cap_fraction": 0.11316155988857939,
+        "clipped_by_action_clamp_fraction": 0.01604282729805014,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.06389045914060326,
+        "deadband": 0.21034201677305536,
+        "tau": 0.10010567701000637,
+        "cap": 0.09288330120540084
+      }
+    },
+    "draw2": {
+      "n": 80,
+      "successes": 24,
+      "success": 0.3,
+      "completed": 1.0,
+      "tail_hit_fraction": 0.3158333333333333,
+      "hit_fraction": 0.32646239554317547,
+      "mean_length": 359.0,
+      "mean_abs_spin": 3.6402265623211862,
+      "mean_transverse": 1.2196371246129274,
+      "drops": 0,
+      "tail_spin_failures": 56,
+      "median_fall_step": null,
+      "tail_failures": 56,
+      "off_centre": 4,
+      "slow_spin": 52,
+      "unsigned_roll_rad": 21.780689239501953,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.015423207015712282,
+        "at_cap_fraction": 0.1610550139275766,
+        "clipped_by_action_clamp_fraction": 0.022045612813370474,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.09413711468805425,
+        "deadband": 0.25756665455400346,
+        "tau": 0.23950927849155962,
+        "cap": 0.05870926309119315
+      }
+    },
+    "draw3": {
+      "n": 80,
+      "successes": 25,
+      "success": 0.3125,
+      "completed": 0.9875,
+      "tail_hit_fraction": 0.3347181372549019,
+      "hit_fraction": 0.3591430444043913,
+      "mean_length": 354.9375,
+      "mean_abs_spin": 4.157935315743089,
+      "mean_transverse": 1.3186783054843545,
+      "drops": 1,
+      "tail_spin_failures": 54,
+      "median_fall_step": 34.0,
+      "tail_failures": 54,
+      "off_centre": 4,
+      "slow_spin": 50,
+      "unsigned_roll_rad": 23.384937286376953,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.02769472348656827,
+        "at_cap_fraction": 0.12989728412256268,
+        "clipped_by_action_clamp_fraction": 0.05448990250696379,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.07957721920887298,
+        "deadband": 0.052851086403730096,
+        "tau": 0.21908586877337,
+        "cap": 0.08940155026820593
+      }
+    },
+    "draw4": {
+      "n": 80,
+      "successes": 35,
+      "success": 0.4375,
+      "completed": 1.0,
+      "tail_hit_fraction": 0.4572916666666666,
+      "hit_fraction": 0.46493732590529246,
+      "mean_length": 359.0,
+      "mean_abs_spin": 4.643696465715766,
+      "mean_transverse": 1.394971877336502,
+      "drops": 0,
+      "tail_spin_failures": 45,
+      "median_fall_step": null,
+      "tail_failures": 45,
+      "off_centre": 0,
+      "slow_spin": 45,
+      "unsigned_roll_rad": 27.7847843170166,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.010812110475842998,
+        "at_cap_fraction": 0.09079561281337048,
+        "clipped_by_action_clamp_fraction": 0.0020212395543175487,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.017963444308062106,
+        "deadband": 0.47323026869222434,
+        "tau": 0.20881039111813898,
+        "cap": 0.0988414800678893
+      }
+    },
+    "draw5": {
+      "n": 80,
+      "successes": 37,
+      "success": 0.4625,
+      "completed": 1.0,
+      "tail_hit_fraction": 0.46291666666666664,
+      "hit_fraction": 0.46166434540389983,
+      "mean_length": 359.0,
+      "mean_abs_spin": 4.416501265391707,
+      "mean_transverse": 1.373307977244258,
+      "drops": 0,
+      "tail_spin_failures": 43,
+      "median_fall_step": null,
+      "tail_failures": 43,
+      "off_centre": 0,
+      "slow_spin": 43,
+      "unsigned_roll_rad": 26.425403594970703,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.011038479701639218,
+        "at_cap_fraction": 0.08812151810584959,
+        "clipped_by_action_clamp_fraction": 0.007463440111420613,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.013852787680947321,
+        "deadband": 0.16393846750256347,
+        "tau": 0.1604999837822607,
+        "cap": 0.08796637218052952
+      }
+    },
+    "draw6": {
+      "n": 80,
+      "successes": 28,
+      "success": 0.35,
+      "completed": 0.9875,
+      "tail_hit_fraction": 0.36208333333333337,
+      "hit_fraction": 0.37428543794490865,
+      "mean_length": 355.6375,
+      "mean_abs_spin": 3.675891321897507,
+      "mean_transverse": 1.2340617092326283,
+      "drops": 1,
+      "tail_spin_failures": 51,
+      "median_fall_step": 90.0,
+      "tail_failures": 51,
+      "off_centre": 1,
+      "slow_spin": 50,
+      "unsigned_roll_rad": 21.463613510131836,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.008636379354843522,
+        "at_cap_fraction": 0.10477889972144847,
+        "clipped_by_action_clamp_fraction": 0.006878481894150417,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.03472472258371323,
+        "deadband": 0.2982007507857383,
+        "tau": 0.22844695212966093,
+        "cap": 0.04899139999644245
+      }
+    },
+    "draw7": {
+      "n": 80,
+      "successes": 39,
+      "success": 0.4875,
+      "completed": 1.0,
+      "tail_hit_fraction": 0.4958333333333334,
+      "hit_fraction": 0.49136490250696385,
+      "mean_length": 359.0,
+      "mean_abs_spin": 4.557111994177103,
+      "mean_transverse": 1.3742150645703077,
+      "drops": 0,
+      "tail_spin_failures": 41,
+      "median_fall_step": null,
+      "tail_failures": 41,
+      "off_centre": 1,
+      "slow_spin": 40,
+      "unsigned_roll_rad": 27.266719818115234,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.006796174755418533,
+        "at_cap_fraction": 0.029930362116991644,
+        "clipped_by_action_clamp_fraction": 0.004106894150417827,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.004655481049180921,
+        "deadband": 0.2333555721435132,
+        "tau": 0.18501188209260944,
+        "cap": 0.10269089387249905
+      }
+    },
+    "draw8": {
+      "n": 80,
+      "successes": 34,
+      "success": 0.425,
+      "completed": 0.9625,
+      "tail_hit_fraction": 0.45163288288288295,
+      "hit_fraction": 0.4457519699706064,
+      "mean_length": 347.8625,
+      "mean_abs_spin": 4.319085120037198,
+      "mean_transverse": 1.3203382661566139,
+      "drops": 3,
+      "tail_spin_failures": 43,
+      "median_fall_step": 69.0,
+      "tail_failures": 43,
+      "off_centre": 2,
+      "slow_spin": 41,
+      "unsigned_roll_rad": 23.091333389282227,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.013761036037402564,
+        "at_cap_fraction": 0.1284731894150418,
+        "clipped_by_action_clamp_fraction": 0.008154596100278551,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.07390414779255411,
+        "deadband": 0.3624993948495886,
+        "tau": 0.05258925868976638,
+        "cap": 0.06698407098834736
+      }
+    },
+    "draw9": {
+      "n": 80,
+      "successes": 31,
+      "success": 0.3875,
+      "completed": 0.9875,
+      "tail_hit_fraction": 0.3939583333333333,
+      "hit_fraction": 0.40231346180190874,
+      "mean_length": 355.275,
+      "mean_abs_spin": 4.1919678542762995,
+      "mean_transverse": 1.3543033305555583,
+      "drops": 1,
+      "tail_spin_failures": 48,
+      "median_fall_step": 61.0,
+      "tail_failures": 48,
+      "off_centre": 1,
+      "slow_spin": 47,
+      "unsigned_roll_rad": 24.56063461303711,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.0044230340940042455,
+        "at_cap_fraction": 0.04119603064066853,
+        "clipped_by_action_clamp_fraction": 0.00844533426183844,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.003541506697208019,
+        "deadband": 0.08741735236475562,
+        "tau": 0.2461544498988158,
+        "cap": 0.056220592721784104
+      }
+    },
+    "draw10": {
+      "n": 80,
+      "successes": 32,
+      "success": 0.4,
+      "completed": 1.0,
+      "tail_hit_fraction": 0.410625,
+      "hit_fraction": 0.4291434540389972,
+      "mean_length": 359.0,
+      "mean_abs_spin": 4.322955431416631,
+      "mean_transverse": 1.3192565646022558,
+      "drops": 0,
+      "tail_spin_failures": 48,
+      "median_fall_step": null,
+      "tail_failures": 48,
+      "off_centre": 2,
+      "slow_spin": 46,
+      "unsigned_roll_rad": 25.865686416625977,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.01207433211438171,
+        "at_cap_fraction": 0.08558147632311977,
+        "clipped_by_action_clamp_fraction": 0.003769150417827298,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.015740435543651354,
+        "deadband": 0.3428358064789308,
+        "tau": 0.09397632255301613,
+        "cap": 0.10453009624868201
+      }
+    },
+    "draw11": {
+      "n": 80,
+      "successes": 22,
+      "success": 0.275,
+      "completed": 0.9125,
+      "tail_hit_fraction": 0.3145099973577796,
+      "hit_fraction": 0.3443638514027672,
+      "mean_length": 331.5,
+      "mean_abs_spin": 4.840544430911541,
+      "mean_transverse": 1.4437204483896493,
+      "drops": 7,
+      "tail_spin_failures": 51,
+      "median_fall_step": 50.0,
+      "tail_failures": 51,
+      "off_centre": 7,
+      "slow_spin": 44,
+      "unsigned_roll_rad": 21.352008819580078,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.03540917671490512,
+        "at_cap_fraction": 0.11330605849582173,
+        "clipped_by_action_clamp_fraction": 0.04692374651810585,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.08035000402053886,
+        "deadband": 0.05244651990986099,
+        "tau": 0.09528170227725641,
+        "cap": 0.1440548871181103
+      }
+    },
+    "draw12": {
+      "n": 80,
+      "successes": 36,
+      "success": 0.45,
+      "completed": 1.0,
+      "tail_hit_fraction": 0.45166666666666666,
+      "hit_fraction": 0.45264623955431754,
+      "mean_length": 359.0,
+      "mean_abs_spin": 4.209241475909948,
+      "mean_transverse": 1.314315947983414,
+      "drops": 0,
+      "tail_spin_failures": 44,
+      "median_fall_step": null,
+      "tail_failures": 44,
+      "off_centre": 2,
+      "slow_spin": 42,
+      "unsigned_roll_rad": 25.1852970123291,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.01524664914458575,
+        "at_cap_fraction": 0.09052402506963789,
+        "clipped_by_action_clamp_fraction": 0.017860376044568246,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.019144025807600953,
+        "deadband": 0.04613842142215624,
+        "tau": 0.1913288591198261,
+        "cap": 0.10502885874999177
+      }
+    },
+    "draw13": {
+      "n": 80,
+      "successes": 27,
+      "success": 0.3375,
+      "completed": 0.9875,
+      "tail_hit_fraction": 0.3473426870748299,
+      "hit_fraction": 0.3658518560627594,
+      "mean_length": 355.125,
+      "mean_abs_spin": 3.9406563322991133,
+      "mean_transverse": 1.3312913009896874,
+      "drops": 1,
+      "tail_spin_failures": 52,
+      "median_fall_step": 49.0,
+      "tail_failures": 52,
+      "off_centre": 2,
+      "slow_spin": 50,
+      "unsigned_roll_rad": 22.486846923828125,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.016965651121976316,
+        "at_cap_fraction": 0.11366295264623956,
+        "clipped_by_action_clamp_fraction": 0.016175139275766016,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.06892879685611779,
+        "deadband": 0.26213994074500685,
+        "tau": 0.1876047603463708,
+        "cap": 0.0814883677408382
+      }
+    },
+    "draw14": {
+      "n": 80,
+      "successes": 29,
+      "success": 0.3625,
+      "completed": 1.0,
+      "tail_hit_fraction": 0.3725,
+      "hit_fraction": 0.38555013927576604,
+      "mean_length": 359.0,
+      "mean_abs_spin": 3.97389193251729,
+      "mean_transverse": 1.2212040325626732,
+      "drops": 0,
+      "tail_spin_failures": 51,
+      "median_fall_step": null,
+      "tail_failures": 51,
+      "off_centre": 2,
+      "slow_spin": 49,
+      "unsigned_roll_rad": 23.77712059020996,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.007419558295923023,
+        "at_cap_fraction": 0.09512534818941504,
+        "clipped_by_action_clamp_fraction": 0.003304317548746518,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.02203969598618262,
+        "deadband": 0.4004999808819127,
+        "tau": 0.19046091706527424,
+        "cap": 0.05591776999042579
+      }
+    },
+    "draw15": {
+      "n": 80,
+      "successes": 33,
+      "success": 0.4125,
+      "completed": 1.0,
+      "tail_hit_fraction": 0.42416666666666664,
+      "hit_fraction": 0.43732590529247906,
+      "mean_length": 359.0,
+      "mean_abs_spin": 4.504267223738134,
+      "mean_transverse": 1.33631155397743,
+      "drops": 0,
+      "tail_spin_failures": 47,
+      "median_fall_step": null,
+      "tail_failures": 47,
+      "off_centre": 3,
+      "slow_spin": 44,
+      "unsigned_roll_rad": 26.95053482055664,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.021782995322952695,
+        "at_cap_fraction": 0.10093837047353761,
+        "clipped_by_action_clamp_fraction": 0.026899373259052926,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.04859881885588866,
+        "deadband": 0.06281585472428752,
+        "tau": 0.24571295786356606,
+        "cap": 0.10068574173267933
+      }
+    },
+    "draw16": {
+      "n": 80,
+      "successes": 30,
+      "success": 0.375,
+      "completed": 0.9875,
+      "tail_hit_fraction": 0.40852941176470586,
+      "hit_fraction": 0.4216724015511497,
+      "mean_length": 355.15,
+      "mean_abs_spin": 4.436950068548322,
+      "mean_transverse": 1.420581964123994,
+      "drops": 1,
+      "tail_spin_failures": 49,
+      "median_fall_step": 51.0,
+      "tail_failures": 49,
+      "off_centre": 2,
+      "slow_spin": 47,
+      "unsigned_roll_rad": 25.5367374420166,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.015338315718021233,
+        "at_cap_fraction": 0.09397458217270195,
+        "clipped_by_action_clamp_fraction": 0.004606545961002785,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.022194310130043915,
+        "deadband": 0.271631340569477,
+        "tau": 0.07227113142769429,
+        "cap": 0.11911351061444764
+      }
+    },
+    "draw17": {
+      "n": 80,
+      "successes": 35,
+      "success": 0.4375,
+      "completed": 1.0,
+      "tail_hit_fraction": 0.44625000000000004,
+      "hit_fraction": 0.4431058495821727,
+      "mean_length": 359.0,
+      "mean_abs_spin": 3.8924923252314327,
+      "mean_transverse": 1.1836057008244096,
+      "drops": 0,
+      "tail_spin_failures": 45,
+      "median_fall_step": null,
+      "tail_failures": 45,
+      "off_centre": 3,
+      "slow_spin": 42,
+      "unsigned_roll_rad": 23.290081024169922,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.010567237422658873,
+        "at_cap_fraction": 0.14778551532033427,
+        "clipped_by_action_clamp_fraction": 0.009785863509749304,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.099821348700373,
+        "deadband": 0.4561217247142502,
+        "tau": 0.08521680159171247,
+        "cap": 0.05032987398814749
+      }
+    },
+    "draw18": {
+      "n": 80,
+      "successes": 33,
+      "success": 0.4125,
+      "completed": 1.0,
+      "tail_hit_fraction": 0.4241666666666667,
+      "hit_fraction": 0.43057103064066854,
+      "mean_length": 359.0,
+      "mean_abs_spin": 4.523987152427435,
+      "mean_transverse": 1.3479559529572724,
+      "drops": 0,
+      "tail_spin_failures": 47,
+      "median_fall_step": null,
+      "tail_failures": 47,
+      "off_centre": 0,
+      "slow_spin": 47,
+      "unsigned_roll_rad": 27.068523406982422,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.008187970967760989,
+        "at_cap_fraction": 0.09098015320334261,
+        "clipped_by_action_clamp_fraction": 0.0039066852367688025,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.013042064262553289,
+        "deadband": 0.33505919349780244,
+        "tau": 0.15977000573665393,
+        "cap": 0.06949226452952534
+      }
+    },
+    "draw19": {
+      "n": 80,
+      "successes": 33,
+      "success": 0.4125,
+      "completed": 0.9875,
+      "tail_hit_fraction": 0.4456918238993711,
+      "hit_fraction": 0.4626648972512745,
+      "mean_length": 355.175,
+      "mean_abs_spin": 5.150073914974928,
+      "mean_transverse": 1.5218060430139304,
+      "drops": 1,
+      "tail_spin_failures": 46,
+      "median_fall_step": 53.0,
+      "tail_failures": 46,
+      "off_centre": 2,
+      "slow_spin": 44,
+      "unsigned_roll_rad": 29.852252960205078,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.025820078272839442,
+        "at_cap_fraction": 0.10019846796657382,
+        "clipped_by_action_clamp_fraction": 0.02392931754874652,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.06357524527295369,
+        "deadband": 0.18568325997502305,
+        "tau": 0.2405148624361083,
+        "cap": 0.14144716250784428
+      }
+    },
+    "draw20": {
+      "n": 80,
+      "successes": 33,
+      "success": 0.4125,
+      "completed": 0.9875,
+      "tail_hit_fraction": 0.4189583333333333,
+      "hit_fraction": 0.43486938784462537,
+      "mean_length": 356.1,
+      "mean_abs_spin": 4.342059482261538,
+      "mean_transverse": 1.3803561793640255,
+      "drops": 1,
+      "tail_spin_failures": 46,
+      "median_fall_step": 127.0,
+      "tail_failures": 46,
+      "off_centre": 1,
+      "slow_spin": 45,
+      "unsigned_roll_rad": 25.531158447265625,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.011804945785189074,
+        "at_cap_fraction": 0.06967618384401114,
+        "clipped_by_action_clamp_fraction": 0.002120473537604457,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.014299551981605364,
+        "deadband": 0.4442937685779763,
+        "tau": 0.095821591803014,
+        "cap": 0.11035938059032938
+      }
+    },
+    "draw21": {
+      "n": 80,
+      "successes": 32,
+      "success": 0.4,
+      "completed": 0.9875,
+      "tail_hit_fraction": 0.41215277777777776,
+      "hit_fraction": 0.423912875270814,
+      "mean_length": 355.075,
+      "mean_abs_spin": 4.333893928304315,
+      "mean_transverse": 1.3834118373692035,
+      "drops": 1,
+      "tail_spin_failures": 47,
+      "median_fall_step": 45.0,
+      "tail_failures": 47,
+      "off_centre": 4,
+      "slow_spin": 43,
+      "unsigned_roll_rad": 24.75814437866211,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.018463280375289385,
+        "at_cap_fraction": 0.10144324512534819,
+        "clipped_by_action_clamp_fraction": 0.02019672701949861,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.039777273519178716,
+        "deadband": 0.07925494203309363,
+        "tau": 0.16482641680238364,
+        "cap": 0.09207204121870352
+      }
+    },
+    "draw22": {
+      "n": 80,
+      "successes": 29,
+      "success": 0.3625,
+      "completed": 0.9625,
+      "tail_hit_fraction": 0.41278108465608465,
+      "hit_fraction": 0.41829002151773736,
+      "mean_length": 347.1,
+      "mean_abs_spin": 5.201070599257946,
+      "mean_transverse": 1.4790378851816057,
+      "drops": 3,
+      "tail_spin_failures": 48,
+      "median_fall_step": 36.0,
+      "tail_failures": 48,
+      "off_centre": 5,
+      "slow_spin": 43,
+      "unsigned_roll_rad": 27.349853515625,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.0212004165861932,
+        "at_cap_fraction": 0.10571030640668523,
+        "clipped_by_action_clamp_fraction": 0.011335306406685237,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.07501198568172218,
+        "deadband": 0.3724319335897138,
+        "tau": 0.1688611267117064,
+        "cap": 0.13263964346333934
+      }
+    },
+    "draw23": {
+      "n": 80,
+      "successes": 35,
+      "success": 0.4375,
+      "completed": 1.0,
+      "tail_hit_fraction": 0.45979166666666665,
+      "hit_fraction": 0.46316155988857943,
+      "mean_length": 359.0,
+      "mean_abs_spin": 4.458971030265093,
+      "mean_transverse": 1.3370713476091622,
+      "drops": 0,
+      "tail_spin_failures": 45,
+      "median_fall_step": null,
+      "tail_failures": 45,
+      "off_centre": 1,
+      "slow_spin": 44,
+      "unsigned_roll_rad": 26.67951011657715,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.006572642584531088,
+        "at_cap_fraction": 0.0488474930362117,
+        "clipped_by_action_clamp_fraction": 0.002597493036211699,
+        "values": 574400
+      },
+      "params": {
+        "gain": 0.0074832540244521685,
+        "deadband": 0.3978284679487513,
+        "tau": 0.0872419418130373,
+        "cap": 0.06780792971431171
+      }
+    }
+  },
+  "episodes": 2000,
+  "ranking": [
+    "draw7",
+    "draw5",
+    "draw23",
+    "draw4",
+    "draw12",
+    "draw8",
+    "draw17",
+    "draw1",
+    "draw19",
+    "draw0",
+    "draw18",
+    "draw15",
+    "draw20",
+    "draw22",
+    "draw21",
+    "draw10",
+    "draw16",
+    "draw9",
+    "draw14",
+    "draw6",
+    "draw13",
+    "draw3",
+    "draw2",
+    "draw11"
+  ],
+  "selected": {
+    "draw": "draw7",
+    "params": {
+      "gain": 0.004655481049180921,
+      "deadband": 0.2333555721435132,
+      "tau": 0.18501188209260944,
+      "cap": 0.10269089387249905
+    },
+    "selected_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1",
+    "rule": "mean final-window hit fraction, then sustained successes, then the lower index"
+  },
+  "note": "S3 stops here: the winner is chosen on the probe manifest only and is not evidence of usefulness; no fresh case has been run"
+}

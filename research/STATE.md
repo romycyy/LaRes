@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-22T00:32:09 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-22T02:01:51 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 

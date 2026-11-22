@@ -1,0 +1,541 @@
+{
+  "study": "incumbent_residual_confirmation",
+  "selected_minus_parent": {
+    "pooled": {
+      "success": {
+        "n": 672,
+        "mean": 0.05505952380952381,
+        "se": 0.01596734706899601,
+        "low": 0.0237075470102162,
+        "high": 0.08641150060883142,
+        "p_value": 0.0005994809403378373
+      },
+      "success_win_loss_tie": {
+        "wins": 77,
+        "losses": 40,
+        "ties": 555
+      },
+      "tail_hit_fraction": {
+        "n": 672,
+        "mean": 0.07119713470986723,
+        "se": 0.015931222323328182,
+        "low": 0.03991608905417193,
+        "high": 0.10247818036556253,
+        "p_value": 9.222045366981003e-06
+      },
+      "drops": {
+        "n": 672,
+        "mean": 0.0,
+        "se": 0.003647789161311569,
+        "low": -0.00600837448906957,
+        "high": 0.00600837448906957,
+        "p_value": 1.0,
+        "one_sided_95_upper": 0.00600837448906957,
+        "margin": 0.05,
+        "non_inferior": true,
+        "counts": [
+          34,
+          34
+        ]
+      },
+      "promotes": true,
+      "adopts": true,
+      "prediction": {
+        "threshold": 0.05,
+        "supported": true,
+        "refuted": false
+      }
+    },
+    "per_manifest": {
+      "s4751": {
+        "n": 84,
+        "selected": 35,
+        "parent": 29,
+        "difference": 0.07142857142857142,
+        "drops": [
+          4,
+          4
+        ]
+      },
+      "s4752": {
+        "n": 84,
+        "selected": 39,
+        "parent": 41,
+        "difference": -0.023809523809523808,
+        "drops": [
+          3,
+          3
+        ]
+      },
+      "s4753": {
+        "n": 84,
+        "selected": 32,
+        "parent": 25,
+        "difference": 0.08333333333333333,
+        "drops": [
+          4,
+          5
+        ]
+      },
+      "s4754": {
+        "n": 84,
+        "selected": 29,
+        "parent": 25,
+        "difference": 0.047619047619047616,
+        "drops": [
+          6,
+          6
+        ]
+      },
+      "s4755": {
+        "n": 84,
+        "selected": 33,
+        "parent": 28,
+        "difference": 0.05952380952380952,
+        "drops": [
+          5,
+          4
+        ]
+      },
+      "s4756": {
+        "n": 84,
+        "selected": 33,
+        "parent": 29,
+        "difference": 0.047619047619047616,
+        "drops": [
+          5,
+          6
+        ]
+      },
+      "s4757": {
+        "n": 84,
+        "selected": 35,
+        "parent": 29,
+        "difference": 0.07142857142857142,
+        "drops": [
+          7,
+          5
+        ]
+      },
+      "s4758": {
+        "n": 84,
+        "selected": 31,
+        "parent": 24,
+        "difference": 0.08333333333333333,
+        "drops": [
+          0,
+          1
+        ]
+      }
+    },
+    "manifest_clustered": {
+      "n": 8,
+      "mean": 0.05505952380952381,
+      "se": 0.012309756540649171,
+      "low": 0.02595157496230188,
+      "high": 0.08416747265674573,
+      "p_value": 0.0028910605437418154
+    },
+    "intervals_agree_on_sign": true,
+    "pairs": 672,
+    "successes": [
+      267,
+      230
+    ]
+  },
+  "cells": {
+    "s4751/parent": {
+      "n": 84,
+      "successes": 29,
+      "success": 0.34523809523809523,
+      "completed": 0.9523809523809523,
+      "tail_hit_fraction": 0.37251511715797436,
+      "hit_fraction": 0.37523873213785675,
+      "mean_length": 343.4404761904762,
+      "mean_abs_spin": 4.169470552532446,
+      "mean_transverse": 1.4249158522912435,
+      "drops": 4,
+      "tail_spin_failures": 51,
+      "median_fall_step": 32.5,
+      "tail_failures": 51,
+      "off_centre": 6,
+      "slow_spin": 45,
+      "unsigned_roll_rad": 21.50558853149414,
+      "residual_activity": null
+    },
+    "s4751/selected": {
+      "n": 84,
+      "successes": 35,
+      "success": 0.4166666666666667,
+      "completed": 0.9523809523809523,
+      "tail_hit_fraction": 0.44281676272041387,
+      "hit_fraction": 0.4402335288697704,
+      "mean_length": 343.4404761904762,
+      "mean_abs_spin": 4.960467145556495,
+      "mean_transverse": 1.6365670474867027,
+      "drops": 4,
+      "tail_spin_failures": 45,
+      "median_fall_step": 32.0,
+      "tail_failures": 45,
+      "off_centre": 5,
+      "slow_spin": 40,
+      "unsigned_roll_rad": 25.376419067382812,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.006335289182077433,
+        "at_cap_fraction": 0.025154198169518503,
+        "clipped_by_action_clamp_fraction": 0.0027772250961666,
+        "values": 603120
+      }
+    },
+    "s4752/parent": {
+      "n": 84,
+      "successes": 41,
+      "success": 0.4880952380952381,
+      "completed": 0.9642857142857143,
+      "tail_hit_fraction": 0.49828996934526987,
+      "hit_fraction": 0.48751267792731,
+      "mean_length": 347.3809523809524,
+      "mean_abs_spin": 4.609582667194662,
+      "mean_transverse": 1.338412108343272,
+      "drops": 3,
+      "tail_spin_failures": 40,
+      "median_fall_step": 34.0,
+      "tail_failures": 40,
+      "off_centre": 3,
+      "slow_spin": 37,
+      "unsigned_roll_rad": 24.534860610961914,
+      "residual_activity": null
+    },
+    "s4752/selected": {
+      "n": 84,
+      "successes": 39,
+      "success": 0.4642857142857143,
+      "completed": 0.9642857142857143,
+      "tail_hit_fraction": 0.4917344865874278,
+      "hit_fraction": 0.4915504436109056,
+      "mean_length": 347.3809523809524,
+      "mean_abs_spin": 5.0768882774171376,
+      "mean_transverse": 1.4709838172864347,
+      "drops": 3,
+      "tail_spin_failures": 42,
+      "median_fall_step": 34.0,
+      "tail_failures": 42,
+      "off_centre": 3,
+      "slow_spin": 39,
+      "unsigned_roll_rad": 27.289268493652344,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.006448643866865653,
+        "at_cap_fraction": 0.022695317681390104,
+        "clipped_by_action_clamp_fraction": 0.004034023079984083,
+        "values": 603120
+      }
+    },
+    "s4753/parent": {
+      "n": 84,
+      "successes": 25,
+      "success": 0.2976190476190476,
+      "completed": 0.9404761904761905,
+      "tail_hit_fraction": 0.32365022722165576,
+      "hit_fraction": 0.34041748194155674,
+      "mean_length": 339.9404761904762,
+      "mean_abs_spin": 4.251451629613127,
+      "mean_transverse": 1.4342859270317214,
+      "drops": 5,
+      "tail_spin_failures": 54,
+      "median_fall_step": 37.0,
+      "tail_failures": 54,
+      "off_centre": 7,
+      "slow_spin": 47,
+      "unsigned_roll_rad": 20.20796012878418,
+      "residual_activity": null
+    },
+    "s4753/selected": {
+      "n": 84,
+      "successes": 32,
+      "success": 0.38095238095238093,
+      "completed": 0.9523809523809523,
+      "tail_hit_fraction": 0.42768455268455274,
+      "hit_fraction": 0.4293951022711469,
+      "mean_length": 343.7142857142857,
+      "mean_abs_spin": 4.989185913332871,
+      "mean_transverse": 1.522005122154951,
+      "drops": 4,
+      "tail_spin_failures": 48,
+      "median_fall_step": 36.5,
+      "tail_failures": 48,
+      "off_centre": 6,
+      "slow_spin": 42,
+      "unsigned_roll_rad": 25.522016525268555,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.00637755329566382,
+        "at_cap_fraction": 0.023474598753150284,
+        "clipped_by_action_clamp_fraction": 0.0039328823451386125,
+        "values": 603120
+      }
+    },
+    "s4754/parent": {
+      "n": 84,
+      "successes": 25,
+      "success": 0.2976190476190476,
+      "completed": 0.9285714285714286,
+      "tail_hit_fraction": 0.3340402299734855,
+      "hit_fraction": 0.3461190865857683,
+      "mean_length": 336.1190476190476,
+      "mean_abs_spin": 4.800029950482505,
+      "mean_transverse": 1.5060444578883194,
+      "drops": 6,
+      "tail_spin_failures": 53,
+      "median_fall_step": 34.5,
+      "tail_failures": 53,
+      "off_centre": 2,
+      "slow_spin": 51,
+      "unsigned_roll_rad": 21.598995208740234,
+      "residual_activity": null
+    },
+    "s4754/selected": {
+      "n": 84,
+      "successes": 29,
+      "success": 0.34523809523809523,
+      "completed": 0.9285714285714286,
+      "tail_hit_fraction": 0.41117534406839457,
+      "hit_fraction": 0.41969288083420164,
+      "mean_length": 336.10714285714283,
+      "mean_abs_spin": 5.769090675172352,
+      "mean_transverse": 1.7152626203993957,
+      "drops": 6,
+      "tail_spin_failures": 49,
+      "median_fall_step": 33.5,
+      "tail_failures": 49,
+      "off_centre": 1,
+      "slow_spin": 48,
+      "unsigned_roll_rad": 27.0164794921875,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.006665970876344494,
+        "at_cap_fraction": 0.027110691073086616,
+        "clipped_by_action_clamp_fraction": 0.0031768139010478844,
+        "values": 603120
+      }
+    },
+    "s4755/parent": {
+      "n": 84,
+      "successes": 28,
+      "success": 0.3333333333333333,
+      "completed": 0.9523809523809523,
+      "tail_hit_fraction": 0.36086051844980416,
+      "hit_fraction": 0.3559808925047186,
+      "mean_length": 343.7261904761905,
+      "mean_abs_spin": 3.871357819154149,
+      "mean_transverse": 1.3927410856953688,
+      "drops": 4,
+      "tail_spin_failures": 52,
+      "median_fall_step": 38.5,
+      "tail_failures": 52,
+      "off_centre": 4,
+      "slow_spin": 48,
+      "unsigned_roll_rad": 19.77968406677246,
+      "residual_activity": null
+    },
+    "s4755/selected": {
+      "n": 84,
+      "successes": 33,
+      "success": 0.39285714285714285,
+      "completed": 0.9404761904761905,
+      "tail_hit_fraction": 0.42452345020256727,
+      "hit_fraction": 0.4219560986761189,
+      "mean_length": 340.1547619047619,
+      "mean_abs_spin": 4.781501317662852,
+      "mean_transverse": 1.6817577243560837,
+      "drops": 5,
+      "tail_spin_failures": 46,
+      "median_fall_step": 36.0,
+      "tail_failures": 46,
+      "off_centre": 4,
+      "slow_spin": 42,
+      "unsigned_roll_rad": 23.703723907470703,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.006661819521051643,
+        "at_cap_fraction": 0.027094110624751293,
+        "clipped_by_action_clamp_fraction": 0.0037422071892823983,
+        "values": 603120
+      }
+    },
+    "s4756/parent": {
+      "n": 84,
+      "successes": 29,
+      "success": 0.34523809523809523,
+      "completed": 0.9285714285714286,
+      "tail_hit_fraction": 0.36738199665831245,
+      "hit_fraction": 0.37264677260118734,
+      "mean_length": 336.4642857142857,
+      "mean_abs_spin": 4.053842755300658,
+      "mean_transverse": 1.3646621469940459,
+      "drops": 6,
+      "tail_spin_failures": 49,
+      "median_fall_step": 38.5,
+      "tail_failures": 49,
+      "off_centre": 1,
+      "slow_spin": 48,
+      "unsigned_roll_rad": 18.684467315673828,
+      "residual_activity": null
+    },
+    "s4756/selected": {
+      "n": 84,
+      "successes": 33,
+      "success": 0.39285714285714285,
+      "completed": 0.9404761904761905,
+      "tail_hit_fraction": 0.42623527905785974,
+      "hit_fraction": 0.4303207015276833,
+      "mean_length": 340.2261904761905,
+      "mean_abs_spin": 4.727369367366745,
+      "mean_transverse": 1.5023760172937597,
+      "drops": 5,
+      "tail_spin_failures": 46,
+      "median_fall_step": 42.0,
+      "tail_failures": 46,
+      "off_centre": 1,
+      "slow_spin": 45,
+      "unsigned_roll_rad": 23.62773323059082,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.006650137168008526,
+        "at_cap_fraction": 0.02536642790821064,
+        "clipped_by_action_clamp_fraction": 0.004793407613741875,
+        "values": 603120
+      }
+    },
+    "s4757/parent": {
+      "n": 84,
+      "successes": 29,
+      "success": 0.34523809523809523,
+      "completed": 0.9404761904761905,
+      "tail_hit_fraction": 0.3667961393957599,
+      "hit_fraction": 0.3706759643062255,
+      "mean_length": 339.9642857142857,
+      "mean_abs_spin": 4.338901071676186,
+      "mean_transverse": 1.5303182481300264,
+      "drops": 5,
+      "tail_spin_failures": 50,
+      "median_fall_step": 37.0,
+      "tail_failures": 50,
+      "off_centre": 3,
+      "slow_spin": 47,
+      "unsigned_roll_rad": 20.463130950927734,
+      "residual_activity": null
+    },
+    "s4757/selected": {
+      "n": 84,
+      "successes": 35,
+      "success": 0.4166666666666667,
+      "completed": 0.9166666666666666,
+      "tail_hit_fraction": 0.4665243731429564,
+      "hit_fraction": 0.46721025102242775,
+      "mean_length": 332.5,
+      "mean_abs_spin": 5.542754106578373,
+      "mean_transverse": 1.786081383093482,
+      "drops": 7,
+      "tail_spin_failures": 42,
+      "median_fall_step": 38.0,
+      "tail_failures": 42,
+      "off_centre": 2,
+      "slow_spin": 40,
+      "unsigned_roll_rad": 25.932971954345703,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.006544621084401803,
+        "at_cap_fraction": 0.02771753548215944,
+        "clipped_by_action_clamp_fraction": 0.004546358933545563,
+        "values": 603120
+      }
+    },
+    "s4758/parent": {
+      "n": 84,
+      "successes": 24,
+      "success": 0.2857142857142857,
+      "completed": 0.9880952380952381,
+      "tail_hit_fraction": 0.2938131313131313,
+      "hit_fraction": 0.3157761458597113,
+      "mean_length": 355.3809523809524,
+      "mean_abs_spin": 3.398321175149509,
+      "mean_transverse": 1.217625123581716,
+      "drops": 1,
+      "tail_spin_failures": 59,
+      "median_fall_step": 55.0,
+      "tail_failures": 59,
+      "off_centre": 5,
+      "slow_spin": 54,
+      "unsigned_roll_rad": 19.52663230895996,
+      "residual_activity": null
+    },
+    "s4758/selected": {
+      "n": 84,
+      "successes": 31,
+      "success": 0.36904761904761907,
+      "completed": 1.0,
+      "tail_hit_fraction": 0.3962301587301587,
+      "hit_fraction": 0.40884069505239423,
+      "mean_length": 359.0,
+      "mean_abs_spin": 4.092749934820902,
+      "mean_transverse": 1.3514603525400162,
+      "drops": 0,
+      "tail_spin_failures": 53,
+      "median_fall_step": null,
+      "tail_failures": 53,
+      "off_centre": 2,
+      "slow_spin": 51,
+      "unsigned_roll_rad": 24.4882869720459,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.006545377551861002,
+        "at_cap_fraction": 0.02486072423398329,
+        "clipped_by_action_clamp_fraction": 0.0045994163682185965,
+        "values": 603120
+      }
+    }
+  },
+  "paired_success_difference": 0.05505952380952381,
+  "paired_success_difference_ci95": [
+    0.0237075470102162,
+    0.08641150060883142
+  ],
+  "adopts": true,
+  "selected": {
+    "gain": 0.004655481049180921,
+    "deadband": 0.2333555721435132,
+    "tau": 0.18501188209260944,
+    "cap": 0.10269089387249905
+  },
+  "selected_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1",
+  "manifests": {
+    "s4751": {
+      "path": "config/manifests/pen_spin_stage3_residual_confirmation_s4751.yaml",
+      "sha256": "4efb936a416a60efc90164fee00126b9b6216d6092562f47cbd39521da83917a"
+    },
+    "s4752": {
+      "path": "config/manifests/pen_spin_stage3_residual_confirmation_s4752.yaml",
+      "sha256": "00f674c50ae2f1032680d4039df748896a3ff1b6a46d941ac49b5c93fa114674"
+    },
+    "s4753": {
+      "path": "config/manifests/pen_spin_stage3_residual_confirmation_s4753.yaml",
+      "sha256": "39570e33e2f4f39b9156ecc0b5445d8d44f333483caa8f11e616cecd7117f04b"
+    },
+    "s4754": {
+      "path": "config/manifests/pen_spin_stage3_residual_confirmation_s4754.yaml",
+      "sha256": "3fb52cecf9dca449d69bd9243629f65a39c8e6c5d36e42fb6de31c5ae90b2573"
+    },
+    "s4755": {
+      "path": "config/manifests/pen_spin_stage3_residual_confirmation_s4755.yaml",
+      "sha256": "a764784e06688958e5c5ee9685c2fb9e9b36feb1a57f7a9844f4ffdf1dd36200"
+    },
+    "s4756": {
+      "path": "config/manifests/pen_spin_stage3_residual_confirmation_s4756.yaml",
+      "sha256": "bb3fc82ba1d696ec3b1cf9beeaee3d4e64c216e04835e034c80fb3a92a9a812a"
+    },
+    "s4757": {
+      "path": "config/manifests/pen_spin_stage3_residual_confirmation_s4757.yaml",
+      "sha256": "795680fc10b3ba9c747e1a657766a8834746fa9b7eee7ab188f3f107a440dcb8"
+    },
+    "s4758": {
+      "path": "config/manifests/pen_spin_stage3_residual_confirmation_s4758.yaml",
+      "sha256": "1d613bca28a5549ec319bdc651180859777a3dedd54f067ca9d836410c8a3282"
+    }
+  },
+  "episodes": 1344,
+  "limitation": "one frozen residual on one incumbent; the final replication, with no retuning; D-070's 90 pairs are not pooled in"
+}

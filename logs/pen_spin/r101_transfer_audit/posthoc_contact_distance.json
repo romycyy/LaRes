@@ -1,0 +1,63 @@
+{
+ "note": "Post hoc, not predeclared. Distance from each fingertip link origin to the ideal pen capsule surface (mm), from the cells' own recorded observations (contact_control.capsule_frames). The pen radius is 12 mm; a touching fingertip reads about 11-12 mm.",
+ "zero_cell_in_play_steps_from_100": {
+  "ff": {
+   "median_mm": 57.5,
+   "p10_p90_mm": [
+    51.9,
+    73.1
+   ],
+   "fraction_within_15mm": 0.0
+  },
+  "mf": {
+   "median_mm": 12.1,
+   "p10_p90_mm": [
+    10.8,
+    13.8
+   ],
+   "fraction_within_15mm": 0.917,
+   "success_cases": 1.0,
+   "failed_cases": 0.88
+  },
+  "rf": {
+   "median_mm": 58.3,
+   "p10_p90_mm": [
+    52.3,
+    67.1
+   ],
+   "fraction_within_15mm": 0.0
+  },
+  "lf": {
+   "median_mm": 59.0,
+   "p10_p90_mm": [
+    53.2,
+    66.2
+   ],
+   "fraction_within_15mm": 0.0
+  },
+  "th": {
+   "median_mm": 11.2,
+   "p10_p90_mm": [
+    10.5,
+    20.5
+   ],
+   "fraction_within_15mm": 0.889,
+   "success_cases": 1.0,
+   "failed_cases": 0.84
+  }
+ },
+ "pulse_window_eligible_cases": {
+  "coherent_pos": {
+   "ff_median_mm": 59.2,
+   "rf_median_mm": 60.6,
+   "mf_median_mm": 12.0,
+   "th_median_mm": 11.0
+  },
+  "coherent_neg": {
+   "ff_median_mm": 56.1,
+   "rf_median_mm": 56.4,
+   "mf_median_mm": 12.0,
+   "th_median_mm": 11.0
+  }
+ }
+}

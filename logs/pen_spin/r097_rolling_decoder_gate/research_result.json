@@ -1,0 +1,418 @@
+{
+ "metrics": {
+  "gate_statistics": 0.2238095238095238,
+  "pooled_paired_sign_agreement": 0.7238095238095238,
+  "pooled_paired_sign_agreement_case_clustered_ci95": [
+   0.7095238095238096,
+   0.7392857142857143
+  ],
+  "gate_verdict": "fail",
+  "prediction_outcome": "refuted",
+  "paired_gain_median": 0.3378725365640529,
+  "feasible_ratio_median": 0.44487380364444107,
+  "bound_active_fraction": 0.43984126984126987,
+  "tracking_error_median": 0.8400910645441808,
+  "weakest_contrast_sign_agreement": 0.03571428571428571,
+  "eligible_pairs": 840,
+  "jacobian_rel_error_median": 0.0024668776852800924,
+  "s1_success": 0.35,
+  "s1_success_wilson95": [
+   0.25454550534873466,
+   0.45919993351192334
+  ],
+  "s1_reproduces": true
+ },
+ "controls": {
+  "chance_sign_agreement": 0.5,
+  "incumbent_alone": {
+   "successes": 28,
+   "n": 80,
+   "timeout_rate": 0.9,
+   "drops": 8,
+   "slow_spin": 42,
+   "off_centre": 2,
+   "roll_by_outcome": {
+    "drop": {
+     "n": 8,
+     "pre_window_abs_rate": 0.0,
+     "aligned_roll_after_window": 0.0,
+     "abs_roll_integral": 9.794780504703521,
+     "reversals": 0.0,
+     "mean_abs_spin": 16.833657264709473,
+     "tail_hit_fraction": 0.3125
+    },
+    "off_centre": {
+     "n": 2,
+     "pre_window_abs_rate": 0.04501769784837961,
+     "aligned_roll_after_window": 0.15278252948385973,
+     "abs_roll_integral": 10.343122912322482,
+     "reversals": 5.0,
+     "mean_abs_spin": 1.728655755519867,
+     "tail_hit_fraction": 0.0
+    },
+    "slow_spin": {
+     "n": 42,
+     "pre_window_abs_rate": 1.6772084832191467,
+     "aligned_roll_after_window": 5.830616440375646,
+     "abs_roll_integral": 11.573184045900902,
+     "reversals": 1.0,
+     "mean_abs_spin": 1.9342369437217712,
+     "tail_hit_fraction": 0.0
+    },
+    "success": {
+     "n": 28,
+     "pre_window_abs_rate": 5.608726501464844,
+     "aligned_roll_after_window": 19.536101281642914,
+     "abs_roll_integral": 33.212325950711964,
+     "reversals": 1.0,
+     "mean_abs_spin": 5.550806999206543,
+     "tail_hit_fraction": 1.0
+    }
+   },
+   "roll_directions": {
+    "positive": 57,
+    "negative": 15,
+    "ended_before_window": 8
+   },
+   "rolling_eligible_cases": 56
+  },
+  "zero_request_residual": {
+   "timeout_rate": 0.9,
+   "sustained": 28,
+   "identity_max_abs": 0.0,
+   "reproduces_parent_rows": true
+  },
+  "prefix_identity_max_abs_diff": 0.0,
+  "gate_checks": {
+   "jacobian_rel_error_median": {
+    "value": 0.0024668776852800924,
+    "ok": true,
+    "rule": "< 0.15"
+   },
+   "retention_diff": {
+    "value": 0.0,
+    "ok": true,
+    "rule": ">= -0.1 (zero-request residual minus incumbent timeout rate)"
+   },
+   "zero_request_identity": {
+    "value": 0.0,
+    "ok": true,
+    "rule": "the zero-request residual's action equals the incumbent's exactly"
+   },
+   "prefix_identity": {
+    "value": 0.0,
+    "ok": true,
+    "rule": "every pulse cell's observations equal its partner's up to pulse_start"
+   },
+   "coverage": {
+    "value": {
+     "contrasts": 15,
+     "under_minimum": [],
+     "min_pairs": 56
+    },
+    "ok": true,
+    "rule": "15 contrasts, each with >= 20 eligible pairs"
+   },
+   "paired_sign_agreement": {
+    "value": 0.7238095238095238,
+    "ok": false,
+    "rule": ">= 0.8 over eligible pairs"
+   },
+   "contrast_sign_agreement": {
+    "value": 0.03571428571428571,
+    "ok": false,
+    "rule": "every contrast >= 0.7"
+   },
+   "paired_gain_median": {
+    "value": 0.3378725365640529,
+    "ok": true,
+    "rule": "in [0.3, 1.5]"
+   },
+   "feasible_ratio_median": {
+    "value": 0.44487380364444107,
+    "ok": false,
+    "rule": ">= 0.7 (feasible / requested)"
+   },
+   "bound_active_fraction": {
+    "value": 0.43984126984126987,
+    "ok": false,
+    "rule": "<= 0.2 of pulse steps"
+   },
+   "tracking_error_median": {
+    "value": 0.8400910645441808,
+    "ok": false,
+    "rule": "<= 0.7 (|achieved - feasible| / |feasible|)"
+   }
+  },
+  "per_contrast": {
+   "ff_axial": {
+    "eligible_pairs": 56,
+    "sign_agreement": 1.0,
+    "gain_median": 0.9203568278683978,
+    "feasible_ratio_median": 0.7771869539283216,
+    "tracking_error_median": 0.37923266402386935,
+    "bound_active_fraction": 0.043750000000000004
+   },
+   "ff_circumferential": {
+    "eligible_pairs": 56,
+    "sign_agreement": 0.9821428571428571,
+    "gain_median": 0.6708819456122209,
+    "feasible_ratio_median": 0.6845557480119169,
+    "tracking_error_median": 0.21160010099116836,
+    "bound_active_fraction": 0.049999999999999996
+   },
+   "ff_normal": {
+    "eligible_pairs": 56,
+    "sign_agreement": 1.0,
+    "gain_median": 0.20609697413444245,
+    "feasible_ratio_median": 0.20817079348489642,
+    "tracking_error_median": 0.19002140768016457,
+    "bound_active_fraction": 0.04642857142857143
+   },
+   "lf_axial": {
+    "eligible_pairs": 56,
+    "sign_agreement": 0.9821428571428571,
+    "gain_median": 0.22924745065817448,
+    "feasible_ratio_median": 0.4596338956616819,
+    "tracking_error_median": 0.7644439192046208,
+    "bound_active_fraction": 0.7494047619047619
+   },
+   "lf_circumferential": {
+    "eligible_pairs": 56,
+    "sign_agreement": 1.0,
+    "gain_median": 0.6481479743913605,
+    "feasible_ratio_median": 0.8375388104468584,
+    "tracking_error_median": 0.48009669804807503,
+    "bound_active_fraction": 0.7979166666666667
+   },
+   "lf_normal": {
+    "eligible_pairs": 56,
+    "sign_agreement": 0.7142857142857143,
+    "gain_median": 0.20544847707567454,
+    "feasible_ratio_median": 0.14515788352582604,
+    "tracking_error_median": 1.6481438541355748,
+    "bound_active_fraction": 0.5949404761904761
+   },
+   "mf_axial": {
+    "eligible_pairs": 56,
+    "sign_agreement": 0.03571428571428571,
+    "gain_median": -0.5654017907008714,
+    "feasible_ratio_median": 0.13984143733978271,
+    "tracking_error_median": 6.19741898556605,
+    "bound_active_fraction": 0.5883928571428572
+   },
+   "mf_circumferential": {
+    "eligible_pairs": 56,
+    "sign_agreement": 0.21428571428571427,
+    "gain_median": -0.2907657391723182,
+    "feasible_ratio_median": 0.6762650911696255,
+    "tracking_error_median": 3.3835737123449343,
+    "bound_active_fraction": 0.46994047619047624
+   },
+   "mf_normal": {
+    "eligible_pairs": 56,
+    "sign_agreement": 0.9821428571428571,
+    "gain_median": 4.312483196110131,
+    "feasible_ratio_median": 0.33875235239975154,
+    "tracking_error_median": 10.500875588535301,
+    "bound_active_fraction": 0.4886904761904762
+   },
+   "rf_axial": {
+    "eligible_pairs": 56,
+    "sign_agreement": 1.0,
+    "gain_median": 0.536153402605469,
+    "feasible_ratio_median": 0.5235765012912452,
+    "tracking_error_median": 0.4481636236065244,
+    "bound_active_fraction": 0.38273809523809527
+   },
+   "rf_circumferential": {
+    "eligible_pairs": 56,
+    "sign_agreement": 1.0,
+    "gain_median": 0.7761185591777384,
+    "feasible_ratio_median": 0.5898825824260712,
+    "tracking_error_median": 0.4521932875050362,
+    "bound_active_fraction": 0.012202380952380952
+   },
+   "rf_normal": {
+    "eligible_pairs": 56,
+    "sign_agreement": 1.0,
+    "gain_median": 0.489577933828182,
+    "feasible_ratio_median": 0.3412876045331359,
+    "tracking_error_median": 0.436026587160147,
+    "bound_active_fraction": 0.01607142857142857
+   },
+   "th_axial": {
+    "eligible_pairs": 56,
+    "sign_agreement": 0.05357142857142857,
+    "gain_median": -0.2740642972298801,
+    "feasible_ratio_median": 0.46334263170138,
+    "tracking_error_median": 1.5305242612726775,
+    "bound_active_fraction": 0.9297619047619047
+   },
+   "th_circumferential": {
+    "eligible_pairs": 56,
+    "sign_agreement": 0.14285714285714285,
+    "gain_median": -0.10349830666840928,
+    "feasible_ratio_median": 0.20997225656174123,
+    "tracking_error_median": 1.4480931507860855,
+    "bound_active_fraction": 0.9392857142857142
+   },
+   "th_normal": {
+    "eligible_pairs": 56,
+    "sign_agreement": 0.75,
+    "gain_median": 0.05959062603128062,
+    "feasible_ratio_median": 0.4201324045425281,
+    "tracking_error_median": 1.1041460804260068,
+    "bound_active_fraction": 0.4880952380952381
+   }
+  },
+  "by_fingertip": {
+   "ff": {
+    "eligible_pairs": 168,
+    "sign_agreement": 0.9940476190476191,
+    "gain_median": 0.6602322046490867,
+    "feasible_ratio_median": 0.6818230031058192,
+    "tracking_error_median": 0.24929342818283906,
+    "bound_active_fraction": 0.04672619047619048
+   },
+   "mf": {
+    "eligible_pairs": 168,
+    "sign_agreement": 0.4107142857142857,
+    "gain_median": -0.13833543640784024,
+    "feasible_ratio_median": 0.33797030337154865,
+    "tracking_error_median": 5.790154181954337,
+    "bound_active_fraction": 0.5156746031746031
+   },
+   "rf": {
+    "eligible_pairs": 168,
+    "sign_agreement": 1.0,
+    "gain_median": 0.5699438526470104,
+    "feasible_ratio_median": 0.5235765012912452,
+    "tracking_error_median": 0.4485950072025682,
+    "bound_active_fraction": 0.13700396825396824
+   },
+   "lf": {
+    "eligible_pairs": 168,
+    "sign_agreement": 0.8988095238095238,
+    "gain_median": 0.3401699243289533,
+    "feasible_ratio_median": 0.46118713507894427,
+    "tracking_error_median": 0.771067621951977,
+    "bound_active_fraction": 0.7140873015873016
+   },
+   "th": {
+    "eligible_pairs": 168,
+    "sign_agreement": 0.31547619047619047,
+    "gain_median": -0.10082593391021197,
+    "feasible_ratio_median": 0.37920683971606195,
+    "tracking_error_median": 1.3717177074771505,
+    "bound_active_fraction": 0.7857142857142857
+   }
+  },
+  "pulse_cells": {
+   "timeout_rate": {
+    "mean": 0.8999999999999998,
+    "min": 0.9
+   },
+   "pulse_window_drops": 0,
+   "sustained_range": [
+    25,
+    30
+   ],
+   "drops_each": 8
+  },
+  "calibration": {
+   "cal0": {
+    "eligible_pairs": 60,
+    "sign_agreement": 0.7333333333333333,
+    "gain_median": 0.2838510131016659,
+    "feasible_ratio_median": 0.5414871353423223,
+    "tracking_error_median": 0.7474832443852144,
+    "bound_active_fraction": 0.59,
+    "case_clustered_interval95": [
+     0.6166666666666667,
+     0.8333333333333334
+    ],
+    "prefix_max_abs_diff": 15.144546508789062,
+    "pulse_drops": 0,
+    "jacobian_rel_error_median": 0.003027972271955295
+   },
+   "cal1": {
+    "eligible_pairs": 60,
+    "sign_agreement": 0.7166666666666667,
+    "gain_median": 0.6432126657318814,
+    "feasible_ratio_median": 0.5725941155105829,
+    "tracking_error_median": 0.7474832443852144,
+    "bound_active_fraction": 0.47638888888888886,
+    "case_clustered_interval95": [
+     0.6,
+     0.8166666666666667
+    ],
+    "prefix_max_abs_diff": 11.568373680114746,
+    "pulse_drops": 0,
+    "jacobian_rel_error_median": 0.003354321273369867
+   },
+   "cal2": {
+    "eligible_pairs": 60,
+    "sign_agreement": 0.7833333333333333,
+    "gain_median": 0.22926440895298067,
+    "feasible_ratio_median": 0.43607751140370965,
+    "tracking_error_median": 0.7864147181321317,
+    "bound_active_fraction": 0.4516666666666667,
+    "case_clustered_interval95": [
+     0.6833333333333333,
+     0.8833333333333333
+    ],
+    "prefix_max_abs_diff": 23.89653968811035,
+    "pulse_drops": 0,
+    "jacobian_rel_error_median": 0.002408261878656631
+   },
+   "cal3": {
+    "eligible_pairs": 60,
+    "sign_agreement": 0.7833333333333333,
+    "gain_median": 0.22926440895298067,
+    "feasible_ratio_median": 0.43607751140370965,
+    "tracking_error_median": 0.7864147181321317,
+    "bound_active_fraction": 0.4516666666666667,
+    "case_clustered_interval95": [
+     0.6833333333333333,
+     0.8833333333333333
+    ],
+    "prefix_max_abs_diff": 10.984016418457031,
+    "pulse_drops": 0,
+    "jacobian_rel_error_median": 0.002408261878656631
+   },
+   "cal4": {
+    "eligible_pairs": 60,
+    "sign_agreement": 0.7,
+    "gain_median": 0.09226007145006956,
+    "feasible_ratio_median": 0.16716018508304842,
+    "tracking_error_median": 0.838845220433505,
+    "bound_active_fraction": 0.39361111111111113,
+    "case_clustered_interval95": [
+     0.5833333333333334,
+     0.8166666666666667
+    ],
+    "prefix_max_abs_diff": 11.588095664978027,
+    "pulse_drops": 0,
+    "jacobian_rel_error_median": 0.0022949615277618276
+   }
+  },
+  "calibration_selection": {
+   "chosen": "cal2",
+   "index": 2,
+   "met_bound_and_feasible": [],
+   "tied_on_agreement": [
+    "cal2",
+    "cal3"
+   ]
+  },
+  "frozen_sha256": "eb108114ddf143d191bde280797525ad732b9c38a85fd9ce92840e7858ce8127",
+  "gate0": "adopt_fixed_stroke.py passes; replay of logs/pen_spin/r081_stroke_feedback fresh manifest bit-identical (35/80)"
+ },
+ "artifacts": [
+  "logs/pen_spin/r097_rolling_decoder_gate/gate_summary.json",
+  "logs/pen_spin/r097_rolling_decoder_gate/baseline_summary.json",
+  "logs/pen_spin/r097_rolling_decoder_gate/calibration_summary.json"
+ ],
+ "notes": "Episodes: S1 80 + calibration 800 + gate 2,480 = 3,360 (plus 80 gate-0 replay, not evidence); 0 LLM generation calls; wall time about 35 minutes on the box. Deviation, made after the calibration and before any gate cell: the prefix-identity check originally compared every recorded step up to 150, including steps after a case had ended (the next episode's auto-reset), and reported differences of 11-24; restricted to in-play steps the prefixes are bit-identical between processes (0.0), and the gate used the in-play check. It did not enter the calibration's selection. No calibration setting met bound activity <= 0.20 and feasible/requested >= 0.70, so the declared fallback chose cal2 by sign agreement (0.783; cal2 and cal3 identical). Post hoc, not pre-declared, from the recorded gate traces: (1) the split is by finger. Forefinger and ring finger track (sign agreement 0.994 and 1.000, bound activity 0.05 and 0.14, gains 0.21-0.92); middle finger and thumb do not (0.411 and 0.315), little finger is mostly bounded (0.899, bound activity 0.71). (2) The incumbent's own action is saturated at +/-1 on MFJ2 on 79% and LFJ1 on 64% (LFJ3 32%) of pulse-window steps, so an additive increment there is clipped; thumb-chain bounds are active on 0.89-0.98 of steps. (3) For mf_circumferential the pen surface point moves with the request (+0.52 of the requested speed) more than the fingertip does (+0.20), so the relative motion is opposite: that finger carries the pen. (4) Pulses changed no episode length: every pulse cell has the incumbent's 8 early drops and timeout rate 0.90, sustained successes 25-30 against 28. Unmeasured: contact forces; which individual bound was active (the trace stores their union); any request other than 0.02 m/s for 0.5 s at steps 150-180."
+}

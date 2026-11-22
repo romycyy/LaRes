@@ -1,0 +1,446 @@
+{
+  "study": "rolling_decoder_gate",
+  "verdict": "fail",
+  "gate": {
+    "verdict": "fail",
+    "checks": {
+      "jacobian_rel_error_median": {
+        "value": 0.0024668776852800924,
+        "ok": true,
+        "rule": "< 0.15"
+      },
+      "retention_diff": {
+        "value": 0.0,
+        "ok": true,
+        "rule": ">= -0.1 (zero-request residual minus incumbent timeout rate)"
+      },
+      "zero_request_identity": {
+        "value": 0.0,
+        "ok": true,
+        "rule": "the zero-request residual's action equals the incumbent's exactly"
+      },
+      "prefix_identity": {
+        "value": 0.0,
+        "ok": true,
+        "rule": "every pulse cell's observations equal its partner's up to pulse_start"
+      },
+      "coverage": {
+        "value": {
+          "contrasts": 15,
+          "under_minimum": [],
+          "min_pairs": 56
+        },
+        "ok": true,
+        "rule": "15 contrasts, each with >= 20 eligible pairs"
+      },
+      "paired_sign_agreement": {
+        "value": 0.7238095238095238,
+        "ok": false,
+        "rule": ">= 0.8 over eligible pairs",
+        "case_clustered_interval95": [
+          0.7095238095238096,
+          0.7392857142857143
+        ]
+      },
+      "contrast_sign_agreement": {
+        "value": 0.03571428571428571,
+        "ok": false,
+        "rule": "every contrast >= 0.7"
+      },
+      "paired_gain_median": {
+        "value": 0.3378725365640529,
+        "ok": true,
+        "rule": "in [0.3, 1.5]"
+      },
+      "feasible_ratio_median": {
+        "value": 0.44487380364444107,
+        "ok": false,
+        "rule": ">= 0.7 (feasible / requested)"
+      },
+      "bound_active_fraction": {
+        "value": 0.43984126984126987,
+        "ok": false,
+        "rule": "<= 0.2 of pulse steps"
+      },
+      "tracking_error_median": {
+        "value": 0.8400910645441808,
+        "ok": false,
+        "rule": "<= 0.7 (|achieved - feasible| / |feasible|)"
+      }
+    },
+    "pooled": {
+      "eligible_pairs": 840,
+      "sign_agreement": 0.7238095238095238,
+      "gain_median": 0.3378725365640529,
+      "feasible_ratio_median": 0.44487380364444107,
+      "tracking_error_median": 0.8400910645441808,
+      "bound_active_fraction": 0.43984126984126987
+    },
+    "per_contrast": {
+      "ff_axial": {
+        "eligible_pairs": 56,
+        "sign_agreement": 1.0,
+        "gain_median": 0.9203568278683978,
+        "feasible_ratio_median": 0.7771869539283216,
+        "tracking_error_median": 0.37923266402386935,
+        "bound_active_fraction": 0.043750000000000004
+      },
+      "ff_circumferential": {
+        "eligible_pairs": 56,
+        "sign_agreement": 0.9821428571428571,
+        "gain_median": 0.6708819456122209,
+        "feasible_ratio_median": 0.6845557480119169,
+        "tracking_error_median": 0.21160010099116836,
+        "bound_active_fraction": 0.049999999999999996
+      },
+      "ff_normal": {
+        "eligible_pairs": 56,
+        "sign_agreement": 1.0,
+        "gain_median": 0.20609697413444245,
+        "feasible_ratio_median": 0.20817079348489642,
+        "tracking_error_median": 0.19002140768016457,
+        "bound_active_fraction": 0.04642857142857143
+      },
+      "lf_axial": {
+        "eligible_pairs": 56,
+        "sign_agreement": 0.9821428571428571,
+        "gain_median": 0.22924745065817448,
+        "feasible_ratio_median": 0.4596338956616819,
+        "tracking_error_median": 0.7644439192046208,
+        "bound_active_fraction": 0.7494047619047619
+      },
+      "lf_circumferential": {
+        "eligible_pairs": 56,
+        "sign_agreement": 1.0,
+        "gain_median": 0.6481479743913605,
+        "feasible_ratio_median": 0.8375388104468584,
+        "tracking_error_median": 0.48009669804807503,
+        "bound_active_fraction": 0.7979166666666667
+      },
+      "lf_normal": {
+        "eligible_pairs": 56,
+        "sign_agreement": 0.7142857142857143,
+        "gain_median": 0.20544847707567454,
+        "feasible_ratio_median": 0.14515788352582604,
+        "tracking_error_median": 1.6481438541355748,
+        "bound_active_fraction": 0.5949404761904761
+      },
+      "mf_axial": {
+        "eligible_pairs": 56,
+        "sign_agreement": 0.03571428571428571,
+        "gain_median": -0.5654017907008714,
+        "feasible_ratio_median": 0.13984143733978271,
+        "tracking_error_median": 6.19741898556605,
+        "bound_active_fraction": 0.5883928571428572
+      },
+      "mf_circumferential": {
+        "eligible_pairs": 56,
+        "sign_agreement": 0.21428571428571427,
+        "gain_median": -0.2907657391723182,
+        "feasible_ratio_median": 0.6762650911696255,
+        "tracking_error_median": 3.3835737123449343,
+        "bound_active_fraction": 0.46994047619047624
+      },
+      "mf_normal": {
+        "eligible_pairs": 56,
+        "sign_agreement": 0.9821428571428571,
+        "gain_median": 4.312483196110131,
+        "feasible_ratio_median": 0.33875235239975154,
+        "tracking_error_median": 10.500875588535301,
+        "bound_active_fraction": 0.4886904761904762
+      },
+      "rf_axial": {
+        "eligible_pairs": 56,
+        "sign_agreement": 1.0,
+        "gain_median": 0.536153402605469,
+        "feasible_ratio_median": 0.5235765012912452,
+        "tracking_error_median": 0.4481636236065244,
+        "bound_active_fraction": 0.38273809523809527
+      },
+      "rf_circumferential": {
+        "eligible_pairs": 56,
+        "sign_agreement": 1.0,
+        "gain_median": 0.7761185591777384,
+        "feasible_ratio_median": 0.5898825824260712,
+        "tracking_error_median": 0.4521932875050362,
+        "bound_active_fraction": 0.012202380952380952
+      },
+      "rf_normal": {
+        "eligible_pairs": 56,
+        "sign_agreement": 1.0,
+        "gain_median": 0.489577933828182,
+        "feasible_ratio_median": 0.3412876045331359,
+        "tracking_error_median": 0.436026587160147,
+        "bound_active_fraction": 0.01607142857142857
+      },
+      "th_axial": {
+        "eligible_pairs": 56,
+        "sign_agreement": 0.05357142857142857,
+        "gain_median": -0.2740642972298801,
+        "feasible_ratio_median": 0.46334263170138,
+        "tracking_error_median": 1.5305242612726775,
+        "bound_active_fraction": 0.9297619047619047
+      },
+      "th_circumferential": {
+        "eligible_pairs": 56,
+        "sign_agreement": 0.14285714285714285,
+        "gain_median": -0.10349830666840928,
+        "feasible_ratio_median": 0.20997225656174123,
+        "tracking_error_median": 1.4480931507860855,
+        "bound_active_fraction": 0.9392857142857142
+      },
+      "th_normal": {
+        "eligible_pairs": 56,
+        "sign_agreement": 0.75,
+        "gain_median": 0.05959062603128062,
+        "feasible_ratio_median": 0.4201324045425281,
+        "tracking_error_median": 1.1041460804260068,
+        "bound_active_fraction": 0.4880952380952381
+      }
+    },
+    "prediction": {
+      "outcome": "refuted",
+      "rule": "case-clustered interval of the pooled sign agreement against 0.8: upper below refutes, lower at or above supports"
+    },
+    "pulse_drops": 0,
+    "thresholds": {
+      "expected_contrasts": 15,
+      "min_eligible_pairs": 20,
+      "paired_sign_agreement_min": 0.8,
+      "contrast_sign_agreement_min": 0.7,
+      "paired_gain_median_min": 0.3,
+      "paired_gain_median_max": 1.5,
+      "feasible_ratio_median_min": 0.7,
+      "bound_active_fraction_max": 0.2,
+      "tracking_error_median_max": 0.7,
+      "jacobian_rel_error_median_max": 0.15,
+      "retention_diff_min": -0.1
+    }
+  },
+  "by_fingertip": {
+    "ff": {
+      "eligible_pairs": 168,
+      "sign_agreement": 0.9940476190476191,
+      "gain_median": 0.6602322046490867,
+      "feasible_ratio_median": 0.6818230031058192,
+      "tracking_error_median": 0.24929342818283906,
+      "bound_active_fraction": 0.04672619047619048
+    },
+    "mf": {
+      "eligible_pairs": 168,
+      "sign_agreement": 0.4107142857142857,
+      "gain_median": -0.13833543640784024,
+      "feasible_ratio_median": 0.33797030337154865,
+      "tracking_error_median": 5.790154181954337,
+      "bound_active_fraction": 0.5156746031746031
+    },
+    "rf": {
+      "eligible_pairs": 168,
+      "sign_agreement": 1.0,
+      "gain_median": 0.5699438526470104,
+      "feasible_ratio_median": 0.5235765012912452,
+      "tracking_error_median": 0.4485950072025682,
+      "bound_active_fraction": 0.13700396825396824
+    },
+    "lf": {
+      "eligible_pairs": 168,
+      "sign_agreement": 0.8988095238095238,
+      "gain_median": 0.3401699243289533,
+      "feasible_ratio_median": 0.46118713507894427,
+      "tracking_error_median": 0.771067621951977,
+      "bound_active_fraction": 0.7140873015873016
+    },
+    "th": {
+      "eligible_pairs": 168,
+      "sign_agreement": 0.31547619047619047,
+      "gain_median": -0.10082593391021197,
+      "feasible_ratio_median": 0.37920683971606195,
+      "tracking_error_median": 1.3717177074771505,
+      "bound_active_fraction": 0.7857142857142857
+    }
+  },
+  "baseline": {
+    "successes": 28,
+    "success": 0.35,
+    "success_wilson95": [
+      0.25454550534873466,
+      0.45919993351192334
+    ],
+    "reproduces": true
+  },
+  "cells": {
+    "parent": {
+      "timeout_rate": 0.9,
+      "sustained": 28
+    },
+    "zero": {
+      "timeout_rate": 0.9,
+      "sustained": 28,
+      "identity_max_abs": 0.0,
+      "reproduces_parent_rows": true
+    },
+    "ff_normal_pos": {
+      "timeout_rate": 0.9,
+      "sustained": 27,
+      "drops": 8
+    },
+    "ff_normal_neg": {
+      "timeout_rate": 0.9,
+      "sustained": 26,
+      "drops": 8
+    },
+    "ff_circumferential_pos": {
+      "timeout_rate": 0.9,
+      "sustained": 27,
+      "drops": 8
+    },
+    "ff_circumferential_neg": {
+      "timeout_rate": 0.9,
+      "sustained": 26,
+      "drops": 8
+    },
+    "ff_axial_pos": {
+      "timeout_rate": 0.9,
+      "sustained": 27,
+      "drops": 8
+    },
+    "ff_axial_neg": {
+      "timeout_rate": 0.9,
+      "sustained": 26,
+      "drops": 8
+    },
+    "mf_normal_pos": {
+      "timeout_rate": 0.9,
+      "sustained": 26,
+      "drops": 8
+    },
+    "mf_normal_neg": {
+      "timeout_rate": 0.9,
+      "sustained": 30,
+      "drops": 8
+    },
+    "mf_circumferential_pos": {
+      "timeout_rate": 0.9,
+      "sustained": 30,
+      "drops": 8
+    },
+    "mf_circumferential_neg": {
+      "timeout_rate": 0.9,
+      "sustained": 25,
+      "drops": 8
+    },
+    "mf_axial_pos": {
+      "timeout_rate": 0.9,
+      "sustained": 27,
+      "drops": 8
+    },
+    "mf_axial_neg": {
+      "timeout_rate": 0.9,
+      "sustained": 27,
+      "drops": 8
+    },
+    "rf_normal_pos": {
+      "timeout_rate": 0.9,
+      "sustained": 29,
+      "drops": 8
+    },
+    "rf_normal_neg": {
+      "timeout_rate": 0.9,
+      "sustained": 26,
+      "drops": 8
+    },
+    "rf_circumferential_pos": {
+      "timeout_rate": 0.9,
+      "sustained": 30,
+      "drops": 8
+    },
+    "rf_circumferential_neg": {
+      "timeout_rate": 0.9,
+      "sustained": 27,
+      "drops": 8
+    },
+    "rf_axial_pos": {
+      "timeout_rate": 0.9,
+      "sustained": 29,
+      "drops": 8
+    },
+    "rf_axial_neg": {
+      "timeout_rate": 0.9,
+      "sustained": 27,
+      "drops": 8
+    },
+    "lf_normal_pos": {
+      "timeout_rate": 0.9,
+      "sustained": 27,
+      "drops": 8
+    },
+    "lf_normal_neg": {
+      "timeout_rate": 0.9,
+      "sustained": 25,
+      "drops": 8
+    },
+    "lf_circumferential_pos": {
+      "timeout_rate": 0.9,
+      "sustained": 28,
+      "drops": 8
+    },
+    "lf_circumferential_neg": {
+      "timeout_rate": 0.9,
+      "sustained": 26,
+      "drops": 8
+    },
+    "lf_axial_pos": {
+      "timeout_rate": 0.9,
+      "sustained": 28,
+      "drops": 8
+    },
+    "lf_axial_neg": {
+      "timeout_rate": 0.9,
+      "sustained": 26,
+      "drops": 8
+    },
+    "th_normal_pos": {
+      "timeout_rate": 0.9,
+      "sustained": 25,
+      "drops": 8
+    },
+    "th_normal_neg": {
+      "timeout_rate": 0.9,
+      "sustained": 26,
+      "drops": 8
+    },
+    "th_circumferential_pos": {
+      "timeout_rate": 0.9,
+      "sustained": 27,
+      "drops": 8
+    },
+    "th_circumferential_neg": {
+      "timeout_rate": 0.9,
+      "sustained": 26,
+      "drops": 8
+    },
+    "th_axial_pos": {
+      "timeout_rate": 0.9,
+      "sustained": 25,
+      "drops": 8
+    },
+    "th_axial_neg": {
+      "timeout_rate": 0.9,
+      "sustained": 25,
+      "drops": 8
+    }
+  },
+  "pulse_cell_timeout_rate": {
+    "mean": 0.8999999999999998,
+    "min": 0.9
+  },
+  "jacobian_samples": 6275,
+  "frozen_sha256": "eb108114ddf143d191bde280797525ad732b9c38a85fd9ce92840e7858ce8127",
+  "decoder_sha256": "f049b5b7277160a345f88e5c4813bb71cdd5a98f64d67a8e4ca444b2d0e6f197",
+  "manifest": {
+    "path": "config/manifests/pen_spin_stage3_rolling_gate_s4741.yaml",
+    "sha256": "00578b1f015ff97e586144a0d512a1f0dc4bea417739ba878c8c4cb848d3c9e3"
+  },
+  "episodes": 2480,
+  "limitation": "directional tracking of fingertip link origins near an ideal capsule during the incumbent's stroke, as a paired contrast; retention under a nonzero pulse is reported per cell, not established; a pass says nothing about task success"
+}

@@ -1,0 +1,112 @@
+{
+  "study": "incumbent_residual_fresh",
+  "cells": {
+    "parent": {
+      "n": 90,
+      "successes": 36,
+      "success": 0.4,
+      "completed": 0.9888888888888889,
+      "tail_hit_fraction": 0.41083820662768034,
+      "hit_fraction": 0.4056891299744254,
+      "mean_length": 355.43333333333334,
+      "mean_abs_spin": 3.8890512304173575,
+      "mean_transverse": 1.3105779009560743,
+      "drops": 1,
+      "tail_spin_failures": 53,
+      "median_fall_step": 38.0,
+      "tail_failures": 53,
+      "off_centre": 5,
+      "slow_spin": 48,
+      "unsigned_roll_rad": 22.02396583557129,
+      "residual_activity": null
+    },
+    "selected": {
+      "n": 90,
+      "successes": 41,
+      "success": 0.45555555555555555,
+      "completed": 0.9888888888888889,
+      "tail_hit_fraction": 0.45895061728395065,
+      "hit_fraction": 0.4673071632449534,
+      "mean_length": 355.4111111111111,
+      "mean_abs_spin": 4.895258513092995,
+      "mean_transverse": 1.4328971102833747,
+      "drops": 1,
+      "tail_spin_failures": 48,
+      "median_fall_step": 36.0,
+      "tail_failures": 48,
+      "off_centre": 4,
+      "slow_spin": 44,
+      "unsigned_roll_rad": 27.97138214111328,
+      "residual_activity": {
+        "mean_abs_delta_rad": 0.006580569178779145,
+        "at_cap_fraction": 0.028051686784277313,
+        "clipped_by_action_clamp_fraction": 0.0033751160631383475,
+        "values": 646200
+      }
+    }
+  },
+  "selected_minus_parent": {
+    "success": {
+      "n": 90,
+      "mean": 0.05555555555555555,
+      "se": 0.04834621063407591,
+      "low": -0.04050733517619734,
+      "high": 0.15161844628730844,
+      "p_value": 0.2535856896124135
+    },
+    "success_win_loss_tie": {
+      "wins": 12,
+      "losses": 7,
+      "ties": 71
+    },
+    "tail_hit_fraction": {
+      "n": 90,
+      "mean": 0.04811241065627031,
+      "se": 0.047407769661211095,
+      "low": -0.04608581785165623,
+      "high": 0.14231063916419684,
+      "p_value": 0.31292198120022324
+    },
+    "drops": {
+      "n": 90,
+      "mean": 0.0,
+      "se": 0.0,
+      "low": 0.0,
+      "high": 0.0,
+      "p_value": 1.0,
+      "one_sided_95_upper": 0.0,
+      "margin": 0.05,
+      "non_inferior": true,
+      "counts": [
+        1,
+        1
+      ]
+    },
+    "promotes": false,
+    "adopts": false,
+    "prediction": {
+      "threshold": 0.1,
+      "supported": false,
+      "refuted": false
+    }
+  },
+  "paired_success_difference": 0.05555555555555555,
+  "paired_success_difference_ci95": [
+    -0.04050733517619734,
+    0.15161844628730844
+  ],
+  "adopts": false,
+  "selected": {
+    "gain": 0.004655481049180921,
+    "deadband": 0.2333555721435132,
+    "tau": 0.18501188209260944,
+    "cap": 0.10269089387249905
+  },
+  "selected_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1",
+  "manifest": {
+    "path": "config/manifests/pen_spin_stage3_residual_fresh_s4744.yaml",
+    "sha256": "31f23f32c76ed2b0f06d2ad237b255d3c38a5337c51752c7ea649504e743cb20"
+  },
+  "episodes": 180,
+  "limitation": "one residual family, one incumbent, one 24-draw random search; the contact arm of this idea was not run (R-097 failed its gate)"
+}

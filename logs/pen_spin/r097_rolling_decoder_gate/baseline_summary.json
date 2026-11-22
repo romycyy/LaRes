@@ -1,0 +1,77 @@
+{
+  "study": "rolling_baseline",
+  "n": 80,
+  "successes": 28,
+  "success": 0.35,
+  "success_wilson95": [
+    0.25454550534873466,
+    0.45919993351192334
+  ],
+  "reproduction_band": [
+    0.35,
+    0.44
+  ],
+  "reproduces": true,
+  "rule": "the Wilson 95% interval of the sustained-success estimate overlaps the recorded band",
+  "completed": 0.9,
+  "tail_hit_fraction": 0.38125775436437204,
+  "hit_fraction": 0.38251123625852246,
+  "mean_length": 326.6375,
+  "mean_abs_spin": 5.244152569025755,
+  "mean_transverse": 1.658046067133546,
+  "drops": 8,
+  "tail_spin_failures": 44,
+  "median_fall_step": 32.0,
+  "tail_failures": 44,
+  "off_centre": 2,
+  "slow_spin": 42,
+  "roll_by_outcome": {
+    "drop": {
+      "n": 8,
+      "pre_window_abs_rate": 0.0,
+      "aligned_roll_after_window": 0.0,
+      "abs_roll_integral": 9.794780504703521,
+      "reversals": 0.0,
+      "mean_abs_spin": 16.833657264709473,
+      "tail_hit_fraction": 0.3125
+    },
+    "off_centre": {
+      "n": 2,
+      "pre_window_abs_rate": 0.04501769784837961,
+      "aligned_roll_after_window": 0.15278252948385973,
+      "abs_roll_integral": 10.343122912322482,
+      "reversals": 5.0,
+      "mean_abs_spin": 1.728655755519867,
+      "tail_hit_fraction": 0.0
+    },
+    "slow_spin": {
+      "n": 42,
+      "pre_window_abs_rate": 1.6772084832191467,
+      "aligned_roll_after_window": 5.830616440375646,
+      "abs_roll_integral": 11.573184045900902,
+      "reversals": 1.0,
+      "mean_abs_spin": 1.9342369437217712,
+      "tail_hit_fraction": 0.0
+    },
+    "success": {
+      "n": 28,
+      "pre_window_abs_rate": 5.608726501464844,
+      "aligned_roll_after_window": 19.536101281642914,
+      "abs_roll_integral": 33.212325950711964,
+      "reversals": 1.0,
+      "mean_abs_spin": 5.550806999206543,
+      "tail_hit_fraction": 1.0
+    }
+  },
+  "roll_directions": {
+    "positive": 57,
+    "negative": 15,
+    "ended_before_window": 8
+  },
+  "rolling_eligible_cases": 56,
+  "manifest": {
+    "path": "config/manifests/pen_spin_stage3_rolling_gate_s4741.yaml",
+    "sha256": "00578b1f015ff97e586144a0d512a1f0dc4bea417739ba878c8c4cb848d3c9e3"
+  },
+  "episodes": 80
+}

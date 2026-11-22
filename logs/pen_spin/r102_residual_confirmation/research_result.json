@@ -1,0 +1,137 @@
+{
+ "metrics": {
+  "paired_success_difference": 0.05505952380952381,
+  "paired_success_difference_ci95": [
+   0.0237075470102162,
+   0.08641150060883142
+  ],
+  "manifest_clustered_ci95": [
+   0.02595157496230188,
+   0.08416747265674573
+  ],
+  "pairs": 672,
+  "successes_selected_parent": [
+   267,
+   230
+  ],
+  "win_loss_tie": {
+   "wins": 77,
+   "losses": 40,
+   "ties": 555
+  },
+  "drop_difference_one_sided_95_upper": 0.00600837448906957,
+  "drops_selected_parent": [
+   34,
+   34
+  ],
+  "promotes": true,
+  "adopts": true,
+  "prediction_supported": true,
+  "intervals_agree_on_sign": true
+ },
+ "controls": {
+  "per_manifest": {
+   "s4751": {
+    "n": 84,
+    "selected": 35,
+    "parent": 29,
+    "difference": 0.07142857142857142,
+    "drops": [
+     4,
+     4
+    ]
+   },
+   "s4752": {
+    "n": 84,
+    "selected": 39,
+    "parent": 41,
+    "difference": -0.023809523809523808,
+    "drops": [
+     3,
+     3
+    ]
+   },
+   "s4753": {
+    "n": 84,
+    "selected": 32,
+    "parent": 25,
+    "difference": 0.08333333333333333,
+    "drops": [
+     4,
+     5
+    ]
+   },
+   "s4754": {
+    "n": 84,
+    "selected": 29,
+    "parent": 25,
+    "difference": 0.047619047619047616,
+    "drops": [
+     6,
+     6
+    ]
+   },
+   "s4755": {
+    "n": 84,
+    "selected": 33,
+    "parent": 28,
+    "difference": 0.05952380952380952,
+    "drops": [
+     5,
+     4
+    ]
+   },
+   "s4756": {
+    "n": 84,
+    "selected": 33,
+    "parent": 29,
+    "difference": 0.047619047619047616,
+    "drops": [
+     5,
+     6
+    ]
+   },
+   "s4757": {
+    "n": 84,
+    "selected": 35,
+    "parent": 29,
+    "difference": 0.07142857142857142,
+    "drops": [
+     7,
+     5
+    ]
+   },
+   "s4758": {
+    "n": 84,
+    "selected": 31,
+    "parent": 24,
+    "difference": 0.08333333333333333,
+    "drops": [
+     0,
+     1
+    ]
+   }
+  },
+  "tail_hit_fraction_difference": {
+   "n": 672,
+   "mean": 0.07119713470986723,
+   "se": 0.015931222323328182,
+   "low": 0.03991608905417193,
+   "high": 0.10247818036556253,
+   "p_value": 9.222045366981003e-06
+  },
+  "unsigned_roll_rad_selected_parent": [
+   25.369612455368042,
+   20.787664890289307
+  ],
+  "slow_spin_selected_parent": [
+   347,
+   377
+  ],
+  "selected_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1"
+ },
+ "artifacts": [
+  "logs/pen_spin/r102_residual_confirmation/summary.json"
+ ],
+ "notes": "1,344 episodes (8 manifests x 84 cases x 2 arms, seeds 4751-4758, 16 fresh processes), 0 LLM generation calls, about 12 minutes on the box. The residual is D-070's frozen draw, verified by hash, unchanged. Incumbent 230/672 = 0.342, residual 267/672 = 0.397. The difference is positive in 7 of 8 manifests (-0.024 in s4752). D-070's 90 pairs are not pooled in. No retuning and no further replication."
+}

@@ -1,0 +1,162 @@
+{
+ "metrics": {
+  "paired_success_difference": 0.05555555555555555,
+  "paired_success_difference_ci95": [
+   -0.04050733517619734,
+   0.15161844628730844
+  ],
+  "promotes": false,
+  "adopts": false,
+  "prediction_supported": false,
+  "prediction_refuted": false,
+  "fresh_successes": [
+   41,
+   36
+  ],
+  "fresh_n": 90,
+  "win_loss_tie": {
+   "wins": 12,
+   "losses": 7,
+   "ties": 71
+  },
+  "paired_tail_hit_difference": 0.04811241065627031,
+  "paired_tail_hit_difference_ci95": [
+   -0.04608581785165623,
+   0.14231063916419684
+  ],
+  "drop_rate_difference_one_sided_95_upper": 0.0,
+  "drop_counts": [
+   1,
+   1
+  ],
+  "fresh_unsigned_roll_rad": [
+   27.97138214111328,
+   22.02396583557129
+  ],
+  "fresh_slow_spin": [
+   44,
+   48
+  ]
+ },
+ "controls": {
+  "fresh_incumbent": {
+   "n": 90,
+   "successes": 36,
+   "success": 0.4,
+   "completed": 0.9888888888888889,
+   "tail_hit_fraction": 0.41083820662768034,
+   "hit_fraction": 0.4056891299744254,
+   "mean_length": 355.43333333333334,
+   "mean_abs_spin": 3.8890512304173575,
+   "mean_transverse": 1.3105779009560743,
+   "drops": 1,
+   "tail_spin_failures": 53,
+   "median_fall_step": 38.0,
+   "tail_failures": 53,
+   "off_centre": 5,
+   "slow_spin": 48,
+   "unsigned_roll_rad": 22.02396583557129,
+   "residual_activity": null
+  },
+  "fresh_selected": {
+   "n": 90,
+   "successes": 41,
+   "success": 0.45555555555555555,
+   "completed": 0.9888888888888889,
+   "tail_hit_fraction": 0.45895061728395065,
+   "hit_fraction": 0.4673071632449534,
+   "mean_length": 355.4111111111111,
+   "mean_abs_spin": 4.895258513092995,
+   "mean_transverse": 1.4328971102833747,
+   "drops": 1,
+   "tail_spin_failures": 48,
+   "median_fall_step": 36.0,
+   "tail_failures": 48,
+   "off_centre": 4,
+   "slow_spin": 44,
+   "unsigned_roll_rad": 27.97138214111328,
+   "residual_activity": {
+    "mean_abs_delta_rad": 0.006580569178779145,
+    "at_cap_fraction": 0.028051686784277313,
+    "clipped_by_action_clamp_fraction": 0.0033751160631383475,
+    "values": 646200
+   }
+  },
+  "probe_incumbent": {
+   "n": 80,
+   "successes": 31,
+   "success": 0.3875,
+   "completed": 0.9625,
+   "tail_hit_fraction": 0.4159963768115942,
+   "hit_fraction": 0.41199335916999713,
+   "mean_length": 347.2375,
+   "mean_abs_spin": 4.148478000611067,
+   "mean_transverse": 1.3451608108356594,
+   "drops": 3,
+   "tail_spin_failures": 46,
+   "median_fall_step": 46.0,
+   "tail_failures": 46,
+   "off_centre": 1,
+   "slow_spin": 45,
+   "unsigned_roll_rad": 22.334270477294922,
+   "residual_activity": null
+  },
+  "probe_selected": {
+   "n": 80,
+   "successes": 39,
+   "success": 0.4875,
+   "completed": 1.0,
+   "tail_hit_fraction": 0.4958333333333334,
+   "hit_fraction": 0.49136490250696385,
+   "mean_length": 359.0,
+   "mean_abs_spin": 4.557111994177103,
+   "mean_transverse": 1.3742150645703077,
+   "drops": 0,
+   "tail_spin_failures": 41,
+   "median_fall_step": null,
+   "tail_failures": 41,
+   "off_centre": 1,
+   "slow_spin": 40,
+   "unsigned_roll_rad": 27.266719818115234,
+   "residual_activity": {
+    "mean_abs_delta_rad": 0.006796174755418533,
+    "at_cap_fraction": 0.029930362116991644,
+    "clipped_by_action_clamp_fraction": 0.004106894150417827,
+    "values": 574400
+   },
+   "params": {
+    "gain": 0.004655481049180921,
+    "deadband": 0.2333555721435132,
+    "tau": 0.18501188209260944,
+    "cap": 0.10269089387249905
+   }
+  },
+  "probe_draws": {
+   "successes_range": [
+    22,
+    39
+   ],
+   "successes_median": 33.0,
+   "above_incumbent": 15,
+   "zero_drop_draws": 12,
+   "unsigned_roll_above_incumbent": 21
+  },
+  "selected": {
+   "draw": "draw7",
+   "params": {
+    "gain": 0.004655481049180921,
+    "deadband": 0.2333555721435132,
+    "tau": 0.18501188209260944,
+    "cap": 0.10269089387249905
+   },
+   "selected_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1",
+   "rule": "mean final-window hit fraction, then sustained successes, then the lower index"
+  },
+  "contact_arm": "not run: R-097 (D-069) failed the rolling decoder gate; the original contact prediction is untested"
+ },
+ "artifacts": [
+  "logs/pen_spin/r099_incumbent_residual/fresh_summary.json",
+  "logs/pen_spin/r099_incumbent_residual/search_summary.json"
+ ],
+ "notes": "Episodes: S3 2,000 (incumbent 80 + 24 x 80) on probe seed 4742, S4 180 (2 x 90) on fresh seed 4744; 0 LLM generation calls; about 20 minutes on the box. Probe-to-fresh shrinkage as expected for the best of 24: +0.100 on the probe cases (39 vs 31 of 80), +0.056 on fresh (41 vs 36 of 90). Deviation: the first S4 invocation crashed after the incumbent's cell and before the residual's cell ran, because the driver wrote its frozen-winner record to selected.json, the filename of the `selected` controller's cell, so that cell was skipped as existing; the record was renamed frozen_selected.json, the driver fixed, and S4 resumed (the incumbent's cell was reused, not rerun). No fresh result for the residual existed before the fix, and nothing was retuned. Secondary, not the registered metric: on fresh the residual raises mean unsigned roll from 22.0 to 28.0 rad and mean |axial rate| from 3.89 to 4.90 rad/s, with slow-spin failures 44 vs 48, with a mean |delta| of 0.0066 rad (clipped by the action clamp on 0.3% of values). In S3 22 of 24 draws raised unsigned roll and 13 had zero drops against the incumbent's 3; the low-gain draws led and the largest-gain draws were worst. No interval was computed for the roll difference. Power: the paired SE is 0.048, so this 90-pair instrument resolves about +/-0.10; a true effect near +0.05 cannot be established or excluded by it."
+}
