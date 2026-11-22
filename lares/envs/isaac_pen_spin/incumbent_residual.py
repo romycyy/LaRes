@@ -36,6 +36,7 @@ from lares.utils.hashing import sha256_text
 
 STAGE = 3
 SEARCH, FRESH = "incumbent_residual", "incumbent_residual_fresh"
+CONFIRMATION = "incumbent_residual_confirmation"
 PARAMS = ("gain", "deadband", "tau", "cap")
 ACTUATED = tuple(range(17)) + (20, 21, 23)     # the 20 actuated joints among the 24 observed (R-093)
 
@@ -109,6 +110,14 @@ class JointMotionResidual:
 def build_manifests(protocol_cfg: dict) -> list[str]:
     from lares.eval.manifest import EvaluationManifest, assert_disjoint
 
+    if protocol_cfg.get("study") == CONFIRMATION:
+        mine = {confirmation_manifest(protocol_cfg, seed): cases.build_manifest(
+            STAGE, int(seed), int(protocol_cfg["confirmation_cases"]), label="residual_confirmation")
+            for seed in protocol_cfg["confirmation_seeds"]}
+        others = [EvaluationManifest.load(p) for p in sorted(glob.glob("config/manifests/pen_spin_stage3_*.yaml"))
+                  if p not in mine]
+        assert_disjoint(list(mine.values()) + others)
+        return [p for p, m in mine.items() if cases.freeze_manifest(p, m)]
     mine = {protocol_cfg["probe_manifest"]: cases.build_manifest(STAGE, int(protocol_cfg["probe_seed"]),
                                                                  int(protocol_cfg["probe_cases"]), label="residual_probe"),
             protocol_cfg["fresh_manifest"]: cases.build_manifest(STAGE, int(protocol_cfg["fresh_seed"]),
@@ -262,10 +271,76 @@ def run_fresh(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
     return summary
 
 
+def confirmation_manifest(protocol_cfg: dict, seed) -> str:
+    return str(protocol_cfg["confirmation_manifest_template"]).format(seed=int(seed))
+
+
+def confirmation_contrast(by_manifest: dict, threshold: float, drop_margin: float) -> dict:
+    """R-102: ``{manifest: (selected rows, parent rows)}`` -> the pooled paired contrast over every case (the primary:
+    strict rule and drop bound, :func:`fresh_contrast`) and, beside it, the manifest-clustered check (a t interval
+    over the per-manifest mean differences), because the cases of one batch are not independent."""
+    from lares.eval.stats import t_summary
+
+    sel = [r for a, _ in by_manifest.values() for r in a]
+    par = [r for _, b in by_manifest.values() for r in b]
+    pooled = fresh_contrast(sel, par, threshold, drop_margin)
+    per = {m: {"n": len(a), "selected": int(sum(r["sustained"] for r in a)), "parent": int(sum(r["sustained"] for r in b)),
+               "difference": float(np.mean([float(x["sustained"]) - float(y["sustained"]) for x, y in zip(a, b)])),
+               "drops": [int(sum(not r["completed"] for r in a)), int(sum(not r["completed"] for r in b))]}
+           for m, (a, b) in by_manifest.items()}
+    clustered = t_summary([v["difference"] for v in per.values()])
+    return {"pooled": pooled, "per_manifest": per, "manifest_clustered": clustered,
+            "intervals_agree_on_sign": bool((pooled["success"]["low"] > 0) == (clustered["low"] is not None and clustered["low"] > 0)),
+            "pairs": len(sel), "successes": [int(sum(r["sustained"] for r in sel)), int(sum(r["sustained"] for r in par))]}
+
+
+def run_confirmation(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
+    """R-102: the frozen D-070 residual, unchanged, against the incumbent on every confirmation manifest; each
+    manifest once per arm, each in a fresh process. The last replication whatever it shows."""
+    os.makedirs(out_dir, exist_ok=True)
+    selected = require_selected(protocol_cfg)
+    record = os.path.join(str(protocol_cfg["search_log_dir"]), "selected.json")
+    if not os.path.exists(record):
+        raise SystemExit("S3's record is missing: the confirmation only runs the residual that search froze")
+    with open(record, encoding="utf-8") as f:
+        if json.load(f)["selected_sha256"] != protocol_cfg["selected_sha256"]:
+            raise SystemExit("the config's selected block is not S3's recorded winner")
+    seeds = [int(s) for s in protocol_cfg["confirmation_seeds"]]
+    freeze_json(os.path.join(out_dir, "frozen_selected.json"),
+                {"params": selected, "selected_sha256": protocol_cfg["selected_sha256"], "seeds": seeds,
+                 "cases_per_manifest": int(protocol_cfg["confirmation_cases"])}, "confirmation plan")
+    dt = float(protocol_cfg["control_dt"])
+    by_manifest, cells, manifests = {}, {}, {}
+    for seed in seeds:
+        mpath = cases.require_frozen(confirmation_manifest(protocol_cfg, seed))
+        sub = os.path.join(out_dir, f"s{seed}")
+        os.makedirs(sub, exist_ok=True)
+        rows = {}
+        for name in ("parent", "selected"):
+            cell = os.path.join(sub, f"{name}.json")
+            study_cell(protocol_cfg, config_path, mpath, name, cell)
+            _, rows[name] = load_cell(cell)
+            cells[f"s{seed}/{name}"] = cell_row(cell, dt)
+        by_manifest[f"s{seed}"] = (rows["selected"], rows["parent"])
+        manifests[f"s{seed}"] = cases.manifest_record(mpath)
+    c = confirmation_contrast(by_manifest, float(protocol_cfg["threshold"]), float(protocol_cfg["drop_margin"]))
+    p = c["pooled"]
+    summary = {"study": CONFIRMATION, "selected_minus_parent": c, "cells": cells,
+               "paired_success_difference": p["success"]["mean"],
+               "paired_success_difference_ci95": [p["success"]["low"], p["success"]["high"]],
+               "adopts": p["adopts"], "selected": selected, "selected_sha256": protocol_cfg["selected_sha256"],
+               "manifests": manifests, "episodes": 2 * c["pairs"],
+               "limitation": "one frozen residual on one incumbent; the final replication, with no retuning; D-070's "
+                             "90 pairs are not pooled in"}
+    _dump(out_dir, "summary.json", summary)
+    return summary
+
+
 def run(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
-    return (run_search if protocol_cfg["study"] == SEARCH else run_fresh)(protocol_cfg, config_path, out_dir)
+    return {SEARCH: run_search, FRESH: run_fresh, CONFIRMATION: run_confirmation}[protocol_cfg["study"]](
+        protocol_cfg, config_path, out_dir)
 
 
-__all__ = ["ACTUATED", "FRESH", "JointMotionResidual", "PARAMS", "SEARCH", "build_manifests", "cell_row",
-           "draw_params", "fresh_contrast", "make_controller", "params_sha256", "rank_key", "require_selected", "run",
-           "run_fresh", "run_search", "unsigned_roll"]
+__all__ = ["ACTUATED", "CONFIRMATION", "FRESH", "JointMotionResidual", "PARAMS", "SEARCH", "build_manifests", "cell_row",
+           "confirmation_contrast", "confirmation_manifest", "draw_params", "fresh_contrast", "make_controller", "params_sha256", "rank_key", "require_selected", "run",
+           "run_confirmation", "run_fresh", "run_search", "unsigned_roll"]

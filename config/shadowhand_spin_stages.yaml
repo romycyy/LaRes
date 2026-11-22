@@ -1311,6 +1311,25 @@ research_protocols:
     <<: *rolling_gate
     log_dir: "logs/pen_spin/r097_rolling_decoder_calibration"
 
+  # R-101 (no LLM): does coherent forefinger + ring circumferential motion transfer to pen roll during rolling?
+  # (lares/envs/isaac_pen_spin/transfer_audit.py). R-097's frozen block unchanged; three cells x 40 cases = 120.
+  #   python scripts/run_shadowhand_spin_stages.py --study transfer_audit
+  transfer_audit:
+    <<: *rolling_gate
+    log_dir: "logs/pen_spin/r101_transfer_audit"
+    cases: 40
+    pool_seed: 4750
+    manifest: "config/manifests/pen_spin_stage3_transfer_audit_s4750.yaml"
+    fingertips: ["ff", "rf"]
+    follow_through_stop: 210
+    roll_window: [120, 150]
+    min_abs_mean_rate: 0.25
+    threshold: 0.10
+    audit_thresholds:                # the audit's own; `thresholds` and `eligibility` stay R-097's (hashed)
+      min_eligible_cases: 20
+      positive_fraction_min: 0.80
+      median_ratio_min: 0.30
+
   # R-099 (I2 = S3 + S4, anonymous-only fallback after D-069; no LLM): a bounded joint-motion residual on the D-058
   # incumbent (lares/envs/isaac_pen_spin/incumbent_residual.py). Two studies, separately gated:
   #   python scripts/run_shadowhand_spin_stages.py --study incumbent_residual        # S3: 80 + 24 x 80 = 2,000, stops
@@ -1340,3 +1359,13 @@ research_protocols:
   incumbent_residual_fresh:
     <<: *incumbent_residual
     log_dir: "logs/pen_spin/r099_incumbent_residual_fresh"
+  # R-102 (no LLM): the one, final confirmation of D-070's frozen residual, unchanged: 8 fresh manifests x 84 cases,
+  # each once per arm in its own process (672 pairs, 1,344 episodes). No retuning and no replication after it.
+  #   python scripts/run_shadowhand_spin_stages.py --study incumbent_residual_confirmation
+  incumbent_residual_confirmation:
+    <<: *incumbent_residual
+    log_dir: "logs/pen_spin/r102_residual_confirmation"
+    confirmation_seeds: [4751, 4752, 4753, 4754, 4755, 4756, 4757, 4758]
+    confirmation_cases: 84
+    confirmation_manifest_template: "config/manifests/pen_spin_stage3_residual_confirmation_s{seed}.yaml"
+    threshold: 0.05

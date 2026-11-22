@@ -112,6 +112,27 @@ class TestSearchAndContrast(unittest.TestCase):
         with self.assertRaises(ValueError):
             ir.fresh_contrast(self.rows([True, False]), list(reversed(self.rows([True, False]))), 0.1, 0.05)
 
+    def test_confirmation_pools_cases_and_reports_the_manifest_cluster(self):
+        def rows(tag, wins, n=20):
+            return ([{"task_hash": f"{tag}{i}", "sustained": i < wins, "completed": True, "tail_hit_fraction": 0.5}
+                     for i in range(n)])
+        by = {f"s{k}": (rows(f"m{k}_", 12), rows(f"m{k}_", 8)) for k in range(4)}
+        c = ir.confirmation_contrast(by, 0.05, 0.05)
+        self.assertEqual((c["pairs"], c["successes"]), (80, [48, 32]))
+        self.assertAlmostEqual(c["pooled"]["success"]["mean"], 0.2)
+        self.assertTrue(c["pooled"]["adopts"])
+        self.assertEqual([v["difference"] for v in c["per_manifest"].values()], [0.2] * 4)
+        self.assertEqual(c["manifest_clustered"]["n"], 4)
+        flat = {f"s{k}": (rows(f"m{k}_", 8), rows(f"m{k}_", 8)) for k in range(4)}
+        self.assertFalse(ir.confirmation_contrast(flat, 0.05, 0.05)["pooled"]["adopts"])
+
+    def test_confirmation_block(self):
+        p = load_yaml(os.path.join(ROOT, "config", "shadowhand_spin_stages.yaml"))["research_protocols"][ir.CONFIRMATION]
+        self.assertEqual(len(p["confirmation_seeds"]) * p["confirmation_cases"], 672)
+        self.assertEqual(ir.params_sha256(ir.require_selected(p)), p["selected_sha256"])
+        self.assertEqual(ir.confirmation_manifest(p, 4751), "config/manifests/pen_spin_stage3_residual_confirmation_s4751.yaml")
+        self.assertEqual((p["threshold"], p["drop_margin"]), (0.05, 0.05))
+
     def test_selected_hash_is_enforced(self):
         p = dict(protocol_cfg())
         with self.assertRaises(SystemExit):

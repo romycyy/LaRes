@@ -75,7 +75,7 @@ def calibration_contrasts(n: int) -> list:
 class RollingPulseController:
     """The incumbent plus a decoded, integrating joint increment inside the pulse window (module docstring).
 
-    ``directions``: per case ``(fingertip, axis, sign)`` or ``None`` for the zero-request residual, which runs the
+    ``directions``: per case ``(fingertip, axis, sign)``, a list of such triples, or ``None`` for the zero-request residual, which runs the
     same decoder with nothing commanded and must return the incumbent's action exactly. ``inner`` is the incumbent
     (injected by tests; built from ``asset_dir`` otherwise).
     """
@@ -119,10 +119,11 @@ class RollingPulseController:
         self.tip = torch.zeros(b, dtype=torch.long, device=dev)
         for i, d in enumerate(self.directions or []):
             if d is not None:
-                kk, a, s = d
-                self.cmd[i, kk, a] = float(s) * float(self.win["pulse_speed"])
-                self.commanded[i, kk] = True
-                self.tip[i] = kk
+                several = isinstance(d[0], (tuple, list))        # R-101: several fingertips commanded together
+                for kk, a, s in reversed(d if several else [d]):
+                    self.cmd[i, kk, a] = float(s) * float(self.win["pulse_speed"])
+                    self.commanded[i, kk] = True
+                    self.tip[i] = kk                             # the recorded tip is the first one named
         self.delta = torch.zeros(b, len(ctrl), device=dev)
         self.frames = None
         self._identity = 0.0
@@ -159,6 +160,9 @@ class RollingPulseController:
         clamp_active = (action != raw)[:, self.ctrl_in_action]
         self._identity = max(self._identity, float((action - g).abs().max()) if self.directions is None else 0.0)
 
+        self._observe(t, {"incumbent": g, "raw": raw, "action": action, "qdot_eff": qdot_eff, "q": q, "J": J,
+                          "frames": frames, "vel_bound": diag["vel_bound_active"], "limit": diag["limit_active"],
+                          "cap": cap_active, "clamp": clamp_active})
         if t < int(self.win["record_stop"]):
             idx = torch.arange(obs.shape[0], device=J.device)
             feasible = cc.world_to_local(torch.einsum("bkin,bn->bki", J, qdot_eff.to(J.dtype)), frames)[idx, self.tip]
@@ -170,6 +174,9 @@ class RollingPulseController:
                 self._rec["jacobian"].append(J_full.cpu().numpy().astype(np.float32))
                 self._rec["jacobian_step"].append(t)
         return action
+
+    def _observe(self, t: int, step: dict) -> None:
+        """Hook for a subclass that records more per pulse step (R-101's audit); nothing here."""
 
     def extra_trace(self) -> dict:
         r = self._rec

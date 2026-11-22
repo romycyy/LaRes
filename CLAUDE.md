@@ -601,6 +601,16 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   90), drops 1 vs 1: no improvement established, not adopted; unsigned roll rose 27% with a 0.0066 rad mean residual.
   A 90-pair instrument resolves about +/-0.10. **Bites:** a driver's own record files must not share a name with a
   cell (`<controller>.json`), or `study_cell` skips that cell as already run.
+- **R-101 result (D-071, refuted; follow-up direction, 2026-11-22).** `transfer_audit.py` (`--study transfer_audit`;
+  `CoherentPulseController` = R-097's pulse controller commanding several fingertips at once, with every bound recorded
+  by type through the base class's `_observe` hook; `RollingPulseController(directions=)` now also takes a list of
+  triples per case). Coherent forefinger + ring circumferential pulses on the incumbent, 40 fresh cases, three cells:
+  authority is adequate (0.69 and 0.82 of the full fingertip displacement) but roll progress pro minus anti is
+  -0.054 rad [-0.147, +0.038] against a predicted +0.10. **Bite (post hoc): under the incumbent only the middle
+  fingertip and thumb are at the pen surface; the forefinger, ring and little fingertips sit about 58 mm away**, so
+  D-069's "tracking" fingers were moving in free space. Check `capsule_frames(...)["distance"]` before reading a
+  fingertip's tracking as contact control. Launch a `--study` driver on the box under Isaac's environment
+  (`source ~/IsaacLab/source_env.sh`), not through `gpu run`'s venv: its children use the driver's interpreter.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

@@ -58,6 +58,8 @@ PEN_SPIN_STUDIES = {
     "rolling_decoder_gate": "rolling_decoder_gate",                # R-097 S2 (the gate, seed 4741)
     "incumbent_residual": "incumbent_residual",                    # R-099 S3 (24-draw probe search, seed 4742)
     "incumbent_residual_fresh": "incumbent_residual",              # R-099 S4 (the frozen winner on 90 fresh cases, 4744)
+    "transfer_audit": "transfer_audit",                            # R-101 (ff + rf circumferential transfer, seed 4750)
+    "incumbent_residual_confirmation": "incumbent_residual",       # R-102 (final 672-pair confirmation, 4751-4758)
 }
 
 

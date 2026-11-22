@@ -369,11 +369,16 @@ separately gated steps (reproduce, controllability, usefulness). Isaac-only, `sc
 | S1: the incumbent alone on a fresh 80-case manifest (R-097; `rolling_decoder_gate.py`, `--study rolling_baseline`) | **Reproduces**: 28/80 = 0.350, Wilson 95% [0.255, 0.459]. Failures: 42 slow spin, 8 early drops (median step 32), 2 off-centre. Slow-spin cases roll steadily one way at about a third of the successes' rate (1.68 vs 5.61 rad/s) | D-069 |
 | S2: contact-frame decoder as an additive, integrating joint increment on the incumbent, 0.02 m/s pulses at steps 150-180 while the pen rolls (R-097; `--study rolling_decoder_calibration`, `rolling_decoder_gate`; 3,360 episodes in all) | **Gate fails**: paired sign agreement 0.724 [0.710, 0.739] against 0.80; feasible/requested 0.445; a bound active on 0.44 of steps; weakest contrast 0.036. Instrument checks all pass. Post hoc by finger: forefinger 0.994 and ring 1.000 track; middle 0.411, thumb 0.315, little 0.899 with bounds on 0.71 of steps | D-069 (refuted; decoder not qualified as a residual on this incumbent) |
 | S3 + S4, anonymous-only fallback: a four-scalar joint-motion residual on the incumbent (R-099; `incumbent_residual.py`, `--study incumbent_residual` then `incumbent_residual_fresh`; 24 seeded draws on 80 probe cases, the frozen winner on 90 fresh pairs; 2,180 episodes). The contact arm was not run | Probe: winner 39/80 vs 31/80, 0 drops vs 3. **Fresh: +0.056 [-0.041, +0.152]** (41 vs 36 of 90), drops 1 vs 1; does not promote. Unsigned roll 28.0 vs 22.0 rad with a mean residual of 0.0066 rad | D-070 (inconclusive; not adopted) |
+| Transfer audit under the follow-up direction of 2026-11-22 (R-101; `transfer_audit.py`, `--study transfer_audit`; zero, `+` and `-` coherent forefinger + ring circumferential pulses on 40 fresh cases, R-097's frozen block unchanged; 120 episodes) | Authority adequate (fingertip displacement 0.69 and 0.82 of the full 20 mm, all 32 eligible cases positive, no speed bound, cap or clamp active). **Roll progress pro minus anti: -0.054 rad [-0.147, +0.038]**, below the predicted +0.10. Post hoc: the forefinger, ring and little fingertips are about 58 mm from the pen surface throughout; only the middle fingertip and thumb are at it (within 15 mm on 0.92 and 0.89 of steps) | D-071 (refuted) |
 
 Found on the way: the incumbent's own action is saturated at +/-1 on `MFJ2` on 79% and `LFJ1` on 64% of steps
 150-180, so anything *added* to its action is clipped on those joints. Two fresh processes on the same batch are
 bit-identical until their controllers differ (in-play steps only: what a case records after it ends is the next
 episode's auto-reset and does differ). Pulses of this size changed no episode's length.
+
+**The incumbent holds the pen with the middle finger and thumb only** (D-071, post hoc, from link-origin distance to an
+ideal capsule; the env has no contact sensor). D-069's "forefinger and ring finger track" was free-space motion, and
+any contact-level interface on this incumbent has to act through the two fingers that failed that gate.
 
 ### 6.5 The current pen-spin incumbent
 

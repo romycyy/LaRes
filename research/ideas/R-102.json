@@ -1,0 +1,219 @@
+{
+  "id": "R-102",
+  "title": "Final 672-pair confirmation of D-070's frozen residual",
+  "hypothesis": "The unchanged low-gain joint-velocity residual reinforces existing joint motion without assuming a roll sign, converting slow-spin failures into sustained successes without materially increasing drops.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "config/pen_spin/d058_fixed_stroke_incumbent",
+    "rationale": "Use D-070's unchanged sustained-success definition and pool exactly 672 fresh case-level residual-minus-incumbent differences. D-070's interval [-0.041, +0.152] settled neither zero nor a +0.05 effect. Unlike rejected R-100's 360-pair proposal, 672 pairs yield an estimated SE near 0.018 and approximately 80% power for +0.05 using D-070's discordance rate; this is prospective confirmation, not a new controller mechanism. Adoption requires a strictly positive mean and a two-sided 95% paired t interval lower bound above zero, plus a one-sided 95% paired drop-rate-difference upper bound at most +0.05. Ties never improve success. Exclude previous results from the confirmatory estimate. Run this only after the audit has finished, regardless of its scientific outcome; this is the last replication whatever the outcome. REVISION (triage round 2, agreed): the eight manifests are frozen before any outcome; each is run once per arm (incumbent, then the frozen residual) in its own fresh process, 16 processes of 84 environments. The config verifies the residual against the full selected_sha256 (2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1) and S3's archived record. Beside the primary pooled case-paired interval, a two-sided 95% t interval over the eight per-manifest paired success differences (7 degrees of freedom) is reported; a disagreement between the two is reported explicitly and not resolved after the fact, and the roughly 80% power figure is conditional on case independence. D-070's 90 pairs are not pooled in. Adoption needs the primary rule (positive mean, 95% lower bound above zero) and the one-sided 95% drop-difference upper bound at most +0.05. No replication follows whatever the outcome."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study incumbent_residual_confirmation",
+    "seeds": [
+      4751,
+      4752,
+      4753,
+      4754,
+      4755,
+      4756,
+      4757,
+      4758
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_residual_confirmation_s4751.yaml",
+      "config/manifests/pen_spin_stage3_residual_confirmation_s4752.yaml",
+      "config/manifests/pen_spin_stage3_residual_confirmation_s4753.yaml",
+      "config/manifests/pen_spin_stage3_residual_confirmation_s4754.yaml",
+      "config/manifests/pen_spin_stage3_residual_confirmation_s4755.yaml",
+      "config/manifests/pen_spin_stage3_residual_confirmation_s4756.yaml",
+      "config/manifests/pen_spin_stage3_residual_confirmation_s4757.yaml",
+      "config/manifests/pen_spin_stage3_residual_confirmation_s4758.yaml"
+    ],
+    "episodes": 1344,
+    "llm_calls": 0,
+    "code_changes": [
+      "lares/envs/isaac_pen_spin/incumbent_residual.py: run_confirmation and confirmation_contrast (evaluation only; the residual's code and parameters are unchanged).",
+      "scripts/run_shadowhand_spin_stages.py: one registry entry, incumbent_residual_confirmation.",
+      "config/shadowhand_spin_stages.yaml: an incumbent_residual_confirmation block (seeds 4751-4758, 84 cases each, threshold 0.05, drop margin 0.05).",
+      "tests/test_incumbent_residual.py: the pooled and manifest-clustered contrast, the config block.",
+      "config/manifests/pen_spin_stage3_residual_confirmation_s4751.yaml",
+      "config/manifests/pen_spin_stage3_residual_confirmation_s4752.yaml",
+      "config/manifests/pen_spin_stage3_residual_confirmation_s4753.yaml",
+      "config/manifests/pen_spin_stage3_residual_confirmation_s4754.yaml",
+      "config/manifests/pen_spin_stage3_residual_confirmation_s4755.yaml",
+      "config/manifests/pen_spin_stage3_residual_confirmation_s4756.yaml",
+      "config/manifests/pen_spin_stage3_residual_confirmation_s4757.yaml",
+      "config/manifests/pen_spin_stage3_residual_confirmation_s4758.yaml"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "running",
+  "source": "advisor",
+  "falsified_by": "An upper 95% paired success-difference bound below +0.05 refutes the predicted magnitude; an interval containing zero establishes no success improvement. A drop-difference lower bound above +0.05 refutes drop safety, while an upper bound exceeding +0.05 merely fails to establish the required safety bound. Unless both strict adoption gates pass, retain the incumbent; there will be no retuning or further replication.",
+  "cost_estimate": {
+    "episodes": 1344,
+    "llm_calls": 0,
+    "wall_time_minutes": 30
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "f31eed62f2028eea53a0bd6a028de1932b716d58c11cd0f4b91423fef737d267",
+  "proposal_call_id": "call_00210",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-22T00:25:28",
+    "advisor_call_id": "call_00215",
+    "round": 3,
+    "note": "With R-101 complete, this is the intended final spend: 1,344 episodes and 0 LLM calls to test whether the frozen joint-motion residual improves sustained success without excessive drops. The prediction is paired_success_difference increasing by at least 0.05 against config/pen_spin/d058_fixed_stroke"
+  },
+  "run": {
+    "started_at": "2026-11-22T00:25:30",
+    "git_sha": "a6bd76f807ef85a2cb03a3c55ccae3d3f61a19b4",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r102_residual_confirmation"
+  },
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-22T00:16:38",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    },
+    {
+      "at": "2026-11-22T00:24:48",
+      "from": "deferred",
+      "to": "proposed",
+      "note": "re-triaged"
+    },
+    {
+      "at": "2026-11-22T00:25:28",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-22T00:25:30",
+      "from": "approved",
+      "to": "running",
+      "note": "git a6bd76f807 (dirty)"
+    }
+  ],
+  "created_at": "2026-11-22T00:14:52",
+  "direction": "No LLM calls in any protocol. Two finite follow-ups to D-069 and D-070 on Stage 3, on the fixed-stroke incumbent (config/pen_spin/d058_fixed_stroke_incumbent). (A) A transfer audit: on about 40 fresh cases, run the incumbent alone and with forefinger/ring circumferential pulses along and against each case's own roll direction, logging clamp activity, joint motion, fingertip and pen-surface velocity, and contact impulses; the prediction is on paired roll progress, pro minus anti. (B) One confirmatory replication of D-070's frozen residual, unchanged, on about 670 fresh pairs against the incumbent, with the strict paired success rule and the drop bound. No retuning, no new controller search, no further replication after (B). One protocol at a time on the box.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "This is the correct second spend: 1,344 simulator episodes and 0 LLM calls test D-070's unchanged frozen residual with substantially more precision than rejected R-100, without reopening controller search. The paired_success_difference prediction is an increase of at least 0.05 versus config/pen_spin/d058_fixed_stroke_incumbent; an upper 95% bound below +0.05 falsifies the magnitude, while an interval containing zero establishes no improvement. Its weakest point is power extrapolated from 90 pairs, making the fixed 672-pair stopping point, strict paired-success gate, and drop-difference upper bound of +0.05 essential. Defer solely until R-101 finishes, regardless of its scientific outcome, then seek agreement to run this protocol unchanged as the last replication.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00211",
+          "briefing_sha256": "b713836e51659b538b2fb10a65c48594e97c39cc272bba8caf7d43d4399ca42c",
+          "at": "2026-11-22T00:16:26"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree to defer on sequencing alone: one protocol at a time, R-101 first. When re-triaged it needs the real command ('--study incumbent_residual_confirmation', constants in the config), manifests named config/manifests/pen_spin_stage3_residual_confirmation_s<seed>.yaml, and a declared manifest-clustered check (t interval over the 8 per-manifest differences) reported beside the primary pooled paired interval because cases in one batch are not independent.",
+          "changes_applied": [],
+          "at": "2026-11-22T00:16:38"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "R-101 is complete, so sequencing no longer justifies deferral: 1,344 episodes and 0 LLM calls are the intended final confirmation of D-070's frozen motion-reinforcing residual. Retain the prediction that paired_success_difference increases by at least 0.05 against config/pen_spin/d058_fixed_stroke_incumbent; falsified_by is an upper 95% paired bound below +0.05, while an interval containing zero establishes no improvement. The weakest point is the independence assumption underlying the power estimate; I accept the implementer's executable-command, manifest-naming, and manifest-clustered-check corrections, which the written protocol still lacks.",
+          "suggested_changes": [
+            "Reuse scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml with --stage 3 --study incumbent_residual_confirmation; remove the proposed replication-only CLI and place confirmation constants in the existing config.",
+            "Rename the eight manifests to config/manifests/pen_spin_stage3_residual_confirmation_s<seed>.yaml for free seeds 4751–4758. Freeze all eight before outcomes and retain 84 cases per manifest, two sequential fresh-process arms per manifest, totaling 1,344 episodes and 0 LLM calls.",
+            "Predeclare a two-sided 95% t interval over the eight per-manifest paired success differences, using 7 degrees of freedom, alongside the primary pooled case-paired interval. Report disagreement explicitly; an interval containing zero is not evidence of a difference under that analysis, and the approximately 80% power estimate is conditional on case independence.",
+            "Carry the existing safeguards unchanged into the corrected config: verify the archived winner's full SHA256 with prefix 2a509ef5, freeze controller parameters and sustained-success definition, require positive paired success with its primary 95% lower bound above zero and one-sided 95% drop-difference upper bound at most +0.05, and stop after these 672 pairs regardless of outcome."
+          ],
+          "priority": 1,
+          "call_id": "call_00214",
+          "briefing_sha256": "eb064c6b221a11aefdf44109d18aa08ca641cb4bd74a0c2c4229faccc85bdb3a",
+          "at": "2026-11-22T00:24:48"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree with all four changes; they are the corrections I asked for in round 1. One detail: the entry point has no --stage flag (the stage is fixed in the study module), so the command is 'python scripts/run_shadowhand_spin_stages.py --study incumbent_residual_confirmation'. R-101's outcome does not change this protocol: the residual acts on joint velocities of every actuated joint and assumes nothing about which fingers touch the pen.",
+          "changes_applied": [],
+          "at": "2026-11-22T00:25:03"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "With R-101 complete, this is the intended final spend: 1,344 episodes and 0 LLM calls to test whether the frozen joint-motion residual improves sustained success without excessive drops. The prediction is paired_success_difference increasing by at least 0.05 against config/pen_spin/d058_fixed_stroke_incumbent, falsified_by an upper 95% paired bound below +0.05; an interval containing zero establishes no improvement. The weakest point remains case independence: the power estimate is conditional, and the manifest-level interval must be reported alongside the primary interval without treating one containing zero as evidence of a difference. I accept the implementer's correction that no --stage flag exists and the argument that the contact audit does not invalidate this geometry-independent residual; the revised protocol now incorporates the agreed command, frozen manifests, hash verification, and clustered check.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00215",
+          "briefing_sha256": "19d43fd167a25f539a3d980b353209dfe7e9cce9d56209665964f41be0806365",
+          "at": "2026-11-22T00:25:22"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "The revised protocol carries every agreed change; seeds 4751-4758 are frozen in eight manifests, the residual is verified by hash and unchanged, both adoption gates and the manifest-clustered check are declared, and this is the last replication whatever it shows.",
+          "changes_applied": [],
+          "at": "2026-11-22T00:25:28"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 3
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-22T00:25:05",
+      "round": 2,
+      "patch": {
+        "prediction": {
+          "rationale": "Use D-070's unchanged sustained-success definition and pool exactly 672 fresh case-level residual-minus-incumbent differences. D-070's interval [-0.041, +0.152] settled neither zero nor a +0.05 effect. Unlike rejected R-100's 360-pair proposal, 672 pairs yield an estimated SE near 0.018 and approximately 80% power for +0.05 using D-070's discordance rate; this is prospective confirmation, not a new controller mechanism. Adoption requires a strictly positive mean and a two-sided 95% paired t interval lower bound above zero, plus a one-sided 95% paired drop-rate-difference upper bound at most +0.05. Ties never improve success. Exclude previous results from the confirmatory estimate. Run this only after the audit has finished, regardless of its scientific outcome; this is the last replication whatever the outcome. REVISION (triage round 2, agreed): the eight manifests are frozen before any outcome; each is run once per arm (incumbent, then the frozen residual) in its own fresh process, 16 processes of 84 environments. The config verifies the residual against the full selected_sha256 (2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1) and S3's archived record. Beside the primary pooled case-paired interval, a two-sided 95% t interval over the eight per-manifest paired success differences (7 degrees of freedom) is reported; a disagreement between the two is reported explicitly and not resolved after the fact, and the roughly 80% power figure is conditional on case independence. D-070's 90 pairs are not pooled in. Adoption needs the primary rule (positive mean, 95% lower bound above zero) and the one-sided 95% drop-difference upper bound at most +0.05. No replication follows whatever the outcome."
+        },
+        "protocol": {
+          "command": "python scripts/run_shadowhand_spin_stages.py --study incumbent_residual_confirmation",
+          "manifests": [
+            "config/manifests/pen_spin_stage3_residual_confirmation_s4751.yaml",
+            "config/manifests/pen_spin_stage3_residual_confirmation_s4752.yaml",
+            "config/manifests/pen_spin_stage3_residual_confirmation_s4753.yaml",
+            "config/manifests/pen_spin_stage3_residual_confirmation_s4754.yaml",
+            "config/manifests/pen_spin_stage3_residual_confirmation_s4755.yaml",
+            "config/manifests/pen_spin_stage3_residual_confirmation_s4756.yaml",
+            "config/manifests/pen_spin_stage3_residual_confirmation_s4757.yaml",
+            "config/manifests/pen_spin_stage3_residual_confirmation_s4758.yaml"
+          ],
+          "code_changes": [
+            "lares/envs/isaac_pen_spin/incumbent_residual.py: run_confirmation and confirmation_contrast (evaluation only; the residual's code and parameters are unchanged).",
+            "scripts/run_shadowhand_spin_stages.py: one registry entry, incumbent_residual_confirmation.",
+            "config/shadowhand_spin_stages.yaml: an incumbent_residual_confirmation block (seeds 4751-4758, 84 cases each, threshold 0.05, drop margin 0.05).",
+            "tests/test_incumbent_residual.py: the pooled and manifest-clustered contrast, the config block.",
+            "config/manifests/pen_spin_stage3_residual_confirmation_s4751.yaml",
+            "config/manifests/pen_spin_stage3_residual_confirmation_s4752.yaml",
+            "config/manifests/pen_spin_stage3_residual_confirmation_s4753.yaml",
+            "config/manifests/pen_spin_stage3_residual_confirmation_s4754.yaml",
+            "config/manifests/pen_spin_stage3_residual_confirmation_s4755.yaml",
+            "config/manifests/pen_spin_stage3_residual_confirmation_s4756.yaml",
+            "config/manifests/pen_spin_stage3_residual_confirmation_s4757.yaml",
+            "config/manifests/pen_spin_stage3_residual_confirmation_s4758.yaml"
+          ]
+        }
+      },
+      "note": "Triage round 2: the advisor's four changes, agreed."
+    }
+  ]
+}
