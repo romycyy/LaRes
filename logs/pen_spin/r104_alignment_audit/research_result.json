@@ -1,0 +1,232 @@
+{
+ "metrics": {
+  "gate_statistics": 0.02774725274725276,
+  "gate_statistics_ci95": [
+   0.008619764688471176,
+   0.05254024473176551
+  ],
+  "threshold": 0.1,
+  "verdict_by_rule": "refuted",
+  "concordance_dense": {
+   "value": 0.9722527472527472,
+   "ci95": [
+    0.9474597552682344,
+    0.9913802353115289
+   ],
+   "per_block": [
+    0.9714285714285714,
+    0.9730769230769231
+   ]
+  },
+  "concordance_tail": {
+   "value": 1.0,
+   "ci95": [
+    1.0,
+    1.0
+   ],
+   "per_block": [
+    1.0,
+    1.0
+   ]
+  },
+  "discordant_comparisons": {
+   "b0": 70,
+   "b1": 260
+  },
+  "omitted_penalty": {
+   "bound_per_episode": 3.6,
+   "vulnerable_margin_fraction": {
+    "dense": 0.01818181818181818,
+    "tail": 0.0
+   }
+  }
+ },
+ "controls": {
+  "policies": {
+   "b0": [
+    "draws",
+    "ppo",
+    "reference"
+   ],
+   "b1": [
+    "ars",
+    "draws",
+    "ppo",
+    "reference"
+   ]
+  },
+  "between_policy": {
+   "b0:draws": {
+    "success": 0.421875,
+    "mean_dense": 109.72301683668556,
+    "mean_tail": 87.1394812870131
+   },
+   "b0:ppo": {
+    "success": 0.453125,
+    "mean_dense": 113.98675512849042,
+    "mean_tail": 90.82264423913233
+   },
+   "b0:reference": {
+    "success": 0.4609375,
+    "mean_dense": 112.32963921884725,
+    "mean_tail": 89.88492367593938
+   },
+   "b1:ars": {
+    "success": 0.4609375,
+    "mean_dense": 124.21647417915688,
+    "mean_tail": 97.87794096143278
+   },
+   "b1:draws": {
+    "success": 0.3984375,
+    "mean_dense": 120.19601222234976,
+    "mean_tail": 95.01412364551624
+   },
+   "b1:ppo": {
+    "success": 0.375,
+    "mean_dense": 118.59745272972683,
+    "mean_tail": 91.1730488774179
+   },
+   "b1:reference": {
+    "success": 0.453125,
+    "mean_dense": 116.92055238542791,
+    "mean_tail": 94.44361896280816
+   }
+  },
+  "sizing": {
+   "b0:draws_vs_ppo": {
+    "discordance": 0.21875,
+    "difference": -0.03125,
+    "pairs_for_80pct_power": 678.928097021196,
+    "pairs_for_80pct_power_ci95": [
+     458.178354492628,
+     924.2055887196051
+    ],
+    "sd_of_paired_difference_at": {
+     "64": 0.05856195823873981,
+     "128": 0.04140955779017632,
+     "256": 0.029280979119369905
+    }
+   },
+   "b0:draws_vs_reference": {
+    "discordance": 0.1640625,
+    "difference": -0.0390625,
+    "pairs_for_80pct_power": 507.23385283230976,
+    "pairs_for_80pct_power_ci95": [
+     311.01185947358255,
+     703.4558461910368
+    ],
+    "sd_of_paired_difference_at": {
+     "64": 0.050592804115289276,
+     "128": 0.035774514869163714,
+     "256": 0.025296402057644638
+    }
+   },
+   "b0:ppo_vs_reference": {
+    "discordance": 0.1640625,
+    "difference": -0.0078125,
+    "pairs_for_80pct_power": 507.23385283230976,
+    "pairs_for_80pct_power_ci95": [
+     311.01185947358255,
+     703.4558461910368
+    ],
+    "sd_of_paired_difference_at": {
+     "64": 0.05082027384577775,
+     "128": 0.03593536025810679,
+     "256": 0.025410136922888876
+    }
+   },
+   "b1:ars_vs_draws": {
+    "discordance": 0.40625,
+    "difference": 0.0625,
+    "pairs_for_80pct_power": 1267.5940770973775,
+    "pairs_for_80pct_power_ci95": [
+     1022.3165853989685,
+     1537.3993179656272
+    ],
+    "sd_of_paired_difference_at": {
+     "64": 0.07959976160293505,
+     "128": 0.05628553121026794,
+     "256": 0.03979988080146753
+    }
+   },
+   "b1:ars_vs_ppo": {
+    "discordance": 0.3984375,
+    "difference": 0.0859375,
+    "pairs_for_80pct_power": 1243.0663279275366,
+    "pairs_for_80pct_power_ci95": [
+     997.7888362291276,
+     1513.4847625250293
+    ],
+    "sd_of_paired_difference_at": {
+     "64": 0.07847485640694446,
+     "128": 0.05549010311799101,
+     "256": 0.03923742820347223
+    }
+   },
+   "b1:ars_vs_reference": {
+    "discordance": 0.3515625,
+    "difference": 0.0078125,
+    "pairs_for_80pct_power": 1095.8998329084914,
+    "pairs_for_80pct_power_ci95": [
+     826.0945920402413,
+     1341.7905183361431
+    ],
+    "sd_of_paired_difference_at": {
+     "64": 0.07440064609445038,
+     "128": 0.05260920137804628,
+     "256": 0.03720032304722519
+    }
+   },
+   "b1:draws_vs_ppo": {
+    "discordance": 0.3046875,
+    "difference": 0.0234375,
+    "pairs_for_80pct_power": 948.7333378894458,
+    "pairs_for_80pct_power_ci95": [
+     703.4558461910368,
+     1194.010829587855
+    ],
+    "sd_of_paired_difference_at": {
+     "64": 0.06920677491683719,
+     "128": 0.04893657984774664,
+     "256": 0.034603387458418594
+    }
+   },
+   "b1:draws_vs_reference": {
+    "discordance": 0.2578125,
+    "difference": -0.0546875,
+    "pairs_for_80pct_power": 801.5668428704006,
+    "pairs_for_80pct_power_ci95": [
+     556.2893511719915,
+     1046.8443345688095
+    ],
+    "sd_of_paired_difference_at": {
+     "64": 0.06334778114103229,
+     "128": 0.044793645617945216,
+     "256": 0.031673890570516144
+    }
+   },
+   "b1:ppo_vs_reference": {
+    "discordance": 0.3125,
+    "difference": -0.078125,
+    "pairs_for_80pct_power": 973.2610870592869,
+    "pairs_for_80pct_power_ci95": [
+     727.9835953608779,
+     1243.0663279275366
+    ],
+    "sd_of_paired_difference_at": {
+     "64": 0.06946323837988316,
+     "128": 0.04911792690159303,
+     "256": 0.03473161918994158
+    }
+   }
+  },
+  "simulator_episodes": 0,
+  "llm_calls": 0,
+  "summary_sha256_before_and_after_start": "031630363315839304c8cbf4180d4d496749ca4c61dcd44ec5a984f38de33e34"
+ },
+ "artifacts": [
+  "logs/pen_spin/r104_alignment_audit/summary.json",
+  "logs/pen_spin/r104_alignment_audit/summary_before_start.json"
+ ],
+ "notes": "Archive only, zero simulator episodes. Deviation: a chained shell command ran the audit once BEFORE `research.py start` succeeded (start had refused because deferred R-105 also listed seed 4771; R-105's seeds were moved to 4772-4777, bookkeeping only). After start the audit was rerun; it is deterministic and the two summary files are byte-identical (same sha256), so nothing was chosen between them. Both scores omit the residual penalty and neither is R-103's training return. Tail concordance is exactly 1.000 in both blocks: a sustaining episode keeps |w| > 4 rad/s and d < 0.08 on all final 60 steps, so its six smallest tail terms are at least exp(-1) x 4/6 = 0.245, while almost every non-sustaining episode has a near-zero step there; the tail score is close to a smooth restatement of the success rule at the CASE level, which is what the prediction's own ceiling (dense already 0.972) left only 0.028 of room for. Between policies the picture differs and was not the registered statistic: in block 1 PPO has a higher mean dense score than the reference (118.6 vs 116.9) with lower success (0.375 vs 0.453), and ARS has the highest mean dense (124.2) and mean tail (97.9 vs 94.4) with success equal to the reference (0.461 vs 0.453); in block 0 PPO's mean dense is above the reference's with success slightly below. So policies can raise mean score without raising the success count. Sizing (planning only): discordance between two policies on a case is 0.16-0.41; the SD of a paired success difference at 64 cases is 0.051-0.080, so R-103's 64-case selection could not rank checkpoints a few points apart; 80% power for +0.05 needs about 500-1,270 pairs depending on the pair (bootstrap ranges 311-1,537)."
+}

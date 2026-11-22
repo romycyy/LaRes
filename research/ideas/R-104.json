@@ -1,0 +1,457 @@
+{
+  "id": "R-104",
+  "title": "Audit whether a late-tail score ranks sustained success better than accumulated dense rolling (archive only)",
+  "hypothesis": "Emphasising weak late-episode rolling rather than accumulated transient rolling improves concordance with sustained success among the archived frozen R-103 policies.",
+  "prediction": {
+    "metric": "gate_statistics",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "the penalty-free dense-score concordance on logs/pen_spin/r103_symbolic_reward/",
+    "rationale": "FROZEN DEFINITIONS (triage round 2, agreed; nothing is computed before approval). Archive-only: reads logs/pen_spin/r103_symbolic_reward/fresh/b{0,1}/*_cell.{json,npz} (per-step center_dist d, axial rate w, length, completion, sustained per case); no simulator step, no controller or incumbent change.\nScores, both WITHOUT the residual penalty (the cells stored no observations or actions, so it cannot be reconstructed; neither score is the original training return): smooth term g_t = exp(-(d_t/0.08)^2) * min(|w_t|/6, 1). dense = sum of g_t over in-play steps, minus 5 if the episode ended in a fall. tail = 360 x mean of the six smallest g_t over scheduled steps 300-359, a step not reached counting 0, minus 5 on a fall. Neither uses the sustained-success label.\nPolicies: block 0 = reference, draws finalist, PPO finalist (its ARS finalist is the reference); block 1 = reference, draws, ARS, PPO.\ngate_statistics = concordance(tail) - concordance(dense). Concordance of a score: over every unordered policy pair of a block and every case on which exactly one of the two sustains, 1 if the score is strictly higher for the sustaining policy, 0.5 on a tie, 0 otherwise; pooled within block, then the two block values averaged equally. Prediction: the difference is at least +0.10.\nUncertainty: 2,000 case-clustered bootstrap resamples within each block (a resampled case brings all its policy comparisons), numpy default_rng(4771) (analysis-only seed, no simulator cases). Supported if the 95% percentile interval's lower bound >= +0.10; refuted if its upper bound < +0.10; otherwise inconclusive. If an archived field is missing, stop inconclusive naming it; no simulation is launched.\nAlso reported: each score's concordance with its own interval; the omitted-penalty bound 0.01 x episode length (at most 3.6 per episode) and the fraction of discordant-pair score margins smaller than the two episodes' summed bounds; the between-policy relation of mean score to success rate; discordance rate per policy pair; nominal paired cases for 80% power at +0.05 (two-sided 0.05) with bootstrap intervals; sampling SD of a paired success difference at 64, 128 and 256 cases. The sizing numbers are planning estimates, not promotion budgets: multiplicity, the strict paired rule and the drop gate are unchanged. A better retrospective concordance on seven selected policies can motivate an objective ablation (R-105); it does not show that optimising the tail score improves success."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study symbolic_reward_alignment_audit",
+    "seeds": [
+      4771
+    ],
+    "manifests": [],
+    "episodes": 0,
+    "llm_calls": 0,
+    "code_changes": [
+      "lares/envs/isaac_pen_spin/symbolic_reward_audit.py (new, no Isaac): the two scores, concordance, the case-clustered bootstrap, the omitted-penalty margin check and the sizing estimates; run() reads the R-103 fresh cells only.",
+      "scripts/run_shadowhand_spin_stages.py: one registry entry, symbolic_reward_alignment_audit.",
+      "config/shadowhand_spin_stages.yaml: the symbolic_reward_alignment_audit block (frozen constants).",
+      "tests/test_symbolic_reward_alignment_audit.py (new)."
+    ],
+    "needs_gpu": false,
+    "needs_llm": false
+  },
+  "status": "decided",
+  "source": "advisor",
+  "falsified_by": "The upper 95% bootstrap bound of concordance(tail) - concordance(dense) is below +0.10. Support needs the lower bound at or above +0.10; anything else is inconclusive. If the archived per-step centre distance, axial rate or termination record cannot reconstruct either revised score, stop inconclusive and name the missing field; do not launch simulation.",
+  "cost_estimate": {
+    "episodes": 0,
+    "llm_calls": 0,
+    "wall_time_minutes": 10
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "d8bfdf0ad71d0e3b02d173e8a2337f50c6376035b389b3f9c53aa7250dc866ec",
+  "proposal_call_id": "call_00226",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-22T03:40:54",
+    "advisor_call_id": "call_00229",
+    "round": 3,
+    "note": "I accept the penalty-free comparison, conservative omitted-penalty checks, and separate no-Isaac module required by the dispatcher, leaving the frozen R-103 handler untouched. The prediction is gate_statistics increasing by at least 0.10 versus penalty-free dense-score concordance: an upper 95% boot"
+  },
+  "run": {
+    "started_at": "2026-11-22T03:41:42",
+    "git_sha": "52a504f29437a8181bb324ef2d10bbb5d40722b1",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r104_alignment_audit",
+    "finished_at": "2026-11-22T03:42:13"
+  },
+  "result": {
+    "metrics": {
+      "gate_statistics": 0.02774725274725276,
+      "gate_statistics_ci95": [
+        0.008619764688471176,
+        0.05254024473176551
+      ],
+      "threshold": 0.1,
+      "verdict_by_rule": "refuted",
+      "concordance_dense": {
+        "value": 0.9722527472527472,
+        "ci95": [
+          0.9474597552682344,
+          0.9913802353115289
+        ],
+        "per_block": [
+          0.9714285714285714,
+          0.9730769230769231
+        ]
+      },
+      "concordance_tail": {
+        "value": 1.0,
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "per_block": [
+          1.0,
+          1.0
+        ]
+      },
+      "discordant_comparisons": {
+        "b0": 70,
+        "b1": 260
+      },
+      "omitted_penalty": {
+        "bound_per_episode": 3.6,
+        "vulnerable_margin_fraction": {
+          "dense": 0.01818181818181818,
+          "tail": 0.0
+        }
+      }
+    },
+    "controls": {
+      "policies": {
+        "b0": [
+          "draws",
+          "ppo",
+          "reference"
+        ],
+        "b1": [
+          "ars",
+          "draws",
+          "ppo",
+          "reference"
+        ]
+      },
+      "between_policy": {
+        "b0:draws": {
+          "success": 0.421875,
+          "mean_dense": 109.72301683668556,
+          "mean_tail": 87.1394812870131
+        },
+        "b0:ppo": {
+          "success": 0.453125,
+          "mean_dense": 113.98675512849042,
+          "mean_tail": 90.82264423913233
+        },
+        "b0:reference": {
+          "success": 0.4609375,
+          "mean_dense": 112.32963921884725,
+          "mean_tail": 89.88492367593938
+        },
+        "b1:ars": {
+          "success": 0.4609375,
+          "mean_dense": 124.21647417915688,
+          "mean_tail": 97.87794096143278
+        },
+        "b1:draws": {
+          "success": 0.3984375,
+          "mean_dense": 120.19601222234976,
+          "mean_tail": 95.01412364551624
+        },
+        "b1:ppo": {
+          "success": 0.375,
+          "mean_dense": 118.59745272972683,
+          "mean_tail": 91.1730488774179
+        },
+        "b1:reference": {
+          "success": 0.453125,
+          "mean_dense": 116.92055238542791,
+          "mean_tail": 94.44361896280816
+        }
+      },
+      "sizing": {
+        "b0:draws_vs_ppo": {
+          "discordance": 0.21875,
+          "difference": -0.03125,
+          "pairs_for_80pct_power": 678.928097021196,
+          "pairs_for_80pct_power_ci95": [
+            458.178354492628,
+            924.2055887196051
+          ],
+          "sd_of_paired_difference_at": {
+            "64": 0.05856195823873981,
+            "128": 0.04140955779017632,
+            "256": 0.029280979119369905
+          }
+        },
+        "b0:draws_vs_reference": {
+          "discordance": 0.1640625,
+          "difference": -0.0390625,
+          "pairs_for_80pct_power": 507.23385283230976,
+          "pairs_for_80pct_power_ci95": [
+            311.01185947358255,
+            703.4558461910368
+          ],
+          "sd_of_paired_difference_at": {
+            "64": 0.050592804115289276,
+            "128": 0.035774514869163714,
+            "256": 0.025296402057644638
+          }
+        },
+        "b0:ppo_vs_reference": {
+          "discordance": 0.1640625,
+          "difference": -0.0078125,
+          "pairs_for_80pct_power": 507.23385283230976,
+          "pairs_for_80pct_power_ci95": [
+            311.01185947358255,
+            703.4558461910368
+          ],
+          "sd_of_paired_difference_at": {
+            "64": 0.05082027384577775,
+            "128": 0.03593536025810679,
+            "256": 0.025410136922888876
+          }
+        },
+        "b1:ars_vs_draws": {
+          "discordance": 0.40625,
+          "difference": 0.0625,
+          "pairs_for_80pct_power": 1267.5940770973775,
+          "pairs_for_80pct_power_ci95": [
+            1022.3165853989685,
+            1537.3993179656272
+          ],
+          "sd_of_paired_difference_at": {
+            "64": 0.07959976160293505,
+            "128": 0.05628553121026794,
+            "256": 0.03979988080146753
+          }
+        },
+        "b1:ars_vs_ppo": {
+          "discordance": 0.3984375,
+          "difference": 0.0859375,
+          "pairs_for_80pct_power": 1243.0663279275366,
+          "pairs_for_80pct_power_ci95": [
+            997.7888362291276,
+            1513.4847625250293
+          ],
+          "sd_of_paired_difference_at": {
+            "64": 0.07847485640694446,
+            "128": 0.05549010311799101,
+            "256": 0.03923742820347223
+          }
+        },
+        "b1:ars_vs_reference": {
+          "discordance": 0.3515625,
+          "difference": 0.0078125,
+          "pairs_for_80pct_power": 1095.8998329084914,
+          "pairs_for_80pct_power_ci95": [
+            826.0945920402413,
+            1341.7905183361431
+          ],
+          "sd_of_paired_difference_at": {
+            "64": 0.07440064609445038,
+            "128": 0.05260920137804628,
+            "256": 0.03720032304722519
+          }
+        },
+        "b1:draws_vs_ppo": {
+          "discordance": 0.3046875,
+          "difference": 0.0234375,
+          "pairs_for_80pct_power": 948.7333378894458,
+          "pairs_for_80pct_power_ci95": [
+            703.4558461910368,
+            1194.010829587855
+          ],
+          "sd_of_paired_difference_at": {
+            "64": 0.06920677491683719,
+            "128": 0.04893657984774664,
+            "256": 0.034603387458418594
+          }
+        },
+        "b1:draws_vs_reference": {
+          "discordance": 0.2578125,
+          "difference": -0.0546875,
+          "pairs_for_80pct_power": 801.5668428704006,
+          "pairs_for_80pct_power_ci95": [
+            556.2893511719915,
+            1046.8443345688095
+          ],
+          "sd_of_paired_difference_at": {
+            "64": 0.06334778114103229,
+            "128": 0.044793645617945216,
+            "256": 0.031673890570516144
+          }
+        },
+        "b1:ppo_vs_reference": {
+          "discordance": 0.3125,
+          "difference": -0.078125,
+          "pairs_for_80pct_power": 973.2610870592869,
+          "pairs_for_80pct_power_ci95": [
+            727.9835953608779,
+            1243.0663279275366
+          ],
+          "sd_of_paired_difference_at": {
+            "64": 0.06946323837988316,
+            "128": 0.04911792690159303,
+            "256": 0.03473161918994158
+          }
+        }
+      },
+      "simulator_episodes": 0,
+      "llm_calls": 0,
+      "summary_sha256_before_and_after_start": "031630363315839304c8cbf4180d4d496749ca4c61dcd44ec5a984f38de33e34"
+    },
+    "artifacts": [
+      "logs/pen_spin/r104_alignment_audit/summary.json",
+      "logs/pen_spin/r104_alignment_audit/summary_before_start.json"
+    ],
+    "notes": "Archive only, zero simulator episodes. Deviation: a chained shell command ran the audit once BEFORE `research.py start` succeeded (start had refused because deferred R-105 also listed seed 4771; R-105's seeds were moved to 4772-4777, bookkeeping only). After start the audit was rerun; it is deterministic and the two summary files are byte-identical (same sha256), so nothing was chosen between them. Both scores omit the residual penalty and neither is R-103's training return. Tail concordance is exactly 1.000 in both blocks: a sustaining episode keeps |w| > 4 rad/s and d < 0.08 on all final 60 steps, so its six smallest tail terms are at least exp(-1) x 4/6 = 0.245, while almost every non-sustaining episode has a near-zero step there; the tail score is close to a smooth restatement of the success rule at the CASE level, which is what the prediction's own ceiling (dense already 0.972) left only 0.028 of room for. Between policies the picture differs and was not the registered statistic: in block 1 PPO has a higher mean dense score than the reference (118.6 vs 116.9) with lower success (0.375 vs 0.453), and ARS has the highest mean dense (124.2) and mean tail (97.9 vs 94.4) with success equal to the reference (0.461 vs 0.453); in block 0 PPO's mean dense is above the reference's with success slightly below. So policies can raise mean score without raising the success count. Sizing (planning only): discordance between two policies on a case is 0.16-0.41; the SD of a paired success difference at 64 cases is 0.051-0.080, so R-103's 64-case selection could not rank checkpoints a few points apart; 80% power for +0.05 needs about 500-1,270 pairs depending on the pair (bootstrap ranges 311-1,537)."
+  },
+  "prediction_outcome": {
+    "metric": "gate_statistics",
+    "before": null,
+    "after": 0.02774725274725276,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.9,
+      "reasoning": "concordance(tail) - concordance(dense) = +0.028, case-clustered bootstrap 95% interval [+0.009, +0.053] over 330 success-discordant comparisons; the upper bound is below the predicted +0.10, so the registered prediction is refuted. The accumulated dense score already ranks the sustaining policy higher on 0.972 [0.947, 0.991] of discordant comparisons; only 1.8% of its margins are within the omitted-penalty bound. Case-level objective misalignment is therefore not what limited R-103. Two things the audit does show, outside the registered statistic: (i) between policies, mean dense score and success rate are not ordered together (block 1 PPO: higher mean score than the reference, 7.8 points lower success), so average reward can rise by improving episodes that still fail; (ii) a 64-case selection manifest has a paired-difference SD of 0.05-0.08 and +0.05 needs roughly 500-1,270 pairs, so R-103's checkpoint selection was noise. Seven selected policies, retrospective.",
+      "cited_artifacts": [],
+      "next_experiment": "Do not run R-105 as written: its premise (the tail score is much better aligned) is refuted at the case level, and its 256-case selection has an SD of 0.03-0.04. If a learning rerun is wanted it should change what R-104 identifies: select with far more cases (or do not select: evaluate the final checkpoint only), and optimise a per-episode success-shaped objective in parameter space (ARS on the tail score or on the success predicate count) rather than average step reward. Otherwise move to P4 (anchored component replacement) or ask whether this residual family is worth more budget.",
+      "recorded_at": "2026-11-22T03:42:15",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "The named penalty-free dense control was measured: concordance was 0.97225 versus 1.00000 for the tail score [logs/pen_spin/r104_alignment_audit/summary.json]. The registered gate_statistics increase was +0.02775, with a 95% interval of [+0.00862, +0.05254]; its upper bound is below the +0.10 threshold, satisfying the preregistered refutation rule [logs/pen_spin/r104_alignment_audit/summary.json]. The interval excludes zero, supporting a smaller retrospective concordance advantage, but not the predicted magnitude or a benefit from optimizing the tail objective [logs/pen_spin/r104_alignment_audit/summary.json]. The reported pre-start execution is a procedural deviation, but the byte-identical archived summaries provide no indication that the rerun changed the result [logs/pen_spin/r104_alignment_audit/summary_before_start.json; logs/pen_spin/r104_alignment_audit/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r104_alignment_audit/summary.json",
+        "logs/pen_spin/r104_alignment_audit/summary_before_start.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-22T03:42:31",
+      "call_id": "call_00230"
+    }
+  ],
+  "decision_id": "D-074",
+  "history": [
+    {
+      "at": "2026-11-22T03:40:54",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-22T03:41:42",
+      "from": "approved",
+      "to": "running",
+      "note": "git 52a504f294 (dirty)"
+    },
+    {
+      "at": "2026-11-22T03:42:13",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-22T03:42:47",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-074: refuted"
+    }
+  ],
+  "created_at": "2026-11-22T03:37:27",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This archive-only audit is the best next spend: 0 simulator episodes and 0 LLM calls, reusing scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml. It predicts gate_statistics will increase by at least 0.10 for tail-score concordance versus original dense-return concordance on the archived R-103 policies; an upper uncertainty bound below +0.10 refutes it. Its weakest point is the small, selected policy pool: better retrospective concordance motivates an objective ablation but does not establish that optimizing the score improves success. If either score cannot be reconstructed, stop as inconclusive without launching simulation.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00227",
+          "briefing_sha256": "86835f0303e3ddde3b8c7c7adc3a579c7ce92ff02124490c5be2cf49544c714f",
+          "at": "2026-11-22T03:38:12"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Right idea and free, but as written it is decided before it runs. I checked the R-103 archive: each fresh cell stores per-step center_dist, spin_rate, the success predicate, length and completion for all 128 cases, but NOT observations or actions (cells ran without record_obs), so the per-step residual penalty cannot be reconstructed; the record's own clause would then force 'inconclusive'. The penalty is at most 0.01 per step and in practice about 1e-4 (mean |executed residual| 0.008-0.029 of a 0.10 cap, i.e. 0.01 x (0.08..0.29)^2), against a rolling term of about 0.35 per step, so it cannot change a ranking materially. Changes: (1) define both scores WITHOUT the residual penalty, say so, and report the bound on what is omitted; (2) pin the definitions: dense = sum over in-play steps of exp(-(d/0.08)^2) min(|w|/6,1) minus 5 if the episode ended in a fall; tail = 360 x mean of the six smallest values of that same smooth term over the last 60 scheduled steps (steps 300-359), a step not reached because of a fall counting 0, minus 5 on a fall; (3) pin the statistic: policies per block = reference plus the distinct finalists (block 0: reference, draws, PPO; block 1: reference, draws, ARS, PPO); for every unordered policy pair and every case where exactly one of the two sustains, a score is concordant if it is strictly higher for the sustaining policy (ties count half); concordance = concordant fraction pooled within block, then averaged over the two blocks; the prediction is tail minus dense >= 0.10; (4) uncertainty by a case-clustered bootstrap within block (2,000 resamples, fixed seed), because one case contributes to several pairs; (5) the sizing output: discordance rate per policy pair and the pairs needed for 80% power at +0.05 (two-sided 0.05) with a bootstrap interval, plus the sampling SD of a 64-, 128- and 256-case selection count; (6) protocol.code_changes should name a new no-Isaac module function and a test, and the study runs on the Mac or the box with no simulator.",
+          "changes_applied": [],
+          "at": "2026-11-22T03:38:29"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "I accept your archive check: the original penalty-inclusive protocol would necessarily stop inconclusive, so explicitly comparing two reconstructible scores is the right zero-episode diagnostic before more learning. I also accept the pinned policy pool, case-clustered uncertainty and paired-discordance sizing; however, small average residual penalties do not establish ranking invariance, especially near ties. This selected, small policy pool can motivate an objective ablation but cannot establish that optimizing the tail score improves sustained success.",
+          "suggested_changes": [
+            "Redefine the hypothesis as: emphasizing weak late-episode rolling rather than accumulated transient rolling improves concordance with sustained success among the archived frozen policies. Define both scores without residual penalties: dense is the sum over in-play steps of exp(-(d/0.08)^2) * min(|w|/6,1), minus 5 on a fall; tail is 360 times the mean of the six smallest terms over scheduled steps 300–359, with unreached steps scored zero, minus 5 on a fall. Freeze definitions before computing results.",
+            "Set the prediction to metric gate_statistics, direction increase, threshold 0.10, against the penalty-free dense-score concordance on logs/pen_spin/r103_symbolic_reward/. Use reference/draws/PPO in block 0 and reference/draws/ARS/PPO in block 1, deduplicating reference-identical policies. Pool success-discordant case-policy pairs within each block, count strictly correct rankings as 1 and score ties as 0.5, then average block concordances equally.",
+            "Use 2,000 within-block case-clustered bootstrap resamples, preserving every policy comparison belonging to each sampled case; preregister free analysis-only seed 4771 without generating simulator cases. Set falsified_by to an upper 95% interval bound below +0.10; support requires a lower bound at least +0.10, otherwise report inconclusive. If archived fields cannot reconstruct either revised score, stop inconclusive and identify the missing per-step center distance, axial spin rate or termination record; do not launch simulation.",
+            "Report a conservative omitted-penalty bound of 0.01 times episode length, at most 3.6 per policy episode, and the fraction of pairwise score margins potentially vulnerable to it. Do not infer negligible ranking impact from mean residual magnitude or characterize either reconstructed score as the original training return.",
+            "Report discordance by policy pair, nominal paired-case requirements for 80% power at a +0.05 success difference with two-sided alpha 0.05 and bootstrap uncertainty, plus sampling SDs of paired success differences at 64, 128 and 256 cases. Label these planning estimates, not sufficient promotion budgets: multiplicity, the existing strict paired-success gate and the drop gate remain unchanged.",
+            "Reuse scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml. Add the missing pure archive-scoring function in lares/envs/isaac_pen_spin/symbolic_reward.py and unit coverage in tests/test_symbolic_reward_alignment_audit.py; dispatch the audit before Isaac initialization rather than adding a runner. Run on the remote box via gpu run, not the Mac, respecting the standing execution constraint. Retain estimates of 0 simulator episodes, 0 LLM calls and approximately 10 minutes; read only R-103 archives, change no controller or incumbent, and keep R-105 deferred pending the audit."
+          ],
+          "priority": 1,
+          "call_id": "call_00228",
+          "briefing_sha256": "917fd77931737c7b31d401b95d52521184ff4130a3c0d37abb0a471d5102cd7e",
+          "at": "2026-11-22T03:39:02"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree with every change, including the correction to my own argument: a small mean penalty does not prove ranking invariance, so the audit reports the conservative bound (0.01 x episode length, at most 3.6) and the fraction of pairwise score margins inside it, and never calls either reconstructed score the training return. One implementation note, not a disagreement: the pure scoring code goes in a small no-Isaac module lares/envs/isaac_pen_spin/symbolic_reward_audit.py registered under the study name (the dispatcher maps a study to one module's run()), leaving the frozen R-103 handler untouched; its run() never launches Isaac.",
+          "changes_applied": [],
+          "at": "2026-11-22T03:39:26"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the penalty-free comparison, conservative omitted-penalty checks, and separate no-Isaac module required by the dispatcher, leaving the frozen R-103 handler untouched. The prediction is gate_statistics increasing by at least 0.10 versus penalty-free dense-score concordance: an upper 95% bootstrap bound below +0.10 falsifies it, while support requires the lower bound to reach +0.10. This is the best next diagnostic at 0 simulator episodes and 0 LLM calls, reusing scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml. Seven selected policies limit inference to retrospective alignment rather than benefits from optimizing tail reward; missing required archived fields must stop the audit as inconclusive without simulation.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00229",
+          "briefing_sha256": "a805ed19aa8d5fbf47e0a44c199c632aaee7b7d1bc6faeeb91c97f484fb13b71",
+          "at": "2026-11-22T03:39:43"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve: definitions, policy pool, statistic, bootstrap and decision rule are frozen before anything is computed; zero simulator episodes and zero LLM calls; it decides whether objective mismatch or selection size is the thing to fix before any more training is bought.",
+          "changes_applied": [],
+          "at": "2026-11-22T03:40:54"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 3
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-22T03:39:27",
+      "round": 2,
+      "patch": {
+        "title": "Audit whether a late-tail score ranks sustained success better than accumulated dense rolling (archive only)",
+        "hypothesis": "Emphasising weak late-episode rolling rather than accumulated transient rolling improves concordance with sustained success among the archived frozen R-103 policies.",
+        "prediction": {
+          "metric": "gate_statistics",
+          "direction": "increase",
+          "threshold": 0.1,
+          "against": "the penalty-free dense-score concordance on logs/pen_spin/r103_symbolic_reward/",
+          "rationale": "FROZEN DEFINITIONS (triage round 2, agreed; nothing is computed before approval). Archive-only: reads logs/pen_spin/r103_symbolic_reward/fresh/b{0,1}/*_cell.{json,npz} (per-step center_dist d, axial rate w, length, completion, sustained per case); no simulator step, no controller or incumbent change.\nScores, both WITHOUT the residual penalty (the cells stored no observations or actions, so it cannot be reconstructed; neither score is the original training return): smooth term g_t = exp(-(d_t/0.08)^2) * min(|w_t|/6, 1). dense = sum of g_t over in-play steps, minus 5 if the episode ended in a fall. tail = 360 x mean of the six smallest g_t over scheduled steps 300-359, a step not reached counting 0, minus 5 on a fall. Neither uses the sustained-success label.\nPolicies: block 0 = reference, draws finalist, PPO finalist (its ARS finalist is the reference); block 1 = reference, draws, ARS, PPO.\ngate_statistics = concordance(tail) - concordance(dense). Concordance of a score: over every unordered policy pair of a block and every case on which exactly one of the two sustains, 1 if the score is strictly higher for the sustaining policy, 0.5 on a tie, 0 otherwise; pooled within block, then the two block values averaged equally. Prediction: the difference is at least +0.10.\nUncertainty: 2,000 case-clustered bootstrap resamples within each block (a resampled case brings all its policy comparisons), numpy default_rng(4771) (analysis-only seed, no simulator cases). Supported if the 95% percentile interval's lower bound >= +0.10; refuted if its upper bound < +0.10; otherwise inconclusive. If an archived field is missing, stop inconclusive naming it; no simulation is launched.\nAlso reported: each score's concordance with its own interval; the omitted-penalty bound 0.01 x episode length (at most 3.6 per episode) and the fraction of discordant-pair score margins smaller than the two episodes' summed bounds; the between-policy relation of mean score to success rate; discordance rate per policy pair; nominal paired cases for 80% power at +0.05 (two-sided 0.05) with bootstrap intervals; sampling SD of a paired success difference at 64, 128 and 256 cases. The sizing numbers are planning estimates, not promotion budgets: multiplicity, the strict paired rule and the drop gate are unchanged. A better retrospective concordance on seven selected policies can motivate an objective ablation (R-105); it does not show that optimising the tail score improves success."
+        },
+        "falsified_by": "The upper 95% bootstrap bound of concordance(tail) - concordance(dense) is below +0.10. Support needs the lower bound at or above +0.10; anything else is inconclusive. If the archived per-step centre distance, axial rate or termination record cannot reconstruct either revised score, stop inconclusive and name the missing field; do not launch simulation.",
+        "protocol": {
+          "seeds": [
+            4771
+          ],
+          "manifests": [],
+          "episodes": 0,
+          "command": "python scripts/run_shadowhand_spin_stages.py --study symbolic_reward_alignment_audit",
+          "code_changes": [
+            "lares/envs/isaac_pen_spin/symbolic_reward_audit.py (new, no Isaac): the two scores, concordance, the case-clustered bootstrap, the omitted-penalty margin check and the sizing estimates; run() reads the R-103 fresh cells only.",
+            "scripts/run_shadowhand_spin_stages.py: one registry entry, symbolic_reward_alignment_audit.",
+            "config/shadowhand_spin_stages.yaml: the symbolic_reward_alignment_audit block (frozen constants).",
+            "tests/test_symbolic_reward_alignment_audit.py (new)."
+          ]
+        },
+        "cost_estimate": {
+          "episodes": 0,
+          "llm_calls": 0,
+          "wall_time_minutes": 10
+        }
+      },
+      "note": "Round 2 agreed revise: penalty-free reconstructible scores with pinned definitions, pinned policy pool and concordance, case-clustered bootstrap (seed 4771), omitted-penalty bound and margin check, sizing estimates labelled as planning only."
+    }
+  ]
+}

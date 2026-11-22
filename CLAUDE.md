@@ -630,6 +630,12 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   `symbolic_reward.executed_joint_order`); a generation that ends on the 360th step auto-resets every survivor, so a
   forced reset per generation costs about 2N episode starts, not N (the study hit its 20,000-start ceiling at the
   seventh run); a 64-case selection manifest cannot rank checkpoints a few points apart.
+- **R-104 result (D-074, refuted; archive only, 2026-11-22).** `symbolic_reward_audit.py` (`--study
+  symbolic_reward_alignment_audit`, no Isaac): on R-103's fresh cells a late-tail score beats the accumulated dense
+  score at ranking success-discordant cases by only +0.028 [+0.009, +0.053] (dense is already 0.972 concordant), so
+  case-level reward misalignment did not limit R-103. Between policies mean reward and success are not ordered
+  together. **Sizing to remember:** two pen-spin policies disagree on 0.16-0.41 of cases; a paired success difference
+  on 64 cases has SD 0.05-0.08; +0.05 at 80% power needs about 500-1,270 pairs.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

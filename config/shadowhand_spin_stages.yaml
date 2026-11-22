@@ -1411,3 +1411,22 @@ research_protocols:
     drop_margin: 0.05
     episode_ceiling: 20000
     max_hours: 4.0
+  # R-104 (no Isaac, no LLM, no episode): does a late-tail score rank sustained success better than accumulated dense
+  # rolling on R-103's archived fresh cells? Definitions frozen at triage (lares/envs/isaac_pen_spin/symbolic_reward_audit.py).
+  #   python scripts/run_shadowhand_spin_stages.py --study symbolic_reward_alignment_audit
+  symbolic_reward_alignment_audit:
+    log_dir: "logs/pen_spin/r104_alignment_audit"
+    source_log_dir: "logs/pen_spin/r103_symbolic_reward"
+    blocks: [0, 1]
+    center_scale: 0.08
+    spin_cap: 6.0
+    fall_penalty: 5.0
+    horizon: 360
+    tail_window: 60
+    tail_smallest: 6
+    omitted_penalty_per_step: 0.01
+    threshold: 0.10
+    effect: 0.05
+    resamples: 2000
+    seed: 4771
+    pool_seed: 4771

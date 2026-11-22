@@ -1,0 +1,117 @@
+{
+  "id": "R-105",
+  "title": "Conditional objective-only ARS ablation with a sustained-tail return",
+  "hypothesis": "Optimizing weak tail-window performance instead of average dense reward prevents transient-spin gains from displacing sustained-success behavior in the same symbolic residual family.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "baseline",
+    "rationale": "Baseline is a concurrently trained original-reward ARS arm, not historical scores. Run only after the audit supports the declared objective-mismatch mechanism and its prospective power calculation fits the episode ceiling; otherwise defer. This differs from R-103 by manipulating only the training objective, not by extending its incomplete comparison. Compare original return with the audit's frozen lower-tail return in two paired training blocks, starting from zero coefficients. Reuse the actor, ARS implementation, 0.10 bounds, features, step sizes and 460800-transition budget unchanged. Retaining bounds isolates reward mismatch despite earlier saturation. Freeze three checkpoints at one-third, two-thirds and full budget; select by sustained success on 256 disjoint cases per block, with a fixed tie-break. Size fresh confirmation prospectively from audit discordance for 80% power at a five-point effect, rounded to 256-case manifests, with at most 768 cases per block. Freeze that size before training; if the required size exceeds the cap, do not start. Four training runs cost 10252 starts, selection costs 3584 episodes, and capped confirmation costs 4608: ceiling 18444. Record both objective arms versus the unchanged D-072 reference, all required paired and manifest-level intervals, drop bounds and residual diagnostics. A positive objective contrast alone does not establish usefulness: advancement requires the repository's strict paired reference-improvement rule and one-sided 95% drop bound <= 0.05, with multiplicity handled prospectively. P2 remains closed without a confirmed useful learner gain."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study symbolic_reward_tail_ars",
+    "seeds": [
+      4772,
+      4773,
+      4774,
+      4775,
+      4776,
+      4777
+    ],
+    "manifests": [
+      "config/manifests/shadowhand_spin/tail_ars_selection_b0.yaml",
+      "config/manifests/shadowhand_spin/tail_ars_selection_b1.yaml",
+      "config/manifests/shadowhand_spin/tail_ars_confirmation_b0_a.yaml",
+      "config/manifests/shadowhand_spin/tail_ars_confirmation_b0_b.yaml",
+      "config/manifests/shadowhand_spin/tail_ars_confirmation_b0_c.yaml",
+      "config/manifests/shadowhand_spin/tail_ars_confirmation_b1_a.yaml",
+      "config/manifests/shadowhand_spin/tail_ars_confirmation_b1_b.yaml",
+      "config/manifests/shadowhand_spin/tail_ars_confirmation_b1_c.yaml"
+    ],
+    "episodes": 18444,
+    "llm_calls": 0,
+    "code_changes": [
+      "lares/envs/isaac_pen_spin/symbolic_reward.py",
+      "lares/envs/isaac_pen_spin/symbolic_reward_child.py",
+      "config/shadowhand_spin_stages.yaml",
+      "config/manifests/shadowhand_spin/"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The upper interval bound for tail-objective ARS minus original-objective ARS is below +0.05. An interval containing zero and +0.05 is inconclusive. Even a supported objective contrast does not justify advancement if neither arm qualifies against the frozen reference; do not repeat confirmation to obtain significance.",
+  "cost_estimate": {
+    "episodes": 18444,
+    "llm_calls": 0,
+    "wall_time_minutes": 35
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "d8bfdf0ad71d0e3b02d173e8a2337f50c6376035b389b3f9c53aa7250dc866ec",
+  "proposal_call_id": "call_00226",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-22T03:38:27",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-22T03:37:27",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "The objective-only contrast addresses a mechanism D-073 left unresolved, but its 18,444-episode ceiling and 0 controller-generation LLM calls should wait for R-104's alignment and power findings. Its paired_success_difference prediction is an increase of at least 0.05 versus concurrently trained original-reward ARS, refuted if the upper interval bound is below +0.05. Its weakest point is whether selection precision and confirmation power remain adequate within the ceiling after multiplicity handling. Reconsider only after those prerequisites are resolved; even a positive objective contrast cannot open P2 without qualifying against the frozen D-072 reference under the strict paired improvement and drop rules.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00227",
+          "briefing_sha256": "86835f0303e3ddde3b8c7c7adc3a579c7ce92ff02124490c5be2cf49544c714f",
+          "at": "2026-11-22T03:38:12"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree: its mechanism (objective mismatch) and its confirmation size both depend on R-104's alignment and discordance numbers; 18,444 episodes should not be committed before them. Its manifest paths (config/manifests/shadowhand_spin/...) also do not follow the repository's pen_spin_stage3_<label>_s<seed>.yaml convention and would need fixing when it is re-triaged.",
+          "changes_applied": [],
+          "at": "2026-11-22T03:38:27"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-22T03:41:40",
+      "round": 1,
+      "patch": {
+        "protocol": {
+          "seeds": [
+            4772,
+            4773,
+            4774,
+            4775,
+            4776,
+            4777
+          ]
+        }
+      },
+      "note": "Bookkeeping only while deferred: R-104's agreed analysis seed is 4771 (triage round 2), which this idea had also listed; its six seeds move to 4772-4777. Nothing else changes."
+    }
+  ]
+}
