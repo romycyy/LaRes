@@ -693,6 +693,17 @@ def run_pen_spin_local_feedback(cfg, overrides: dict) -> None:
     _print_summary(local_feedback.run_study(lcfg, _stream_factory(cfg), expert, client))
 
 
+def run_pen_spin_structure_search(cfg, overrides: dict) -> None:
+    """R-109 (P2): fixed vs grammar vs LLM structural edits from the R-106 finalist, with the exact-success ARS learner."""
+    from lares.envs.isaac_pen_spin import structure_search
+
+    scfg = _study_block(cfg, PEN_SPIN_STUDIES["structure_search"], overrides, isaac_env=cfg.pen_spin["isaac_env"])
+    summary = structure_search.run_study(scfg, openai_client())
+    print(json.dumps({k: v for k, v in summary.items() if k in ("smoke_gate", "paired_success_difference",
+                                                                "paired_success_difference_across_blocks_ci95", "cells",
+                                                                "accounting", "llm", "incomplete", "note")}, indent=2))
+
+
 @dataclass(frozen=True)
 class PenSpinStudy:
     """One ``--study`` of the pen-spin pipeline: its config block, how to freeze its manifests, how to run it.
@@ -727,6 +738,7 @@ PEN_SPIN_STUDIES = {s.name: s for s in (
     PenSpinStudy("r084_coordinate_repair", "r084_coordinate_repair", "coordinate_repair", run_pen_spin_coordinate_repair),
     PenSpinStudy("modular_cold", "modular_cold", "modular_cold", run_pen_spin_modular_cold),
     PenSpinStudy("contact_rules", "contact_rules", "contact_rules", run_pen_spin_contact_rules),
+    PenSpinStudy("structure_search", "pen_spin_structure", "structure_search", run_pen_spin_structure_search),
 )}
 
 

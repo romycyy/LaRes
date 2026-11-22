@@ -1,0 +1,20 @@
+{
+ "block": 0,
+ "arm": "grammar",
+ "round": 1,
+ "information": "round 0 selection rollouts of the retained parent (c0)",
+ "parent_sha256": "a2a04ae398e91f0745824fa537f6bc0bd29efb97ed1c503c0478094ffc5d43f2",
+ "edits": [
+  {
+   "expr": "centre_dist",
+   "target": "chain:TH"
+  },
+  {
+   "expr": [
+    "abs",
+    "posture"
+   ],
+   "target": "groups"
+  }
+ ]
+}

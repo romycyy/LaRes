@@ -1,0 +1,40 @@
+{
+ "idea": "R-109",
+ "recorded": "2026-11-22, after the first two selection decisions, before any confirmation case and before any round-2 generation or training",
+ "authority": "advisor consult call_00244; the user delegated such decisions on 2026-11-22",
+ "kind": "OUTCOME-INFORMED pilot amendment: the amended study is not wholly preregistered",
+ "observed_before_amending": {
+  "b0_fixed_r0": {
+   "parent": 802,
+   "c0": 839,
+   "c1": 841,
+   "holm_p": [
+    0.106,
+    0.106
+   ],
+   "registered_decision": "parent"
+  },
+  "b0_grammar_r0": {
+   "parent": 809,
+   "c0": 821,
+   "c1": 815,
+   "holm_p": [
+    0.983,
+    0.983
+   ],
+   "registered_decision": "parent"
+  },
+  "cases": 1536,
+  "not_observed": "any LLM-arm selection, any other block, any confirmation case"
+ },
+ "reason": "six or twelve updates buy about +0.025 on the selection placements, below what the strict Holm gate at n = 1,536 can pass; under the registered rule most arms would keep the unchanged parent in both rounds and every confirmation contrast would be 0 by construction",
+ "registered_rule": "a candidate replaces the parent only with a positive paired success difference, Holm-adjusted p < 0.05 over the two candidates and the drop bound",
+ "amended_rule": "for every arm, block and round the retained policy is the one with the most sustained successes on the 1,536 shared selection placements among the parent and the candidates whose one-sided 95% upper bound on the paired drop difference is <= 0.05; ties favour the parent, then the earlier candidate; the Holm tests and duplicate-parent diagnostics are still reported and a selection win is not treated as an established improvement",
+ "application": "completed decisions are recomputed from their saved selection rows only; nothing is regenerated or retrained; no round-2 edit or training existed when the driver was stopped (lineage check); the simulator child running at the stop (train_b0_llm_r0) was left to finish and its result is reused",
+ "unchanged": "edits already generated, grammar seeding as registered, training and selection placements, seeds, ARS settings, budget (0 added episodes, 0 added calls), finalist freezing, confirmation manifests and criteria, the saved incumbent",
+ "config_sha256": {
+  "registered": "cc06784c3f36e38bcba6ca49bc5c5535bb5df6365f7540c1c557885a3331e2cc",
+  "amended": "7716c159132e4af186b90f7668423aa8059f2cee5672a31b14e405dac2a856b5"
+ },
+ "known_spec_defect_left_as_registered": "the grammar RNG seed is block_seed + 9000 + 10 r + k with consecutive block seeds, so block b's candidate 1 and block b+1's candidate 0 draw the same edit; the blocks are not three independent grammar-search replicates and the across-block t intervals are nominal"
+}

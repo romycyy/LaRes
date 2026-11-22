@@ -1,0 +1,23 @@
+{
+ "block": 1,
+ "arm": "grammar",
+ "round": 1,
+ "information": "round 0 selection rollouts of the retained parent (parent)",
+ "parent_sha256": "c1bedbec55ae656a785dcfe27022d4357cf964da659edb597b8cdc30553335da",
+ "edits": [
+  {
+   "expr": [
+    "abs",
+    "posture"
+   ],
+   "target": "groups"
+  },
+  {
+   "expr": [
+    "comp",
+    "spin_level"
+   ],
+   "target": "chain:RF"
+  }
+ ]
+}

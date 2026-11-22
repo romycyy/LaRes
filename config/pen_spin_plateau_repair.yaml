@@ -211,6 +211,46 @@ self_trace_source:
     self_sha256: "5351187bd0b2a915017be1a77e943d5aaa19b55a24933693300db5cfb0dd26b8"
     expert_sha256: "3a2b053756538407d62a4d1917ed3a3749cdfed10e9c0f767290a3347e77451c"
 
+pen_spin_structure:
+  # R-109 (P2; approved 2026-11-22, advisor call_00242): from the frozen R-106 finalist, three blocks x two rounds;
+  # per round every arm spends 12 exact-success ARS updates and submits two candidates to one selection gate
+  # (lares/envs/isaac_pen_spin/structure_search.py, structure_terms.py, structure_search_child.py). Frozen at triage.
+  #   python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study structure_search
+  study_dir: "logs/pen_spin/r109_structure_search"
+  config_path: "config/pen_spin_plateau_repair.yaml"
+  block_seeds: [4835, 4836, 4837]   # per block: training placements (cases.placements(seed, 12288)) and direction streams
+  incumbent_asset: "config/pen_spin/d058_fixed_stroke_incumbent"
+  reference_descriptor: "config/pen_spin/symbolic_reward_reference/reference.json"
+  reference_residual: {"gain": 0.004655481049180921, "deadband": 0.2333555721435132, "tau": 0.18501188209260944, "cap": 0.10269089387249905}
+  reference_residual_sha256: "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1"
+  control_dt: 0.016666666666666666
+  actor: {coefficients: 32, bound: 0.10, cap: 0.10, spin_target: 7.0, feature_clip_sigmas: 3.0, rms_floor_velocity: 0.05, rms_floor_posture: 0.01}
+  normalization_path: "logs/pen_spin/r103_symbolic_reward/normalization.json"
+  normalization_sha256: "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac"
+  root_finalist: "config/pen_spin/r106_success_ars_finalist/finalist.json"
+  root_theta_sha256: "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef"
+  layout: {slots: 4, cases_per_slot: 512, horizon: 360}
+  ars: {directions: 4, top: 4, nu: 0.02, alpha: 0.01}
+  rounds: 2
+  candidates: 2
+  updates_per_candidate: 6
+  smoke: {seed: 4834, probe_edit: {"expr": ["mul", "spin_deficit", "tip_dist"], "target": "groups"}, probe_magnitude: 0.05, duplicate_slot_tolerance: 0.0001}
+  selection_seeds: [[[4838, 4839, 4840], [4841, 4842, 4843]], [[4844, 4845, 4846], [4847, 4848, 4849]], [[4850, 4851, 4852], [4853, 4854, 4855]]]   # [block][round][batch], shared by the three arms
+  confirmation_seeds: [[4856, 4857, 4858, 4859, 4860, 4861, 4862, 4863, 4864, 4865, 4866, 4867], [4868, 4869, 4870, 4871, 4872, 4873, 4874, 4875, 4876, 4877, 4878, 4879], [4880, 4881, 4882, 4883, 4884, 4885, 4886, 4887, 4888, 4889, 4890, 4891]]
+  confirmation_cases: 128
+  confirmation_manifest_template: "config/manifests/pen_spin_stage3_structure_confirm_s{seed}.yaml"
+  sample_rows: 8192
+  threshold: 0.05
+  drop_margin: 0.05
+  # Outcome-informed amendment (2026-11-22, advisor consult call_00244, after the first two selection decisions and
+  # before any confirmation): the retained policy is the best of {parent, c0, c1} by sustained successes among those
+  # within the drop bound (ties: parent, then the earlier candidate). The registered strict Holm gate is still computed
+  # and reported. config/pen_spin/symbolic_reward_reference/amendment_r109_selection.json records both hashes.
+  selection_rule: "best_success_drop_bound"
+  start_ceiling: 2300000
+  max_calls_per_slot: 2             # one generation call plus at most one linked correction; 12 slots, 24 calls at most
+  llm_workers: 16
+
 log_dir: "logs/pen_spin/r042_keyframe_repair"
 record_demo_gif: false
 

@@ -1,0 +1,28 @@
+{
+ "block": 0,
+ "arm": "grammar",
+ "round": 0,
+ "information": "the seed-4834 smoke (shared initialisation information)",
+ "parent_sha256": "c1bedbec55ae656a785dcfe27022d4357cf964da659edb597b8cdc30553335da",
+ "edits": [
+  {
+   "expr": [
+    "abs",
+    "phase_cos"
+   ],
+   "target": "chain:MF"
+  },
+  {
+   "expr": [
+    "mul",
+    "tilt_up",
+    [
+     "mul",
+     "tilt_up",
+     "transverse"
+    ]
+   ],
+   "target": "chain:FF"
+  }
+ ]
+}

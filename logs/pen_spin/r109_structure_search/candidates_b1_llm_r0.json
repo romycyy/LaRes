@@ -1,0 +1,59 @@
+{
+ "block": 1,
+ "arm": "llm",
+ "round": 0,
+ "information": "the seed-4834 smoke (shared initialisation information)",
+ "parent_sha256": "c1bedbec55ae656a785dcfe27022d4357cf964da659edb597b8cdc30553335da",
+ "edits": [
+  {
+   "expr": [
+    "mul",
+    "spin_deficit",
+    "tip_dist"
+   ],
+   "target": "groups"
+  },
+  {
+   "expr": [
+    "mul",
+    "ref",
+    "spin_deficit"
+   ],
+   "target": "groups"
+  }
+ ],
+ "slots": [
+  {
+   "edit": {
+    "expr": [
+     "mul",
+     "spin_deficit",
+     "tip_dist"
+    ],
+    "target": "groups"
+   },
+   "rationale": "Adds roll-direction-invariant, finger-specific contact corrections during slow spinning, allowing training to improve engagement while leaving already-fast rolling largely unchanged.",
+   "calls": [
+    "call_00002"
+   ],
+   "tokens": 3452,
+   "errors": []
+  },
+  {
+   "edit": {
+    "expr": [
+     "mul",
+     "ref",
+     "spin_deficit"
+    ],
+    "target": "groups"
+   },
+   "rationale": "Selectively rescales each group's reference actuation when spinning is slow, targeting the dominant failure mode without assuming a roll direction.",
+   "calls": [
+    "call_00005"
+   ],
+   "tokens": 2990,
+   "errors": []
+  }
+ ]
+}

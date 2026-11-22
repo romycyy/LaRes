@@ -654,6 +654,19 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   shared placements per signed candidate in one batch and 17.6 M transitions, not training on the success count.
   An Isaac evaluation child can die at start-up with `malloc(): unaligned tcache chunk detected`; rerunning the driver
   resumes at the missing cell.
+- **R-109 result (D-077, inconclusive; P2 pilot, 2026-11-22).** `structure_terms.py` (the residual as a term list
+  `{"expr", "target"}` over typed, clipped observation primitives; `TermController`; `validate_edit`, `sample_edit`;
+  the inherited three terms reproduce the R-106 controller bit for bit and an added zero-coefficient term changes
+  nothing), `structure_search.py` (`run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study
+  structure_search`, block `pen_spin_structure`; the driver runs in `.venv-metaworld` and launches
+  `structure_search_child` through `isaac_shell`; slots of one batch run the union of their structures). Fixed vs
+  grammar vs LLM edits from the R-106 finalist, 3 blocks x 2 rounds: LLM minus grammar +0.009 (nominal across-block
+  [-0.047, +0.064]; pooled [-0.006, +0.024]); no structural arm beats continued fitting, and nothing improves on the
+  R-106 root (fixed +0.009 [-0.006, +0.025]); every trained policy is about +0.125 above the D-072 reference.
+  **Bites:** 6-12 ARS updates buy about +0.025 on 1,536 selection placements, below a strict Holm gate (the registered
+  gate would have kept the parent 18 of 18 times; it was amended mid-run, outcome-informed); RNG seeds built as
+  `block_seed + offset + k` collide when block seeds are consecutive (use a seed sequence per (block, round, slot));
+  `pgrep -f <pattern>` over ssh matches the ssh command's own shell (bracket the first letter).
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

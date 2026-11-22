@@ -161,7 +161,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The across-block (three-block, equal-weight) 95% interval for LLM-minus-grammar has an upper bound below +0.05. An interval containing zero cannot establish an advantage, even when it also refutes the five-point magnitude. If neither structural arm beats the budget-matched fixed arm, no structural-evolution contribution is claimed; if only grammar helps, continue with grammar rather than attributing value to LLM guidance.",
   "cost_estimate": {
@@ -179,17 +179,1142 @@
     "round": 4,
     "note": "D-075 establishes learner usefulness but leaves structural-search value unresolved, making this inherited-edit comparison the appropriate next main experiment. I accept the implementer's lagged-information timeline, explicit update allocation and reused configuration: they resolve the previous block"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-11-22T05:02:22",
+    "git_sha": "90a13ecc20a0ef6e592ea54457b21c9ff1e7e410",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r109_structure_search",
+    "finished_at": "2026-11-22T08:58:32"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.008897569444444442,
+      "paired_success_difference_across_blocks_ci95": [
+        -0.04652416925849476,
+        0.06431930814738364
+      ],
+      "contrasts": {
+        "llm_minus_grammar": {
+          "estimate": 0.008897569444444442,
+          "per_block": [
+            0.033854166666666664,
+            -0.009114583333333334,
+            0.001953125
+          ],
+          "across_blocks_ci95_nominal": [
+            -0.04652416925849476,
+            0.06431930814738364
+          ],
+          "pooled_case_paired_ci95": [
+            -0.005956098892958986,
+            0.023751237781847873
+          ],
+          "pooled_win_loss_tie": {
+            "wins": 630,
+            "losses": 589,
+            "ties": 3389
+          },
+          "pooled_manifest_clustered_ci95": [
+            -0.008615516767474924,
+            0.026410655656363812
+          ],
+          "drop_one_sided_95_upper": 0.0014893742870217498,
+          "pooled_promotes": false,
+          "pooled_adopts": false
+        },
+        "grammar_minus_fixed": {
+          "estimate": -0.010199652777777778,
+          "per_block": [
+            -0.008463541666666666,
+            0.001953125,
+            -0.024088541666666668
+          ],
+          "across_blocks_ci95_nominal": [
+            -0.04276011881578977,
+            0.022360813260234216
+          ],
+          "pooled_case_paired_ci95": [
+            -0.024967050856781837,
+            0.004567745301226283
+          ],
+          "pooled_win_loss_tie": {
+            "wins": 579,
+            "losses": 626,
+            "ties": 3403
+          },
+          "pooled_manifest_clustered_ci95": [
+            -0.026867793689055973,
+            0.006468488133500419
+          ],
+          "drop_one_sided_95_upper": 0.0020915936908784184,
+          "pooled_promotes": false,
+          "pooled_adopts": false
+        },
+        "llm_minus_fixed": {
+          "estimate": -0.0013020833333333333,
+          "per_block": [
+            0.025390625,
+            -0.007161458333333333,
+            -0.022135416666666668
+          ],
+          "across_blocks_ci95_nominal": [
+            -0.06166358150522876,
+            0.059059414838562085
+          ],
+          "pooled_case_paired_ci95": [
+            -0.01575642438190992,
+            0.01315225771524325
+          ],
+          "pooled_win_loss_tie": {
+            "wins": 574,
+            "losses": 580,
+            "ties": 3454
+          },
+          "pooled_manifest_clustered_ci95": [
+            -0.014891310273890011,
+            0.012287143607223343
+          ],
+          "drop_one_sided_95_upper": 0.0005486906932973346,
+          "pooled_promotes": false,
+          "pooled_adopts": false
+        },
+        "fixed_minus_r106": {
+          "estimate": 0.009114583333333332,
+          "per_block": [
+            -0.006510416666666667,
+            -0.001953125,
+            0.035807291666666664
+          ],
+          "across_blocks_ci95_nominal": [
+            -0.04858845136685583,
+            0.0668176180335225
+          ],
+          "pooled_case_paired_ci95": [
+            -0.0063305438531385625,
+            0.024559710519805232
+          ],
+          "pooled_win_loss_tie": {
+            "wins": 680,
+            "losses": 638,
+            "ties": 3290
+          },
+          "pooled_manifest_clustered_ci95": [
+            -0.005858586934146138,
+            0.024087753600812806
+          ],
+          "drop_one_sided_95_upper": 0.006073493495182379,
+          "pooled_promotes": false,
+          "pooled_adopts": false
+        },
+        "grammar_minus_r106": {
+          "estimate": -0.0010850694444444447,
+          "per_block": [
+            -0.014973958333333334,
+            0.0,
+            0.01171875
+          ],
+          "across_blocks_ci95_nominal": [
+            -0.034321328265266474,
+            0.03215118937637758
+          ],
+          "pooled_case_paired_ci95": [
+            -0.013365623178265592,
+            0.011195484289376703
+          ],
+          "pooled_win_loss_tie": {
+            "wins": 414,
+            "losses": 419,
+            "ties": 3775
+          },
+          "pooled_manifest_clustered_ci95": [
+            -0.014236089340853006,
+            0.012065950451964118
+          ],
+          "drop_one_sided_95_upper": 0.004538066737310536,
+          "pooled_promotes": false,
+          "pooled_adopts": false
+        },
+        "llm_minus_r106": {
+          "estimate": 0.0078125,
+          "per_block": [
+            0.018880208333333332,
+            -0.009114583333333334,
+            0.013671875
+          ],
+          "across_blocks_ci95_nominal": [
+            -0.029173323824245305,
+            0.044798323824245305
+          ],
+          "pooled_case_paired_ci95": [
+            -0.007361231696250737,
+            0.022986231696250737
+          ],
+          "pooled_win_loss_tie": {
+            "wins": 654,
+            "losses": 618,
+            "ties": 3336
+          },
+          "pooled_manifest_clustered_ci95": [
+            -0.00618916326964538,
+            0.02181416326964538
+          ],
+          "drop_one_sided_95_upper": 0.0039040351221709727,
+          "pooled_promotes": false,
+          "pooled_adopts": false
+        },
+        "fixed_minus_reference": {
+          "estimate": 0.13389756944444445,
+          "per_block": [
+            0.11328125,
+            0.13541666666666666,
+            0.15299479166666666
+          ],
+          "across_blocks_ci95_nominal": [
+            0.08446247437052082,
+            0.18333266451836808
+          ],
+          "pooled_case_paired_ci95": [
+            0.11704666441397293,
+            0.15074847447491596
+          ],
+          "pooled_win_loss_tie": {
+            "wins": 1134,
+            "losses": 517,
+            "ties": 2957
+          },
+          "pooled_manifest_clustered_ci95": [
+            0.11734561448695732,
+            0.15044952440193157
+          ],
+          "drop_one_sided_95_upper": -0.009358179938958332,
+          "pooled_promotes": true,
+          "pooled_adopts": true
+        },
+        "grammar_minus_reference": {
+          "estimate": 0.12369791666666667,
+          "per_block": [
+            0.10481770833333333,
+            0.13736979166666666,
+            0.12890625
+          ],
+          "across_blocks_ci95_nominal": [
+            0.08174211880881707,
+            0.16565371452451627
+          ],
+          "pooled_case_paired_ci95": [
+            0.10620851478928958,
+            0.14118731854404376
+          ],
+          "pooled_win_loss_tie": {
+            "wins": 1165,
+            "losses": 595,
+            "ties": 2848
+          },
+          "pooled_manifest_clustered_ci95": [
+            0.10342332770024415,
+            0.1439725056330892
+          ],
+          "drop_one_sided_95_upper": -0.009725704461717256,
+          "pooled_promotes": true,
+          "pooled_adopts": true
+        },
+        "llm_minus_reference": {
+          "estimate": 0.13259548611111113,
+          "per_block": [
+            0.138671875,
+            0.12825520833333334,
+            0.130859375
+          ],
+          "across_blocks_ci95_nominal": [
+            0.11912896264111589,
+            0.14606200958110638
+          ],
+          "pooled_case_paired_ci95": [
+            0.1155544145344808,
+            0.1496365576877414
+          ],
+          "pooled_win_loss_tie": {
+            "wins": 1148,
+            "losses": 537,
+            "ties": 2923
+          },
+          "pooled_manifest_clustered_ci95": [
+            0.11675433542150572,
+            0.1484366368007165
+          ],
+          "drop_one_sided_95_upper": -0.011675422730306848,
+          "pooled_promotes": true,
+          "pooled_adopts": true
+        },
+        "r106_minus_reference": {
+          "estimate": 0.1247829861111111,
+          "per_block": [
+            0.11979166666666667,
+            0.13736979166666666,
+            0.1171875
+          ],
+          "across_blocks_ci95_nominal": [
+            0.09751215709422029,
+            0.15205381512800192
+          ],
+          "pooled_case_paired_ci95": [
+            0.10728448939932772,
+            0.1422814828228945
+          ],
+          "pooled_win_loss_tie": {
+            "wins": 1169,
+            "losses": 594,
+            "ties": 2845
+          },
+          "pooled_manifest_clustered_ci95": [
+            0.10710726251198358,
+            0.14245870971023863
+          ],
+          "drop_one_sided_95_upper": -0.011868397668889903,
+          "pooled_promotes": true,
+          "pooled_adopts": true
+        }
+      },
+      "successes_of_1536_per_block": {
+        "b0": {
+          "reference": 650,
+          "r106": 834,
+          "fixed": 824,
+          "grammar": 811,
+          "llm": 863
+        },
+        "b1": {
+          "reference": 637,
+          "r106": 848,
+          "fixed": 845,
+          "grammar": 848,
+          "llm": 834
+        },
+        "b2": {
+          "reference": 645,
+          "r106": 825,
+          "fixed": 880,
+          "grammar": 843,
+          "llm": 846
+        }
+      },
+      "drops_of_1536_per_block": {
+        "b0": {
+          "reference": 82,
+          "r106": 58,
+          "fixed": 64,
+          "grammar": 67,
+          "llm": 55
+        },
+        "b1": {
+          "reference": 74,
+          "r106": 44,
+          "fixed": 54,
+          "grammar": 44,
+          "llm": 51
+        },
+        "b2": {
+          "reference": 62,
+          "r106": 43,
+          "fixed": 40,
+          "grammar": 44,
+          "llm": 42
+        }
+      },
+      "structural_contribution_claimed": false
+    },
+    "controls": {
+      "smoke_gates": {
+        "joint_order": true,
+        "inheritance_identity": true,
+        "scorer_live": true,
+        "activation": true
+      },
+      "aa": [
+        0.505859375,
+        0.51953125,
+        0.51953125,
+        0.517578125
+      ],
+      "selection_rule": "best_success_drop_bound",
+      "selection_history": {
+        "b0_fixed_r0": {
+          "selected": "c1",
+          "selected_under_registered_strict_rule": "parent",
+          "parent": 802,
+          "c0": 839,
+          "c1": 841,
+          "holm_p": [
+            0.1055136668350301,
+            0.1055136668350301
+          ],
+          "duplicate_parent_difference": 0.0,
+          "edits": [
+            null,
+            null
+          ]
+        },
+        "b0_grammar_r0": {
+          "selected": "c0",
+          "selected_under_registered_strict_rule": "parent",
+          "parent": 809,
+          "c0": 821,
+          "c1": 815,
+          "holm_p": [
+            0.9829507436462168,
+            0.9829507436462168
+          ],
+          "duplicate_parent_difference": -0.00390625,
+          "edits": [
+            {
+              "expr": [
+                "abs",
+                "phase_cos"
+              ],
+              "target": "chain:MF"
+            },
+            {
+              "expr": [
+                "mul",
+                "tilt_up",
+                [
+                  "mul",
+                  "tilt_up",
+                  "transverse"
+                ]
+              ],
+              "target": "chain:FF"
+            }
+          ]
+        },
+        "b0_llm_r0": {
+          "selected": "c0",
+          "selected_under_registered_strict_rule": "parent",
+          "parent": 798,
+          "c0": 828,
+          "c1": 809,
+          "holm_p": [
+            0.25362460535876313,
+            0.501004587734628
+          ],
+          "duplicate_parent_difference": 0.0078125,
+          "edits": [
+            {
+              "expr": [
+                "mul",
+                "spin_deficit",
+                "tip_dist"
+              ],
+              "target": "groups"
+            },
+            {
+              "expr": [
+                "mul",
+                "vel",
+                [
+                  "gate",
+                  "spin_deficit",
+                  0.25,
+                  "above"
+                ]
+              ],
+              "target": "groups"
+            }
+          ]
+        },
+        "b1_fixed_r0": {
+          "selected": "c0",
+          "selected_under_registered_strict_rule": "parent",
+          "parent": 842,
+          "c0": 850,
+          "c1": 833,
+          "holm_p": [
+            1.0,
+            1.0
+          ],
+          "duplicate_parent_difference": 0.005208333333333333,
+          "edits": [
+            null,
+            null
+          ]
+        },
+        "b1_grammar_r0": {
+          "selected": "parent",
+          "selected_under_registered_strict_rule": "parent",
+          "parent": 843,
+          "c0": 843,
+          "c1": 832,
+          "holm_p": [
+            1.0,
+            1.0
+          ],
+          "duplicate_parent_difference": -0.0006510416666666666,
+          "edits": [
+            {
+              "expr": [
+                "mul",
+                "tilt_up",
+                [
+                  "mul",
+                  "tilt_up",
+                  "transverse"
+                ]
+              ],
+              "target": "chain:FF"
+            },
+            {
+              "expr": "centre_z",
+              "target": "chain:RF"
+            }
+          ]
+        },
+        "b1_llm_r0": {
+          "selected": "c0",
+          "selected_under_registered_strict_rule": "parent",
+          "parent": 834,
+          "c0": 841,
+          "c1": 837,
+          "holm_p": [
+            1.0,
+            1.0
+          ],
+          "duplicate_parent_difference": 0.007161458333333333,
+          "edits": [
+            {
+              "expr": [
+                "mul",
+                "spin_deficit",
+                "tip_dist"
+              ],
+              "target": "groups"
+            },
+            {
+              "expr": [
+                "mul",
+                "ref",
+                "spin_deficit"
+              ],
+              "target": "groups"
+            }
+          ]
+        },
+        "b2_fixed_r0": {
+          "selected": "c0",
+          "selected_under_registered_strict_rule": "parent",
+          "parent": 835,
+          "c0": 849,
+          "c1": 840,
+          "holm_p": [
+            0.9525678198242653,
+            0.9525678198242653
+          ],
+          "duplicate_parent_difference": 0.009765625,
+          "edits": [
+            null,
+            null
+          ]
+        },
+        "b2_grammar_r0": {
+          "selected": "parent",
+          "selected_under_registered_strict_rule": "parent",
+          "parent": 856,
+          "c0": 843,
+          "c1": 848,
+          "holm_p": [
+            1.0,
+            1.0
+          ],
+          "duplicate_parent_difference": -0.013671875,
+          "edits": [
+            {
+              "expr": "centre_z",
+              "target": "chain:RF"
+            },
+            {
+              "expr": [
+                "gate",
+                "spin_deficit",
+                0.75,
+                "below"
+              ],
+              "target": "chain:TH"
+            }
+          ]
+        },
+        "b2_llm_r0": {
+          "selected": "c1",
+          "selected_under_registered_strict_rule": "parent",
+          "parent": 839,
+          "c0": 830,
+          "c1": 843,
+          "holm_p": [
+            1.0,
+            1.0
+          ],
+          "duplicate_parent_difference": -0.005208333333333333,
+          "edits": [
+            {
+              "expr": [
+                "mul",
+                "spin_deficit",
+                "tip_dist"
+              ],
+              "target": "groups"
+            },
+            {
+              "expr": [
+                "mul",
+                "ref",
+                "spin_deficit"
+              ],
+              "target": "groups"
+            }
+          ]
+        },
+        "b0_fixed_r1": {
+          "selected": "parent",
+          "selected_under_registered_strict_rule": "parent",
+          "parent": 854,
+          "c0": 834,
+          "c1": 830,
+          "holm_p": [
+            0.41452930556563855,
+            0.41452930556563855
+          ],
+          "duplicate_parent_difference": -0.004557291666666667,
+          "edits": [
+            null,
+            null
+          ]
+        },
+        "b0_grammar_r1": {
+          "selected": "c0",
+          "selected_under_registered_strict_rule": "parent",
+          "parent": 853,
+          "c0": 867,
+          "c1": 854,
+          "holm_p": [
+            0.9995290453996721,
+            0.9995290453996721
+          ],
+          "duplicate_parent_difference": -0.008463541666666666,
+          "edits": [
+            {
+              "expr": "centre_dist",
+              "target": "chain:TH"
+            },
+            {
+              "expr": [
+                "abs",
+                "posture"
+              ],
+              "target": "groups"
+            }
+          ]
+        },
+        "b0_llm_r1": {
+          "selected": "c1",
+          "selected_under_registered_strict_rule": "parent",
+          "parent": 832,
+          "c0": 862,
+          "c1": 871,
+          "holm_p": [
+            0.12385082853110027,
+            0.0640349912117307
+          ],
+          "duplicate_parent_difference": -0.0078125,
+          "edits": [
+            {
+              "expr": [
+                "gate",
+                "spin_deficit",
+                0.25,
+                "above"
+              ],
+              "target": "chain:TH"
+            },
+            {
+              "expr": [
+                "mul",
+                "ref",
+                "spin_deficit"
+              ],
+              "target": "groups"
+            }
+          ]
+        },
+        "b1_fixed_r1": {
+          "selected": "c1",
+          "selected_under_registered_strict_rule": "parent",
+          "parent": 815,
+          "c0": 805,
+          "c1": 830,
+          "holm_p": [
+            0.9661268838669239,
+            0.9661268838669239
+          ],
+          "duplicate_parent_difference": 0.005859375,
+          "edits": [
+            null,
+            null
+          ]
+        },
+        "b1_grammar_r1": {
+          "selected": "parent",
+          "selected_under_registered_strict_rule": "parent",
+          "parent": 816,
+          "c0": 779,
+          "c1": 806,
+          "holm_p": [
+            0.17914988500542553,
+            0.6198456029925824
+          ],
+          "duplicate_parent_difference": 0.0013020833333333333,
+          "edits": [
+            {
+              "expr": [
+                "abs",
+                "posture"
+              ],
+              "target": "groups"
+            },
+            {
+              "expr": [
+                "comp",
+                "spin_level"
+              ],
+              "target": "chain:RF"
+            }
+          ]
+        },
+        "b1_llm_r1": {
+          "selected": "parent",
+          "selected_under_registered_strict_rule": "parent",
+          "parent": 832,
+          "c0": 815,
+          "c1": 805,
+          "holm_p": [
+            0.43295513951893516,
+            0.43295513951893516
+          ],
+          "duplicate_parent_difference": -0.013671875,
+          "edits": [
+            {
+              "expr": [
+                "mul",
+                "spin_deficit",
+                "vel"
+              ],
+              "target": "groups"
+            },
+            {
+              "expr": [
+                "mul",
+                "posture",
+                "spin_deficit"
+              ],
+              "target": "groups"
+            }
+          ]
+        },
+        "b2_fixed_r1": {
+          "selected": "c0",
+          "selected_under_registered_strict_rule": "parent",
+          "parent": 867,
+          "c0": 868,
+          "c1": 863,
+          "holm_p": [
+            1.0,
+            1.0
+          ],
+          "duplicate_parent_difference": 0.006510416666666667,
+          "edits": [
+            null,
+            null
+          ]
+        },
+        "b2_grammar_r1": {
+          "selected": "c1",
+          "selected_under_registered_strict_rule": "parent",
+          "parent": 842,
+          "c0": 862,
+          "c1": 871,
+          "holm_p": [
+            0.29729701961787924,
+            0.2727427501385312
+          ],
+          "duplicate_parent_difference": -0.004557291666666667,
+          "edits": [
+            {
+              "expr": [
+                "comp",
+                "spin_level"
+              ],
+              "target": "chain:RF"
+            },
+            {
+              "expr": "pos",
+              "target": "groups"
+            }
+          ]
+        },
+        "b2_llm_r1": {
+          "selected": "c0",
+          "selected_under_registered_strict_rule": "parent",
+          "parent": 861,
+          "c0": 866,
+          "c1": 851,
+          "holm_p": [
+            1.0,
+            1.0
+          ],
+          "duplicate_parent_difference": -0.01171875,
+          "edits": [
+            {
+              "expr": [
+                "mul",
+                "spin_deficit",
+                "vel"
+              ],
+              "target": "groups"
+            },
+            {
+              "expr": [
+                "mul",
+                "posture",
+                "spin_deficit"
+              ],
+              "target": "groups"
+            }
+          ]
+        }
+      },
+      "decisions_that_would_differ_under_registered_rule": 13,
+      "finalists": {
+        "b0_fixed": {
+          "sha256": "66572aae043c9b1065548b11a794a8b3e21606927fc932738673e98e92327372",
+          "terms": [
+            {
+              "expr": "spin_deficit",
+              "target": "joints"
+            },
+            {
+              "expr": "vel",
+              "target": "groups"
+            },
+            {
+              "expr": "posture",
+              "target": "groups"
+            }
+          ],
+          "coefficients": 32,
+          "is_root": false,
+          "theta_l2": 0.25448391690801
+        },
+        "b0_grammar": {
+          "sha256": "eb3b79324da1ac4445440c53645ad28dbadfc6ab72a441ad55cb64017bf78766",
+          "terms": [
+            {
+              "expr": "spin_deficit",
+              "target": "joints"
+            },
+            {
+              "expr": "vel",
+              "target": "groups"
+            },
+            {
+              "expr": "posture",
+              "target": "groups"
+            },
+            {
+              "expr": [
+                "abs",
+                "phase_cos"
+              ],
+              "target": "chain:MF"
+            },
+            {
+              "expr": "centre_dist",
+              "target": "chain:TH"
+            }
+          ],
+          "coefficients": 40,
+          "is_root": false,
+          "theta_l2": 0.27270326324345556
+        },
+        "b0_llm": {
+          "sha256": "15e00ba9b910fc0c273b4d2b48f389f07a321c3fa4753d7dfff730bba156d56c",
+          "terms": [
+            {
+              "expr": "spin_deficit",
+              "target": "joints"
+            },
+            {
+              "expr": "vel",
+              "target": "groups"
+            },
+            {
+              "expr": "posture",
+              "target": "groups"
+            },
+            {
+              "expr": [
+                "mul",
+                "spin_deficit",
+                "tip_dist"
+              ],
+              "target": "groups"
+            },
+            {
+              "expr": [
+                "mul",
+                "ref",
+                "spin_deficit"
+              ],
+              "target": "groups"
+            }
+          ],
+          "coefficients": 44,
+          "is_root": false,
+          "theta_l2": 0.31782650565200915
+        },
+        "b1_fixed": {
+          "sha256": "7796e74f932e712b1a01f8abc721e052be9bb4eeb0dda4246cff21e031b4bbd6",
+          "terms": [
+            {
+              "expr": "spin_deficit",
+              "target": "joints"
+            },
+            {
+              "expr": "vel",
+              "target": "groups"
+            },
+            {
+              "expr": "posture",
+              "target": "groups"
+            }
+          ],
+          "coefficients": 32,
+          "is_root": false,
+          "theta_l2": 0.3149878523364306
+        },
+        "b1_grammar": {
+          "sha256": "c1bedbec55ae656a785dcfe27022d4357cf964da659edb597b8cdc30553335da",
+          "terms": [
+            {
+              "expr": "spin_deficit",
+              "target": "joints"
+            },
+            {
+              "expr": "vel",
+              "target": "groups"
+            },
+            {
+              "expr": "posture",
+              "target": "groups"
+            }
+          ],
+          "coefficients": 32,
+          "is_root": true,
+          "theta_l2": 0.24587907918026775
+        },
+        "b1_llm": {
+          "sha256": "2ce0b3afee3660e16b8da86fcff67f0737a58e7cbac9e72ccb297442062cb994",
+          "terms": [
+            {
+              "expr": "spin_deficit",
+              "target": "joints"
+            },
+            {
+              "expr": "vel",
+              "target": "groups"
+            },
+            {
+              "expr": "posture",
+              "target": "groups"
+            },
+            {
+              "expr": [
+                "mul",
+                "spin_deficit",
+                "tip_dist"
+              ],
+              "target": "groups"
+            }
+          ],
+          "coefficients": 38,
+          "is_root": false,
+          "theta_l2": 0.29668488683657823
+        },
+        "b2_fixed": {
+          "sha256": "449cfab1896365ea67ae35bb02f233627703abfb683adfcb2edad03117cfa6f6",
+          "terms": [
+            {
+              "expr": "spin_deficit",
+              "target": "joints"
+            },
+            {
+              "expr": "vel",
+              "target": "groups"
+            },
+            {
+              "expr": "posture",
+              "target": "groups"
+            }
+          ],
+          "coefficients": 32,
+          "is_root": false,
+          "theta_l2": 0.29708328241361137
+        },
+        "b2_grammar": {
+          "sha256": "7c106b253e029b052a2bdfcfba7427cda4a10925ca895a90e4ac8f7fb49bbf85",
+          "terms": [
+            {
+              "expr": "spin_deficit",
+              "target": "joints"
+            },
+            {
+              "expr": "vel",
+              "target": "groups"
+            },
+            {
+              "expr": "posture",
+              "target": "groups"
+            },
+            {
+              "expr": "pos",
+              "target": "groups"
+            }
+          ],
+          "coefficients": 38,
+          "is_root": false,
+          "theta_l2": 0.29086333680235854
+        },
+        "b2_llm": {
+          "sha256": "a47839e4d5f1f20d05cf7ab5200867eb7ebd1919b0b3bbe6c4bf1b6ea6456c26",
+          "terms": [
+            {
+              "expr": "spin_deficit",
+              "target": "joints"
+            },
+            {
+              "expr": "vel",
+              "target": "groups"
+            },
+            {
+              "expr": "posture",
+              "target": "groups"
+            },
+            {
+              "expr": [
+                "mul",
+                "ref",
+                "spin_deficit"
+              ],
+              "target": "groups"
+            },
+            {
+              "expr": [
+                "mul",
+                "spin_deficit",
+                "vel"
+              ],
+              "target": "groups"
+            }
+          ],
+          "coefficients": 44,
+          "is_root": false,
+          "theta_l2": 0.3135414809409346
+        }
+      },
+      "llm": {
+        "llm_calls": 12,
+        "llm_prompt_tokens": 30357,
+        "llm_completion_tokens": 9980,
+        "llm_total_tokens": 40337,
+        "llm_wall_time_seconds": 258.67593359947205,
+        "unknown_call_ids": []
+      },
+      "accounting": {
+        "simulator_starts_before_confirmation": 2000215,
+        "confirmation_cells": 168,
+        "confirmation_charged_starts": 43008,
+        "charged_total": 2043223,
+        "ceiling": 2300000
+      },
+      "config_sha256_amended": "7716c159132e4af186b90f7668423aa8059f2cee5672a31b14e405dac2a856b5"
+    },
+    "artifacts": [
+      "logs/pen_spin/r109_structure_search/summary.json",
+      "logs/pen_spin/r109_structure_search/finalists.json",
+      "logs/pen_spin/r109_structure_search/history.partial.json",
+      "logs/pen_spin/r109_structure_search/history_registered_rule.partial.json",
+      "logs/pen_spin/r109_structure_search/frozen_config.json",
+      "logs/pen_spin/r109_structure_search/frozen_config_registered.json",
+      "logs/pen_spin/r109_structure_search/smoke.json",
+      "logs/pen_spin/r109_structure_search/llm_calls.jsonl",
+      "config/pen_spin/symbolic_reward_reference/amendment_r109_selection.json"
+    ],
+    "notes": "OUTCOME-INFORMED AMENDMENT: after the first two selection decisions (block 0, fixed and grammar, round 1) the selection rule was changed for all arms, blocks and rounds from the registered strict Holm gate to 'most sustained successes among the parent and the candidates within the drop bound, ties to the parent' (advisor consult call_00244; amendment file records both config hashes; no confirmation case had run; the two decisions were recomputed from saved rows; nothing was regenerated or retrained). Under the registered rule all 18 selection decisions would have kept the parent (no candidate reached Holm p < 0.05; smallest 0.106), every finalist would have been the R-106 root and every between-arm contrast exactly 0. Under the amended rule 13 of 18 decisions moved to a candidate. The study is therefore not wholly preregistered. KNOWN SPEC DEFECT, left as registered: the grammar RNG seed is block_seed + 9000 + 10 r + k with consecutive block seeds, so block b's candidate 1 and block b+1's candidate 0 drew the same edit in both rounds; the three blocks are not independent grammar-search replicates and all across-block t intervals (2 degrees of freedom) are nominal and exploratory. The driver was stopped once between simulator children to apply the amendment (my first kill command also killed my own remote shell; the in-flight training child finished and its result was reused; no seeded child was relaunched). RESULT: no arm separates from another or from the R-106 root on fresh cases; all four trained policies sit about +0.12 to +0.13 above the D-072 reference in every block (r106 +0.125 pooled over 4,608 pairs, a second replication of D-075). Fixed continuation (24 more updates) minus the root: +0.009 [-0.006, +0.025] pooled, so the fixed structure's gains have flattened. The pooled case-paired LLM-minus-grammar interval is [-0.006, +0.024] (conditional on these nine finalists), i.e. any advantage of these LLM finalists over these grammar finalists is below +0.05; the registered across-block interval [-0.047, +0.064] contains zero and +0.05. LLM edits: 12 calls, 40,337 tokens, 0 corrections, 0 invalid; in round 1 all three blocks' first proposal was the same term (spin_deficit x tip_dist on groups), reflecting the shared initial information. Selection wins did not predict confirmation: e.g. block 2 fixed led its selections and is the best block-2 finalist (880), block 0 LLM (863) likewise, but block 1's selected fixed and LLM finalists are no better than the root. 2,043,223 starts charged of 2,300,000; 168 confirmation cells (identical policies reused cells)."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.008897569444444442,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.85,
+      "reasoning": "Registered statistic: LLM minus grammar, equal-weight mean of three block differences, +0.009 with a nominal three-block interval [-0.047, +0.064] (blocks +0.034, -0.009, +0.002): it contains zero and +0.05, so by the registered falsified_by the prediction is neither supported nor refuted; the interval is nominal because the grammar streams overlap between blocks and the selection rule was amended after two decisions. Beside it, conditional on these nine finalists, the pooled case-paired interval over 4,608 pairs is [-0.006, +0.024]: these LLM finalists are not five points better than these grammar finalists. No structural arm beats budget-matched continued fitting (grammar - fixed -0.010 [-0.025, +0.005]; LLM - fixed -0.001 [-0.016, +0.013]), so no structural-evolution contribution is claimed. No arm, including 24 more updates of the fixed structure, improves on the R-106 root (fixed +0.009 [-0.006, +0.025]; LLM +0.008; grammar -0.001); every trained policy stays about +0.12-0.13 above the D-072 reference in every block. Under the registered strict gate all 18 selections would have kept the parent and every contrast would have been exactly zero.",
+      "cited_artifacts": [],
+      "next_experiment": "P2 as a three-block pilot is done: neither grammar nor LLM edits add value over continued fitting at this budget, and continued fitting itself has flattened, so the binding constraint is no longer structure or optimisation budget in this residual-on-reference form. Options for the advisor: (a) stop structural search in this family and report; (b) P4, anchored component replacement, which lets the learner change the reference's own stroke/feedback coefficients instead of adding a bounded residual (the residual is capped at 0.10 and three finalists sit near the bound); (c) a failure-mode audit of the R-106 finalist on archived cells (which failures remain: slow spin vs drops vs off-centre) to decide where capacity is needed before spending more. If any further structure study is run, fix the seed-stream collision and use a selection rule sized to the per-round gain.",
+      "recorded_at": "2026-11-22T08:58:34",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 0.99,
+      "reasoning": "LLM-minus-grammar paired_success_difference was +0.00890, with a nominal across-block 95% interval of [-0.04652, +0.06432]; it contains both zero and the predicted +0.05, so neither support nor the declared falsification condition is established [logs/pen_spin/r109_structure_search/summary.json]. The pooled case-paired interval [-0.00596, +0.02375] excludes the predicted magnitude conditional on these finalists, but cannot replace the governing algorithm-level interval [logs/pen_spin/r109_structure_search/summary.json]. The outcome-informed selection amendment changed 13 of 18 decisions, so the confirmations evaluate an amended search rather than the approved strict-gated algorithm [config/pen_spin/symbolic_reward_reference/amendment_r109_selection.json] [logs/pen_spin/r109_structure_search/history.partial.json]. Shared grammar RNG streams also undermine independent-block inference, making the reported across-block intervals exploratory [logs/pen_spin/r109_structure_search/frozen_config_registered.json]. Neither structural arm establishes an advantage over fixed fitting, so no structural-evolution contribution is demonstrated [logs/pen_spin/r109_structure_search/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r109_structure_search/summary.json",
+        "config/pen_spin/symbolic_reward_reference/amendment_r109_selection.json",
+        "logs/pen_spin/r109_structure_search/history.partial.json",
+        "logs/pen_spin/r109_structure_search/frozen_config_registered.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-22T08:59:00",
+      "call_id": "call_00245"
+    }
+  ],
+  "decision_id": "D-077",
   "history": [
     {
       "at": "2026-11-22T04:28:32",
       "from": "proposed",
       "to": "approved",
       "note": "triage round 4: both say approve"
+    },
+    {
+      "at": "2026-11-22T05:02:22",
+      "from": "approved",
+      "to": "running",
+      "note": "git 90a13ecc20 (dirty)"
+    },
+    {
+      "at": "2026-11-22T08:58:32",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-22T08:59:21",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-077: inconclusive"
     }
   ],
   "created_at": "2026-11-22T04:17:55",

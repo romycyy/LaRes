@@ -1,0 +1,140 @@
+{
+ "mode": "smoke",
+ "seed": 4834,
+ "gates": {
+  "joint_order": {
+   "passes": true
+  },
+  "inheritance_identity": {
+   "compared": 696745,
+   "mismatches": 0,
+   "passes": true,
+   "note": "base terms plus one zero-coefficient new term equal the R-106 controller bit for bit"
+  },
+  "scorer_live": {
+   "parent_successes": 1056,
+   "passes": true
+  },
+  "activation": {
+   "plus_slots_max_abs_difference_at_step_0": 5.781650543212891e-06,
+   "new_term_contribution": 0.014233402757954549,
+   "zero_slot_new_term_contribution": 0.0,
+   "executed_residual_zero_vs_probe": [
+    0.021480645845142414,
+    0.027461133439320117
+   ],
+   "passes": true
+  }
+ },
+ "aa": {
+  "slot_success": [
+   0.505859375,
+   0.51953125,
+   0.51953125,
+   0.517578125
+  ],
+  "pairwise_discordance": [
+   0.091796875,
+   0.091796875,
+   0.1640625,
+   0.08984375,
+   0.134765625,
+   0.142578125
+  ],
+  "mean_discordance": 0.119140625,
+  "slot_differences": [
+   -0.013671875,
+   -0.013671875,
+   -0.01171875,
+   0.0,
+   0.001953125,
+   0.001953125
+  ],
+  "sd_of_slot_differences": 0.00790955341067054,
+  "max_abs_slot_difference": 0.013671875,
+  "cases": 512
+ },
+ "parent_stats": {
+  "cases": 2048,
+  "successes": 1056,
+  "success": 0.515625,
+  "drops": 120,
+  "slow_spin": 848,
+  "off_centre": 24,
+  "mean_abs_axial_rate": 6.1006554262226205,
+  "per_joint_executed_residual": {
+   "WRJ1": 0.008300978107910736,
+   "WRJ0": 0.01854780481715923,
+   "FFJ3": 0.018374779611058087,
+   "MFJ3": 0.017275194021986233,
+   "RFJ3": 0.0056271178464576575,
+   "LFJ4": 0.04610497718102283,
+   "THJ4": 0.027229011690111896,
+   "FFJ2": 0.022047099059660437,
+   "MFJ2": 0.028294049755236805,
+   "RFJ2": 0.026749262355824345,
+   "LFJ3": 0.017001126267078684,
+   "THJ3": 0.02924428605164807,
+   "FFJ1": 0.014676821474094834,
+   "MFJ1": 0.0065713535477653524,
+   "RFJ1": 0.009452846618867205,
+   "LFJ2": 0.03162861619060073,
+   "THJ2": 0.009574945638993904,
+   "LFJ1": 0.042590560696635325,
+   "THJ1": 0.03078283128984971,
+   "THJ0": 0.02226514183635084
+  },
+  "per_joint_saturation": {
+   "WRJ1": 0.0,
+   "WRJ0": 0.0,
+   "FFJ3": 0.0,
+   "MFJ3": 0.0,
+   "RFJ3": 0.0,
+   "LFJ4": 0.0,
+   "THJ4": 0.38465805519824803,
+   "FFJ2": 0.0,
+   "MFJ2": 0.364311757030663,
+   "RFJ2": 0.0,
+   "LFJ3": 0.1959340725104457,
+   "THJ3": 0.0,
+   "FFJ1": 0.003911690459610028,
+   "MFJ1": 1.768149373259053e-05,
+   "RFJ1": 0.0,
+   "LFJ2": 0.0,
+   "THJ2": 0.0,
+   "LFJ1": 0.5296082087188858,
+   "THJ1": 0.18253868943991244,
+   "THJ0": 0.0014801936181854359
+  },
+  "per_term_mean_abs_contribution": {
+   "\"spin_deficit\"@joints": 0.016495059366991954,
+   "\"vel\"@groups": 0.005714611215545104,
+   "\"posture\"@groups": 0.009466145846424563,
+   "[\"mul\",\"spin_deficit\",\"tip_dist\"]@groups": 0.0
+  }
+ },
+ "probe_slots": {
+  "slot_success": [
+   0.515625,
+   0.482421875,
+   0.501953125,
+   0.490234375
+  ],
+  "coefficients": [
+   "t3[[\"mul\",\"spin_deficit\",\"tip_dist\"]@groups].WR",
+   "t3[[\"mul\",\"spin_deficit\",\"tip_dist\"]@groups].FF",
+   "t3[[\"mul\",\"spin_deficit\",\"tip_dist\"]@groups].MF",
+   "t3[[\"mul\",\"spin_deficit\",\"tip_dist\"]@groups].RF",
+   "t3[[\"mul\",\"spin_deficit\",\"tip_dist\"]@groups].LF",
+   "t3[[\"mul\",\"spin_deficit\",\"tip_dist\"]@groups].TH"
+  ],
+  "note": "slots: zero, +probe, -probe, +probe; a diagnostic only"
+ },
+ "starts": 8200,
+ "transitions": 1470464,
+ "throughput": {
+  "transitions_per_s": 31480.426333362106,
+  "wall_time_s": 46.71042203903198
+ },
+ "passes": true
+}

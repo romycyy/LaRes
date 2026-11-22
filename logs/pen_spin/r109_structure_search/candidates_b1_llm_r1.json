@@ -1,0 +1,59 @@
+{
+ "block": 1,
+ "arm": "llm",
+ "round": 1,
+ "information": "round 0 selection rollouts of the retained parent (c0)",
+ "parent_sha256": "2ce0b3afee3660e16b8da86fcff67f0737a58e7cbac9e72ccb297442062cb994",
+ "edits": [
+  {
+   "expr": [
+    "mul",
+    "spin_deficit",
+    "vel"
+   ],
+   "target": "groups"
+  },
+  {
+   "expr": [
+    "mul",
+    "posture",
+    "spin_deficit"
+   ],
+   "target": "groups"
+  }
+ ],
+ "slots": [
+  {
+   "edit": {
+    "expr": [
+     "mul",
+     "spin_deficit",
+     "vel"
+    ],
+    "target": "groups"
+   },
+   "rationale": "This lets training tune each group's velocity feedback specifically during slow spin, without imposing a fixed roll direction or maintaining the same extra drive at high speed.",
+   "calls": [
+    "call_00008"
+   ],
+   "tokens": 3510,
+   "errors": []
+  },
+  {
+   "edit": {
+    "expr": [
+     "mul",
+     "posture",
+     "spin_deficit"
+    ],
+    "target": "groups"
+   },
+   "rationale": "Adds roll-sign-invariant, speed-dependent posture feedback so training can tune each finger\u2019s grip when rotation slows while reducing interference during fast rolling.",
+   "calls": [
+    "call_00010"
+   ],
+   "tokens": 3346,
+   "errors": []
+  }
+ ]
+}

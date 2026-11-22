@@ -1,0 +1,61 @@
+{
+ "block": 0,
+ "arm": "llm",
+ "round": 1,
+ "information": "round 0 selection rollouts of the retained parent (c0)",
+ "parent_sha256": "25552e00b46301850760e57b73102313fb300936e365e91a70786fad66a15c1d",
+ "edits": [
+  {
+   "expr": [
+    "gate",
+    "spin_deficit",
+    0.25,
+    "above"
+   ],
+   "target": "chain:TH"
+  },
+  {
+   "expr": [
+    "mul",
+    "ref",
+    "spin_deficit"
+   ],
+   "target": "groups"
+  }
+ ],
+ "slots": [
+  {
+   "edit": {
+    "expr": [
+     "gate",
+     "spin_deficit",
+     0.25,
+     "above"
+    ],
+    "target": "chain:TH"
+   },
+   "rationale": "Adds independently trainable thumb-joint corrections as spin approaches or falls below the required speed, while leaving rates above 5.25 rad/s unaffected and assuming no roll direction.",
+   "calls": [
+    "call_00009"
+   ],
+   "tokens": 3774,
+   "errors": []
+  },
+  {
+   "edit": {
+    "expr": [
+     "mul",
+     "ref",
+     "spin_deficit"
+    ],
+    "target": "groups"
+   },
+   "rationale": "Lets training selectively amplify or attenuate the reference actions during spin shortfalls, targeting the dominant slow-spin failures while preserving the reference's episode-dependent roll direction.",
+   "calls": [
+    "call_00012"
+   ],
+   "tokens": 3810,
+   "errors": []
+  }
+ ]
+}

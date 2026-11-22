@@ -1,0 +1,69 @@
+{
+ "block": 0,
+ "arm": "llm",
+ "round": 0,
+ "information": "the seed-4834 smoke (shared initialisation information)",
+ "parent_sha256": "c1bedbec55ae656a785dcfe27022d4357cf964da659edb597b8cdc30553335da",
+ "edits": [
+  {
+   "expr": [
+    "mul",
+    "spin_deficit",
+    "tip_dist"
+   ],
+   "target": "groups"
+  },
+  {
+   "expr": [
+    "mul",
+    "vel",
+    [
+     "gate",
+     "spin_deficit",
+     0.25,
+     "above"
+    ]
+   ],
+   "target": "groups"
+  }
+ ],
+ "slots": [
+  {
+   "edit": {
+    "expr": [
+     "mul",
+     "spin_deficit",
+     "tip_dist"
+    ],
+    "target": "groups"
+   },
+   "rationale": "Contact-aware corrections during slow spin can restore finger engagement without continuously tightening the grasp or assuming a roll direction.",
+   "calls": [
+    "call_00003"
+   ],
+   "tokens": 3852,
+   "errors": []
+  },
+  {
+   "edit": {
+    "expr": [
+     "mul",
+     "vel",
+     [
+      "gate",
+      "spin_deficit",
+      0.25,
+      "above"
+     ]
+    ],
+    "target": "groups"
+   },
+   "rationale": "Speed-gated joint-velocity feedback can learn direction-adaptive drive below 5.25 rad/s while leaving faster rolls undisturbed.",
+   "calls": [
+    "call_00006"
+   ],
+   "tokens": 3051,
+   "errors": []
+  }
+ ]
+}

@@ -1,0 +1,59 @@
+{
+ "block": 2,
+ "arm": "llm",
+ "round": 0,
+ "information": "the seed-4834 smoke (shared initialisation information)",
+ "parent_sha256": "c1bedbec55ae656a785dcfe27022d4357cf964da659edb597b8cdc30553335da",
+ "edits": [
+  {
+   "expr": [
+    "mul",
+    "spin_deficit",
+    "tip_dist"
+   ],
+   "target": "groups"
+  },
+  {
+   "expr": [
+    "mul",
+    "ref",
+    "spin_deficit"
+   ],
+   "target": "groups"
+  }
+ ],
+ "slots": [
+  {
+   "edit": {
+    "expr": [
+     "mul",
+     "spin_deficit",
+     "tip_dist"
+    ],
+    "target": "groups"
+   },
+   "rationale": "This adds roll-sign-invariant, finger-local contact correction when spin is slow, allowing training to recover useful contact without persistently tightening the grip during fast rolling.",
+   "calls": [
+    "call_00001"
+   ],
+   "tokens": 2939,
+   "errors": []
+  },
+  {
+   "edit": {
+    "expr": [
+     "mul",
+     "ref",
+     "spin_deficit"
+    ],
+    "target": "groups"
+   },
+   "rationale": "Enables group-wise amplification of the reference's coordinated actions when spin is slow, tapering as speed recovers without assuming a fixed roll direction.",
+   "calls": [
+    "call_00004"
+   ],
+   "tokens": 2808,
+   "errors": []
+  }
+ ]
+}
