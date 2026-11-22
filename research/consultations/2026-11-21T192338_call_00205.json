@@ -1,0 +1,18 @@
+{
+  "ideas": [
+    {
+      "id": "R-099",
+      "recommendation": "run_as_is",
+      "reasoning": "Agree: draw7's 39/80 successes and zero drops versus the incumbent's 31/80 and three drops provide no new reason to stop, but usefulness remains inconclusive after selection among 24 tail-hit-ranked draws; the incumbent's marginal SE is not the uncertainty of the paired difference (logs/pen_spin/r099_incumbent_residual/search_summary.json). S4 provides the missing fresh paired measurement for 180 additional simulator episodes and 0 LLM calls: retain paired_success_difference, direction increase, threshold 0.10, against the unchanged D-058 incumbent on the same 90 cases from unused reserved seed 4744. Falsified_by: a fresh paired 95% interval upper bound below +0.10 refutes the predicted magnitude; an interval including zero establishes no improvement, and adoption additionally requires mean > 0, lower bound > 0, and the one-sided 95% paired drop-rate-difference upper bound <= +0.05.",
+      "suggested_changes": [],
+      "depends_on": []
+    }
+  ],
+  "order": [
+    "R-099"
+  ],
+  "next_step": "If the user chooses to proceed, verify the frozen draw7 hash and run only scripts/run_shadowhand_spin_stages.py --study incumbent_residual_fresh via gpu run using config/shadowhand_spin_stages.yaml, without retuning, extra draws, or probe reruns.",
+  "call_id": "call_00205",
+  "briefing_sha256": "7605477c3adc71ed7c873255329013087166d7906173333ce209e99c4cdd0c3f",
+  "question": "S3 report for R-099 (incumbent_residual: the incumbent and 24 seeded draws of the four-parameter anonymous joint-motion residual, each on the whole 80-case probe manifest seed 4742 in its own process; 2,000 episodes; artifact logs/pen_spin/r099_incumbent_residual/search_summary.json). Incumbent on the probe cases: 31/80 sustained, tail-hit fraction 0.416, timeout rate 0.963, 3 drops, 45 slow spin, 1 off-centre, mean unsigned roll integral 22.3 rad. Winner by the declared ranking (tail-hit, then successes, then index): draw7, gain 0.00466 s, deadband 0.233 rad/s, tau 0.185 s, cap 0.103 rad, sha256 2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1: 39/80 sustained, tail-hit 0.496, timeout rate 1.000, 0 drops, 40 slow spin, 1 off-centre, unsigned roll 27.3 rad; residual activity mean |delta| 0.0068 rad, at the cap on 3% of values, clipped by the action clamp on 0.2%. Runner-up draw5: 37/80, tail-hit 0.463, 0 drops. Across the 24 draws: sustained successes range 22-39 (median 33; 14 draws above the incumbent's 31, 3 equal, 7 below), tail-hit 0.315-0.496 (13 above the incumbent's 0.416), drops 0 in 13 draws, 1 in 8, 3 in 2, 7 in 1 (incumbent 3), unsigned roll 21.4-29.9 rad (22 of 24 above the incumbent's 22.3). The low-gain draws lead: the top five have gain <= 0.019 and mean |delta| <= 0.015 rad; the four largest-gain or largest-|delta| draws are among the worst (draw11: gain 0.080, cap 0.144, 22/80, 7 drops, 7 off-centre). Selected parameters and hash are now frozen in the config (selected / selected_sha256) and match S3's selected.json; no fresh case has run. My position: the selection is the maximum of 24 noisy probe scores (the incumbent's own probe SE is about 0.054, and the winner's +0.10 is under two SEs), so this is not evidence of usefulness and I expect shrinkage; but nothing in S3 argues against the declared S4, the winner does not increase drops on the probe cases, and S4 (180 episodes on seed 4744, strict paired rule, one-sided 95% drop bound <= +0.05, prediction +0.10) should run exactly as declared. Do you agree S4 proceeds unchanged? Answer agree or disagree with reasons."
+}

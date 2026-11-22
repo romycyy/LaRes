@@ -1310,3 +1310,33 @@ research_protocols:
   rolling_decoder_calibration:
     <<: *rolling_gate
     log_dir: "logs/pen_spin/r097_rolling_decoder_calibration"
+
+  # R-099 (I2 = S3 + S4, anonymous-only fallback after D-069; no LLM): a bounded joint-motion residual on the D-058
+  # incumbent (lares/envs/isaac_pen_spin/incumbent_residual.py). Two studies, separately gated:
+  #   python scripts/run_shadowhand_spin_stages.py --study incumbent_residual        # S3: 80 + 24 x 80 = 2,000, stops
+  #   python scripts/run_shadowhand_spin_stages.py --study incumbent_residual_fresh  # S4: 2 x 90 = 180
+  # The cap range is [0.25 B, B] with B = 0.15 rad, R-097's frozen per-joint increment cap. Seed 4743 only seeds the draws.
+  incumbent_residual: &incumbent_residual
+    log_dir: "logs/pen_spin/r099_incumbent_residual"
+    search_log_dir: "logs/pen_spin/r099_incumbent_residual"
+    incumbent_asset: "config/pen_spin/d058_fixed_stroke_incumbent"
+    control_dt: 0.016666666666666666
+    pool_seed: 4742
+    probe_seed: 4742
+    probe_cases: 80
+    probe_manifest: "config/manifests/pen_spin_stage3_residual_probe_s4742.yaml"
+    draw_seed: 4743
+    draws: 24
+    ranges: {gain: [0.0, 0.10], deadband: [0.0, 0.50], tau: [0.05, 0.25], cap: [0.0375, 0.15]}
+    fresh_seed: 4744
+    fresh_cases: 90
+    fresh_manifest: "config/manifests/pen_spin_stage3_residual_fresh_s4744.yaml"
+    threshold: 0.10
+    drop_margin: 0.05
+    # Frozen 2026-11-21 from S3 (draw7 of 24 on the seed-4742 probe manifest: 39/80, tail-hit 0.496, 0 drops, against
+    # the incumbent's 31/80, 0.416, 3 drops), before any fresh case.
+    selected: {"gain": 0.004655481049180921, "deadband": 0.2333555721435132, "tau": 0.18501188209260944, "cap": 0.10269089387249905}
+    selected_sha256: "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1"
+  incumbent_residual_fresh:
+    <<: *incumbent_residual
+    log_dir: "logs/pen_spin/r099_incumbent_residual_fresh"

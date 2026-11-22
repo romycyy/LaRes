@@ -593,6 +593,14 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   on `MFJ2` (79% of steps) and `LFJ1` (64%), so an additive residual is clipped there; when comparing two cells'
   prefixes use in-play steps only (`in_play_prefix`), since a case's recorded steps after it ends are the next
   episode's auto-reset and differ between processes.
+- **R-099 result (D-070, inconclusive; 2026-11-21).** `incumbent_residual.py` (`--study incumbent_residual`, the
+  24-draw probe search, which stops after hashing its winner; then `--study incumbent_residual_fresh`, which refuses to
+  run unless the config's `selected` block matches `selected_sha256` and the search's record). `JointMotionResidual`
+  adds `clip(g sign(v_f) max(|v_f| - v0, 0), -b, b)` (filtered joint velocities only, no geometry, no roll sign) to the
+  incumbent's action. Only this anonymous arm ran, because R-097 failed. Fresh: +0.056 [-0.041, +0.152] (41 vs 36 of
+  90), drops 1 vs 1: no improvement established, not adopted; unsigned roll rose 27% with a 0.0066 rad mean residual.
+  A 90-pair instrument resolves about +/-0.10. **Bites:** a driver's own record files must not share a name with a
+  cell (`<controller>.json`), or `study_cell` skips that cell as already run.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

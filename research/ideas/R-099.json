@@ -1,13 +1,13 @@
 {
   "id": "R-099",
-  "title": "I2: Matched residual search followed by paired usefulness qualification",
-  "hypothesis": "A bounded stance-aware circumferential residual can repair slow-spin tails more effectively than joint-motion reinforcement while preserving the incumbent's retention.",
+  "title": "I2 (anonymous-only fallback): bounded joint-motion residual on the incumbent, searched then qualified on fresh pairs",
+  "hypothesis": "Bounded reinforcement of filtered joint motion sustains effective movement through slow-spin tails without increasing drops. (The original contact-residual prediction is UNTESTED: R-097 / D-069 failed the rolling decoder gate, so the contact arm is not run.)",
   "prediction": {
     "metric": "paired_success_difference",
     "direction": "increase",
     "threshold": 0.1,
-    "against": "I2: unchanged D-058 fixed-stroke incumbent on the same 90 fresh cases",
-    "rationale": "Rank 3: this larger experiment measures practical usefulness only after controllability is settled; the primary target is an absolute +0.10 paired sustained-success difference for the frozen contact residual."
+    "against": "the unchanged D-058 fixed-stroke incumbent on the same 90 fresh paired cases (seed 4744)",
+    "rationale": "The frozen winner of a 24-draw random search of a four-parameter anonymous joint-motion residual should lift fresh paired sustained success by at least +0.10 over the incumbent; S1 of R-097 showed the incumbent's failures are steady low-rate rolling (42 of 52), which stronger joint motion could plausibly raise."
   },
   "protocol": {
     "script": "scripts/run_shadowhand_spin_stages.py",
@@ -22,44 +22,273 @@
       "config/manifests/pen_spin_stage3_residual_probe_s4742.yaml",
       "config/manifests/pen_spin_stage3_residual_fresh_s4744.yaml"
     ],
-    "episodes": 4190,
+    "episodes": 2180,
     "llm_calls": 0,
     "code_changes": [
-      "Add lares/envs/isaac_pen_spin/incumbent_residual.py; register incumbent_residual in the existing runner/config. Declare now but seek approval only after I1 is decided. If incumbent reproduction fails, stop; if decoder qualification fails with reproduction intact, permit only the anonymous-versus-incumbent fallback.",
-      "Use Stage 3 and exactly four free scalar parameters per residual. Leave the fixed incumbent stroke unchanged and enforce additive joint-target residual bounds plus actuator limits. A zero-amplitude identity check must reproduce incumbent targets exactly.",
-      "Contact arm: request circumferential relative fingertip velocity only during stance, using the case's causally observed stable roll direction and an unsigned rate deficit; abstain when direction is uncertain. Parameters are velocity gain in [0, 0.01] m/rad, target absolute rate in [4, 8] rad/s, filter time constant in [0.05, 0.25] s, and joint-increment cap in [0.25 B, B], where B is I1's frozen qualified cap. Requests never exceed I1's qualified pulse amplitude.",
-      "Anonymous arm: reinforce measured joint motion with delta_q = clip(g * sign(v_filtered) * max(abs(v_filtered) - v0, 0), -b, b). Its four parameters are g in [0, 0.10] s, v0 in [0, 0.50] rad/s, filter time constant in [0.05, 0.25] s, and b in [0.25 B, B]. It reads joint positions/velocities and anonymous indices only, with no fingertip geometry, pen-frame geometry or assumed roll sign. If I1 fails decoder qualification, use a predeclared B = 0.02 rad for this arm rather than recalibrating it.",
-      "Seed 4743 generates 24 four-dimensional uniform random draws, reused as normalized draws for both arms. Each draw executes all 80 frozen probe cases in a fresh Isaac process. Score incumbent once on those 80 cases. Rank by final-window hit fraction, then sustained success, then draw index; inspect unsigned roll progress, retention, saturation and drop counts without additional tuning. Freeze and hash each winner before any fresh-case execution.",
-      "S3 costs 80 + 2 x 24 x 80 = 3920 episodes. S4 runs incumbent and both frozen winners on the same 90 fresh cases, one whole-manifest fresh process per arm: 270 episodes. Total 4190. Anonymous-only fallback costs 80 + 24 x 80 + 180 = 2180 episodes and uses the same declared seeds without retuning.",
-      "For S4 use the existing sustained-success rule and paired t procedure: positive paired difference and interval lower bound strictly above zero, with Holm correction at familywise alpha 0.05 over the two residual-versus-incumbent comparisons. A tie never promotes. Also require each candidate's paired drop-rate difference upper bound <= +0.05, using one-sided 97.5% bounds for the two candidates. In the anonymous-only fallback use one comparison and a one-sided 95% drop bound.",
-      "Report contact-minus-anonymous as a secondary paired comparison, not a substitute for beating incumbent. Failure shelves only the tested decoder/controller family, not contact coordinates generally. No automatic new draws, controller revisions, LLM calls, BC, RL, curriculum or gradient fitting; execute one protocol at a time."
+      "Module lares/envs/isaac_pen_spin/incumbent_residual.py, config block incumbent_residual (incumbent_residual_fresh merged from it), two registry names in scripts/run_shadowhand_spin_stages.py, mocked unittest tests/test_incumbent_residual.py. Stage 3, the unchanged config/pen_spin/d058_fixed_stroke_incumbent, one whole manifest per fresh Isaac process, serial, no LLM, no retries, no extra draws. The contact arm is not run or tuned.",
+      "Residual (JointMotionResidual), reading the 20 actuated joints' observed velocities and anonymous indices only (no fingertip geometry, no pen frame, no roll sign): v_f <- v_f + alpha (v - v_f) with alpha = dt / (tau + dt); delta = clip(g * sign(v_f) * max(|v_f| - v0, 0), -b, b) in rad; action = clamp(incumbent + 2 delta / (hi - lo), -1, 1). With g = 0 the action equals the incumbent's exactly (unit-tested). Four free scalars: g in [0, 0.10] s, v0 in [0, 0.50] rad/s, tau in [0.05, 0.25] s, b in [0.25 B, B].",
+      "Cap: B = 0.15 rad, so b in [0.0375, 0.15] rad. This replaces the fallback's earlier B = 0.02 rad, for reasons stated before any episode: 0.02 rad is about 6% of the incumbent's stroke (0.28 x 1.408 = 0.39 normalised, about 0.3 rad), while the only change that ever qualified on this incumbent (D-058) scaled the stroke by 41%, so a null at 0.02 rad would be uninformative; B = 0.15 rad is R-097's frozen per-joint increment cap, under which pulses changed no episode length and added no drop. D-069 also measured the incumbent's action saturated on MFJ2 (79%) and LFJ1 (64%), where an additive residual is clipped; the fraction of residual values clipped by the action clamp is reported per cell.",
+      "S3 (`--study incumbent_residual`, 80 + 24 x 80 = 2,000 episodes, a stop point): the incumbent once and 24 draws on the frozen 80-case probe manifest (seed 4742). Draws are numpy.random.default_rng(4743) uniform in the declared ranges, written to draws.json before the first cell. Ranking: mean final-window hit fraction, then sustained successes, then the lower draw index. The report gives, for the incumbent and every draw: successes, tail-hit fraction, timeout rate, drops, slow-spin and off-centre counts, mean unsigned roll integral (rad), residual activity (mean |delta|, fraction at the cap, fraction clipped by the action clamp). The winner's parameters and their sha256 are written to selected.json and then into the config (selected / selected_sha256). S3 then STOPS: the report is returned to the advisor for agreement, and no fresh case runs before that.",
+      "S4 (`--study incumbent_residual_fresh`, 2 x 90 = 180 episodes): refuses to run unless the config's selected block matches selected_sha256 and S3's recorded winner. The incumbent and the frozen winner on the 90-case fresh manifest (seed 4744), paired by case. Primary: paired sustained-success difference with its 95% t interval; adoption needs mean > 0 and lower bound > 0 (a tie never promotes) AND the one-sided 95% upper bound of the paired drop-rate difference <= +0.05 (one comparison, so no multiplicity correction). Also reported: win/loss/tie, paired final-window hit-fraction difference, drops, slow-spin and off-centre counts, unsigned roll, residual activity.",
+      "Scope of any conclusion: this one residual family, this incumbent, one 24-draw random search. A null shelves this joint-motion-reinforcement family only. No BC, RL, curriculum, gradient fitting, automatic new draws or controller revisions after outcomes."
     ],
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "deferred",
+  "status": "decided",
   "source": "advisor",
-  "falsified_by": "A fresh paired interval upper bound below +0.10 refutes the contact prediction's magnitude. An interval including zero is not evidence of improvement. Failure of corrected strict promotion or the drop non-inferiority gate prevents adoption; if I1 fails, the contact prediction is untested and only the predeclared anonymous fallback runs.",
+  "falsified_by": "A fresh paired sustained-success interval whose upper bound is below +0.10 refutes the predicted magnitude; an interval including zero establishes no improvement. Adoption additionally requires the strict paired rule (mean > 0 and 95% lower bound > 0) and a one-sided 95% upper bound of the paired drop-rate difference <= +0.05.",
   "cost_estimate": {
-    "episodes": 4190,
+    "episodes": 2180,
     "llm_calls": 0,
-    "wall_time_minutes": 180
+    "wall_time_minutes": 35
   },
   "open_question_refs": [],
   "briefing_sha256": "c497f6deb0e78f8c86b9fb0974fb9ce398182afa5129ddc246f1f606681cf014",
   "proposal_call_id": "call_00198",
-  "approval": {},
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-21T19:13:21",
+    "advisor_call_id": "call_00204",
+    "round": 3,
+    "note": "I accept the implementer's argument for predeclaring B = 0.15 rad rather than 0.02 rad: it permits a meaningful intervention relative to the incumbent stroke, although brief pulse retention does not establish safety for sustained motion reinforcement. The revised anonymous-only fallback tests whethe"
+  },
+  "run": {
+    "started_at": "2026-11-21T19:13:33",
+    "git_sha": "eb1f08a298be08d2a7bc8e5ccb6173e5547a96cc",
+    "dirty_worktree": true,
+    "log_dir": "",
+    "finished_at": "2026-11-21T19:25:53"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.05555555555555555,
+      "paired_success_difference_ci95": [
+        -0.04050733517619734,
+        0.15161844628730844
+      ],
+      "promotes": false,
+      "adopts": false,
+      "prediction_supported": false,
+      "prediction_refuted": false,
+      "fresh_successes": [
+        41,
+        36
+      ],
+      "fresh_n": 90,
+      "win_loss_tie": {
+        "wins": 12,
+        "losses": 7,
+        "ties": 71
+      },
+      "paired_tail_hit_difference": 0.04811241065627031,
+      "paired_tail_hit_difference_ci95": [
+        -0.04608581785165623,
+        0.14231063916419684
+      ],
+      "drop_rate_difference_one_sided_95_upper": 0.0,
+      "drop_counts": [
+        1,
+        1
+      ],
+      "fresh_unsigned_roll_rad": [
+        27.97138214111328,
+        22.02396583557129
+      ],
+      "fresh_slow_spin": [
+        44,
+        48
+      ]
+    },
+    "controls": {
+      "fresh_incumbent": {
+        "n": 90,
+        "successes": 36,
+        "success": 0.4,
+        "completed": 0.9888888888888889,
+        "tail_hit_fraction": 0.41083820662768034,
+        "hit_fraction": 0.4056891299744254,
+        "mean_length": 355.43333333333334,
+        "mean_abs_spin": 3.8890512304173575,
+        "mean_transverse": 1.3105779009560743,
+        "drops": 1,
+        "tail_spin_failures": 53,
+        "median_fall_step": 38.0,
+        "tail_failures": 53,
+        "off_centre": 5,
+        "slow_spin": 48,
+        "unsigned_roll_rad": 22.02396583557129,
+        "residual_activity": null
+      },
+      "fresh_selected": {
+        "n": 90,
+        "successes": 41,
+        "success": 0.45555555555555555,
+        "completed": 0.9888888888888889,
+        "tail_hit_fraction": 0.45895061728395065,
+        "hit_fraction": 0.4673071632449534,
+        "mean_length": 355.4111111111111,
+        "mean_abs_spin": 4.895258513092995,
+        "mean_transverse": 1.4328971102833747,
+        "drops": 1,
+        "tail_spin_failures": 48,
+        "median_fall_step": 36.0,
+        "tail_failures": 48,
+        "off_centre": 4,
+        "slow_spin": 44,
+        "unsigned_roll_rad": 27.97138214111328,
+        "residual_activity": {
+          "mean_abs_delta_rad": 0.006580569178779145,
+          "at_cap_fraction": 0.028051686784277313,
+          "clipped_by_action_clamp_fraction": 0.0033751160631383475,
+          "values": 646200
+        }
+      },
+      "probe_incumbent": {
+        "n": 80,
+        "successes": 31,
+        "success": 0.3875,
+        "completed": 0.9625,
+        "tail_hit_fraction": 0.4159963768115942,
+        "hit_fraction": 0.41199335916999713,
+        "mean_length": 347.2375,
+        "mean_abs_spin": 4.148478000611067,
+        "mean_transverse": 1.3451608108356594,
+        "drops": 3,
+        "tail_spin_failures": 46,
+        "median_fall_step": 46.0,
+        "tail_failures": 46,
+        "off_centre": 1,
+        "slow_spin": 45,
+        "unsigned_roll_rad": 22.334270477294922,
+        "residual_activity": null
+      },
+      "probe_selected": {
+        "n": 80,
+        "successes": 39,
+        "success": 0.4875,
+        "completed": 1.0,
+        "tail_hit_fraction": 0.4958333333333334,
+        "hit_fraction": 0.49136490250696385,
+        "mean_length": 359.0,
+        "mean_abs_spin": 4.557111994177103,
+        "mean_transverse": 1.3742150645703077,
+        "drops": 0,
+        "tail_spin_failures": 41,
+        "median_fall_step": null,
+        "tail_failures": 41,
+        "off_centre": 1,
+        "slow_spin": 40,
+        "unsigned_roll_rad": 27.266719818115234,
+        "residual_activity": {
+          "mean_abs_delta_rad": 0.006796174755418533,
+          "at_cap_fraction": 0.029930362116991644,
+          "clipped_by_action_clamp_fraction": 0.004106894150417827,
+          "values": 574400
+        },
+        "params": {
+          "gain": 0.004655481049180921,
+          "deadband": 0.2333555721435132,
+          "tau": 0.18501188209260944,
+          "cap": 0.10269089387249905
+        }
+      },
+      "probe_draws": {
+        "successes_range": [
+          22,
+          39
+        ],
+        "successes_median": 33.0,
+        "above_incumbent": 15,
+        "zero_drop_draws": 12,
+        "unsigned_roll_above_incumbent": 21
+      },
+      "selected": {
+        "draw": "draw7",
+        "params": {
+          "gain": 0.004655481049180921,
+          "deadband": 0.2333555721435132,
+          "tau": 0.18501188209260944,
+          "cap": 0.10269089387249905
+        },
+        "selected_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1",
+        "rule": "mean final-window hit fraction, then sustained successes, then the lower index"
+      },
+      "contact_arm": "not run: R-097 (D-069) failed the rolling decoder gate; the original contact prediction is untested"
+    },
+    "artifacts": [
+      "logs/pen_spin/r099_incumbent_residual/fresh_summary.json",
+      "logs/pen_spin/r099_incumbent_residual/search_summary.json"
+    ],
+    "notes": "Episodes: S3 2,000 (incumbent 80 + 24 x 80) on probe seed 4742, S4 180 (2 x 90) on fresh seed 4744; 0 LLM generation calls; about 20 minutes on the box. Probe-to-fresh shrinkage as expected for the best of 24: +0.100 on the probe cases (39 vs 31 of 80), +0.056 on fresh (41 vs 36 of 90). Deviation: the first S4 invocation crashed after the incumbent's cell and before the residual's cell ran, because the driver wrote its frozen-winner record to selected.json, the filename of the `selected` controller's cell, so that cell was skipped as existing; the record was renamed frozen_selected.json, the driver fixed, and S4 resumed (the incumbent's cell was reused, not rerun). No fresh result for the residual existed before the fix, and nothing was retuned. Secondary, not the registered metric: on fresh the residual raises mean unsigned roll from 22.0 to 28.0 rad and mean |axial rate| from 3.89 to 4.90 rad/s, with slow-spin failures 44 vs 48, with a mean |delta| of 0.0066 rad (clipped by the action clamp on 0.3% of values). In S3 22 of 24 draws raised unsigned roll and 13 had zero drops against the incumbent's 3; the low-gain draws led and the largest-gain draws were worst. No interval was computed for the roll difference. Power: the paired SE is 0.048, so this 90-pair instrument resolves about +/-0.10; a true effect near +0.05 cannot be established or excluded by it."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.05555555555555555,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.9,
+      "reasoning": "By the registered rule the prediction (+0.10 paired sustained success over the incumbent on 90 fresh pairs) is neither supported nor refuted: +0.056, 95% interval [-0.041, +0.152], which contains both zero and +0.10 (41 vs 36 of 90; 12 wins, 7 losses, 71 ties). The residual does not promote (lower bound below zero) and is not adopted; the drop bound holds (1 vs 1, upper bound 0.0 <= 0.05). No improvement is established. It is not a refutation either: the upper bound is above the threshold, and the secondaries point the same way as the point estimate (unsigned roll 28.0 vs 22.0 rad, tail-hit +0.048 [-0.046, +0.142], 22 of 24 probe draws raising roll), but those are not the registered metric and the roll difference has no interval. The instrument resolves about +/-0.10, so an effect near +0.05 is below what it can decide. Scope: this joint-motion-reinforcement family, this incumbent, one 24-draw search; the contact arm was not run.",
+      "cited_artifacts": [],
+      "next_experiment": "Do not adopt. The cheapest decisive step is a prospective replication of the SAME frozen residual (hash 2a509ef5...) on a larger fresh paired instrument sized for +0.05 (about 360 pairs for SE 0.024), with no retuning, as D-057 did for the curl clamp; otherwise shelve this family. R-098 stays deferred (its precondition, a passing decoder gate, did not occur).",
+      "recorded_at": "2026-11-21T19:25:55",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 0.99,
+      "reasoning": "Against the unchanged incumbent, fresh paired_success_difference was +0.0556 with a 95% interval of [-0.0405, +0.1516], from 41 versus 36 successes across 90 pairs [logs/pen_spin/r099_incumbent_residual/fresh_summary.json]. The interval includes both zero and the predicted +0.10, so no improvement is established and the predicted magnitude is neither supported nor refuted [logs/pen_spin/r099_incumbent_residual/fresh_summary.json]. The recorded drop-rate upper bound was 0.000, satisfying the +0.05 safety bound, but the success interval fails the strict promotion rule; the incumbent remains unchanged [logs/pen_spin/r099_incumbent_residual/fresh_summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r099_incumbent_residual/fresh_summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-21T19:26:20",
+      "call_id": "call_00206"
+    }
+  ],
+  "decision_id": "D-070",
   "history": [
     {
       "at": "2026-11-21T18:35:51",
       "from": "proposed",
       "to": "deferred",
       "note": "triage round 1: both say defer"
+    },
+    {
+      "at": "2026-11-21T19:10:22",
+      "from": "deferred",
+      "to": "proposed",
+      "note": "re-triaged"
+    },
+    {
+      "at": "2026-11-21T19:13:21",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-21T19:13:33",
+      "from": "approved",
+      "to": "running",
+      "note": "git eb1f08a298 (dirty)"
+    },
+    {
+      "at": "2026-11-21T19:25:53",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-21T19:26:20",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-070: inconclusive"
     }
   ],
   "created_at": "2026-11-21T18:34:04",
@@ -84,11 +313,103 @@
           "at": "2026-11-21T18:35:51"
         },
         "outcome": "agreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "I accept the implementer's conditional argument: D-069 reproduces the incumbent but fails rolling-decoder qualification, activating only the declared anonymous-only fallback. Reinforcing observed joint motion could repair low-rate tails without assuming a roll sign, but it might instead amplify ineffective motion. The remaining defects are that the hypothesis and prediction concern the now-ineligible contact arm, and the combined invocation does not explicitly preserve the user's separate S3 and S4 gates.",
+          "suggested_changes": [
+            "Make the anonymous-only fallback the executable protocol: four parameters, 24 random draws, B = 0.02 rad, unchanged incumbent and existing ranking. Reuse scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml with free seeds 4742, 4743 and 4744; do not run or tune the contact arm.",
+            "Replace the active hypothesis with: 'Bounded reinforcement of filtered joint motion sustains effective movement through slow-spin tails without increasing drops.' Register the prospective prediction as paired_success_difference, direction increase, threshold 0.10, against the unchanged D-058 incumbent on the same 90 fresh paired cases. State falsified_by: a paired interval upper bound below +0.10 refutes the predicted magnitude; an interval including zero establishes no improvement. Mark the original contact prediction untested.",
+            "Separate execution gates: S3 costs 2,000 episodes (80 incumbent plus 24 x 80 anonymous probes), then stop and record the selected controller's hash, tail-hit ranking, sustained unsigned progress, retention, saturation and drops for S4 review. Do not execute any fresh cases before that gate.",
+            "Declare S4 separately at 180 episodes, retaining the fallback's strict positive paired sustained-success interval and one-sided 95% paired drop-rate upper bound <= +0.05. Total maximum remains 2,180 episodes and zero LLM calls, with no additional draws or retuning."
+          ],
+          "priority": 1,
+          "call_id": "call_00203",
+          "briefing_sha256": "a3280c034858f65f101d5cc656b354d0e864e019c13bf8f290db4e686600fee3",
+          "at": "2026-11-21T19:10:22"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree to revise, and agree with the advisor's four changes (anonymous-only executable protocol on seeds 4742/4743/4744, hypothesis and prediction restated as anonymous residual minus the unchanged incumbent with the contact prediction marked untested, S3 as a 2,000-episode stop point reporting the selected hash and its ranking/progress/retention/saturation/drops, S4 declared separately at 180 episodes with the strict paired rule and a one-sided 95% drop bound <= +0.05). One further change, with new evidence from D-069: the fallback cap B = 0.02 rad was written before S2 and makes a null uninformative. The incumbent's stroke is 0.28 x 1.408 = 0.39 in normalised action, about 0.3 rad on a 1.57 rad joint range, so a 0.02 rad residual is about 6% of the stroke, while the one change that ever qualified on this incumbent (D-058) scaled the stroke by 41%; and D-069 measured that the incumbent's action is already saturated on MFJ2 (79%) and LFJ1 (64%), where any additive residual is clipped anyway. I propose B = 0.15 rad, which is not a new tuned number: it is the per-joint increment cap R-097 froze from its calibration (cal2) and under which pulses changed no episode length and caused no extra drop. The cap range stays [0.25 B, B] = [0.0375, 0.15] rad; everything else in the fallback is unchanged. The S3 report will include the fraction of steps on which the residual was clipped by the action clamp.",
+          "changes_applied": [],
+          "at": "2026-11-21T19:10:47"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the implementer's argument for predeclaring B = 0.15 rad rather than 0.02 rad: it permits a meaningful intervention relative to the incumbent stroke, although brief pulse retention does not establish safety for sustained motion reinforcement. The revised anonymous-only fallback tests whether reinforcing filtered joint motion repairs slow-spin tails without assuming roll direction, reusing scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml for 2,000 S3 episodes and zero LLM calls. Retain the prediction paired_success_difference, direction increase, threshold 0.10, against the unchanged D-058 incumbent on the same 90 fresh paired cases; it is falsified by an interval upper bound below +0.10, and an interval including zero establishes no improvement. Approve S3 now with its mandatory stop and frozen winner hash; the additional 180-episode, zero-LLM S4 remains gated on review of tail-hit ranking, sustained progress, retention and residual activity, with adoption requiring the strict positive paired interval and paired drop-rate upper bound <= +0.05.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00204",
+          "briefing_sha256": "df2d59a74e336d2f2972c34946b9e0a4a797659d16fc1e14d95088eed1338b1f",
+          "at": "2026-11-21T19:13:00"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve as revised: anonymous-only, four parameters, 24 seeded draws, cap range [0.0375, 0.15] rad, S3 a 2,000-episode stop point with the winner hashed, S4 gated on the advisor's review of the S3 report, strict paired rule plus the drop bound. A pass on short pulses does not establish that sustained reinforcement is safe, which is exactly what S3's drop counts will show.",
+          "changes_applied": [],
+          "at": "2026-11-21T19:13:21"
+        },
+        "outcome": "agreed"
       }
     ],
-    "outcome": "defer",
-    "agreed_round": 1
+    "outcome": "approve",
+    "agreed_round": 3
   },
   "escalation": {},
-  "revisions": []
+  "revisions": [
+    {
+      "at": "2026-11-21T19:12:41",
+      "round": 2,
+      "patch": {
+        "title": "I2 (anonymous-only fallback): bounded joint-motion residual on the incumbent, searched then qualified on fresh pairs",
+        "hypothesis": "Bounded reinforcement of filtered joint motion sustains effective movement through slow-spin tails without increasing drops. (The original contact-residual prediction is UNTESTED: R-097 / D-069 failed the rolling decoder gate, so the contact arm is not run.)",
+        "prediction": {
+          "metric": "paired_success_difference",
+          "direction": "increase",
+          "threshold": 0.1,
+          "against": "the unchanged D-058 fixed-stroke incumbent on the same 90 fresh paired cases (seed 4744)",
+          "rationale": "The frozen winner of a 24-draw random search of a four-parameter anonymous joint-motion residual should lift fresh paired sustained success by at least +0.10 over the incumbent; S1 of R-097 showed the incumbent's failures are steady low-rate rolling (42 of 52), which stronger joint motion could plausibly raise."
+        },
+        "falsified_by": "A fresh paired sustained-success interval whose upper bound is below +0.10 refutes the predicted magnitude; an interval including zero establishes no improvement. Adoption additionally requires the strict paired rule (mean > 0 and 95% lower bound > 0) and a one-sided 95% upper bound of the paired drop-rate difference <= +0.05.",
+        "protocol": {
+          "script": "scripts/run_shadowhand_spin_stages.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "python scripts/run_shadowhand_spin_stages.py --study incumbent_residual",
+          "seeds": [
+            4742,
+            4743,
+            4744
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_residual_probe_s4742.yaml",
+            "config/manifests/pen_spin_stage3_residual_fresh_s4744.yaml"
+          ],
+          "episodes": 2180,
+          "llm_calls": 0,
+          "needs_gpu": true,
+          "needs_llm": false,
+          "code_changes": [
+            "Module lares/envs/isaac_pen_spin/incumbent_residual.py, config block incumbent_residual (incumbent_residual_fresh merged from it), two registry names in scripts/run_shadowhand_spin_stages.py, mocked unittest tests/test_incumbent_residual.py. Stage 3, the unchanged config/pen_spin/d058_fixed_stroke_incumbent, one whole manifest per fresh Isaac process, serial, no LLM, no retries, no extra draws. The contact arm is not run or tuned.",
+            "Residual (JointMotionResidual), reading the 20 actuated joints' observed velocities and anonymous indices only (no fingertip geometry, no pen frame, no roll sign): v_f <- v_f + alpha (v - v_f) with alpha = dt / (tau + dt); delta = clip(g * sign(v_f) * max(|v_f| - v0, 0), -b, b) in rad; action = clamp(incumbent + 2 delta / (hi - lo), -1, 1). With g = 0 the action equals the incumbent's exactly (unit-tested). Four free scalars: g in [0, 0.10] s, v0 in [0, 0.50] rad/s, tau in [0.05, 0.25] s, b in [0.25 B, B].",
+            "Cap: B = 0.15 rad, so b in [0.0375, 0.15] rad. This replaces the fallback's earlier B = 0.02 rad, for reasons stated before any episode: 0.02 rad is about 6% of the incumbent's stroke (0.28 x 1.408 = 0.39 normalised, about 0.3 rad), while the only change that ever qualified on this incumbent (D-058) scaled the stroke by 41%, so a null at 0.02 rad would be uninformative; B = 0.15 rad is R-097's frozen per-joint increment cap, under which pulses changed no episode length and added no drop. D-069 also measured the incumbent's action saturated on MFJ2 (79%) and LFJ1 (64%), where an additive residual is clipped; the fraction of residual values clipped by the action clamp is reported per cell.",
+            "S3 (`--study incumbent_residual`, 80 + 24 x 80 = 2,000 episodes, a stop point): the incumbent once and 24 draws on the frozen 80-case probe manifest (seed 4742). Draws are numpy.random.default_rng(4743) uniform in the declared ranges, written to draws.json before the first cell. Ranking: mean final-window hit fraction, then sustained successes, then the lower draw index. The report gives, for the incumbent and every draw: successes, tail-hit fraction, timeout rate, drops, slow-spin and off-centre counts, mean unsigned roll integral (rad), residual activity (mean |delta|, fraction at the cap, fraction clipped by the action clamp). The winner's parameters and their sha256 are written to selected.json and then into the config (selected / selected_sha256). S3 then STOPS: the report is returned to the advisor for agreement, and no fresh case runs before that.",
+            "S4 (`--study incumbent_residual_fresh`, 2 x 90 = 180 episodes): refuses to run unless the config's selected block matches selected_sha256 and S3's recorded winner. The incumbent and the frozen winner on the 90-case fresh manifest (seed 4744), paired by case. Primary: paired sustained-success difference with its 95% t interval; adoption needs mean > 0 and lower bound > 0 (a tie never promotes) AND the one-sided 95% upper bound of the paired drop-rate difference <= +0.05 (one comparison, so no multiplicity correction). Also reported: win/loss/tie, paired final-window hit-fraction difference, drops, slow-spin and off-centre counts, unsigned roll, residual activity.",
+            "Scope of any conclusion: this one residual family, this incumbent, one 24-draw random search. A null shelves this joint-motion-reinforcement family only. No BC, RL, curriculum, gradient fitting, automatic new draws or controller revisions after outcomes."
+          ]
+        },
+        "cost_estimate": {
+          "episodes": 2180,
+          "llm_calls": 0,
+          "wall_time_minutes": 35
+        }
+      },
+      "note": "Anonymous-only fallback after D-069: the advisor's four changes plus the implementer's cap argument (B = 0.15 rad, R-097's frozen cap, instead of 0.02 rad)."
+    }
+  ]
 }
