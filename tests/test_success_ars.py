@@ -126,5 +126,51 @@ class TestFrozenFiles(unittest.TestCase):
             sa.make_controller("draw3", CFG)
 
 
+class TestAttribution(unittest.TestCase):
+    """R-108: the second registry name served by the same module."""
+
+    def setUp(self):
+        self.cfg = {**ALL[sa.ATTRIBUTION], "study": sa.ATTRIBUTION}
+
+    def test_block_differs_from_r106_only_in_seeds_reward_and_bridge(self):
+        for k in ("actor", "ars", "reference_residual", "normalization_sha256", "confirmation_cases", "threshold", "drop_margin"):
+            self.assertEqual(self.cfg[k], CFG[k], k)
+        self.assertEqual({k: v for k, v in self.cfg["training"].items() if k != "seed"},
+                         {k: v for k, v in CFG["training"].items() if k != "seed"})
+        self.assertEqual(self.cfg["reward"], ALL[sr.STUDY]["reward"])
+        est = 2 * 2 * 12 * 2 * 2048 + 2 * 2 * 2048 + 2 * 4 * 12 * 128
+        self.assertLessEqual(est, self.cfg["start_ceiling"])
+
+    def test_frozen_files_and_controllers(self):
+        cwd = os.getcwd()
+        os.chdir(ROOT)
+        try:
+            self.assertEqual(sa.build_manifests(self.cfg), [])
+            self.assertEqual(sa.bridge_finalist(self.cfg)["theta_sha256"], self.cfg["bridge_theta_sha256"])
+            self.assertEqual(sa.placement_provenance(self.cfg)["training_cases"], 6144)
+            with self.assertRaises(SystemExit):
+                sa.bridge_finalist({**self.cfg, "bridge_theta_sha256": "0" * 64})
+        finally:
+            os.chdir(cwd)
+        with self.assertRaises(ValueError):
+            sa.make_controller("exact", CFG)                  # the R-106 study has no such controller
+
+    def test_contrasts_and_holm(self):
+        rng = np.random.default_rng(0)
+        rows = {}
+        for m in range(12):
+            base = rng.random(128) < 0.42
+            mk = lambda s: [{"task_hash": f"h{m}_{i}", "sustained": bool(x), "completed": True, "tail_hit_fraction": float(x)}   # noqa: E731
+                            for i, x in enumerate(s)]
+            lift = base | (rng.random(128) < 0.2)
+            rows[f"s{m}"] = {"reference": mk(base), "dense": mk(base), "exact": mk(lift), "r106": mk(lift)}
+        c = sa.attribution_contrasts(rows, 0.05, 0.05)
+        self.assertEqual(set(c), {"exact_minus_dense", "exact_minus_reference", "dense_minus_reference", "r106_minus_reference"})
+        self.assertEqual(c["exact_minus_dense"]["pairs"], 1536)
+        self.assertTrue(c["exact_minus_dense"]["positive_effect_claim"])
+        self.assertFalse(c["dense_minus_reference"]["positive_effect_claim"])
+        self.assertNotIn("holm", c["r106_minus_reference"])
+
+
 if __name__ == "__main__":
     unittest.main()

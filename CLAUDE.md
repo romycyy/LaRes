@@ -647,6 +647,13 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   placement in two environments is not bit-identical in observation; at 2,048 envs the T4 runs 33,800 transitions/s (128
   envs: 3,650), so 17.6 M transitions take 8 minutes; the same policy on the same 512 placements in different slots of
   one batch differs by at most 0.006 in success (a within-batch contrast is far quieter than two processes).
+- **R-108 result (D-076, refuted; 2026-11-22).** `success_ars.run_attribution` (`--study pen_spin_objective_attribution`):
+  exact-success ARS minus dense-reward ARS, identical placements, directions and budget: -0.021 [-0.046, +0.005] over
+  1,536 fresh pairs. Both beat the reference (exact +0.087, dense +0.108) and the frozen R-106 finalist replicates on
+  new cases (+0.110 [+0.080, +0.140]). **D-075's gain is the instrument, not the objective:** what made ARS work is 512
+  shared placements per signed candidate in one batch and 17.6 M transitions, not training on the success count.
+  An Isaac evaluation child can die at start-up with `malloc(): unaligned tcache chunk detected`; rerunning the driver
+  resumes at the missing cell.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

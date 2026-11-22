@@ -19,7 +19,7 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 
-def rollout(env, ctx, ctrl, vecs, theta_env, *, plain=None, keep_steps: int = 0) -> dict:
+def rollout(env, ctx, ctrl, vecs, theta_env, *, plain=None, keep_steps: int = 0, reward_cfg=None) -> dict:
     """One batch: placements ``vecs`` (one per environment), residual coefficients ``theta_env`` (one row per
     environment). Returns per-environment first-episode outcomes, residual sums, and the simulator starts made."""
     import torch
@@ -44,6 +44,7 @@ def rollout(env, ctx, ctrl, vecs, theta_env, *, plain=None, keep_steps: int = 0)
     prop = torch.zeros(n, device=dev, dtype=torch.float64)
     exe = torch.zeros_like(prop)
     starts, mism, compared = n, 0, 0
+    dense = torch.zeros(n, device=dev, dtype=torch.float64)
     seq_obs, seq_act, first_action = [], [], None
     for t in range(T):
         p = ctrl.parts(obs, t, ctx)
@@ -65,6 +66,11 @@ def rollout(env, ctx, ctrl, vecs, theta_env, *, plain=None, keep_steps: int = 0)
         done = terminated | truncated
         ctrl.reset_envs(done)
         starts += int(done.sum())
+        if reward_cfg is not None:                           # R-103's step reward, first episodes only
+            from lares.envs.isaac_pen_spin.symbolic_reward import step_reward
+
+            r = step_reward(env.center_dist, env.spin_rate, terminated, action, p["ref"], reward_cfg, ctrl.cap)
+            dense += torch.where(alive, r.double(), torch.zeros_like(dense))
         step_ok = (env.center_dist < spec.success_center_tolerance) & (env.spin_rate.abs() > spec.success_spin_rate)
         pred[t] = alive & step_ok
         length = torch.where(alive, length + 1, length)
@@ -76,7 +82,7 @@ def rollout(env, ctx, ctrl, vecs, theta_env, *, plain=None, keep_steps: int = 0)
 
     sc = first_episode_scores(pred.cpu().numpy(), length.cpu().numpy(), completed.cpu().numpy())
     return {"sustained": sc["sustained"], "completed": completed.cpu().numpy(), "length": length.cpu().numpy(),
-            "tail_hit": sc["tail_hit"], "proposed": prop.cpu().numpy(),
+            "tail_hit": sc["tail_hit"], "proposed": prop.cpu().numpy(), "dense": dense.cpu().numpy(),
             "executed": exe.cpu().numpy(), "starts": starts, "transitions": int(length.sum()),
             "env_steps": int((t + 1) * n), "identity": {"compared": compared, "mismatches": mism},
             "seq_obs": seq_obs, "seq_act": seq_act, "first_action": first_action,
@@ -115,7 +121,13 @@ def smoke(req: dict, protocol_cfg: dict, device: str) -> dict:
         vecs = sa.tile(sa.smoke_placements(protocol_cfg), lay["slots"])
         zero = torch.zeros((lay["num_envs"], sr.N_COEF), device=device)
         t0 = time.time()
-        a = rollout(env, ctx, ctrl, vecs, zero, plain=sr.build_reference(protocol_cfg, "smoke_plain", resettable=False))
+        rw = protocol_cfg.get("reward")
+        a = rollout(env, ctx, ctrl, vecs, zero, plain=sr.build_reference(protocol_cfg, "smoke_plain", resettable=False),
+                    reward_cfg=rw)
+        if rw is not None:                                  # R-108: the dense return must be finite; its A/A spread is reported
+            dm = a["dense"].reshape(lay["slots"], lay["per"]).mean(axis=1)
+            out["gates"]["dense_return"] = {"slot_means": [float(x) for x in dm], "max_abs_slot_difference": float(dm.max() - dm.min()),
+                                            "passes": bool(np.isfinite(a["dense"]).all() and dm.min() > 0)}
         out["gates"]["zero_theta_identity"] = {**a["identity"], "passes": a["identity"]["mismatches"] == 0 and a["identity"]["compared"] > 0}
         out["aa"] = sa.aa_statistics(a["sustained"].reshape(lay["slots"], lay["per"]))
         out["aa"]["scorer_live"] = bool(a["sustained"].any())
@@ -181,6 +193,9 @@ def train(req: dict, protocol_cfg: dict, device: str) -> dict:
     env, ctx, ctrl, lay, to_t = _setup(protocol_cfg, device, int(tr["seed"]), "train")
     ars = sr.ARS(int(tr["seed"]), protocol_cfg["ars"], float(protocol_cfg["actor"]["bound"]))
     cap = int(req["start_cap"])
+    objective, rw = req.get("objective", "exact"), protocol_cfg.get("reward")
+    if objective not in ("exact", "dense") or (objective == "dense" and rw is None):
+        raise SystemExit(f"objective {objective!r} is not available for this protocol")
     starts = transitions = scored = 0
     updates, history, complete, note = [], [sr.theta_record(ars.theta)], True, None
     t0 = time.time()
@@ -188,17 +203,19 @@ def train(req: dict, protocol_cfg: dict, device: str) -> dict:
         for u in range(lay["updates"]):
             cand = ars.ask(u)
             vecs = sa.tile(sa.training_placements(protocol_cfg, u), lay["slots"])
-            slot_scores, drops, prop = [], [], []
+            slot_scores, drops, prop, success, dense_r = [], [], [], [], []
             for r in range(lay["rollouts"]):
                 if starts + 2 * lay["num_envs"] > cap:
                     complete, note = False, f"update {u + 1} rollout {r + 1}: {starts} starts, cap {cap}"
                     break
                 rc = sa.rollout_candidates(cand, r, lay)
-                res = rollout(env, ctx, ctrl, vecs, to_t(sa.slot_thetas(rc, lay["per"])))
+                res = rollout(env, ctx, ctrl, vecs, to_t(sa.slot_thetas(rc, lay["per"])), reward_cfg=rw)
                 starts += res["starts"]
                 transitions += res["env_steps"]
                 scored += lay["num_envs"]
-                slot_scores.append(res["sustained"].reshape(lay["slots"], lay["per"]).mean(axis=1))
+                success.append(res["sustained"].reshape(lay["slots"], lay["per"]).mean(axis=1))
+                dense_r.append(res["dense"].reshape(lay["slots"], lay["per"]).mean(axis=1))
+                slot_scores.append(success[-1] if objective == "exact" else dense_r[-1])
                 drops.append((~res["completed"]).reshape(lay["slots"], lay["per"]).mean(axis=1))
                 prop.append(float(res["proposed"].sum() / max(1, res["transitions"]) / sr.N_JOINTS))
             if not complete:
@@ -208,14 +225,16 @@ def train(req: dict, protocol_cfg: dict, device: str) -> dict:
             n = lay["directions"]
             history.append(sr.theta_record(ars.theta))
             updates.append({"update": u + 1, "plus": [float(x) for x in scores[:n]], "minus": [float(x) for x in scores[n:]],
-                            "mean_candidate_success": float(scores.mean()), "sigma_r": info["sigma_r"],
+                            "mean_candidate_success": float(np.mean(success)), "sigma_r": info["sigma_r"],
+                            "slot_success": [[float(x) for x in v] for v in success],
+                            "slot_dense_return": [[float(x) for x in v] for v in dense_r],
                             "slot_drop_rates": [[float(x) for x in d] for d in drops], "mean_abs_proposed": prop,
                             "theta_abs_max": float(np.abs(ars.theta).max()), "theta_l2": float(np.linalg.norm(ars.theta)),
                             "starts_so_far": starts, "wall_time_s": time.time() - t0})
             print("update", json.dumps(updates[-1]), flush=True)
     finally:
         env.close()
-    return {"mode": "train", "seed": int(tr["seed"]), "complete": complete, "note": note, "updates": updates,
+    return {"mode": "train", "objective": objective, "seed": int(tr["seed"]), "complete": complete, "note": note, "updates": updates,
             "starts": starts, "transitions": transitions, "scored_episodes": scored, "wall_time_s": time.time() - t0,
             "final_theta": sr.theta_record(ars.theta) if complete else None,
             "final_theta_sha256": sr.theta_sha256(ars.theta) if complete else None, "theta_history": history,

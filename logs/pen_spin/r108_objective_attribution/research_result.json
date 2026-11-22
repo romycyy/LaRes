@@ -1,0 +1,375 @@
+{
+ "metrics": {
+  "paired_success_difference": -0.020833333333333332,
+  "paired_success_difference_ci95": [
+   -0.04616835301812454,
+   0.004501686351457878
+  ],
+  "pairs": 1536,
+  "successes_of_1536": {
+   "reference": 659,
+   "exact": 793,
+   "dense": 825,
+   "r106": 828
+  },
+  "drops_of_1536": {
+   "reference": 74,
+   "exact": 46,
+   "dense": 51,
+   "r106": 45
+  },
+  "contrasts": {
+   "exact_minus_dense": {
+    "difference": -0.020833333333333332,
+    "ci95": [
+     -0.04616835301812454,
+     0.004501686351457878
+    ],
+    "win_loss_tie": {
+     "wins": 181,
+     "losses": 213,
+     "ties": 1142
+    },
+    "manifest_clustered_ci95": [
+     -0.05531046151068977,
+     0.013643794844023106
+    ],
+    "manifests_positive": 4,
+    "drop_difference_one_sided_95_upper": 0.0023126808409714666,
+    "promotes": false,
+    "adopts": false,
+    "holm": {
+     "p": 0.10695504899958753,
+     "p_holm": 0.10695504899958753,
+     "rejects": false
+    },
+    "magnitude_supported": false,
+    "magnitude_refuted": true
+   },
+   "exact_minus_reference": {
+    "difference": 0.08723958333333333,
+    "ci95": [
+     0.05810076655240061,
+     0.11637840011426605
+    ],
+    "win_loss_tie": {
+     "wins": 333,
+     "losses": 199,
+     "ties": 1004
+    },
+    "manifest_clustered_ci95": [
+     0.06230041006974971,
+     0.11217875659691695
+    ],
+    "manifests_positive": 12,
+    "drop_difference_one_sided_95_upper": -0.011325033232252611,
+    "promotes": true,
+    "adopts": true,
+    "holm": {
+     "p": 5.248792369959427e-09,
+     "p_holm": 1.0497584739918854e-08,
+     "rejects": true
+    },
+    "magnitude_supported": true,
+    "magnitude_refuted": false
+   },
+   "dense_minus_reference": {
+    "difference": 0.10807291666666667,
+    "ci95": [
+     0.08002559656703884,
+     0.1361202367662945
+    ],
+    "win_loss_tie": {
+     "wins": 333,
+     "losses": 167,
+     "ties": 1036
+    },
+    "manifest_clustered_ci95": [
+     0.07536275828549255,
+     0.1407830750478408
+    ],
+    "manifests_positive": 12,
+    "drop_difference_one_sided_95_upper": -0.009039316104255037,
+    "promotes": true,
+    "adopts": true,
+    "holm": {
+     "p": 6.992656348740037e-14,
+     "p_holm": 2.0977969046220109e-13,
+     "rejects": true
+    },
+    "magnitude_supported": true,
+    "magnitude_refuted": false
+   },
+   "r106_minus_reference": {
+    "difference": 0.11002604166666667,
+    "ci95": [
+     0.07962386778075509,
+     0.14042821555257826
+    ],
+    "win_loss_tie": {
+     "wins": 377,
+     "losses": 208,
+     "ties": 951
+    },
+    "manifest_clustered_ci95": [
+     0.08081579887765789,
+     0.13923628445567546
+    ],
+    "manifests_positive": 12,
+    "drop_difference_one_sided_95_upper": -0.011896418817301442,
+    "promotes": true,
+    "adopts": true,
+    "holm": null,
+    "magnitude_supported": true,
+    "magnitude_refuted": false
+   }
+  },
+  "finalist_cosine_exact_dense": 0.8382018281185707
+ },
+ "controls": {
+  "smoke_gates_seed_4820": {
+   "joint_order": true,
+   "dense_return": true,
+   "zero_theta_identity": true,
+   "scorer_live": true,
+   "executed_authority": true,
+   "per_environment_theta": true,
+   "reconstruction": true
+  },
+  "aa": {
+   "slot_success": [
+    0.44140625,
+    0.4375,
+    0.439453125,
+    0.453125
+   ],
+   "mean_discordance": 0.0849609375,
+   "sd_of_slot_differences": 0.008506003260718525,
+   "max_abs_slot_difference": 0.015625
+  },
+  "aa_dense_slot_means": [
+   116.25555421603707,
+   116.71301468610135,
+   115.99198279510713,
+   117.05539767569431
+  ],
+  "training_mean_candidate_success": {
+   "exact": [
+    0.389892578125,
+    0.42333984375,
+    0.444091796875,
+    0.470703125,
+    0.464111328125,
+    0.49462890625,
+    0.49072265625,
+    0.50390625,
+    0.4833984375,
+    0.530029296875,
+    0.500244140625,
+    0.514404296875
+   ],
+   "dense": [
+    0.389892578125,
+    0.4287109375,
+    0.4541015625,
+    0.4697265625,
+    0.461181640625,
+    0.48828125,
+    0.493896484375,
+    0.492431640625,
+    0.451904296875,
+    0.511962890625,
+    0.47900390625,
+    0.505615234375
+   ]
+  },
+  "training_mean_candidate_dense_return": {
+   "exact": [
+    108.09572591276225,
+    116.09444418860383,
+    115.16003864587924,
+    119.70228205228166,
+    118.602806953874,
+    126.29184231166982,
+    122.41880815977342,
+    124.67844557007538,
+    122.70667432942089,
+    129.8043100620676,
+    126.75675249859185,
+    129.98927483882935
+   ],
+   "dense": [
+    108.09572591276225,
+    117.3986110081953,
+    117.45659477490139,
+    121.34488341083494,
+    120.18399428955627,
+    128.36435695656797,
+    125.501351079226,
+    125.84171737474651,
+    123.80333507327217,
+    131.37168841197752,
+    129.0905140634548,
+    134.6109412137875
+   ]
+  },
+  "finalists": {
+   "exact": {
+    "theta_sha256": "54f2cefb0cad0c35107494db4cd66ec6baa94ee4106f8d5216537a6ef4947992",
+    "theta_l2": 0.19529833558978693,
+    "theta_abs_max": 0.09998471289873123
+   },
+   "dense": {
+    "theta_sha256": "30bb5d85c15d27f2b00359f183017084d6868fb5a88c0b7b5e42cdbd8976bd4d",
+    "theta_l2": 0.21998165487744356,
+    "theta_abs_max": 0.0824686661362648
+   }
+  },
+  "per_manifest_exact_minus_dense": {
+   "s4822": {
+    "n": 128,
+    "selected": 71,
+    "parent": 78,
+    "difference": -0.0546875,
+    "drops": [
+     3,
+     3
+    ]
+   },
+   "s4823": {
+    "n": 128,
+    "selected": 69,
+    "parent": 74,
+    "difference": -0.0390625,
+    "drops": [
+     3,
+     2
+    ]
+   },
+   "s4824": {
+    "n": 128,
+    "selected": 66,
+    "parent": 63,
+    "difference": 0.0234375,
+    "drops": [
+     2,
+     4
+    ]
+   },
+   "s4825": {
+    "n": 128,
+    "selected": 66,
+    "parent": 75,
+    "difference": -0.0703125,
+    "drops": [
+     4,
+     4
+    ]
+   },
+   "s4826": {
+    "n": 128,
+    "selected": 64,
+    "parent": 71,
+    "difference": -0.0546875,
+    "drops": [
+     1,
+     2
+    ]
+   },
+   "s4827": {
+    "n": 128,
+    "selected": 66,
+    "parent": 67,
+    "difference": -0.0078125,
+    "drops": [
+     6,
+     5
+    ]
+   },
+   "s4828": {
+    "n": 128,
+    "selected": 75,
+    "parent": 65,
+    "difference": 0.078125,
+    "drops": [
+     2,
+     5
+    ]
+   },
+   "s4829": {
+    "n": 128,
+    "selected": 58,
+    "parent": 59,
+    "difference": -0.0078125,
+    "drops": [
+     1,
+     2
+    ]
+   },
+   "s4830": {
+    "n": 128,
+    "selected": 54,
+    "parent": 67,
+    "difference": -0.1015625,
+    "drops": [
+     9,
+     10
+    ]
+   },
+   "s4831": {
+    "n": 128,
+    "selected": 69,
+    "parent": 65,
+    "difference": 0.03125,
+    "drops": [
+     3,
+     3
+    ]
+   },
+   "s4832": {
+    "n": 128,
+    "selected": 66,
+    "parent": 76,
+    "difference": -0.078125,
+    "drops": [
+     7,
+     4
+    ]
+   },
+   "s4833": {
+    "n": 128,
+    "selected": 69,
+    "parent": 65,
+    "difference": 0.03125,
+    "drops": [
+     5,
+     7
+    ]
+   }
+  },
+  "accounting": {
+   "smoke_starts": 8203,
+   "training_starts": {
+    "exact": 98416,
+    "dense": 98416
+   },
+   "confirmation_cases": 6144,
+   "confirmation_charged_starts": 12288,
+   "charged_total": 217323,
+   "ceiling": 250000,
+   "llm_calls": 0
+  },
+  "config_sha256": "6deee2aefd9cbbbd510e58e8ba9f4674bdb0609ed38db7992a0f195a30ba4e8e"
+ },
+ "artifacts": [
+  "logs/pen_spin/r108_objective_attribution/summary.json",
+  "logs/pen_spin/r108_objective_attribution/finalists.json",
+  "logs/pen_spin/r108_objective_attribution/train_exact.json",
+  "logs/pen_spin/r108_objective_attribution/train_dense.json",
+  "logs/pen_spin/r108_objective_attribution/smoke.json",
+  "logs/pen_spin/r108_objective_attribution/frozen_config.json",
+  "logs/pen_spin/r108_objective_attribution/confirmation",
+  "logs/pen_spin/r108_objective_attribution/driver_crash_s4825.log"
+ ],
+ "notes": "Both arms saw identical placements and identical direction streams and differ only in the return ARS optimised; both terminal means were frozen in finalists.json before any confirmation case. Deviation: during confirmation one evaluation process (the reference on manifest s4825, the tenth cell) died at simulator start-up with 'malloc(): unaligned tcache chunk detected' before producing any result; the driver was rerun, skipped the 9 finished cells and ran the remaining 39; no training child was relaunched and nothing was re-scored (log kept as driver_crash_s4825.log). The dense arm optimises R-103's summed step reward and still raises the success count as much as the exact arm does: in training the two arms' candidate success curves are indistinguishable (0.39 -> 0.51) and each arm's finalist also scores well on the other arm's return; the two finalists point the same way (cosine 0.84). So D-075's gain is not explained by the exact-success objective; what R-106 and both arms here share, and R-103 lacked, is the instrument: 512 shared placements per signed candidate in one batch (A/A slot differences at most 0.016 here) and 17.6 M transitions per run, 38x R-103's. This also revises D-074's side remark: with a quiet enough contrast, the dense reward's policy-level misalignment does not stop ARS from finding success gains. The frozen R-106 finalist replicates on entirely new cases: +0.110 [+0.080, +0.140] (828 vs 659), descriptive, outside the Holm family. One matched pair of trajectories; charged starts 217,323 of 250,000; zero LLM calls."
+}

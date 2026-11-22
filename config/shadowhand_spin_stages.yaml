@@ -1386,7 +1386,7 @@ research_protocols:
     pool_seed: 4764
     actor: &sr_actor {coefficients: 32, bound: 0.10, cap: 0.10, spin_target: 7.0, feature_clip_sigmas: 3.0,
             rms_floor_velocity: 0.05, rms_floor_posture: 0.01}
-    reward: {center_scale: 0.08, spin_cap: 6.0, fall_penalty: 5.0, residual_cost: 0.01}
+    reward: &sr_reward {center_scale: 0.08, spin_cap: 6.0, fall_penalty: 5.0, residual_cost: 0.01}
     training: {num_envs: 128, horizon: 360, transitions: 460800, cap: 500000, checkpoints: 5,
                blocks: {0: 4760, 1: 4761, 2: 4762}}
     draws: {generations: 10, per_generation: 8, envs_per_draw: 16, rho_min: 0.03, rng_offset: 1000}
@@ -1461,3 +1461,31 @@ research_protocols:
     drop_margin: 0.05
     start_ceiling: 125000
     max_hours: 4.0
+  # R-108 (no LLM): does the exact-success objective, rather than the instrument and budget, explain D-075? Two ARS
+  # trajectories identical to R-106's in everything (same placements, same directions) except the return they optimise:
+  # the sustained-success fraction, or R-103's summed step reward. Both terminal means, the reference and the frozen
+  # R-106 finalist are confirmed on twelve fresh 128-case manifests (success_ars.run_attribution).
+  #   python scripts/run_shadowhand_spin_stages.py --study pen_spin_objective_attribution
+  pen_spin_objective_attribution:
+    log_dir: "logs/pen_spin/r108_objective_attribution"
+    incumbent_asset: "config/pen_spin/d058_fixed_stroke_incumbent"
+    reference_descriptor: "config/pen_spin/symbolic_reward_reference/reference.json"
+    reference_residual: *d070_selected
+    reference_residual_sha256: *d070_selected_sha256
+    control_dt: 0.016666666666666666
+    pool_seed: 4822
+    actor: *sr_actor
+    reward: *sr_reward
+    normalization_path: "logs/pen_spin/r103_symbolic_reward/normalization.json"
+    normalization_sha256: "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac"
+    bridge_finalist: "config/pen_spin/r106_success_ars_finalist/finalist.json"
+    bridge_theta_sha256: "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef"
+    training: {seed: 4821, slots: 4, cases_per_slot: 512, rollouts_per_update: 2, horizon: 360}
+    ars: {iterations: 12, directions: 4, top: 4, nu: 0.02, alpha: 0.01, rng_offset: 2000}
+    smoke: {seed: 4820, probe_magnitude: 0.05, pooled_ratio_min: 0.50, reconstruction_steps: 40, duplicate_slot_tolerance: 0.0001}
+    confirmation_seeds: [4822, 4823, 4824, 4825, 4826, 4827, 4828, 4829, 4830, 4831, 4832, 4833]
+    confirmation_cases: 128
+    confirmation_manifest_template: "config/manifests/pen_spin_stage3_objective_confirm_s{seed}.yaml"
+    threshold: 0.05
+    drop_margin: 0.05
+    start_ceiling: 250000

@@ -33,6 +33,9 @@ from lares.envs.isaac_pen_spin.protocols import freeze_json, load_cell, study_ce
 from lares.utils.hashing import sha256_file
 
 STUDY = "symbolic_exact_success_ars"
+ATTRIBUTION = "pen_spin_objective_attribution"               # R-108: exact-success vs dense-reward ARS, one matched block
+OBJECTIVES = ("exact", "dense")
+BRIDGE = "r106"                                              # the frozen R-106 finalist, re-evaluated on the new cases
 STAGE = 3
 REFERENCE, FINALIST = "reference", "finalist"
 CHILD = "lares.envs.isaac_pen_spin.success_ars_child"
@@ -176,10 +179,15 @@ def normalization(protocol_cfg: dict) -> dict:
 def make_controller(name: str, protocol_cfg: dict, out_dir: str | None = None):
     if name == REFERENCE:
         return sr.build_reference(protocol_cfg, REFERENCE, resettable=False)
-    if name != FINALIST:
+    out_dir = out_dir or str(protocol_cfg["log_dir"])
+    if name == FINALIST:
+        entry = _load(os.path.join(out_dir, "finalist.json"))
+    elif name in OBJECTIVES and protocol_cfg.get("study") == ATTRIBUTION:
+        entry = _load(os.path.join(out_dir, "finalists.json"))["finalists"][name]
+    elif name == BRIDGE and protocol_cfg.get("study") == ATTRIBUTION:
+        entry = bridge_finalist(protocol_cfg)
+    else:
         raise ValueError(f"unknown controller {name!r}")
-    with open(os.path.join(out_dir or str(protocol_cfg["log_dir"]), "finalist.json"), encoding="utf-8") as f:
-        entry = json.load(f)
     if sr.theta_sha256(entry["theta"]) != entry["theta_sha256"]:
         raise SystemExit("the stored finalist does not match its hash")
     return sr.build_controller(protocol_cfg, FINALIST, entry["theta"], normalization(protocol_cfg))
@@ -223,7 +231,119 @@ def run_child(request: dict, request_path: str) -> dict:
     return _load(request["response_path"])
 
 
+def bridge_finalist(protocol_cfg: dict) -> dict:
+    """The frozen R-106 finalist (D-075), verified against the hash the config names."""
+    entry = _load(protocol_cfg["bridge_finalist"])
+    if entry["theta_sha256"] != protocol_cfg["bridge_theta_sha256"] or sr.theta_sha256(entry["theta"]) != entry["theta_sha256"]:
+        raise SystemExit("the bridge finalist is not the frozen R-106 finalist")
+    return entry
+
+
+#: R-108's contrasts; Holm covers the first three, the fourth is a descriptive replication bridge to D-075.
+ATTRIBUTION_CONTRASTS = (("exact", "dense"), ("exact", REFERENCE), ("dense", REFERENCE), (BRIDGE, REFERENCE))
+
+
+def attribution_contrasts(rows: dict, threshold: float, drop_margin: float) -> dict:
+    """``rows[manifest][policy]`` -> each contrast's pooled and manifest-clustered summary, Holm over the first three."""
+    from lares.envs.isaac_pen_spin.incumbent_residual import confirmation_contrast
+
+    out = {f"{a}_minus_{b}": confirmation_contrast({m: (r[a], r[b]) for m, r in rows.items()}, threshold, drop_margin)
+           for a, b in ATTRIBUTION_CONTRASTS}
+    family = [f"{a}_minus_{b}" for a, b in ATTRIBUTION_CONTRASTS[:3]]
+    h = sr.holm({k: out[k]["pooled"]["success"]["p_value"] for k in family})
+    for k in family:
+        out[k]["holm"] = h[k]
+        out[k]["positive_effect_claim"] = bool(h[k]["rejects"] and out[k]["pooled"]["success"]["mean"] > 0)
+    return out
+
+
+def run_attribution(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
+    """R-108: two ARS trajectories that differ only in the return they optimise, then one confirmation of both."""
+    from lares.envs.isaac_pen_spin.incumbent_residual import cell_row
+
+    if os.path.normpath(out_dir) != os.path.normpath(str(protocol_cfg["log_dir"])):
+        raise SystemExit("evaluation cells read the finalists from the protocol's own log_dir; do not override it")
+    os.makedirs(out_dir, exist_ok=True)
+    descriptor = sr.check_reference(protocol_cfg)
+    normalization(protocol_cfg)
+    bridge = bridge_finalist(protocol_cfg)
+    lay = layout(protocol_cfg)
+    cfg_sha = sr.config_sha256(protocol_cfg)
+    freeze_json(os.path.join(out_dir, "frozen_config.json"),
+                {"config_sha256": cfg_sha, "config": sr.frozen_config(protocol_cfg), "reference": descriptor,
+                 "placements": placement_provenance(protocol_cfg), "bridge_theta_sha256": bridge["theta_sha256"]},
+                "frozen configuration")
+    seeds = [int(s) for s in protocol_cfg["confirmation_seeds"]]
+    mpaths = {s: cases.require_frozen(confirmation_manifest(protocol_cfg, s)) for s in seeds}
+    policies = (REFERENCE, *OBJECTIVES, BRIDGE)
+    ceiling = int(protocol_cfg["start_ceiling"])
+    reserve = 2 * len(policies) * len(seeds) * int(protocol_cfg["confirmation_cases"])
+    base = {"config_path": os.path.abspath(config_path), "study": ATTRIBUTION, "out_dir": out_dir, "config_sha256": cfg_sha}
+
+    smoke = run_child({**base, "mode": "smoke", "response_path": os.path.join(out_dir, "smoke.json")},
+                      os.path.join(out_dir, "smoke.request.json"))
+    summary = {"study": ATTRIBUTION, "config_sha256": cfg_sha, "smoke": smoke, "layout": lay,
+               "smoke_gate": "pass" if smoke["passes"] else "fail"}
+    if not smoke["passes"]:
+        summary["note"] = "the smoke gate failed: no training or confirmation ran"
+        _dump(os.path.join(out_dir, "summary.json"), summary)
+        return summary
+    started, training = int(smoke["starts"]), {}
+    for arm in OBJECTIVES:
+        training[arm] = run_child({**base, "mode": "train", "objective": arm, "start_cap": ceiling - reserve - started,
+                                   "response_path": os.path.join(out_dir, f"train_{arm}.json")},
+                                  os.path.join(out_dir, f"train_{arm}.request.json"))
+        started += int(training[arm]["starts"])
+        if not training[arm]["complete"]:
+            summary.update({"incomplete": f"the start ceiling was reached in the {arm} arm: no confirmation",
+                            "training": {k: {kk: v[kk] for kk in ("starts", "complete", "note")} for k, v in training.items()}})
+            _dump(os.path.join(out_dir, "summary.json"), summary)
+            return summary
+    finalists = {arm: {"theta": training[arm]["final_theta"], "theta_sha256": training[arm]["final_theta_sha256"]}
+                 for arm in OBJECTIVES}
+    freeze_json(os.path.join(out_dir, "finalists.json"),
+                {"rule": "each arm's final ARS parameter mean; no checkpoint selection", "finalists": finalists}, "finalists")
+
+    dt = float(protocol_cfg["control_dt"])
+    expect = {**{a: finalists[a]["theta_sha256"] for a in OBJECTIVES}, BRIDGE: bridge["theta_sha256"]}
+    rows, cells = {}, {}
+    for s in seeds:
+        sub = os.path.join(out_dir, "confirmation", f"s{s}")
+        os.makedirs(sub, exist_ok=True)
+        rows[f"s{s}"] = {}
+        for name in policies:
+            cell = os.path.join(sub, f"{name}_cell.json")
+            study_cell(protocol_cfg, config_path, mpaths[s], name, cell, record_obs=False)
+            if name in expect and _load(cell)["controller_params"]["theta_sha256"] != expect[name]:
+                raise SystemExit(f"{cell}: the evaluated theta is not the frozen one")
+            _, rows[f"s{s}"][name] = load_cell(cell)
+            cells[f"s{s}/{name}"] = {k: v for k, v in cell_row(cell, dt).items() if k != "residual_activity"}
+    c = attribution_contrasts(rows, float(protocol_cfg["threshold"]), float(protocol_cfg["drop_margin"]))
+    head = c["exact_minus_dense"]["pooled"]["success"]
+    pairs = c["exact_minus_dense"]["pairs"]
+    summary.update({
+        "paired_success_difference": head["mean"], "paired_success_difference_ci95": [head["low"], head["high"]],
+        "contrasts": c, "cells": cells,
+        "successes": {p: int(sum(r["sustained"] for m in rows.values() for r in m[p])) for p in policies},
+        "drops": {p: int(sum(not r["completed"] for m in rows.values() for r in m[p])) for p in policies},
+        "finalists": {a: {"theta_sha256": finalists[a]["theta_sha256"], "theta_l2": float(np.linalg.norm(finalists[a]["theta"])),
+                          "theta_abs_max": float(np.abs(finalists[a]["theta"]).max()),
+                          "theta": dict(zip(sr.COEF_NAMES, finalists[a]["theta"]))} for a in OBJECTIVES},
+        "finalist_cosine": float(np.dot(finalists["exact"]["theta"], finalists["dense"]["theta"])
+                                 / max(np.linalg.norm(finalists["exact"]["theta"]) * np.linalg.norm(finalists["dense"]["theta"]), 1e-12)),
+        "training": {a: {k: v for k, v in training[a].items() if k != "theta_history"} for a in OBJECTIVES},
+        "accounting": {"smoke_starts": smoke["starts"], "training_starts": {a: training[a]["starts"] for a in OBJECTIVES},
+                       "confirmation_cases": len(policies) * pairs, "confirmation_charged_starts": 2 * len(policies) * pairs,
+                       "charged_total": started + 2 * len(policies) * pairs, "ceiling": ceiling, "llm_calls": 0},
+        "limitation": "one matched pair of ARS trajectories: the contrast is conditional on these two runs",
+    })
+    _dump(os.path.join(out_dir, "summary.json"), summary)
+    return summary
+
+
 def run(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
+    if protocol_cfg.get("study") == ATTRIBUTION:
+        return run_attribution(protocol_cfg, config_path, out_dir)
     from lares.envs.isaac_pen_spin.incumbent_residual import cell_row, confirmation_contrast
 
     if os.path.normpath(out_dir) != os.path.normpath(str(protocol_cfg["log_dir"])):
@@ -303,6 +423,6 @@ def run(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
     return summary
 
 
-__all__ = ["FINALIST", "REFERENCE", "STUDY", "aa_statistics", "ars_scores", "build_manifests", "confirmation_manifest",
+__all__ = ["ATTRIBUTION", "ATTRIBUTION_CONTRASTS", "BRIDGE", "FINALIST", "OBJECTIVES", "attribution_contrasts", "bridge_finalist", "run_attribution", "REFERENCE", "STUDY", "aa_statistics", "ars_scores", "build_manifests", "confirmation_manifest",
            "first_episode_scores", "layout", "make_controller", "normalization", "placement_hashes", "placement_provenance", "rollout_candidates",
            "run", "slot_thetas", "smoke_placements", "tile", "training_placements"]

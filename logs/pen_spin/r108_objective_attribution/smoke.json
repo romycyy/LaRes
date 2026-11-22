@@ -1,0 +1,97 @@
+{
+ "mode": "smoke",
+ "seed": 4820,
+ "gates": {
+  "joint_order": {
+   "passes": true
+  },
+  "dense_return": {
+   "slot_means": [
+    116.25555421603707,
+    116.71301468610135,
+    115.99198279510713,
+    117.05539767569431
+   ],
+   "max_abs_slot_difference": 1.0634148805871746,
+   "passes": true
+  },
+  "zero_theta_identity": {
+   "compared": 708297,
+   "mismatches": 0,
+   "passes": true
+  },
+  "scorer_live": {
+   "reference_successes": 907,
+   "passes": true
+  },
+  "executed_authority": {
+   "pooled_executed_over_proposed": 0.964104916941269,
+   "zero_slot_proposed": 0.0,
+   "passes": true
+  },
+  "per_environment_theta": {
+   "plus_slots_max_abs_difference_at_step_0": 7.927417755126953e-06,
+   "plus_slots_agree_at_step_0": true,
+   "plus_differs_from_minus": true,
+   "plus_differs_from_zero": true,
+   "passes": true
+  },
+  "reconstruction": {
+   "steps": 40,
+   "environments": 492,
+   "mismatches": 0,
+   "passes": true
+  }
+ },
+ "aa": {
+  "slot_success": [
+   0.44140625,
+   0.4375,
+   0.439453125,
+   0.453125
+  ],
+  "pairwise_discordance": [
+   0.078125,
+   0.099609375,
+   0.09375,
+   0.083984375,
+   0.078125,
+   0.076171875
+  ],
+  "mean_discordance": 0.0849609375,
+  "slot_differences": [
+   0.00390625,
+   0.001953125,
+   -0.01171875,
+   -0.001953125,
+   -0.015625,
+   -0.013671875
+  ],
+  "sd_of_slot_differences": 0.008506003260718525,
+  "max_abs_slot_difference": 0.015625,
+  "cases": 512,
+  "scorer_live": true,
+  "slot_drops": [
+   21,
+   21,
+   21,
+   21
+  ]
+ },
+ "probe_slots": {
+  "slot_success": [
+   0.4375,
+   0.4140625,
+   0.37109375,
+   0.40234375
+  ],
+  "note": "slots: zero, +probe, -probe, +probe; a diagnostic, not a selection"
+ },
+ "starts": 8203,
+ "transitions": 1470464,
+ "throughput": {
+  "transitions_per_s": 33448.10713346044,
+  "wall_time_s": 43.96254754066467
+ },
+ "passes": true
+}
