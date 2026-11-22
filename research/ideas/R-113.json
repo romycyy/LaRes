@@ -1,0 +1,115 @@
+{
+  "id": "R-113",
+  "title": "2. Conditional fallback: learn an odd roll-direction residual",
+  "hypothesis": "A direction-odd posture residual compensates asymmetric contact mechanics that an unsigned slow-spin gate cannot represent.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "EVEN_GATE arm initialized from config/pen_spin/r106_success_ars_finalist/finalist.json",
+    "rationale": "Queue behind the completed P3 decision; do not run concurrently. Run this fallback only if P3 does not produce a qualified useful memory gain and the existing exhaustion rules permit another mechanism test; otherwise re-triage it against the new evidence. Negative rolling's lower success motivates, but does not prove, a direction-specific repair. Unlike D-077's unsigned deficit terms, introduce q = sign of the existing filtered axial rate, with q(0) = 0. Compare ODD_GATE = q times spin_deficit with EVEN_GATE = abs(q) times spin_deficit. Both gates therefore have identical absolute magnitude at every identical state. Both arms inherit the frozen root's 32 coefficients and add the same 20 posture-offset and six grouped reference-action coefficients, initialized to zero; preserve the combined 0.10 cap and all coefficient bounds. Fit both with unchanged exact-success ARS, 12 updates, four antithetic directions and 512 shared placements per signed candidate, with identical placement and direction streams. No new memory, optimizer, objective or structure search. Freeze terminal means without selection; monitoring cases do not select checkpoints. Confirm both finalists, the root and D-072-qualified reference once on twelve fresh 128-case manifests, prospectively sized from archived discordance. Primary success is unconditional across all cases: do not select or score the primary contrast only on episodes whose eventual direction is negative. Require strict paired success and the drop upper bound of 0.05 against root and reference for usefulness. Retain direction-conditioned outcomes only as diagnostics. This ranks second because the observed directional association may be an outcome of poor capture rather than a repairable cause. Implement and test the proposed handler before execution, recheck provisional seeds, and leave the saved incumbent unchanged."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study direction_odd_matched",
+    "seeds": [
+      4908,
+      4909,
+      4910,
+      4911,
+      4912,
+      4913,
+      4914,
+      4915,
+      4916,
+      4917,
+      4918,
+      4919,
+      4920,
+      4921,
+      4922
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_direction_smoke_s4908.yaml",
+      "config/manifests/pen_spin_stage3_direction_train_s4909.yaml",
+      "config/manifests/pen_spin_stage3_direction_monitor_s4910.yaml",
+      "config/manifests/pen_spin_stage3_direction_confirmation_s4911.yaml",
+      "config/manifests/pen_spin_stage3_direction_confirmation_s4912.yaml",
+      "config/manifests/pen_spin_stage3_direction_confirmation_s4913.yaml",
+      "config/manifests/pen_spin_stage3_direction_confirmation_s4914.yaml",
+      "config/manifests/pen_spin_stage3_direction_confirmation_s4915.yaml",
+      "config/manifests/pen_spin_stage3_direction_confirmation_s4916.yaml",
+      "config/manifests/pen_spin_stage3_direction_confirmation_s4917.yaml",
+      "config/manifests/pen_spin_stage3_direction_confirmation_s4918.yaml",
+      "config/manifests/pen_spin_stage3_direction_confirmation_s4919.yaml",
+      "config/manifests/pen_spin_stage3_direction_confirmation_s4920.yaml",
+      "config/manifests/pen_spin_stage3_direction_confirmation_s4921.yaml",
+      "config/manifests/pen_spin_stage3_direction_confirmation_s4922.yaml"
+    ],
+    "episodes": 225000,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py",
+      "config/shadowhand_spin_stages.yaml",
+      "structure_terms.py",
+      "success_ars.py"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "An upper confidence bound below +0.05 for ODD_GATE minus EVEN_GATE refutes the registered useful-effect prediction; an interval spanning zero and +0.05 is inconclusive. A subgroup improvement without an unconditional gain does not support the prediction, and failed success/drop qualification prevents adoption.",
+  "cost_estimate": {
+    "episodes": 225000,
+    "llm_calls": 0,
+    "wall_time_minutes": 35
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "507d6b5d32e3935dae9479dade064b177608418b2e69bcb57d2bf421ff9e0e20",
+  "proposal_call_id": "call_00251",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-22T09:10:45",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-22T09:09:14",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Direction-odd feedback differs from D-077's unsigned terms, but the negative-direction failure association may reflect poor capture rather than a repairable cause. Its estimated 225,000 simulator episodes and 0 controller-generation LLM calls should wait for R-112's decision and the exhaustion-rule check; a qualified memory gain would require re-triage rather than automatic execution. Retain the conditional prediction of paired_success_difference increasing by at least 0.05 for ODD_GATE versus EVEN_GATE, refuted by an upper confidence bound below +0.05; subgroup gains or an interval including zero cannot establish improvement.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00252",
+          "briefing_sha256": "53dd08e30f5e79356ce79c7b00f26392bf2e6f6315304f151275fb04b019a7b7",
+          "at": "2026-11-22T09:10:45"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree with queuing it behind P3; the directional association may be a consequence of poor capture rather than a repairable cause, and it should be re-triaged against R-112's result.",
+          "changes_applied": [],
+          "at": "2026-11-22T09:10:45"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

@@ -673,6 +673,13 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   +0.108 [+0.095, +0.120] against a predicted +0.15); the first 60 steps predict it at 0.81 (AUC 0.90); the same case
   flips mode between policies in both directions; negative-roll episodes succeed at 0.32 against 0.61 for positive.
   The mode is an early capture outcome that then persists, which is what motivates memory (P3) or a recovery behaviour.
+- **R-112 result (D-079, refuted; P3 pilot, 2026-11-22).** `memory_study.py` (`--study compact_memory_matched`; reuses
+  `structure_search_child` through a dotted `config_key`; state primitives `deficit_fast` / `deficit_slow` in
+  `structure_terms.TermController`, reset per environment). A 60-step slow memory of the spin deficit against the
+  same 26 coefficients on a single-filter gate: -0.001 [-0.029, +0.027] over 1,536 pairs; filtering against the
+  instantaneous gate -0.008; no arm improves on the R-106 root. With D-077 this closes additions to the 0.10-capped
+  residual: more updates, new terms and memory all leave it at about 0.54 success (root +0.110 over the reference, four
+  confirmations).
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

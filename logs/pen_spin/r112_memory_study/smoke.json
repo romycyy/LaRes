@@ -1,0 +1,149 @@
+{
+ "mode": "smoke",
+ "seed": 4893,
+ "gates": {
+  "joint_order": {
+   "passes": true
+  },
+  "inheritance_identity": {
+   "compared": 718438,
+   "mismatches": 0,
+   "passes": true,
+   "note": "base terms plus one zero-coefficient new term equal the R-106 controller bit for bit"
+  },
+  "scorer_live": {
+   "parent_successes": 1135,
+   "passes": true
+  },
+  "activation": {
+   "plus_slots_max_abs_difference_at_step_0": 5.9604644775390625e-06,
+   "new_term_contribution": 0.01577634790617874,
+   "zero_slot_new_term_contribution": 0.0,
+   "executed_residual_zero_vs_probe": [
+    0.020857203331019196,
+    0.026168140389201212
+   ],
+   "passes": true
+  },
+  "memory_reset_isolation": {
+   "reset_environments": 2012,
+   "violations": 0,
+   "slow_state_range": [
+    0.0009151366539299488,
+    0.9965615272521973
+   ],
+   "passes": true
+  }
+ },
+ "aa": {
+  "slot_success": [
+   0.548828125,
+   0.560546875,
+   0.548828125,
+   0.55859375
+  ],
+  "pairwise_discordance": [
+   0.09375,
+   0.09375,
+   0.115234375,
+   0.09375,
+   0.119140625,
+   0.111328125
+  ],
+  "mean_discordance": 0.1044921875,
+  "slot_differences": [
+   -0.01171875,
+   0.0,
+   -0.009765625,
+   0.01171875,
+   0.001953125,
+   -0.009765625
+  ],
+  "sd_of_slot_differences": 0.009140124184998117,
+  "max_abs_slot_difference": 0.01171875,
+  "cases": 512
+ },
+ "parent_stats": {
+  "cases": 2048,
+  "successes": 1135,
+  "success": 0.55419921875,
+  "drops": 53,
+  "slow_spin": 825,
+  "off_centre": 35,
+  "mean_abs_axial_rate": 6.110295182879578,
+  "per_joint_executed_residual": {
+   "WRJ1": 0.007774517264064294,
+   "WRJ0": 0.017865738173276448,
+   "FFJ3": 0.01753709391164448,
+   "MFJ3": 0.016492983222769677,
+   "RFJ3": 0.005470675712861916,
+   "LFJ4": 0.0438275463821028,
+   "THJ4": 0.02621599312451272,
+   "FFJ2": 0.021068025535478874,
+   "MFJ2": 0.0270917322028016,
+   "RFJ2": 0.02607815086891476,
+   "LFJ3": 0.015346399518508446,
+   "THJ3": 0.02846156228267853,
+   "FFJ1": 0.013929627921600508,
+   "MFJ1": 0.0067918855343766585,
+   "RFJ1": 0.009036360576322401,
+   "LFJ2": 0.028610725443400875,
+   "THJ2": 0.009256761539105846,
+   "LFJ1": 0.04428899130288677,
+   "THJ1": 0.030135694644882187,
+   "THJ0": 0.021413949395794336
+  },
+  "per_joint_saturation": {
+   "WRJ1": 0.0,
+   "WRJ0": 0.0,
+   "FFJ3": 0.0,
+   "MFJ3": 0.0,
+   "RFJ3": 2.7202298050139276e-06,
+   "LFJ4": 0.0,
+   "THJ4": 0.3502778388852209,
+   "FFJ2": 0.0,
+   "MFJ2": 0.35157756202093504,
+   "RFJ2": 0.0,
+   "LFJ3": 0.2164769697925899,
+   "THJ3": 0.0,
+   "FFJ1": 0.0038020588723521407,
+   "MFJ1": 5.440459610027855e-06,
+   "RFJ1": 0.0,
+   "LFJ2": 0.0,
+   "THJ2": 0.0,
+   "LFJ1": 0.5429134274337375,
+   "THJ1": 0.13826422431360802,
+   "THJ0": 0.00045602227669992013
+  },
+  "per_term_mean_abs_contribution": {
+   "\"spin_deficit\"@joints": 0.01578650674840628,
+   "\"vel\"@groups": 0.005549183863509658,
+   "\"posture\"@groups": 0.009211354320303271,
+   "\"deficit_slow\"@groups": 0.0
+  }
+ },
+ "probe_slots": {
+  "slot_success": [
+   0.556640625,
+   0.546875,
+   0.568359375,
+   0.560546875
+  ],
+  "coefficients": [
+   "t3[\"deficit_slow\"@groups].WR",
+   "t3[\"deficit_slow\"@groups].FF",
+   "t3[\"deficit_slow\"@groups].MF",
+   "t3[\"deficit_slow\"@groups].RF",
+   "t3[\"deficit_slow\"@groups].LF",
+   "t3[\"deficit_slow\"@groups].TH"
+  ],
+  "note": "slots: zero, +probe, -probe, +probe; a diagnostic only"
+ },
+ "starts": 8199,
+ "transitions": 1470464,
+ "throughput": {
+  "transitions_per_s": 32850.6207474383,
+  "wall_time_s": 44.7621374130249
+ },
+ "passes": true
+}

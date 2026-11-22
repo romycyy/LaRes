@@ -135,6 +135,8 @@ class TestLanguage(unittest.TestCase):
     def test_every_primitive_evaluates_in_its_range(self):
         feats = sample()
         for name, (kind, _) in st.PRIMITIVES.items():
+            if name in st.STATE_PRIMITIVES:                  # controller state (R-112), not computable from a stored sample
+                continue
             v = feats[name]
             self.assertIn(v.shape[1], (1, 20), name)
             self.assertTrue(bool(torch.isfinite(v).all()), name)

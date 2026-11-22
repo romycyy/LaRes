@@ -1,0 +1,218 @@
+{
+ "config_sha256": "4556880d927f962151c165120860666850e663bb3ed42c08c5c8a6539c988cfc",
+ "config": {
+  "actor": {
+   "bound": 0.1,
+   "cap": 0.1,
+   "coefficients": 32,
+   "feature_clip_sigmas": 3.0,
+   "rms_floor_posture": 0.01,
+   "rms_floor_velocity": 0.05,
+   "spin_target": 7.0
+  },
+  "ars": {
+   "alpha": 0.01,
+   "directions": 4,
+   "nu": 0.02,
+   "top": 4
+  },
+  "block_seeds": [
+   4894
+  ],
+  "candidates": 2,
+  "config_key": "research_protocols.compact_memory_matched",
+  "confirmation_cases": 128,
+  "confirmation_manifest_template": "config/manifests/pen_spin_stage3_memory_confirm_s{seed}.yaml",
+  "confirmation_seeds": [
+   [
+    4895,
+    4896,
+    4897,
+    4898,
+    4899,
+    4900,
+    4901,
+    4902,
+    4903,
+    4904,
+    4905,
+    4906
+   ]
+  ],
+  "control_dt": 0.016666666666666666,
+  "drop_margin": 0.05,
+  "incumbent_asset": "config/pen_spin/d058_fixed_stroke_incumbent",
+  "layout": {
+   "cases_per_slot": 512,
+   "horizon": 360,
+   "slots": 4
+  },
+  "memory": true,
+  "normalization_path": "logs/pen_spin/r103_symbolic_reward/normalization.json",
+  "normalization_sha256": "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac",
+  "pool_seed": 4895,
+  "reference_descriptor": "config/pen_spin/symbolic_reward_reference/reference.json",
+  "reference_residual": {
+   "cap": 0.10269089387249905,
+   "deadband": 0.2333555721435132,
+   "gain": 0.004655481049180921,
+   "tau": 0.18501188209260944
+  },
+  "reference_residual_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1",
+  "root_finalist": "config/pen_spin/r106_success_ars_finalist/finalist.json",
+  "root_theta_sha256": "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef",
+  "rounds": 1,
+  "sample_rows": 8192,
+  "selection_seeds": [
+   [
+    []
+   ]
+  ],
+  "smoke": {
+   "duplicate_slot_tolerance": 0.0001,
+   "probe_edit": {
+    "expr": "deficit_slow",
+    "target": "groups"
+   },
+   "probe_magnitude": 0.05,
+   "seed": 4893
+  },
+  "start_ceiling": 340000,
+  "study_dir": "logs/pen_spin/r112_memory_study",
+  "threshold": 0.05,
+  "updates_per_candidate": 6
+ },
+ "reference": {
+  "name": "d072_qualified_reference",
+  "decisions": [
+   "D-058",
+   "D-070",
+   "D-072"
+  ],
+  "construction": "JointMotionResidual(reference_residual, incumbent_asset): clamp(incumbent + 2 clip(g sign(v_f) max(|v_f| - v0, 0), -b, b) / (hi - lo), -1, 1)",
+  "incumbent_asset": "config/pen_spin/d058_fixed_stroke_incumbent",
+  "incumbent_json_sha256": "1ffcbece3d2f18b35f89461d1079b579f21891fc7f7f8576c3feb217ea711c9c",
+  "incumbent_files": {
+   "parent_source.py": "40782dcdf5a95589d0b34062919728fa92d4e5760fce890e3bd98833285e602d",
+   "state.pt": "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22",
+   "evaluated_source.py": "fdc1da8e2811d94c5bcd1bda2f0e97625a6ea805452e56d65726e587a418c062",
+   "constant_gain.json": "dacec45947d56133b39ca0edb773df4660d73768c0814e85d180e5423b1fcb69"
+  },
+  "stroke_gain_constant": 1.4081491479357957,
+  "residual_params": {
+   "gain": 0.004655481049180921,
+   "deadband": 0.2333555721435132,
+   "tau": 0.18501188209260944,
+   "cap": 0.10269089387249905
+  },
+  "residual_params_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1",
+  "residual_source_sha256": "0dc215bb762295319f273c70242beefbbcabe7e8baf4670fbe64586482318b4e"
+ },
+ "root_policy_sha256": "c1bedbec55ae656a785dcfe27022d4357cf964da659edb597b8cdc30553335da",
+ "placements": {
+  "groups": {
+   "train_b0": {
+    "cases": 6144,
+    "sha256": "4958001286e5bd1f0c3ef3dbf7bd4f64e8531fe9ccc693aab2ba4b7dca7a7e28"
+   },
+   "smoke": {
+    "cases": 512,
+    "sha256": "17f3d2bbeaea146f28fe50ea51fe29886dce1f3752792b2f3cf6ce71c1013152"
+   }
+  },
+  "placements": 6656,
+  "disjoint_from_committed_pen_spin_cases": 19294
+ },
+ "initial_policies": {
+  "instant": {
+   "sha256": "87975e8b124e83b71af090cbb0e7516559b4c927b7aded7355c4f66fc0e452b4",
+   "terms": [
+    {
+     "expr": "spin_deficit",
+     "target": "joints"
+    },
+    {
+     "expr": "vel",
+     "target": "groups"
+    },
+    {
+     "expr": "posture",
+     "target": "groups"
+    },
+    {
+     "expr": "spin_deficit",
+     "target": "joints"
+    },
+    {
+     "expr": [
+      "mul",
+      "ref",
+      "spin_deficit"
+     ],
+     "target": "groups"
+    }
+   ],
+   "coefficients": 58
+  },
+  "single_filter": {
+   "sha256": "1db688acc1d335147f8412d5296284c2fc9de72b880053569697d682b0c75673",
+   "terms": [
+    {
+     "expr": "spin_deficit",
+     "target": "joints"
+    },
+    {
+     "expr": "vel",
+     "target": "groups"
+    },
+    {
+     "expr": "posture",
+     "target": "groups"
+    },
+    {
+     "expr": "deficit_fast",
+     "target": "joints"
+    },
+    {
+     "expr": [
+      "mul",
+      "deficit_fast",
+      "ref"
+     ],
+     "target": "groups"
+    }
+   ],
+   "coefficients": 58
+  },
+  "two_timescale": {
+   "sha256": "f633f6997e7889f4d29765d7abc9cc567611ebc50f97a5f6714fe372f64e82da",
+   "terms": [
+    {
+     "expr": "spin_deficit",
+     "target": "joints"
+    },
+    {
+     "expr": "vel",
+     "target": "groups"
+    },
+    {
+     "expr": "posture",
+     "target": "groups"
+    },
+    {
+     "expr": "deficit_slow",
+     "target": "joints"
+    },
+    {
+     "expr": [
+      "mul",
+      "deficit_slow",
+      "ref"
+     ],
+     "target": "groups"
+    }
+   ],
+   "coefficients": 58
+  }
+ }
+}

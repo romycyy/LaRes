@@ -38,7 +38,12 @@ PRIMITIVES = {
     "phase_sin": ("signed", "scalar"), "phase_cos": ("signed", "scalar"),
     "tip_dist": ("unit", "finger"), "tip_axial_abs": ("unit", "finger"),
     "vel": ("signed", "joint"), "posture": ("signed", "joint"), "ref": ("signed", "joint"), "pos": ("signed", "joint"),
+    # R-112: trusted controller STATE (reset per environment like the reference's velocity filter); never sampled
+    # by the grammar and not part of the R-109 edit language
+    "deficit_fast": ("unit", "scalar"), "deficit_slow": ("unit", "scalar"),
 }
+STATE_PRIMITIVES = ("deficit_fast", "deficit_slow")
+SLOW_STEPS = 60.0
 GATE_CENTRES = (0.25, 0.5, 0.75)
 GATE_WIDTH = 0.25
 OPERATORS = ("mul", "gate", "comp", "abs")
@@ -152,9 +157,9 @@ class Features:
     """The primitives of one batch of observations, computed on demand. ``s``, ``vhat`` and ``ehat`` are passed in
     exactly as the R-103 controller computes them, so the inherited terms reproduce it bit for bit."""
 
-    def __init__(self, obs, ref, s, vhat, ehat):
+    def __init__(self, obs, ref, s, vhat, ehat, state: dict | None = None):
         self.obs, self.ref = torch.nan_to_num(obs.to(ref.device, ref.dtype)), ref
-        self._c = {"spin_deficit": s, "vel": vhat, "posture": ehat, "ref": ref}
+        self._c = {"spin_deficit": s, "vel": vhat, "posture": ehat, "ref": ref, **(state or {})}
         self._g = None
 
     def _geometry(self) -> dict:
@@ -324,9 +329,33 @@ class TermController(sr.SymbolicResidualController):
                        "execution": "clamp(reference + clip(sum_terms coef * expr, -cap, cap), -1, 1)"}
         self._stats = None
 
+    def reset(self, ctx):
+        super().reset(ctx)
+        self._fast = self._slow = self._mem_pending = None
+
+    def reset_envs(self, mask) -> None:
+        super().reset_envs(mask)
+        self._mem_pending = mask.clone() if self._mem_pending is None else (self._mem_pending | mask)
+
+    def _advance_memory(self, s) -> dict:
+        """``deficit_fast``: the spin deficit through the reference's own filter constant, starting at ``s``;
+        ``deficit_slow``: its 60-step exponential average, starting at 0. An environment whose episode just ended
+        restarts both, exactly as a fresh controller's first step would."""
+        if self._fast is None:
+            fast_prev, slow_prev = s, torch.zeros_like(s)
+        else:
+            fast_prev, slow_prev = self._fast, self._slow
+            if self._mem_pending is not None:
+                m = self._mem_pending.to(s.device).unsqueeze(1)
+                fast_prev, slow_prev = torch.where(m, s, fast_prev), torch.where(m, torch.zeros_like(s), slow_prev)
+        self._mem_pending = None
+        self._fast = fast_prev + self.ref.alpha * (s - fast_prev)
+        self._slow = slow_prev + (self._fast - slow_prev) / SLOW_STEPS
+        return {"deficit_fast": self._fast, "deficit_slow": self._slow}
+
     def parts(self, obs, t, ctx) -> dict:
         p = super().parts(obs, t, ctx)
-        p["feats"] = Features(obs, p["ref"], p["s"], p["vhat"], p["ehat"])
+        p["feats"] = Features(obs, p["ref"], p["s"], p["vhat"], p["ehat"], self._advance_memory(p["s"]))
         return p
 
     def mean(self, parts: dict, theta):
@@ -389,7 +418,7 @@ def validate_edit(edit, policy: dict, tried=(), feats: Features | None = None, l
 
 def _random_expr(rng, d: int, want: str | None):
     if d == 1:
-        names = [n for n, (ty, _) in PRIMITIVES.items() if want in (None, ty)]
+        names = [n for n, (ty, _) in PRIMITIVES.items() if want in (None, ty) and n not in STATE_PRIMITIVES]
         return names[int(rng.integers(len(names)))]
     ops = ["mul", "gate", "comp", "abs"] if want != "signed" else ["mul"]
     op = ops[int(rng.integers(len(ops)))]
@@ -467,7 +496,7 @@ Limits: depth at most 3 (a primitive is depth 1), at most 7 nodes, at most 8 new
 The term must not already exist in the structure or among the edits already tried, and must be nonzero on at least
 5% of the parent's observations."""
 
-__all__ = ["BASE_TERMS", "EDIT_TARGETS", "EditError", "FINGER_OF", "Features", "LANGUAGE_TEXT", "LIMITS", "PRIMITIVES",
+__all__ = ["BASE_TERMS", "EDIT_TARGETS", "EditError", "FINGER_OF", "Features", "LANGUAGE_TEXT", "LIMITS", "PRIMITIVES", "SLOW_STEPS", "STATE_PRIMITIVES",
            "TARGETS", "TermController", "activation_fraction", "ars_candidates", "ars_directions", "ars_step",
            "base_policy", "build_controller", "canonical", "check_policy", "coefficient_names", "depth", "evaluate",
            "expr_type", "extend", "n_coefficients", "n_slots", "nodes", "policy_record", "residual", "sample_edit",

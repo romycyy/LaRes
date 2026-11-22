@@ -42,7 +42,7 @@ ARMS = ("fixed", "grammar", "llm")
 ROOT, REFERENCE = "r106", "reference"
 CHILD = "lares.envs.isaac_pen_spin.structure_search_child"
 #: keys the entry point folds into the block; they are not part of the frozen configuration
-RUNTIME_KEYS = ("model", "reasoning_effort", "isaac_env", "config_path", "study")
+RUNTIME_KEYS = ("model", "reasoning_effort", "isaac_env", "config_path", "study", "log_dir")
 #: the planned contrasts; the first is the registered prediction
 CONTRASTS = (("llm", "grammar"), ("grammar", "fixed"), ("llm", "fixed"), ("fixed", ROOT), ("grammar", ROOT), ("llm", ROOT),
              ("fixed", REFERENCE), ("grammar", REFERENCE), ("llm", REFERENCE), (ROOT, REFERENCE))
@@ -353,7 +353,7 @@ def run_child(cfg: dict, request: dict, stem: str, seeded: bool = True) -> dict:
     if seeded and os.path.exists(marker):
         raise SystemExit(f"{marker}: this child already started and left no result; it is not relaunched")
     req_path = stem + ".request.json"
-    _dump(req_path, {**request, "config_path": cfg["config_path"], "config_key": CONFIG_KEY, "config_sha256": config_sha256(cfg)})
+    _dump(req_path, {**request, "config_path": cfg["config_path"], "config_key": cfg.get("config_key", CONFIG_KEY), "config_sha256": config_sha256(cfg)})
     if seeded:
         _dump(marker, {"started_at": time.strftime("%Y-%m-%dT%H:%M:%S")})
     print("running", request["mode"], stem, flush=True)

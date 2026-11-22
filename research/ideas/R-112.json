@@ -1,0 +1,650 @@
+{
+  "id": "R-112",
+  "title": "1. P3: persistent deficit versus matched instantaneous feedback",
+  "hypothesis": "A slow deficit state distinguishes persistent low spin from normal startup, allowing a learned recovery posture without disturbing capture.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "SINGLE_FILTER arm initialized from config/pen_spin/r106_success_ars_finalist/finalist.json",
+    "rationale": "Ranked first because three matched arms distinguish temporal information from ordinary smoothing and additional parameters, directly addressing the plateau left by D-077. Train INSTANT, SINGLE_FILTER and TWO_TIMESCALE from the frozen R-106 root. Each inherits its 32 coefficients and adds the same 26 zero-initialized coefficients: 20 posture offsets and six grouped reference-action gains. Only their new gate differs: instantaneous spin deficit, deficit using the existing fixed filter, or a slow EMA of that filtered deficit. The inherited root supplies the fast pathway in TWO_TIMESCALE. Use one new state scalar, EMA time constant 60 control steps, initialized to zero on every environment reset; do not also add a timer. Preserve coefficient bounds and the combined residual cap of 0.10. Fit all arms with unchanged exact-success ARS, 12 updates, four antithetic directions and 512 shared placements per signed candidate. Freeze terminal means without selection. Use a disjoint monitoring manifest for validation curves, never checkpoint selection. Confirm the three terminal policies, unchanged root and D-072-qualified reference once on twelve fresh 128-case manifests. The primary contrast is TWO_TIMESCALE minus SINGLE_FILTER; INSTANT diagnoses filtering. The 1,536-pair size follows the archived discordance estimate for a five-point effect and must be frozen at triage. Apply the strict paired success rule and drop upper-bound requirement of 0.05 against both root and reference before calling the candidate useful. Report case-paired and manifest-level intervals; a positive interval does not establish a five-point magnitude unless its lower bound reaches 0.05. This is one matched training pilot, not evidence across optimizer restarts. No structural search or incumbent replacement. Implement and test the proposed study handler before execution; verify these provisional seed allocations against the live ledger.\n\nFROZEN REVISION (triage round 2, agreed; supersedes the text above where they differ). States (trusted controller state, reset per environment exactly as the reference's velocity filter): s = clip((7 - |axial rate|)/7, 0, 1), the existing instantaneous deficit; deficit_fast = exponential average of s with alpha = dt/(0.185 + dt) (the reference filter's constant), initialised to s at an episode's first step; deficit_slow += (deficit_fast - deficit_slow)/60 per control step, initialised to 0 at every environment reset. No timer. Arms, each from the frozen R-106 finalist (32 inherited coefficients, bit for bit) plus the same 26 zero-initialised coefficients: term A = gate on target 'joints' (20 posture offsets), term B = gate x ref on target 'groups' (6 grouped reference-action gains); gate = spin_deficit (INSTANT), deficit_fast (SINGLE_FILTER), deficit_slow (TWO_TIMESCALE). 58 coefficients per arm; coefficient bound 0.10 and the combined residual cap 0.10 unchanged. Training: exact-success ARS, 12 updates, 4 antithetic directions all used, nu 0.02, alpha 0.01, 512 shared placements per signed candidate (two 2,048-environment rollouts per update), one persistent process per arm; all three arms use the SAME placements (cases.placements(4894, 6144)) and the SAME direction streams (default_rng(4894 + 2000 + 100 u), dimension 58). Terminal means frozen and hashed before any confirmation; no checkpoint selection; no monitoring manifest. Smoke (seed 4893, stops on failure): the inherited structure plus a zero-coefficient deficit_slow term equals the R-106 controller bit for bit on identical observations over a rollout; a nonzero coefficient on it acts (two identical +probe slots agree within 1e-4 at step 0, +probe differs from -probe and from zero); asynchronous per-environment reset isolation of both states (a reset environment's states equal a fresh controller's first-step states and no other environment's states are disturbed); scorer live; A/A; throughput. Confirmation: the D-072 reference, the R-106 root and the three terminal policies, each once per manifest in a fresh process, twelve 128-case manifests (seeds 4895-4906), 1,536 pairs per contrast. Contrasts: TWO_TIMESCALE minus SINGLE_FILTER (primary); SINGLE_FILTER minus INSTANT (what smoothing alone buys); each arm minus the root and minus the reference (strict paired rule and one-sided 95% drop bound <= 0.05 for usefulness), Holm over the three root comparisons; case-paired and manifest-clustered intervals. Budget: about 318,760 simulator starts (training 3 x 98,400; smoke 8,200; confirmation 5 x 1,536 cases charged at 2); hard ceiling 340,000, enforced before every rollout; a started seeded child is never relaunched. Seed 4907 is not used. One matched set of trajectories: a pilot."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study compact_memory_matched",
+    "seeds": [
+      4893,
+      4894,
+      4895,
+      4896,
+      4897,
+      4898,
+      4899,
+      4900,
+      4901,
+      4902,
+      4903,
+      4904,
+      4905,
+      4906
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_memory_confirm_s4895.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4896.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4897.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4898.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4899.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4900.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4901.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4902.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4903.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4904.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4905.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4906.yaml"
+    ],
+    "episodes": 318760,
+    "llm_calls": 0,
+    "code_changes": [
+      "lares/envs/isaac_pen_spin/structure_terms.py: the state primitives deficit_fast and deficit_slow (per-environment reset), excluded from grammar sampling.",
+      "lares/envs/isaac_pen_spin/memory_study.py (new): the three-arm driver, reusing R-109's child (train and cell modes) and confirmation contrasts.",
+      "lares/envs/isaac_pen_spin/structure_search.py and structure_search_child.py: the child reads its block from a dotted config key, and the smoke adds the reset-isolation check when the block declares memory.",
+      "scripts/run_shadowhand_spin_stages.py: one registry entry, compact_memory_matched.",
+      "config/shadowhand_spin_stages.yaml: the compact_memory_matched block.",
+      "tests/test_memory_study.py (new).",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4895.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4896.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4897.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4898.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4899.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4900.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4901.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4902.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4903.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4904.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4905.yaml",
+      "config/manifests/pen_spin_stage3_memory_confirm_s4906.yaml"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "decided",
+  "source": "advisor",
+  "falsified_by": "An upper confidence bound below +0.05 for TWO_TIMESCALE minus SINGLE_FILTER refutes the registered useful-effect prediction; an interval spanning both zero and +0.05 is inconclusive. Failure of the root/reference success or drop qualification gates prevents a usefulness claim regardless of the primary contrast.",
+  "cost_estimate": {
+    "episodes": 318760,
+    "llm_calls": 0,
+    "wall_time_minutes": 60
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "507d6b5d32e3935dae9479dade064b177608418b2e69bcb57d2bf421ff9e0e20",
+  "proposal_call_id": "call_00251",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-22T09:13:42",
+    "advisor_call_id": "call_00254",
+    "round": 3,
+    "note": "The frozen revision tests whether persistent deficit enables recovery that matched instantaneous feedback and smoothing cannot, addressing the slow-mode persistence identified by D-078. I accept the implementer's explicit state definitions, matched 58-coefficient arms, shared training streams and re"
+  },
+  "run": {
+    "started_at": "2026-11-22T09:15:18",
+    "git_sha": "fb651dba7f80795c4fbe87e147a7ede35cd35ce5",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r112_memory_study",
+    "finished_at": "2026-11-22T10:02:31"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": -0.0006510416666666666,
+      "paired_success_difference_ci95": [
+        -0.028550756410005904,
+        0.02724867307667257
+      ],
+      "pairs": 1536,
+      "successes_of_1536": {
+        "reference": 653,
+        "r106": 822,
+        "instant": 840,
+        "single_filter": 828,
+        "two_timescale": 827
+      },
+      "drops_of_1536": {
+        "reference": 70,
+        "r106": 54,
+        "instant": 43,
+        "single_filter": 42,
+        "two_timescale": 47
+      },
+      "contrasts": {
+        "two_timescale_minus_single_filter": {
+          "difference": -0.0006510416666666666,
+          "ci95": [
+            -0.028550756410005904,
+            0.02724867307667257
+          ],
+          "win_loss_tie": {
+            "wins": 238,
+            "losses": 239,
+            "ties": 1059
+          },
+          "manifest_clustered_ci95": [
+            -0.03061831537679727,
+            0.029316232043463935
+          ],
+          "drop_difference_one_sided_95_upper": 0.008393867796259528,
+          "promotes": false,
+          "adopts": false,
+          "holm": null
+        },
+        "single_filter_minus_instant": {
+          "difference": -0.0078125,
+          "ci95": [
+            -0.03484800156445182,
+            0.019223001564451826
+          ],
+          "win_loss_tie": {
+            "wins": 218,
+            "losses": 230,
+            "ties": 1088
+          },
+          "manifest_clustered_ci95": [
+            -0.03698757475013317,
+            0.021362574750133173
+          ],
+          "drop_difference_one_sided_95_upper": 0.004021024657247594,
+          "promotes": false,
+          "adopts": false,
+          "holm": null
+        },
+        "instant_minus_r106": {
+          "difference": 0.01171875,
+          "ci95": [
+            -0.01537351500420276,
+            0.03881101500420276
+          ],
+          "win_loss_tie": {
+            "wins": 234,
+            "losses": 216,
+            "ties": 1086
+          },
+          "manifest_clustered_ci95": [
+            -0.013899767208006238,
+            0.03733726720800624
+          ],
+          "drop_difference_one_sided_95_upper": -0.0020297904452377617,
+          "promotes": false,
+          "adopts": false,
+          "holm": {
+            "p": 0.39631927103253217,
+            "p_holm": 1.0,
+            "rejects": false
+          }
+        },
+        "single_filter_minus_r106": {
+          "difference": 0.00390625,
+          "ci95": [
+            -0.023963537277600054,
+            0.031776037277600054
+          ],
+          "win_loss_tie": {
+            "wins": 241,
+            "losses": 235,
+            "ties": 1060
+          },
+          "manifest_clustered_ci95": [
+            -0.03051669438121825,
+            0.03832919438121825
+          ],
+          "drop_difference_one_sided_95_upper": -0.002795736137260036,
+          "promotes": false,
+          "adopts": false,
+          "holm": {
+            "p": 0.7834094892163861,
+            "p_holm": 1.0,
+            "rejects": false
+          }
+        },
+        "two_timescale_minus_r106": {
+          "difference": 0.0032552083333333335,
+          "ci95": [
+            -0.020745176754933113,
+            0.027255593421599777
+          ],
+          "win_loss_tie": {
+            "wins": 179,
+            "losses": 174,
+            "ties": 1183
+          },
+          "manifest_clustered_ci95": [
+            -0.024701178201281027,
+            0.03121159486794769
+          ],
+          "drop_difference_one_sided_95_upper": 0.0003508734940281819,
+          "promotes": false,
+          "adopts": false,
+          "holm": {
+            "p": 0.7902420998499302,
+            "p_holm": 1.0,
+            "rejects": false
+          }
+        },
+        "instant_minus_reference": {
+          "difference": 0.12174479166666667,
+          "ci95": [
+            0.08977726062634586,
+            0.15371232270698748
+          ],
+          "win_loss_tie": {
+            "wins": 418,
+            "losses": 231,
+            "ties": 887
+          },
+          "manifest_clustered_ci95": [
+            0.09185235829908384,
+            0.1516372250342495
+          ],
+          "drop_difference_one_sided_95_upper": -0.01110018271704069,
+          "promotes": true,
+          "adopts": true,
+          "holm": null
+        },
+        "single_filter_minus_reference": {
+          "difference": 0.11393229166666667,
+          "ci95": [
+            0.08138731900452467,
+            0.14647726432880867
+          ],
+          "win_loss_tie": {
+            "wins": 422,
+            "losses": 247,
+            "ties": 867
+          },
+          "manifest_clustered_ci95": [
+            0.08315378253406841,
+            0.14471080079926493
+          ],
+          "drop_difference_one_sided_95_upper": -0.010842664676392548,
+          "promotes": true,
+          "adopts": true,
+          "holm": null
+        },
+        "two_timescale_minus_reference": {
+          "difference": 0.11328125,
+          "ci95": [
+            0.08266823231939305,
+            0.14389426768060695
+          ],
+          "win_loss_tie": {
+            "wins": 384,
+            "losses": 210,
+            "ties": 942
+          },
+          "manifest_clustered_ci95": [
+            0.08705782782030645,
+            0.13950467217969353
+          ],
+          "drop_difference_one_sided_95_upper": -0.008664002139461693,
+          "promotes": true,
+          "adopts": true,
+          "holm": null
+        },
+        "r106_minus_reference": {
+          "difference": 0.11002604166666667,
+          "ci95": [
+            0.0793566638853743,
+            0.14069541944795905
+          ],
+          "win_loss_tie": {
+            "wins": 382,
+            "losses": 213,
+            "ties": 941
+          },
+          "manifest_clustered_ci95": [
+            0.0868924320470025,
+            0.13315965128633084
+          ],
+          "drop_difference_one_sided_95_upper": -0.002850087007719923,
+          "promotes": true,
+          "adopts": true,
+          "holm": null
+        }
+      }
+    },
+    "controls": {
+      "smoke_gates": {
+        "joint_order": true,
+        "inheritance_identity": true,
+        "scorer_live": true,
+        "activation": true,
+        "memory_reset_isolation": true
+      },
+      "memory_reset_isolation": {
+        "reset_environments": 2012,
+        "violations": 0,
+        "slow_state_range": [
+          0.0009151366539299488,
+          0.9965615272521973
+        ],
+        "passes": true
+      },
+      "aa": [
+        0.548828125,
+        0.560546875,
+        0.548828125,
+        0.55859375
+      ],
+      "finalists": {
+        "instant": {
+          "sha256": "20251def505ae82e696664082c7db823755c073f96c00fcb6834a19cb5e48c1e",
+          "theta_l2": 0.3241115336034021,
+          "inherited_l2_change": 0.13229432279428588,
+          "posture_offsets_abs_max": 0.056901756674051285,
+          "posture_offsets_l2": 0.1386126011066207,
+          "reference_gains": {
+            "WR": -0.047085005789995193,
+            "FF": -0.013850201852619648,
+            "MF": 0.015212579630315304,
+            "RF": 0.009474711492657661,
+            "LF": -0.003001936012879014,
+            "TH": 0.023710746318101883
+          }
+        },
+        "single_filter": {
+          "sha256": "43e314a07e1ea9ccf27ea798ba082a9ef3d62b205e5b95447df137d6b8ab7f71",
+          "theta_l2": 0.3259177759242711,
+          "inherited_l2_change": 0.12617717862701178,
+          "posture_offsets_abs_max": 0.07051707059144974,
+          "posture_offsets_l2": 0.15371530547344286,
+          "reference_gains": {
+            "WR": -0.03928719460964203,
+            "FF": 0.02401188760995865,
+            "MF": 0.003780658822506666,
+            "RF": 0.00017074058996513486,
+            "LF": -0.0006177197792567313,
+            "TH": 0.027005497366189957
+          }
+        },
+        "two_timescale": {
+          "sha256": "e0342a35b533a50f9178b640063cf9f15e1b2570b5ce5e34946bc351451299c5",
+          "theta_l2": 0.321543940851624,
+          "inherited_l2_change": 0.10603475104578917,
+          "posture_offsets_abs_max": 0.05829264968633652,
+          "posture_offsets_l2": 0.10336192596951745,
+          "reference_gains": {
+            "WR": -0.011158827692270279,
+            "FF": -0.017452634871006012,
+            "MF": 0.023945674300193787,
+            "RF": 0.0257074274122715,
+            "LF": 0.013398068957030773,
+            "TH": -0.05076339840888977
+          }
+        }
+      },
+      "training_mean_candidate_success": {
+        "instant": [
+          0.554931640625,
+          0.50927734375,
+          0.546142578125,
+          0.533203125,
+          0.519775390625,
+          0.55078125,
+          0.503662109375,
+          0.580322265625,
+          0.528564453125,
+          0.519775390625,
+          0.54296875,
+          0.55712890625
+        ],
+        "single_filter": [
+          0.552490234375,
+          0.508056640625,
+          0.545166015625,
+          0.53466796875,
+          0.534423828125,
+          0.541748046875,
+          0.49609375,
+          0.570556640625,
+          0.533203125,
+          0.5283203125,
+          0.5419921875,
+          0.573486328125
+        ],
+        "two_timescale": [
+          0.56298828125,
+          0.518310546875,
+          0.523193359375,
+          0.549560546875,
+          0.518310546875,
+          0.531005859375,
+          0.49951171875,
+          0.562744140625,
+          0.53271484375,
+          0.519287109375,
+          0.53125,
+          0.543212890625
+        ]
+      },
+      "accounting": {
+        "simulator_starts_before_confirmation": 303313,
+        "confirmation_cells": 60,
+        "confirmation_charged_starts": 15360,
+        "charged_total": 318673,
+        "ceiling": 340000,
+        "llm_calls": 0
+      },
+      "config_sha256": "4556880d927f962151c165120860666850e663bb3ed42c08c5c8a6539c988cfc"
+    },
+    "artifacts": [
+      "logs/pen_spin/r112_memory_study/summary.json",
+      "logs/pen_spin/r112_memory_study/finalists.json",
+      "logs/pen_spin/r112_memory_study/smoke.json",
+      "logs/pen_spin/r112_memory_study/frozen_config.json",
+      "logs/pen_spin/r112_memory_study/train_instant.json",
+      "logs/pen_spin/r112_memory_study/train_single_filter.json",
+      "logs/pen_spin/r112_memory_study/train_two_timescale.json"
+    ],
+    "notes": "No deviation: the smoke passed on the first attempt (inheritance identity bitwise, activation, memory reset isolation 0 violations over 2,012 reset environments, slow state spanning 0.001-0.997 at the end of a rollout, so the state does engage), every arm ran exactly 12 updates on the same placements and direction streams, terminal means were frozen before confirmation, and the five policies were confirmed once on twelve fresh manifests (seeds 4895-4906). All three arms moved their 26 new coefficients (posture-offset L2 0.10-0.15, largest |offset| 0.057-0.071) and changed the inherited ones (L2 change 0.11-0.13), yet none differs from the root on fresh cases: instant +0.012 [-0.015, +0.039], single filter +0.004 [-0.024, +0.032], two-timescale +0.003 [-0.021, +0.027]. Training-time candidate success was flat for all arms (0.50-0.58 on changing placements). The R-106 root reproduces again at +0.110 [+0.079, +0.141] over the reference (fourth independent confirmation). The learned 're-start' the slow state could have gated did not appear: with a combined residual cap of 0.10 and posture offsets below 0.07, a stuck episode's slow-gated correction is of the same small size as every other residual term, which may simply be too little to leave the slow attractor; that is a hypothesis this study does not test. One matched set of trajectories; 318,673 starts charged of 340,000; zero LLM calls."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": -0.0006510416666666666,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.9,
+      "reasoning": "TWO_TIMESCALE minus SINGLE_FILTER: -0.001 paired sustained success, 95% interval [-0.029, +0.027] over 1,536 fresh pairs (238 wins, 239 losses), manifest-clustered [-0.031, +0.029]; the upper bound is below the predicted +0.05, so the prediction that a slow memory of the spin deficit adds five points over the single-filter gate is refuted for this matched set of trajectories. Filtering alone buys nothing either (single filter minus instant -0.008 [-0.035, +0.019]), and no arm improves on the R-106 root (all within [-0.024, +0.039], Holm p 1.0), although all of them moved their new coefficients. The instrument was sound: identity, activation and reset isolation passed and the slow state spans its range. Every policy stays about +0.11 to +0.12 above the reference.",
+      "cited_artifacts": [],
+      "next_experiment": "Three different additions to the bounded residual have now failed to move the root (more updates, structural terms, memory): the residual-on-reference form with a 0.10 cap looks saturated at about 0.54 success. What is untested is authority, not information: whether ANY intervention gets a stuck episode out of the slow mode. Before more learning, run the cheap scripted diagnostic: in episodes that are slow at a fixed step, apply a scripted re-capture (for example return to the reset grasp posture for N steps, or a larger-amplitude stroke) and measure the conversion rate against untouched stuck episodes on the same cases; if nothing scripted converts them, the slow mode needs a different controller (P4 on the reference's own stroke), and if something does, learn its trigger. R-113 (direction-odd term) is another bounded residual term and should stay deferred.",
+      "recorded_at": "2026-11-22T10:02:33",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "Against the measured SINGLE_FILTER control, TWO_TIMESCALE achieved paired_success_difference −0.00065 over 1,536 pairs, with case-paired 95% interval [−0.02855, +0.02725] and manifest-clustered interval [−0.03062, +0.02932] [logs/pen_spin/r112_memory_study/summary.json]. Both upper bounds are below the registered +0.05 threshold, meeting the stated falsification criterion; because both intervals also include zero, they establish neither improvement nor degradation [logs/pen_spin/r112_memory_study/summary.json]. No trained arm establishes a success improvement over the root, so the usefulness requirement fails despite passing drop bounds and improving over the reference [logs/pen_spin/r112_memory_study/summary.json]. Activation and reset-isolation checks passed, but those checks do not establish why the predicted gain failed to appear [logs/pen_spin/r112_memory_study/smoke.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r112_memory_study/summary.json",
+        "logs/pen_spin/r112_memory_study/smoke.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-22T10:02:53",
+      "call_id": "call_00255"
+    }
+  ],
+  "decision_id": "D-079",
+  "history": [
+    {
+      "at": "2026-11-22T09:13:42",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-22T09:15:18",
+      "from": "approved",
+      "to": "running",
+      "note": "git fb651dba7f (dirty)"
+    },
+    {
+      "at": "2026-11-22T10:02:31",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-22T10:03:09",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-079: refuted"
+    }
+  ],
+  "created_at": "2026-11-22T09:09:14",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "D-078's persistent slow mode motivates testing whether accumulated deficit separates startup from being stuck, which D-077's memoryless edits did not settle. The matched-capacity protocol using scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml merits its estimated 330,000 simulator episodes and 0 controller-generation LLM calls. Retain the prediction of paired_success_difference increasing by at least 0.05 for TWO_TIMESCALE versus SINGLE_FILTER; an upper confidence bound below +0.05 refutes it, while an interval including zero establishes no improvement. Its weakest point is one optimizer trajectory per arm, so conclusions remain specific to these frozen policies and usefulness still requires the registered root/reference success and drop gates.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00252",
+          "briefing_sha256": "53dd08e30f5e79356ce79c7b00f26392bf2e6f6315304f151275fb04b019a7b7",
+          "at": "2026-11-22T09:10:45"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "The three-arm design is right (it separates temporal information from smoothing and from extra parameters) and I want to run it; four things must be pinned or it is not executable. (1) 'The existing fixed filter' filters joint velocities, not the spin deficit, so define the states: s = clip((7 - |axial rate|)/7, 0, 1) (the existing instantaneous deficit); deficit_fast = an exponential average of s with the reference's own filter constant (alpha = dt/(tau + dt), tau = 0.185 s, about 11 steps), initialised to s at an episode's first step; deficit_slow = an exponential average of deficit_fast with a 60-step time constant (deficit_slow += (deficit_fast - deficit_slow)/60), initialised to 0 at every environment reset. Both are trusted controller state, reset per environment exactly as the velocity filter is, with a unit test for reset isolation. (2) The 26 new coefficients: term A = gate on target 'joints' (20 posture offsets), term B = gate x ref on 'groups' (6), with gate = spin_deficit (INSTANT), deficit_fast (SINGLE_FILTER) or deficit_slow (TWO_TIMESCALE); 58 coefficients per arm, so the three arms share the SAME ARS direction streams and placements (seed 4894) and differ only in the gate. (3) Drop the monitoring manifest: there is no checkpoint selection, each update already records every signed candidate's success on 512 shared placements, and a separate validation rollout would add simulator cost and a new code path for no decision; that frees one seed (4893 smoke, 4894 training, 4895-4906 confirmation; 4907 unused). (4) Code and venue: the memory primitives go into structure_terms.py as state primitives excluded from grammar sampling; a new driver module lares/envs/isaac_pen_spin/memory_study.py reuses the R-109 child's train and cell modes (one job per arm, updates 0-11) and its smoke (the inherited structure plus a zero-coefficient memory term must equal the R-106 controller bit for bit; a nonzero coefficient must act); budget 3 x 98,400 + smoke 8,200 + confirmation 5 x 1,536 x 2 = about 319,000 starts, ceiling 340,000. Contrasts: TWO_TIMESCALE minus SINGLE_FILTER (primary), SINGLE_FILTER minus INSTANT (what filtering alone buys), each arm minus the root and minus the reference with the strict rule and drop bound, Holm over the three root comparisons.",
+          "changes_applied": [],
+          "at": "2026-11-22T09:10:47"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "This matched study tests whether persistent deficit supplies useful temporal information beyond instantaneous feedback and smoothing, following the plateau and persistent failures recorded in D-077/D-078. I accept the implementer's correction that the existing filter operates on joint velocity, the explicit deficit-state definitions, shared ARS streams, and removal of monitoring rollouts because terminal policies are not selected. These changes improve executability and information per episode, but they have not been applied; one optimizer trajectory per arm remains the main limitation.",
+          "suggested_changes": [
+            "Define s = clip((7 - |axial rate|)/7, 0, 1), deficit_fast as its EMA with alpha = dt/(0.185 + dt), initialized to s on the first episode step, and deficit_slow += (deficit_fast - deficit_slow)/60, initialized to zero at every reset; add no timer and test asynchronous per-environment reset isolation.",
+            "Freeze each arm at 58 coefficients: the inherited 32 plus 20 gated joint-posture offsets and six gated grouped reference-action gains, all new coefficients initially zero. Use s, deficit_fast and deficit_slow respectively for INSTANT, SINGLE_FILTER and TWO_TIMESCALE; preserve bounds and the combined residual cap of 0.10, and share direction streams and placements across arms.",
+            "Remove the monitoring manifest. After live-ledger verification, reserve seed 4893 for smoke, 4894 for training, and 4895-4906 for twelve fresh 128-case confirmation manifests; leave 4907 unused. Freeze all terminal means after the unchanged 12-update ARS schedule without checkpoint selection.",
+            "Reuse scripts/run_shadowhand_spin_stages.py, config/shadowhand_spin_stages.yaml and R-109's training/cell implementation, adding only the missing stateful study handler and primitives in structure_terms.py, excluded from grammar sampling. Do not duplicate the trainer or evaluator. Smoke must establish zero-coefficient identity on identical observation/state inputs, nonzero-term authority and reset isolation, not bit identity across different simulator slots.",
+            "Retain the prediction: paired_success_difference increases by at least 0.05 for TWO_TIMESCALE against SINGLE_FILTER initialized from config/pen_spin/r106_success_ars_finalist/finalist.json. Retain falsified_by: an interval upper bound below +0.05 refutes that magnitude; an interval containing zero provides no evidence of improvement, and one spanning zero and +0.05 is inconclusive. Claim a demonstrated five-point magnitude only if the lower bound reaches +0.05.",
+            "Confirm the three terminal policies, unchanged R-106 root and D-072-qualified reference once on the frozen confirmation cases. Report case-paired and manifest-level intervals, the primary TWO_TIMESCALE-minus-SINGLE_FILTER contrast, and secondary SINGLE_FILTER-minus-INSTANT contrast; require strict paired success and drop upper bounds no greater than +0.05 against both root and reference for usefulness, with Holm correction over the three root comparisons.",
+            "Replace the cost estimate with approximately 318760 simulator starts, a hard ceiling of 340000, and zero experiment LLM calls, including smoke and all confirmation rollouts. Preserve the saved incumbent and locked final-test split; run only this protocol."
+          ],
+          "priority": 1,
+          "call_id": "call_00253",
+          "briefing_sha256": "e1f267b03b7b6b8873dd8bc1bd6f27026cd0763a516459b290c7b76d83e593a1",
+          "at": "2026-11-22T09:11:12"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agreed on every change; the patch records the states, the 58-coefficient arms, shared streams, the smoke's identity/authority/reset-isolation checks, seeds 4893-4906 and the 340,000-start ceiling.",
+          "changes_applied": [],
+          "at": "2026-11-22T09:11:36"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "The frozen revision tests whether persistent deficit enables recovery that matched instantaneous feedback and smoothing cannot, addressing the slow-mode persistence identified by D-078. I accept the implementer's explicit state definitions, matched 58-coefficient arms, shared training streams and removal of monitoring rollouts: they isolate the gate while avoiding selection and unnecessary episodes. Retain the prediction that paired_success_difference increases by at least 0.05 for TWO_TIMESCALE against SINGLE_FILTER; falsified_by is an upper confidence bound below +0.05, while an interval including zero establishes no improvement and usefulness still requires the registered root/reference success and drop gates. Reusing scripts/run_shadowhand_spin_stages.py, config/shadowhand_spin_stages.yaml and the existing trainer/evaluator justifies approximately 318760 simulator starts under the 340000 ceiling and zero experiment LLM calls, but one optimizer trajectory per arm limits conclusions to this matched pilot.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00254",
+          "briefing_sha256": "f97de93b081a19f77c5bcc38d71b7d9af41fa931349e588fffcd93d21615b5bc",
+          "at": "2026-11-22T09:11:54"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve: states, arms, shared streams, smoke checks, confirmation and budget are frozen; the comparison isolates slow temporal information from smoothing and from added parameters, which is what the direction's P3 asks and what D-078's traces motivate. Weakest point: one matched set of trajectories.",
+          "changes_applied": [],
+          "at": "2026-11-22T09:13:42"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 3
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-22T09:11:37",
+      "round": 2,
+      "patch": {
+        "prediction": {
+          "rationale": "Ranked first because three matched arms distinguish temporal information from ordinary smoothing and additional parameters, directly addressing the plateau left by D-077. Train INSTANT, SINGLE_FILTER and TWO_TIMESCALE from the frozen R-106 root. Each inherits its 32 coefficients and adds the same 26 zero-initialized coefficients: 20 posture offsets and six grouped reference-action gains. Only their new gate differs: instantaneous spin deficit, deficit using the existing fixed filter, or a slow EMA of that filtered deficit. The inherited root supplies the fast pathway in TWO_TIMESCALE. Use one new state scalar, EMA time constant 60 control steps, initialized to zero on every environment reset; do not also add a timer. Preserve coefficient bounds and the combined residual cap of 0.10. Fit all arms with unchanged exact-success ARS, 12 updates, four antithetic directions and 512 shared placements per signed candidate. Freeze terminal means without selection. Use a disjoint monitoring manifest for validation curves, never checkpoint selection. Confirm the three terminal policies, unchanged root and D-072-qualified reference once on twelve fresh 128-case manifests. The primary contrast is TWO_TIMESCALE minus SINGLE_FILTER; INSTANT diagnoses filtering. The 1,536-pair size follows the archived discordance estimate for a five-point effect and must be frozen at triage. Apply the strict paired success rule and drop upper-bound requirement of 0.05 against both root and reference before calling the candidate useful. Report case-paired and manifest-level intervals; a positive interval does not establish a five-point magnitude unless its lower bound reaches 0.05. This is one matched training pilot, not evidence across optimizer restarts. No structural search or incumbent replacement. Implement and test the proposed study handler before execution; verify these provisional seed allocations against the live ledger.\n\nFROZEN REVISION (triage round 2, agreed; supersedes the text above where they differ). States (trusted controller state, reset per environment exactly as the reference's velocity filter): s = clip((7 - |axial rate|)/7, 0, 1), the existing instantaneous deficit; deficit_fast = exponential average of s with alpha = dt/(0.185 + dt) (the reference filter's constant), initialised to s at an episode's first step; deficit_slow += (deficit_fast - deficit_slow)/60 per control step, initialised to 0 at every environment reset. No timer. Arms, each from the frozen R-106 finalist (32 inherited coefficients, bit for bit) plus the same 26 zero-initialised coefficients: term A = gate on target 'joints' (20 posture offsets), term B = gate x ref on target 'groups' (6 grouped reference-action gains); gate = spin_deficit (INSTANT), deficit_fast (SINGLE_FILTER), deficit_slow (TWO_TIMESCALE). 58 coefficients per arm; coefficient bound 0.10 and the combined residual cap 0.10 unchanged. Training: exact-success ARS, 12 updates, 4 antithetic directions all used, nu 0.02, alpha 0.01, 512 shared placements per signed candidate (two 2,048-environment rollouts per update), one persistent process per arm; all three arms use the SAME placements (cases.placements(4894, 6144)) and the SAME direction streams (default_rng(4894 + 2000 + 100 u), dimension 58). Terminal means frozen and hashed before any confirmation; no checkpoint selection; no monitoring manifest. Smoke (seed 4893, stops on failure): the inherited structure plus a zero-coefficient deficit_slow term equals the R-106 controller bit for bit on identical observations over a rollout; a nonzero coefficient on it acts (two identical +probe slots agree within 1e-4 at step 0, +probe differs from -probe and from zero); asynchronous per-environment reset isolation of both states (a reset environment's states equal a fresh controller's first-step states and no other environment's states are disturbed); scorer live; A/A; throughput. Confirmation: the D-072 reference, the R-106 root and the three terminal policies, each once per manifest in a fresh process, twelve 128-case manifests (seeds 4895-4906), 1,536 pairs per contrast. Contrasts: TWO_TIMESCALE minus SINGLE_FILTER (primary); SINGLE_FILTER minus INSTANT (what smoothing alone buys); each arm minus the root and minus the reference (strict paired rule and one-sided 95% drop bound <= 0.05 for usefulness), Holm over the three root comparisons; case-paired and manifest-clustered intervals. Budget: about 318,760 simulator starts (training 3 x 98,400; smoke 8,200; confirmation 5 x 1,536 cases charged at 2); hard ceiling 340,000, enforced before every rollout; a started seeded child is never relaunched. Seed 4907 is not used. One matched set of trajectories: a pilot."
+        },
+        "protocol": {
+          "seeds": [
+            4893,
+            4894,
+            4895,
+            4896,
+            4897,
+            4898,
+            4899,
+            4900,
+            4901,
+            4902,
+            4903,
+            4904,
+            4905,
+            4906
+          ],
+          "episodes": 318760,
+          "manifests": [
+            "config/manifests/pen_spin_stage3_memory_confirm_s4895.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4896.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4897.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4898.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4899.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4900.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4901.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4902.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4903.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4904.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4905.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4906.yaml"
+          ],
+          "code_changes": [
+            "lares/envs/isaac_pen_spin/structure_terms.py: the state primitives deficit_fast and deficit_slow (per-environment reset), excluded from grammar sampling.",
+            "lares/envs/isaac_pen_spin/memory_study.py (new): the three-arm driver, reusing R-109's child (train and cell modes) and confirmation contrasts.",
+            "lares/envs/isaac_pen_spin/structure_search.py and structure_search_child.py: the child reads its block from a dotted config key, and the smoke adds the reset-isolation check when the block declares memory.",
+            "scripts/run_shadowhand_spin_stages.py: one registry entry, compact_memory_matched.",
+            "config/shadowhand_spin_stages.yaml: the compact_memory_matched block.",
+            "tests/test_memory_study.py (new).",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4895.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4896.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4897.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4898.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4899.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4900.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4901.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4902.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4903.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4904.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4905.yaml",
+            "config/manifests/pen_spin_stage3_memory_confirm_s4906.yaml"
+          ]
+        },
+        "cost_estimate": {
+          "episodes": 318760,
+          "llm_calls": 0,
+          "wall_time_minutes": 60
+        }
+      },
+      "note": "Round 2 agreed revise: pinned state definitions, 58-coefficient arms on shared streams, no monitoring manifest, seeds 4893-4906, 318,760 starts under a 340,000 ceiling."
+    }
+  ]
+}

@@ -1507,3 +1507,40 @@ research_protocols:
     prefix_windows: [30, 60]
     trailing_mean: 10
     direction_window: [100, 300]
+  # R-112 (P3, no LLM): three arms from the R-106 finalist, each adding the same 26 zero-initialised coefficients
+  # (20 gated posture offsets, 6 gated reference-action gains); only the gate differs: the instantaneous spin deficit,
+  # the same through the reference's ~11-step filter, or a 60-step slow memory of it (memory_study.py; the Isaac side
+  # is R-109's structure_search_child). Shared placements and ARS direction streams; 12 updates; final means only.
+  #   python scripts/run_shadowhand_spin_stages.py --study compact_memory_matched
+  compact_memory_matched:
+    log_dir: "logs/pen_spin/r112_memory_study"
+    study_dir: "logs/pen_spin/r112_memory_study"
+    config_key: "research_protocols.compact_memory_matched"
+    isaac_env: "~/IsaacLab/source_env.sh"
+    memory: true
+    block_seeds: [4894]
+    incumbent_asset: "config/pen_spin/d058_fixed_stroke_incumbent"
+    reference_descriptor: "config/pen_spin/symbolic_reward_reference/reference.json"
+    reference_residual: *d070_selected
+    reference_residual_sha256: *d070_selected_sha256
+    control_dt: 0.016666666666666666
+    pool_seed: 4895
+    actor: *sr_actor
+    normalization_path: "logs/pen_spin/r103_symbolic_reward/normalization.json"
+    normalization_sha256: "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac"
+    root_finalist: "config/pen_spin/r106_success_ars_finalist/finalist.json"
+    root_theta_sha256: "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef"
+    layout: {slots: 4, cases_per_slot: 512, horizon: 360}
+    ars: {directions: 4, top: 4, nu: 0.02, alpha: 0.01}
+    rounds: 1
+    candidates: 2                 # schedule arithmetic only: 2 x 6 = the 12 update slices one arm's single job uses
+    updates_per_candidate: 6
+    smoke: {seed: 4893, probe_edit: {"expr": "deficit_slow", "target": "groups"}, probe_magnitude: 0.05, duplicate_slot_tolerance: 0.0001}
+    selection_seeds: [[[]]]
+    confirmation_seeds: [[4895, 4896, 4897, 4898, 4899, 4900, 4901, 4902, 4903, 4904, 4905, 4906]]
+    confirmation_cases: 128
+    confirmation_manifest_template: "config/manifests/pen_spin_stage3_memory_confirm_s{seed}.yaml"
+    sample_rows: 8192
+    threshold: 0.05
+    drop_margin: 0.05
+    start_ceiling: 340000

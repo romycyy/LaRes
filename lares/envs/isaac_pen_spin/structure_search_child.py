@@ -215,6 +215,19 @@ def smoke(req: dict, protocol_cfg: dict, device: str) -> dict:
                                                      and not torch.equal(slot(fa, 1), slot(fa, 2)))}
         out["probe_slots"] = {"slot_success": [float(x) for x in b["sustained"].reshape(lay["slots"], per).mean(axis=1)],
                               "coefficients": names[-k:], "note": "slots: zero, +probe, -probe, +probe; a diagnostic only"}
+        if protocol_cfg.get("memory"):                       # R-112: asynchronous per-environment reset of the states
+            obs_now = env._get_observations()["policy"]
+            fast0, slow0 = ctrl._fast.clone(), ctrl._slow.clone()
+            half = torch.arange(lay["num_envs"], device=device) % 2 == 0
+            ctrl.reset_envs(half)
+            pend = ctrl._mem_pending.clone().unsqueeze(1)
+            pm = ctrl.parts(obs_now, 0, ctx)
+            exp_fast = torch.where(pend, pm["s"], fast0 + ctrl.ref.alpha * (pm["s"] - fast0))
+            exp_slow = torch.where(pend, exp_fast / st.SLOW_STEPS, slow0 + (exp_fast - slow0) / st.SLOW_STEPS)
+            bad = int((ctrl._fast != exp_fast).any(dim=1).sum() + (ctrl._slow != exp_slow).any(dim=1).sum())
+            out["gates"]["memory_reset_isolation"] = {"reset_environments": int(pend.sum()), "violations": bad,
+                                                      "slow_state_range": [float(slow0.min()), float(slow0.max())],
+                                                      "passes": bad == 0 and 0 < int(pend.sum()) < lay["num_envs"]}
         out["starts"] = a["starts"] + b["starts"]
         out["transitions"] = a["env_steps"] + b["env_steps"]
         out["throughput"] = {"transitions_per_s": out["transitions"] / wall, "wall_time_s": wall}
@@ -354,7 +367,9 @@ def main(request_path: str) -> None:
 
     with open(request_path, encoding="utf-8") as f:
         req = json.load(f)
-    protocol_cfg = load_yaml(req["config_path"])[req["config_key"]]
+    protocol_cfg = load_yaml(req["config_path"])
+    for key in str(req["config_key"]).split("."):           # "pen_spin_structure" or "research_protocols.<study>"
+        protocol_cfg = protocol_cfg[key]
     device = str(req.get("device", "cuda:0"))
     _ensure_isaaclab_on_path(DEFAULT_ISAACLAB_ROOT)
     launch_isaac_app(headless=True, device=device)
