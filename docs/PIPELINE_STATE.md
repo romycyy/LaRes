@@ -2,7 +2,8 @@
 
 This is the one document to read first. It describes the pipeline as it exists on `staging` at commit `613fa84`, and
 separates what has been **verified** from what is only **built**, **assumed** or **open**. It covers 91 research ideas
-(R-001 to R-091) and 63 decisions (D-001 to D-063); R-092 to R-096 and D-064 to D-068 (2026-11-20) are in section 6.4b.
+(R-001 to R-091) and 63 decisions (D-001 to D-063); R-092 to R-096 and D-064 to D-068 (2026-11-20) are in section 6.4b,
+R-097 onward (2026-11-21, the no-LLM incumbent-residual direction) in section 6.4c.
 
 Authoritative sources, in order (if this file disagrees with them, they win):
 
@@ -357,6 +358,21 @@ All of these started from the frozen **R-046 block-3 learner** (`config/pen_spin
 Found on the way: the PhysX Jacobian and the observed fingertip linear velocity refer to the distal links' centres of
 mass, the observed fingertip position to the link origins (15-16 mm apart). A closed reference posture (joint targets
 0.35 rad inside the limits) retains the pen in about 80% of Stage-3 cases where the neutral pose retains none.
+
+### 6.4c No-LLM residual repairs of the incumbent (2026-11-21)
+
+Direction: before any more LLM spending, test whether a bounded residual on the working incumbent can help, in
+separately gated steps (reproduce, controllability, usefulness). Isaac-only, `scripts/run_shadowhand_spin_stages.py`.
+
+| Study | Result | Decision |
+|---|---|---|
+| S1: the incumbent alone on a fresh 80-case manifest (R-097; `rolling_decoder_gate.py`, `--study rolling_baseline`) | **Reproduces**: 28/80 = 0.350, Wilson 95% [0.255, 0.459]. Failures: 42 slow spin, 8 early drops (median step 32), 2 off-centre. Slow-spin cases roll steadily one way at about a third of the successes' rate (1.68 vs 5.61 rad/s) | D-069 |
+| S2: contact-frame decoder as an additive, integrating joint increment on the incumbent, 0.02 m/s pulses at steps 150-180 while the pen rolls (R-097; `--study rolling_decoder_calibration`, `rolling_decoder_gate`; 3,360 episodes in all) | **Gate fails**: paired sign agreement 0.724 [0.710, 0.739] against 0.80; feasible/requested 0.445; a bound active on 0.44 of steps; weakest contrast 0.036. Instrument checks all pass. Post hoc by finger: forefinger 0.994 and ring 1.000 track; middle 0.411, thumb 0.315, little 0.899 with bounds on 0.71 of steps | D-069 (refuted; decoder not qualified as a residual on this incumbent) |
+
+Found on the way: the incumbent's own action is saturated at +/-1 on `MFJ2` on 79% and `LFJ1` on 64% of steps
+150-180, so anything *added* to its action is clipped on those joints. Two fresh processes on the same batch are
+bit-identical until their controllers differ (in-play steps only: what a case records after it ends is the next
+episode's auto-reset and does differ). Pulses of this size changed no episode's length.
 
 ### 6.5 The current pen-spin incumbent
 

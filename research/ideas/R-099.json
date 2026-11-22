@@ -1,0 +1,94 @@
+{
+  "id": "R-099",
+  "title": "I2: Matched residual search followed by paired usefulness qualification",
+  "hypothesis": "A bounded stance-aware circumferential residual can repair slow-spin tails more effectively than joint-motion reinforcement while preserving the incumbent's retention.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "I2: unchanged D-058 fixed-stroke incumbent on the same 90 fresh cases",
+    "rationale": "Rank 3: this larger experiment measures practical usefulness only after controllability is settled; the primary target is an absolute +0.10 paired sustained-success difference for the frozen contact residual."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study incumbent_residual",
+    "seeds": [
+      4742,
+      4743,
+      4744
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_residual_probe_s4742.yaml",
+      "config/manifests/pen_spin_stage3_residual_fresh_s4744.yaml"
+    ],
+    "episodes": 4190,
+    "llm_calls": 0,
+    "code_changes": [
+      "Add lares/envs/isaac_pen_spin/incumbent_residual.py; register incumbent_residual in the existing runner/config. Declare now but seek approval only after I1 is decided. If incumbent reproduction fails, stop; if decoder qualification fails with reproduction intact, permit only the anonymous-versus-incumbent fallback.",
+      "Use Stage 3 and exactly four free scalar parameters per residual. Leave the fixed incumbent stroke unchanged and enforce additive joint-target residual bounds plus actuator limits. A zero-amplitude identity check must reproduce incumbent targets exactly.",
+      "Contact arm: request circumferential relative fingertip velocity only during stance, using the case's causally observed stable roll direction and an unsigned rate deficit; abstain when direction is uncertain. Parameters are velocity gain in [0, 0.01] m/rad, target absolute rate in [4, 8] rad/s, filter time constant in [0.05, 0.25] s, and joint-increment cap in [0.25 B, B], where B is I1's frozen qualified cap. Requests never exceed I1's qualified pulse amplitude.",
+      "Anonymous arm: reinforce measured joint motion with delta_q = clip(g * sign(v_filtered) * max(abs(v_filtered) - v0, 0), -b, b). Its four parameters are g in [0, 0.10] s, v0 in [0, 0.50] rad/s, filter time constant in [0.05, 0.25] s, and b in [0.25 B, B]. It reads joint positions/velocities and anonymous indices only, with no fingertip geometry, pen-frame geometry or assumed roll sign. If I1 fails decoder qualification, use a predeclared B = 0.02 rad for this arm rather than recalibrating it.",
+      "Seed 4743 generates 24 four-dimensional uniform random draws, reused as normalized draws for both arms. Each draw executes all 80 frozen probe cases in a fresh Isaac process. Score incumbent once on those 80 cases. Rank by final-window hit fraction, then sustained success, then draw index; inspect unsigned roll progress, retention, saturation and drop counts without additional tuning. Freeze and hash each winner before any fresh-case execution.",
+      "S3 costs 80 + 2 x 24 x 80 = 3920 episodes. S4 runs incumbent and both frozen winners on the same 90 fresh cases, one whole-manifest fresh process per arm: 270 episodes. Total 4190. Anonymous-only fallback costs 80 + 24 x 80 + 180 = 2180 episodes and uses the same declared seeds without retuning.",
+      "For S4 use the existing sustained-success rule and paired t procedure: positive paired difference and interval lower bound strictly above zero, with Holm correction at familywise alpha 0.05 over the two residual-versus-incumbent comparisons. A tie never promotes. Also require each candidate's paired drop-rate difference upper bound <= +0.05, using one-sided 97.5% bounds for the two candidates. In the anonymous-only fallback use one comparison and a one-sided 95% drop bound.",
+      "Report contact-minus-anonymous as a secondary paired comparison, not a substitute for beating incumbent. Failure shelves only the tested decoder/controller family, not contact coordinates generally. No automatic new draws, controller revisions, LLM calls, BC, RL, curriculum or gradient fitting; execute one protocol at a time."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "A fresh paired interval upper bound below +0.10 refutes the contact prediction's magnitude. An interval including zero is not evidence of improvement. Failure of corrected strict promotion or the drop non-inferiority gate prevents adoption; if I1 fails, the contact prediction is untested and only the predeclared anonymous fallback runs.",
+  "cost_estimate": {
+    "episodes": 4190,
+    "llm_calls": 0,
+    "wall_time_minutes": 180
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "c497f6deb0e78f8c86b9fb0974fb9ce398182afa5129ddc246f1f606681cf014",
+  "proposal_call_id": "call_00198",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-21T18:35:51",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-21T18:34:04",
+  "direction": "No LLM calls in any protocol. Test bounded residual repairs of the working fixed-stroke incumbent (config/pen_spin/d058_fixed_stroke_incumbent) on Stage 3, in four separately gated steps: (S1) reproduce the incumbent on fixed cases and quantify its slow-spin failures, with angular progress measured along each case's own roll direction; (S2) qualify the contact-frame decoder DURING ROLLING on top of the incumbent stroke, reporting requested, feasible (after bounds and least squares) and achieved motion separately, with tracking error, directional agreement and bound activity as pass/fail criteria (controllability gate); (S3) only if S2 passes, compare incumbent alone, a hand-authored contact-frame residual and a hand-authored anonymous-coordinate joint residual, with matched tuning budgets (same parameter count, same number of probe evaluations, same tuning method, tuned on probe cases and frozen before any fresh case), candidates ranked by tail-hit fraction with sustained unsigned angular progress and retention inspected; (S4) evaluate the selected controllers on fresh paired cases, 90 pairs per comparison, Holm correction over the two comparisons, promotion requires the strict paired sustained-success rule AND a pre-declared numeric non-inferiority bound on drops (usefulness gate). Residuals must not assume a roll sign. If S2 fails, the anonymous residual may still be compared against the incumbent alone. A failed hand-authored controller shelves that decoder/controller family only. No BC, RL, curriculum or gradient fitting. One protocol at a time on the box.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "The matched four-parameter, 24-draw search and fresh paired usefulness gate fit S3/S4, but spending 4,190 episodes and zero LLM calls must wait for R-097; decoder failure with intact reproduction permits only the declared 2,180-episode anonymous fallback. Its weakest point is that the primary endpoint tests contact versus incumbent, not superiority over the anonymous controller, which requires the secondary paired comparison to exclude zero. Retain the paired_success_difference prediction of an increase of at least 0.10 against the unchanged incumbent on 90 fresh paired cases; falsified_by is an interval upper bound below +0.10, and neither an interval including zero nor failure of the corrected promotion or drop bound permits adoption.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00199",
+          "briefing_sha256": "3bb60db422ce8d5f794aa544a0e8875790bb1fb05279be03d94e7794da9b2397",
+          "at": "2026-11-21T18:35:41"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Defer until R-097 is decided; the contact arm's cap B and pulse amplitude come from R-097's frozen block, and a decoder failure switches it to the anonymous-only fallback. The secondary contact-minus-anonymous comparison must exclude zero before any claim about contact coordinates.",
+          "changes_applied": [],
+          "at": "2026-11-21T18:35:51"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

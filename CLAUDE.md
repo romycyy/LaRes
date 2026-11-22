@@ -579,6 +579,20 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   the regime the gate qualified: residual 0.108 m/s against a 0.05 m/s request cap, a bound active on 97% of steps;
   the hand-authored contact controller scored 0.02. A gate on small pulses with the pen at rest does not qualify a
   decoder for rolling.
+- **R-097 result (D-069, refuted; no-LLM direction, 2026-11-21).** `rolling_decoder_gate.py` (three `--study` names of
+  `run_shadowhand_spin_stages.py`, run in order: `rolling_baseline`, `rolling_decoder_calibration`,
+  `rolling_decoder_gate`). `RollingPulseController` runs the D-058 incumbent unchanged and, inside a pulse window, adds
+  a decoded joint increment that **integrates** (`delta += dt * qdot`, capped per joint): the incumbent's action is
+  `q + 0.8 (target - q)`, so a non-accumulating offset is a position step, not a velocity. It reports requested,
+  feasible (after bounds, through the Jacobian) and achieved motion separately as paired +/- contrasts, with a
+  case-clustered bootstrap interval (`clustered_interval`) because the 15 contrasts share cases. S1: the incumbent
+  reproduces on a fresh manifest (28/80, Wilson [0.255, 0.459]; 42 slow-spin failures rolling steadily at about a third
+  of the successes' rate). S2: **the gate fails** (sign agreement 0.724 [0.710, 0.739] vs 0.80, feasible/requested
+  0.445, bounds active on 0.44 of steps). Forefinger and ring finger track almost perfectly; the middle finger, thumb
+  and little finger do not. **Things this found that will bite you:** the incumbent's own action is saturated at +/-1
+  on `MFJ2` (79% of steps) and `LFJ1` (64%), so an additive residual is clipped there; when comparing two cells'
+  prefixes use in-play steps only (`in_play_prefix`), since a case's recorded steps after it ends are the next
+  episode's auto-reset and differ between processes.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

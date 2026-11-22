@@ -1,0 +1,89 @@
+{
+  "id": "R-098",
+  "title": "I3: Diagnose fingertip-to-pen transfer after a failed useful repair",
+  "hypothesis": "Coherent circumferential fingertip motion transfers frictional impulse into the pen's existing roll direction even when a sustained residual controller fails its usefulness gate.",
+  "prediction": {
+    "metric": "signed_goal_progress",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "I3: opposite-direction circumferential pulse on identical cases",
+    "rationale": "Rank 2 by marginal information per episode: 120 episodes distinguish fingertip tracking from object-level authority; the registered Isaac metric is direction-aligned axial angular progress in radians, with a minimum paired gain of 0.10 rad."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study rolling_transfer_audit",
+    "seeds": [
+      4745
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_rolling_transfer_s4745.yaml"
+    ],
+    "episodes": 120,
+    "llm_calls": 0,
+    "code_changes": [
+      "Register rolling_transfer_audit in the existing runner/config and extend lares/envs/isaac_pen_spin/rolling_decoder_gate.py; no separate controller module is needed.",
+      "Conditional diagnostic only: run after I1 passes and I2 has finished, and only if I2's contact controller fails usefulness qualification. This placement prevents diagnostic feedback from enlarging either arm's tuning budget. Do not run after an I1 failure or a successful contact repair.",
+      "Use one frozen 40-case Stage 3 manifest and three cells: unchanged incumbent, simultaneous pro-roll circumferential pulses, and simultaneous opposite pulses. Each cell executes the whole manifest in its own fresh Isaac process. Use I1's frozen decoder, amplitude, bounds, rolling eligibility and steps 150-180 pulse window.",
+      "Choose pulse orientation from each case's common observed pre-pulse roll direction, abstaining when direction is unstable; never hard-code a roll sign. Apply pulses through the same stance mask used by I2. Require at least 20 eligible paired cases or report inconclusive coverage.",
+      "Measure paired direction-aligned axial angular progress over steps 150-210, with a +0.10 rad target and a paired t interval. Also report integral absolute roll, reversals, requested/feasible/achieved fingertip contrasts, bound activity, drops and timeout_rate to distinguish lost fingertip control from failed motion transfer.",
+      "This is an object-transfer diagnostic, not another tuning or promotion opportunity. It neither revives a shelved controller nor changes I2's frozen families, budgets or verdict; run serially with no other protocol on the box."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "A paired interval upper bound below +0.10 rad refutes the predicted transfer magnitude; an interval including zero establishes no transfer advantage, and an interval spanning the threshold is inconclusive.",
+  "cost_estimate": {
+    "episodes": 120,
+    "llm_calls": 0,
+    "wall_time_minutes": 15
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "c497f6deb0e78f8c86b9fb0974fb9ce398182afa5129ddc246f1f606681cf014",
+  "proposal_call_id": "call_00198",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-21T18:35:52",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-21T18:34:04",
+  "direction": "No LLM calls in any protocol. Test bounded residual repairs of the working fixed-stroke incumbent (config/pen_spin/d058_fixed_stroke_incumbent) on Stage 3, in four separately gated steps: (S1) reproduce the incumbent on fixed cases and quantify its slow-spin failures, with angular progress measured along each case's own roll direction; (S2) qualify the contact-frame decoder DURING ROLLING on top of the incumbent stroke, reporting requested, feasible (after bounds and least squares) and achieved motion separately, with tracking error, directional agreement and bound activity as pass/fail criteria (controllability gate); (S3) only if S2 passes, compare incumbent alone, a hand-authored contact-frame residual and a hand-authored anonymous-coordinate joint residual, with matched tuning budgets (same parameter count, same number of probe evaluations, same tuning method, tuned on probe cases and frozen before any fresh case), candidates ranked by tail-hit fraction with sustained unsigned angular progress and retention inspected; (S4) evaluate the selected controllers on fresh paired cases, 90 pairs per comparison, Holm correction over the two comparisons, promotion requires the strict paired sustained-success rule AND a pre-declared numeric non-inferiority bound on drops (usefulness gate). Residuals must not assume a roll sign. If S2 fails, the anonymous residual may still be compared against the incumbent alone. A failed hand-authored controller shelves that decoder/controller family only. No BC, RL, curriculum or gradient fitting. One protocol at a time on the box.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "This 120-episode, zero-LLM diagnostic could distinguish fingertip tracking from object-level transfer, but only after R-097 passes and R-099's contact controller fails usefulness qualification. Its weakest point is that short-pulse transfer cannot establish sustained controller usefulness, so its diagnostic-only status and prohibition on retuning are essential. Retain the signed_goal_progress prediction of an increase of at least 0.10 rad against opposite-direction pulses on identical cases; falsified_by is a paired interval upper bound below +0.10 rad, while an interval including zero establishes no transfer advantage.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00199",
+          "briefing_sha256": "3bb60db422ce8d5f794aa544a0e8875790bb1fb05279be03d94e7794da9b2397",
+          "at": "2026-11-21T18:35:41"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Defer: conditional diagnostic, only meaningful after R-097 passes and R-099's contact controller fails usefulness.",
+          "changes_applied": [],
+          "at": "2026-11-21T18:35:52"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

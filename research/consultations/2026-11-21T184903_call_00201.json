@@ -1,0 +1,18 @@
+{
+  "ideas": [
+    {
+      "id": "R-097",
+      "recommendation": "run_as_is",
+      "reasoning": "Agree procedurally on the supplied report: the reported Wilson interval [0.255, 0.459] overlaps [0.35, 0.44], satisfying the declared S1 reproduction rule without establishing equivalence or selecting constants; no result-artifact paths were supplied for an independent audit. Continue calibration and then the gate unchanged: the remaining 3,280 simulator episodes (800 calibration, 2,480 gate) and zero LLM calls qualify directional tracking during rolling before downstream search, but cannot establish nonzero-residual retention or sustained-success usefulness. Retain the gate_statistics prediction of an increase of at least 0.30 against 0.50 sign-balanced chance, corresponding to pooled agreement of 0.80; falsified_by a case-clustered 95% interval whose upper bound is below 0.80, with an interval spanning 0.80 inconclusive and every declared operational gate check still required.",
+      "suggested_changes": [],
+      "depends_on": []
+    }
+  ],
+  "order": [
+    "R-097"
+  ],
+  "next_step": "Run the unchanged 800-episode calibration on reserved seed 4740 via gpu run using scripts/run_shadowhand_spin_stages.py --study rolling_decoder_calibration and config/shadowhand_spin_stages.yaml, with selection reading calibration outcomes only.",
+  "call_id": "call_00201",
+  "briefing_sha256": "65272ca3f3b1a384c594251f0fa0dca235d04727b2e971d91522ece41221e342",
+  "question": "S1 report for R-097 (rolling_baseline, incumbent alone on the seed-4741 gate manifest, 80 episodes, one fresh process; gate 0 before it: incumbent hashes verified and a replay of the recorded r081 fresh manifest was bit-identical, 35/80). Result: 28/80 sustained successes = 0.350, Wilson 95% interval [0.255, 0.459], which overlaps the recorded band [0.35, 0.44], so by the declared rule S1 REPRODUCES. Failure split: 8 drops (median fall step 32, i.e. early), 44 completed-but-not-sustained of which 42 slow spin and 2 off-centre. Timeout rate 0.90, tail-hit fraction 0.381, mean |axial rate| 5.24 rad/s. Roll direction (sign of the median axial rate over steps 120-149): 57 positive, 15 negative, 8 ended before the window. Medians by outcome: successes pre-window |rate| 5.61 rad/s, direction-aligned roll after step 150 19.5 rad, integral |rate| 33.2 rad, 1 reversal; slow-spin failures pre-window |rate| 1.68 rad/s, aligned roll 5.83 rad, integral |rate| 11.6 rad, 1 reversal, tail-hit 0.0; off-centre |rate| 0.05, 5 reversals. Rolling-eligible cases (alive at step 150 and median |rate| >= 1 rad/s over 120-149): 56 of 80, above the 20-pair minimum per contrast. The calibration grid was committed in the config before S1 and is unchanged. My position: S1 reproduces and the declared protocol continues unchanged with the calibration on seed 4740 and then the gate on seed 4741; nothing in S1 selects any constant. One observation, not a change: slow-spin failures roll in a consistent direction at about a third of the successes' rate, with few reversals, so the failure is low rate rather than direction instability. Do you agree that S1 reproduces and that the calibration and gate proceed exactly as declared? Answer agree or disagree with reasons."
+}
