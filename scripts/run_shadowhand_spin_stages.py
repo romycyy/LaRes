@@ -64,6 +64,7 @@ PEN_SPIN_STUDIES = {
     "symbolic_reward_alignment_audit": "symbolic_reward_audit",    # R-104 (archive-only score/success alignment, no Isaac)
     "symbolic_exact_success_ars": "success_ars",                   # R-106 (ARS on the exact sustained-success count)
     "pen_spin_objective_attribution": "success_ars",               # R-108 (exact-success vs dense-reward ARS, matched)
+    "slow_mode_archive_audit": "slow_mode_audit",                  # R-110 (archive-only: does reset geometry predict the slow mode?)
 }
 
 

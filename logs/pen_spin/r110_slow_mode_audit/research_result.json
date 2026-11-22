@@ -1,0 +1,128 @@
+{
+ "metrics": {
+  "gate_statistics": 0.10771331867409906,
+  "gate_statistics_ci95": [
+   0.09482760637346599,
+   0.12033986024001087
+  ],
+  "threshold": 0.15,
+  "verdict_by_rule": "refuted",
+  "reset_gate": {
+   "balanced_accuracy": 0.6077133186740991,
+   "advantage": 0.10771331867409906,
+   "advantage_ci95": [
+    0.09482760637346599,
+    0.12033986024001087
+   ],
+   "auc": 0.6406287185795738,
+   "features": 58
+  },
+  "classes": {
+   "slow": 1904,
+   "success": 2507,
+   "excluded_drop_or_off_centre": 197,
+   "episodes": 4608,
+   "manifests": 36
+  }
+ },
+ "controls": {
+  "prefix_gates": {
+   "first_30_steps": {
+    "balanced_accuracy": 0.7518523763713703,
+    "advantage": 0.25185237637137026,
+    "advantage_ci95": [
+     0.24096413617335188,
+     0.26350201213139357
+    ],
+    "auc": 0.8220292005912856,
+    "features": 5
+   },
+   "first_30_steps_plus_reset": {
+    "balanced_accuracy": 0.76654443189322,
+    "advantage": 0.26654443189321997,
+    "advantage_ci95": [
+     0.2529143190935972,
+     0.2797492092755104
+    ],
+    "auc": 0.8288586076632488,
+    "features": 63
+   },
+   "first_60_steps": {
+    "balanced_accuracy": 0.8112335879704893,
+    "advantage": 0.3112335879704893,
+    "advantage_ci95": [
+     0.2984803378302405,
+     0.3224873870673931
+    ],
+    "auc": 0.9003705590732504,
+    "features": 5
+   },
+   "first_60_steps_plus_reset": {
+    "balanced_accuracy": 0.8470863514931302,
+    "advantage": 0.34708635149313016,
+    "advantage_ci95": [
+     0.33548294121499755,
+     0.3582343907020371
+    ],
+    "auc": 0.8963821467956947,
+    "features": 63
+   }
+  },
+  "divergence": {
+   "first_step_auc_80": 30,
+   "first_step_auc_90": 60
+  },
+  "divergence_auc_at_steps": {
+   "10": 0.4411,
+   "20": 0.601,
+   "30": 0.8121,
+   "40": 0.8581,
+   "60": 0.9001,
+   "100": 0.9341,
+   "200": 0.9604,
+   "360": 0.9713
+  },
+  "roll_direction": {
+   "positive": {
+    "cases": 3722,
+    "success_rate": 0.61472326706072
+   },
+   "negative": {
+    "cases": 689,
+    "success_rate": 0.3178519593613933
+   }
+  },
+  "reference_to_finalist": {
+   "success->success": 1338,
+   "success->slow": 574,
+   "success->drop_or_off_centre": 20,
+   "slow->success": 1071,
+   "slow->slow": 1183,
+   "slow->drop_or_off_centre": 17,
+   "drop_or_off_centre->success": 98,
+   "drop_or_off_centre->slow": 147,
+   "drop_or_off_centre->drop_or_off_centre": 160
+  },
+  "reference_outcome_as_predictor": {
+   "balanced_accuracy": 0.6143619792312691,
+   "cases": 4166
+  },
+  "largest_reset_coefficients": {
+   "p1^2": -0.39242685543826644,
+   "p4^2": 0.2533415834479442,
+   "p1": 0.22182480136388563,
+   "p4": -0.18765066378421177,
+   "p3": -0.1614847179185936,
+   "p15": 0.08709826272133993,
+   "p0": 0.08116923160653508,
+   "p3^2": 0.07611430774672986
+  },
+  "placement_layout": "p0-p2 pen position, p3-p4 pen rotation, p5-p28 hand joint offsets (24 joints, simulator order)",
+  "simulator_episodes": 0,
+  "llm_calls": 0
+ },
+ "artifacts": [
+  "logs/pen_spin/r110_slow_mode_audit/summary.json"
+ ],
+ "notes": "Archive only (R-109's 36 confirmation manifests of the R-106 root, 4,608 episodes; 197 drops/off-centre excluded); placements reconstructed from manifest seeds and verified against the archived task hashes; the specification was frozen in the record before any feature-outcome association was examined. Diagnostics (not registered): the first 30 steps predict the mode with held-out balanced accuracy 0.752 (AUC 0.82) and the first 60 steps with 0.811 (AUC 0.90); the 10-step mean |axial rate| alone reaches AUC 0.80 at step 30 and 0.90 at step 60 (0.44 at step 10, i.e. no separation right after reset). So the mode is largely settled within the first second, during capture, and only weakly foreshadowed by the reset geometry (the pen's y position and its second rotation draw carry most of the reset signal). The mode is not a fixed property of a case: of the reference's 1,932 successes on these same cases the finalist is slow on 574, while 1,071 of the reference's 2,271 slow cases become finalist successes; the reference's outcome predicts the finalist's with balanced accuracy 0.614 only. Roll direction matters: 3,722 episodes roll positive with a 0.615 success rate, 689 roll negative with 0.318. One policy, one archive; association, not causation."
+}

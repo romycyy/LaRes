@@ -1,0 +1,341 @@
+{
+  "id": "R-110",
+  "title": "1. Archive audit: does reset geometry predict the slow attractor?",
+  "hypothesis": "A compact reset-geometry gate can identify susceptibility to the R-106 finalist's slow attractor because capture depends systematically on initial placement.",
+  "prediction": {
+    "metric": "gate_statistics",
+    "direction": "increase",
+    "threshold": 0.15,
+    "against": "a constant-label gate (balanced accuracy 0.50) on the same archived R-106 finalist episodes",
+    "rationale": "Define the scalar as manifest-held-out balanced classification accuracy for slow-spin failures versus sustained successes; the constant-label control scores 0.50. Freeze a regularized linear gate, preprocessing and manifest-grouped cross-validation before analysis. Test reset placement alone; compare first-30-step and first-60-step spin/centre summaries diagnostically. Use only logs/pen_spin/r109_structure_search/confirmation and CPU reconstruction of recorded placements: no simulator resets or controller tuning. Also report divergence timing, roll-direction dependence and reference-to-finalist outcome flips. This extends the completed failure-count audit to basin predictability; it is not another objective-alignment audit. Association can prioritize an intervention but cannot establish capture causality. Record uncertainty by resampling whole manifests, with results and provenance in research_result.json. This zero-episode measurement precedes the second proposal.\n\nFROZEN SPECIFICATION (triage round 1; no placement or prefix feature has been examined against outcome; only the class counts were known). Data: the R-106 root's 36 confirmation cells in logs/pen_spin/r109_structure_search/confirmation (4,608 episodes) and the reference's cells on the same manifests. Classes: slow-spin failure (completed, not sustained, final centre distance < 0.08) vs sustained success; drops and off-centre episodes are excluded from the gate and counted. Reset features: the 29 placement draws of each case, cases.placements(manifest seed, 128) (pen position 3, pen rotation 2, hand joints 24), plus their squares: 58 features, standardised on the training folds only. Gate: class-balanced L2-regularised logistic regression (penalty weight 1.0 on standardised features; scipy L-BFGS-B; intercept unpenalised). Folds: six groups of six manifests (manifests ordered by seed, group = index mod 6); every prediction is held out by manifest group. gate_statistics = held-out balanced accuracy of the reset-only gate minus 0.50 (the constant-label control). Uncertainty: 2,000 bootstrap resamples of whole manifests of the held-out predictions, numpy default_rng(4892) (analysis-only seed). Supported if the 95% lower bound >= 0.15; refuted if the upper bound < 0.15; otherwise inconclusive. Diagnostics by the same procedure, reported, not registered: prefix gates on five summaries of steps [0, 30) and [0, 60) (mean |axial rate|, mean signed rate, |rate| at the window's last step, mean centre distance, centre distance at the last step), alone and combined with the reset features; held-out AUCs; divergence timing = the earliest step at which the 10-step trailing mean of |axial rate| alone separates the classes with AUC >= 0.80 and >= 0.90; roll direction = sign of the mean axial rate over steps 100-300 and the success rate by sign; reference-to-finalist flips = the 2x2 mode table on the same cases; the largest standardised reset coefficients. Zero simulator episodes, zero LLM calls; an association cannot establish capture causality.\nFITTING DETAILS (round 2): objective = class-weighted mean log-loss (each class weighted to total 1/2) plus (1.0 / (2 n_train)) * ||w||^2 with n_train the number of training episodes; the intercept is not penalised; classification threshold 0.5 on the predicted probability of 'slow'. The reset-only held-out balanced accuracy minus 0.50 is the sole confirmatory statistic; the prefix, divergence-timing, roll-direction and reference-flip analyses are diagnostics and never revise the gate. Placement reconstruction is verified first: the hash of each reconstructed placement must equal the task_hash stored in the archived cell row, otherwise the audit halts as inconclusive. A new CPU-only module is needed because no existing audit code fits a grouped classifier on placements and step traces (symbolic_reward_audit.py compares two episode scores only); it imports no simulator code."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study slow_mode_archive_audit",
+    "seeds": [
+      4892
+    ],
+    "manifests": [],
+    "episodes": 0,
+    "llm_calls": 0,
+    "code_changes": [
+      "lares/envs/isaac_pen_spin/slow_mode_audit.py (new, no Isaac): classes, reset and prefix features, the manifest-grouped logistic gate, bootstrap, diagnostics.",
+      "scripts/run_shadowhand_spin_stages.py: one registry entry, slow_mode_archive_audit.",
+      "config/shadowhand_spin_stages.yaml: the slow_mode_archive_audit block.",
+      "tests/test_slow_mode_audit.py (new)."
+    ],
+    "needs_gpu": false,
+    "needs_llm": false
+  },
+  "status": "decided",
+  "source": "advisor",
+  "falsified_by": "The manifest-clustered 95% upper bound on the reset-only gate's balanced-accuracy advantage is below 0.15; an interval spanning that threshold is inconclusive. Strong prefix prediction without reset prediction would instead motivate investigating early dynamics, not claim reset causality.",
+  "cost_estimate": {
+    "episodes": 0,
+    "llm_calls": 0,
+    "wall_time_minutes": 10
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "774c0a3b28f71ac4a504e72171940653a0b3f9544bec57d3e50767fede604ee7",
+  "proposal_call_id": "call_00246",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-22T09:05:26",
+    "advisor_call_id": "call_00249",
+    "round": 3,
+    "note": "I accept the implementer's argument: the required features, fitting details, folds, provenance check and diagnostic restrictions are now frozen in the record. At 0 simulator episodes and 0 experimental LLM calls, this tests reset predictability beyond the completed failure-count audit before committ"
+  },
+  "run": {
+    "started_at": "2026-11-22T09:05:47",
+    "git_sha": "1664f08c45537f01fce9586c8106ebc0c0c20344",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r110_slow_mode_audit",
+    "finished_at": "2026-11-22T09:06:37"
+  },
+  "result": {
+    "metrics": {
+      "gate_statistics": 0.10771331867409906,
+      "gate_statistics_ci95": [
+        0.09482760637346599,
+        0.12033986024001087
+      ],
+      "threshold": 0.15,
+      "verdict_by_rule": "refuted",
+      "reset_gate": {
+        "balanced_accuracy": 0.6077133186740991,
+        "advantage": 0.10771331867409906,
+        "advantage_ci95": [
+          0.09482760637346599,
+          0.12033986024001087
+        ],
+        "auc": 0.6406287185795738,
+        "features": 58
+      },
+      "classes": {
+        "slow": 1904,
+        "success": 2507,
+        "excluded_drop_or_off_centre": 197,
+        "episodes": 4608,
+        "manifests": 36
+      }
+    },
+    "controls": {
+      "prefix_gates": {
+        "first_30_steps": {
+          "balanced_accuracy": 0.7518523763713703,
+          "advantage": 0.25185237637137026,
+          "advantage_ci95": [
+            0.24096413617335188,
+            0.26350201213139357
+          ],
+          "auc": 0.8220292005912856,
+          "features": 5
+        },
+        "first_30_steps_plus_reset": {
+          "balanced_accuracy": 0.76654443189322,
+          "advantage": 0.26654443189321997,
+          "advantage_ci95": [
+            0.2529143190935972,
+            0.2797492092755104
+          ],
+          "auc": 0.8288586076632488,
+          "features": 63
+        },
+        "first_60_steps": {
+          "balanced_accuracy": 0.8112335879704893,
+          "advantage": 0.3112335879704893,
+          "advantage_ci95": [
+            0.2984803378302405,
+            0.3224873870673931
+          ],
+          "auc": 0.9003705590732504,
+          "features": 5
+        },
+        "first_60_steps_plus_reset": {
+          "balanced_accuracy": 0.8470863514931302,
+          "advantage": 0.34708635149313016,
+          "advantage_ci95": [
+            0.33548294121499755,
+            0.3582343907020371
+          ],
+          "auc": 0.8963821467956947,
+          "features": 63
+        }
+      },
+      "divergence": {
+        "first_step_auc_80": 30,
+        "first_step_auc_90": 60
+      },
+      "divergence_auc_at_steps": {
+        "10": 0.4411,
+        "20": 0.601,
+        "30": 0.8121,
+        "40": 0.8581,
+        "60": 0.9001,
+        "100": 0.9341,
+        "200": 0.9604,
+        "360": 0.9713
+      },
+      "roll_direction": {
+        "positive": {
+          "cases": 3722,
+          "success_rate": 0.61472326706072
+        },
+        "negative": {
+          "cases": 689,
+          "success_rate": 0.3178519593613933
+        }
+      },
+      "reference_to_finalist": {
+        "success->success": 1338,
+        "success->slow": 574,
+        "success->drop_or_off_centre": 20,
+        "slow->success": 1071,
+        "slow->slow": 1183,
+        "slow->drop_or_off_centre": 17,
+        "drop_or_off_centre->success": 98,
+        "drop_or_off_centre->slow": 147,
+        "drop_or_off_centre->drop_or_off_centre": 160
+      },
+      "reference_outcome_as_predictor": {
+        "balanced_accuracy": 0.6143619792312691,
+        "cases": 4166
+      },
+      "largest_reset_coefficients": {
+        "p1^2": -0.39242685543826644,
+        "p4^2": 0.2533415834479442,
+        "p1": 0.22182480136388563,
+        "p4": -0.18765066378421177,
+        "p3": -0.1614847179185936,
+        "p15": 0.08709826272133993,
+        "p0": 0.08116923160653508,
+        "p3^2": 0.07611430774672986
+      },
+      "placement_layout": "p0-p2 pen position, p3-p4 pen rotation, p5-p28 hand joint offsets (24 joints, simulator order)",
+      "simulator_episodes": 0,
+      "llm_calls": 0
+    },
+    "artifacts": [
+      "logs/pen_spin/r110_slow_mode_audit/summary.json"
+    ],
+    "notes": "Archive only (R-109's 36 confirmation manifests of the R-106 root, 4,608 episodes; 197 drops/off-centre excluded); placements reconstructed from manifest seeds and verified against the archived task hashes; the specification was frozen in the record before any feature-outcome association was examined. Diagnostics (not registered): the first 30 steps predict the mode with held-out balanced accuracy 0.752 (AUC 0.82) and the first 60 steps with 0.811 (AUC 0.90); the 10-step mean |axial rate| alone reaches AUC 0.80 at step 30 and 0.90 at step 60 (0.44 at step 10, i.e. no separation right after reset). So the mode is largely settled within the first second, during capture, and only weakly foreshadowed by the reset geometry (the pen's y position and its second rotation draw carry most of the reset signal). The mode is not a fixed property of a case: of the reference's 1,932 successes on these same cases the finalist is slow on 574, while 1,071 of the reference's 2,271 slow cases become finalist successes; the reference's outcome predicts the finalist's with balanced accuracy 0.614 only. Roll direction matters: 3,722 episodes roll positive with a 0.615 success rate, 689 roll negative with 0.318. One policy, one archive; association, not causation."
+  },
+  "prediction_outcome": {
+    "metric": "gate_statistics",
+    "before": null,
+    "after": 0.10771331867409906,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.9,
+      "reasoning": "The reset-only gate's held-out balanced accuracy is 0.608, an advantage of +0.108 over the constant-label control with a manifest-bootstrap 95% interval [+0.095, +0.120]; the upper bound is below the registered +0.15, so the prediction that reset geometry identifies slow-mode susceptibility at that strength is refuted (there is a real but weak dependence: the interval excludes zero). The diagnostics locate the decision instead in the first second: prefix gates reach 0.752 at 30 steps and 0.811 at 60 (AUC 0.90), and the same cases flip mode between the reference and the finalist in both directions (574 success->slow, 1,071 slow->success), so the mode is an early, sensitive capture outcome rather than a property of the placement. Negative-roll episodes succeed at 0.32 against 0.61 for positive-roll ones.",
+      "cited_artifacts": [],
+      "next_experiment": "Do not run R-111 as written (posture-then-stroke fitting was conditional on a reset/capture-posture dependence; the dependence found is weak). The evidence points to (i) the first 60 steps (capture transient) and (ii) episodes that, once slow, stay slow for the remaining five seconds: a controller with no memory cannot tell 'still starting' from 'stuck', so P3 (compact memory) is now motivated by traces: e.g. a slow-for-N-steps latch that triggers a re-start of the capture/stroke transient, compared against the same term without memory. Alternatively a roll-direction-aware term (the reference and its residual treat both directions alike, and the negative direction is twice as likely to fail). Ask the advisor to choose.",
+      "recorded_at": "2026-11-22T09:06:39",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "The reset-only gate achieved balanced accuracy 0.6077 against the constant-label control of 0.50, giving gate_statistics +0.1077 [logs/pen_spin/r110_slow_mode_audit/summary.json]. Its manifest-clustered 95% interval, [+0.0948, +0.1203], is entirely below the required +0.15 increase and therefore meets the registered falsification rule [logs/pen_spin/r110_slow_mode_audit/summary.json]. Reset geometry has predictive signal above the constant control, but this frozen gate does not attain the predicted magnitude; this does not exclude other forms of reset dependence [logs/pen_spin/r110_slow_mode_audit/summary.json]. Diagnostic prefix-only balanced accuracies reach 0.7519 after 30 steps and 0.8112 after 60 steps, but those associations neither rescue the confirmatory prediction nor establish capture causality or irreversible outcome determination [logs/pen_spin/r110_slow_mode_audit/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r110_slow_mode_audit/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-22T09:06:56",
+      "call_id": "call_00250"
+    }
+  ],
+  "decision_id": "D-078",
+  "history": [
+    {
+      "at": "2026-11-22T09:05:26",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-22T09:05:47",
+      "from": "approved",
+      "to": "running",
+      "note": "git 1664f08c45 (dirty)"
+    },
+    {
+      "at": "2026-11-22T09:06:37",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-22T09:07:11",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-078: refuted"
+    }
+  ],
+  "created_at": "2026-11-22T09:02:12",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "At 0 simulator episodes and 0 LLM calls, this is the best next spend before a capture/posture intervention. It extends the completed failure-count audit to held-out predictability rather than repeating objective alignment. The prediction is a gate_statistics increase of at least 0.15 over the constant-label control on the same archived episodes, falsified if the manifest-clustered 95% upper bound on that advantage is below 0.15. Its limitation is causal: reset predictability can prioritize an intervention but cannot establish that posture changes will help.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00247",
+          "briefing_sha256": "5933caea3407352470e91c12adf1437bf64a12fbf0b44d1a3a7bb6694b98c309",
+          "at": "2026-11-22T09:02:57"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Free and the right next step, but 'freeze before analysis' has to mean the record holds the definitions, and today it holds none (no seed, no classifier, no features, no folds). I have already looked at class COUNTS of this archive (stated in the focus); I have not looked at any placement or prefix feature against outcome. Proposed frozen specification: data = the R-106 root's 36 confirmation cells of R-109 (4,608 episodes), classes slow-spin failure (completed, not sustained, final centre distance < 0.08) vs sustained success, drops and off-centre excluded and counted; reset features = the 29 placement draws of each case (cases.placements(manifest seed, 128): pen position 3, pen rotation 2, hand joints 24) plus their squares (58 features), standardised on the training folds; gate = class-balanced L2 logistic regression (penalty weight 1.0 on standardised features, scipy L-BFGS); folds = six groups of six manifests (manifest order by seed, group = index mod 6), all predictions held out by manifest; statistic = held-out balanced accuracy minus 0.50; uncertainty = 2,000 bootstrap resamples of whole manifests of the held-out predictions, numpy default_rng(4892) (analysis-only seed); supported if the 95% lower bound >= 0.15, refuted if the upper bound < 0.15. Diagnostics with the same procedure: prefix gates on 5 summaries of steps [0, 30) and [0, 60) (mean |axial rate|, mean signed rate, |rate| at the last step, mean centre distance, centre distance at the last step), alone and with the reset features; divergence timing = the earliest step at which the 10-step mean |axial rate| alone separates the classes with AUC >= 0.80 and >= 0.90; roll direction = sign of the mean axial rate over steps 100-300, success rate by sign; reference-to-finalist flips = the 2x2 mode table over the same cases and how well the reference's outcome on a case predicts the finalist's. Code in a new no-Isaac module lares/envs/isaac_pen_spin/slow_mode_audit.py with a test; run on the box where the traces are.",
+          "changes_applied": [],
+          "at": "2026-11-22T09:03:21"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "I accept the implementer's objection: the original approval left essential analysis choices unspecified, and the proposed specification has not yet been committed to the protocol. This archive-only audit would distinguish reset predictability from the completed failure-count audit at 0 simulator episodes and 0 LLM calls. The prediction remains a gate_statistics increase of at least 0.15 over the constant-label control; falsified_by is a manifest-clustered 95% upper bound below 0.15, with threshold-spanning intervals inconclusive. Its weakest point remains interpretation: failure of this particular gate would not exclude other reset dependence, while successful classification would not establish capture causality.",
+          "suggested_changes": [
+            "Commit the implementer's proposed frozen specification before inspecting feature–outcome associations: the 36 archived R-106-root cells, class definitions and exclusions, 58 reset features, training-fold standardisation, class-balanced L2 logistic gate, six manifest-grouped folds, and 2,000 whole-manifest bootstrap resamples. Also specify loss/penalty normalisation, intercept treatment and the classification threshold.",
+            "Make reset-only held-out balanced accuracy minus 0.50 the sole confirmatory statistic, supported only when its 95% lower bound is at least 0.15. Freeze the proposed prefix, divergence-timing, roll-direction and reference-flip analyses as diagnostics; do not use their outcomes to revise the confirmatory gate.",
+            "Retain scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml as the registered entry point and config, reusing existing archive and placement utilities. Justify any necessary new CPU-only helper by identifying functionality unavailable in existing audit code; prohibit simulator imports or resets and halt if archived placements cannot be reconstructed faithfully.",
+            "Reserve free seed 4892 for analysis-only bootstrap randomness, leaving simulator seeds empty. Record archive provenance, exclusions, folds, fitting settings and uncertainty in research_result.json; keep the budget at 0 simulator episodes and 0 LLM calls, with no controller tuning or incumbent changes."
+          ],
+          "priority": 1,
+          "call_id": "call_00248",
+          "briefing_sha256": "11d378ae205cb8c34ec008acf88953bd1b9002760495e10bb8583f3cce6440b6",
+          "at": "2026-11-22T09:03:51"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agreed on all four changes; the patch persists the specification with the loss/penalty normalisation, unpenalised intercept, 0.5 threshold, the placement-reconstruction halt and the diagnostics marked as non-confirmatory.",
+          "changes_applied": [],
+          "at": "2026-11-22T09:04:02"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the implementer's argument: the required features, fitting details, folds, provenance check and diagnostic restrictions are now frozen in the record. At 0 simulator episodes and 0 experimental LLM calls, this tests reset predictability beyond the completed failure-count audit before committing to a controller intervention. The prediction is a gate_statistics increase of at least 0.15 versus the constant-label gate; a manifest-clustered 95% upper bound below 0.15 falsifies it, while an interval spanning 0.15 is inconclusive. Its weakest point remains interpretation: association cannot establish capture causality, and failure of this particular gate cannot exclude other reset dependence.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00249",
+          "briefing_sha256": "0a190ec1f066e281f70ac73cfe894de69d4e32ec234f97c7ca910db4681a4de9",
+          "at": "2026-11-22T09:04:22"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve: the gate, features, folds, statistic, bootstrap and decision rule are frozen before any feature-outcome association is examined; zero simulator episodes; it decides whether the slow mode is set by the reset geometry or arises later, which is what the next intervention depends on.",
+          "changes_applied": [],
+          "at": "2026-11-22T09:05:26"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 3
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-22T09:04:04",
+      "round": 2,
+      "patch": {
+        "prediction": {
+          "rationale": "Define the scalar as manifest-held-out balanced classification accuracy for slow-spin failures versus sustained successes; the constant-label control scores 0.50. Freeze a regularized linear gate, preprocessing and manifest-grouped cross-validation before analysis. Test reset placement alone; compare first-30-step and first-60-step spin/centre summaries diagnostically. Use only logs/pen_spin/r109_structure_search/confirmation and CPU reconstruction of recorded placements: no simulator resets or controller tuning. Also report divergence timing, roll-direction dependence and reference-to-finalist outcome flips. This extends the completed failure-count audit to basin predictability; it is not another objective-alignment audit. Association can prioritize an intervention but cannot establish capture causality. Record uncertainty by resampling whole manifests, with results and provenance in research_result.json. This zero-episode measurement precedes the second proposal.\n\nFROZEN SPECIFICATION (triage round 1; no placement or prefix feature has been examined against outcome; only the class counts were known). Data: the R-106 root's 36 confirmation cells in logs/pen_spin/r109_structure_search/confirmation (4,608 episodes) and the reference's cells on the same manifests. Classes: slow-spin failure (completed, not sustained, final centre distance < 0.08) vs sustained success; drops and off-centre episodes are excluded from the gate and counted. Reset features: the 29 placement draws of each case, cases.placements(manifest seed, 128) (pen position 3, pen rotation 2, hand joints 24), plus their squares: 58 features, standardised on the training folds only. Gate: class-balanced L2-regularised logistic regression (penalty weight 1.0 on standardised features; scipy L-BFGS-B; intercept unpenalised). Folds: six groups of six manifests (manifests ordered by seed, group = index mod 6); every prediction is held out by manifest group. gate_statistics = held-out balanced accuracy of the reset-only gate minus 0.50 (the constant-label control). Uncertainty: 2,000 bootstrap resamples of whole manifests of the held-out predictions, numpy default_rng(4892) (analysis-only seed). Supported if the 95% lower bound >= 0.15; refuted if the upper bound < 0.15; otherwise inconclusive. Diagnostics by the same procedure, reported, not registered: prefix gates on five summaries of steps [0, 30) and [0, 60) (mean |axial rate|, mean signed rate, |rate| at the window's last step, mean centre distance, centre distance at the last step), alone and combined with the reset features; held-out AUCs; divergence timing = the earliest step at which the 10-step trailing mean of |axial rate| alone separates the classes with AUC >= 0.80 and >= 0.90; roll direction = sign of the mean axial rate over steps 100-300 and the success rate by sign; reference-to-finalist flips = the 2x2 mode table on the same cases; the largest standardised reset coefficients. Zero simulator episodes, zero LLM calls; an association cannot establish capture causality.\nFITTING DETAILS (round 2): objective = class-weighted mean log-loss (each class weighted to total 1/2) plus (1.0 / (2 n_train)) * ||w||^2 with n_train the number of training episodes; the intercept is not penalised; classification threshold 0.5 on the predicted probability of 'slow'. The reset-only held-out balanced accuracy minus 0.50 is the sole confirmatory statistic; the prefix, divergence-timing, roll-direction and reference-flip analyses are diagnostics and never revise the gate. Placement reconstruction is verified first: the hash of each reconstructed placement must equal the task_hash stored in the archived cell row, otherwise the audit halts as inconclusive. A new CPU-only module is needed because no existing audit code fits a grouped classifier on placements and step traces (symbolic_reward_audit.py compares two episode scores only); it imports no simulator code.",
+          "against": "a constant-label gate (balanced accuracy 0.50) on the same archived R-106 finalist episodes"
+        },
+        "protocol": {
+          "seeds": [
+            4892
+          ],
+          "code_changes": [
+            "lares/envs/isaac_pen_spin/slow_mode_audit.py (new, no Isaac): classes, reset and prefix features, the manifest-grouped logistic gate, bootstrap, diagnostics.",
+            "scripts/run_shadowhand_spin_stages.py: one registry entry, slow_mode_archive_audit.",
+            "config/shadowhand_spin_stages.yaml: the slow_mode_archive_audit block.",
+            "tests/test_slow_mode_audit.py (new)."
+          ]
+        },
+        "cost_estimate": {
+          "episodes": 0,
+          "llm_calls": 0,
+          "wall_time_minutes": 10
+        }
+      },
+      "note": "Rounds 1-2 agreed revise: the complete audit specification is frozen in the record before any feature-outcome association is inspected."
+    }
+  ]
+}

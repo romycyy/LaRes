@@ -1,0 +1,84 @@
+{
+  "id": "R-111",
+  "title": "2. Conditional P4: construct native posture and stroke components",
+  "hypothesis": "Optimizing native grasp posture before stroke parameters preserves successful capture basins better than simultaneous fitting while escaping limitations of the frozen additive residual.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "budget-matched simultaneous native-component fitting from config/pen_spin/r106_success_ars_finalist/finalist.json",
+    "rationale": "Run only after the archive audit is decided and motivates capture/posture intervention; otherwise return this dependency to triage without spending episodes. Supersede deferred R-107's finger-chain output replacement with native-component fitting: the new evidence is reliable shared-placement learning, a fixed-structure plateau and a dominant slow mode. D-048 used the old controller and a 30-case instrument, so does not settle this contrast. Freeze two groups before training: active grasp-pose constants, then stroke_amp/lift_amp/phase_lead. Keep the curl clamp, stroke scaling, R-106 residual and all other components unchanged. Both arms receive identical bounds, complexity, placement streams and 12 exact-success ARS updates using 512 shared placements per signed candidate; incremental fitting allocates six updates per group, simultaneous fitting all twelve to both groups. Freeze terminal means without checkpoint selection. Scope is one matched training pair, not an optimizer-seed population claim. Evaluate both finalists, the frozen R-106 root and D-072 reference. Use a disjoint 512-pair sizing pilot, then one confirmation sized prospectively for a 0.05 effect using pilot discordance and manifest variability. Historical discordance 0.16-0.41 implies roughly 500-1,280 independent pairs at 80% power; plan at least 1,536 and at most 3,584, returning to triage before confirmation if clustering requires more. Keep the strict paired success and drop qualification rules, including root and D-072 comparisons; positivity alone does not establish a five-point gain. Preserve the saved incumbent. Estimate 270,000 charged episode starts including reset overhead, with a 280,000 ceiling. Allocate seeds from the live free ledger only at triage and instantiate the listed manifest template; the new handler is not yet runnable. Save all required paired diagnostics, hashes, costs and deviations in research_result.json."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study native_component_construction",
+    "seeds": [],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_native_components_<role>_s<seed>.yaml"
+    ],
+    "episodes": 270000,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py",
+      "config/shadowhand_spin_stages.yaml",
+      "tests/test_shadowhand_spin_native_components.py"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "A confirmation interval whose upper bound is below +0.05 refutes the predicted incremental advantage; an interval containing both zero and +0.05 is inconclusive. Failure to improve over the frozen R-106 root or failure of drop qualification prevents adoption regardless of the incremental-versus-simultaneous contrast.",
+  "cost_estimate": {
+    "episodes": 270000,
+    "llm_calls": 0,
+    "wall_time_minutes": 80
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "774c0a3b28f71ac4a504e72171940653a0b3f9544bec57d3e50767fede604ee7",
+  "proposal_call_id": "call_00246",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-22T09:03:19",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-22T09:02:12",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Native posture-then-stroke fitting tests a different intervention from deferred finger-chain replacement, motivated by the residual-family plateau, but its capture/posture dependency remains unresolved. Defer the estimated 270,000 simulator starts, with a 280,000 ceiling and 0 LLM calls, until R-110 is decided and actually motivates this intervention; archive association alone must not automatically authorize training. The prediction is a paired_success_difference increase of at least 0.05 against budget-matched simultaneous native-component fitting, falsified if the confirmation interval upper bound is below +0.05. Return to triage after the audit with concrete free-seed allocations and the executable frozen protocol; no training or sizing-pilot episodes are authorized now.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00247",
+          "briefing_sha256": "5933caea3407352470e91c12adf1437bf64a12fbf0b44d1a3a7bb6694b98c309",
+          "at": "2026-11-22T09:02:57"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree: it depends on what R-110 says about where the slow mode is decided, and its seeds, bounds and component list are not yet concrete.",
+          "changes_applied": [],
+          "at": "2026-11-22T09:03:19"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

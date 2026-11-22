@@ -667,6 +667,12 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   gate would have kept the parent 18 of 18 times; it was amended mid-run, outcome-informed); RNG seeds built as
   `block_seed + offset + k` collide when block seeds are consecutive (use a seed sequence per (block, round, slot));
   `pgrep -f <pattern>` over ssh matches the ssh command's own shell (bracket the first letter).
+- **R-110 result (D-078, refuted; archive only, 2026-11-22).** `slow_mode_audit.py` (`--study slow_mode_archive_audit`):
+  the R-106 finalist still fails 41% of episodes in a distinct **slow-rolling mode** (about 2 rad/s against 8 rad/s in
+  successes; drops 3%, off-centre 1%). Reset placement predicts it only weakly (held-out balanced accuracy 0.608,
+  +0.108 [+0.095, +0.120] against a predicted +0.15); the first 60 steps predict it at 0.81 (AUC 0.90); the same case
+  flips mode between policies in both directions; negative-roll episodes succeed at 0.32 against 0.61 for positive.
+  The mode is an early capture outcome that then persists, which is what motivates memory (P3) or a recovery behaviour.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

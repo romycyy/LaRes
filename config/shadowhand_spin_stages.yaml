@@ -1489,3 +1489,21 @@ research_protocols:
     threshold: 0.05
     drop_margin: 0.05
     start_ceiling: 250000
+  # R-110 (no Isaac, no LLM, no episode): does the reset placement predict the R-106 finalist's slow-rolling mode on
+  # R-109's 4,608 archived confirmation episodes? Frozen at triage (lares/envs/isaac_pen_spin/slow_mode_audit.py).
+  #   python scripts/run_shadowhand_spin_stages.py --study slow_mode_archive_audit
+  slow_mode_archive_audit:
+    log_dir: "logs/pen_spin/r110_slow_mode_audit"
+    source_log_dir: "logs/pen_spin/r109_structure_search"
+    policy: "r106"
+    manifests: 36
+    horizon: 360
+    folds: 6
+    penalty: 1.0
+    threshold: 0.15
+    resamples: 2000
+    seed: 4892
+    pool_seed: 4892
+    prefix_windows: [30, 60]
+    trailing_mean: 10
+    direction_window: [100, 300]
