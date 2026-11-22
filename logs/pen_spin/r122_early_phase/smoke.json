@@ -1,0 +1,61 @@
+{
+ "mode": "smoke_early",
+ "gates": {
+  "inheritance_identity": {
+   "compared": 699684,
+   "mismatches": 0,
+   "passes": true
+  },
+  "scorer_live": {
+   "parent_successes": 1634,
+   "passes": true
+  },
+  "startup_only": {
+   "action_differs_env_steps": 120904,
+   "after_step_60": 0,
+   "passes": true
+  },
+  "state_reset": {
+   "passes": true
+  }
+ },
+ "aa": {
+  "slot_success": [
+   0.802734375,
+   0.798828125,
+   0.80078125,
+   0.7890625
+  ],
+  "pairwise_discordance": [
+   0.07421875,
+   0.076171875,
+   0.099609375,
+   0.072265625,
+   0.091796875,
+   0.09765625
+  ],
+  "mean_discordance": 0.08528645833333333,
+  "slot_differences": [
+   0.00390625,
+   0.001953125,
+   0.013671875,
+   -0.001953125,
+   0.009765625,
+   0.01171875
+  ],
+  "sd_of_slot_differences": 0.006135009890307159,
+  "max_abs_slot_difference": 0.013671875,
+  "cases": 512
+ },
+ "probe": {
+  "success": 0.76904296875,
+  "drops": 122,
+  "parent_success_same_placements": 0.7978515625,
+  "parent_drops": 123
+ },
+ "starts": 8201,
+ "throughput": {
+  "transitions_per_s": 30816.727683594545
+ },
+ "passes": true
+}

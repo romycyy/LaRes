@@ -717,6 +717,11 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   (0.81)**; every finalist qualifies against the parent and D-072. Best controller so far:
   `config/pen_spin/r121_joint_finalist/` (not installed as the incumbent; the user's call). Per-update mean candidate
   success is a poor progress indicator: it was flat in all arms while every finalist improved on fresh cases.
+- **R-122 result (D-085, refuted; 2026-11-22).** `recovery_early.py` (`--study joint_early_phase`; `StartupRoot` in
+  `recovery_module.py` adds optional per-joint start-up offsets inside the residual clamp, fading by step 60). From the
+  R-121 JOINT finalist: EARLY minus CONTINUE +0.013 [-0.009, +0.035]; neither improves on JOINT (CONTINUE -0.016, EARLY
+  -0.003). **JOINT has plateaued under ARS continuation at about 0.79-0.81** (1,207 of 1,536 here) and stays the best
+  controller. The offsets cut early drops 42 -> 29 but persistent-slow failures rose 158 -> 174.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

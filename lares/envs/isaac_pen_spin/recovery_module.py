@@ -60,6 +60,29 @@ CONTRASTS = (("trained", "r106"), ("scripted", "r106"), ("trained", "scripted"),
 N_RESIDUAL = sr.N_COEF
 DIM_JOINT = DIM + N_RESIDUAL                                 # R-121: the module's 11 coordinates, then the residual's 32
 RESIDUAL_SPAN = 0.20                                         # a unit of residual coordinate is the whole [-0.10, 0.10] range
+DIM_EARLY = DIM_JOINT + sr.N_JOINTS                          # R-122: 20 start-up offset coordinates after the 43 joint ones
+STARTUP_STEPS = 60.0
+
+
+class StartupRoot(sr.SymbolicResidualController):
+    """The residual controller with an optional start-up offset per joint inside its clamp::
+
+        residual = clip(a s + b_g vhat + c_g ehat + offset * max(0, 1 - t / 60), -cap, cap)
+
+    ``startup_offsets`` is ``None`` (the unchanged controller) or ``(N, 20)``; zero offsets add exactly nothing."""
+
+    startup_offsets = None
+    startup_gate = None
+
+    def mean(self, parts: dict, theta):
+        if self.startup_offsets is None:
+            return super().mean(parts, theta)
+        idx = torch.as_tensor(sr.GROUP_OF, device=parts["vhat"].device)
+        a = theta[..., :sr.N_JOINTS]
+        b = theta[..., sr.N_JOINTS:sr.N_JOINTS + sr.N_GROUPS].index_select(-1, idx)
+        c = theta[..., sr.N_JOINTS + sr.N_GROUPS:].index_select(-1, idx)
+        raw = a * parts["s"] + b * parts["vhat"] + c * parts["ehat"] + self.startup_offsets * self.startup_gate
+        return parts["ref"] + raw.clamp(-self.cap, self.cap)
 
 
 def bounds(cfg: dict | None = None) -> tuple:
@@ -71,7 +94,7 @@ def bounds(cfg: dict | None = None) -> tuple:
 
 
 def module_dim(d: int) -> int:
-    return DIM if d == DIM_JOINT else d
+    return DIM if d in (DIM_JOINT, DIM_EARLY) else d
 
 
 def to_params(x, low=None, high=None) -> np.ndarray:
@@ -91,7 +114,7 @@ def to_unit(params, low=None, high=None) -> np.ndarray:
 
 def x_record(x, low=None, high=None) -> dict:
     xs = [float(v) for v in np.asarray(x, dtype=np.float64).reshape(-1)]
-    if len(xs) not in (DIM, DIM_RETRY, DIM_JOINT):
+    if len(xs) not in (DIM, DIM_RETRY, DIM_JOINT, DIM_EARLY):
         raise ValueError(f"the module has {DIM} parameters ({DIM_RETRY} with a second attempt, {DIM_JOINT} with the residual)")
     return {"x": xs, "params": dict(zip(NAMES, [float(v) for v in to_params(xs, low, high)])),
             "sha256": sha256_text(json.dumps(xs, separators=(",", ":")))}
@@ -128,9 +151,14 @@ class RecoveryController:
         """Per-environment (or shared) parameters as tensors on the controller's device."""
         dev, dt = self.device, self.dtype
         x = np.atleast_2d(np.asarray(x, dtype=np.float64))
-        if x.shape[1] == DIM_JOINT:                          # the residual's coefficients, one row per environment
+        self.root.startup_offsets = None
+        if x.shape[1] == DIM_EARLY:                          # start-up offsets inside the residual clamp
+            off = np.clip(RESIDUAL_SPAN * (np.clip(x[:, DIM_JOINT:], 0.0, 1.0) - 0.5), -self.root.cap, self.root.cap)
+            off = torch.as_tensor(off, device=dev, dtype=dt)
+            self.root.startup_offsets = off.expand(self.n, sr.N_JOINTS) if off.shape[0] == 1 else off
+        if x.shape[1] in (DIM_JOINT, DIM_EARLY):             # the residual's coefficients, one row per environment
             theta0 = self.root._theta_cpu.double().numpy()
-            theta = np.clip(theta0 + RESIDUAL_SPAN * (np.clip(x[:, DIM:], 0.0, 1.0) - self.residual_origin), -self.root.bound, self.root.bound)
+            theta = np.clip(theta0 + RESIDUAL_SPAN * (np.clip(x[:, DIM:DIM_JOINT], 0.0, 1.0) - self.residual_origin), -self.root.bound, self.root.bound)
             th = torch.as_tensor(theta, device=dev, dtype=dt)
             self.root.theta = th.expand(self.n, N_RESIDUAL) if th.shape[0] == 1 else th
         p = torch.as_tensor(to_params(x, self.low, self.high), device=dev, dtype=dt)
@@ -198,6 +226,7 @@ class RecoveryController:
         beta = beta + beta2 * self.kappa                     # kappa = 0 leaves beta unchanged exactly
         boost = boost | (self.elig2 & (u2 >= end) & (u2 < end + BOOST_STEPS))
         self.gain.scale[:] = torch.where(boost, self.mult, torch.ones_like(self.mult)).unsqueeze(1).cpu()
+        self.root.startup_gate = (1.0 - self.step.to(self.dtype) / STARTUP_STEPS).clamp(min=0.0).unsqueeze(1)
         a_root = self.root(obs, t, ctx)
         self.last_root = a_root
         w = beta.unsqueeze(1) * self.depth
@@ -223,7 +252,8 @@ def residual_origin(theta) -> np.ndarray:
 
 def build(protocol_cfg: dict, name: str, x, enabled: bool = True, inner=None, original_bounds: bool = False) -> RecoveryController:
     theta = ra.finalist_theta(protocol_cfg)
-    root = sr.build_controller(protocol_cfg, f"{name}:root", theta, ra.normalization(protocol_cfg), inner=inner)
+    root = StartupRoot(f"{name}:root", sr.build_reference(protocol_cfg, f"{name}:root:reference", inner=inner),
+                       ra.normalization(protocol_cfg), protocol_cfg["actor"], theta)
     low, high = bounds(None if original_bounds else protocol_cfg)
     return RecoveryController(name, root, x, float(protocol_cfg["centre_tolerance"]), enabled, low, high, residual_origin(theta))
 
@@ -387,7 +417,8 @@ def run(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
 # ---------------------------------------------------------------------------------------------------------------------
 
 
-def _rollout(env, ctx, ctrl, vecs, x_env, *, plain=None, script_check: dict | None = None, plain_tol: float = 0.0) -> dict:
+def _rollout(env, ctx, ctrl, vecs, x_env, *, plain=None, script_check: dict | None = None, plain_tol: float = 0.0,
+             late_from: int | None = None) -> dict:
     from lares.envs.isaac_pen_spin.runner import _write_placements
     from lares.envs.isaac_pen_spin.success_ars import first_episode_scores
 
@@ -405,14 +436,16 @@ def _rollout(env, ctx, ctrl, vecs, x_env, *, plain=None, script_check: dict | No
     completed = torch.zeros(n, dtype=torch.bool, device=dev)
     length = torch.zeros(n, dtype=torch.long, device=dev)
     pred = torch.zeros((T, n), dtype=torch.bool, device=dev)
-    starts, mism, compared, script_bad, elig_bad = n, 0, 0, 0, None
+    starts, mism, compared, script_bad, elig_bad, late_mism = n, 0, 0, 0, None, 0
     env_rate = torch.zeros(n, device=dev)
     env_centre = torch.zeros(n, device=dev)
     for t in range(T):
         action = ctrl(obs, t, ctx)
         if plain is not None:
             a_plain = plain(obs, t, ctx).to(action.device)
-            mism += int(((action[alive] - a_plain[alive]).abs() > plain_tol).any(dim=1).sum())
+            bad = int(((action[alive] - a_plain[alive]).abs() > plain_tol).any(dim=1).sum())
+            mism += bad
+            late_mism += bad if (late_from is not None and t >= late_from) else 0
             compared += int(alive.sum())
         if script_check is not None:
             # the D-080 script on the same observations: eligibility from the env's own values, the fixed 20/40 blend
@@ -443,7 +476,7 @@ def _rollout(env, ctx, ctrl, vecs, x_env, *, plain=None, script_check: dict | No
             break
     sc = first_episode_scores(pred.cpu().numpy(), length.cpu().numpy(), completed.cpu().numpy())
     return {"sustained": sc["sustained"], "completed": completed.cpu().numpy(), "starts": starts, "env_steps": int((t + 1) * n),
-            "identity": {"compared": compared, "mismatches": mism}, "script_mismatches": script_bad,
+            "identity": {"compared": compared, "mismatches": mism}, "late_mismatches": late_mism, "script_mismatches": script_bad,
             "eligibility_mismatches": elig_bad, "triggered": int(ctrl.triggered), "triggered2": int(ctrl.triggered2)}
 
 
@@ -496,6 +529,8 @@ def _child(req: dict, cfg: dict, device: str) -> dict:
             return _smoke_retry(env, ctx, cfg, lay, seed, device)
         if req["mode"] == "smoke_joint":
             return _smoke_joint(env, ctx, cfg, lay, seed, device, req)
+        if req["mode"] == "smoke_early":
+            return _smoke_early(env, ctx, cfg, lay, seed, device)
         x = np.asarray(req.get("init_x", SCRIPT_X), dtype=float).copy()      # R-118 trains from a given point
         dim, draw_dim = len(x), int(req.get("direction_dim", len(x)))
         scale = np.asarray(req.get("coord_scale", [1.0] * dim), dtype=float)
@@ -531,7 +566,8 @@ def _child(req: dict, cfg: dict, device: str) -> dict:
                             "clipped_candidate_coordinates": int((raw != cand).sum()),
                             "second_attempt_fraction": trig2,
                             "params": dict(zip(NAMES, [float(v) for v in to_params(x, ctrl.low, ctrl.high)])),
-                            "residual_shift_l2": float(np.linalg.norm(RESIDUAL_SPAN * (x[DIM:] - ctrl.residual_origin))) if dim == DIM_JOINT else None,
+                            "residual_shift_l2": float(np.linalg.norm(RESIDUAL_SPAN * (x[DIM:DIM_JOINT] - ctrl.residual_origin))) if dim >= DIM_JOINT else None,
+                            "startup_offset_abs_max": float(np.abs(RESIDUAL_SPAN * (x[DIM_JOINT:] - 0.5)).max()) if dim == DIM_EARLY else None,
                             "starts_so_far": starts})
             print("update", json.dumps(updates[-1]), flush=True)
         return {"mode": "train", "seed": seed, "complete": complete, "note": note, "updates": updates, "starts": starts,
@@ -603,6 +639,40 @@ def _smoke_joint(env, ctx, cfg: dict, lay: dict, seed: int, device: str, req: di
                                   "passes": c["identity"]["mismatches"] > 0 and c["triggered"] > a["triggered"]}
     out["starts"] = a["starts"] + b["starts"] + c["starts"]
     out["throughput"] = {"transitions_per_s": (a["env_steps"] + b["env_steps"] + c["env_steps"]) / (time.time() - t0)}
+    out["passes"] = all(g["passes"] for g in out["gates"].values())
+    return out
+
+
+def _smoke_early(env, ctx, cfg: dict, lay: dict, seed: int, device: str) -> dict:
+    """R-122's gate: start-up offsets at zero are the parent exactly; nonzero ones act in the first 60 steps only."""
+    from lares.envs.isaac_pen_spin import success_ars as sa
+
+    n = lay["slots"] * lay["per"]
+    parent = np.asarray(_load(cfg["module_finalist"])["x"], dtype=float)
+    early = np.concatenate([parent, np.full(sr.N_JOINTS, 0.5)])
+    vecs = sa.tile(cases.placements(seed, lay["per"]), lay["slots"])
+    out = {"mode": "smoke_early", "gates": {}}
+    t0 = time.time()
+    a = _rollout(env, ctx, build(cfg, "early", early), vecs, early, plain=build(cfg, "parent", parent))
+    out["gates"]["inheritance_identity"] = {**a["identity"], "passes": a["identity"]["mismatches"] == 0 and a["identity"]["compared"] > 0}
+    sus = a["sustained"].reshape(lay["slots"], lay["per"])
+    out["aa"] = sa.aa_statistics(sus)
+    out["gates"]["scorer_live"] = {"parent_successes": int(sus.sum()), "passes": bool(sus.any())}
+    probe = early.copy()
+    probe[DIM_JOINT:DIM_JOINT + 8] = 1.0                      # eight joints offset by +0.10 at the first step
+    on = build(cfg, "probe", probe)
+    b = _rollout(env, ctx, on, vecs, probe, plain=build(cfg, "parent", parent), late_from=int(STARTUP_STEPS) + 1)
+    out["gates"]["startup_only"] = {"action_differs_env_steps": b["identity"]["mismatches"], "after_step_60": b["late_mismatches"],
+                                    "passes": b["identity"]["mismatches"] > 0 and b["late_mismatches"] == 0}
+    half = torch.arange(n, device=device) % 2 == 0
+    on.step[:] = 200
+    on.reset_envs(half)
+    on.root.startup_gate = (1.0 - on.step.to(on.dtype) / STARTUP_STEPS).clamp(min=0.0).unsqueeze(1)
+    out["gates"]["state_reset"] = {"passes": bool((on.root.startup_gate[half] == 1.0).all() and (on.root.startup_gate[~half] == 0.0).all())}
+    out["probe"] = {"success": float(b["sustained"].mean()), "drops": int((~b["completed"]).sum()),
+                    "parent_success_same_placements": float(a["sustained"].mean()), "parent_drops": int((~a["completed"]).sum())}
+    out["starts"] = a["starts"] + b["starts"]
+    out["throughput"] = {"transitions_per_s": (a["env_steps"] + b["env_steps"]) / (time.time() - t0)}
     out["passes"] = all(g["passes"] for g in out["gates"].values())
     return out
 

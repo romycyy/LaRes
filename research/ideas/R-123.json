@@ -1,0 +1,114 @@
+{
+  "id": "R-123",
+  "title": "2. Conditional: trigger the single recovery from an early slow latch",
+  "hypothesis": "An early persistent-slow trigger gives selected episodes more settling time before the scoring window without subjecting fast starters to an earlier recovery.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "baseline",
+    "rationale": "Queue only after idea 1 is decided, and run this frozen-JOINT protocol only if neither finalist qualifies over JOINT and archived trajectories still show substantial slow-at-step-60 failures awaiting a late decision; otherwise revise the parent before spending. Baseline is matched 24-update continuation of JOINT's 43 coordinates. Add two learned parameters: a speed threshold and a 1-60-step persistence count, monitored from step 60 until the existing decision deadline. Crossing the threshold for the required duration consumes the episode's sole recovery decision; otherwise retain the original deadline rule. Preserve the recovery waveform and optimize all 45 coordinates. Initialize the new branch actively at 4.18 rad/s and 12 steps, while testing that threshold zero exactly recovers the parent. Unlike D-082 this advances, rather than repeats, recovery; unlike D-079 the memory controls proven recovery authority rather than another capped residual; unlike R-117 it changes onset, not hand-back. Reuse the same ARS budget and pairing as idea 1. Freeze terminal means and confirm the two finalists, JOINT, D-072 and the untrained active-trigger policy on 1,536 fresh pairs. Register seven success contrasts: finalist-versus-finalist, each finalist versus JOINT and D-072, trained-trigger versus untrained-trigger, and untrained-trigger versus JOINT. Conservative Holm planning gives approximately 94% to over 99% case-paired power for +0.05 at discordance 0.07-0.22. This ranks second because it introduces a stateful timing decision and needs stronger reset and one-shot checks."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study joint_early_onset",
+    "seeds": [
+      5026,
+      5027,
+      5028,
+      5029,
+      5030,
+      5031,
+      5032,
+      5033,
+      5034,
+      5035,
+      5036,
+      5037,
+      5038,
+      5039,
+      5040
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_early_onset_train_s5026.yaml",
+      "config/manifests/pen_spin_stage3_early_onset_smoke_s5028.yaml",
+      "config/manifests/pen_spin_stage3_early_onset_confirmation_s5029.yaml",
+      "config/manifests/pen_spin_stage3_early_onset_confirmation_s5030.yaml",
+      "config/manifests/pen_spin_stage3_early_onset_confirmation_s5031.yaml",
+      "config/manifests/pen_spin_stage3_early_onset_confirmation_s5032.yaml",
+      "config/manifests/pen_spin_stage3_early_onset_confirmation_s5033.yaml",
+      "config/manifests/pen_spin_stage3_early_onset_confirmation_s5034.yaml",
+      "config/manifests/pen_spin_stage3_early_onset_confirmation_s5035.yaml",
+      "config/manifests/pen_spin_stage3_early_onset_confirmation_s5036.yaml",
+      "config/manifests/pen_spin_stage3_early_onset_confirmation_s5037.yaml",
+      "config/manifests/pen_spin_stage3_early_onset_confirmation_s5038.yaml",
+      "config/manifests/pen_spin_stage3_early_onset_confirmation_s5039.yaml",
+      "config/manifests/pen_spin_stage3_early_onset_confirmation_s5040.yaml"
+    ],
+    "episodes": 402176,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py",
+      "config/shadowhand_spin_stages.yaml",
+      "config/experiment_seed_ledger.jsonl",
+      "tests/test_shadowhand_spin_early_onset.py"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The registered magnitude is refuted if the trained-trigger-minus-continuation interval upper bound is below +0.05; an upper bound at or below zero refutes useful earlier state-conditioned onset. An interval containing zero is inconclusive. Do not claim a learning contribution without a positive trained-minus-untrained contrast. Preserve strict paired promotion and one-sided 95% drop upper bounds <= +0.05 against JOINT and D-072. Record the full shared result contract, including trigger times, remaining slow failures, recovery-associated drops, manifest uncertainty and costs. Apply existing escalation/exhaustion rules rather than automatically extending training.",
+  "cost_estimate": {
+    "episodes": 402176,
+    "llm_calls": 0,
+    "wall_time_minutes": 60
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "eb03ea056e0c142dd87e63de79586373a8649db75ad67057e4de425d576b60b2",
+  "proposal_call_id": "call_00278",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-22T13:23:45",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-22T13:22:14",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Wait for R-122: this protocol is justified only if neither finalist qualifies over JOINT and the JOINT archive still shows substantial slow-at-step-60 failures awaiting recovery. Advancing the sole recovery decision is distinct from repeated recovery or filtered residuals, but its weakest point is that the necessary timing diagnosis remains conditional. Retain the prediction that paired_success_difference increases by at least 0.05 against matched 24-update JOINT continuation; the registered magnitude is falsified by an interval upper bound below +0.05, while an interval containing zero cannot establish benefit. Its estimated 402,176 simulator episodes and zero controller-generation LLM calls should remain unspent until those conditions hold, with trained-versus-untrained evidence required to credit learning.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00279",
+          "briefing_sha256": "7960dd67082336da79482f9bd31cfef8ba0df33352b78359b41729cc3a023959",
+          "at": "2026-11-22T13:23:44"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree: queue it behind R-122 and re-triage around whichever parent qualifies; it also needs one-shot and reset checks for the latch.",
+          "changes_applied": [],
+          "at": "2026-11-22T13:23:45"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

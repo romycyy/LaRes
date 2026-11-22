@@ -1,0 +1,573 @@
+{
+  "id": "R-122",
+  "title": "1. Learn capture-only offsets versus matched JOINT continuation",
+  "hypothesis": "A separately learned start-up residual changes the capture transient before slow rolling becomes established, improving sustained success beyond continuation of JOINT's existing coordinates.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "CONTINUE: budget-matched 24-update ARS continuation of the frozen R-121 JOINT finalist's 43 coordinates",
+    "rationale": "Baseline means 24-update continuation of frozen config/pen_spin/r121_joint_finalist/, optimizing its existing 43 coordinates. The challenger optimizes those coordinates plus 20 zero-initialized joint offsets multiplied by max(0, 1-t/60), before the unchanged residual clamp. This targets both early drops and entry into persistent slow rolling; preventing early drops alone cannot explain five points. Reuse recovery_joint.py's ARS machinery: eight signed direction pairs, 512 shared placements per candidate, 24 updates per arm, matched inherited-coordinate perturbations and physical step sizes. Freeze terminal means without rollout-based checkpoint selection. Confirm both finalists, frozen JOINT and D-072 on 1,536 fresh paired cases. Register five success contrasts: challenger versus continuation, and each finalist versus JOINT and D-072. At discordance 0.07-0.22, conservative five-contrast Holm planning gives approximately 95% to over 99% case-paired power for +0.05; manifest heterogeneity must also be reported. This ranks first because one added schedule tests a previously untouched phase while simultaneously measuring JOINT's remaining optimization headroom. The study key and manifests are planned, not currently runnable.\n\nFROZEN SPECIFICATION (triage round 1, implementer's pinning; the design is unchanged). Parent: config/pen_spin/r121_joint_finalist/finalist.json (43 coordinates: 11 module parameters in R-121's widened ranges, then 32 residual coordinates; hash verified). CONTINUE: those 43 coordinates. EARLY: the same 43 plus 20 start-up coordinates z_j in [0, 1], one per actuated joint, initial 0.5; offset_j = 0.20 (z_j - 0.5) in [-0.10, +0.10] action units; the root's residual becomes clip(a_j s + b_g vhat_j + c_g ehat_j + offset_j * max(0, 1 - t/60), -0.10, +0.10) with t the environment's own episode step (0 at reset), i.e. the offsets act inside the unchanged residual clamp and vanish from step 60 on; at z = 0.5 the EARLY policy equals the parent bit for bit (smoke gate). Learner as R-121: ARS in normalised coordinates with clipping projection, 4 antithetic directions (8 signed candidates) all used, 512 shared placements per signed candidate, sustained-success fraction, nu 0.1 and alpha 0.05 with the two widened module coordinates scaled back to their original physical step (3/5 and 70/77); for residual and start-up coordinates these are 0.02 and 0.01 in action units. 24 updates per arm, one persistent process per arm, same placements cases.placements(5012, 12288); one (4, 63) direction draw per update from default_rng(5012 + 2000), CONTINUE using the first 43 columns. Terminal means frozen and hashed; no selection. Smoke (seed 5011, three rollouts): EARLY at z = 0.5 equals the parent in lockstep exactly; a probe with eight start-up coordinates at 1.0 changes actions during the first 60 steps of an episode and at no later step; state reset; scorer; A/A. Confirmation, once, twelve 128-case manifests (seeds 5013-5024; 5025 unused), fresh process per cell: D-072 reference, the JOINT parent, CONTINUE, EARLY (1,536 pairs per contrast). One five-contrast Holm family on the two-sided case-paired t tests: EARLY minus CONTINUE (primary), each finalist minus JOINT, each finalist minus D-072. Qualification of a finalist: Holm p < 0.05 with a strictly positive lower bound against both JOINT and D-072 and one-sided 95% drop bounds <= 0.05 against both. Reported with R-120's labels (early/late drop, persistent slow, intermittent, near miss) for every policy, manifest-clustered intervals, per-joint start-up offsets and the fraction of early steps at which the clamp binds. Budget: training 2 x 24 x about 8,200 = 393,600 starts; smoke 12,300; confirmation 4 x 1,536 cases charged at 2 = 12,288: about 418,200; hard ceiling 440,000 enforced before every rollout; a started seeded child is never relaunched."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study joint_early_phase",
+    "seeds": [
+      5011,
+      5012,
+      5013,
+      5014,
+      5015,
+      5016,
+      5017,
+      5018,
+      5019,
+      5020,
+      5021,
+      5022,
+      5023,
+      5024
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_early_confirm_s5013.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5014.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5015.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5016.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5017.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5018.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5019.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5020.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5021.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5022.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5023.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5024.yaml"
+    ],
+    "episodes": 418200,
+    "llm_calls": 0,
+    "code_changes": [
+      "lares/envs/isaac_pen_spin/recovery_module.py: optional start-up offsets inside the root's residual clamp (20 coordinates after the 43 joint ones), inactive and bit-identical at 0.5.",
+      "lares/envs/isaac_pen_spin/recovery_early.py (new): the two-arm driver, evaluation controllers, the five-contrast Holm family and the label table.",
+      "scripts/run_shadowhand_spin_stages.py: one registry entry, joint_early_phase.",
+      "config/shadowhand_spin_stages.yaml: the joint_early_phase block.",
+      "tests/test_recovery_early.py (new).",
+      "config/manifests/pen_spin_stage3_early_confirm_s5013.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5014.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5015.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5016.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5017.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5018.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5019.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5020.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5021.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5022.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5023.yaml",
+      "config/manifests/pen_spin_stage3_early_confirm_s5024.yaml"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "decided",
+  "source": "advisor",
+  "falsified_by": "The registered magnitude is refuted if the challenger-minus-continuation interval upper bound is below +0.05; an upper bound at or below zero refutes a beneficial capture-schedule effect. An interval containing zero is inconclusive. Qualify only under the unchanged strict paired promotion rule and one-sided 95% drop upper bounds <= +0.05 against JOINT and D-072. Retain the full shared result contract, including early-drop and persistent-slow labels, per-manifest uncertainty, action norms, saturation, costs and reconstructable artifacts; leave the saved default incumbent unchanged.",
+  "cost_estimate": {
+    "episodes": 418200,
+    "llm_calls": 0,
+    "wall_time_minutes": 70
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "eb03ea056e0c142dd87e63de79586373a8649db75ad67057e4de425d576b60b2",
+  "proposal_call_id": "call_00278",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-22T13:25:02",
+    "advisor_call_id": "call_00280",
+    "round": 2,
+    "note": "I accept the implementer's exact inheritance, shared-direction, seed-role and multiplicity specifications, and the corrected budget supersedes my earlier estimate. Matched JOINT continuation makes this an informative test of capture-phase capacity rather than merely additional optimization; its weak"
+  },
+  "run": {
+    "started_at": "2026-11-22T13:27:19",
+    "git_sha": "754639fb0f359c1a76391ee46dd58b36be273658",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r122_early_phase",
+    "finished_at": "2026-11-22T14:17:48"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.013020833333333334,
+      "paired_success_difference_ci95": [
+        -0.008947423540230716,
+        0.03498909020689738
+      ],
+      "pairs": 1536,
+      "successes_of_1536": {
+        "reference": 662,
+        "joint": 1207,
+        "continue": 1182,
+        "early": 1202
+      },
+      "drops_of_1536": {
+        "reference": 70,
+        "joint": 71,
+        "continue": 74,
+        "early": 59
+      },
+      "qualification": {
+        "continue": {
+          "against_parent": false,
+          "against_reference": true,
+          "qualifies": false
+        },
+        "early": {
+          "against_parent": false,
+          "against_reference": true,
+          "qualifies": false
+        }
+      },
+      "contrasts": {
+        "early_minus_continue": {
+          "difference": 0.013020833333333334,
+          "ci95": [
+            -0.008947423540230716,
+            0.03498909020689738
+          ],
+          "win_loss_tie": {
+            "wins": 158,
+            "losses": 138,
+            "ties": 1240
+          },
+          "manifest_clustered_ci95": [
+            -0.012930687900880389,
+            0.03897235456754706
+          ],
+          "drop_difference": -0.009765625,
+          "drop_difference_one_sided_95_upper": -0.0025870559200375986,
+          "p_holm": 0.4903374189091944
+        },
+        "continue_minus_joint": {
+          "difference": -0.016276041666666668,
+          "ci95": [
+            -0.03812712177171297,
+            0.005575038438379636
+          ],
+          "win_loss_tie": {
+            "wins": 134,
+            "losses": 159,
+            "ties": 1243
+          },
+          "manifest_clustered_ci95": [
+            -0.037908542199370954,
+            0.005356458866037615
+          ],
+          "drop_difference": 0.001953125,
+          "drop_difference_one_sided_95_upper": 0.008815912204871237,
+          "p_holm": 0.43261505764682306
+        },
+        "early_minus_joint": {
+          "difference": -0.0032552083333333335,
+          "ci95": [
+            -0.026141866096696664,
+            0.01963144943003
+          ],
+          "win_loss_tie": {
+            "wins": 158,
+            "losses": 163,
+            "ties": 1215
+          },
+          "manifest_clustered_ci95": [
+            -0.024887708866037615,
+            0.01837729219937095
+          ],
+          "drop_difference": -0.0078125,
+          "drop_difference_one_sided_95_upper": -0.0005501772074623691,
+          "p_holm": 0.7802908475163189
+        },
+        "continue_minus_reference": {
+          "difference": 0.3385416666666667,
+          "ci95": [
+            0.30874801835454235,
+            0.368335314978791
+          ],
+          "win_loss_tie": {
+            "wins": 620,
+            "losses": 100,
+            "ties": 816
+          },
+          "manifest_clustered_ci95": [
+            0.30572895049145116,
+            0.3713543828418822
+          ],
+          "drop_difference": 0.0026041666666666665,
+          "drop_difference_one_sided_95_upper": 0.010624515494045703,
+          "p_holm": 7.18965960289658e-95
+        },
+        "early_minus_reference": {
+          "difference": 0.3515625,
+          "ci95": [
+            0.3203721017179975,
+            0.3827528982820025
+          ],
+          "win_loss_tie": {
+            "wins": 663,
+            "losses": 123,
+            "ties": 750
+          },
+          "manifest_clustered_ci95": [
+            0.3182305273061866,
+            0.3848944726938134
+          ],
+          "drop_difference": -0.007161458333333333,
+          "drop_difference_one_sided_95_upper": 0.0009253426383598841,
+          "p_holm": 1.1764653782590837e-93
+        },
+        "joint_minus_reference": {
+          "difference": 0.3548177083333333,
+          "ci95": [
+            0.32514298773050127,
+            0.38449242893616536
+          ],
+          "win_loss_tie": {
+            "wins": 639,
+            "losses": 94,
+            "ties": 803
+          },
+          "manifest_clustered_ci95": [
+            0.3259934359421641,
+            0.3836419807245025
+          ],
+          "drop_difference": 0.0006510416666666666,
+          "drop_difference_one_sided_95_upper": 0.00874339034665695,
+          "p_holm": null
+        }
+      },
+      "failure_labels": {
+        "reference": {
+          "success": 662,
+          "drop_early": 65,
+          "drop_late": 5,
+          "off_centre": 66,
+          "persistent_slow": 697,
+          "intermittent": 26,
+          "near_miss": 15
+        },
+        "joint": {
+          "success": 1207,
+          "drop_early": 42,
+          "drop_late": 29,
+          "off_centre": 25,
+          "persistent_slow": 158,
+          "intermittent": 47,
+          "near_miss": 28
+        },
+        "continue": {
+          "success": 1182,
+          "drop_early": 42,
+          "drop_late": 32,
+          "off_centre": 17,
+          "persistent_slow": 192,
+          "intermittent": 45,
+          "near_miss": 26
+        },
+        "early": {
+          "success": 1202,
+          "drop_early": 29,
+          "drop_late": 30,
+          "off_centre": 26,
+          "persistent_slow": 174,
+          "intermittent": 45,
+          "near_miss": 30
+        }
+      }
+    },
+    "controls": {
+      "smoke_gates": {
+        "inheritance_identity": true,
+        "scorer_live": true,
+        "startup_only": true,
+        "state_reset": true
+      },
+      "smoke_startup_only": {
+        "action_differs_env_steps": 120904,
+        "after_step_60": 0,
+        "passes": true
+      },
+      "smoke_probe": {
+        "success": 0.76904296875,
+        "drops": 122,
+        "parent_success_same_placements": 0.7978515625,
+        "parent_drops": 123
+      },
+      "startup_offsets": {
+        "WRJ1": -0.05057334926700296,
+        "WRJ0": 0.0010332036914206145,
+        "FFJ3": -0.04209929979709778,
+        "MFJ3": 0.009320602431385439,
+        "RFJ3": 0.05964283902548793,
+        "LFJ4": 0.0004258224565568236,
+        "THJ4": 0.07453896830072407,
+        "FFJ2": 0.007667491459730069,
+        "MFJ2": 0.0538770655384379,
+        "RFJ2": 0.055056760624693696,
+        "LFJ3": 0.03714527179002005,
+        "THJ3": -0.03724154621817673,
+        "FFJ1": 0.006769768072318861,
+        "MFJ1": -0.044353521112152294,
+        "RFJ1": -0.008580918259269977,
+        "LFJ2": -0.05891295047490513,
+        "THJ2": 0.008696357923325505,
+        "LFJ1": -0.00010726906046972796,
+        "THJ1": 0.0033543125758073392,
+        "THJ0": -0.016742827779985616
+      },
+      "training_mean_candidate_success": {
+        "continue": [
+          0.744140625,
+          0.7568359375,
+          0.73486328125,
+          0.780517578125,
+          0.730712890625,
+          0.72509765625,
+          0.72412109375,
+          0.745361328125,
+          0.730224609375,
+          0.761962890625,
+          0.700927734375,
+          0.747314453125,
+          0.743408203125,
+          0.772705078125,
+          0.756591796875,
+          0.749267578125,
+          0.76953125,
+          0.74853515625,
+          0.74365234375,
+          0.722900390625,
+          0.7421875,
+          0.731201171875,
+          0.73291015625,
+          0.727783203125
+        ],
+        "early": [
+          0.73388671875,
+          0.751708984375,
+          0.74072265625,
+          0.782470703125,
+          0.723388671875,
+          0.72314453125,
+          0.70703125,
+          0.739501953125,
+          0.7294921875,
+          0.783203125,
+          0.656005859375,
+          0.73486328125,
+          0.743896484375,
+          0.787109375,
+          0.7578125,
+          0.765869140625,
+          0.783203125,
+          0.759521484375,
+          0.75439453125,
+          0.76416015625,
+          0.762939453125,
+          0.75146484375,
+          0.74560546875,
+          0.75341796875
+        ]
+      },
+      "accounting": {
+        "smoke_starts": 8201,
+        "training_starts": {
+          "continue": 196866,
+          "early": 196800
+        },
+        "confirmation_charged_starts": 12288,
+        "charged_total": 414155,
+        "ceiling": 440000,
+        "llm_calls": 0
+      },
+      "config_sha256": "adfc85f1695ddf1e5ddd18698341a34220465d3242d0ec4684a764e797f8edd1"
+    },
+    "artifacts": [
+      "logs/pen_spin/r122_early_phase/summary.json",
+      "logs/pen_spin/r122_early_phase/finalists.json",
+      "logs/pen_spin/r122_early_phase/smoke.json",
+      "logs/pen_spin/r122_early_phase/frozen_config.json",
+      "logs/pen_spin/r122_early_phase/train_continue.json",
+      "logs/pen_spin/r122_early_phase/train_early.json"
+    ],
+    "notes": "No deviation: the smoke passed first time (zero start-up offsets equal the parent exactly; probe offsets change actions on 120,904 environment-steps, none after step 60; gate reset per environment), both arms ran 24 updates on seed 5012's placements with shared direction draws, terminal means frozen before confirmation, four policies confirmed once on twelve fresh manifests (seeds 5013-5024); the smoke used two rollouts (8,201 starts; three were budgeted); 414,155 starts charged of 440,000. EARLY minus CONTINUE: +0.013 [-0.009, +0.035] (Holm p 0.49): the upper bound is below +0.05. Neither finalist improves on the frozen JOINT parent: CONTINUE -0.016 [-0.038, +0.006] (134 wins, 159 losses), EARLY -0.003 [-0.026, +0.020]; neither qualifies against the parent (both remain far above D-072). So 24 further ARS updates from JOINT give nothing, in contrast to R-118 (+0.10 from the unconverged R-116 module) and R-121 (+0.02 to +0.06): the 43-coordinate controller has plateaued under this learner at about 0.79-0.81 (JOINT here: 1,207 of 1,536 = 0.786; 0.806 in R-121's confirmation). The start-up offsets did what they were aimed at on one failure type and not on success: early drops 29 for EARLY against 42 for JOINT and CONTINUE (the first intervention since the R-106 residual to move them), with offsets up to 0.075 (thumb THJ4 +0.075, ring RFJ3 +0.060, wrist WRJ1 -0.051), but persistent-slow failures were 174 against JOINT's 158, so total success did not rise. Discordance between a continued finalist and its parent is about 0.19-0.21 here (293-321 discordant of 1,536), i.e. ARS continuation at this stage mostly reshuffles which cases succeed. One matched pair of trajectories; a single confirmation."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.013020833333333334,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.88,
+      "reasoning": "EARLY minus budget-matched CONTINUE is +0.013 paired sustained success with a 95% interval [-0.009, +0.035] over 1,536 fresh pairs (158 wins, 138 losses; manifest-clustered [-0.013, +0.039]); the upper bound is below the predicted +0.05, so the registered magnitude is refuted, and the interval includes zero. Neither finalist improves on the frozen JOINT parent (CONTINUE -0.016 [-0.038, +0.006]; EARLY -0.003 [-0.026, +0.020]) and neither qualifies. The start-up offsets reduce early drops (29 vs 42) without raising success.",
+      "cited_artifacts": [],
+      "next_experiment": "JOINT has plateaued under ARS continuation, so further 'more updates' or small additive terms are unlikely to pay; keep the R-121 JOINT finalist as the best controller. The early-drop reduction is real but small (13 episodes of 1,536) and was offset elsewhere. Remaining failures of JOINT here: 158 persistent slow, 75 fast-but-unsteady, 42 early and 29 late drops, 25 off-centre. R-123's precondition is met (neither finalist qualifies), but the direction should now weigh a consolidated replication of the ladder and a hand-off to the user against one more mechanism.",
+      "recorded_at": "2026-11-22T14:17:50",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.97,
+      "reasoning": "The named budget-matched CONTINUE control was measured: EARLY minus CONTINUE was +0.01302, with 95% paired CI [-0.00895, +0.03499] and Holm p = 0.4903 [logs/pen_spin/r122_early_phase/summary.json]. Both the case-paired upper bound and the manifest-clustered upper bound (+0.03897) fall below the predicted +0.05 increase in paired_success_difference, satisfying the registered magnitude-refutation criterion [logs/pen_spin/r122_early_phase/summary.json]. Whether there is a smaller sustained-success benefit remains inconclusive because both intervals include zero [logs/pen_spin/r122_early_phase/summary.json]. EARLY recorded fewer early drops—29 versus 42 for both controls—but that descriptive change does not establish a sustained-success improvement [logs/pen_spin/r122_early_phase/summary.json]. Neither finalist qualifies against JOINT, despite both qualifying against the D-072 reference, so neither meets the required promotion gates [logs/pen_spin/r122_early_phase/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r122_early_phase/summary.json"
+      ],
+      "next_experiment": "Check deferred R-123's remaining early-slow prerequisite using the frozen JOINT archive before re-triage, spending zero simulator episodes and zero LLM calls.",
+      "recorded_at": "2026-11-22T14:18:16",
+      "call_id": "call_00281"
+    }
+  ],
+  "decision_id": "D-085",
+  "history": [
+    {
+      "at": "2026-11-22T13:25:02",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 2: both say approve"
+    },
+    {
+      "at": "2026-11-22T13:27:19",
+      "from": "approved",
+      "to": "running",
+      "note": "git 754639fb0f (dirty)"
+    },
+    {
+      "at": "2026-11-22T14:17:48",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-22T14:18:17",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-085: refuted"
+    }
+  ],
+  "created_at": "2026-11-22T13:22:14",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This is the right next incremental-construction experiment: the capture-only schedule tests early slow-mode entry while matched JOINT continuation measures remaining optimization headroom. Its weakest point is that preventing early drops alone cannot deliver five percentage points, but the matched perturbations and frozen terminal means make the structural comparison informative. Retain the prediction that paired_success_difference increases by at least 0.05 against 24-update JOINT continuation; the registered magnitude is falsified by an interval upper bound below +0.05, and an interval containing zero cannot establish benefit. The estimated 400,384 simulator episodes and zero controller-generation LLM calls are justified, retaining the registered multiplicity correction, strict paired promotion/drop gates, D-072 reference and unchanged saved incumbent.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00279",
+          "briefing_sha256": "7960dd67082336da79482f9bd31cfef8ba0df33352b78359b41729cc3a023959",
+          "at": "2026-11-22T13:23:44"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Right next experiment (the first 60 steps are the one phase nothing has touched, and CONTINUE measures JOINT's remaining headroom at the same time); the record needs the start-up term's exact form and coordinates (offset_j = 0.20 (z_j - 0.5) times max(0, 1 - t/60), inside the unchanged residual clamp, z = 0.5 initially for exact inheritance), the shared 63-column direction draw with CONTINUE on the first 43, the smoke gates, the seed roles (5011 smoke, 5012 training, 5013-5024 confirmation, 5025 unused), the five-contrast Holm family with the two-sided qualification rule against both JOINT and D-072, and a reconciled budget (about 418,200 starts, ceiling 440,000). The patch records exactly these.",
+          "changes_applied": [],
+          "at": "2026-11-22T13:23:46"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the implementer's exact inheritance, shared-direction, seed-role and multiplicity specifications, and the corrected budget supersedes my earlier estimate. Matched JOINT continuation makes this an informative test of capture-phase capacity rather than merely additional optimization; its weakest point remains that preventing early drops alone cannot deliver the predicted five-point gain. Retain the prediction that paired_success_difference increases by at least 0.05 against the 24-update CONTINUE control; falsified_by: a paired interval upper bound below +0.05 refutes that magnitude, while an interval containing zero cannot establish benefit. Reuse scripts/run_shadowhand_spin_stages.py, config/shadowhand_spin_stages.yaml and recovery_joint.py machinery under the frozen four-direction/eight-candidate specification, spending approximately 418,200 simulator starts with a 440,000 ceiling and zero controller-generation LLM calls, while retaining both-reference qualification/drop gates and leaving the saved incumbent and final-test split untouched.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00280",
+          "briefing_sha256": "0b41a1061ebd3b4c414d9dbd796421392d9a2dabb8139b2b5628149ba419e393",
+          "at": "2026-11-22T13:24:17"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve: the start-up term, coordinates, shared direction draws, smoke gates, seeds, five-contrast Holm family with the two-sided qualification rule and the 440,000-start ceiling are frozen. It tests the one phase nothing has touched (the first 60 steps) and measures JOINT's remaining headroom with the matched continuation.",
+          "changes_applied": [],
+          "at": "2026-11-22T13:25:02"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-22T13:23:48",
+      "round": 1,
+      "patch": {
+        "prediction": {
+          "rationale": "Baseline means 24-update continuation of frozen config/pen_spin/r121_joint_finalist/, optimizing its existing 43 coordinates. The challenger optimizes those coordinates plus 20 zero-initialized joint offsets multiplied by max(0, 1-t/60), before the unchanged residual clamp. This targets both early drops and entry into persistent slow rolling; preventing early drops alone cannot explain five points. Reuse recovery_joint.py's ARS machinery: eight signed direction pairs, 512 shared placements per candidate, 24 updates per arm, matched inherited-coordinate perturbations and physical step sizes. Freeze terminal means without rollout-based checkpoint selection. Confirm both finalists, frozen JOINT and D-072 on 1,536 fresh paired cases. Register five success contrasts: challenger versus continuation, and each finalist versus JOINT and D-072. At discordance 0.07-0.22, conservative five-contrast Holm planning gives approximately 95% to over 99% case-paired power for +0.05; manifest heterogeneity must also be reported. This ranks first because one added schedule tests a previously untouched phase while simultaneously measuring JOINT's remaining optimization headroom. The study key and manifests are planned, not currently runnable.\n\nFROZEN SPECIFICATION (triage round 1, implementer's pinning; the design is unchanged). Parent: config/pen_spin/r121_joint_finalist/finalist.json (43 coordinates: 11 module parameters in R-121's widened ranges, then 32 residual coordinates; hash verified). CONTINUE: those 43 coordinates. EARLY: the same 43 plus 20 start-up coordinates z_j in [0, 1], one per actuated joint, initial 0.5; offset_j = 0.20 (z_j - 0.5) in [-0.10, +0.10] action units; the root's residual becomes clip(a_j s + b_g vhat_j + c_g ehat_j + offset_j * max(0, 1 - t/60), -0.10, +0.10) with t the environment's own episode step (0 at reset), i.e. the offsets act inside the unchanged residual clamp and vanish from step 60 on; at z = 0.5 the EARLY policy equals the parent bit for bit (smoke gate). Learner as R-121: ARS in normalised coordinates with clipping projection, 4 antithetic directions (8 signed candidates) all used, 512 shared placements per signed candidate, sustained-success fraction, nu 0.1 and alpha 0.05 with the two widened module coordinates scaled back to their original physical step (3/5 and 70/77); for residual and start-up coordinates these are 0.02 and 0.01 in action units. 24 updates per arm, one persistent process per arm, same placements cases.placements(5012, 12288); one (4, 63) direction draw per update from default_rng(5012 + 2000), CONTINUE using the first 43 columns. Terminal means frozen and hashed; no selection. Smoke (seed 5011, three rollouts): EARLY at z = 0.5 equals the parent in lockstep exactly; a probe with eight start-up coordinates at 1.0 changes actions during the first 60 steps of an episode and at no later step; state reset; scorer; A/A. Confirmation, once, twelve 128-case manifests (seeds 5013-5024; 5025 unused), fresh process per cell: D-072 reference, the JOINT parent, CONTINUE, EARLY (1,536 pairs per contrast). One five-contrast Holm family on the two-sided case-paired t tests: EARLY minus CONTINUE (primary), each finalist minus JOINT, each finalist minus D-072. Qualification of a finalist: Holm p < 0.05 with a strictly positive lower bound against both JOINT and D-072 and one-sided 95% drop bounds <= 0.05 against both. Reported with R-120's labels (early/late drop, persistent slow, intermittent, near miss) for every policy, manifest-clustered intervals, per-joint start-up offsets and the fraction of early steps at which the clamp binds. Budget: training 2 x 24 x about 8,200 = 393,600 starts; smoke 12,300; confirmation 4 x 1,536 cases charged at 2 = 12,288: about 418,200; hard ceiling 440,000 enforced before every rollout; a started seeded child is never relaunched.",
+          "against": "CONTINUE: budget-matched 24-update ARS continuation of the frozen R-121 JOINT finalist's 43 coordinates"
+        },
+        "protocol": {
+          "seeds": [
+            5011,
+            5012,
+            5013,
+            5014,
+            5015,
+            5016,
+            5017,
+            5018,
+            5019,
+            5020,
+            5021,
+            5022,
+            5023,
+            5024
+          ],
+          "episodes": 418200,
+          "manifests": [
+            "config/manifests/pen_spin_stage3_early_confirm_s5013.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5014.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5015.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5016.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5017.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5018.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5019.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5020.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5021.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5022.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5023.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5024.yaml"
+          ],
+          "code_changes": [
+            "lares/envs/isaac_pen_spin/recovery_module.py: optional start-up offsets inside the root's residual clamp (20 coordinates after the 43 joint ones), inactive and bit-identical at 0.5.",
+            "lares/envs/isaac_pen_spin/recovery_early.py (new): the two-arm driver, evaluation controllers, the five-contrast Holm family and the label table.",
+            "scripts/run_shadowhand_spin_stages.py: one registry entry, joint_early_phase.",
+            "config/shadowhand_spin_stages.yaml: the joint_early_phase block.",
+            "tests/test_recovery_early.py (new).",
+            "config/manifests/pen_spin_stage3_early_confirm_s5013.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5014.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5015.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5016.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5017.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5018.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5019.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5020.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5021.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5022.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5023.yaml",
+            "config/manifests/pen_spin_stage3_early_confirm_s5024.yaml"
+          ]
+        },
+        "cost_estimate": {
+          "episodes": 418200,
+          "llm_calls": 0,
+          "wall_time_minutes": 70
+        }
+      },
+      "note": "Round 1: implementer's pinned start-up term, coordinates, smoke gates, seeds, Holm family and budget."
+    }
+  ]
+}
