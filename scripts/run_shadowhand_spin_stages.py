@@ -70,6 +70,7 @@ PEN_SPIN_STUDIES = {
     "symbolic_recovery_ars": "recovery_module",                    # R-116 (learned re-capture module on the R-106 finalist)
     "recovery_retry_vs_continue": "recovery_retry",                # R-118 (second re-capture attempt vs matched continuation)
     "recovery_tail_archive_audit": "recovery_tail_audit",          # R-120 (archive-only: which failures continued training removed)
+    "recovery_joint_matched": "recovery_joint",                    # R-121 (joint residual + module adaptation vs module-only, matched)
 }
 
 

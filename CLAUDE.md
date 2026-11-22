@@ -709,6 +709,14 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   333 (R-116) -> 194 (CONTINUE); R-116 minus CONTINUE +0.090 [+0.073, +0.108]. CONTINUE's remaining failures: 194
   persistent slow, 97 fast but unsteady, 46 early drops (the same cases for every trained policy; before step 60), 26
   late drops, 32 off-centre.
+- **R-121 result (D-084, inconclusive on its +0.05 magnitude; positive and qualified; 2026-11-22).** `recovery_joint.py`
+  (`--study recovery_joint_matched`; `recovery_module.py` gained per-study ranges `module_bounds`, per-coordinate step
+  scaling and joint residual coordinates, 43 = 11 module + 32 residual offsets). From the R-118 CONTINUE finalist:
+  JOINT minus widened-module +0.030 [+0.008, +0.052] (Holm p 0.015). Sustained success of 1,536 fresh cases: reference
+  661 (0.43), R-106 root 812 (0.53), CONTINUE 1,148 (0.75), module-only continuations 1,180 / 1,192, **JOINT 1,238
+  (0.81)**; every finalist qualifies against the parent and D-072. Best controller so far:
+  `config/pen_spin/r121_joint_finalist/` (not installed as the incumbent; the user's call). Per-update mean candidate
+  success is a poor progress indicator: it was flat in all arms while every finalist improved on fresh cases.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

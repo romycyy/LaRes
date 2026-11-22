@@ -7,7 +7,7 @@
     "direction": "increase",
     "threshold": 0.05,
     "against": "MODULE_WIDE: matched 24-update module-only ARS from config/pen_spin/r118_continue_finalist/",
-    "rationale": "JOINT minus MODULE_WIDE isolates co-adaptation; MODULE_ORIGINAL additionally separates relaxed bounds from ordinary continuation. This supersedes deferred R-119 because D-082 now establishes the simpler structure and a substantially stronger qualified parent; neither D-082 nor the frozen-residual plateau tests this coupling."
+    "rationale": "JOINT minus MODULE_WIDE isolates co-adaptation; MODULE_ORIGINAL additionally separates relaxed bounds from ordinary continuation. This supersedes deferred R-119 because D-082 now establishes the simpler structure and a substantially stronger qualified parent; neither D-082 nor the frozen-residual plateau tests this coupling.\n\nFROZEN SPECIFICATION (triage rounds 1-2, agreed). Parent: config/pen_spin/r118_continue_finalist/finalist.json (the R-106 finalist plus the 11-parameter single-decision re-capture module; hash verified). ARMS, 24 ARS updates each, one persistent process per arm, same placements cases.placements(4998, 12288) (512 per update), terminal means frozen and hashed, no selection:\n MODULE_ORIGINAL: the 11 module parameters with the R-116 ranges (plain continuation).\n MODULE_WIDE: the same 11 with two ranges widened: threshold [1, 6] rad/s (was [1, 4]) and ramp-out [3, 80] steps (was [10, 80]); the parent's physical parameter values are unchanged, re-expressed in the new normalised coordinates, and the smoke verifies that the re-expressed module reproduces the parent's actions in lockstep.\n JOINT: MODULE_WIDE's 11 coordinates followed by the residual's 32 coefficients in the unit coordinate y = (theta + 0.10)/0.20 (coefficient bound 0.10 and residual cap 0.10 unchanged), 43 coordinates; initial point = the parent.\n Learner: ARS in normalised coordinates with clipping projection, 4 antithetic directions all used, 512 shared placements per signed candidate, return = sustained-success fraction; nu 0.1 and alpha 0.05 in the ORIGINAL normalised units: in the two widened coordinates the perturbation and the update are multiplied by (original range / widened range) = 3/5 for the threshold and 70/77 for the ramp-out, so every arm perturbs and steps each module parameter by the same physical amount; for the residual coordinates nu 0.1 and alpha 0.05 are exactly R-106's 0.02 and 0.01 in coefficient units. Directions: one (4, 43) standard-normal draw per update from default_rng(4998 + 2000); the module arms use its first 11 columns.\n Smoke (seed 4997): MODULE_WIDE's and JOINT's initial policies equal the parent in lockstep (bit for bit for JOINT's residual part; module schedule within 1e-5); a perturbed residual coordinate changes the action; a threshold above 4 rad/s can trigger; state reset; scorer; A/A.\n Confirmation, once, twelve 128-case manifests (seeds 4999-5010), fresh process per cell: D-072 reference, R-106 root, CONTINUE parent, and the three finalists (1,536 pairs per contrast).\n CONTRASTS, one eight-member Holm family on the two-sided case-paired t tests: JOINT minus MODULE_WIDE (primary), MODULE_WIDE minus MODULE_ORIGINAL (what the bounds buy), each finalist minus the CONTINUE parent (3) and minus D-072 (3). Qualification of a finalist (round-3 correction): Holm-adjusted p < 0.05 AND a strictly positive paired success-interval lower bound against BOTH the CONTINUE parent and D-072 (both contrasts are members of the eight-contrast family), and one-sided 95% upper bounds on the paired drop-rate difference <= 0.05 against both the parent and D-072. Case-paired and manifest-clustered intervals reported for all.\nPOWER (frozen before approval; normal approximation; SE = sqrt(q - 0.05^2)/sqrt(1536) with q the fraction of discordant pairs; the most conservative Holm step uses two-sided alpha 0.05/8, critical z = 2.73). Target power 0.80 for a true +0.05 JOINT-minus-MODULE_WIDE difference. Anticipated q: 0.064 (the recorded discordance between two finalists continued from one parent, RETRY vs CONTINUE in R-118: 98 of 1,536), SE 0.0063, power > 0.999; at q = 0.135 (CONTINUE vs its parent R-116: 207 of 1,536), SE 0.0093, power 0.996; sensitivity: at q = 0.30, SE 0.0139, power 0.80 (the target is met for any q <= 0.30); at q = 0.41 (the largest discordance recorded between two policies, R-104), SE 0.0163, power 0.63. This is power to establish POSITIVITY of a true +0.05 effect. Precision for the predicted magnitude is a different matter: the 95% interval half-width is 0.012 at q = 0.064 and 0.027 at q = 0.30, so 'at least +0.05' (lower bound >= 0.05) is demonstrated with 50% probability only if the true effect is about +0.062 (q = 0.064) to +0.077 (q = 0.30), and the registered refutation (upper bound < 0.05) is reached with 80% probability if the true effect is at most about +0.032 (q = 0.064). 1,536 pairs are therefore kept.\nBUDGET: training 3 x 24 x about 8,200 = 590,400 starts; smoke 8,200; confirmation 6 x 1,536 cases charged at 2 = 18,432: about 617,000; hard ceiling 640,000 enforced before every rollout; a started seeded child is never relaunched. Seeds 4997 (smoke), 4998 (training), 4999-5010 (confirmation). Supersedes deferred R-119, whose reserved seeds are not used."
   },
   "protocol": {
     "script": "scripts/run_shadowhand_spin_stages.py",
@@ -30,8 +30,6 @@
       5010
     ],
     "manifests": [
-      "config/manifests/pen_spin_stage3_joint_smoke_s4997.yaml",
-      "config/manifests/pen_spin_stage3_joint_train_s4998.yaml",
       "config/manifests/pen_spin_stage3_joint_confirm_s4999.yaml",
       "config/manifests/pen_spin_stage3_joint_confirm_s5000.yaml",
       "config/manifests/pen_spin_stage3_joint_confirm_s5001.yaml",
@@ -45,37 +43,530 @@
       "config/manifests/pen_spin_stage3_joint_confirm_s5009.yaml",
       "config/manifests/pen_spin_stage3_joint_confirm_s5010.yaml"
     ],
-    "episodes": 602000,
+    "episodes": 617000,
     "llm_calls": 0,
     "code_changes": [
-      "recovery_module.py: reuse the generic training child. Support original and widened bounds: trigger upper bound 6 rad/s and ramp-out lower bound 3 steps. Re-express the parent without changing its initial actions; test inheritance, bound mapping and frozen-coordinate behavior.",
-      "recovery_retry.py and symbolic_reward.py: extend existing interfaces for three matched arms: MODULE_ORIGINAL, MODULE_WIDE and JOINT. Each receives 24 exact-success ARS updates with 512 shared placements per signed candidate and the established direction count, optimizer settings and return normalization. Share module direction draws in physical parameter units across arms; JOINT additionally updates the inherited 32 residual coefficients with the existing 0.10 bound. Do not renormalize whole direction vectors by dimension.",
-      "recovery_retry.py: freeze terminal means without checkpoint selection. Confirm all three finalists, CONTINUE, R-106 and D-072 once on twelve fresh 128-case manifests. Prospectively retain 1,536 pairs using D-082's discordance and the supplied SE range to size a five-point contrast; verify the power calculation before training and freeze it at triage.",
-      "config/shadowhand_spin_stages.yaml: predeclare primary JOINT-minus-MODULE_WIDE, secondary MODULE_WIDE-minus-MODULE_ORIGINAL, and each finalist versus CONTINUE and D-072 as one eight-contrast Holm family. Require the established strictly positive paired t lower bound and challenger-minus-reference drop upper bound <= 0.05 against CONTINUE and D-072 for qualification. Report magnitude evidence separately from positivity.",
-      "scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml: register the planned handler and manifests before execution. Run only after the archive audit is recorded; verify seeds against the live ledger and supersede R-119 through tooling without consuming its reserved seeds.",
-      "recovery_retry.py: preserve the Stage-3 task, fixed paired layouts and one whole confirmation manifest per fresh Isaac process. Record all shared-contract diagnostics, curves, per-case outcomes, manifest uncertainty, action norms, saturation, hashes, checkpoints and actual costs. Preserve the saved incumbent and D-072 reference; add no controller-generation calls or temporal structure. Estimated cost includes approximately 590,400 training starts, 9,216 confirmation starts and bounded interface smoke checks; follow existing exhaustion and handoff rules."
+      "lares/envs/isaac_pen_spin/recovery_module.py: per-study parameter ranges, per-coordinate step scaling, and optional joint residual coordinates in the controller and the training child.",
+      "lares/envs/isaac_pen_spin/recovery_joint.py (new): the three-arm driver, evaluation controllers, the eight-contrast Holm family.",
+      "scripts/run_shadowhand_spin_stages.py: one registry entry, recovery_joint_matched.",
+      "config/shadowhand_spin_stages.yaml: the recovery_joint_matched block.",
+      "tests/test_recovery_joint.py (new).",
+      "config/manifests/pen_spin_stage3_joint_confirm_s4999.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5000.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5001.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5002.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5003.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5004.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5005.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5006.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5007.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5008.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5009.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5010.yaml"
     ],
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "proposed",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The upper paired 95% confidence bound for JOINT-minus-MODULE_WIDE is below 0.05. An interval including zero is not evidence of improvement; failure of the strict success or drop gate prevents qualification regardless of the point estimate.",
   "cost_estimate": {
-    "episodes": 602000,
+    "episodes": 617000,
     "llm_calls": 0,
-    "wall_time_minutes": 85
+    "wall_time_minutes": 95
   },
   "open_question_refs": [],
   "briefing_sha256": "ba139e110ee8e512ee40a878d21849aa642826a7a337854f9d9a261c692bb21d",
   "proposal_call_id": "call_00271",
-  "approval": {},
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
-  "history": [],
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-22T12:00:48",
+    "advisor_call_id": "call_00276",
+    "round": 4,
+    "note": "The matched arms separate ordinary continuation, boundary relief and residual–recovery co-adaptation, superseding R-119 from the stronger qualified parent rather than repeating the frozen-residual plateau tests. I accept the implementer's corrected qualification gate against both CONTINUE and D-072;"
+  },
+  "run": {
+    "started_at": "2026-11-22T12:03:17",
+    "git_sha": "c801ed33f90698b714752dadd93acfe42eb3fb2d",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r121_recovery_joint",
+    "finished_at": "2026-11-22T13:18:09"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.029947916666666668,
+      "paired_success_difference_ci95": [
+        0.008021192758872357,
+        0.05187464057446098
+      ],
+      "pairs": 1536,
+      "successes_of_1536": {
+        "reference": 661,
+        "r106": 812,
+        "continue": 1148,
+        "module_original": 1180,
+        "module_wide": 1192,
+        "joint": 1238
+      },
+      "drops_of_1536": {
+        "reference": 80,
+        "r106": 49,
+        "continue": 76,
+        "module_original": 82,
+        "module_wide": 75,
+        "joint": 70
+      },
+      "qualification": {
+        "module_original": {
+          "against_parent": true,
+          "against_reference": true,
+          "qualifies": true
+        },
+        "module_wide": {
+          "against_parent": true,
+          "against_reference": true,
+          "qualifies": true
+        },
+        "joint": {
+          "against_parent": true,
+          "against_reference": true,
+          "qualifies": true
+        }
+      },
+      "contrasts": {
+        "joint_minus_module_wide": {
+          "difference": 0.029947916666666668,
+          "ci95": [
+            0.008021192758872357,
+            0.05187464057446098
+          ],
+          "win_loss_tie": {
+            "wins": 171,
+            "losses": 125,
+            "ties": 1240
+          },
+          "manifest_clustered_ci95": [
+            0.020287084035080984,
+            0.03960874929825235
+          ],
+          "manifests_positive": 12,
+          "drop_difference": -0.0032552083333333335,
+          "drop_difference_one_sided_95_upper": 0.0023126808409714675,
+          "p_holm": 0.014923248237409542,
+          "holm_rejects": true
+        },
+        "module_wide_minus_module_original": {
+          "difference": 0.0078125,
+          "ci95": [
+            -0.0044340396482071415,
+            0.02005903964820714
+          ],
+          "win_loss_tie": {
+            "wins": 52,
+            "losses": 40,
+            "ties": 1444
+          },
+          "manifest_clustered_ci95": [
+            -0.007153997557051412,
+            0.022778997557051414
+          ],
+          "manifests_positive": 7,
+          "drop_difference": -0.004557291666666667,
+          "drop_difference_one_sided_95_upper": -0.0013474039894418532,
+          "p_holm": 0.21100955511514946,
+          "holm_rejects": false
+        },
+        "module_original_minus_continue": {
+          "difference": 0.020833333333333332,
+          "ci95": [
+            0.0073544636084512255,
+            0.03431220305821544
+          ],
+          "win_loss_tie": {
+            "wins": 72,
+            "losses": 40,
+            "ties": 1424
+          },
+          "manifest_clustered_ci95": [
+            0.008613239249537689,
+            0.033053427417128974
+          ],
+          "manifests_positive": 9,
+          "drop_difference": 0.00390625,
+          "drop_difference_one_sided_95_upper": 0.006933494688162933,
+          "p_holm": 0.007415918370154756,
+          "holm_rejects": true
+        },
+        "module_wide_minus_continue": {
+          "difference": 0.028645833333333332,
+          "ci95": [
+            0.015824271093669014,
+            0.04146739557299765
+          ],
+          "win_loss_tie": {
+            "wins": 73,
+            "losses": 29,
+            "ties": 1434
+          },
+          "manifest_clustered_ci95": [
+            0.016064476435851,
+            0.04122719023081567
+          ],
+          "manifests_positive": 12,
+          "drop_difference": -0.0006510416666666666,
+          "drop_difference_one_sided_95_upper": 0.0017455628063502916,
+          "p_holm": 5.014081104060959e-05,
+          "holm_rejects": true
+        },
+        "joint_minus_continue": {
+          "difference": 0.05859375,
+          "ci95": [
+            0.035432698676701777,
+            0.08175480132329822
+          ],
+          "win_loss_tie": {
+            "wins": 212,
+            "losses": 122,
+            "ties": 1202
+          },
+          "manifest_clustered_ci95": [
+            0.04057170041535016,
+            0.07661579958464984
+          ],
+          "manifests_positive": 12,
+          "drop_difference": -0.00390625,
+          "drop_difference_one_sided_95_upper": 0.0013422245905538432,
+          "p_holm": 3.870753963657681e-06,
+          "holm_rejects": true
+        },
+        "module_original_minus_reference": {
+          "difference": 0.337890625,
+          "ci95": [
+            0.3074019105164443,
+            0.3683793394835557
+          ],
+          "win_loss_tie": {
+            "wins": 632,
+            "losses": 113,
+            "ties": 791
+          },
+          "manifest_clustered_ci95": [
+            0.3042160054966343,
+            0.3715652445033657
+          ],
+          "manifests_positive": 12,
+          "drop_difference": 0.0013020833333333333,
+          "drop_difference_one_sided_95_upper": 0.00917845220752953,
+          "p_holm": 8.720155183876184e-91,
+          "holm_rejects": true
+        },
+        "module_wide_minus_reference": {
+          "difference": 0.345703125,
+          "ci95": [
+            0.3153808706926539,
+            0.3760253793073461
+          ],
+          "win_loss_tie": {
+            "wins": 639,
+            "losses": 108,
+            "ties": 789
+          },
+          "manifest_clustered_ci95": [
+            0.3247366697343082,
+            0.3666695802656918
+          ],
+          "manifests_positive": 12,
+          "drop_difference": -0.0032552083333333335,
+          "drop_difference_one_sided_95_upper": 0.004246592660771263,
+          "p_holm": 2.8503306982195935e-95,
+          "holm_rejects": true
+        },
+        "joint_minus_reference": {
+          "difference": 0.3756510416666667,
+          "ci95": [
+            0.34679530942625614,
+            0.40450677390707723
+          ],
+          "win_loss_tie": {
+            "wins": 652,
+            "losses": 75,
+            "ties": 809
+          },
+          "manifest_clustered_ci95": [
+            0.3556318942182891,
+            0.39567018911504426
+          ],
+          "manifests_positive": 12,
+          "drop_difference": -0.006510416666666667,
+          "drop_difference_one_sided_95_upper": 0.0015060142892455,
+          "p_holm": 2.947179777367465e-119,
+          "holm_rejects": true
+        },
+        "continue_minus_r106": {
+          "difference": 0.21875,
+          "ci95": [
+            0.19797439364328517,
+            0.23952560635671483
+          ],
+          "win_loss_tie": {
+            "wins": 337,
+            "losses": 1,
+            "ties": 1198
+          },
+          "manifest_clustered_ci95": [
+            0.2012962145421027,
+            0.2362037854578973
+          ],
+          "manifests_positive": 12,
+          "drop_difference": 0.017578125,
+          "drop_difference_one_sided_95_upper": 0.023098524828617756,
+          "p_holm": null,
+          "holm_rejects": null
+        },
+        "continue_minus_reference": {
+          "difference": 0.3170572916666667,
+          "ci95": [
+            0.28638292604280985,
+            0.3477316572905235
+          ],
+          "win_loss_tie": {
+            "wins": 609,
+            "losses": 122,
+            "ties": 805
+          },
+          "manifest_clustered_ci95": [
+            0.2904979074236126,
+            0.3436166759097208
+          ],
+          "manifests_positive": 12,
+          "drop_difference": -0.0026041666666666665,
+          "drop_difference_one_sided_95_upper": 0.004821118361532654,
+          "p_holm": null,
+          "holm_rejects": null
+        }
+      }
+    },
+    "controls": {
+      "smoke_gates": {
+        "wide_inheritance": true,
+        "scorer_live": true,
+        "joint_inheritance": true,
+        "probe_acts": true
+      },
+      "smoke_probe": {
+        "action_differs_env_steps": 449144,
+        "triggered": 1309,
+        "parent_triggered": 796,
+        "threshold": 6.0,
+        "passes": true
+      },
+      "finalist_params": {
+        "module_original": {
+          "threshold": 3.8505672290034454,
+          "decision_step": 155.7642493097768,
+          "ramp_in": 28.35884738915822,
+          "ramp_out": 17.193729723572602,
+          "depth_WR": 0.4372776679573745,
+          "depth_FF": 0.8744303820313176,
+          "depth_MF": 0.6322962270100827,
+          "depth_RF": 0.9665162390144196,
+          "depth_LF": 0.0,
+          "depth_TH": 0.33613808109006277,
+          "stroke_multiplier": 1.2181990015677044
+        },
+        "module_wide": {
+          "threshold": 3.817331726413594,
+          "decision_step": 145.24669484786745,
+          "ramp_in": 25.687874541308968,
+          "ramp_out": 4.492973910236445,
+          "depth_WR": 0.5925788719619345,
+          "depth_FF": 0.851955264821051,
+          "depth_MF": 0.7237174517495722,
+          "depth_RF": 1.0,
+          "depth_LF": 0.07692503087643286,
+          "depth_TH": 0.37515147689188894,
+          "stroke_multiplier": 1.4956698644513908
+        },
+        "joint": {
+          "threshold": 4.176750425189703,
+          "decision_step": 149.08168512240468,
+          "ramp_in": 28.570998228079098,
+          "ramp_out": 6.337430947042382,
+          "depth_WR": 0.39436701939430296,
+          "depth_FF": 0.9891946300563769,
+          "depth_MF": 0.6592989900520426,
+          "depth_RF": 0.7008168020795885,
+          "depth_LF": 0.0,
+          "depth_TH": 0.34451502809704027,
+          "stroke_multiplier": 1.4547363433026508
+        }
+      },
+      "joint_residual_change": {
+        "l2": 0.17145989646055623,
+        "max_abs": 0.08141581192612649
+      },
+      "training_mean_candidate_success": {
+        "module_original": [
+          0.723876953125,
+          0.71044921875,
+          0.744384765625,
+          0.720703125,
+          0.739501953125,
+          0.774169921875,
+          0.733642578125,
+          0.732177734375,
+          0.76318359375,
+          0.748046875,
+          0.7294921875,
+          0.719482421875,
+          0.74853515625,
+          0.733154296875,
+          0.719482421875,
+          0.716552734375,
+          0.749267578125,
+          0.736083984375,
+          0.7587890625,
+          0.76123046875,
+          0.75830078125,
+          0.739013671875,
+          0.75537109375,
+          0.71875
+        ],
+        "module_wide": [
+          0.726318359375,
+          0.71044921875,
+          0.7587890625,
+          0.721435546875,
+          0.73779296875,
+          0.78271484375,
+          0.737548828125,
+          0.736572265625,
+          0.764892578125,
+          0.7548828125,
+          0.728515625,
+          0.72705078125,
+          0.7578125,
+          0.734619140625,
+          0.73828125,
+          0.7236328125,
+          0.74951171875,
+          0.747314453125,
+          0.76171875,
+          0.7685546875,
+          0.75830078125,
+          0.725341796875,
+          0.7578125,
+          0.7255859375
+        ],
+        "joint": [
+          0.716552734375,
+          0.69384765625,
+          0.748291015625,
+          0.7197265625,
+          0.734375,
+          0.765869140625,
+          0.71630859375,
+          0.719482421875,
+          0.73779296875,
+          0.73779296875,
+          0.72314453125,
+          0.71142578125,
+          0.73095703125,
+          0.72119140625,
+          0.747314453125,
+          0.72216796875,
+          0.75048828125,
+          0.761962890625,
+          0.75537109375,
+          0.754150390625,
+          0.765625,
+          0.735595703125,
+          0.74560546875,
+          0.72119140625
+        ]
+      },
+      "accounting": {
+        "smoke_starts": 12300,
+        "training_starts": {
+          "module_original": 196881,
+          "module_wide": 196884,
+          "joint": 196905
+        },
+        "confirmation_charged_starts": 18432,
+        "charged_total": 621402,
+        "ceiling": 640000,
+        "llm_calls": 0
+      },
+      "config_sha256": "4a22580a1a3eb5a89469c1c2ff0fb37d8ae6d090aa5720addffd63bc15c215e2"
+    },
+    "artifacts": [
+      "logs/pen_spin/r121_recovery_joint/summary.json",
+      "logs/pen_spin/r121_recovery_joint/finalists.json",
+      "logs/pen_spin/r121_recovery_joint/smoke.json",
+      "logs/pen_spin/r121_recovery_joint/frozen_config.json",
+      "logs/pen_spin/r121_recovery_joint/train_module_original.json",
+      "logs/pen_spin/r121_recovery_joint/train_module_wide.json",
+      "logs/pen_spin/r121_recovery_joint/train_joint.json"
+    ],
+    "notes": "No deviation in the registered protocol; one accounting note: the smoke used three rollouts (12,300 starts) where the estimate assumed two (8,200); total charged 621,402 of 640,000. Smoke passed first time (the widened-range module and the joint policy reproduce the parent in lockstep within 1e-5; the probe with threshold 6 rad/s and shifted residual coefficients changes actions and triggers more). All three arms ran 24 updates on seed 4998's placements with shared direction draws and physically matched module step sizes; terminal means frozen before confirmation; six policies confirmed once on twelve fresh manifests (seeds 4999-5010). Sustained success of 1,536: reference 661 (0.430), R-106 root 812 (0.529), CONTINUE parent 1,148 (0.747), MODULE_ORIGINAL 1,180 (0.768), MODULE_WIDE 1,192 (0.776), JOINT 1,238 (0.806); drops 80 / 49 / 76 / 82 / 75 / 70. Registered contrast JOINT minus MODULE_WIDE: +0.030 [+0.008, +0.052], Holm p 0.015, manifest-clustered [+0.020, +0.040], 171 wins and 125 losses: a positive co-adaptation effect is established, but the interval contains values on both sides of +0.05 (upper bound 0.0519), so the registered five-point magnitude is neither supported nor refuted. Boundary relief: MODULE_WIDE minus MODULE_ORIGINAL +0.008 [-0.004, +0.020] (not established). Every finalist qualifies under the registered rule (Holm p < 0.05 with a positive lower bound against both the CONTINUE parent and D-072, and drop bounds within 0.05 against both): MODULE_ORIGINAL +0.021 [+0.007, +0.034], MODULE_WIDE +0.029 [+0.016, +0.042], JOINT +0.059 [+0.035, +0.082] over the parent. Notable: training-time candidate success was flat for all three arms (about 0.72-0.76 throughout, on changing placements), yet all three finalists are better than the parent on fresh cases; the per-update means are averages over perturbed candidates and are a poor progress indicator. JOINT moved the residual by an L2 of 0.171 (largest single coefficient change 0.081) and its module ends with threshold 4.18 rad/s, ramp-out 6.3 steps, little-finger depth 0.0, stroke multiplier 1.45; discordance JOINT vs MODULE_WIDE was 296/1,536 = 0.19, three times the 0.064 anticipated, which is why the interval is wider than planned (SE 0.011). The CONTINUE parent replicates on new cases: +0.219 over the root (337 wins, 1 loss) and +0.317 over the reference. One matched set of ARS trajectories from one parent; a single confirmation."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.029947916666666668,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.85,
+      "reasoning": "JOINT minus MODULE_WIDE is +0.030 paired sustained success with a 95% interval [+0.008, +0.052] over 1,536 fresh pairs (171 wins, 125 losses), Holm-adjusted p 0.015 in the eight-contrast family, manifest-clustered [+0.020, +0.040]. Co-adaptation of the residual with the module therefore has an established POSITIVE effect, but the registered prediction is a five-point increase: the interval's upper bound (0.0519) is not below 0.05, so the magnitude is not refuted, and its lower bound is far from 0.05, so it is not supported: inconclusive on the registered magnitude, with the point estimate at three points. Beside it: all three finalists qualify against the CONTINUE parent and D-072 under the registered rule; JOINT is the best controller so far at 0.806 sustained success (+0.059 [+0.035, +0.082] over the parent, drops 70 vs 76); widening the two bounds is not established as helpful (+0.008 [-0.004, +0.020]).",
+      "cited_artifacts": [],
+      "next_experiment": "Freeze the JOINT finalist as the best qualified controller (0.81 sustained success against the reference's 0.43); installing it is the user's call. The ladder under this direction is now: reference 0.43 -> residual (R-106) 0.53-0.55 -> re-capture module (R-116) 0.64 -> continued (R-118) 0.74-0.75 -> joint (R-121) 0.81. Remaining failures should be re-audited on this archive (how many persistent slow, unsteady, early drops remain) before the next structural idea; the 46-per-1,536 early drops (capture before step 60) are untouched by everything so far and are the most obvious separate lever.",
+      "recorded_at": "2026-11-22T13:18:11",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 0.99,
+      "reasoning": "JOINT minus the named MODULE_WIDE control increased paired success by 0.02995, with case-paired 95% CI [0.00802, 0.05187] and Holm-adjusted p = 0.01492, establishing a positive difference [logs/pen_spin/r121_recovery_joint/summary.json]. However, the registered 0.05 magnitude is neither supported nor refuted: the interval crosses that threshold, and its upper bound does not meet the registered refutation condition [logs/pen_spin/r121_recovery_joint/summary.json]. The manifest-clustered interval [0.02029, 0.03961] falls below 0.05, but substituting this secondary interval would change the registered decision rule [logs/pen_spin/r121_recovery_joint/summary.json]. Separately, JOINT passes the recorded success and drop qualification gates against both CONTINUE and the reference; qualification does not establish the predicted magnitude against MODULE_WIDE [logs/pen_spin/r121_recovery_joint/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r121_recovery_joint/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-22T13:18:30",
+      "call_id": "call_00277"
+    }
+  ],
+  "decision_id": "D-084",
+  "history": [
+    {
+      "at": "2026-11-22T12:00:48",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 4: both say approve"
+    },
+    {
+      "at": "2026-11-22T12:03:17",
+      "from": "approved",
+      "to": "running",
+      "note": "git c801ed33f9 (dirty)"
+    },
+    {
+      "at": "2026-11-22T13:18:09",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-22T13:18:54",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-084: inconclusive"
+    }
+  ],
   "created_at": "2026-11-22T11:54:16",
   "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
   "triage": {
@@ -118,12 +609,136 @@
           "briefing_sha256": "7d1150021f2bc6758d59b742305f0f56054d3094e614b7efef5d70001321c14b",
           "at": "2026-11-22T11:56:27"
         },
-        "implementer": null,
-        "outcome": null
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agreed on all four changes. The patch records the executable details (inheritance, 43-coordinate ordering, residual scaling, shared placements and directions, physically matched module perturbation and update sizes across the original and widened ranges), the eight-contrast Holm family with the unchanged strict success and drop gates, the reconciled 617,000-start estimate under a 640,000 ceiling, and the power calculation: 1,536 pairs give power above 0.99 for positivity of a true +0.05 difference at the recorded finalist-versus-finalist discordances (0.064 and 0.135) and 0.80 up to a discordance of 0.30, with the precision for the +0.05 magnitude stated separately.",
+          "changes_applied": [],
+          "at": "2026-11-22T11:58:51"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "The matched arms would separate continued optimization, boundary relief and co-adaptation, addressing coupling that the frozen-residual plateau did not test. I accept the implementer's physical-unit matching, inheritance checks, eight-contrast Holm family and power calculation, which appropriately distinguishes positivity from confirming the predicted magnitude. However, the written qualification rule still requires positive success only against CONTINUE, omitting the agreed success gate against D-072; that omission must be corrected before spending approximately 617,000 simulator episodes, capped at 640,000, and zero controller-generation LLM calls. Retain the prediction of paired_success_difference increasing by at least 0.05 for JOINT versus MODULE_WIDE, falsified if its upper paired 95% bound is below 0.05; an interval including zero establishes no improvement.",
+          "suggested_changes": [
+            "Correct the frozen qualification specification and its implementation through scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml: each finalist must have Holm-adjusted p < 0.05 and a strictly positive paired success interval lower bound against BOTH CONTINUE and D-072, using the existing eight-contrast family. Retain the paired drop-difference upper-bound requirement <= 0.05 against both controls; all other frozen protocol details remain unchanged."
+          ],
+          "priority": 1,
+          "call_id": "call_00275",
+          "briefing_sha256": "1c687a11aa0414fd9273932b842325c5ba0af97a4dcac8eb37c8caf82abee6d0",
+          "at": "2026-11-22T11:59:17"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agreed: qualification needs the Holm-adjusted test and a strictly positive lower bound against both the CONTINUE parent and D-072, not the parent alone; the patch corrects that sentence and the implementation will follow it.",
+          "changes_applied": [],
+          "at": "2026-11-22T11:59:28"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 4,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "The matched arms separate ordinary continuation, boundary relief and residual–recovery co-adaptation, superseding R-119 from the stronger qualified parent rather than repeating the frozen-residual plateau tests. I accept the implementer's corrected qualification gate against both CONTINUE and D-072; physical-unit matching, inheritance checks and the eight-contrast Holm family now address the earlier objections. The remaining limitation is one optimization trajectory per arm, and confirmation power falls below the target at unusually high discordance, but the frozen sensitivity analysis makes that risk explicit and the approximately 617,000-episode spend informative. Retain the prediction that paired_success_difference increases by at least 0.05 for JOINT versus MODULE_WIDE, falsified if its upper paired 95% bound is below 0.05; an interval including zero establishes no improvement, and qualification separately requires both strict success and drop gates.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00276",
+          "briefing_sha256": "4099c86f0bdd06e4eb4a4792ead6a3cc8dcc2313cb9b08f5fdcbf9385618f286",
+          "at": "2026-11-22T11:59:45"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve: arms, inheritance, coordinates, physically matched step sizes, the eight-contrast Holm family with the corrected qualification rule, the power calculation, seeds and the 640,000-start ceiling are frozen. It separates plain continuation, boundary relief and co-adaptation of the residual with the module from the best qualified parent.",
+          "changes_applied": [],
+          "at": "2026-11-22T12:00:48"
+        },
+        "outcome": "agreed"
       }
     ],
-    "outcome": null
+    "outcome": "approve",
+    "agreed_round": 4
   },
   "escalation": {},
-  "revisions": []
+  "revisions": [
+    {
+      "at": "2026-11-22T11:58:53",
+      "round": 2,
+      "patch": {
+        "prediction": {
+          "rationale": "JOINT minus MODULE_WIDE isolates co-adaptation; MODULE_ORIGINAL additionally separates relaxed bounds from ordinary continuation. This supersedes deferred R-119 because D-082 now establishes the simpler structure and a substantially stronger qualified parent; neither D-082 nor the frozen-residual plateau tests this coupling.\n\nFROZEN SPECIFICATION (triage rounds 1-2, agreed). Parent: config/pen_spin/r118_continue_finalist/finalist.json (the R-106 finalist plus the 11-parameter single-decision re-capture module; hash verified). ARMS, 24 ARS updates each, one persistent process per arm, same placements cases.placements(4998, 12288) (512 per update), terminal means frozen and hashed, no selection:\n MODULE_ORIGINAL: the 11 module parameters with the R-116 ranges (plain continuation).\n MODULE_WIDE: the same 11 with two ranges widened: threshold [1, 6] rad/s (was [1, 4]) and ramp-out [3, 80] steps (was [10, 80]); the parent's physical parameter values are unchanged, re-expressed in the new normalised coordinates, and the smoke verifies that the re-expressed module reproduces the parent's actions in lockstep.\n JOINT: MODULE_WIDE's 11 coordinates followed by the residual's 32 coefficients in the unit coordinate y = (theta + 0.10)/0.20 (coefficient bound 0.10 and residual cap 0.10 unchanged), 43 coordinates; initial point = the parent.\n Learner: ARS in normalised coordinates with clipping projection, 4 antithetic directions all used, 512 shared placements per signed candidate, return = sustained-success fraction; nu 0.1 and alpha 0.05 in the ORIGINAL normalised units: in the two widened coordinates the perturbation and the update are multiplied by (original range / widened range) = 3/5 for the threshold and 70/77 for the ramp-out, so every arm perturbs and steps each module parameter by the same physical amount; for the residual coordinates nu 0.1 and alpha 0.05 are exactly R-106's 0.02 and 0.01 in coefficient units. Directions: one (4, 43) standard-normal draw per update from default_rng(4998 + 2000); the module arms use its first 11 columns.\n Smoke (seed 4997): MODULE_WIDE's and JOINT's initial policies equal the parent in lockstep (bit for bit for JOINT's residual part; module schedule within 1e-5); a perturbed residual coordinate changes the action; a threshold above 4 rad/s can trigger; state reset; scorer; A/A.\n Confirmation, once, twelve 128-case manifests (seeds 4999-5010), fresh process per cell: D-072 reference, R-106 root, CONTINUE parent, and the three finalists (1,536 pairs per contrast).\n CONTRASTS, one eight-member Holm family on the two-sided case-paired t tests: JOINT minus MODULE_WIDE (primary), MODULE_WIDE minus MODULE_ORIGINAL (what the bounds buy), each finalist minus the CONTINUE parent (3) and minus D-072 (3). Qualification of a finalist: Holm-adjusted p < 0.05 with a strictly positive paired lower bound against the parent, and one-sided 95% upper bounds on the paired drop-rate difference <= 0.05 against both the parent and D-072. Case-paired and manifest-clustered intervals reported for all.\nPOWER (frozen before approval; normal approximation; SE = sqrt(q - 0.05^2)/sqrt(1536) with q the fraction of discordant pairs; the most conservative Holm step uses two-sided alpha 0.05/8, critical z = 2.73). Target power 0.80 for a true +0.05 JOINT-minus-MODULE_WIDE difference. Anticipated q: 0.064 (the recorded discordance between two finalists continued from one parent, RETRY vs CONTINUE in R-118: 98 of 1,536), SE 0.0063, power > 0.999; at q = 0.135 (CONTINUE vs its parent R-116: 207 of 1,536), SE 0.0093, power 0.996; sensitivity: at q = 0.30, SE 0.0139, power 0.80 (the target is met for any q <= 0.30); at q = 0.41 (the largest discordance recorded between two policies, R-104), SE 0.0163, power 0.63. This is power to establish POSITIVITY of a true +0.05 effect. Precision for the predicted magnitude is a different matter: the 95% interval half-width is 0.012 at q = 0.064 and 0.027 at q = 0.30, so 'at least +0.05' (lower bound >= 0.05) is demonstrated with 50% probability only if the true effect is about +0.062 (q = 0.064) to +0.077 (q = 0.30), and the registered refutation (upper bound < 0.05) is reached with 80% probability if the true effect is at most about +0.032 (q = 0.064). 1,536 pairs are therefore kept.\nBUDGET: training 3 x 24 x about 8,200 = 590,400 starts; smoke 8,200; confirmation 6 x 1,536 cases charged at 2 = 18,432: about 617,000; hard ceiling 640,000 enforced before every rollout; a started seeded child is never relaunched. Seeds 4997 (smoke), 4998 (training), 4999-5010 (confirmation). Supersedes deferred R-119, whose reserved seeds are not used."
+        },
+        "protocol": {
+          "seeds": [
+            4997,
+            4998,
+            4999,
+            5000,
+            5001,
+            5002,
+            5003,
+            5004,
+            5005,
+            5006,
+            5007,
+            5008,
+            5009,
+            5010
+          ],
+          "episodes": 617000,
+          "manifests": [
+            "config/manifests/pen_spin_stage3_joint_confirm_s4999.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5000.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5001.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5002.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5003.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5004.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5005.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5006.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5007.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5008.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5009.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5010.yaml"
+          ],
+          "code_changes": [
+            "lares/envs/isaac_pen_spin/recovery_module.py: per-study parameter ranges, per-coordinate step scaling, and optional joint residual coordinates in the controller and the training child.",
+            "lares/envs/isaac_pen_spin/recovery_joint.py (new): the three-arm driver, evaluation controllers, the eight-contrast Holm family.",
+            "scripts/run_shadowhand_spin_stages.py: one registry entry, recovery_joint_matched.",
+            "config/shadowhand_spin_stages.yaml: the recovery_joint_matched block.",
+            "tests/test_recovery_joint.py (new).",
+            "config/manifests/pen_spin_stage3_joint_confirm_s4999.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5000.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5001.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5002.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5003.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5004.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5005.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5006.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5007.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5008.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5009.yaml",
+            "config/manifests/pen_spin_stage3_joint_confirm_s5010.yaml"
+          ]
+        },
+        "cost_estimate": {
+          "episodes": 617000,
+          "llm_calls": 0,
+          "wall_time_minutes": 95
+        }
+      },
+      "note": "Round 2 agreed revise: executable details, physically matched step sizes, eight-contrast Holm family, power calculation, 617,000 starts under a 640,000 ceiling, seeds 4997-5010."
+    },
+    {
+      "at": "2026-11-22T11:59:30",
+      "round": 3,
+      "patch": {
+        "prediction": {
+          "rationale": "JOINT minus MODULE_WIDE isolates co-adaptation; MODULE_ORIGINAL additionally separates relaxed bounds from ordinary continuation. This supersedes deferred R-119 because D-082 now establishes the simpler structure and a substantially stronger qualified parent; neither D-082 nor the frozen-residual plateau tests this coupling.\n\nFROZEN SPECIFICATION (triage rounds 1-2, agreed). Parent: config/pen_spin/r118_continue_finalist/finalist.json (the R-106 finalist plus the 11-parameter single-decision re-capture module; hash verified). ARMS, 24 ARS updates each, one persistent process per arm, same placements cases.placements(4998, 12288) (512 per update), terminal means frozen and hashed, no selection:\n MODULE_ORIGINAL: the 11 module parameters with the R-116 ranges (plain continuation).\n MODULE_WIDE: the same 11 with two ranges widened: threshold [1, 6] rad/s (was [1, 4]) and ramp-out [3, 80] steps (was [10, 80]); the parent's physical parameter values are unchanged, re-expressed in the new normalised coordinates, and the smoke verifies that the re-expressed module reproduces the parent's actions in lockstep.\n JOINT: MODULE_WIDE's 11 coordinates followed by the residual's 32 coefficients in the unit coordinate y = (theta + 0.10)/0.20 (coefficient bound 0.10 and residual cap 0.10 unchanged), 43 coordinates; initial point = the parent.\n Learner: ARS in normalised coordinates with clipping projection, 4 antithetic directions all used, 512 shared placements per signed candidate, return = sustained-success fraction; nu 0.1 and alpha 0.05 in the ORIGINAL normalised units: in the two widened coordinates the perturbation and the update are multiplied by (original range / widened range) = 3/5 for the threshold and 70/77 for the ramp-out, so every arm perturbs and steps each module parameter by the same physical amount; for the residual coordinates nu 0.1 and alpha 0.05 are exactly R-106's 0.02 and 0.01 in coefficient units. Directions: one (4, 43) standard-normal draw per update from default_rng(4998 + 2000); the module arms use its first 11 columns.\n Smoke (seed 4997): MODULE_WIDE's and JOINT's initial policies equal the parent in lockstep (bit for bit for JOINT's residual part; module schedule within 1e-5); a perturbed residual coordinate changes the action; a threshold above 4 rad/s can trigger; state reset; scorer; A/A.\n Confirmation, once, twelve 128-case manifests (seeds 4999-5010), fresh process per cell: D-072 reference, R-106 root, CONTINUE parent, and the three finalists (1,536 pairs per contrast).\n CONTRASTS, one eight-member Holm family on the two-sided case-paired t tests: JOINT minus MODULE_WIDE (primary), MODULE_WIDE minus MODULE_ORIGINAL (what the bounds buy), each finalist minus the CONTINUE parent (3) and minus D-072 (3). Qualification of a finalist (round-3 correction): Holm-adjusted p < 0.05 AND a strictly positive paired success-interval lower bound against BOTH the CONTINUE parent and D-072 (both contrasts are members of the eight-contrast family), and one-sided 95% upper bounds on the paired drop-rate difference <= 0.05 against both the parent and D-072. Case-paired and manifest-clustered intervals reported for all.\nPOWER (frozen before approval; normal approximation; SE = sqrt(q - 0.05^2)/sqrt(1536) with q the fraction of discordant pairs; the most conservative Holm step uses two-sided alpha 0.05/8, critical z = 2.73). Target power 0.80 for a true +0.05 JOINT-minus-MODULE_WIDE difference. Anticipated q: 0.064 (the recorded discordance between two finalists continued from one parent, RETRY vs CONTINUE in R-118: 98 of 1,536), SE 0.0063, power > 0.999; at q = 0.135 (CONTINUE vs its parent R-116: 207 of 1,536), SE 0.0093, power 0.996; sensitivity: at q = 0.30, SE 0.0139, power 0.80 (the target is met for any q <= 0.30); at q = 0.41 (the largest discordance recorded between two policies, R-104), SE 0.0163, power 0.63. This is power to establish POSITIVITY of a true +0.05 effect. Precision for the predicted magnitude is a different matter: the 95% interval half-width is 0.012 at q = 0.064 and 0.027 at q = 0.30, so 'at least +0.05' (lower bound >= 0.05) is demonstrated with 50% probability only if the true effect is about +0.062 (q = 0.064) to +0.077 (q = 0.30), and the registered refutation (upper bound < 0.05) is reached with 80% probability if the true effect is at most about +0.032 (q = 0.064). 1,536 pairs are therefore kept.\nBUDGET: training 3 x 24 x about 8,200 = 590,400 starts; smoke 8,200; confirmation 6 x 1,536 cases charged at 2 = 18,432: about 617,000; hard ceiling 640,000 enforced before every rollout; a started seeded child is never relaunched. Seeds 4997 (smoke), 4998 (training), 4999-5010 (confirmation). Supersedes deferred R-119, whose reserved seeds are not used."
+        }
+      },
+      "note": "Round 3 agreed revise: qualification requires Holm p < 0.05 and a positive lower bound against both the parent and D-072."
+    }
+  ]
 }

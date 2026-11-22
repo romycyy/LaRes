@@ -1,0 +1,25 @@
+{
+ "name": "r121_joint_finalist",
+ "decision": "D-084 / R-121",
+ "status": "qualified against the R-118 CONTINUE finalist (+0.059 [+0.035, +0.082] over 1,536 fresh pairs; drops 70 vs 76) and the D-072 reference (+0.376 [+0.347, +0.405]; 1,238 vs 661); about 0.81 sustained success; NOT installed as the default incumbent",
+ "construction": "lares.envs.isaac_pen_spin.recovery_module.build(protocol_cfg, name, x) with the recovery_joint_matched block (module_bounds as recorded): x = 11 module coordinates in the widened ranges followed by 32 residual coordinates (offsets from the R-106 finalist's coefficients in units of 0.20)",
+ "module_sha256": "1527eb5643a59f9b77858f0dc5852280badd1f6ec012c0efa7c30019c794713c",
+ "params": {
+  "threshold": 4.176750425189703,
+  "decision_step": 149.08168512240468,
+  "ramp_in": 28.570998228079098,
+  "ramp_out": 6.337430947042382,
+  "depth_WR": 0.39436701939430296,
+  "depth_FF": 0.9891946300563769,
+  "depth_MF": 0.6592989900520426,
+  "depth_RF": 0.7008168020795885,
+  "depth_LF": 0.0,
+  "depth_TH": 0.34451502809704027,
+  "stroke_multiplier": 1.4547363433026508
+ },
+ "files": {
+  "finalist.json": "fd419fd9293f9cee3b368271f7ad36e1c1bd74ba1e04e06b2869cd5c0aabe961"
+ },
+ "config_block": "research_protocols.recovery_joint_matched",
+ "evaluated_in": "logs/pen_spin/r121_recovery_joint/summary.json"
+}

@@ -57,17 +57,43 @@ CONTRASTS = (("trained", "r106"), ("scripted", "r106"), ("trained", "scripted"),
              ("scripted", "reference"), ("r106", "reference"))
 
 
-def to_params(x) -> np.ndarray:
+N_RESIDUAL = sr.N_COEF
+DIM_JOINT = DIM + N_RESIDUAL                                 # R-121: the module's 11 coordinates, then the residual's 32
+RESIDUAL_SPAN = 0.20                                         # a unit of residual coordinate is the whole [-0.10, 0.10] range
+
+
+def bounds(cfg: dict | None = None) -> tuple:
+    """``(low, high)`` over all module parameters; a study may widen ranges through ``module_bounds``."""
+    low, high = LOW.copy(), HIGH.copy()
+    for name, (lo, hi) in ((cfg or {}).get("module_bounds") or {}).items():
+        low[NAMES.index(name)], high[NAMES.index(name)] = float(lo), float(hi)
+    return low, high
+
+
+def module_dim(d: int) -> int:
+    return DIM if d == DIM_JOINT else d
+
+
+def to_params(x, low=None, high=None) -> np.ndarray:
+    """Physical module parameters of the (leading) module coordinates of ``x``."""
     x = np.asarray(x, dtype=float)
-    d = x.shape[-1]
-    return LOW[:d] + np.clip(x, 0.0, 1.0) * (HIGH[:d] - LOW[:d])
+    d = module_dim(x.shape[-1])
+    low, high = (LOW if low is None else low), (HIGH if high is None else high)
+    return low[:d] + np.clip(x[..., :d], 0.0, 1.0) * (high[:d] - low[:d])
 
 
-def x_record(x) -> dict:
+def to_unit(params, low=None, high=None) -> np.ndarray:
+    """Normalised coordinates of physical module parameters (a parent re-expressed in a study's ranges)."""
+    p = np.asarray(params, dtype=float)
+    low, high = (LOW if low is None else low), (HIGH if high is None else high)
+    return (p - low[:len(p)]) / (high[:len(p)] - low[:len(p)])
+
+
+def x_record(x, low=None, high=None) -> dict:
     xs = [float(v) for v in np.asarray(x, dtype=np.float64).reshape(-1)]
-    if len(xs) not in (DIM, DIM_RETRY):
-        raise ValueError(f"the module has {DIM} parameters ({DIM_RETRY} with a second attempt)")
-    return {"x": xs, "params": dict(zip(NAMES, [float(v) for v in to_params(xs)])),
+    if len(xs) not in (DIM, DIM_RETRY, DIM_JOINT):
+        raise ValueError(f"the module has {DIM} parameters ({DIM_RETRY} with a second attempt, {DIM_JOINT} with the residual)")
+    return {"x": xs, "params": dict(zip(NAMES, [float(v) for v in to_params(xs, low, high)])),
             "sha256": sha256_text(json.dumps(xs, separators=(",", ":")))}
 
 
@@ -85,18 +111,29 @@ class RecoveryController:
     ``x`` is the normalised parameter vector, one row or one row per environment. ``enabled=False`` computes
     everything and never triggers (the smoke's identity check)."""
 
-    def __init__(self, name: str, root, x, centre_tolerance: float, enabled: bool = True):
+    def __init__(self, name: str, root, x, centre_tolerance: float, enabled: bool = True, low=None, high=None,
+                 residual_origin=None):
         self.root, self.name, self.enabled = root, name, bool(enabled)
         self.tolerance = float(centre_tolerance)
         self._x = np.asarray(x, dtype=np.float64)
+        self.low, self.high = (LOW if low is None else np.asarray(low, float)), (HIGH if high is None else np.asarray(high, float))
+        #: R-121: residual coordinates are offsets from this point (the parent's normalised residual), so the parent's
+        #: own coordinates give back its coefficients exactly
+        self.residual_origin = None if residual_origin is None else np.asarray(residual_origin, dtype=np.float64)
         self.params = {"root_theta_sha256": root.params["theta_sha256"], "enabled": self.enabled,
-                       **({"module": x_record(self._x)} if self._x.ndim == 1 else {})}
+                       **({"module": x_record(self._x, self.low, self.high)} if self._x.ndim == 1 else {})}
         self.gain = None
 
     def set_x(self, x) -> None:
         """Per-environment (or shared) parameters as tensors on the controller's device."""
         dev, dt = self.device, self.dtype
-        p = torch.as_tensor(to_params(np.atleast_2d(x)), device=dev, dtype=dt)
+        x = np.atleast_2d(np.asarray(x, dtype=np.float64))
+        if x.shape[1] == DIM_JOINT:                          # the residual's coefficients, one row per environment
+            theta0 = self.root._theta_cpu.double().numpy()
+            theta = np.clip(theta0 + RESIDUAL_SPAN * (np.clip(x[:, DIM:], 0.0, 1.0) - self.residual_origin), -self.root.bound, self.root.bound)
+            th = torch.as_tensor(theta, device=dev, dtype=dt)
+            self.root.theta = th.expand(self.n, N_RESIDUAL) if th.shape[0] == 1 else th
+        p = torch.as_tensor(to_params(x, self.low, self.high), device=dev, dtype=dt)
         if p.shape[0] == 1:
             p = p.expand(self.n, p.shape[1])
         self.threshold, self.T = p[:, 0], torch.round(p[:, 1]).long()
@@ -179,9 +216,16 @@ class RecoveryController:
 # ---------------------------------------------------------------------------------------------------------------------
 
 
-def build(protocol_cfg: dict, name: str, x, enabled: bool = True, inner=None) -> RecoveryController:
-    root = sr.build_controller(protocol_cfg, f"{name}:root", ra.finalist_theta(protocol_cfg), ra.normalization(protocol_cfg), inner=inner)
-    return RecoveryController(name, root, x, float(protocol_cfg["centre_tolerance"]), enabled)
+def residual_origin(theta) -> np.ndarray:
+    """The residual coefficients' normalised coordinates: ``(theta + 0.10) / 0.20``."""
+    return (np.asarray(theta, dtype=np.float64) + RESIDUAL_SPAN / 2.0) / RESIDUAL_SPAN
+
+
+def build(protocol_cfg: dict, name: str, x, enabled: bool = True, inner=None, original_bounds: bool = False) -> RecoveryController:
+    theta = ra.finalist_theta(protocol_cfg)
+    root = sr.build_controller(protocol_cfg, f"{name}:root", theta, ra.normalization(protocol_cfg), inner=inner)
+    low, high = bounds(None if original_bounds else protocol_cfg)
+    return RecoveryController(name, root, x, float(protocol_cfg["centre_tolerance"]), enabled, low, high, residual_origin(theta))
 
 
 def confirmation_manifest(cfg: dict, seed) -> str:
@@ -221,17 +265,18 @@ def make_controller(name: str, protocol_cfg: dict, out_dir: str | None = None):
 # ---------------------------------------------------------------------------------------------------------------------
 
 
-def ars_candidates(x, delta, nu: float) -> np.ndarray:
-    return np.clip(np.concatenate([x + nu * delta, x - nu * delta]), 0.0, 1.0)
+def ars_candidates(x, delta, nu: float, scale=1.0) -> np.ndarray:
+    """``scale`` (per coordinate) keeps a widened coordinate's perturbation at its original physical size (R-121)."""
+    return np.clip(np.concatenate([x + nu * scale * delta, x - nu * scale * delta]), 0.0, 1.0)
 
 
-def ars_step(x, delta, scores, alpha: float) -> tuple:
+def ars_step(x, delta, scores, alpha: float, scale=1.0) -> tuple:
     r = np.asarray(scores, dtype=float)
     n = len(delta)
     rp, rm = r[:n], r[n:]
     sigma = float(r.std())
     if sigma > 1e-8:
-        x = np.clip(x + alpha / (n * sigma) * ((rp - rm)[:, None] * delta).sum(0), 0.0, 1.0)
+        x = np.clip(x + alpha / (n * sigma) * scale * ((rp - rm)[:, None] * delta).sum(0), 0.0, 1.0)
     return x, sigma
 
 
@@ -342,7 +387,7 @@ def run(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
 # ---------------------------------------------------------------------------------------------------------------------
 
 
-def _rollout(env, ctx, ctrl, vecs, x_env, *, plain=None, script_check: dict | None = None) -> dict:
+def _rollout(env, ctx, ctrl, vecs, x_env, *, plain=None, script_check: dict | None = None, plain_tol: float = 0.0) -> dict:
     from lares.envs.isaac_pen_spin.runner import _write_placements
     from lares.envs.isaac_pen_spin.success_ars import first_episode_scores
 
@@ -367,7 +412,7 @@ def _rollout(env, ctx, ctrl, vecs, x_env, *, plain=None, script_check: dict | No
         action = ctrl(obs, t, ctx)
         if plain is not None:
             a_plain = plain(obs, t, ctx).to(action.device)
-            mism += int((action[alive] != a_plain[alive]).any(dim=1).sum())
+            mism += int(((action[alive] - a_plain[alive]).abs() > plain_tol).any(dim=1).sum())
             compared += int(alive.sum())
         if script_check is not None:
             # the D-080 script on the same observations: eligibility from the env's own values, the fixed 20/40 blend
@@ -449,9 +494,12 @@ def _child(req: dict, cfg: dict, device: str) -> dict:
             return out
         if req["mode"] == "smoke_retry":
             return _smoke_retry(env, ctx, cfg, lay, seed, device)
+        if req["mode"] == "smoke_joint":
+            return _smoke_joint(env, ctx, cfg, lay, seed, device, req)
         x = np.asarray(req.get("init_x", SCRIPT_X), dtype=float).copy()      # R-118 trains from a given point
         dim, draw_dim = len(x), int(req.get("direction_dim", len(x)))
-        ctrl = build(cfg, "train", x)
+        scale = np.asarray(req.get("coord_scale", [1.0] * dim), dtype=float)
+        ctrl = build(cfg, "train", x, original_bounds=bool(req.get("original_bounds", False)))
         rng = np.random.default_rng(seed + 2000)
         ars = cfg["ars"]
         cap, starts, transitions, updates, complete, note = int(req["start_cap"]), 0, 0, [], True, None
@@ -461,8 +509,8 @@ def _child(req: dict, cfg: dict, device: str) -> dict:
                 complete, note = False, f"update {u + 1}: {starts} starts, cap {cap}"
                 break
             delta = rng.standard_normal((lay["directions"], draw_dim))[:, :dim]   # arms share the leading coordinates' draws
-            cand = ars_candidates(x, delta, float(ars["nu"]))
-            raw = np.concatenate([x + float(ars["nu"]) * delta, x - float(ars["nu"]) * delta])
+            cand = ars_candidates(x, delta, float(ars["nu"]), scale)
+            raw = np.concatenate([x + float(ars["nu"]) * scale * delta, x - float(ars["nu"]) * scale * delta])
             vecs = sa.tile(cases.placements(seed, lay["per"] * int(ars["iterations"]))[lay["per"] * u:lay["per"] * (u + 1)], lay["slots"])
             slot_scores, trig, trig2, drops = [], [], [], []
             for r in range(2):
@@ -475,14 +523,16 @@ def _child(req: dict, cfg: dict, device: str) -> dict:
                 trig.append(res["triggered"] / n)
                 trig2.append(res["triggered2"] / n)
             scores = sa.ars_scores(slot_scores, lay)
-            x, sigma = ars_step(x, delta, scores, float(ars["alpha"]))
+            x, sigma = ars_step(x, delta, scores, float(ars["alpha"]), scale)
             d = lay["directions"]
             updates.append({"update": u + 1, "plus": [float(v) for v in scores[:d]], "minus": [float(v) for v in scores[d:]],
                             "mean_candidate_success": float(scores.mean()), "sigma_r": sigma, "triggered_fraction": trig,
                             "slot_drop_rates": [[float(v) for v in dd] for dd in drops],
                             "clipped_candidate_coordinates": int((raw != cand).sum()),
                             "second_attempt_fraction": trig2,
-                            "params": dict(zip(NAMES, [float(v) for v in to_params(x)])), "starts_so_far": starts})
+                            "params": dict(zip(NAMES, [float(v) for v in to_params(x, ctrl.low, ctrl.high)])),
+                            "residual_shift_l2": float(np.linalg.norm(RESIDUAL_SPAN * (x[DIM:] - ctrl.residual_origin))) if dim == DIM_JOINT else None,
+                            "starts_so_far": starts})
             print("update", json.dumps(updates[-1]), flush=True)
         return {"mode": "train", "seed": seed, "complete": complete, "note": note, "updates": updates, "starts": starts,
                 "transitions": transitions, "wall_time_s": time.time() - t0, "final_x": [float(v) for v in x] if complete else None}
@@ -523,6 +573,36 @@ def _smoke_retry(env, ctx, cfg: dict, lay: dict, seed: int, device: str) -> dict
                                   "parent_success_same_placements": float(a["sustained"].mean()), "parent_drops": int((~a["completed"]).sum())}
     out["starts"] = a["starts"] + b["starts"]
     out["throughput"] = {"transitions_per_s": (a["env_steps"] + b["env_steps"]) / (time.time() - t0)}
+    out["passes"] = all(g["passes"] for g in out["gates"].values())
+    return out
+
+
+def _smoke_joint(env, ctx, cfg: dict, lay: dict, seed: int, device: str, req: dict) -> dict:
+    """R-121's gate: the widened-range module and the joint policy, at their initial points, are the parent."""
+    from lares.envs.isaac_pen_spin import success_ars as sa
+
+    n = lay["slots"] * lay["per"]
+    parent = np.asarray(_load(cfg["module_finalist"])["x"], dtype=float)
+    wide, joint = np.asarray(req["init_wide"], dtype=float), np.asarray(req["init_joint"], dtype=float)
+    vecs = sa.tile(cases.placements(seed, lay["per"]), lay["slots"])
+    out = {"mode": "smoke_joint", "gates": {}}
+    t0 = time.time()
+    a = _rollout(env, ctx, build(cfg, "wide", wide), vecs, wide, plain=build(cfg, "parent", parent, original_bounds=True), plain_tol=SCRIPT_TOLERANCE)
+    out["gates"]["wide_inheritance"] = {**a["identity"], "passes": a["identity"]["mismatches"] == 0 and a["identity"]["compared"] > 0}
+    sus = a["sustained"].reshape(lay["slots"], lay["per"])
+    out["aa"] = sa.aa_statistics(sus)
+    out["gates"]["scorer_live"] = {"parent_successes": int(sus.sum()), "passes": bool(sus.any())}
+    b = _rollout(env, ctx, build(cfg, "joint", joint), vecs, joint, plain=build(cfg, "parent", parent, original_bounds=True), plain_tol=SCRIPT_TOLERANCE)
+    out["gates"]["joint_inheritance"] = {**b["identity"], "passes": b["identity"]["mismatches"] == 0 and b["identity"]["compared"] > 0}
+    probe = joint.copy()
+    probe[0] = 1.0                                           # threshold at its widened upper bound
+    probe[DIM:DIM + 8] = np.clip(probe[DIM:DIM + 8] + 0.25, 0.0, 1.0)   # eight residual coefficients moved by 0.05
+    c = _rollout(env, ctx, build(cfg, "probe", probe), vecs, probe, plain=build(cfg, "parent", parent, original_bounds=True), plain_tol=SCRIPT_TOLERANCE)
+    out["gates"]["probe_acts"] = {"action_differs_env_steps": c["identity"]["mismatches"], "triggered": c["triggered"], "parent_triggered": a["triggered"],
+                                  "threshold": float(to_params(probe, *bounds(cfg))[0]),
+                                  "passes": c["identity"]["mismatches"] > 0 and c["triggered"] > a["triggered"]}
+    out["starts"] = a["starts"] + b["starts"] + c["starts"]
+    out["throughput"] = {"transitions_per_s": (a["env_steps"] + b["env_steps"] + c["env_steps"]) / (time.time() - t0)}
     out["passes"] = all(g["passes"] for g in out["gates"].values())
     return out
 
