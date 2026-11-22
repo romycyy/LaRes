@@ -680,6 +680,14 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   instantaneous gate -0.008; no arm improves on the R-106 root. With D-077 this closes additions to the 0.10-capped
   residual: more updates, new terms and memory all leave it at about 0.54 success (root +0.110 over the reference, four
   confirmations).
+- **R-114 result (D-080, supported; diagnostic, 2026-11-22).** `recovery_authority.py` (`--study recovery_authority`; the
+  module is also its own Isaac child). On the R-106 finalist, 31% of episodes are stuck (slow, centred, alive) at step
+  120 and 0.8% of those recover untreated. A scripted **re-capture** (blend the sent action toward the reset posture
+  over 20 steps and back over 40) converts +0.107 [+0.079, +0.134] of jointly stuck pairs to sustained success and
+  leaves 59% of survivors rolling above 4 rad/s, but drops 9% of treated episodes (drop bound fails). A 1.5x stroke
+  gain gives +0.019 with no drops; tripling the residual gives nothing (the 0.10 cap is not what binds). **Escape
+  authority exists; the open problem is the shape and trigger of the re-capture**, not information or residual size.
+  `PerEnvGain` replaces the incumbent's `_stroke_gain` with a per-environment multiplier (scale 1 is bit-identical).
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

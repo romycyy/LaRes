@@ -1544,3 +1544,36 @@ research_protocols:
     threshold: 0.05
     drop_margin: 0.05
     start_ceiling: 340000
+  # R-114 (no LLM, no learning): can a scripted action get a stuck episode of the R-106 finalist rolling again? Four
+  # batches of 4 x 512 shared placements; from step 120, eligible (slow, centred, alive) environments get no action
+  # change, a re-capture blend, a 1.5x stroke gain or a 3x residual for 60 steps (recovery_authority.py). Diagnostic.
+  #   python scripts/run_shadowhand_spin_stages.py --study recovery_authority
+  recovery_authority:
+    log_dir: "logs/pen_spin/r114_recovery_authority"
+    incumbent_asset: "config/pen_spin/d058_fixed_stroke_incumbent"
+    reference_descriptor: "config/pen_spin/symbolic_reward_reference/reference.json"
+    reference_residual: *d070_selected
+    reference_residual_sha256: *d070_selected_sha256
+    control_dt: 0.016666666666666666
+    pool_seed: 4907
+    actor: *sr_actor
+    normalization_path: "logs/pen_spin/r103_symbolic_reward/normalization.json"
+    normalization_sha256: "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac"
+    root_finalist: "config/pen_spin/r106_success_ars_finalist/finalist.json"
+    root_theta_sha256: "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef"
+    placement_seeds: [4907, 4923, 4924, 4925]
+    cases_per_slot: 512
+    t0: 120
+    window: 60
+    ramp_in: 20
+    stuck_window: 30
+    stuck_rate: 3.0
+    centre_tolerance: 0.08
+    stroke_scale: 1.5
+    residual_scale: 3.0
+    threshold: 0.05
+    drop_margin: 0.05
+    first_batch_control_success: [0.44, 0.64]
+    min_pairs_first_batch: 60
+    min_pairs_total: 300
+    start_ceiling: 18000

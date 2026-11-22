@@ -1,0 +1,125 @@
+{
+ "config_sha256": "342cbf38a0b86096b42f68543d45865c768dee77e71827958b4a009c2c421c53",
+ "config": {
+  "actor": {
+   "bound": 0.1,
+   "cap": 0.1,
+   "coefficients": 32,
+   "feature_clip_sigmas": 3.0,
+   "rms_floor_posture": 0.01,
+   "rms_floor_velocity": 0.05,
+   "spin_target": 7.0
+  },
+  "cases_per_slot": 512,
+  "centre_tolerance": 0.08,
+  "control_dt": 0.016666666666666666,
+  "drop_margin": 0.05,
+  "first_batch_control_success": [
+   0.44,
+   0.64
+  ],
+  "incumbent_asset": "config/pen_spin/d058_fixed_stroke_incumbent",
+  "log_dir": "logs/pen_spin/r114_recovery_authority",
+  "min_pairs_first_batch": 60,
+  "min_pairs_total": 300,
+  "normalization_path": "logs/pen_spin/r103_symbolic_reward/normalization.json",
+  "normalization_sha256": "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac",
+  "placement_seeds": [
+   4907,
+   4923,
+   4924,
+   4925
+  ],
+  "pool_seed": 4907,
+  "ramp_in": 20,
+  "reference_descriptor": "config/pen_spin/symbolic_reward_reference/reference.json",
+  "reference_residual": {
+   "cap": 0.10269089387249905,
+   "deadband": 0.2333555721435132,
+   "gain": 0.004655481049180921,
+   "tau": 0.18501188209260944
+  },
+  "reference_residual_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1",
+  "residual_scale": 3.0,
+  "root_finalist": "config/pen_spin/r106_success_ars_finalist/finalist.json",
+  "root_theta_sha256": "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef",
+  "start_ceiling": 18000,
+  "stroke_scale": 1.5,
+  "stuck_rate": 3.0,
+  "stuck_window": 30,
+  "t0": 120,
+  "threshold": 0.05,
+  "window": 60
+ },
+ "reference": {
+  "name": "d072_qualified_reference",
+  "decisions": [
+   "D-058",
+   "D-070",
+   "D-072"
+  ],
+  "construction": "JointMotionResidual(reference_residual, incumbent_asset): clamp(incumbent + 2 clip(g sign(v_f) max(|v_f| - v0, 0), -b, b) / (hi - lo), -1, 1)",
+  "incumbent_asset": "config/pen_spin/d058_fixed_stroke_incumbent",
+  "incumbent_json_sha256": "1ffcbece3d2f18b35f89461d1079b579f21891fc7f7f8576c3feb217ea711c9c",
+  "incumbent_files": {
+   "parent_source.py": "40782dcdf5a95589d0b34062919728fa92d4e5760fce890e3bd98833285e602d",
+   "state.pt": "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22",
+   "evaluated_source.py": "fdc1da8e2811d94c5bcd1bda2f0e97625a6ea805452e56d65726e587a418c062",
+   "constant_gain.json": "dacec45947d56133b39ca0edb773df4660d73768c0814e85d180e5423b1fcb69"
+  },
+  "stroke_gain_constant": 1.4081491479357957,
+  "residual_params": {
+   "gain": 0.004655481049180921,
+   "deadband": 0.2333555721435132,
+   "tau": 0.18501188209260944,
+   "cap": 0.10269089387249905
+  },
+  "residual_params_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1",
+  "residual_source_sha256": "0dc215bb762295319f273c70242beefbbcabe7e8baf4670fbe64586482318b4e"
+ },
+ "placements": {
+  "batches": {
+   "4907": {
+    "cases": 512,
+    "sha256": "aacacf9752fbe7b9c5c255a0005573dcce58af7272beff6d1a0d00f4cbfcf645",
+    "slot_roles": [
+     "control",
+     "recapture",
+     "stroke_boost",
+     "residual_x3"
+    ]
+   },
+   "4923": {
+    "cases": 512,
+    "sha256": "9ed19a0c81d76d31b7a28b8c236b9c270920ae81b2065a21a122861bc6508b20",
+    "slot_roles": [
+     "recapture",
+     "stroke_boost",
+     "residual_x3",
+     "control"
+    ]
+   },
+   "4924": {
+    "cases": 512,
+    "sha256": "f931c0323e1f8b09e59e81f6c0266475dc0b3071a318aa9c83eb360689718ed0",
+    "slot_roles": [
+     "stroke_boost",
+     "residual_x3",
+     "control",
+     "recapture"
+    ]
+   },
+   "4925": {
+    "cases": 512,
+    "sha256": "c4a5491bddb49bd035ff8edd43f82cb68937b4ad0362fe56fee85c3cb4cecff1",
+    "slot_roles": [
+     "residual_x3",
+     "control",
+     "recapture",
+     "stroke_boost"
+    ]
+   }
+  },
+  "disjoint_from_committed_pen_spin_cases": 19294
+ }
+}

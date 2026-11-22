@@ -1,0 +1,473 @@
+{
+  "id": "R-114",
+  "title": "1. Establish recovery authority with three frozen interventions",
+  "hypothesis": "Briefly reopening and recatching the grasp can move a persistently slow episode into a rolling contact configuration that the frozen R-106 finalist can sustain.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "R-106 finalist with no intervention, restricted to placement pairs stuck before intervention",
+    "rationale": "Primary contrast: recapture minus untreated control on sustained success among pairs eligible in both slots. At step 120, eligibility requires no fall, a centered pen and a preceding 30-step mean absolute axial rate below 3 rad/s. Apply one frozen 60-step intervention, then restore the finalist: recapture blends toward the reset grasp over 20 steps and back over 40; secondary probes multiply native stroke gain by 1.5 or residual output by 3 with cap 0.30. Freeze exact action formulas before execution. Four 512-placement manifests each use four matched slots, with intervention identities counterbalanced across slots. Five percentage points of conversion would justify recovery learning; report Holm-adjusted inference across all three probes, paired and manifest-level intervals, eligibility counts and drop bounds. These are diagnostic cases, not promotion evidence. A null bounds these scripts, not every possible recovery action.\n\nFROZEN SPECIFICATION (triage rounds 1-2, agreed; supersedes the text above where they differ).\nPLACEMENTS AND SLOTS. One persistent process, four batches of 2,048 environments = 4 slots x the same 512 placements, cases.placements(seed, 512) for seeds 4907, 4923, 4924, 4925 (hashed and checked disjoint from every committed pen-spin manifest before execution; in-process diagnostic rollouts, no manifest files, first episode per environment only). Roles control / recapture / stroke_boost / residual_x3; slot k of batch b holds role (k + b) mod 4.\nBEFORE T0. Steps 0-119: every environment runs the frozen R-106 finalist (config/pen_spin/r106_success_ars_finalist/finalist.json on the D-072 reference) unchanged. ELIGIBILITY at T0 = 120, per environment: no episode end so far, centre distance at step 119 below 0.08 m, and mean |axial rate| over steps 90-119 below 3.0 rad/s.\nINTERVENTIONS, steps 120-179, eligible environments only (ineligible environments, and every step from 180 on, execute the finalist's action): the finalist's action and the reference's velocity filter are computed every step for every environment exactly as without an intervention; an intervention only replaces the action that is sent, so no controller state is reset, paused or re-phased, and the override ends by construction at step 180. recapture: sent = clamp((1 - beta) a_finalist + beta a_neutral, -1, 1), a_neutral = clamp((2 q_default - hi - lo)/(hi - lo), -1, 1) (the action whose joint targets are the hand's default reset posture; ControllerContext.neutral_action), beta = (t - 119)/20 for t = 120..139 and (180 - t)/40 for t = 140..179. stroke_boost: the incumbent's fixed stroke gain, read from the frozen controller (not a rounded value), is multiplied by 1.5 for those environments inside the reference; the residual and everything else are unchanged. residual_x3: sent = clamp(reference + clip(3 x (a s + b_g vhat + c_g ehat), -0.30, 0.30), -1, 1) with the finalist's coefficients.\nSTATISTICS. Outcome = the unchanged sustained-success rule at the episode's end. For each probe, a pair is a placement whose control-slot and probe-slot environments are BOTH eligible. Registered statistic and interval: recapture's mean paired difference in sustained success (probe minus control) with its two-sided 95% paired t interval over all jointly eligible pairs of the four batches: supported if the lower bound >= +0.05, refuted if the upper bound < +0.05, otherwise inconclusive; a positive effect below the registered magnitude is reported separately. 'Useful scripted authority' for any probe additionally requires a Holm-adjusted (three probes) two-sided paired p < 0.05 with a positive mean, a one-sided 95% upper bound on the paired drop-rate difference (falls after step 120) of at most +0.05, and a four-batch clustered interval (t over the batch means, 3 degrees of freedom) whose sign agrees; if the clustered interval contains zero the result is reported as 'positive case-paired, not confirmed across batches' and is not called useful authority. Also reported: eligibility per slot, between-slot eligibility agreement, unpaired conversion rates, mean |axial rate| over the final 60 steps of treated and control eligible environments, falls during and after the window.\nARCHIVE-BASED SIZING (R-109's 4,608 archived finalist episodes, computed before triage closed): 31.3% of episodes are eligible at step 120 and only 0.6% of those (9 of 1,444) end as sustained successes untreated, so the control's conversion is about 0.006. With about 90% between-slot agreement, about 27% of placements are jointly eligible: about 138 pairs per batch, about 550 in total; the paired SE at a conversion of 0.05 is about 0.009. INSTRUMENT CHECKS, terminating the study without a verdict, retuning or replacement cases if failed: after the first batch, the control slot's overall sustained success must lie in 0.44-0.64 (512 cases around the finalist's 0.54) and recapture must have at least 60 jointly eligible pairs; over all four batches recapture must have at least 300.\nBUDGET. 8,192 evaluated first episodes; charged simulator starts = 8,192 initial placements + one auto-reset per environment when its first episode ends (8,192) + repeat auto-resets of environments that fall again while their batch finishes (at most a few hundred): about 16,600, counted exactly; hard ceiling 18,000 checked before every batch; no outcome-dependent expansion; no separate smoke seed. Zero LLM calls. A null bounds these three scripts, not every possible recovery action."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study recovery_authority",
+    "seeds": [
+      4907,
+      4923,
+      4924,
+      4925
+    ],
+    "manifests": [],
+    "episodes": 18000,
+    "llm_calls": 0,
+    "code_changes": [
+      "lares/envs/isaac_pen_spin/recovery_authority.py (new): eligibility, the three scripted interventions, the paired/clustered statistics, the driver and its Isaac child entry point; reuses the R-106 controller, the shared-placement layout and the first-episode scorer.",
+      "scripts/run_shadowhand_spin_stages.py: one registry entry, recovery_authority.",
+      "config/shadowhand_spin_stages.yaml: the recovery_authority block.",
+      "tests/test_recovery_authority.py (new)."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "decided",
+  "source": "advisor",
+  "falsified_by": "The recapture-minus-control interval has an upper bound below +0.05; an interval spanning both zero and +0.05 is inconclusive. A drop-bound failure prevents using a success gain to qualify the intervention. Only a positive, multiplicity-corrected contrast with an acceptable drop bound establishes useful scripted authority.",
+  "cost_estimate": {
+    "episodes": 18000,
+    "llm_calls": 0,
+    "wall_time_minutes": 15
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "4097b3338de9b275a2db94da32bf474792fa9f7653f867c6cb1fdbc7be475aa6",
+  "proposal_call_id": "call_00256",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-22T10:10:29",
+    "advisor_call_id": "call_00259",
+    "round": 3,
+    "note": "This is the right diagnostic after D-077/D-079: recapture tests escape from the slow contact mode rather than adding information to the bounded residual. I accept the implementer's archive-based eligibility minima, explicit action/state handling and itemized reset accounting: 8,192 scored episodes, "
+  },
+  "run": {
+    "started_at": "2026-11-22T10:11:10",
+    "git_sha": "16eb622eb3c328a631b8112d757bddb48f5ff1c3",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r114_recovery_authority",
+    "finished_at": "2026-11-22T10:13:39"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.10666666666666667,
+      "paired_success_difference_ci95": [
+        0.07913635297432414,
+        0.1341969803590092
+      ],
+      "probes": {
+        "recapture": {
+          "pairs": 525,
+          "difference": 0.10666666666666667,
+          "ci95": [
+            0.07913635297432414,
+            0.1341969803590092
+          ],
+          "p_holm": 3.8080030520550336e-13,
+          "win_loss_tie": {
+            "wins": 58,
+            "losses": 2,
+            "ties": 465
+          },
+          "drop_difference": 0.0838095238095238,
+          "drop_one_sided_95_upper": 0.10375616005999036,
+          "drops_ok": false,
+          "unpaired_conversion": 0.11690363349131122,
+          "eligible": 633,
+          "tail_abs_spin_control_probe": [
+            1.345273767414148,
+            6.9003500883565065
+          ],
+          "verdict": {
+            "magnitude_supported": true,
+            "magnitude_refuted": false,
+            "positive_case_paired": true,
+            "confirmed_across_batches": true,
+            "useful_scripted_authority": false
+          },
+          "batch_clustered_ci95": [
+            0.051871162722745785,
+            0.16895549192228193
+          ],
+          "per_batch": [
+            {
+              "pairs": 155,
+              "difference": 0.07741935483870968,
+              "probe_conversions": 13,
+              "control_conversions": 1
+            },
+            {
+              "pairs": 112,
+              "difference": 0.14285714285714285,
+              "probe_conversions": 16,
+              "control_conversions": 0
+            },
+            {
+              "pairs": 138,
+              "difference": 0.07971014492753623,
+              "probe_conversions": 12,
+              "control_conversions": 1
+            },
+            {
+              "pairs": 120,
+              "difference": 0.14166666666666666,
+              "probe_conversions": 17,
+              "control_conversions": 0
+            }
+          ]
+        },
+        "stroke_boost": {
+          "pairs": 519,
+          "difference": 0.019267822736030827,
+          "ci95": [
+            0.0074021964022575396,
+            0.031133449069804114
+          ],
+          "p_holm": 0.0030166277246912753,
+          "win_loss_tie": {
+            "wins": 10,
+            "losses": 0,
+            "ties": 509
+          },
+          "drop_difference": 0.0,
+          "drop_one_sided_95_upper": 0.0,
+          "drops_ok": true,
+          "unpaired_conversion": 0.03194888178913738,
+          "eligible": 626,
+          "tail_abs_spin_control_probe": [
+            1.322089966392613,
+            1.5557245019411037
+          ],
+          "verdict": {
+            "magnitude_supported": false,
+            "magnitude_refuted": true,
+            "positive_case_paired": true,
+            "confirmed_across_batches": true,
+            "useful_scripted_authority": true
+          },
+          "batch_clustered_ci95": [
+            0.007979630055022861,
+            0.03238853448655955
+          ],
+          "per_batch": [
+            {
+              "pairs": 150,
+              "difference": 0.013333333333333334,
+              "probe_conversions": 2,
+              "control_conversions": 0
+            },
+            {
+              "pairs": 115,
+              "difference": 0.02608695652173913,
+              "probe_conversions": 3,
+              "control_conversions": 0
+            },
+            {
+              "pairs": 145,
+              "difference": 0.013793103448275862,
+              "probe_conversions": 3,
+              "control_conversions": 1
+            },
+            {
+              "pairs": 109,
+              "difference": 0.027522935779816515,
+              "probe_conversions": 4,
+              "control_conversions": 1
+            }
+          ]
+        },
+        "residual_x3": {
+          "pairs": 521,
+          "difference": 0.005758157389635317,
+          "ci95": [
+            -0.0026669035593506595,
+            0.014183218338621293
+          ],
+          "p_holm": 0.1799633607586159,
+          "win_loss_tie": {
+            "wins": 4,
+            "losses": 1,
+            "ties": 516
+          },
+          "drop_difference": -0.0019193857965451055,
+          "drop_one_sided_95_upper": 0.0012433574116357876,
+          "drops_ok": true,
+          "unpaired_conversion": 0.01579778830963665,
+          "eligible": 633,
+          "tail_abs_spin_control_probe": [
+            1.346428660406631,
+            1.497727393165531
+          ],
+          "verdict": {
+            "magnitude_supported": false,
+            "magnitude_refuted": true,
+            "positive_case_paired": false,
+            "confirmed_across_batches": false,
+            "useful_scripted_authority": false
+          },
+          "batch_clustered_ci95": [
+            -0.013432838777928145,
+            0.025035847239657422
+          ],
+          "per_batch": [
+            {
+              "pairs": 146,
+              "difference": -0.00684931506849315,
+              "probe_conversions": 0,
+              "control_conversions": 1
+            },
+            {
+              "pairs": 112,
+              "difference": 0.008928571428571428,
+              "probe_conversions": 1,
+              "control_conversions": 0
+            },
+            {
+              "pairs": 142,
+              "difference": 0.02112676056338028,
+              "probe_conversions": 3,
+              "control_conversions": 0
+            },
+            {
+              "pairs": 121,
+              "difference": 0.0,
+              "probe_conversions": 1,
+              "control_conversions": 1
+            }
+          ]
+        }
+      }
+    },
+    "controls": {
+      "control": {
+        "cases": 2048,
+        "success": 0.5419921875,
+        "eligible_fraction": 0.30859375,
+        "untreated_conversion": 0.007911392405063292,
+        "first_batch_success": 0.546875
+      },
+      "eligibility_agreement_between_slots": 0.8943684895833334,
+      "starts": 16394,
+      "ceiling": 18000,
+      "stroke_gain_constant": 1.4081491479357957,
+      "eligible_episode_outcomes_post_hoc": {
+        "control": {
+          "eligible": 632,
+          "sustained": 5,
+          "dropped": 1,
+          "median_tail_abs_spin_completed": 1.34,
+          "fraction_completed_tail_spin_above_4": 0.013
+        },
+        "recapture": {
+          "eligible": 633,
+          "sustained": 74,
+          "dropped": 59,
+          "median_fall_step": 159,
+          "median_tail_abs_spin_completed": 5.59,
+          "fraction_completed_tail_spin_above_4": 0.594,
+          "fraction_above_8": 0.371,
+          "p90": 16.9
+        },
+        "stroke_boost": {
+          "eligible": 626,
+          "sustained": 20,
+          "dropped": 1,
+          "median_tail_abs_spin_completed": 1.43,
+          "fraction_completed_tail_spin_above_4": 0.042
+        },
+        "residual_x3": {
+          "eligible": 633,
+          "sustained": 10,
+          "dropped": 0,
+          "median_tail_abs_spin_completed": 1.49,
+          "fraction_completed_tail_spin_above_4": 0.022
+        }
+      },
+      "llm_calls": 0,
+      "config_sha256": "342cbf38a0b86096b42f68543d45865c768dee77e71827958b4a009c2c421c53"
+    },
+    "artifacts": [
+      "logs/pen_spin/r114_recovery_authority/summary.json",
+      "logs/pen_spin/r114_recovery_authority/rollouts.json",
+      "logs/pen_spin/r114_recovery_authority/frozen_config.json"
+    ],
+    "notes": "No deviation: one child, four batches, instrument checks passed (control success 0.542 over 2,048 cases, first batch 0.547; 30.9% eligible; untreated conversion 0.8%; between-slot eligibility agreement 0.894; 525 jointly eligible recapture pairs against a minimum of 300), 16,394 starts of an 18,000 ceiling. In-process diagnostic rollouts, not the fresh-process evaluator; authority only. RECAPTURE: +0.107 [+0.079, +0.134] paired sustained success among jointly eligible pairs (58 wins, 2 losses; batch-clustered [+0.052, +0.169]; Holm p < 0.001): the registered magnitude is supported. It FAILS the drop bound: paired drop difference +0.084, one-sided upper bound +0.104 against +0.05 (59 of 633 treated stuck episodes fall, median fall step 159, i.e. during the open-and-recatch), so it is not 'useful scripted authority' as registered. Post hoc, not registered: among the 574 treated episodes that are not dropped, 59% end with a mean final-second |axial rate| above 4 rad/s (median 5.6; 37% above 8; untreated 1.3%), but only 74 of 633 meet the strict sustained rule: the re-capture restarts rolling in most stuck episodes, and what is missing is retention during the manoeuvre and steadiness/centring afterwards. STROKE BOOST (1.5x for 60 steps): +0.019 [+0.007, +0.031], no drops, positive after Holm and across batches but below the registered magnitude: a small, safe lever. RESIDUAL x3 with a 0.30 cap: +0.006 [-0.003, +0.014]: tripling the learned residual does not release a stuck episode, so the 0.10 cap is not what binds. A null or a positive here bounds these three scripts at these settings (T0 = 120, 60 steps, one blend schedule), not every recovery action."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.10666666666666667,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "supported",
+      "confidence": 0.85,
+      "reasoning": "The registered statistic, recapture minus untreated control on sustained success among jointly eligible (stuck) pairs, is +0.107 with a paired 95% interval [+0.079, +0.134] over 525 pairs (58 wins, 2 losses); the lower bound is above the predicted +0.05, the Holm-adjusted p is below 0.001 and the four-batch clustered interval [+0.052, +0.169] agrees. So escape authority exists: an episode that would otherwise stay slow (untreated conversion 0.8%) can be restarted by reopening and recatching. By the registered qualification rule it is NOT yet a useful scripted intervention: the drop bound fails (paired drop difference +0.084, upper bound +0.104 against +0.05). The stroke boost is a small safe positive (+0.019 [+0.007, +0.031], below the registered magnitude) and tripling the residual does nothing (+0.006 [-0.003, +0.014]), which rules out the residual cap as the binding constraint. In-process diagnostic, one schedule.",
+      "cited_artifacts": [],
+      "next_experiment": "Authority exists, so the problem is now the SHAPE and TRIGGER of the re-capture: keep the pen during the manoeuvre (59 of 633 treated episodes fall) and make the restarted roll steady and centred (59% of survivors roll above 4 rad/s on average but only 12% meet the strict rule). Next: learn a parameterised recovery behaviour with the instrument that works (ARS on shared placements): a small symbolic recovery module on top of the frozen R-106 finalist (trigger threshold and timing, blend depth, ramp durations, a per-group blend instead of all joints, optionally a stroke boost after re-catch), trained on the full-episode success count so that drops are penalised by the objective itself, then confirmed on fresh manifests against the root with the strict rule and the drop bound. That is the direction's anchored incremental construction (P4) applied where authority was shown, and it supersedes R-115 / R-111.",
+      "recorded_at": "2026-11-22T10:13:41",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "supported",
+      "confidence": 0.99,
+      "reasoning": "Against untreated R-106 on 525 jointly eligible pairs, recapture increased paired_success_difference by +0.1067, with a 95% interval [+0.0791, +0.1342], supporting the registered increase of at least +0.05 [logs/pen_spin/r114_recovery_authority/summary.json]. The effect also passes multiplicity correction (Holm p = 3.81e-13) and has a positive batch-clustered interval [+0.0519, +0.1690] [logs/pen_spin/r114_recovery_authority/summary.json]. However, recapture does not qualify as useful scripted authority: its paired drop difference is +0.0838 and its one-sided upper bound is +0.1038, exceeding the +0.05 limit [logs/pen_spin/r114_recovery_authority/summary.json]. Stroke boost qualifies under the registered usefulness gates but has a smaller success gain of +0.0193 [+0.0074, +0.0311]; residual scaling establishes no success difference because its interval includes zero [logs/pen_spin/r114_recovery_authority/summary.json]. Instrument checks passed, and the diagnostic consumed 16,394 simulator starts and zero LLM calls; these results are not promotion evidence [logs/pen_spin/r114_recovery_authority/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r114_recovery_authority/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-22T10:14:01",
+      "call_id": "call_00260"
+    }
+  ],
+  "decision_id": "D-080",
+  "history": [
+    {
+      "at": "2026-11-22T10:10:29",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-22T10:11:10",
+      "from": "approved",
+      "to": "running",
+      "note": "git 16eb622eb3 (dirty)"
+    },
+    {
+      "at": "2026-11-22T10:13:39",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-22T10:14:18",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-080: supported"
+    }
+  ],
+  "created_at": "2026-11-22T10:05:22",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "This is the right diagnostic after D-077 and D-079: it tests escape authority rather than adding information to the saturated bounded residual. The paired_success_difference prediction is an increase of at least 0.05 against untreated R-106 on jointly eligible pairs, falsified if its interval upper bound is below +0.05. The weakest points are unspecified intervention formulas, an unnumbered drop gate and episode accounting: four 512-placement manifests with four slots total 8,192 starts, not 24,576. A diagnostic with zero controller-generation LLM calls is justified, but the exact allocation and total simulator budget must be agreed before spending.",
+          "suggested_changes": [
+            "Freeze the exact recapture, native-stroke and residual-scaling formulas, including action coordinates, blending endpoints, clipping, timing and restoration of controller state.",
+            "Specify the counterbalanced slot allocation and reconcile the episode budget: identify every repetition, smoke and other charged simulator start, or reduce the stated total to the actual allocation.",
+            "Set the drop gate explicitly: a one-sided upper paired drop-difference bound no greater than +0.05 against untreated R-106 on the same eligible pairs, with multiplicity handling declared for qualification across the three probes.",
+            "Use archived pre-intervention traces to estimate eligible counts and anticipated precision before execution; freeze the conditional estimand, paired analysis and manifest-level analysis without outcome-dependent expansion. Distinguish evidence of positive authority from confirmation of the registered five-point magnitude.",
+            "Reuse scripts/run_shadowhand_spin_stages.py, config/shadowhand_spin_stages.yaml and existing controller-loading and evaluation helpers; restrict new code to intervention functionality absent from those helpers and its tests. Keep the proposed free seeds, explicitly allocate any additional smoke seeds before agreement, and preserve diagnostic-only status."
+          ],
+          "priority": 1,
+          "call_id": "call_00257",
+          "briefing_sha256": "4a014c456bc039f9a97b62babf8bbe0e33f1ec3b748ef39e329e88d163d6a7c6",
+          "at": "2026-11-22T10:06:45"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "The diagnostic is the right next step and nearly executable; the record asks for the exact action formulas to be frozen and does not contain them, and it lists four manifests where the design uses in-process shared placements. Proposed frozen specification. Placements: cases.placements(seed, 512) for seeds 4907, 4923, 4924, 4925 (four batches of 2,048 environments = 4 slots x the same 512 placements, one persistent process; these are in-process diagnostic rollouts, so protocol.manifests is empty). Roles control / recapture / stroke_boost / residual_x3, slot assignment rotated by one per batch. Every environment runs the frozen R-106 finalist unchanged for steps 0-119. Eligibility at T0 = 120, per environment: no episode end so far, centre distance at step 119 below 0.08, and mean |axial rate| over steps 90-119 below 3.0 rad/s. Only eligible environments are treated, for steps 120-179; all others and all later steps run the finalist. recapture: action = (1 - beta) a_finalist + beta a_neutral, a_neutral the action whose joint targets are the hand's default (reset) posture, beta = (t - 119)/20 for t in 120..139 and (180 - t)/40 for t in 140..179. stroke_boost: the incumbent's fixed stroke gain (1.408...) multiplied by 1.5 inside the reference for those environments, everything else unchanged. residual_x3: the finalist's residual computed with 3 x its coefficients and clipped at 0.30 instead of 0.10. Outcome: the unchanged sustained-success rule at the episode's end. Per intervention, pairs are placements whose control-slot and intervention-slot environments are BOTH eligible; statistic = mean paired difference in sustained success (intervention minus control) with a paired t interval, a batch-clustered interval (4 batches), the paired drop-rate difference (falls after step 120) with its one-sided 95% upper bound against 0.05, Holm over the three probes. Primary = recapture. Reported beside it: eligibility counts per slot, between-slot eligibility agreement, unpaired conversion rates, mean |axial rate| over the final 60 steps, and the control slot's overall success as an instrument check (it should match the finalist's known 0.52-0.56). No separate smoke process: the instrument checks are computed from the first batch before the summary is written, and the study halts with no verdict if the control slot's success is outside 0.45-0.62 or fewer than 400 pairs are eligible for recapture. About 16,400 simulator starts expected, ceiling 25,000. Code: one new module lares/envs/isaac_pen_spin/recovery_authority.py (driver, child entry point and pure statistics) plus a test.",
+          "changes_applied": [],
+          "at": "2026-11-22T10:06:47"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "Testing escape authority is justified after the bounded-residual plateau and differs from adding more information or structure. I accept the implementer's recapture schedule, counterbalanced slots and in-process diagnostic evaluation, but 8,192 evaluated rollouts still do not explain approximately 16,400 charged starts or the 25,000-start ceiling. The first-batch eligibility gate also needs correction or justification: 400 jointly eligible pairs out of 512 requires 78.1% eligibility, and no archive-based estimate supports that requirement. These are executable-protocol gaps, not reasons to abandon the diagnostic; the controller-generation budget remains zero LLM calls.",
+          "suggested_changes": [
+            "Update the actual protocol record with the proposed formulas and allocation. Itemize all 8,192 planned evaluated rollouts plus initialization, automatic-reset and other charged starts; derive a fixed total and ceiling, with no outcome-dependent expansion or unallocated smoke seeds.",
+            "Use archived pre-intervention traces to estimate eligibility and precision. State whether the 400-pair minimum applies to the first 512 placements or all 2,048, then freeze justified first-batch and final minima; failed instrument checks must terminate without a verdict, retuning or replacement cases.",
+            "Freeze the multiplicity-adjusted qualification rule across all three probes, including the one-sided upper paired drop-difference bound of at most +0.05. Specify how paired and four-batch clustered inference enter the verdict, rather than merely listing both.",
+            "Preserve the prediction: paired_success_difference increases by at least 0.05 versus untreated R-106 among jointly eligible pairs. Its magnitude is falsified when the registered interval upper bound is below +0.05; an interval containing both zero and +0.05 is inconclusive, and positive authority below the registered magnitude must be reported separately.",
+            "Specify the reset-target-to-action conversion, final action clipping and continuous controller-state handling during and after intervention; read the exact stroke gain from the frozen controller rather than using the rounded value. Test that overrides disappear after step 179 without resetting phase or filters.",
+            "Reuse scripts/run_shadowhand_spin_stages.py, config/shadowhand_spin_stages.yaml and existing loading/evaluation helpers; add only missing intervention functionality and tests. Freeze and hash diagnostic placement draws and slot assignments for free seeds 4907, 4923, 4924 and 4925 before execution, keeping all existing evaluation manifests and saved incumbent assets unchanged."
+          ],
+          "priority": 1,
+          "call_id": "call_00258",
+          "briefing_sha256": "ad12f68363022f563ff1934812725f740b590ea1f91984139aaf70a273270a64",
+          "at": "2026-11-22T10:07:35"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agreed on all six changes. The archive gives the numbers that were missing: 31.3% of the finalist's episodes are eligible at step 120 and only 0.6% of those recover untreated, so about 138 jointly eligible pairs per batch and about 550 in total are expected; my '400 pairs' was meant for all 2,048 placements and is replaced by justified minima (60 after the first batch, 300 overall). Starts are itemised (8,192 placements + 8,192 first auto-resets + a few hundred repeats; ceiling 18,000). The verdict rule now says how the paired and batch-clustered intervals enter, and the action formulas, clipping and state handling are explicit.",
+          "changes_applied": [],
+          "at": "2026-11-22T10:08:20"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This is the right diagnostic after D-077/D-079: recapture tests escape from the slow contact mode rather than adding information to the bounded residual. I accept the implementer's archive-based eligibility minima, explicit action/state handling and itemized reset accounting: 8,192 scored episodes, approximately 16,600 charged starts, an 18,000-start ceiling and zero LLM calls. The prediction remains paired_success_difference increasing by at least 0.05 against untreated R-106 on jointly eligible pairs, falsified if the registered interval upper bound is below +0.05. The weakest point is only four batches, appropriately addressed by requiring positive clustered inference alongside Holm correction and the drop bound before declaring useful scripted authority; this remains diagnostic, not promotion evidence.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00259",
+          "briefing_sha256": "ccfe23d025eca1eb84eecea1f7edd642093f687834cd380e3344e8b2f80771de",
+          "at": "2026-11-22T10:08:41"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve: formulas, eligibility, sizing from the archive, instrument checks, the verdict rule and an itemised 18,000-start ceiling are frozen; about ten minutes of box time decides whether any of three scripted actions can move a stuck episode, which determines whether recovery learning or the reference's own stroke is the next lever.",
+          "changes_applied": [],
+          "at": "2026-11-22T10:10:29"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 3
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-22T10:08:22",
+      "round": 2,
+      "patch": {
+        "prediction": {
+          "rationale": "Primary contrast: recapture minus untreated control on sustained success among pairs eligible in both slots. At step 120, eligibility requires no fall, a centered pen and a preceding 30-step mean absolute axial rate below 3 rad/s. Apply one frozen 60-step intervention, then restore the finalist: recapture blends toward the reset grasp over 20 steps and back over 40; secondary probes multiply native stroke gain by 1.5 or residual output by 3 with cap 0.30. Freeze exact action formulas before execution. Four 512-placement manifests each use four matched slots, with intervention identities counterbalanced across slots. Five percentage points of conversion would justify recovery learning; report Holm-adjusted inference across all three probes, paired and manifest-level intervals, eligibility counts and drop bounds. These are diagnostic cases, not promotion evidence. A null bounds these scripts, not every possible recovery action.\n\nFROZEN SPECIFICATION (triage rounds 1-2, agreed; supersedes the text above where they differ).\nPLACEMENTS AND SLOTS. One persistent process, four batches of 2,048 environments = 4 slots x the same 512 placements, cases.placements(seed, 512) for seeds 4907, 4923, 4924, 4925 (hashed and checked disjoint from every committed pen-spin manifest before execution; in-process diagnostic rollouts, no manifest files, first episode per environment only). Roles control / recapture / stroke_boost / residual_x3; slot k of batch b holds role (k + b) mod 4.\nBEFORE T0. Steps 0-119: every environment runs the frozen R-106 finalist (config/pen_spin/r106_success_ars_finalist/finalist.json on the D-072 reference) unchanged. ELIGIBILITY at T0 = 120, per environment: no episode end so far, centre distance at step 119 below 0.08 m, and mean |axial rate| over steps 90-119 below 3.0 rad/s.\nINTERVENTIONS, steps 120-179, eligible environments only (ineligible environments, and every step from 180 on, execute the finalist's action): the finalist's action and the reference's velocity filter are computed every step for every environment exactly as without an intervention; an intervention only replaces the action that is sent, so no controller state is reset, paused or re-phased, and the override ends by construction at step 180. recapture: sent = clamp((1 - beta) a_finalist + beta a_neutral, -1, 1), a_neutral = clamp((2 q_default - hi - lo)/(hi - lo), -1, 1) (the action whose joint targets are the hand's default reset posture; ControllerContext.neutral_action), beta = (t - 119)/20 for t = 120..139 and (180 - t)/40 for t = 140..179. stroke_boost: the incumbent's fixed stroke gain, read from the frozen controller (not a rounded value), is multiplied by 1.5 for those environments inside the reference; the residual and everything else are unchanged. residual_x3: sent = clamp(reference + clip(3 x (a s + b_g vhat + c_g ehat), -0.30, 0.30), -1, 1) with the finalist's coefficients.\nSTATISTICS. Outcome = the unchanged sustained-success rule at the episode's end. For each probe, a pair is a placement whose control-slot and probe-slot environments are BOTH eligible. Registered statistic and interval: recapture's mean paired difference in sustained success (probe minus control) with its two-sided 95% paired t interval over all jointly eligible pairs of the four batches: supported if the lower bound >= +0.05, refuted if the upper bound < +0.05, otherwise inconclusive; a positive effect below the registered magnitude is reported separately. 'Useful scripted authority' for any probe additionally requires a Holm-adjusted (three probes) two-sided paired p < 0.05 with a positive mean, a one-sided 95% upper bound on the paired drop-rate difference (falls after step 120) of at most +0.05, and a four-batch clustered interval (t over the batch means, 3 degrees of freedom) whose sign agrees; if the clustered interval contains zero the result is reported as 'positive case-paired, not confirmed across batches' and is not called useful authority. Also reported: eligibility per slot, between-slot eligibility agreement, unpaired conversion rates, mean |axial rate| over the final 60 steps of treated and control eligible environments, falls during and after the window.\nARCHIVE-BASED SIZING (R-109's 4,608 archived finalist episodes, computed before triage closed): 31.3% of episodes are eligible at step 120 and only 0.6% of those (9 of 1,444) end as sustained successes untreated, so the control's conversion is about 0.006. With about 90% between-slot agreement, about 27% of placements are jointly eligible: about 138 pairs per batch, about 550 in total; the paired SE at a conversion of 0.05 is about 0.009. INSTRUMENT CHECKS, terminating the study without a verdict, retuning or replacement cases if failed: after the first batch, the control slot's overall sustained success must lie in 0.44-0.64 (512 cases around the finalist's 0.54) and recapture must have at least 60 jointly eligible pairs; over all four batches recapture must have at least 300.\nBUDGET. 8,192 evaluated first episodes; charged simulator starts = 8,192 initial placements + one auto-reset per environment when its first episode ends (8,192) + repeat auto-resets of environments that fall again while their batch finishes (at most a few hundred): about 16,600, counted exactly; hard ceiling 18,000 checked before every batch; no outcome-dependent expansion; no separate smoke seed. Zero LLM calls. A null bounds these three scripts, not every possible recovery action."
+        },
+        "protocol": {
+          "seeds": [
+            4907,
+            4923,
+            4924,
+            4925
+          ],
+          "manifests": [],
+          "episodes": 18000,
+          "code_changes": [
+            "lares/envs/isaac_pen_spin/recovery_authority.py (new): eligibility, the three scripted interventions, the paired/clustered statistics, the driver and its Isaac child entry point; reuses the R-106 controller, the shared-placement layout and the first-episode scorer.",
+            "scripts/run_shadowhand_spin_stages.py: one registry entry, recovery_authority.",
+            "config/shadowhand_spin_stages.yaml: the recovery_authority block.",
+            "tests/test_recovery_authority.py (new)."
+          ]
+        },
+        "cost_estimate": {
+          "episodes": 18000,
+          "llm_calls": 0,
+          "wall_time_minutes": 15
+        }
+      },
+      "note": "Rounds 1-2 agreed revise: exact formulas, eligibility, archive-based sizing and instrument checks, itemised starts with an 18,000 ceiling, verdict rule with Holm, drop bound and batch-clustered agreement."
+    }
+  ]
+}

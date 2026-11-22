@@ -1,0 +1,113 @@
+{
+  "id": "R-115",
+  "title": "2. Conditional R-111 revision: native posture then stroke construction",
+  "hypothesis": "Optimizing native posture before native stroke reduces interference between grasp retention and spin production, outperforming simultaneous fitting while unchanged outputs remain anchored.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "budget-matched simultaneous native posture-and-stroke construction",
+    "rationale": "Wait for idea 1; run only after recapture or native-stroke intervention establishes drop-qualified recovery authority, not after a residual-scaling result alone. This revises deferred R-111 by replacing its weak reset-geometry prerequisite with intervention evidence. Keep the D-072 reference and inherited R-106 residual frozen; directly replace predefined native posture and stroke parameters rather than add another capped residual. Freeze parameter groups, complexity cap and posture-then-stroke ordering at triage. Incremental fitting spends six ARS updates on posture, freezes it, then spends six on stroke; simultaneous fitting spends twelve on both. Reuse exact-success ARS, four antithetic directions and 512 shared placements per signed candidate, with matched direction streams and terminal checkpoints only. Use a disjoint 512-case pilot solely to size one confirmation for a five-point effect, capped at 1,536 pairs; re-triage without confirmation if that cap is insufficient. Confirm the two finalists, R-106 root and D-072 reference with the established evaluator. Apply strict paired success and drop gates; beating simultaneous fitting without improving the root does not justify adoption."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study native_component_construction",
+    "seeds": [
+      4926,
+      4927,
+      4928,
+      4929,
+      4930,
+      4931,
+      4932,
+      4933,
+      4934,
+      4935,
+      4936,
+      4937,
+      4938,
+      4939
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_native_components_train_s4926.yaml",
+      "config/manifests/pen_spin_stage3_native_components_pilot_s4927.yaml",
+      "config/manifests/pen_spin_stage3_native_components_confirm_s4928.yaml",
+      "config/manifests/pen_spin_stage3_native_components_confirm_s4929.yaml",
+      "config/manifests/pen_spin_stage3_native_components_confirm_s4930.yaml",
+      "config/manifests/pen_spin_stage3_native_components_confirm_s4931.yaml",
+      "config/manifests/pen_spin_stage3_native_components_confirm_s4932.yaml",
+      "config/manifests/pen_spin_stage3_native_components_confirm_s4933.yaml",
+      "config/manifests/pen_spin_stage3_native_components_confirm_s4934.yaml",
+      "config/manifests/pen_spin_stage3_native_components_confirm_s4935.yaml",
+      "config/manifests/pen_spin_stage3_native_components_confirm_s4936.yaml",
+      "config/manifests/pen_spin_stage3_native_components_confirm_s4937.yaml",
+      "config/manifests/pen_spin_stage3_native_components_confirm_s4938.yaml",
+      "config/manifests/pen_spin_stage3_native_components_confirm_s4939.yaml"
+    ],
+    "episodes": 230000,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py",
+      "config/shadowhand_spin_stages.yaml",
+      "scripts/isaac/pen_spin_native_component_study.py",
+      "tests/test_pen_spin_native_component_study.py"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The confirmed incremental-minus-simultaneous interval has an upper bound below +0.05; an interval spanning zero and +0.05 is inconclusive. Even a supported construction contrast is not a useful controller advance unless the incremental finalist also strictly improves on the R-106 root and passes the prescribed drop qualification.",
+  "cost_estimate": {
+    "episodes": 230000,
+    "llm_calls": 0,
+    "wall_time_minutes": 120
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "4097b3338de9b275a2db94da32bf474792fa9f7653f867c6cb1fdbc7be475aa6",
+  "proposal_call_id": "call_00256",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-22T10:06:45",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-22T10:05:22",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "This explicitly revises R-111 by replacing weak reset-geometry evidence with causal intervention evidence, so the earlier deferral does not settle the revised mechanism. Its paired_success_difference prediction is an increase of at least 0.05 against budget-matched simultaneous construction, falsified if the confirmation interval upper bound is below +0.05. The weakest point remains whether native posture or stroke has useful recovery authority; a residual-scaling gain alone would not establish that prerequisite. Defer the estimated 230,000 simulator episodes and zero LLM calls until R-114 establishes drop-qualified recapture or native-stroke authority, then re-triage the frozen construction specification and complete cost accounting.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00257",
+          "briefing_sha256": "4a014c456bc039f9a97b62babf8bbe0e33f1ec3b748ef39e329e88d163d6a7c6",
+          "at": "2026-11-22T10:06:45"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree: it should wait for R-114's authority result, and its parameter groups and bounds are not yet concrete.",
+          "changes_applied": [],
+          "at": "2026-11-22T10:06:45"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}
