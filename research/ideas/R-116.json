@@ -1,0 +1,947 @@
+{
+  "id": "R-116",
+  "title": "1. Learn a single-attempt symbolic re-capture module",
+  "hypothesis": "Optimizing the trigger and joint-group shape of a latched re-capture will retain the pen during recovery and turn restarted rolling into sustained success.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "frozen R-106 finalist without recovery",
+    "rationale": "Highest expected information per episode: D-080 establishes recovery authority but does not test reward-trained recovery shape or fresh-process usefulness. This supersedes R-111/R-115's native posture-then-stroke proposal rather than repeating it. Reuse recovery_authority.py and success_ars.py through the existing dispatcher. Fit 11 bounded parameters: trigger threshold [1,4] rad/s on the 30-step mean absolute rate, decision step [60,180], ramp-in [5,40] steps, ramp-out [10,80], six existing joint-group blend depths [0,1], and a post-recapture stroke multiplier [1,2] lasting 60 steps. Initialize at threshold 3, step 120, ramps 20/40, depths 1 and multiplier 1. Crucially, permit exactly one trigger decision and one attempt: this preserves the untrained D-080 script, unlike an earliest-trigger gate with retries. Always compute the frozen root action and update its state; replace only the sent action during recovery. Use normalized projected ARS, 12 updates, four antithetic directions, 512 shared placements per signed candidate, nu 0.1 and alpha 0.05, optimizing full-episode sustained-success count. Freeze the terminal mean without selection. Log one disjoint 128-case monitoring curve without using it for decisions. Confirm D-072, root, untrained script and trained module once on twelve fresh 128-case manifests, one manifest per fresh process with matched layout. The 1,536-pair size is prospectively based on the recorded pilot discordance range 0.16–0.41 for a five-point effect. Report case-paired and manifest-level intervals, all required diagnostics, and scripted-minus-root and trained-minus-scripted contrasts. Attribute an effect to learning only if trained-minus-scripted excludes zero. Usefulness additionally requires the unchanged strict paired rule and one-sided 95% drop-difference upper bound <= 0.05 against both root and D-072. Keep the saved incumbent unchanged. Counts include training reset starts, smoke, monitoring and confirmation overhead; register and test the handler before running.\n\nFROZEN REVISION (triage round 2, agreed; supersedes the text above where they differ).\nONE OBSERVATION-ONLY CONTROLLER for training and fresh-process evaluation. At each control step t (per-environment counter, 0 at an episode's first step; all module state is cleared at every environment reset) the controller computes the frozen R-106 finalist's action a_root and updates the reference's filter exactly as without the module, and records from the observation o_t: rate_t = |axial rate| (pen quaternion obs[51:55] w-first and angular velocity obs[58:61]/0.2 projected on the pen's long axis: the env's own formula) and centre_t = |obj_pos - in_hand_pos| (obs[48:51] - obs[61:64]).\nPARAMETERS (11): threshold r in [1, 4] rad/s (init 3); decision step tau in [60, 180] (init 120); ramp-in n_in in [5, 40] steps (init 20); ramp-out n_out in [10, 80] (init 40); blend depth d_g in [0, 1] for the six joint groups wrist, FF, MF, RF, LF, TH (init 1); post-recapture stroke multiplier m in [1, 2] (init 1), held for 60 steps.\nSEMANTICS. One decision, at step T = round(tau): the environment is eligible if centre_T < 0.08 and the mean of rate over the 30 observations T-29..T is below r (the episode is alive by construction). If eligible, with u = t - T: beta(u) = min((u + 1)/n_in, 1) for u < n_in; 1 - (u - n_in)/n_out for n_in <= u < n_in + n_out; 0 afterwards (at 20/40 this is the D-080 schedule exactly); sent_j = clamp((1 - beta d_g(j)) a_root,j + beta d_g(j) a_neutral,j, -1, 1), a_neutral = clamp((2 q_default - hi - lo)/(hi - lo), -1, 1); for the 60 steps after the blend ends the incumbent's fixed stroke gain inside the reference is multiplied by m for that environment. No second decision, no retry. Ineligible environments always send a_root.\nLEARNER. ARS in normalised coordinates x in [0, 1]^11 (linear maps to the ranges above; projection by clipping; boundary clipping of candidates recorded), from the scripted initial point, nu 0.1, alpha 0.05, 12 updates, 4 antithetic directions all used, direction RNG default_rng(4941 + 2000); return = full-episode sustained-success fraction of a signed candidate's 512 first episodes; two 2,048-environment rollouts per update, 4 slots on the same 512 placements, cases.placements(4941, 6144); one persistent process; terminal mean frozen and hashed, no selection, no monitoring curve.\nSMOKE (seed 4940, gates training): a module that cannot trigger (threshold 0) equals the R-106 controller bit for bit in lockstep over a rollout; the untrained module's sent action equals the D-080 script's formula evaluated on the same observations and eligibility; per-environment state reset; scorer live; A/A; eligibility fraction and the scripted slots' success are reported (not tuned to match D-080).\nCONFIRMATION, once: the D-072 reference, the R-106 root, the untrained scripted module and the trained module, each once per manifest in a fresh process, twelve 128-case manifests (seeds 4942-4953; 4954 unused), 1,536 pairs per contrast. Contrasts: trained minus root (primary); scripted minus root; trained minus scripted (learning is credited only if this interval is above zero); each minus the reference; case-paired and manifest-clustered intervals; usefulness requires the strict paired rule and the one-sided 95% drop-difference bound <= 0.05 against both the root and the reference. BUDGET: about 118,800 simulator starts (training 98,304; smoke 8,200; confirmation 4 x 1,536 cases charged at 2); hard ceiling 125,000 enforced before every rollout; a started seeded child is never relaunched. One ARS trajectory."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study symbolic_recovery_ars",
+    "seeds": [
+      4940,
+      4941,
+      4942,
+      4943,
+      4944,
+      4945,
+      4946,
+      4947,
+      4948,
+      4949,
+      4950,
+      4951,
+      4952,
+      4953
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4942.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4943.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4944.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4945.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4946.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4947.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4948.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4949.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4950.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4951.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4952.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4953.yaml"
+    ],
+    "episodes": 118800,
+    "llm_calls": 0,
+    "code_changes": [
+      "lares/envs/isaac_pen_spin/recovery_module.py (new): the observation-only recovery controller on the frozen finalist, the normalised-parameter ARS driver, the Isaac child entry point and the contrasts; reuses recovery_authority.py (schedule, per-environment stroke gain), success_ars.py (slot layout, scorer) and symbolic_reward.py (ARS-free pieces, reference).",
+      "scripts/run_shadowhand_spin_stages.py: one registry entry, symbolic_recovery_ars.",
+      "config/shadowhand_spin_stages.yaml: the symbolic_recovery_ars block.",
+      "tests/test_recovery_module.py (new).",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4942.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4943.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4944.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4945.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4946.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4947.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4948.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4949.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4950.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4951.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4952.yaml",
+      "config/manifests/pen_spin_stage3_recovery_confirm_s4953.yaml"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "decided",
+  "source": "advisor",
+  "falsified_by": "A confirmation interval whose upper bound is below +0.05 refutes the predicted magnitude; an interval including zero is inconclusive. A nonpositive trained-minus-scripted contrast does not establish a contribution from learning, and failure of either drop qualification prevents a usefulness claim.",
+  "cost_estimate": {
+    "episodes": 118800,
+    "llm_calls": 0,
+    "wall_time_minutes": 40
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "2ee8b1fb6363168a1384c44f12f282243cc1832da750d3d327915ee2c6ee1aea",
+  "proposal_call_id": "call_00261",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-22T10:21:32",
+    "advisor_call_id": "call_00264",
+    "round": 3,
+    "note": "I accept the implementer's now-applied observation-only semantics, normalized projected ARS, smoke gates and removal of monitoring: learned timing and joint-group blends test whether D-080's escape authority can produce retained sustained rolling, which its untrained intervention did not establish. "
+  },
+  "run": {
+    "started_at": "2026-11-22T10:22:39",
+    "git_sha": "c7417d55bb3de1c1bb25848584fdcb854e8f7128",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r116_recovery_module",
+    "finished_at": "2026-11-22T10:49:10"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.08203125,
+      "paired_success_difference_ci95": [
+        0.06782555047049496,
+        0.09623694952950504
+      ],
+      "pairs": 1536,
+      "successes_of_1536": {
+        "reference": 678,
+        "r106": 827,
+        "scripted": 874,
+        "trained": 953
+      },
+      "drops_of_1536": {
+        "reference": 81,
+        "r106": 47,
+        "scripted": 85,
+        "trained": 68
+      },
+      "triggered_episodes_of_1536": {
+        "scripted": 477,
+        "trained": 433
+      },
+      "contrasts": {
+        "trained_minus_r106": {
+          "difference": 0.08203125,
+          "ci95": [
+            0.06782555047049496,
+            0.09623694952950504
+          ],
+          "win_loss_tie": {
+            "wins": 130,
+            "losses": 4,
+            "ties": 1402
+          },
+          "manifest_clustered_ci95": [
+            0.06906988290991574,
+            0.09499261709008426
+          ],
+          "manifests_positive": 12,
+          "drop_difference": 0.013671875,
+          "drop_difference_one_sided_95_upper": 0.01855007942194692,
+          "promotes": true,
+          "adopts": true,
+          "magnitude_supported": true
+        },
+        "scripted_minus_r106": {
+          "difference": 0.030598958333333332,
+          "ci95": [
+            0.0214260910302698,
+            0.03977182563639686
+          ],
+          "win_loss_tie": {
+            "wins": 50,
+            "losses": 3,
+            "ties": 1483
+          },
+          "manifest_clustered_ci95": [
+            0.017818878032836633,
+            0.04337903863383003
+          ],
+          "manifests_positive": 12,
+          "drop_difference": 0.024739583333333332,
+          "drop_difference_one_sided_95_upper": 0.03126475191993573,
+          "promotes": true,
+          "adopts": true,
+          "magnitude_supported": false
+        },
+        "trained_minus_scripted": {
+          "difference": 0.051432291666666664,
+          "ci95": [
+            0.036814835089080435,
+            0.06604974824425289
+          ],
+          "win_loss_tie": {
+            "wins": 107,
+            "losses": 28,
+            "ties": 1401
+          },
+          "manifest_clustered_ci95": [
+            0.03731953784796849,
+            0.06554504548536484
+          ],
+          "manifests_positive": 11,
+          "drop_difference": -0.011067708333333334,
+          "drop_difference_one_sided_95_upper": -0.006177864691749843,
+          "promotes": true,
+          "adopts": true,
+          "magnitude_supported": true
+        },
+        "trained_minus_reference": {
+          "difference": 0.17903645833333334,
+          "ci95": [
+            0.14738877531111333,
+            0.21068414135555336
+          ],
+          "win_loss_tie": {
+            "wins": 469,
+            "losses": 194,
+            "ties": 873
+          },
+          "manifest_clustered_ci95": [
+            0.14228717925399847,
+            0.2157857374126682
+          ],
+          "manifests_positive": 12,
+          "drop_difference": -0.008463541666666666,
+          "drop_difference_one_sided_95_upper": -0.0002380792805522329,
+          "promotes": true,
+          "adopts": true,
+          "magnitude_supported": true
+        },
+        "scripted_minus_reference": {
+          "difference": 0.12760416666666666,
+          "ci95": [
+            0.09628758563840864,
+            0.15892074769492467
+          ],
+          "win_loss_tie": {
+            "wins": 411,
+            "losses": 215,
+            "ties": 910
+          },
+          "manifest_clustered_ci95": [
+            0.09229253487018317,
+            0.16291579846315013
+          ],
+          "manifests_positive": 12,
+          "drop_difference": 0.0026041666666666665,
+          "drop_difference_one_sided_95_upper": 0.011698575412622552,
+          "promotes": true,
+          "adopts": true,
+          "magnitude_supported": true
+        },
+        "r106_minus_reference": {
+          "difference": 0.09700520833333333,
+          "ci95": [
+            0.06564809653873796,
+            0.1283623201279287
+          ],
+          "win_loss_tie": {
+            "wins": 383,
+            "losses": 234,
+            "ties": 919
+          },
+          "manifest_clustered_ci95": [
+            0.06529471169266254,
+            0.1287157049740041
+          ],
+          "manifests_positive": 12,
+          "drop_difference": -0.022135416666666668,
+          "drop_difference_one_sided_95_upper": -0.014613452248080866,
+          "promotes": true,
+          "adopts": true,
+          "magnitude_supported": true
+        }
+      }
+    },
+    "controls": {
+      "smoke_gates": {
+        "no_trigger_identity": true,
+        "scorer_live": true,
+        "script_equivalence": true,
+        "state_reset": true
+      },
+      "smoke_script_equivalence": {
+        "action_mismatch_env_steps": 0,
+        "eligibility_mismatches": 0,
+        "passes": true
+      },
+      "smoke_scripted_vs_root_in_process": {
+        "triggered_fraction": 0.32373046875,
+        "success": 0.59326171875,
+        "drops": 87,
+        "root_success_same_placements": 0.54638671875,
+        "root_drops": 52
+      },
+      "aa": [
+        0.546875,
+        0.529296875,
+        0.548828125,
+        0.560546875
+      ],
+      "finalist": {
+        "x": [
+          0.5451714185776565,
+          0.3095346063397585,
+          0.5932001425341059,
+          0.3436430975673391,
+          0.7894474026723622,
+          0.8600155249500486,
+          0.8092522018654211,
+          1.0,
+          0.6865736389544153,
+          0.42246673453484396,
+          0.0
+        ],
+        "params": {
+          "threshold": 2.6355142557329696,
+          "decision_step": 97.14415276077102,
+          "ramp_in": 25.762004988693707,
+          "ramp_out": 34.055016829713736,
+          "depth_WR": 0.7894474026723622,
+          "depth_FF": 0.8600155249500486,
+          "depth_MF": 0.8092522018654211,
+          "depth_RF": 1.0,
+          "depth_LF": 0.6865736389544153,
+          "depth_TH": 0.42246673453484396,
+          "stroke_multiplier": 1.0
+        },
+        "sha256": "f7f9313d7eaea2072536e37923b6a1f7b429c521c269fc0893475e07cf4d70df"
+      },
+      "script": {
+        "threshold": 3.0,
+        "decision_step": 120.0,
+        "ramp_in": 20.0,
+        "ramp_out": 40.0,
+        "depth_WR": 1.0,
+        "depth_FF": 1.0,
+        "depth_MF": 1.0,
+        "depth_RF": 1.0,
+        "depth_LF": 1.0,
+        "depth_TH": 1.0,
+        "stroke_multiplier": 1.0
+      },
+      "training_updates": [
+        {
+          "update": 1,
+          "mean_candidate_success": 0.564453125,
+          "plus": [
+            0.576171875,
+            0.56640625,
+            0.5625,
+            0.576171875
+          ],
+          "minus": [
+            0.583984375,
+            0.546875,
+            0.5625,
+            0.541015625
+          ],
+          "triggered_fraction": [
+            0.34765625,
+            0.32958984375
+          ],
+          "clipped_candidate_coordinates": 28,
+          "params": {
+            "threshold": 3.0286053884934674,
+            "decision_step": 117.28135128981032,
+            "ramp_in": 21.27144366006306,
+            "ramp_out": 41.93486746310613,
+            "depth_WR": 1.0,
+            "depth_FF": 1.0,
+            "depth_MF": 1.0,
+            "depth_RF": 0.9373331614153708,
+            "depth_LF": 1.0,
+            "depth_TH": 0.9485706577178694,
+            "stroke_multiplier": 1.0743771953320955
+          }
+        },
+        {
+          "update": 2,
+          "mean_candidate_success": 0.591552734375,
+          "plus": [
+            0.59765625,
+            0.58203125,
+            0.5859375,
+            0.591796875
+          ],
+          "minus": [
+            0.578125,
+            0.62109375,
+            0.59765625,
+            0.578125
+          ],
+          "triggered_fraction": [
+            0.29541015625,
+            0.28466796875
+          ],
+          "clipped_candidate_coordinates": 20,
+          "params": {
+            "threshold": 3.0747114508345463,
+            "decision_step": 117.02614413997316,
+            "ramp_in": 21.062171015588874,
+            "ramp_out": 40.9781454340351,
+            "depth_WR": 0.9632946487367252,
+            "depth_FF": 0.9942026238998072,
+            "depth_MF": 1.0,
+            "depth_RF": 0.9496468325062579,
+            "depth_LF": 1.0,
+            "depth_TH": 0.897461479785884,
+            "stroke_multiplier": 1.0342463635550307
+          }
+        },
+        {
+          "update": 3,
+          "mean_candidate_success": 0.574951171875,
+          "plus": [
+            0.611328125,
+            0.587890625,
+            0.58984375,
+            0.58984375
+          ],
+          "minus": [
+            0.546875,
+            0.55078125,
+            0.560546875,
+            0.5625
+          ],
+          "triggered_fraction": [
+            0.3359375,
+            0.35546875
+          ],
+          "clipped_candidate_coordinates": 16,
+          "params": {
+            "threshold": 3.105227617684894,
+            "decision_step": 114.94126051419798,
+            "ramp_in": 22.476593546591186,
+            "ramp_out": 39.262248815283215,
+            "depth_WR": 1.0,
+            "depth_FF": 1.0,
+            "depth_MF": 1.0,
+            "depth_RF": 0.9506345021817085,
+            "depth_LF": 0.9240609145379695,
+            "depth_TH": 0.8393914033175536,
+            "stroke_multiplier": 1.004579882861284
+          }
+        },
+        {
+          "update": 4,
+          "mean_candidate_success": 0.572509765625,
+          "plus": [
+            0.595703125,
+            0.5703125,
+            0.5625,
+            0.572265625
+          ],
+          "minus": [
+            0.5625,
+            0.591796875,
+            0.568359375,
+            0.556640625
+          ],
+          "triggered_fraction": [
+            0.36181640625,
+            0.36083984375
+          ],
+          "clipped_candidate_coordinates": 18,
+          "params": {
+            "threshold": 3.090212389663324,
+            "decision_step": 111.93454585675767,
+            "ramp_in": 23.397374789620873,
+            "ramp_out": 37.49571721021286,
+            "depth_WR": 1.0,
+            "depth_FF": 1.0,
+            "depth_MF": 1.0,
+            "depth_RF": 0.9617112117505592,
+            "depth_LF": 0.9779137394370118,
+            "depth_TH": 0.8124405977629273,
+            "stroke_multiplier": 1.0
+          }
+        },
+        {
+          "update": 5,
+          "mean_candidate_success": 0.573974609375,
+          "plus": [
+            0.568359375,
+            0.595703125,
+            0.572265625,
+            0.58203125
+          ],
+          "minus": [
+            0.5859375,
+            0.5390625,
+            0.576171875,
+            0.572265625
+          ],
+          "triggered_fraction": [
+            0.32568359375,
+            0.32666015625
+          ],
+          "clipped_candidate_coordinates": 23,
+          "params": {
+            "threshold": 2.8649174017288948,
+            "decision_step": 105.57331245794653,
+            "ramp_in": 22.84075457797115,
+            "ramp_out": 34.864238281137816,
+            "depth_WR": 0.9228644253717162,
+            "depth_FF": 1.0,
+            "depth_MF": 0.9795428974401176,
+            "depth_RF": 0.9240942887252575,
+            "depth_LF": 0.9494023819559922,
+            "depth_TH": 0.744964617204184,
+            "stroke_multiplier": 1.0
+          }
+        },
+        {
+          "update": 6,
+          "mean_candidate_success": 0.595458984375,
+          "plus": [
+            0.591796875,
+            0.59765625,
+            0.619140625,
+            0.6328125
+          ],
+          "minus": [
+            0.57421875,
+            0.580078125,
+            0.59375,
+            0.57421875
+          ],
+          "triggered_fraction": [
+            0.310546875,
+            0.31689453125
+          ],
+          "clipped_candidate_coordinates": 18,
+          "params": {
+            "threshold": 2.9296218865388846,
+            "decision_step": 112.64337232373887,
+            "ramp_in": 24.691273837915077,
+            "ramp_out": 35.60698409968158,
+            "depth_WR": 0.8843996512512415,
+            "depth_FF": 0.988616066422416,
+            "depth_MF": 0.9727862039354581,
+            "depth_RF": 1.0,
+            "depth_LF": 0.8743055897590963,
+            "depth_TH": 0.6683153525228037,
+            "stroke_multiplier": 1.0
+          }
+        },
+        {
+          "update": 7,
+          "mean_candidate_success": 0.6279296875,
+          "plus": [
+            0.62109375,
+            0.62890625,
+            0.638671875,
+            0.6484375
+          ],
+          "minus": [
+            0.611328125,
+            0.599609375,
+            0.646484375,
+            0.62890625
+          ],
+          "triggered_fraction": [
+            0.30810546875,
+            0.29931640625
+          ],
+          "clipped_candidate_coordinates": 16,
+          "params": {
+            "threshold": 2.909366873982382,
+            "decision_step": 115.0363924344152,
+            "ramp_in": 24.88348895617072,
+            "ramp_out": 36.76801321555696,
+            "depth_WR": 0.8726950360663119,
+            "depth_FF": 0.9837452428579394,
+            "depth_MF": 0.9913155048717426,
+            "depth_RF": 1.0,
+            "depth_LF": 0.8615199945277703,
+            "depth_TH": 0.6389712544928863,
+            "stroke_multiplier": 1.0
+          }
+        },
+        {
+          "update": 8,
+          "mean_candidate_success": 0.601806640625,
+          "plus": [
+            0.58984375,
+            0.609375,
+            0.587890625,
+            0.611328125
+          ],
+          "minus": [
+            0.591796875,
+            0.609375,
+            0.609375,
+            0.60546875
+          ],
+          "triggered_fraction": [
+            0.31591796875,
+            0.302734375
+          ],
+          "clipped_candidate_coordinates": 17,
+          "params": {
+            "threshold": 2.744347169575022,
+            "decision_step": 105.51666444501255,
+            "ramp_in": 23.631849816948108,
+            "ramp_out": 39.746284366627975,
+            "depth_WR": 0.8858903379218747,
+            "depth_FF": 0.928271138097572,
+            "depth_MF": 0.9835190889636108,
+            "depth_RF": 0.9782800950499732,
+            "depth_LF": 0.8446496803965491,
+            "depth_TH": 0.6241181002315295,
+            "stroke_multiplier": 1.0
+          }
+        },
+        {
+          "update": 9,
+          "mean_candidate_success": 0.626953125,
+          "plus": [
+            0.61328125,
+            0.62109375,
+            0.625,
+            0.64453125
+          ],
+          "minus": [
+            0.63671875,
+            0.61328125,
+            0.646484375,
+            0.615234375
+          ],
+          "triggered_fraction": [
+            0.283203125,
+            0.29248046875
+          ],
+          "clipped_candidate_coordinates": 14,
+          "params": {
+            "threshold": 2.6009415743913316,
+            "decision_step": 97.65954231394227,
+            "ramp_in": 24.758141174332096,
+            "ramp_out": 39.57290856239074,
+            "depth_WR": 0.8973633804751938,
+            "depth_FF": 0.9373065107330089,
+            "depth_MF": 0.9221778329617274,
+            "depth_RF": 0.8924836924805928,
+            "depth_LF": 0.8176244893854111,
+            "depth_TH": 0.5889104947340038,
+            "stroke_multiplier": 1.0557756771875348
+          }
+        },
+        {
+          "update": 10,
+          "mean_candidate_success": 0.632568359375,
+          "plus": [
+            0.677734375,
+            0.642578125,
+            0.634765625,
+            0.6171875
+          ],
+          "minus": [
+            0.611328125,
+            0.607421875,
+            0.650390625,
+            0.619140625
+          ],
+          "triggered_fraction": [
+            0.232421875,
+            0.24462890625
+          ],
+          "clipped_candidate_coordinates": 8,
+          "params": {
+            "threshold": 2.825920127320486,
+            "decision_step": 104.10850249685751,
+            "ramp_in": 27.10821625949941,
+            "ramp_out": 35.947567734043645,
+            "depth_WR": 0.8400456897626362,
+            "depth_FF": 0.8650532370706516,
+            "depth_MF": 0.8771652441517317,
+            "depth_RF": 0.9956542404926401,
+            "depth_LF": 0.7904798388034129,
+            "depth_TH": 0.47461275039939066,
+            "stroke_multiplier": 1.039167988871342
+          }
+        },
+        {
+          "update": 11,
+          "mean_candidate_success": 0.6240234375,
+          "plus": [
+            0.61328125,
+            0.61328125,
+            0.634765625,
+            0.61328125
+          ],
+          "minus": [
+            0.61328125,
+            0.62890625,
+            0.60546875,
+            0.669921875
+          ],
+          "triggered_fraction": [
+            0.3046875,
+            0.29345703125
+          ],
+          "clipped_candidate_coordinates": 9,
+          "params": {
+            "threshold": 2.722047051826454,
+            "decision_step": 100.0927573677773,
+            "ramp_in": 26.48725971691902,
+            "ramp_out": 34.06373865385923,
+            "depth_WR": 0.81916024635441,
+            "depth_FF": 0.8391550726873722,
+            "depth_MF": 0.8359156469723016,
+            "depth_RF": 1.0,
+            "depth_LF": 0.7059974527746206,
+            "depth_TH": 0.4218357302891773,
+            "stroke_multiplier": 1.0216753674192236
+          }
+        },
+        {
+          "update": 12,
+          "mean_candidate_success": 0.594970703125,
+          "plus": [
+            0.615234375,
+            0.595703125,
+            0.59375,
+            0.583984375
+          ],
+          "minus": [
+            0.609375,
+            0.572265625,
+            0.59375,
+            0.595703125
+          ],
+          "triggered_fraction": [
+            0.28759765625,
+            0.302734375
+          ],
+          "clipped_candidate_coordinates": 7,
+          "params": {
+            "threshold": 2.6355142557329696,
+            "decision_step": 97.14415276077102,
+            "ramp_in": 25.762004988693707,
+            "ramp_out": 34.055016829713736,
+            "depth_WR": 0.7894474026723622,
+            "depth_FF": 0.8600155249500486,
+            "depth_MF": 0.8092522018654211,
+            "depth_RF": 1.0,
+            "depth_LF": 0.6865736389544153,
+            "depth_TH": 0.42246673453484396,
+            "stroke_multiplier": 1.0
+          }
+        }
+      ],
+      "accounting": {
+        "smoke_starts": 8196,
+        "training_starts": 98458,
+        "confirmation_charged_starts": 12288,
+        "charged_total": 118942,
+        "ceiling": 125000,
+        "llm_calls": 0
+      },
+      "config_sha256": "197ab104f5ec9de94bc8a3dbf745882ec2bccc065c6c3bd1ace83a95143c8518"
+    },
+    "artifacts": [
+      "logs/pen_spin/r116_recovery_module/summary.json",
+      "logs/pen_spin/r116_recovery_module/finalist.json",
+      "logs/pen_spin/r116_recovery_module/train.json",
+      "logs/pen_spin/r116_recovery_module/smoke.json",
+      "logs/pen_spin/r116_recovery_module/frozen_config.json"
+    ],
+    "notes": "No deviation in the registered protocol: the smoke passed on the first attempt (a disabled module equals the R-106 controller bit for bit; the untrained module's sent action matches the D-080 script on the same observations with 0 mismatching environment-steps and 0 eligibility mismatches; state reset; scorer; A/A), 12 ARS updates on seed 4941, the terminal mean frozen in finalist.json before any confirmation case, then the reference, the root, the untrained script and the trained module once each on twelve fresh manifests (seeds 4942-4953) through the fresh-process evaluator. One implementation note fixed before any simulator step and stated here for completeness: the script-equivalence check compares to a tolerance of 1e-5 rather than bit for bit, because the module's blend is float32 tensor arithmetic and the script's a Python float; untouched actions equal the root's exactly. What learning changed (final parameters against the script): thumb blend depth 1.00 -> 0.42, little finger 0.69, wrist 0.79, middle 0.81, forefinger 0.86, ring 1.00; decision step 120 -> 97; threshold 3.0 -> 2.64 rad/s; ramp-in 20 -> 25.8 steps, ramp-out 40 -> 34.1; stroke multiplier stayed at 1.0 (it starts at its lower bound; half of its perturbations are clipped). So the learned re-capture opens the thumb less than half way, i.e. keeps hold of the pen while the fingers re-seat, and acts earlier. The trained module triggers in 433 of 1,536 episodes (script 477). Drops: trained 68 vs root 47 (paired difference +0.014, upper bound +0.019, inside the +0.05 bound), script 85. The untrained script alone is worth +0.031 [+0.021, +0.040] over the root under the real evaluator, and its drop bound also holds here (upper bound +0.031) although it failed among treated-only pairs in D-080's in-process diagnostic. The root reproduces at +0.097 [+0.066, +0.128] over the reference (fifth confirmation). Scope: one ARS trajectory of 12 updates; the parameters were still moving at update 12; a single confirmation, though a large one with 130 wins against 4 losses."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.08203125,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "supported",
+      "confidence": 0.92,
+      "reasoning": "The trained re-capture module beats the frozen R-106 finalist by +0.082 paired sustained success, 95% interval [+0.068, +0.096] over 1,536 fresh pairs (953 vs 827; 130 wins, 4 losses), manifest-clustered [+0.069, +0.095], positive in 12 of 12 manifests; the lower bound is above the predicted +0.05. The drop bound holds (paired drop difference +0.014, upper bound +0.019 against +0.05) against the root, and against the D-072 reference the module is +0.179 [+0.147, +0.211] with fewer drops (68 vs 81), so the strict paired rule and the drop gate pass against both. Learning is credited: trained minus the untrained script is +0.051 [+0.037, +0.066], 11 of 12 manifests, with fewer drops than the script. The finalist was frozen before confirmation, nothing was selected, the manifests were unused, and every smoke gate passed. Limits: one ARS trajectory still moving at update 12; one confirmation.",
+      "cited_artifacts": [],
+      "next_experiment": "This is a qualified improvement on the R-106 finalist (about 0.62 sustained success against 0.54 and the reference's 0.44); installing it as the incumbent asset is the user's call. Within the direction: (1) the module was not converged, so a budget-matched continuation (more updates of the same 11 parameters) is the cheap next step and the right control for anything structural; (2) R-117 (event-terminated support) had preconditions that are NOT met (the stroke multiplier stayed at 1.0), so it should be cancelled or re-triaged; (3) the remaining failures should be re-audited on this confirmation's archive (how many triggered episodes still end slow, how many never trigger, how many drop during re-capture) before choosing between a second attempt, a trigger on the early window (steps 30-60, where D-078 says the mode is already predictable) and joint co-training of the residual with the module.",
+      "recorded_at": "2026-11-22T10:49:11",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "supported",
+      "confidence": 0.99,
+      "reasoning": "Against the named frozen R-106 control, paired_success_difference increased by 0.0820, with case-paired 95% interval [0.0678, 0.0962] and manifest-clustered interval [0.0691, 0.0950]; both lower bounds exceed the predicted 0.05 threshold [logs/pen_spin/r116_recovery_module/summary.json]. Learning also contributed beyond the untrained script: trained-minus-scripted was +0.0514, with case-paired interval [0.0368, 0.0660] excluding zero positively [logs/pen_spin/r116_recovery_module/summary.json]. The strict paired-success and drop qualifications pass against both root and reference: drop-difference upper bounds were 0.01855 and -0.000238, respectively, below the 0.05 limit, although trained drops exceeded root drops, 68 versus 47 [logs/pen_spin/r116_recovery_module/summary.json]. These contrasts support the trained module's usefulness but do not isolate whether timing, trigger threshold or joint-group blend changes caused its advantage [logs/pen_spin/r116_recovery_module/summary.json; logs/pen_spin/r116_recovery_module/finalist.json]. Recorded expenditure was 118,942 simulator starts, within the 125,000 ceiling, and zero LLM calls [logs/pen_spin/r116_recovery_module/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r116_recovery_module/summary.json",
+        "logs/pen_spin/r116_recovery_module/finalist.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-22T10:49:37",
+      "call_id": "call_00265"
+    }
+  ],
+  "decision_id": "D-081",
+  "history": [
+    {
+      "at": "2026-11-22T10:21:32",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-22T10:22:39",
+      "from": "approved",
+      "to": "running",
+      "note": "git c7417d55bb (dirty)"
+    },
+    {
+      "at": "2026-11-22T10:49:10",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-22T10:49:59",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-081: supported"
+    }
+  ],
+  "created_at": "2026-11-22T10:16:40",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This is the justified next incremental-construction experiment: D-080 demonstrated re-capture authority but left learned retention and fresh-process usefulness unresolved, unlike the deferred native posture/stroke proposals. Its weakest point is translating a conditional benefit among stuck episodes into a full-population gain; the predicted paired_success_difference increase of at least 0.05 against the frozen R-106 finalist is refuted if the confirmation interval's upper bound is below 0.05. The 121,856-episode, zero-LLM-call budget is justified by shared-placement training, freezing without checkpoint selection, and one prospective confirmation; learning credit requires a positive trained-minus-scripted interval, while usefulness requires the registered paired-success and drop gates.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00262",
+          "briefing_sha256": "70394f1946513bc4b2da554a93e5d1e68707261e0471d40ebaff60f0863198a7",
+          "at": "2026-11-22T10:17:49"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "This is the experiment to run next and its parameter list and ranges are right (and the single-attempt rule is a good correction of my retry idea: it keeps the untrained module identical to the D-080 script). Four things need pinning to make it executable and deployable. (1) Signals: the module must work inside the fresh-process evaluator, where a controller sees only the observation, so the trigger uses observation-derived quantities: |axial rate| from the observed pen quaternion and angular velocity (the same formula as the env's) and centre distance = |obj_pos - in_hand_pos|, averaged over the 30 observations ending at the decision step; R-114 read the env's own values, which are the same quantities one step earlier in indexing. One controller class serves training and evaluation, with a per-environment step counter and state reset at each auto-reset. (2) Semantics with real-valued parameters: decision at step round(tau); eligible = alive by construction (first episode), centre distance below 0.08 and the 30-step mean below the threshold; with u = t - decision step, beta(u) = min((u + 1)/n_in, 1) for u < n_in, 1 - (u - n_in)/n_out for n_in <= u < n_in + n_out, 0 afterwards (exactly the D-080 schedule at 20/40); sent_j = clamp((1 - beta d_g(j)) a_root,j + beta d_g(j) a_neutral,j, -1, 1); the stroke multiplier applies inside the reference for the 60 steps after the blend ends; the root's action and filter are computed every step regardless. (3) ARS in normalised units x in [0, 1]^11 (linear maps to the stated ranges, projection by clipping), nu 0.1, alpha 0.05, all four directions used; six depths start at the upper bound and the multiplier at the lower bound, so half of their perturbations are clipped, which is acceptable and recorded. (4) Drop the monitoring curve: nothing is selected on it and it adds a code path; training already logs every signed candidate's success on 512 shared placements. Smoke (seed 4940): a module that can never trigger (threshold 0) reproduces the R-106 controller bit for bit in lockstep; the untrained module's sent action equals the D-080 script's formula on the same observations; scorer live; A/A; the scripted slots' eligibility fraction and overall success are reported against D-080's 0.31 and the control. Seeds 4940 smoke, 4941 training, 4942-4953 confirmation, 4954 unused; about 118,800 starts (training 98,304, smoke 8,200, confirmation 4 x 1,536 x 2), ceiling 125,000. New module lares/envs/isaac_pen_spin/recovery_module.py (controller, learner driver, child entry point) reusing recovery_authority.py's pieces.",
+          "changes_applied": [],
+          "at": "2026-11-22T10:17:51"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "Learning the trigger and joint-group recovery shape could convert D-080's demonstrated escape authority into retained, sustained rolling. I accept the implementer's observation-only implementation, explicit single-attempt semantics and normalized projected ARS; these resolve deployment ambiguities without changing the mechanism. I also accept removing the unused monitoring curve and correcting episode accounting, but these amendments are not yet applied, so the protocol as written should not run. Its weakest point remains whether learning can improve retention enough to produce a full-population gain rather than merely restart some stuck episodes.",
+          "suggested_changes": [
+            "Specify one observation-only controller shared by training and fresh-process evaluation, with the implementer's axial-rate and centre-distance signals, exact observation indexing, 30-observation window, rounded decision step, single eligibility decision, blend formula and 60-step post-blend multiplier; reset all per-environment state at episode reset and continue updating the frozen root throughout recovery.",
+            "Register ARS in normalized [0,1]^11 coordinates with linear parameter maps, clipping projection, nu=0.1, alpha=0.05 and all four directions used; record boundary clipping. Retain 12 updates, shared placements, exact sustained-success optimization and terminal-mean freezing without selection.",
+            "Remove monitoring. Assign free seed 4940 to smoke, 4941 to training and 4942–4953 to twelve confirmation manifests; leave 4954 unused. Replace the budget with approximately 118,800 simulator starts and a hard 125,000-start ceiling, including reset and smoke overhead, with zero controller-generation LLM calls.",
+            "Reuse scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, plus recovery_authority.py and success_ars.py implementations; add only missing observation-controller integration rather than duplicating existing learner or evaluator machinery. Gate training on the proposed no-trigger lockstep identity, scripted-action equivalence, state-reset, scorer and A/A smoke checks; report eligibility and scripted success without retuning to match D-080.",
+            "Retain the prediction: paired_success_difference increases by at least 0.05 against the frozen R-106 finalist without recovery. Retain falsified_by: a confirmation interval upper bound below 0.05 refutes that magnitude; an interval containing zero does not establish improvement. Credit learning only when trained-minus-scripted excludes zero positively, and require the unchanged paired-success and drop gates against root and D-072 for usefulness; keep the saved incumbent unchanged."
+          ],
+          "priority": 1,
+          "call_id": "call_00263",
+          "briefing_sha256": "f7c22a469369fc8df0feebf88f2ad8083cb403758a48d76fefb660759f39e962",
+          "at": "2026-11-22T10:18:19"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agreed on every change; the patch records the observation-only controller with exact indexing, the single-decision semantics, normalised ARS, the smoke gates, seeds 4940-4953 and the 125,000-start ceiling, with monitoring removed.",
+          "changes_applied": [],
+          "at": "2026-11-22T10:18:43"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the implementer's now-applied observation-only semantics, normalized projected ARS, smoke gates and removal of monitoring: learned timing and joint-group blends test whether D-080's escape authority can produce retained sustained rolling, which its untrained intervention did not establish. The weakest point remains full-population benefit; retain the prediction that paired_success_difference increases by at least 0.05 against the frozen R-106 finalist without recovery, falsified_by a confirmation interval upper bound below 0.05, while an interval containing zero establishes no improvement. Approximately 118,800 simulator starts, a hard 125,000-start ceiling and zero controller-generation LLM calls are justified by shared-placement training, terminal freezing without selection and one fresh confirmation. Credit learning only if trained-minus-scripted excludes zero positively, require the unchanged strict paired-success and drop gates against both R-106 and D-072 for usefulness, and leave the saved incumbent unchanged.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00264",
+          "briefing_sha256": "27896859ff287f12acce4408251ee1b0eb42b6821cc7548052ecd0ff44c157cb",
+          "at": "2026-11-22T10:19:01"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve: the controller, its observation indexing, single-decision semantics, normalised ARS, smoke gates, confirmation and budget are frozen; the untrained module is the D-080 script, so the study measures both what the script is worth under the real evaluator and what learning its shape and trigger adds. Weakest point: one ARS trajectory, and D-080's authority was measured in-process.",
+          "changes_applied": [],
+          "at": "2026-11-22T10:21:32"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 3
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-22T10:18:45",
+      "round": 2,
+      "patch": {
+        "prediction": {
+          "rationale": "Highest expected information per episode: D-080 establishes recovery authority but does not test reward-trained recovery shape or fresh-process usefulness. This supersedes R-111/R-115's native posture-then-stroke proposal rather than repeating it. Reuse recovery_authority.py and success_ars.py through the existing dispatcher. Fit 11 bounded parameters: trigger threshold [1,4] rad/s on the 30-step mean absolute rate, decision step [60,180], ramp-in [5,40] steps, ramp-out [10,80], six existing joint-group blend depths [0,1], and a post-recapture stroke multiplier [1,2] lasting 60 steps. Initialize at threshold 3, step 120, ramps 20/40, depths 1 and multiplier 1. Crucially, permit exactly one trigger decision and one attempt: this preserves the untrained D-080 script, unlike an earliest-trigger gate with retries. Always compute the frozen root action and update its state; replace only the sent action during recovery. Use normalized projected ARS, 12 updates, four antithetic directions, 512 shared placements per signed candidate, nu 0.1 and alpha 0.05, optimizing full-episode sustained-success count. Freeze the terminal mean without selection. Log one disjoint 128-case monitoring curve without using it for decisions. Confirm D-072, root, untrained script and trained module once on twelve fresh 128-case manifests, one manifest per fresh process with matched layout. The 1,536-pair size is prospectively based on the recorded pilot discordance range 0.16–0.41 for a five-point effect. Report case-paired and manifest-level intervals, all required diagnostics, and scripted-minus-root and trained-minus-scripted contrasts. Attribute an effect to learning only if trained-minus-scripted excludes zero. Usefulness additionally requires the unchanged strict paired rule and one-sided 95% drop-difference upper bound <= 0.05 against both root and D-072. Keep the saved incumbent unchanged. Counts include training reset starts, smoke, monitoring and confirmation overhead; register and test the handler before running.\n\nFROZEN REVISION (triage round 2, agreed; supersedes the text above where they differ).\nONE OBSERVATION-ONLY CONTROLLER for training and fresh-process evaluation. At each control step t (per-environment counter, 0 at an episode's first step; all module state is cleared at every environment reset) the controller computes the frozen R-106 finalist's action a_root and updates the reference's filter exactly as without the module, and records from the observation o_t: rate_t = |axial rate| (pen quaternion obs[51:55] w-first and angular velocity obs[58:61]/0.2 projected on the pen's long axis: the env's own formula) and centre_t = |obj_pos - in_hand_pos| (obs[48:51] - obs[61:64]).\nPARAMETERS (11): threshold r in [1, 4] rad/s (init 3); decision step tau in [60, 180] (init 120); ramp-in n_in in [5, 40] steps (init 20); ramp-out n_out in [10, 80] (init 40); blend depth d_g in [0, 1] for the six joint groups wrist, FF, MF, RF, LF, TH (init 1); post-recapture stroke multiplier m in [1, 2] (init 1), held for 60 steps.\nSEMANTICS. One decision, at step T = round(tau): the environment is eligible if centre_T < 0.08 and the mean of rate over the 30 observations T-29..T is below r (the episode is alive by construction). If eligible, with u = t - T: beta(u) = min((u + 1)/n_in, 1) for u < n_in; 1 - (u - n_in)/n_out for n_in <= u < n_in + n_out; 0 afterwards (at 20/40 this is the D-080 schedule exactly); sent_j = clamp((1 - beta d_g(j)) a_root,j + beta d_g(j) a_neutral,j, -1, 1), a_neutral = clamp((2 q_default - hi - lo)/(hi - lo), -1, 1); for the 60 steps after the blend ends the incumbent's fixed stroke gain inside the reference is multiplied by m for that environment. No second decision, no retry. Ineligible environments always send a_root.\nLEARNER. ARS in normalised coordinates x in [0, 1]^11 (linear maps to the ranges above; projection by clipping; boundary clipping of candidates recorded), from the scripted initial point, nu 0.1, alpha 0.05, 12 updates, 4 antithetic directions all used, direction RNG default_rng(4941 + 2000); return = full-episode sustained-success fraction of a signed candidate's 512 first episodes; two 2,048-environment rollouts per update, 4 slots on the same 512 placements, cases.placements(4941, 6144); one persistent process; terminal mean frozen and hashed, no selection, no monitoring curve.\nSMOKE (seed 4940, gates training): a module that cannot trigger (threshold 0) equals the R-106 controller bit for bit in lockstep over a rollout; the untrained module's sent action equals the D-080 script's formula evaluated on the same observations and eligibility; per-environment state reset; scorer live; A/A; eligibility fraction and the scripted slots' success are reported (not tuned to match D-080).\nCONFIRMATION, once: the D-072 reference, the R-106 root, the untrained scripted module and the trained module, each once per manifest in a fresh process, twelve 128-case manifests (seeds 4942-4953; 4954 unused), 1,536 pairs per contrast. Contrasts: trained minus root (primary); scripted minus root; trained minus scripted (learning is credited only if this interval is above zero); each minus the reference; case-paired and manifest-clustered intervals; usefulness requires the strict paired rule and the one-sided 95% drop-difference bound <= 0.05 against both the root and the reference. BUDGET: about 118,800 simulator starts (training 98,304; smoke 8,200; confirmation 4 x 1,536 cases charged at 2); hard ceiling 125,000 enforced before every rollout; a started seeded child is never relaunched. One ARS trajectory."
+        },
+        "protocol": {
+          "seeds": [
+            4940,
+            4941,
+            4942,
+            4943,
+            4944,
+            4945,
+            4946,
+            4947,
+            4948,
+            4949,
+            4950,
+            4951,
+            4952,
+            4953
+          ],
+          "episodes": 118800,
+          "manifests": [
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4942.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4943.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4944.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4945.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4946.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4947.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4948.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4949.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4950.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4951.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4952.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4953.yaml"
+          ],
+          "code_changes": [
+            "lares/envs/isaac_pen_spin/recovery_module.py (new): the observation-only recovery controller on the frozen finalist, the normalised-parameter ARS driver, the Isaac child entry point and the contrasts; reuses recovery_authority.py (schedule, per-environment stroke gain), success_ars.py (slot layout, scorer) and symbolic_reward.py (ARS-free pieces, reference).",
+            "scripts/run_shadowhand_spin_stages.py: one registry entry, symbolic_recovery_ars.",
+            "config/shadowhand_spin_stages.yaml: the symbolic_recovery_ars block.",
+            "tests/test_recovery_module.py (new).",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4942.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4943.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4944.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4945.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4946.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4947.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4948.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4949.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4950.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4951.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4952.yaml",
+            "config/manifests/pen_spin_stage3_recovery_confirm_s4953.yaml"
+          ]
+        },
+        "cost_estimate": {
+          "episodes": 118800,
+          "llm_calls": 0,
+          "wall_time_minutes": 40
+        }
+      },
+      "note": "Round 2 agreed revise: observation-only controller, pinned semantics, normalised ARS, smoke gates, no monitoring, seeds 4940-4953, 118,800 starts under a 125,000 ceiling."
+    }
+  ]
+}

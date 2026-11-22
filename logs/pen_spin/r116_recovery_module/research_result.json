@@ -1,0 +1,655 @@
+{
+ "metrics": {
+  "paired_success_difference": 0.08203125,
+  "paired_success_difference_ci95": [
+   0.06782555047049496,
+   0.09623694952950504
+  ],
+  "pairs": 1536,
+  "successes_of_1536": {
+   "reference": 678,
+   "r106": 827,
+   "scripted": 874,
+   "trained": 953
+  },
+  "drops_of_1536": {
+   "reference": 81,
+   "r106": 47,
+   "scripted": 85,
+   "trained": 68
+  },
+  "triggered_episodes_of_1536": {
+   "scripted": 477,
+   "trained": 433
+  },
+  "contrasts": {
+   "trained_minus_r106": {
+    "difference": 0.08203125,
+    "ci95": [
+     0.06782555047049496,
+     0.09623694952950504
+    ],
+    "win_loss_tie": {
+     "wins": 130,
+     "losses": 4,
+     "ties": 1402
+    },
+    "manifest_clustered_ci95": [
+     0.06906988290991574,
+     0.09499261709008426
+    ],
+    "manifests_positive": 12,
+    "drop_difference": 0.013671875,
+    "drop_difference_one_sided_95_upper": 0.01855007942194692,
+    "promotes": true,
+    "adopts": true,
+    "magnitude_supported": true
+   },
+   "scripted_minus_r106": {
+    "difference": 0.030598958333333332,
+    "ci95": [
+     0.0214260910302698,
+     0.03977182563639686
+    ],
+    "win_loss_tie": {
+     "wins": 50,
+     "losses": 3,
+     "ties": 1483
+    },
+    "manifest_clustered_ci95": [
+     0.017818878032836633,
+     0.04337903863383003
+    ],
+    "manifests_positive": 12,
+    "drop_difference": 0.024739583333333332,
+    "drop_difference_one_sided_95_upper": 0.03126475191993573,
+    "promotes": true,
+    "adopts": true,
+    "magnitude_supported": false
+   },
+   "trained_minus_scripted": {
+    "difference": 0.051432291666666664,
+    "ci95": [
+     0.036814835089080435,
+     0.06604974824425289
+    ],
+    "win_loss_tie": {
+     "wins": 107,
+     "losses": 28,
+     "ties": 1401
+    },
+    "manifest_clustered_ci95": [
+     0.03731953784796849,
+     0.06554504548536484
+    ],
+    "manifests_positive": 11,
+    "drop_difference": -0.011067708333333334,
+    "drop_difference_one_sided_95_upper": -0.006177864691749843,
+    "promotes": true,
+    "adopts": true,
+    "magnitude_supported": true
+   },
+   "trained_minus_reference": {
+    "difference": 0.17903645833333334,
+    "ci95": [
+     0.14738877531111333,
+     0.21068414135555336
+    ],
+    "win_loss_tie": {
+     "wins": 469,
+     "losses": 194,
+     "ties": 873
+    },
+    "manifest_clustered_ci95": [
+     0.14228717925399847,
+     0.2157857374126682
+    ],
+    "manifests_positive": 12,
+    "drop_difference": -0.008463541666666666,
+    "drop_difference_one_sided_95_upper": -0.0002380792805522329,
+    "promotes": true,
+    "adopts": true,
+    "magnitude_supported": true
+   },
+   "scripted_minus_reference": {
+    "difference": 0.12760416666666666,
+    "ci95": [
+     0.09628758563840864,
+     0.15892074769492467
+    ],
+    "win_loss_tie": {
+     "wins": 411,
+     "losses": 215,
+     "ties": 910
+    },
+    "manifest_clustered_ci95": [
+     0.09229253487018317,
+     0.16291579846315013
+    ],
+    "manifests_positive": 12,
+    "drop_difference": 0.0026041666666666665,
+    "drop_difference_one_sided_95_upper": 0.011698575412622552,
+    "promotes": true,
+    "adopts": true,
+    "magnitude_supported": true
+   },
+   "r106_minus_reference": {
+    "difference": 0.09700520833333333,
+    "ci95": [
+     0.06564809653873796,
+     0.1283623201279287
+    ],
+    "win_loss_tie": {
+     "wins": 383,
+     "losses": 234,
+     "ties": 919
+    },
+    "manifest_clustered_ci95": [
+     0.06529471169266254,
+     0.1287157049740041
+    ],
+    "manifests_positive": 12,
+    "drop_difference": -0.022135416666666668,
+    "drop_difference_one_sided_95_upper": -0.014613452248080866,
+    "promotes": true,
+    "adopts": true,
+    "magnitude_supported": true
+   }
+  }
+ },
+ "controls": {
+  "smoke_gates": {
+   "no_trigger_identity": true,
+   "scorer_live": true,
+   "script_equivalence": true,
+   "state_reset": true
+  },
+  "smoke_script_equivalence": {
+   "action_mismatch_env_steps": 0,
+   "eligibility_mismatches": 0,
+   "passes": true
+  },
+  "smoke_scripted_vs_root_in_process": {
+   "triggered_fraction": 0.32373046875,
+   "success": 0.59326171875,
+   "drops": 87,
+   "root_success_same_placements": 0.54638671875,
+   "root_drops": 52
+  },
+  "aa": [
+   0.546875,
+   0.529296875,
+   0.548828125,
+   0.560546875
+  ],
+  "finalist": {
+   "x": [
+    0.5451714185776565,
+    0.3095346063397585,
+    0.5932001425341059,
+    0.3436430975673391,
+    0.7894474026723622,
+    0.8600155249500486,
+    0.8092522018654211,
+    1.0,
+    0.6865736389544153,
+    0.42246673453484396,
+    0.0
+   ],
+   "params": {
+    "threshold": 2.6355142557329696,
+    "decision_step": 97.14415276077102,
+    "ramp_in": 25.762004988693707,
+    "ramp_out": 34.055016829713736,
+    "depth_WR": 0.7894474026723622,
+    "depth_FF": 0.8600155249500486,
+    "depth_MF": 0.8092522018654211,
+    "depth_RF": 1.0,
+    "depth_LF": 0.6865736389544153,
+    "depth_TH": 0.42246673453484396,
+    "stroke_multiplier": 1.0
+   },
+   "sha256": "f7f9313d7eaea2072536e37923b6a1f7b429c521c269fc0893475e07cf4d70df"
+  },
+  "script": {
+   "threshold": 3.0,
+   "decision_step": 120.0,
+   "ramp_in": 20.0,
+   "ramp_out": 40.0,
+   "depth_WR": 1.0,
+   "depth_FF": 1.0,
+   "depth_MF": 1.0,
+   "depth_RF": 1.0,
+   "depth_LF": 1.0,
+   "depth_TH": 1.0,
+   "stroke_multiplier": 1.0
+  },
+  "training_updates": [
+   {
+    "update": 1,
+    "mean_candidate_success": 0.564453125,
+    "plus": [
+     0.576171875,
+     0.56640625,
+     0.5625,
+     0.576171875
+    ],
+    "minus": [
+     0.583984375,
+     0.546875,
+     0.5625,
+     0.541015625
+    ],
+    "triggered_fraction": [
+     0.34765625,
+     0.32958984375
+    ],
+    "clipped_candidate_coordinates": 28,
+    "params": {
+     "threshold": 3.0286053884934674,
+     "decision_step": 117.28135128981032,
+     "ramp_in": 21.27144366006306,
+     "ramp_out": 41.93486746310613,
+     "depth_WR": 1.0,
+     "depth_FF": 1.0,
+     "depth_MF": 1.0,
+     "depth_RF": 0.9373331614153708,
+     "depth_LF": 1.0,
+     "depth_TH": 0.9485706577178694,
+     "stroke_multiplier": 1.0743771953320955
+    }
+   },
+   {
+    "update": 2,
+    "mean_candidate_success": 0.591552734375,
+    "plus": [
+     0.59765625,
+     0.58203125,
+     0.5859375,
+     0.591796875
+    ],
+    "minus": [
+     0.578125,
+     0.62109375,
+     0.59765625,
+     0.578125
+    ],
+    "triggered_fraction": [
+     0.29541015625,
+     0.28466796875
+    ],
+    "clipped_candidate_coordinates": 20,
+    "params": {
+     "threshold": 3.0747114508345463,
+     "decision_step": 117.02614413997316,
+     "ramp_in": 21.062171015588874,
+     "ramp_out": 40.9781454340351,
+     "depth_WR": 0.9632946487367252,
+     "depth_FF": 0.9942026238998072,
+     "depth_MF": 1.0,
+     "depth_RF": 0.9496468325062579,
+     "depth_LF": 1.0,
+     "depth_TH": 0.897461479785884,
+     "stroke_multiplier": 1.0342463635550307
+    }
+   },
+   {
+    "update": 3,
+    "mean_candidate_success": 0.574951171875,
+    "plus": [
+     0.611328125,
+     0.587890625,
+     0.58984375,
+     0.58984375
+    ],
+    "minus": [
+     0.546875,
+     0.55078125,
+     0.560546875,
+     0.5625
+    ],
+    "triggered_fraction": [
+     0.3359375,
+     0.35546875
+    ],
+    "clipped_candidate_coordinates": 16,
+    "params": {
+     "threshold": 3.105227617684894,
+     "decision_step": 114.94126051419798,
+     "ramp_in": 22.476593546591186,
+     "ramp_out": 39.262248815283215,
+     "depth_WR": 1.0,
+     "depth_FF": 1.0,
+     "depth_MF": 1.0,
+     "depth_RF": 0.9506345021817085,
+     "depth_LF": 0.9240609145379695,
+     "depth_TH": 0.8393914033175536,
+     "stroke_multiplier": 1.004579882861284
+    }
+   },
+   {
+    "update": 4,
+    "mean_candidate_success": 0.572509765625,
+    "plus": [
+     0.595703125,
+     0.5703125,
+     0.5625,
+     0.572265625
+    ],
+    "minus": [
+     0.5625,
+     0.591796875,
+     0.568359375,
+     0.556640625
+    ],
+    "triggered_fraction": [
+     0.36181640625,
+     0.36083984375
+    ],
+    "clipped_candidate_coordinates": 18,
+    "params": {
+     "threshold": 3.090212389663324,
+     "decision_step": 111.93454585675767,
+     "ramp_in": 23.397374789620873,
+     "ramp_out": 37.49571721021286,
+     "depth_WR": 1.0,
+     "depth_FF": 1.0,
+     "depth_MF": 1.0,
+     "depth_RF": 0.9617112117505592,
+     "depth_LF": 0.9779137394370118,
+     "depth_TH": 0.8124405977629273,
+     "stroke_multiplier": 1.0
+    }
+   },
+   {
+    "update": 5,
+    "mean_candidate_success": 0.573974609375,
+    "plus": [
+     0.568359375,
+     0.595703125,
+     0.572265625,
+     0.58203125
+    ],
+    "minus": [
+     0.5859375,
+     0.5390625,
+     0.576171875,
+     0.572265625
+    ],
+    "triggered_fraction": [
+     0.32568359375,
+     0.32666015625
+    ],
+    "clipped_candidate_coordinates": 23,
+    "params": {
+     "threshold": 2.8649174017288948,
+     "decision_step": 105.57331245794653,
+     "ramp_in": 22.84075457797115,
+     "ramp_out": 34.864238281137816,
+     "depth_WR": 0.9228644253717162,
+     "depth_FF": 1.0,
+     "depth_MF": 0.9795428974401176,
+     "depth_RF": 0.9240942887252575,
+     "depth_LF": 0.9494023819559922,
+     "depth_TH": 0.744964617204184,
+     "stroke_multiplier": 1.0
+    }
+   },
+   {
+    "update": 6,
+    "mean_candidate_success": 0.595458984375,
+    "plus": [
+     0.591796875,
+     0.59765625,
+     0.619140625,
+     0.6328125
+    ],
+    "minus": [
+     0.57421875,
+     0.580078125,
+     0.59375,
+     0.57421875
+    ],
+    "triggered_fraction": [
+     0.310546875,
+     0.31689453125
+    ],
+    "clipped_candidate_coordinates": 18,
+    "params": {
+     "threshold": 2.9296218865388846,
+     "decision_step": 112.64337232373887,
+     "ramp_in": 24.691273837915077,
+     "ramp_out": 35.60698409968158,
+     "depth_WR": 0.8843996512512415,
+     "depth_FF": 0.988616066422416,
+     "depth_MF": 0.9727862039354581,
+     "depth_RF": 1.0,
+     "depth_LF": 0.8743055897590963,
+     "depth_TH": 0.6683153525228037,
+     "stroke_multiplier": 1.0
+    }
+   },
+   {
+    "update": 7,
+    "mean_candidate_success": 0.6279296875,
+    "plus": [
+     0.62109375,
+     0.62890625,
+     0.638671875,
+     0.6484375
+    ],
+    "minus": [
+     0.611328125,
+     0.599609375,
+     0.646484375,
+     0.62890625
+    ],
+    "triggered_fraction": [
+     0.30810546875,
+     0.29931640625
+    ],
+    "clipped_candidate_coordinates": 16,
+    "params": {
+     "threshold": 2.909366873982382,
+     "decision_step": 115.0363924344152,
+     "ramp_in": 24.88348895617072,
+     "ramp_out": 36.76801321555696,
+     "depth_WR": 0.8726950360663119,
+     "depth_FF": 0.9837452428579394,
+     "depth_MF": 0.9913155048717426,
+     "depth_RF": 1.0,
+     "depth_LF": 0.8615199945277703,
+     "depth_TH": 0.6389712544928863,
+     "stroke_multiplier": 1.0
+    }
+   },
+   {
+    "update": 8,
+    "mean_candidate_success": 0.601806640625,
+    "plus": [
+     0.58984375,
+     0.609375,
+     0.587890625,
+     0.611328125
+    ],
+    "minus": [
+     0.591796875,
+     0.609375,
+     0.609375,
+     0.60546875
+    ],
+    "triggered_fraction": [
+     0.31591796875,
+     0.302734375
+    ],
+    "clipped_candidate_coordinates": 17,
+    "params": {
+     "threshold": 2.744347169575022,
+     "decision_step": 105.51666444501255,
+     "ramp_in": 23.631849816948108,
+     "ramp_out": 39.746284366627975,
+     "depth_WR": 0.8858903379218747,
+     "depth_FF": 0.928271138097572,
+     "depth_MF": 0.9835190889636108,
+     "depth_RF": 0.9782800950499732,
+     "depth_LF": 0.8446496803965491,
+     "depth_TH": 0.6241181002315295,
+     "stroke_multiplier": 1.0
+    }
+   },
+   {
+    "update": 9,
+    "mean_candidate_success": 0.626953125,
+    "plus": [
+     0.61328125,
+     0.62109375,
+     0.625,
+     0.64453125
+    ],
+    "minus": [
+     0.63671875,
+     0.61328125,
+     0.646484375,
+     0.615234375
+    ],
+    "triggered_fraction": [
+     0.283203125,
+     0.29248046875
+    ],
+    "clipped_candidate_coordinates": 14,
+    "params": {
+     "threshold": 2.6009415743913316,
+     "decision_step": 97.65954231394227,
+     "ramp_in": 24.758141174332096,
+     "ramp_out": 39.57290856239074,
+     "depth_WR": 0.8973633804751938,
+     "depth_FF": 0.9373065107330089,
+     "depth_MF": 0.9221778329617274,
+     "depth_RF": 0.8924836924805928,
+     "depth_LF": 0.8176244893854111,
+     "depth_TH": 0.5889104947340038,
+     "stroke_multiplier": 1.0557756771875348
+    }
+   },
+   {
+    "update": 10,
+    "mean_candidate_success": 0.632568359375,
+    "plus": [
+     0.677734375,
+     0.642578125,
+     0.634765625,
+     0.6171875
+    ],
+    "minus": [
+     0.611328125,
+     0.607421875,
+     0.650390625,
+     0.619140625
+    ],
+    "triggered_fraction": [
+     0.232421875,
+     0.24462890625
+    ],
+    "clipped_candidate_coordinates": 8,
+    "params": {
+     "threshold": 2.825920127320486,
+     "decision_step": 104.10850249685751,
+     "ramp_in": 27.10821625949941,
+     "ramp_out": 35.947567734043645,
+     "depth_WR": 0.8400456897626362,
+     "depth_FF": 0.8650532370706516,
+     "depth_MF": 0.8771652441517317,
+     "depth_RF": 0.9956542404926401,
+     "depth_LF": 0.7904798388034129,
+     "depth_TH": 0.47461275039939066,
+     "stroke_multiplier": 1.039167988871342
+    }
+   },
+   {
+    "update": 11,
+    "mean_candidate_success": 0.6240234375,
+    "plus": [
+     0.61328125,
+     0.61328125,
+     0.634765625,
+     0.61328125
+    ],
+    "minus": [
+     0.61328125,
+     0.62890625,
+     0.60546875,
+     0.669921875
+    ],
+    "triggered_fraction": [
+     0.3046875,
+     0.29345703125
+    ],
+    "clipped_candidate_coordinates": 9,
+    "params": {
+     "threshold": 2.722047051826454,
+     "decision_step": 100.0927573677773,
+     "ramp_in": 26.48725971691902,
+     "ramp_out": 34.06373865385923,
+     "depth_WR": 0.81916024635441,
+     "depth_FF": 0.8391550726873722,
+     "depth_MF": 0.8359156469723016,
+     "depth_RF": 1.0,
+     "depth_LF": 0.7059974527746206,
+     "depth_TH": 0.4218357302891773,
+     "stroke_multiplier": 1.0216753674192236
+    }
+   },
+   {
+    "update": 12,
+    "mean_candidate_success": 0.594970703125,
+    "plus": [
+     0.615234375,
+     0.595703125,
+     0.59375,
+     0.583984375
+    ],
+    "minus": [
+     0.609375,
+     0.572265625,
+     0.59375,
+     0.595703125
+    ],
+    "triggered_fraction": [
+     0.28759765625,
+     0.302734375
+    ],
+    "clipped_candidate_coordinates": 7,
+    "params": {
+     "threshold": 2.6355142557329696,
+     "decision_step": 97.14415276077102,
+     "ramp_in": 25.762004988693707,
+     "ramp_out": 34.055016829713736,
+     "depth_WR": 0.7894474026723622,
+     "depth_FF": 0.8600155249500486,
+     "depth_MF": 0.8092522018654211,
+     "depth_RF": 1.0,
+     "depth_LF": 0.6865736389544153,
+     "depth_TH": 0.42246673453484396,
+     "stroke_multiplier": 1.0
+    }
+   }
+  ],
+  "accounting": {
+   "smoke_starts": 8196,
+   "training_starts": 98458,
+   "confirmation_charged_starts": 12288,
+   "charged_total": 118942,
+   "ceiling": 125000,
+   "llm_calls": 0
+  },
+  "config_sha256": "197ab104f5ec9de94bc8a3dbf745882ec2bccc065c6c3bd1ace83a95143c8518"
+ },
+ "artifacts": [
+  "logs/pen_spin/r116_recovery_module/summary.json",
+  "logs/pen_spin/r116_recovery_module/finalist.json",
+  "logs/pen_spin/r116_recovery_module/train.json",
+  "logs/pen_spin/r116_recovery_module/smoke.json",
+  "logs/pen_spin/r116_recovery_module/frozen_config.json"
+ ],
+ "notes": "No deviation in the registered protocol: the smoke passed on the first attempt (a disabled module equals the R-106 controller bit for bit; the untrained module's sent action matches the D-080 script on the same observations with 0 mismatching environment-steps and 0 eligibility mismatches; state reset; scorer; A/A), 12 ARS updates on seed 4941, the terminal mean frozen in finalist.json before any confirmation case, then the reference, the root, the untrained script and the trained module once each on twelve fresh manifests (seeds 4942-4953) through the fresh-process evaluator. One implementation note fixed before any simulator step and stated here for completeness: the script-equivalence check compares to a tolerance of 1e-5 rather than bit for bit, because the module's blend is float32 tensor arithmetic and the script's a Python float; untouched actions equal the root's exactly. What learning changed (final parameters against the script): thumb blend depth 1.00 -> 0.42, little finger 0.69, wrist 0.79, middle 0.81, forefinger 0.86, ring 1.00; decision step 120 -> 97; threshold 3.0 -> 2.64 rad/s; ramp-in 20 -> 25.8 steps, ramp-out 40 -> 34.1; stroke multiplier stayed at 1.0 (it starts at its lower bound; half of its perturbations are clipped). So the learned re-capture opens the thumb less than half way, i.e. keeps hold of the pen while the fingers re-seat, and acts earlier. The trained module triggers in 433 of 1,536 episodes (script 477). Drops: trained 68 vs root 47 (paired difference +0.014, upper bound +0.019, inside the +0.05 bound), script 85. The untrained script alone is worth +0.031 [+0.021, +0.040] over the root under the real evaluator, and its drop bound also holds here (upper bound +0.031) although it failed among treated-only pairs in D-080's in-process diagnostic. The root reproduces at +0.097 [+0.066, +0.128] over the reference (fifth confirmation). Scope: one ARS trajectory of 12 updates; the parameters were still moving at update 12; a single confirmation, though a large one with 130 wins against 4 losses."
+}

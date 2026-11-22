@@ -1,0 +1,62 @@
+{
+ "mode": "smoke",
+ "gates": {
+  "no_trigger_identity": {
+   "compared": 718656,
+   "mismatches": 0,
+   "passes": true
+  },
+  "scorer_live": {
+   "root_successes": 1119,
+   "passes": true
+  },
+  "script_equivalence": {
+   "action_mismatch_env_steps": 0,
+   "eligibility_mismatches": 0,
+   "passes": true
+  },
+  "state_reset": {
+   "passes": true
+  }
+ },
+ "aa": {
+  "slot_success": [
+   0.546875,
+   0.529296875,
+   0.548828125,
+   0.560546875
+  ],
+  "pairwise_discordance": [
+   0.083984375,
+   0.076171875,
+   0.146484375,
+   0.09765625,
+   0.15625,
+   0.1640625
+  ],
+  "mean_discordance": 0.12076822916666667,
+  "slot_differences": [
+   0.017578125,
+   -0.001953125,
+   -0.013671875,
+   -0.01953125,
+   -0.03125,
+   -0.01171875
+  ],
+  "sd_of_slot_differences": 0.016637904462667594,
+  "max_abs_slot_difference": 0.03125,
+  "cases": 512
+ },
+ "scripted": {
+  "triggered_fraction": 0.32373046875,
+  "success": 0.59326171875,
+  "drops": 87,
+  "root_success_same_placements": 0.54638671875,
+  "root_drops": 52
+ },
+ "starts": 8196,
+ "throughput": {
+  "transitions_per_s": 34033.48804277701
+ },
+ "passes": true
+}

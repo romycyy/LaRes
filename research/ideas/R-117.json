@@ -1,0 +1,113 @@
+{
+  "id": "R-117",
+  "title": "2. Conditional: event-terminated versus timed recovery support",
+  "hypothesis": "Ending post-recapture stroke support only after persistent centered rolling will prevent premature hand-back to the slow attractor better than a learned timer.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "matched ARS-trained timer-terminated recovery-support arm",
+    "rationale": "Defer until idea 1 is decided; do not run concurrently or consume these seeds beforehand. Run only if idea 1 confirms useful improvement, its learned stroke multiplier exceeds 1, and its monitoring traces show recovered episodes losing centered rolling after support ends. Otherwise cancel this protocol. This tests state-dependent phase transitions, not another filter as in D-079, another re-capture parameter setting as in D-080, or native posture/stroke replacement as in R-115. Inherit idea 1's complete learned module in both arms, retaining one recovery attempt and identical action authority. Replace only the post-recapture support-ending rule. TIME adds two parameters: hold duration [0,120] steps and linear taper [0,30], initialized at 60 and 0. EVENT adds two parameters: centered absolute-rate threshold [2,6] rad/s and consecutive qualifying duration [1,60] steps, initialized at 4 and 15; reset the qualifying counter whenever the predicate fails, then use a fixed ten-step taper. Both arms must restore the unmodified root action by step 300. Both inherit all 11 learned coefficients and optimize the resulting 13 coefficients with identical projected ARS settings, direction streams, shared placements and budgets from idea 1. Freeze both terminal means without selection. Log matched disjoint monitoring curves. Confirm D-072, R-106, idea 1's frozen module, TIME and EVENT once on twelve fresh 128-case manifests through the established evaluator. The primary contrast is EVENT minus TIME; also report both against their inherited module, root and D-072. Use the recorded pilot discordance range to prospectively freeze 1,536 confirmation pairs. Preserve the strict paired success and drop rules, both uncertainty levels, all result fields, and the saved incumbent. The compact counter is justified only by the stated trace dependency; it adds closed-loop hand-back rather than merely longer memory. Reuse the dispatcher and learner introduced by idea 1; no controller-generation calls."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study recovery_event_handoff",
+    "seeds": [
+      4955,
+      4956,
+      4957,
+      4958,
+      4959,
+      4960,
+      4961,
+      4962,
+      4963,
+      4964,
+      4965,
+      4966,
+      4967,
+      4968,
+      4969
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_handoff_smoke_s4955.yaml",
+      "config/manifests/pen_spin_stage3_handoff_train_s4956.yaml",
+      "config/manifests/pen_spin_stage3_handoff_monitor_s4957.yaml",
+      "config/manifests/pen_spin_stage3_handoff_confirmation_s4958.yaml",
+      "config/manifests/pen_spin_stage3_handoff_confirmation_s4959.yaml",
+      "config/manifests/pen_spin_stage3_handoff_confirmation_s4960.yaml",
+      "config/manifests/pen_spin_stage3_handoff_confirmation_s4961.yaml",
+      "config/manifests/pen_spin_stage3_handoff_confirmation_s4962.yaml",
+      "config/manifests/pen_spin_stage3_handoff_confirmation_s4963.yaml",
+      "config/manifests/pen_spin_stage3_handoff_confirmation_s4964.yaml",
+      "config/manifests/pen_spin_stage3_handoff_confirmation_s4965.yaml",
+      "config/manifests/pen_spin_stage3_handoff_confirmation_s4966.yaml",
+      "config/manifests/pen_spin_stage3_handoff_confirmation_s4967.yaml",
+      "config/manifests/pen_spin_stage3_handoff_confirmation_s4968.yaml",
+      "config/manifests/pen_spin_stage3_handoff_confirmation_s4969.yaml"
+    ],
+    "episodes": 226304,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py",
+      "config/shadowhand_spin_stages.yaml"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "An EVENT-minus-TIME confirmation interval with upper bound below +0.05 refutes the predicted magnitude; an interval including zero is inconclusive. EVENT must also beat the inherited module under the strict paired rule and satisfy the drop bound against root and D-072 to count as a useful extension.",
+  "cost_estimate": {
+    "episodes": 226304,
+    "llm_calls": 0,
+    "wall_time_minutes": 55
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "2ee8b1fb6363168a1384c44f12f282243cc1832da750d3d327915ee2c6ee1aea",
+  "proposal_call_id": "call_00261",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-22T10:17:49",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-22T10:16:40",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Event-terminated support tests a distinct hand-back mechanism rather than repeating D-079's filtered residuals, but it is justified only after R-116 establishes useful recovery and traces implicate premature support termination. Its weakest point is that these prerequisites remain unobserved, so the 226,304-episode, zero-LLM-call budget should remain unspent and seeds 4955–4969 unused. The predicted paired_success_difference increase of at least 0.05 against the matched ARS-trained timer arm is refuted if the confirmation interval's upper bound is below 0.05; an interval including zero cannot establish superiority. Reconsider only if all stated prerequisites hold; otherwise cancel as proposed.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00262",
+          "briefing_sha256": "70394f1946513bc4b2da554a93e5d1e68707261e0471d40ebaff60f0863198a7",
+          "at": "2026-11-22T10:17:49"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree: it is conditional on R-116 confirming a useful module with a stroke multiplier above 1 and on traces showing hand-back failures; cancel otherwise.",
+          "changes_applied": [],
+          "at": "2026-11-22T10:17:49"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

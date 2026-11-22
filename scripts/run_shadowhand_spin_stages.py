@@ -67,6 +67,7 @@ PEN_SPIN_STUDIES = {
     "slow_mode_archive_audit": "slow_mode_audit",                  # R-110 (archive-only: does reset geometry predict the slow mode?)
     "compact_memory_matched": "memory_study",                      # R-112 (P3: instant vs filtered vs slow-memory gate)
     "recovery_authority": "recovery_authority",                    # R-114 (scripted re-capture / stroke / residual probes on stuck episodes)
+    "symbolic_recovery_ars": "recovery_module",                    # R-116 (learned re-capture module on the R-106 finalist)
 }
 
 

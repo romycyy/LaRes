@@ -1,0 +1,25 @@
+{
+ "name": "r116_recovery_finalist",
+ "decision": "D-081 / R-116",
+ "status": "qualified against the R-106 finalist (+0.082 [+0.068, +0.096] over 1,536 fresh pairs, drops 68 vs 47, bound holds) and the D-072 reference (+0.179 [+0.147, +0.211]); NOT installed as the default incumbent",
+ "construction": "lares.envs.isaac_pen_spin.recovery_module.build(protocol_cfg, name, x): the frozen R-106 finalist (config/pen_spin/r106_success_ars_finalist) plus a single-decision re-capture module with the normalised parameters x",
+ "module_sha256": "f7f9313d7eaea2072536e37923b6a1f7b429c521c269fc0893475e07cf4d70df",
+ "params": {
+  "threshold": 2.6355142557329696,
+  "decision_step": 97.14415276077102,
+  "ramp_in": 25.762004988693707,
+  "ramp_out": 34.055016829713736,
+  "depth_WR": 0.7894474026723622,
+  "depth_FF": 0.8600155249500486,
+  "depth_MF": 0.8092522018654211,
+  "depth_RF": 1.0,
+  "depth_LF": 0.6865736389544153,
+  "depth_TH": 0.42246673453484396,
+  "stroke_multiplier": 1.0
+ },
+ "files": {
+  "finalist.json": "cb2f72421309fe603da53c449f042f8f8f4ca2b82dc517be2684732d86de0c15"
+ },
+ "config_block": "research_protocols.symbolic_recovery_ars",
+ "evaluated_in": "logs/pen_spin/r116_recovery_module/summary.json"
+}

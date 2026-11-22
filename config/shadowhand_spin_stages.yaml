@@ -1577,3 +1577,32 @@ research_protocols:
     min_pairs_first_batch: 60
     min_pairs_total: 300
     start_ceiling: 18000
+  # R-116 (no LLM): a re-capture module on the frozen R-106 finalist, 11 bounded parameters starting at the D-080
+  # script, trained by ARS on the full-episode sustained-success count (recovery_module.py, also its own Isaac child),
+  # then the reference, the root, the untrained script and the trained module on twelve fresh 128-case manifests.
+  #   python scripts/run_shadowhand_spin_stages.py --study symbolic_recovery_ars
+  symbolic_recovery_ars:
+    log_dir: "logs/pen_spin/r116_recovery_module"
+    incumbent_asset: "config/pen_spin/d058_fixed_stroke_incumbent"
+    reference_descriptor: "config/pen_spin/symbolic_reward_reference/reference.json"
+    reference_residual: *d070_selected
+    reference_residual_sha256: *d070_selected_sha256
+    control_dt: 0.016666666666666666
+    pool_seed: 4942
+    actor: *sr_actor
+    normalization_path: "logs/pen_spin/r103_symbolic_reward/normalization.json"
+    normalization_sha256: "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac"
+    root_finalist: "config/pen_spin/r106_success_ars_finalist/finalist.json"
+    root_theta_sha256: "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef"
+    centre_tolerance: 0.08
+    cases_per_slot: 512
+    smoke_seed: 4940
+    smoke_eligibility_mismatch_max: 10
+    training_seed: 4941
+    ars: {iterations: 12, directions: 4, nu: 0.1, alpha: 0.05}
+    confirmation_seeds: [4942, 4943, 4944, 4945, 4946, 4947, 4948, 4949, 4950, 4951, 4952, 4953]
+    confirmation_cases: 128
+    confirmation_manifest_template: "config/manifests/pen_spin_stage3_recovery_confirm_s{seed}.yaml"
+    threshold: 0.05
+    drop_margin: 0.05
+    start_ceiling: 125000

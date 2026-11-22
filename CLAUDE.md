@@ -688,6 +688,14 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   gain gives +0.019 with no drops; tripling the residual gives nothing (the 0.10 cap is not what binds). **Escape
   authority exists; the open problem is the shape and trigger of the re-capture**, not information or residual size.
   `PerEnvGain` replaces the incumbent's `_stroke_gain` with a per-environment multiplier (scale 1 is bit-identical).
+- **R-116 result (D-081, supported; 2026-11-22).** `recovery_module.py` (`--study symbolic_recovery_ars`; its own Isaac
+  child): the D-080 re-capture as an 11-parameter, single-decision, observation-only module on the frozen R-106 finalist
+  (`RecoveryController`), trained by ARS on the full-episode success count from the scripted initial point. Fresh, 1,536
+  pairs: trained minus root **+0.082 [+0.068, +0.096]** (953 vs 827; 130 wins, 4 losses; drops 68 vs 47, bound holds);
+  trained minus the untrained script +0.051 [+0.037, +0.066]; trained minus the D-072 reference +0.179 (953 vs 678).
+  Learning halved how far the thumb opens (depth 0.42) and moved the decision to step 97. Frozen in
+  `config/pen_spin/r116_recovery_finalist/` (about 0.62 sustained success; not installed as the incumbent, the user's
+  call). Compare a float32 tensor schedule with a Python-float one to a tolerance, never bit for bit.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override
