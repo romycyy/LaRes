@@ -1,0 +1,743 @@
+{
+  "id": "R-126",
+  "title": "Causal block transplant: is JOINT's residual adaptation necessary?",
+  "hypothesis": "JOINT's adapted residual preserves the rolling state produced by its adapted re-capture module, so transplanting that module onto R-118's unchanged residual loses meaningful success.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.02,
+    "against": "R-118 residual combined with the frozen R-121 JOINT module",
+    "rationale": "Primary contrast: frozen JOINT minus the module-only transplant. Evaluate the complete two-by-two combination of R-118/JOINT residual blocks and R-118/JOINT module blocks, plus D-072. D-084 compared independently optimized arms; these frozen counterfactuals instead identify necessity and sufficiency of the realized parameter changes. The 0.02 threshold represents most of D-086's 0.024 adjacent gain. This is not a claim that R-118 has only 11 runtime parameters. Reuse the existing recovery_joint evaluation and serialization interfaces; add only a block-combination study handler. Require descriptor compatibility, exact source hashes and reproduction of both unmodified endpoints before evaluating hybrids. Use two 128-case pilot manifests solely to estimate discordance, then size confirmation by the frozen rule below. The listed seeds are proposed config allocations, subject to live-ledger verification at triage; do not hardcode them in runner code. No training, controller selection, promotion or incumbent modification is proposed. FROZEN SIZING (revision 1): five policies (D-072; R118res+R118mod = the R-118 asset; R118res+JOINTmod = the module-only transplant; JOINTres+R118mod = the reciprocal; JOINTres+JOINTmod = the JOINT asset), each once per manifest in a fresh process. Pilot: seeds 5076-5077 (256 pairs), excluded from confirmation, used only for d = (wins + losses) / 256 between JOINT and the module-only transplant (point estimate, floored at 0.05; no other pilot quantity is read for sizing and the prediction is not changed). Confirmation pairs n = ceil((1.960 + 0.842)^2 * d / 0.02^2), i.e. 80% power for +0.02 against zero with a two-sided 5% test; manifests = max(8, ceil(n / 128)), taken in order from seeds 5078-5093 then 5114-5137; cap 40 manifests (5,120 pairs); if the rule asks for more than 40 the study stops without confirmation and is reported inconclusive. The cap is 40, not 16, because D-086 already measured the discordance between JOINT and R-118 at 0.197 (606 of 3,072), for which +0.02 at 80% power needs about 3,870 pairs = 31 manifests: a 16-manifest cap would stop the study for certain unless the hybrids are far more concordant than their endpoints. Endpoint reproduction costs no rollout: before any cell runs, the composed JOINTres+JOINTmod coordinates must equal the frozen R-121 asset's 43 coordinates exactly (same hash) and the composed R118res+R118mod controller must have the R-106 residual coefficients exactly and the R-118 module's eleven physical parameters to 1e-9 (the R-118 module is stored in the original ranges and is re-expressed in the R-121 ranges). Holm family on confirmation: JOINT minus module-only transplant (primary), JOINT minus reciprocal, module-only transplant minus R-118, reciprocal minus R-118, JOINT minus R-118; the block interaction (JOINT - transplant - reciprocal + R-118) is reported with its paired interval, diagnostically. Ceiling (2 + 40) x 5 x 128 = 26,880 episodes."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study parameter_block_transplant",
+    "seeds": [
+      5076,
+      5077,
+      5078,
+      5079,
+      5080,
+      5081,
+      5082,
+      5083,
+      5084,
+      5085,
+      5086,
+      5087,
+      5088,
+      5089,
+      5090,
+      5091,
+      5092,
+      5093,
+      5114,
+      5115,
+      5116,
+      5117,
+      5118,
+      5119,
+      5120,
+      5121,
+      5122,
+      5123,
+      5124,
+      5125,
+      5126,
+      5127,
+      5128,
+      5129,
+      5130,
+      5131,
+      5132,
+      5133,
+      5134,
+      5135,
+      5136,
+      5137
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_blockswap_pilot_s5076.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_pilot_s5077.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5078.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5079.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5080.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5081.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5082.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5083.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5084.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5085.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5086.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5087.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5088.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5089.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5090.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5091.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5092.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5093.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5114.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5115.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5116.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5117.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5118.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5119.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5120.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5121.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5122.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5123.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5124.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5125.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5126.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5127.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5128.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5129.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5130.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5131.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5132.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5133.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5134.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5135.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5136.yaml",
+      "config/manifests/pen_spin_stage3_blockswap_confirm_s5137.yaml"
+    ],
+    "episodes": 26880,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py",
+      "config/shadowhand_spin_stages.yaml"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "decided",
+  "source": "advisor",
+  "falsified_by": "A confirmation upper confidence bound below +0.02 for JOINT minus the module-only transplant refutes the predicted contribution; an interval containing zero establishes no difference. Report the reciprocal transplant and paired block interaction diagnostically, without treating either as a substitute primary endpoint.",
+  "cost_estimate": {
+    "episodes": 26880,
+    "llm_calls": 0,
+    "wall_time_minutes": 100
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "e1208cbaef3861af8857fdaaf0393dbd2a3d56464dd111b3ab7946134dc88314",
+  "proposal_call_id": "call_00286",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-22T15:22:15",
+    "advisor_call_id": "call_00288",
+    "round": 2,
+    "note": "Frozen block swaps isolate the contribution of JOINT's realized residual changes, unlike D-084's independently optimized arms. I accept the implementer's cap argument: discordance of 0.197 requires about 31 manifests under the registered formula, making 40 defensible where 16 was not; the ceiling is"
+  },
+  "run": {
+    "started_at": "2026-11-22T15:23:08",
+    "git_sha": "27c87ceb79dc2f9cd099334959b168fb2d0bdf87",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r126_block_transplant",
+    "finished_at": "2026-11-22T16:26:48"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.0068359375,
+      "paired_success_difference_ci95": [
+        -0.006359434796017589,
+        0.02003130979601759
+      ],
+      "pairs": 4096,
+      "policies": {
+        "reference": {
+          "successes": 1740,
+          "drops": 227,
+          "cases": 4096
+        },
+        "r118": {
+          "successes": 3120,
+          "drops": 210,
+          "cases": 4096
+        },
+        "transplant": {
+          "successes": 3215,
+          "drops": 219,
+          "cases": 4096
+        },
+        "reciprocal": {
+          "successes": 3130,
+          "drops": 214,
+          "cases": 4096
+        },
+        "joint": {
+          "successes": 3243,
+          "drops": 212,
+          "cases": 4096
+        }
+      },
+      "contrasts": {
+        "joint_minus_transplant": {
+          "difference": 0.0068359375,
+          "ci95": [
+            -0.006359434796017589,
+            0.02003130979601759
+          ],
+          "win_loss_tie": {
+            "wins": 394,
+            "losses": 366,
+            "ties": 3336
+          },
+          "manifest_clustered_ci95": [
+            -0.008980881698629636,
+            0.022652756698629636
+          ],
+          "manifests_positive_of_32": 18,
+          "drop_difference": -0.001708984375,
+          "drop_difference_one_sided_95_upper": 0.0024848184138929396,
+          "p_holm": 0.6196924906289025
+        },
+        "joint_minus_reciprocal": {
+          "difference": 0.027587890625,
+          "ci95": [
+            0.019930339625168186,
+            0.035245441624831814
+          ],
+          "win_loss_tie": {
+            "wins": 186,
+            "losses": 73,
+            "ties": 3837
+          },
+          "manifest_clustered_ci95": [
+            0.02200080851854879,
+            0.03317497273145121
+          ],
+          "manifests_positive_of_32": 29,
+          "drop_difference": -0.00048828125,
+          "drop_difference_one_sided_95_upper": 0.001118531710217558,
+          "p_holm": 9.512039545121524e-12
+        },
+        "transplant_minus_r118": {
+          "difference": 0.023193359375,
+          "ci95": [
+            0.015462628839900044,
+            0.030924089910099956
+          ],
+          "win_loss_tie": {
+            "wins": 179,
+            "losses": 84,
+            "ties": 3833
+          },
+          "manifest_clustered_ci95": [
+            0.017359773972036113,
+            0.029026944777963887
+          ],
+          "manifests_positive_of_32": 27,
+          "drop_difference": 0.002197265625,
+          "drop_difference_one_sided_95_upper": 0.0038526174197652903,
+          "p_holm": 1.7515962392761724e-08
+        },
+        "reciprocal_minus_r118": {
+          "difference": 0.00244140625,
+          "ci95": [
+            -0.011514973342602399,
+            0.0163977858426024
+          ],
+          "win_loss_tie": {
+            "wins": 430,
+            "losses": 420,
+            "ties": 3246
+          },
+          "manifest_clustered_ci95": [
+            -0.012263321796257295,
+            0.017146134296257297
+          ],
+          "manifests_positive_of_32": 13,
+          "drop_difference": 0.0009765625,
+          "drop_difference_one_sided_95_upper": 0.005189715395149549,
+          "p_holm": 0.7316459883873903
+        },
+        "joint_minus_r118": {
+          "difference": 0.030029296875,
+          "ci95": [
+            0.0164277361722906,
+            0.0436308575777094
+          ],
+          "win_loss_tie": {
+            "wins": 467,
+            "losses": 344,
+            "ties": 3285
+          },
+          "manifest_clustered_ci95": [
+            0.015003105731373265,
+            0.04505548801862674
+          ],
+          "manifests_positive_of_32": 24,
+          "drop_difference": 0.00048828125,
+          "drop_difference_one_sided_95_upper": 0.004663012308637463,
+          "p_holm": 4.6123710578732525e-05
+        }
+      },
+      "block_interaction": {
+        "mean": 0.00439453125,
+        "low": -0.005691547221020374,
+        "high": 0.014480609721020374,
+        "n": 4096
+      }
+    },
+    "controls": {
+      "endpoints": {
+        "joint_sha256": "1527eb5643a59f9b77858f0dc5852280badd1f6ec012c0efa7c30019c794713c",
+        "joint_matches_asset": true,
+        "r118_module_max_abs_error": 0.0,
+        "reciprocal_module_max_abs_error": 0.0,
+        "r118_residual": "the frozen R-106 coefficients (no residual coordinates)",
+        "passes": true
+      },
+      "sizing": {
+        "discordance": 0.203125,
+        "discordance_used": 0.203125,
+        "pairs_required": 3987,
+        "manifests": 32,
+        "cap": 40,
+        "within_cap": true
+      },
+      "pilot": {
+        "policies": {
+          "reference": {
+            "successes": 98,
+            "drops": 9,
+            "cases": 256
+          },
+          "r118": {
+            "successes": 195,
+            "drops": 9,
+            "cases": 256
+          },
+          "transplant": {
+            "successes": 196,
+            "drops": 10,
+            "cases": 256
+          },
+          "reciprocal": {
+            "successes": 198,
+            "drops": 11,
+            "cases": 256
+          },
+          "joint": {
+            "successes": 204,
+            "drops": 12,
+            "cases": 256
+          }
+        },
+        "note": "read for sizing only; excluded from confirmation"
+      },
+      "accounting": {
+        "pilot_episodes": 1280,
+        "confirmation_episodes": 20480,
+        "llm_calls": 0,
+        "training": "none"
+      },
+      "config_sha256": "cc1e205592376a79ab7fbddba27e281419d64546fca77877b024c552259e20ba",
+      "policies": {
+        "r118": {
+          "x": [
+            0.6,
+            0.7590946238371127,
+            0.6592184626353792,
+            0.10104503913070818,
+            0.5991259424696785,
+            0.8623236308553709,
+            0.6776634821220447,
+            0.8538341943356329,
+            0.14553711849982642,
+            0.4088089759260884,
+            0.059213561633790546
+          ],
+          "params": {
+            "threshold": 4.0,
+            "decision_step": 151.09135486045352,
+            "ramp_in": 28.07264619223827,
+            "ramp_out": 10.78046801306453,
+            "depth_WR": 0.5991259424696785,
+            "depth_FF": 0.8623236308553709,
+            "depth_MF": 0.6776634821220447,
+            "depth_RF": 0.8538341943356329,
+            "depth_LF": 0.14553711849982642,
+            "depth_TH": 0.4088089759260884,
+            "stroke_multiplier": 1.0592135616337905
+          },
+          "sha256": "eea6eb67ea35a873c4a6e735ed9ad6f380982dbbdc44bc21280ad21f5a3ad99e"
+        },
+        "transplant": {
+          "x": [
+            0.6353500850379407,
+            0.7423473760200391,
+            0.6734570922308314,
+            0.043343259052498466,
+            0.39436701939430296,
+            0.9891946300563769,
+            0.6592989900520426,
+            0.7008168020795885,
+            0.0,
+            0.34451502809704027,
+            0.45473634330265067
+          ],
+          "params": {
+            "threshold": 4.176750425189703,
+            "decision_step": 149.08168512240468,
+            "ramp_in": 28.570998228079098,
+            "ramp_out": 6.337430947042382,
+            "depth_WR": 0.39436701939430296,
+            "depth_FF": 0.9891946300563769,
+            "depth_MF": 0.6592989900520426,
+            "depth_RF": 0.7008168020795885,
+            "depth_LF": 0.0,
+            "depth_TH": 0.34451502809704027,
+            "stroke_multiplier": 1.4547363433026508
+          },
+          "sha256": "9e17b365c5176cc0a9e4adee77cf4d87d055d8982672d60a8478c446b2fe5415"
+        },
+        "reciprocal": {
+          "x": [
+            0.6,
+            0.7590946238371127,
+            0.6592184626353792,
+            0.10104503913070818,
+            0.5991259424696785,
+            0.8623236308553709,
+            0.6776634821220447,
+            0.8538341943356329,
+            0.14553711849982642,
+            0.4088089759260884,
+            0.059213561633790546,
+            0.0,
+            0.5374997058674745,
+            0.3131356124158756,
+            0.9627377397277231,
+            0.5155057215761368,
+            0.24093822062971257,
+            0.7698408091706443,
+            0.6094654467880144,
+            0.5431509911626892,
+            0.7578049783728272,
+            0.4221101707072932,
+            0.12480178938433992,
+            0.5865485418853215,
+            0.48984454637600944,
+            0.5144142294488494,
+            0.22739335293316126,
+            0.218888831954796,
+            0.1700889600978559,
+            0.14211353901084642,
+            0.5705384310758835,
+            0.6363408872454155,
+            0.6569795225342088,
+            0.4122277564281624,
+            0.46073438964505814,
+            0.5757306353343193,
+            0.7526702714503345,
+            0.49923295935674394,
+            0.7637940448974231,
+            0.5379363291192427,
+            0.24504493594186363,
+            0.04109856562201895,
+            0.7434831077709794
+          ],
+          "params": {
+            "threshold": 4.0,
+            "decision_step": 151.09135486045352,
+            "ramp_in": 28.07264619223827,
+            "ramp_out": 10.78046801306453,
+            "depth_WR": 0.5991259424696785,
+            "depth_FF": 0.8623236308553709,
+            "depth_MF": 0.6776634821220447,
+            "depth_RF": 0.8538341943356329,
+            "depth_LF": 0.14553711849982642,
+            "depth_TH": 0.4088089759260884,
+            "stroke_multiplier": 1.0592135616337905
+          },
+          "sha256": "94aa14fd25e96fe117a908643be992f5ad1544443ddc5e9ddc452ba709e82b01"
+        },
+        "joint": {
+          "x": [
+            0.6353500850379407,
+            0.7423473760200391,
+            0.6734570922308314,
+            0.043343259052498466,
+            0.39436701939430296,
+            0.9891946300563769,
+            0.6592989900520426,
+            0.7008168020795885,
+            0.0,
+            0.34451502809704027,
+            0.45473634330265067,
+            0.0,
+            0.5374997058674745,
+            0.3131356124158756,
+            0.9627377397277231,
+            0.5155057215761368,
+            0.24093822062971257,
+            0.7698408091706443,
+            0.6094654467880144,
+            0.5431509911626892,
+            0.7578049783728272,
+            0.4221101707072932,
+            0.12480178938433992,
+            0.5865485418853215,
+            0.48984454637600944,
+            0.5144142294488494,
+            0.22739335293316126,
+            0.218888831954796,
+            0.1700889600978559,
+            0.14211353901084642,
+            0.5705384310758835,
+            0.6363408872454155,
+            0.6569795225342088,
+            0.4122277564281624,
+            0.46073438964505814,
+            0.5757306353343193,
+            0.7526702714503345,
+            0.49923295935674394,
+            0.7637940448974231,
+            0.5379363291192427,
+            0.24504493594186363,
+            0.04109856562201895,
+            0.7434831077709794
+          ],
+          "params": {
+            "threshold": 4.176750425189703,
+            "decision_step": 149.08168512240468,
+            "ramp_in": 28.570998228079098,
+            "ramp_out": 6.337430947042382,
+            "depth_WR": 0.39436701939430296,
+            "depth_FF": 0.9891946300563769,
+            "depth_MF": 0.6592989900520426,
+            "depth_RF": 0.7008168020795885,
+            "depth_LF": 0.0,
+            "depth_TH": 0.34451502809704027,
+            "stroke_multiplier": 1.4547363433026508
+          },
+          "sha256": "1527eb5643a59f9b77858f0dc5852280badd1f6ec012c0efa7c30019c794713c"
+        }
+      }
+    },
+    "artifacts": [
+      "logs/pen_spin/r126_block_transplant/summary.json",
+      "logs/pen_spin/r126_block_transplant/frozen_config.json",
+      "logs/pen_spin/r126_block_transplant/sizing.json",
+      "config/pen_spin/r126_transplant_finalist/finalist.json"
+    ],
+    "notes": "Evaluation as registered: endpoint composition exact (JOINT hash matches the asset; R-118 module error 0.0), pilot on seeds 5076-5077 read only for the JOINT-versus-transplant discordance (0.203), the frozen formula asked for 3,987 pairs = 32 manifests (cap 40), confirmation on seeds 5078-5093 and 5114-5129, five policies once per manifest in fresh processes; 21,760 episodes of a 26,880 ceiling; no training, no LLM calls. Two process slips before the first cell, neither touching a result: `research.py start` ran before the box-side test had passed (a chained command did not stop on the failure; nothing had been launched), and the failure itself was 24 stale manifest copies left on the server by the earlier R-124 rename (the documented sync gap); they were deleted on the server and their 24 lines removed from the server's sync record, after which the tests passed. PRIMARY: JOINT minus the module-only transplant +0.0068, 95% [-0.0064, +0.0200] (394 wins, 366 losses; manifest-clustered [-0.009, +0.023]; Holm p 0.62): the interval includes zero and its upper bound (0.02003) sits on the registered +0.02, so the registered falsification rule (upper bound below +0.02) is not met by 0.00003 and no positive contribution is established: inconclusive, leaning against. The 2x2 is clear about where JOINT's gain lives: the MODULE block carries it (transplant minus R-118 +0.023 [+0.016, +0.031], 27 of 32 manifests; JOINT minus reciprocal +0.028 [+0.020, +0.035]) and the RESIDUAL block does not (reciprocal minus R-118 +0.002 [-0.012, +0.016]; JOINT minus transplant +0.007); interaction +0.004 [-0.006, +0.014]. Swapping the residual block changes which cases succeed (discordance 0.19-0.21) without changing how many; swapping the module block changes few cases (0.06) but mostly in one direction. Successes of 4,096: reference 1,740 (0.425), R-118 3,120 (0.762), transplant 3,215 (0.785), reciprocal 3,130 (0.764), JOINT 3,243 (0.792); drops 227 / 210 / 219 / 214 / 212. JOINT minus R-118 +0.030 [+0.016, +0.044] replicates D-086's +0.024. So the 43-coordinate JOINT is matched within about 0.02 by an 11-parameter module on the unchanged R-106 residual; that transplant is frozen as config/pen_spin/r126_transplant_finalist/ (derived, not trained; not installed). D-084's 'joint adaptation' contrast is thereby reinterpreted: what the joint arm found was mostly a better module (its threshold and ramp-out moved inside the widened ranges), not better residual coefficients. Nominal power only (pilot-estimated discordance, Holm)."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.0068359375,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.8,
+      "reasoning": "JOINT minus the module-only transplant is +0.0068 paired sustained success, 95% interval [-0.0064, +0.0200] over 4,096 fresh pairs (394 wins, 366 losses; manifest-clustered [-0.009, +0.023]). The interval includes zero, so no positive contribution of JOINT's residual changes is established; its upper bound is 0.02003, which is not below the registered +0.02, so the registered refutation rule is not met either (by 0.00003). By the pre-declared rules that is inconclusive, leaning against the hypothesis. The diagnostic 2x2 is unambiguous that the module block carries JOINT's gain (+0.023 and +0.028, both Holm-significant) and the residual block does not (+0.002 and +0.007).",
+      "cited_artifacts": [],
+      "next_experiment": "R-127's precondition (a positive primary interval for the residual's contribution) is not met, so by its own rule it stays deferred and the exhaustion rule applies. For the user: the 11-parameter transplant (0.785) is within about 0.02 of JOINT (0.792) and is the simpler candidate for adoption; it is frozen as config/pen_spin/r126_transplant_finalist.",
+      "recorded_at": "2026-11-22T16:26:50",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 0.99,
+      "reasoning": "Against the specified module-only transplant, JOINT's paired_success_difference was +0.0068359375 over 4,096 confirmation pairs, with 95% interval [-0.006359435, +0.020031310] [logs/pen_spin/r126_block_transplant/summary.json]. This interval includes zero, and Holm-adjusted p = 0.6197, so no positive residual contribution is established [logs/pen_spin/r126_block_transplant/summary.json]. However, the upper bound exceeds the registered +0.02 threshold, so the frozen magnitude-falsification criterion is not met: the prediction is neither supported nor refuted [logs/pen_spin/r126_block_transplant/summary.json]. The module-only transplant improves over R-118 by +0.02319, with interval [+0.01546, +0.03092], but that secondary finding neither substitutes for the primary contrast nor establishes equivalence between JOINT and the transplant [logs/pen_spin/r126_block_transplant/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r126_block_transplant/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-22T16:27:08",
+      "call_id": "call_00289"
+    }
+  ],
+  "decision_id": "D-087",
+  "history": [
+    {
+      "at": "2026-11-22T15:22:15",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 2: both say approve"
+    },
+    {
+      "at": "2026-11-22T15:23:08",
+      "from": "approved",
+      "to": "running",
+      "note": "git 27c87ceb79 (dirty)"
+    },
+    {
+      "at": "2026-11-22T16:26:48",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-22T16:27:18",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-087: inconclusive"
+    }
+  ],
+  "created_at": "2026-11-22T15:18:45",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "Frozen block swaps isolate the contribution of JOINT's realized residual changes, unlike D-084's separately optimized arms, at a modest ceiling of 11,520 simulator episodes and zero controller-generation LLM calls. The weakness is powering for +0.05 while predicting paired_success_difference increase of at least +0.02 against the module-only transplant. Align sizing with that prediction before spending; a confirmation upper bound below +0.02 falsifies its magnitude, while an interval containing zero establishes no positive contribution.",
+          "suggested_changes": [
+            "Retain the +0.02 primary prediction and size confirmation for 80% power to detect +0.02 against zero, rather than +0.05, using pilot discordance only; freeze the sizing formula and its treatment of pilot uncertainty before running pilots.",
+            "Keep pilots excluded from confirmation, retain the sixteen-manifest confirmation cap, and stop without confirmation if the revised power requirement exceeds it; do not change the prediction after inspecting pilot outcomes.",
+            "Reuse scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml with the proposed minimal handler; explicitly account for endpoint-reproduction rollouts within the 11,520-episode ceiling and retain zero controller-generation LLM calls."
+          ],
+          "priority": 1,
+          "call_id": "call_00287",
+          "briefing_sha256": "1e6a2b6a58ec0b88508f0ce75e63f602f9c64c3429bb04d619323d969508fbaa",
+          "at": "2026-11-22T15:19:46"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree to revise, and agree with sizing for the registered +0.02 rather than +0.05. One number has to change with it: D-086 already measured the discordance between JOINT and R-118 at 0.197 (606 of 3,072 pairs), and +0.02 at 80% power then needs about 3,870 pairs, 31 manifests; under a sixteen-manifest cap the study would stop without confirmation unless the hybrids are far more concordant than their endpoints, so the pilot would be spent for nothing. The revision freezes: the five policies; the pilot (seeds 5076-5077) read only for the JOINT-versus-transplant discordance, point estimate floored at 0.05; n = ceil((1.960+0.842)^2 d / 0.02^2), at least 8 manifests, cap 40 (stop and report inconclusive beyond it); a rollout-free exact endpoint-reproduction check on the composed parameters; the five-contrast Holm family with the interaction reported diagnostically; ceiling 26,880 episodes, zero LLM calls. Seeds 5094-5113 belong to R-127, so the added confirmation seeds are 5114-5137.",
+          "changes_applied": [],
+          "at": "2026-11-22T15:20:31"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "Frozen block swaps isolate the contribution of JOINT's realized residual changes, unlike D-084's independently optimized arms. I accept the implementer's cap argument: discordance of 0.197 requires about 31 manifests under the registered formula, making 40 defensible where 16 was not; the ceiling is 26,880 simulator episodes and zero LLM calls, with rollout-free endpoint checks. The weakest point remains sizing uncertainty: pilot-estimated discordance and Holm adjustment mean the nominal 80% power is not guaranteed for the adjusted primary test. Retain the prediction of paired_success_difference increase of at least 0.02 against the module-only transplant: a confirmation upper bound below 0.02 falsifies that magnitude, while an interval including zero provides no evidence of a difference.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00288",
+          "briefing_sha256": "baf155ded55b30f910abc0b3ccff517c0f6bdaec9ef1c39e4f3728e457d02960",
+          "at": "2026-11-22T15:21:05"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve the revised record: five frozen policies, pilot seeds 5076-5077 read only for the JOINT-versus-transplant discordance, the frozen sizing formula for +0.02 at 80% power with at least 8 and at most 40 confirmation manifests, exact rollout-free endpoint checks, the five-contrast Holm family with the interaction diagnostic, ceiling 26,880 episodes. I accept the advisor's caveat that Holm adjustment and pilot uncertainty make the nominal power approximate; it will be reported.",
+          "changes_applied": [],
+          "at": "2026-11-22T15:22:15"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-22T15:20:33",
+      "round": 1,
+      "patch": {
+        "prediction": {
+          "rationale": "Primary contrast: frozen JOINT minus the module-only transplant. Evaluate the complete two-by-two combination of R-118/JOINT residual blocks and R-118/JOINT module blocks, plus D-072. D-084 compared independently optimized arms; these frozen counterfactuals instead identify necessity and sufficiency of the realized parameter changes. The 0.02 threshold represents most of D-086's 0.024 adjacent gain. This is not a claim that R-118 has only 11 runtime parameters. Reuse the existing recovery_joint evaluation and serialization interfaces; add only a block-combination study handler. Require descriptor compatibility, exact source hashes and reproduction of both unmodified endpoints before evaluating hybrids. Use two 128-case pilot manifests solely to estimate discordance, then size confirmation by the frozen rule below. The listed seeds are proposed config allocations, subject to live-ledger verification at triage; do not hardcode them in runner code. No training, controller selection, promotion or incumbent modification is proposed. FROZEN SIZING (revision 1): five policies (D-072; R118res+R118mod = the R-118 asset; R118res+JOINTmod = the module-only transplant; JOINTres+R118mod = the reciprocal; JOINTres+JOINTmod = the JOINT asset), each once per manifest in a fresh process. Pilot: seeds 5076-5077 (256 pairs), excluded from confirmation, used only for d = (wins + losses) / 256 between JOINT and the module-only transplant (point estimate, floored at 0.05; no other pilot quantity is read for sizing and the prediction is not changed). Confirmation pairs n = ceil((1.960 + 0.842)^2 * d / 0.02^2), i.e. 80% power for +0.02 against zero with a two-sided 5% test; manifests = max(8, ceil(n / 128)), taken in order from seeds 5078-5093 then 5114-5137; cap 40 manifests (5,120 pairs); if the rule asks for more than 40 the study stops without confirmation and is reported inconclusive. The cap is 40, not 16, because D-086 already measured the discordance between JOINT and R-118 at 0.197 (606 of 3,072), for which +0.02 at 80% power needs about 3,870 pairs = 31 manifests: a 16-manifest cap would stop the study for certain unless the hybrids are far more concordant than their endpoints. Endpoint reproduction costs no rollout: before any cell runs, the composed JOINTres+JOINTmod coordinates must equal the frozen R-121 asset's 43 coordinates exactly (same hash) and the composed R118res+R118mod controller must have the R-106 residual coefficients exactly and the R-118 module's eleven physical parameters to 1e-9 (the R-118 module is stored in the original ranges and is re-expressed in the R-121 ranges). Holm family on confirmation: JOINT minus module-only transplant (primary), JOINT minus reciprocal, module-only transplant minus R-118, reciprocal minus R-118, JOINT minus R-118; the block interaction (JOINT - transplant - reciprocal + R-118) is reported with its paired interval, diagnostically. Ceiling (2 + 40) x 5 x 128 = 26,880 episodes."
+        },
+        "protocol": {
+          "seeds": [
+            5076,
+            5077,
+            5078,
+            5079,
+            5080,
+            5081,
+            5082,
+            5083,
+            5084,
+            5085,
+            5086,
+            5087,
+            5088,
+            5089,
+            5090,
+            5091,
+            5092,
+            5093,
+            5114,
+            5115,
+            5116,
+            5117,
+            5118,
+            5119,
+            5120,
+            5121,
+            5122,
+            5123,
+            5124,
+            5125,
+            5126,
+            5127,
+            5128,
+            5129,
+            5130,
+            5131,
+            5132,
+            5133,
+            5134,
+            5135,
+            5136,
+            5137
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_blockswap_pilot_s5076.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_pilot_s5077.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5078.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5079.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5080.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5081.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5082.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5083.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5084.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5085.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5086.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5087.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5088.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5089.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5090.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5091.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5092.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5093.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5114.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5115.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5116.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5117.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5118.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5119.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5120.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5121.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5122.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5123.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5124.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5125.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5126.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5127.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5128.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5129.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5130.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5131.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5132.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5133.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5134.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5135.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5136.yaml",
+            "config/manifests/pen_spin_stage3_blockswap_confirm_s5137.yaml"
+          ],
+          "episodes": 26880
+        },
+        "cost_estimate": {
+          "episodes": 26880,
+          "llm_calls": 0,
+          "wall_time_minutes": 100
+        }
+      },
+      "note": "Sized for +0.02 at 80% power from pilot discordance with a frozen formula; cap raised to 40 manifests because the known endpoint discordance (0.197) needs 31; rollout-free endpoint reproduction; five-contrast Holm family."
+    }
+  ]
+}

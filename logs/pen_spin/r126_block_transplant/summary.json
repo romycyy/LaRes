@@ -1,0 +1,2071 @@
+{
+ "study": "parameter_block_transplant",
+ "config_sha256": "cc1e205592376a79ab7fbddba27e281419d64546fca77877b024c552259e20ba",
+ "endpoints": {
+  "joint_sha256": "1527eb5643a59f9b77858f0dc5852280badd1f6ec012c0efa7c30019c794713c",
+  "joint_matches_asset": true,
+  "r118_module_max_abs_error": 0.0,
+  "reciprocal_module_max_abs_error": 0.0,
+  "r118_residual": "the frozen R-106 coefficients (no residual coordinates)",
+  "passes": true
+ },
+ "sizing": {
+  "discordance": 0.203125,
+  "discordance_used": 0.203125,
+  "pairs_required": 3987,
+  "manifests": 32,
+  "cap": 40,
+  "within_cap": true
+ },
+ "pilot": {
+  "policies": {
+   "reference": {
+    "successes": 98,
+    "drops": 9,
+    "cases": 256
+   },
+   "r118": {
+    "successes": 195,
+    "drops": 9,
+    "cases": 256
+   },
+   "transplant": {
+    "successes": 196,
+    "drops": 10,
+    "cases": 256
+   },
+   "reciprocal": {
+    "successes": 198,
+    "drops": 11,
+    "cases": 256
+   },
+   "joint": {
+    "successes": 204,
+    "drops": 12,
+    "cases": 256
+   }
+  },
+  "note": "read for sizing only; excluded from confirmation"
+ },
+ "confirmation_seeds": [
+  5078,
+  5079,
+  5080,
+  5081,
+  5082,
+  5083,
+  5084,
+  5085,
+  5086,
+  5087,
+  5088,
+  5089,
+  5090,
+  5091,
+  5092,
+  5093,
+  5114,
+  5115,
+  5116,
+  5117,
+  5118,
+  5119,
+  5120,
+  5121,
+  5122,
+  5123,
+  5124,
+  5125,
+  5126,
+  5127,
+  5128,
+  5129
+ ],
+ "paired_success_difference": 0.0068359375,
+ "paired_success_difference_ci95": [
+  -0.006359434796017589,
+  0.02003130979601759
+ ],
+ "policies": {
+  "reference": {
+   "successes": 1740,
+   "drops": 227,
+   "cases": 4096
+  },
+  "r118": {
+   "successes": 3120,
+   "drops": 210,
+   "cases": 4096
+  },
+  "transplant": {
+   "successes": 3215,
+   "drops": 219,
+   "cases": 4096
+  },
+  "reciprocal": {
+   "successes": 3130,
+   "drops": 214,
+   "cases": 4096
+  },
+  "joint": {
+   "successes": 3243,
+   "drops": 212,
+   "cases": 4096
+  }
+ },
+ "contrasts": {
+  "joint_minus_transplant": {
+   "pooled": {
+    "success": {
+     "n": 4096,
+     "mean": 0.0068359375,
+     "se": 0.006730466603293225,
+     "low": -0.006359434796017589,
+     "high": 0.02003130979601759,
+     "p_value": 0.30984624531445126
+    },
+    "success_win_loss_tie": {
+     "wins": 394,
+     "losses": 366,
+     "ties": 3336
+    },
+    "tail_hit_fraction": {
+     "n": 4096,
+     "mean": 0.0031285605791367935,
+     "se": 0.005538177011478242,
+     "low": -0.007729276152709434,
+     "high": 0.01398639731098302,
+     "p_value": 0.5721672760550464
+    },
+    "drops": {
+     "n": 4096,
+     "mean": -0.001708984375,
+     "se": 0.0025490742650315537,
+     "low": -0.00590278716389294,
+     "high": 0.0024848184138929396,
+     "p_value": 0.5026193937125656,
+     "one_sided_95_upper": 0.0024848184138929396,
+     "margin": 0.05,
+     "non_inferior": true,
+     "counts": [
+      212,
+      219
+     ]
+    },
+    "promotes": false,
+    "adopts": false,
+    "prediction": {
+     "threshold": 0.02,
+     "supported": false,
+     "refuted": false
+    }
+   },
+   "per_manifest": {
+    "s5078": {
+     "n": 128,
+     "selected": 102,
+     "parent": 95,
+     "difference": 0.0546875,
+     "drops": [
+      7,
+      7
+     ]
+    },
+    "s5079": {
+     "n": 128,
+     "selected": 99,
+     "parent": 101,
+     "difference": -0.015625,
+     "drops": [
+      5,
+      7
+     ]
+    },
+    "s5080": {
+     "n": 128,
+     "selected": 96,
+     "parent": 103,
+     "difference": -0.0546875,
+     "drops": [
+      10,
+      4
+     ]
+    },
+    "s5081": {
+     "n": 128,
+     "selected": 105,
+     "parent": 99,
+     "difference": 0.046875,
+     "drops": [
+      8,
+      11
+     ]
+    },
+    "s5082": {
+     "n": 128,
+     "selected": 104,
+     "parent": 101,
+     "difference": 0.0234375,
+     "drops": [
+      6,
+      5
+     ]
+    },
+    "s5083": {
+     "n": 128,
+     "selected": 101,
+     "parent": 100,
+     "difference": 0.0078125,
+     "drops": [
+      7,
+      8
+     ]
+    },
+    "s5084": {
+     "n": 128,
+     "selected": 99,
+     "parent": 97,
+     "difference": 0.015625,
+     "drops": [
+      10,
+      10
+     ]
+    },
+    "s5085": {
+     "n": 128,
+     "selected": 95,
+     "parent": 102,
+     "difference": -0.0546875,
+     "drops": [
+      11,
+      6
+     ]
+    },
+    "s5086": {
+     "n": 128,
+     "selected": 96,
+     "parent": 103,
+     "difference": -0.0546875,
+     "drops": [
+      9,
+      8
+     ]
+    },
+    "s5087": {
+     "n": 128,
+     "selected": 98,
+     "parent": 97,
+     "difference": 0.0078125,
+     "drops": [
+      5,
+      6
+     ]
+    },
+    "s5088": {
+     "n": 128,
+     "selected": 104,
+     "parent": 102,
+     "difference": 0.015625,
+     "drops": [
+      8,
+      9
+     ]
+    },
+    "s5089": {
+     "n": 128,
+     "selected": 99,
+     "parent": 98,
+     "difference": 0.0078125,
+     "drops": [
+      7,
+      8
+     ]
+    },
+    "s5090": {
+     "n": 128,
+     "selected": 96,
+     "parent": 97,
+     "difference": -0.0078125,
+     "drops": [
+      6,
+      8
+     ]
+    },
+    "s5091": {
+     "n": 128,
+     "selected": 92,
+     "parent": 96,
+     "difference": -0.03125,
+     "drops": [
+      6,
+      8
+     ]
+    },
+    "s5092": {
+     "n": 128,
+     "selected": 110,
+     "parent": 94,
+     "difference": 0.125,
+     "drops": [
+      7,
+      8
+     ]
+    },
+    "s5093": {
+     "n": 128,
+     "selected": 103,
+     "parent": 105,
+     "difference": -0.015625,
+     "drops": [
+      4,
+      6
+     ]
+    },
+    "s5114": {
+     "n": 128,
+     "selected": 97,
+     "parent": 104,
+     "difference": -0.0546875,
+     "drops": [
+      10,
+      9
+     ]
+    },
+    "s5115": {
+     "n": 128,
+     "selected": 110,
+     "parent": 101,
+     "difference": 0.0703125,
+     "drops": [
+      3,
+      6
+     ]
+    },
+    "s5116": {
+     "n": 128,
+     "selected": 105,
+     "parent": 104,
+     "difference": 0.0078125,
+     "drops": [
+      5,
+      7
+     ]
+    },
+    "s5117": {
+     "n": 128,
+     "selected": 98,
+     "parent": 87,
+     "difference": 0.0859375,
+     "drops": [
+      8,
+      10
+     ]
+    },
+    "s5118": {
+     "n": 128,
+     "selected": 99,
+     "parent": 101,
+     "difference": -0.015625,
+     "drops": [
+      5,
+      5
+     ]
+    },
+    "s5119": {
+     "n": 128,
+     "selected": 102,
+     "parent": 104,
+     "difference": -0.015625,
+     "drops": [
+      6,
+      7
+     ]
+    },
+    "s5120": {
+     "n": 128,
+     "selected": 105,
+     "parent": 99,
+     "difference": 0.046875,
+     "drops": [
+      2,
+      4
+     ]
+    },
+    "s5121": {
+     "n": 128,
+     "selected": 105,
+     "parent": 102,
+     "difference": 0.0234375,
+     "drops": [
+      4,
+      5
+     ]
+    },
+    "s5122": {
+     "n": 128,
+     "selected": 103,
+     "parent": 97,
+     "difference": 0.046875,
+     "drops": [
+      12,
+      11
+     ]
+    },
+    "s5123": {
+     "n": 128,
+     "selected": 96,
+     "parent": 105,
+     "difference": -0.0703125,
+     "drops": [
+      8,
+      5
+     ]
+    },
+    "s5124": {
+     "n": 128,
+     "selected": 103,
+     "parent": 104,
+     "difference": -0.0078125,
+     "drops": [
+      6,
+      5
+     ]
+    },
+    "s5125": {
+     "n": 128,
+     "selected": 102,
+     "parent": 97,
+     "difference": 0.0390625,
+     "drops": [
+      7,
+      6
+     ]
+    },
+    "s5126": {
+     "n": 128,
+     "selected": 106,
+     "parent": 110,
+     "difference": -0.03125,
+     "drops": [
+      5,
+      3
+     ]
+    },
+    "s5127": {
+     "n": 128,
+     "selected": 108,
+     "parent": 106,
+     "difference": 0.015625,
+     "drops": [
+      4,
+      5
+     ]
+    },
+    "s5128": {
+     "n": 128,
+     "selected": 101,
+     "parent": 101,
+     "difference": 0.0,
+     "drops": [
+      5,
+      4
+     ]
+    },
+    "s5129": {
+     "n": 128,
+     "selected": 104,
+     "parent": 103,
+     "difference": 0.0078125,
+     "drops": [
+      6,
+      8
+     ]
+    }
+   },
+   "manifest_clustered": {
+    "n": 32,
+    "mean": 0.0068359375,
+    "se": 0.007755192409530904,
+    "low": -0.008980881698629636,
+    "high": 0.022652756698629636,
+    "p_value": 0.3848493014720561
+   },
+   "intervals_agree_on_sign": true,
+   "pairs": 4096,
+   "successes": [
+    3243,
+    3215
+   ],
+   "holm": {
+    "p": 0.30984624531445126,
+    "p_holm": 0.6196924906289025,
+    "rejects": false
+   }
+  },
+  "joint_minus_reciprocal": {
+   "pooled": {
+    "success": {
+     "n": 4096,
+     "mean": 0.027587890625,
+     "se": 0.003905830780002871,
+     "low": 0.019930339625168186,
+     "high": 0.035245441624831814,
+     "p_value": 1.9024079090243048e-12
+    },
+    "success_win_loss_tie": {
+     "wins": 186,
+     "losses": 73,
+     "ties": 3837
+    },
+    "tail_hit_fraction": {
+     "n": 4096,
+     "mean": 0.03270670572916667,
+     "se": 0.0036519654562365833,
+     "low": 0.025546868730100585,
+     "high": 0.03986654272823275,
+     "p_value": 5.012918590764998e-19
+    },
+    "drops": {
+     "n": 4096,
+     "mean": -0.00048828125,
+     "se": 0.000976651924706016,
+     "low": -0.0020950942102175582,
+     "high": 0.001118531710217558,
+     "p_value": 0.6171341769756928,
+     "one_sided_95_upper": 0.001118531710217558,
+     "margin": 0.05,
+     "non_inferior": true,
+     "counts": [
+      212,
+      214
+     ]
+    },
+    "promotes": true,
+    "adopts": true,
+    "prediction": {
+     "threshold": 0.02,
+     "supported": true,
+     "refuted": false
+    }
+   },
+   "per_manifest": {
+    "s5078": {
+     "n": 128,
+     "selected": 102,
+     "parent": 99,
+     "difference": 0.0234375,
+     "drops": [
+      7,
+      9
+     ]
+    },
+    "s5079": {
+     "n": 128,
+     "selected": 99,
+     "parent": 94,
+     "difference": 0.0390625,
+     "drops": [
+      5,
+      5
+     ]
+    },
+    "s5080": {
+     "n": 128,
+     "selected": 96,
+     "parent": 90,
+     "difference": 0.046875,
+     "drops": [
+      10,
+      11
+     ]
+    },
+    "s5081": {
+     "n": 128,
+     "selected": 105,
+     "parent": 105,
+     "difference": 0.0,
+     "drops": [
+      8,
+      7
+     ]
+    },
+    "s5082": {
+     "n": 128,
+     "selected": 104,
+     "parent": 99,
+     "difference": 0.0390625,
+     "drops": [
+      6,
+      7
+     ]
+    },
+    "s5083": {
+     "n": 128,
+     "selected": 101,
+     "parent": 99,
+     "difference": 0.015625,
+     "drops": [
+      7,
+      6
+     ]
+    },
+    "s5084": {
+     "n": 128,
+     "selected": 99,
+     "parent": 95,
+     "difference": 0.03125,
+     "drops": [
+      10,
+      9
+     ]
+    },
+    "s5085": {
+     "n": 128,
+     "selected": 95,
+     "parent": 96,
+     "difference": -0.0078125,
+     "drops": [
+      11,
+      13
+     ]
+    },
+    "s5086": {
+     "n": 128,
+     "selected": 96,
+     "parent": 92,
+     "difference": 0.03125,
+     "drops": [
+      9,
+      9
+     ]
+    },
+    "s5087": {
+     "n": 128,
+     "selected": 98,
+     "parent": 93,
+     "difference": 0.0390625,
+     "drops": [
+      5,
+      5
+     ]
+    },
+    "s5088": {
+     "n": 128,
+     "selected": 104,
+     "parent": 101,
+     "difference": 0.0234375,
+     "drops": [
+      8,
+      8
+     ]
+    },
+    "s5089": {
+     "n": 128,
+     "selected": 99,
+     "parent": 93,
+     "difference": 0.046875,
+     "drops": [
+      7,
+      7
+     ]
+    },
+    "s5090": {
+     "n": 128,
+     "selected": 96,
+     "parent": 96,
+     "difference": 0.0,
+     "drops": [
+      6,
+      6
+     ]
+    },
+    "s5091": {
+     "n": 128,
+     "selected": 92,
+     "parent": 90,
+     "difference": 0.015625,
+     "drops": [
+      6,
+      6
+     ]
+    },
+    "s5092": {
+     "n": 128,
+     "selected": 110,
+     "parent": 103,
+     "difference": 0.0546875,
+     "drops": [
+      7,
+      7
+     ]
+    },
+    "s5093": {
+     "n": 128,
+     "selected": 103,
+     "parent": 100,
+     "difference": 0.0234375,
+     "drops": [
+      4,
+      5
+     ]
+    },
+    "s5114": {
+     "n": 128,
+     "selected": 97,
+     "parent": 94,
+     "difference": 0.0234375,
+     "drops": [
+      10,
+      9
+     ]
+    },
+    "s5115": {
+     "n": 128,
+     "selected": 110,
+     "parent": 106,
+     "difference": 0.03125,
+     "drops": [
+      3,
+      4
+     ]
+    },
+    "s5116": {
+     "n": 128,
+     "selected": 105,
+     "parent": 102,
+     "difference": 0.0234375,
+     "drops": [
+      5,
+      5
+     ]
+    },
+    "s5117": {
+     "n": 128,
+     "selected": 98,
+     "parent": 94,
+     "difference": 0.03125,
+     "drops": [
+      8,
+      8
+     ]
+    },
+    "s5118": {
+     "n": 128,
+     "selected": 99,
+     "parent": 95,
+     "difference": 0.03125,
+     "drops": [
+      5,
+      5
+     ]
+    },
+    "s5119": {
+     "n": 128,
+     "selected": 102,
+     "parent": 99,
+     "difference": 0.0234375,
+     "drops": [
+      6,
+      6
+     ]
+    },
+    "s5120": {
+     "n": 128,
+     "selected": 105,
+     "parent": 102,
+     "difference": 0.0234375,
+     "drops": [
+      2,
+      2
+     ]
+    },
+    "s5121": {
+     "n": 128,
+     "selected": 105,
+     "parent": 103,
+     "difference": 0.015625,
+     "drops": [
+      4,
+      4
+     ]
+    },
+    "s5122": {
+     "n": 128,
+     "selected": 103,
+     "parent": 102,
+     "difference": 0.0078125,
+     "drops": [
+      12,
+      11
+     ]
+    },
+    "s5123": {
+     "n": 128,
+     "selected": 96,
+     "parent": 93,
+     "difference": 0.0234375,
+     "drops": [
+      8,
+      8
+     ]
+    },
+    "s5124": {
+     "n": 128,
+     "selected": 103,
+     "parent": 100,
+     "difference": 0.0234375,
+     "drops": [
+      6,
+      6
+     ]
+    },
+    "s5125": {
+     "n": 128,
+     "selected": 102,
+     "parent": 94,
+     "difference": 0.0625,
+     "drops": [
+      7,
+      7
+     ]
+    },
+    "s5126": {
+     "n": 128,
+     "selected": 106,
+     "parent": 102,
+     "difference": 0.03125,
+     "drops": [
+      5,
+      5
+     ]
+    },
+    "s5127": {
+     "n": 128,
+     "selected": 108,
+     "parent": 103,
+     "difference": 0.0390625,
+     "drops": [
+      4,
+      4
+     ]
+    },
+    "s5128": {
+     "n": 128,
+     "selected": 101,
+     "parent": 98,
+     "difference": 0.0234375,
+     "drops": [
+      5,
+      4
+     ]
+    },
+    "s5129": {
+     "n": 128,
+     "selected": 104,
+     "parent": 98,
+     "difference": 0.046875,
+     "drops": [
+      6,
+      6
+     ]
+    }
+   },
+   "manifest_clustered": {
+    "n": 32,
+    "mean": 0.027587890625,
+    "se": 0.0027394191081813934,
+    "low": 0.02200080851854879,
+    "high": 0.03317497273145121,
+    "p_value": 2.707707992492109e-11
+   },
+   "intervals_agree_on_sign": true,
+   "pairs": 4096,
+   "successes": [
+    3243,
+    3130
+   ],
+   "holm": {
+    "p": 1.9024079090243048e-12,
+    "p_holm": 9.512039545121524e-12,
+    "rejects": true
+   }
+  },
+  "transplant_minus_r118": {
+   "pooled": {
+    "success": {
+     "n": 4096,
+     "mean": 0.023193359375,
+     "se": 0.003943156927921821,
+     "low": 0.015462628839900044,
+     "high": 0.030924089910099956,
+     "p_value": 4.378990598190431e-09
+    },
+    "success_win_loss_tie": {
+     "wins": 179,
+     "losses": 84,
+     "ties": 3833
+    },
+    "tail_hit_fraction": {
+     "n": 4096,
+     "mean": 0.02670084635416667,
+     "se": 0.003610672064162163,
+     "low": 0.01962196684496032,
+     "high": 0.033779725863373015,
+     "p_value": 1.7060431579320233e-13
+    },
+    "drops": {
+     "n": 4096,
+     "mean": 0.002197265625,
+     "se": 0.0010061547650226704,
+     "low": 0.0005419138302347097,
+     "high": 0.0038526174197652903,
+     "p_value": 0.029031686046394032,
+     "one_sided_95_upper": 0.0038526174197652903,
+     "margin": 0.05,
+     "non_inferior": true,
+     "counts": [
+      219,
+      210
+     ]
+    },
+    "promotes": true,
+    "adopts": true,
+    "prediction": {
+     "threshold": 0.02,
+     "supported": true,
+     "refuted": false
+    }
+   },
+   "per_manifest": {
+    "s5078": {
+     "n": 128,
+     "selected": 95,
+     "parent": 95,
+     "difference": 0.0,
+     "drops": [
+      7,
+      6
+     ]
+    },
+    "s5079": {
+     "n": 128,
+     "selected": 101,
+     "parent": 97,
+     "difference": 0.03125,
+     "drops": [
+      7,
+      5
+     ]
+    },
+    "s5080": {
+     "n": 128,
+     "selected": 103,
+     "parent": 96,
+     "difference": 0.0546875,
+     "drops": [
+      4,
+      4
+     ]
+    },
+    "s5081": {
+     "n": 128,
+     "selected": 99,
+     "parent": 97,
+     "difference": 0.015625,
+     "drops": [
+      11,
+      12
+     ]
+    },
+    "s5082": {
+     "n": 128,
+     "selected": 101,
+     "parent": 98,
+     "difference": 0.0234375,
+     "drops": [
+      5,
+      4
+     ]
+    },
+    "s5083": {
+     "n": 128,
+     "selected": 100,
+     "parent": 95,
+     "difference": 0.0390625,
+     "drops": [
+      8,
+      8
+     ]
+    },
+    "s5084": {
+     "n": 128,
+     "selected": 97,
+     "parent": 96,
+     "difference": 0.0078125,
+     "drops": [
+      10,
+      10
+     ]
+    },
+    "s5085": {
+     "n": 128,
+     "selected": 102,
+     "parent": 96,
+     "difference": 0.046875,
+     "drops": [
+      6,
+      6
+     ]
+    },
+    "s5086": {
+     "n": 128,
+     "selected": 103,
+     "parent": 99,
+     "difference": 0.03125,
+     "drops": [
+      8,
+      8
+     ]
+    },
+    "s5087": {
+     "n": 128,
+     "selected": 97,
+     "parent": 95,
+     "difference": 0.015625,
+     "drops": [
+      6,
+      6
+     ]
+    },
+    "s5088": {
+     "n": 128,
+     "selected": 102,
+     "parent": 100,
+     "difference": 0.015625,
+     "drops": [
+      9,
+      9
+     ]
+    },
+    "s5089": {
+     "n": 128,
+     "selected": 98,
+     "parent": 94,
+     "difference": 0.03125,
+     "drops": [
+      8,
+      8
+     ]
+    },
+    "s5090": {
+     "n": 128,
+     "selected": 97,
+     "parent": 95,
+     "difference": 0.015625,
+     "drops": [
+      8,
+      7
+     ]
+    },
+    "s5091": {
+     "n": 128,
+     "selected": 96,
+     "parent": 93,
+     "difference": 0.0234375,
+     "drops": [
+      8,
+      8
+     ]
+    },
+    "s5092": {
+     "n": 128,
+     "selected": 94,
+     "parent": 91,
+     "difference": 0.0234375,
+     "drops": [
+      8,
+      7
+     ]
+    },
+    "s5093": {
+     "n": 128,
+     "selected": 105,
+     "parent": 102,
+     "difference": 0.0234375,
+     "drops": [
+      6,
+      6
+     ]
+    },
+    "s5114": {
+     "n": 128,
+     "selected": 104,
+     "parent": 102,
+     "difference": 0.015625,
+     "drops": [
+      9,
+      10
+     ]
+    },
+    "s5115": {
+     "n": 128,
+     "selected": 101,
+     "parent": 102,
+     "difference": -0.0078125,
+     "drops": [
+      6,
+      6
+     ]
+    },
+    "s5116": {
+     "n": 128,
+     "selected": 104,
+     "parent": 104,
+     "difference": 0.0,
+     "drops": [
+      7,
+      7
+     ]
+    },
+    "s5117": {
+     "n": 128,
+     "selected": 87,
+     "parent": 81,
+     "difference": 0.046875,
+     "drops": [
+      10,
+      10
+     ]
+    },
+    "s5118": {
+     "n": 128,
+     "selected": 101,
+     "parent": 95,
+     "difference": 0.046875,
+     "drops": [
+      5,
+      4
+     ]
+    },
+    "s5119": {
+     "n": 128,
+     "selected": 104,
+     "parent": 103,
+     "difference": 0.0078125,
+     "drops": [
+      7,
+      6
+     ]
+    },
+    "s5120": {
+     "n": 128,
+     "selected": 99,
+     "parent": 94,
+     "difference": 0.0390625,
+     "drops": [
+      4,
+      4
+     ]
+    },
+    "s5121": {
+     "n": 128,
+     "selected": 102,
+     "parent": 99,
+     "difference": 0.0234375,
+     "drops": [
+      5,
+      5
+     ]
+    },
+    "s5122": {
+     "n": 128,
+     "selected": 97,
+     "parent": 97,
+     "difference": 0.0,
+     "drops": [
+      11,
+      9
+     ]
+    },
+    "s5123": {
+     "n": 128,
+     "selected": 105,
+     "parent": 102,
+     "difference": 0.0234375,
+     "drops": [
+      5,
+      5
+     ]
+    },
+    "s5124": {
+     "n": 128,
+     "selected": 104,
+     "parent": 100,
+     "difference": 0.03125,
+     "drops": [
+      5,
+      5
+     ]
+    },
+    "s5125": {
+     "n": 128,
+     "selected": 97,
+     "parent": 98,
+     "difference": -0.0078125,
+     "drops": [
+      6,
+      7
+     ]
+    },
+    "s5126": {
+     "n": 128,
+     "selected": 110,
+     "parent": 106,
+     "difference": 0.03125,
+     "drops": [
+      3,
+      3
+     ]
+    },
+    "s5127": {
+     "n": 128,
+     "selected": 106,
+     "parent": 101,
+     "difference": 0.0390625,
+     "drops": [
+      5,
+      5
+     ]
+    },
+    "s5128": {
+     "n": 128,
+     "selected": 101,
+     "parent": 98,
+     "difference": 0.0234375,
+     "drops": [
+      4,
+      3
+     ]
+    },
+    "s5129": {
+     "n": 128,
+     "selected": 103,
+     "parent": 99,
+     "difference": 0.03125,
+     "drops": [
+      8,
+      7
+     ]
+    }
+   },
+   "manifest_clustered": {
+    "n": 32,
+    "mean": 0.023193359375,
+    "se": 0.002860282884268883,
+    "low": 0.017359773972036113,
+    "high": 0.029026944777963887,
+    "p_value": 3.706771671042789e-09
+   },
+   "intervals_agree_on_sign": true,
+   "pairs": 4096,
+   "successes": [
+    3215,
+    3120
+   ],
+   "holm": {
+    "p": 4.378990598190431e-09,
+    "p_holm": 1.7515962392761724e-08,
+    "rejects": true
+   }
+  },
+  "reciprocal_minus_r118": {
+   "pooled": {
+    "success": {
+     "n": 4096,
+     "mean": 0.00244140625,
+     "se": 0.007118628004095258,
+     "low": -0.011514973342602399,
+     "high": 0.0163977858426024,
+     "p_value": 0.7316459883873903
+    },
+    "success_win_loss_tie": {
+     "wins": 430,
+     "losses": 420,
+     "ties": 3246
+    },
+    "tail_hit_fraction": {
+     "n": 4096,
+     "mean": -0.0028772987958632056,
+     "se": 0.006168862630102014,
+     "low": -0.01497162209394732,
+     "high": 0.00921702450222091,
+     "p_value": 0.6409376338358592
+    },
+    "drops": {
+     "n": 4096,
+     "mean": 0.0009765625,
+     "se": 0.002560835633023149,
+     "low": -0.0032365903951495486,
+     "high": 0.005189715395149549,
+     "p_value": 0.7029668666445246,
+     "one_sided_95_upper": 0.005189715395149549,
+     "margin": 0.05,
+     "non_inferior": true,
+     "counts": [
+      214,
+      210
+     ]
+    },
+    "promotes": false,
+    "adopts": false,
+    "prediction": {
+     "threshold": 0.02,
+     "supported": false,
+     "refuted": true
+    }
+   },
+   "per_manifest": {
+    "s5078": {
+     "n": 128,
+     "selected": 99,
+     "parent": 95,
+     "difference": 0.03125,
+     "drops": [
+      9,
+      6
+     ]
+    },
+    "s5079": {
+     "n": 128,
+     "selected": 94,
+     "parent": 97,
+     "difference": -0.0234375,
+     "drops": [
+      5,
+      5
+     ]
+    },
+    "s5080": {
+     "n": 128,
+     "selected": 90,
+     "parent": 96,
+     "difference": -0.046875,
+     "drops": [
+      11,
+      4
+     ]
+    },
+    "s5081": {
+     "n": 128,
+     "selected": 105,
+     "parent": 97,
+     "difference": 0.0625,
+     "drops": [
+      7,
+      12
+     ]
+    },
+    "s5082": {
+     "n": 128,
+     "selected": 99,
+     "parent": 98,
+     "difference": 0.0078125,
+     "drops": [
+      7,
+      4
+     ]
+    },
+    "s5083": {
+     "n": 128,
+     "selected": 99,
+     "parent": 95,
+     "difference": 0.03125,
+     "drops": [
+      6,
+      8
+     ]
+    },
+    "s5084": {
+     "n": 128,
+     "selected": 95,
+     "parent": 96,
+     "difference": -0.0078125,
+     "drops": [
+      9,
+      10
+     ]
+    },
+    "s5085": {
+     "n": 128,
+     "selected": 96,
+     "parent": 96,
+     "difference": 0.0,
+     "drops": [
+      13,
+      6
+     ]
+    },
+    "s5086": {
+     "n": 128,
+     "selected": 92,
+     "parent": 99,
+     "difference": -0.0546875,
+     "drops": [
+      9,
+      8
+     ]
+    },
+    "s5087": {
+     "n": 128,
+     "selected": 93,
+     "parent": 95,
+     "difference": -0.015625,
+     "drops": [
+      5,
+      6
+     ]
+    },
+    "s5088": {
+     "n": 128,
+     "selected": 101,
+     "parent": 100,
+     "difference": 0.0078125,
+     "drops": [
+      8,
+      9
+     ]
+    },
+    "s5089": {
+     "n": 128,
+     "selected": 93,
+     "parent": 94,
+     "difference": -0.0078125,
+     "drops": [
+      7,
+      8
+     ]
+    },
+    "s5090": {
+     "n": 128,
+     "selected": 96,
+     "parent": 95,
+     "difference": 0.0078125,
+     "drops": [
+      6,
+      7
+     ]
+    },
+    "s5091": {
+     "n": 128,
+     "selected": 90,
+     "parent": 93,
+     "difference": -0.0234375,
+     "drops": [
+      6,
+      8
+     ]
+    },
+    "s5092": {
+     "n": 128,
+     "selected": 103,
+     "parent": 91,
+     "difference": 0.09375,
+     "drops": [
+      7,
+      7
+     ]
+    },
+    "s5093": {
+     "n": 128,
+     "selected": 100,
+     "parent": 102,
+     "difference": -0.015625,
+     "drops": [
+      5,
+      6
+     ]
+    },
+    "s5114": {
+     "n": 128,
+     "selected": 94,
+     "parent": 102,
+     "difference": -0.0625,
+     "drops": [
+      9,
+      10
+     ]
+    },
+    "s5115": {
+     "n": 128,
+     "selected": 106,
+     "parent": 102,
+     "difference": 0.03125,
+     "drops": [
+      4,
+      6
+     ]
+    },
+    "s5116": {
+     "n": 128,
+     "selected": 102,
+     "parent": 104,
+     "difference": -0.015625,
+     "drops": [
+      5,
+      7
+     ]
+    },
+    "s5117": {
+     "n": 128,
+     "selected": 94,
+     "parent": 81,
+     "difference": 0.1015625,
+     "drops": [
+      8,
+      10
+     ]
+    },
+    "s5118": {
+     "n": 128,
+     "selected": 95,
+     "parent": 95,
+     "difference": 0.0,
+     "drops": [
+      5,
+      4
+     ]
+    },
+    "s5119": {
+     "n": 128,
+     "selected": 99,
+     "parent": 103,
+     "difference": -0.03125,
+     "drops": [
+      6,
+      6
+     ]
+    },
+    "s5120": {
+     "n": 128,
+     "selected": 102,
+     "parent": 94,
+     "difference": 0.0625,
+     "drops": [
+      2,
+      4
+     ]
+    },
+    "s5121": {
+     "n": 128,
+     "selected": 103,
+     "parent": 99,
+     "difference": 0.03125,
+     "drops": [
+      4,
+      5
+     ]
+    },
+    "s5122": {
+     "n": 128,
+     "selected": 102,
+     "parent": 97,
+     "difference": 0.0390625,
+     "drops": [
+      11,
+      9
+     ]
+    },
+    "s5123": {
+     "n": 128,
+     "selected": 93,
+     "parent": 102,
+     "difference": -0.0703125,
+     "drops": [
+      8,
+      5
+     ]
+    },
+    "s5124": {
+     "n": 128,
+     "selected": 100,
+     "parent": 100,
+     "difference": 0.0,
+     "drops": [
+      6,
+      5
+     ]
+    },
+    "s5125": {
+     "n": 128,
+     "selected": 94,
+     "parent": 98,
+     "difference": -0.03125,
+     "drops": [
+      7,
+      7
+     ]
+    },
+    "s5126": {
+     "n": 128,
+     "selected": 102,
+     "parent": 106,
+     "difference": -0.03125,
+     "drops": [
+      5,
+      3
+     ]
+    },
+    "s5127": {
+     "n": 128,
+     "selected": 103,
+     "parent": 101,
+     "difference": 0.015625,
+     "drops": [
+      4,
+      5
+     ]
+    },
+    "s5128": {
+     "n": 128,
+     "selected": 98,
+     "parent": 98,
+     "difference": 0.0,
+     "drops": [
+      4,
+      3
+     ]
+    },
+    "s5129": {
+     "n": 128,
+     "selected": 98,
+     "parent": 99,
+     "difference": -0.0078125,
+     "drops": [
+      6,
+      7
+     ]
+    }
+   },
+   "manifest_clustered": {
+    "n": 32,
+    "mean": 0.00244140625,
+    "se": 0.007209919636587298,
+    "low": -0.012263321796257295,
+    "high": 0.017146134296257297,
+    "p_value": 0.737180665222963
+   },
+   "intervals_agree_on_sign": true,
+   "pairs": 4096,
+   "successes": [
+    3130,
+    3120
+   ],
+   "holm": {
+    "p": 0.7316459883873903,
+    "p_holm": 0.7316459883873903,
+    "rejects": false
+   }
+  },
+  "joint_minus_r118": {
+   "pooled": {
+    "success": {
+     "n": 4096,
+     "mean": 0.030029296875,
+     "se": 0.006937648139710291,
+     "low": 0.0164277361722906,
+     "high": 0.0436308575777094,
+     "p_value": 1.537457019291084e-05
+    },
+    "success_win_loss_tie": {
+     "wins": 467,
+     "losses": 344,
+     "ties": 3285
+    },
+    "tail_hit_fraction": {
+     "n": 4096,
+     "mean": 0.029829406933303465,
+     "se": 0.005955592311207409,
+     "low": 0.018153209364589692,
+     "high": 0.041505604502017235,
+     "p_value": 5.712624475563697e-07
+    },
+    "drops": {
+     "n": 4096,
+     "mean": 0.00048828125,
+     "se": 0.0025374820993454097,
+     "low": -0.003686449808637463,
+     "high": 0.004663012308637463,
+     "p_value": 0.8474169215538563,
+     "one_sided_95_upper": 0.004663012308637463,
+     "margin": 0.05,
+     "non_inferior": true,
+     "counts": [
+      212,
+      210
+     ]
+    },
+    "promotes": true,
+    "adopts": true,
+    "prediction": {
+     "threshold": 0.02,
+     "supported": true,
+     "refuted": false
+    }
+   },
+   "per_manifest": {
+    "s5078": {
+     "n": 128,
+     "selected": 102,
+     "parent": 95,
+     "difference": 0.0546875,
+     "drops": [
+      7,
+      6
+     ]
+    },
+    "s5079": {
+     "n": 128,
+     "selected": 99,
+     "parent": 97,
+     "difference": 0.015625,
+     "drops": [
+      5,
+      5
+     ]
+    },
+    "s5080": {
+     "n": 128,
+     "selected": 96,
+     "parent": 96,
+     "difference": 0.0,
+     "drops": [
+      10,
+      4
+     ]
+    },
+    "s5081": {
+     "n": 128,
+     "selected": 105,
+     "parent": 97,
+     "difference": 0.0625,
+     "drops": [
+      8,
+      12
+     ]
+    },
+    "s5082": {
+     "n": 128,
+     "selected": 104,
+     "parent": 98,
+     "difference": 0.046875,
+     "drops": [
+      6,
+      4
+     ]
+    },
+    "s5083": {
+     "n": 128,
+     "selected": 101,
+     "parent": 95,
+     "difference": 0.046875,
+     "drops": [
+      7,
+      8
+     ]
+    },
+    "s5084": {
+     "n": 128,
+     "selected": 99,
+     "parent": 96,
+     "difference": 0.0234375,
+     "drops": [
+      10,
+      10
+     ]
+    },
+    "s5085": {
+     "n": 128,
+     "selected": 95,
+     "parent": 96,
+     "difference": -0.0078125,
+     "drops": [
+      11,
+      6
+     ]
+    },
+    "s5086": {
+     "n": 128,
+     "selected": 96,
+     "parent": 99,
+     "difference": -0.0234375,
+     "drops": [
+      9,
+      8
+     ]
+    },
+    "s5087": {
+     "n": 128,
+     "selected": 98,
+     "parent": 95,
+     "difference": 0.0234375,
+     "drops": [
+      5,
+      6
+     ]
+    },
+    "s5088": {
+     "n": 128,
+     "selected": 104,
+     "parent": 100,
+     "difference": 0.03125,
+     "drops": [
+      8,
+      9
+     ]
+    },
+    "s5089": {
+     "n": 128,
+     "selected": 99,
+     "parent": 94,
+     "difference": 0.0390625,
+     "drops": [
+      7,
+      8
+     ]
+    },
+    "s5090": {
+     "n": 128,
+     "selected": 96,
+     "parent": 95,
+     "difference": 0.0078125,
+     "drops": [
+      6,
+      7
+     ]
+    },
+    "s5091": {
+     "n": 128,
+     "selected": 92,
+     "parent": 93,
+     "difference": -0.0078125,
+     "drops": [
+      6,
+      8
+     ]
+    },
+    "s5092": {
+     "n": 128,
+     "selected": 110,
+     "parent": 91,
+     "difference": 0.1484375,
+     "drops": [
+      7,
+      7
+     ]
+    },
+    "s5093": {
+     "n": 128,
+     "selected": 103,
+     "parent": 102,
+     "difference": 0.0078125,
+     "drops": [
+      4,
+      6
+     ]
+    },
+    "s5114": {
+     "n": 128,
+     "selected": 97,
+     "parent": 102,
+     "difference": -0.0390625,
+     "drops": [
+      10,
+      10
+     ]
+    },
+    "s5115": {
+     "n": 128,
+     "selected": 110,
+     "parent": 102,
+     "difference": 0.0625,
+     "drops": [
+      3,
+      6
+     ]
+    },
+    "s5116": {
+     "n": 128,
+     "selected": 105,
+     "parent": 104,
+     "difference": 0.0078125,
+     "drops": [
+      5,
+      7
+     ]
+    },
+    "s5117": {
+     "n": 128,
+     "selected": 98,
+     "parent": 81,
+     "difference": 0.1328125,
+     "drops": [
+      8,
+      10
+     ]
+    },
+    "s5118": {
+     "n": 128,
+     "selected": 99,
+     "parent": 95,
+     "difference": 0.03125,
+     "drops": [
+      5,
+      4
+     ]
+    },
+    "s5119": {
+     "n": 128,
+     "selected": 102,
+     "parent": 103,
+     "difference": -0.0078125,
+     "drops": [
+      6,
+      6
+     ]
+    },
+    "s5120": {
+     "n": 128,
+     "selected": 105,
+     "parent": 94,
+     "difference": 0.0859375,
+     "drops": [
+      2,
+      4
+     ]
+    },
+    "s5121": {
+     "n": 128,
+     "selected": 105,
+     "parent": 99,
+     "difference": 0.046875,
+     "drops": [
+      4,
+      5
+     ]
+    },
+    "s5122": {
+     "n": 128,
+     "selected": 103,
+     "parent": 97,
+     "difference": 0.046875,
+     "drops": [
+      12,
+      9
+     ]
+    },
+    "s5123": {
+     "n": 128,
+     "selected": 96,
+     "parent": 102,
+     "difference": -0.046875,
+     "drops": [
+      8,
+      5
+     ]
+    },
+    "s5124": {
+     "n": 128,
+     "selected": 103,
+     "parent": 100,
+     "difference": 0.0234375,
+     "drops": [
+      6,
+      5
+     ]
+    },
+    "s5125": {
+     "n": 128,
+     "selected": 102,
+     "parent": 98,
+     "difference": 0.03125,
+     "drops": [
+      7,
+      7
+     ]
+    },
+    "s5126": {
+     "n": 128,
+     "selected": 106,
+     "parent": 106,
+     "difference": 0.0,
+     "drops": [
+      5,
+      3
+     ]
+    },
+    "s5127": {
+     "n": 128,
+     "selected": 108,
+     "parent": 101,
+     "difference": 0.0546875,
+     "drops": [
+      4,
+      5
+     ]
+    },
+    "s5128": {
+     "n": 128,
+     "selected": 101,
+     "parent": 98,
+     "difference": 0.0234375,
+     "drops": [
+      5,
+      3
+     ]
+    },
+    "s5129": {
+     "n": 128,
+     "selected": 104,
+     "parent": 99,
+     "difference": 0.0390625,
+     "drops": [
+      6,
+      7
+     ]
+    }
+   },
+   "manifest_clustered": {
+    "n": 32,
+    "mean": 0.030029296875,
+    "se": 0.0073675371791131535,
+    "low": 0.015003105731373265,
+    "high": 0.04505548801862674,
+    "p_value": 0.000295695220588809
+   },
+   "intervals_agree_on_sign": true,
+   "pairs": 4096,
+   "successes": [
+    3243,
+    3120
+   ],
+   "holm": {
+    "p": 1.537457019291084e-05,
+    "p_holm": 4.6123710578732525e-05,
+    "rejects": true
+   }
+  }
+ },
+ "interaction": {
+  "mean": 0.00439453125,
+  "low": -0.005691547221020374,
+  "high": 0.014480609721020374,
+  "n": 4096
+ },
+ "accounting": {
+  "pilot_episodes": 1280,
+  "confirmation_episodes": 20480,
+  "llm_calls": 0,
+  "training": "none"
+ },
+ "limitation": "frozen counterfactual combinations of two trained endpoints; one confirmation; power is nominal (pilot-estimated discordance, Holm adjustment)"
+}

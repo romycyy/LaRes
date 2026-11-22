@@ -1,0 +1,122 @@
+{
+  "id": "R-127",
+  "title": "Matched-budget staged versus simultaneous residual–recovery fitting",
+  "hypothesis": "Learning a safe re-capture before releasing residual coordinates prevents incompatible grasp-and-roll adaptations, giving staged fitting higher success than simultaneous fitting at equal rollout budget.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "simultaneous 43-coordinate ARS from the identical inherited initialization",
+    "rationale": "Run only after the first protocol is decided and its primary interval establishes a positive contribution from JOINT's residual adaptation; otherwise defer this expenditure and apply the exhaustion rule. Both arms start from frozen R-106's 32 residual coefficients plus the identical archived initial R-116 re-capture script, using identical widened R-121 bounds and physically matched perturbations. STAGED optimizes only the 11 module parameters for 12 updates, then all 43 coordinates for 12; SIMULTANEOUS optimizes all 43 for 24 updates. Share placements and full-coordinate direction streams, masking inactive coordinates without renormalization. Freeze optimizer settings, terminal-mean selection and symbolic complexity. This revises R-107/P4: no finger-chain or native-controller replacement is attempted, and no claim is made that P4's original failure gate opened. It isolates the construction schedule for demonstrated useful modules; D-084 changed trainable coordinates, while D-085 started from an already qualified JOINT endpoint, so neither settles this fresh-start schedule contrast. Reuse the existing recovery_joint optimizer and evaluator; implement only the parameter-release mask and study registration. Evaluate both finalists, R-106 and D-072 on two pilot manifests and prospectively sized confirmation capped at sixteen manifests. Power for a 0.05 effect, controlling the primary and finalist qualification contrasts together; stop if the cap is inadequate. Apply the unchanged paired-success and drop rules. The episode ceiling includes 48 updates at approximately 8,200 starts, 2,048 smoke starts and 9,216 evaluation episodes. Seed allocations require live-ledger verification before implementation."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study staged_residual_recovery",
+    "seeds": [
+      5094,
+      5095,
+      5096,
+      5097,
+      5098,
+      5099,
+      5100,
+      5101,
+      5102,
+      5103,
+      5104,
+      5105,
+      5106,
+      5107,
+      5108,
+      5109,
+      5110,
+      5111,
+      5112,
+      5113
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_schedule_train_s5094.yaml",
+      "config/manifests/pen_spin_stage3_schedule_pilot_s5096.yaml",
+      "config/manifests/pen_spin_stage3_schedule_pilot_s5097.yaml",
+      "config/manifests/pen_spin_stage3_schedule_confirm_s5098.yaml",
+      "config/manifests/pen_spin_stage3_schedule_confirm_s5099.yaml",
+      "config/manifests/pen_spin_stage3_schedule_confirm_s5100.yaml",
+      "config/manifests/pen_spin_stage3_schedule_confirm_s5101.yaml",
+      "config/manifests/pen_spin_stage3_schedule_confirm_s5102.yaml",
+      "config/manifests/pen_spin_stage3_schedule_confirm_s5103.yaml",
+      "config/manifests/pen_spin_stage3_schedule_confirm_s5104.yaml",
+      "config/manifests/pen_spin_stage3_schedule_confirm_s5105.yaml",
+      "config/manifests/pen_spin_stage3_schedule_confirm_s5106.yaml",
+      "config/manifests/pen_spin_stage3_schedule_confirm_s5107.yaml",
+      "config/manifests/pen_spin_stage3_schedule_confirm_s5108.yaml",
+      "config/manifests/pen_spin_stage3_schedule_confirm_s5109.yaml",
+      "config/manifests/pen_spin_stage3_schedule_confirm_s5110.yaml",
+      "config/manifests/pen_spin_stage3_schedule_confirm_s5111.yaml",
+      "config/manifests/pen_spin_stage3_schedule_confirm_s5112.yaml",
+      "config/manifests/pen_spin_stage3_schedule_confirm_s5113.yaml"
+    ],
+    "episodes": 404864,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py",
+      "config/shadowhand_spin_stages.yaml"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "A confirmation upper confidence bound below +0.05 for STAGED minus SIMULTANEOUS refutes the predicted magnitude; an interval containing zero provides no evidence for a schedule advantage. A positive effect below 0.05 must be reported separately from support for the registered threshold.",
+  "cost_estimate": {
+    "episodes": 404864,
+    "llm_calls": 0,
+    "wall_time_minutes": 70
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "e1208cbaef3861af8857fdaaf0393dbd2a3d56464dd111b3ab7946134dc88314",
+  "proposal_call_id": "call_00286",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-22T15:20:29",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-22T15:18:45",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "The matched initialization and parameter-release mask isolate construction schedule, a contrast not settled by D-084's coordinate comparison or D-085's continuation from JOINT. However, its 404,864 simulator episodes and zero controller-generation LLM calls are not the next spend before R-126 establishes the specified positive residual contribution. Retain the paired_success_difference prediction of an increase of at least +0.05 against simultaneous 43-coordinate ARS; a confirmation upper bound below +0.05 falsifies that magnitude, and an interval containing zero establishes no schedule advantage. Reconsider after R-126 under the existing exhaustion rule rather than authorizing training conditionally now.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00287",
+          "briefing_sha256": "1e6a2b6a58ec0b88508f0ce75e63f602f9c64c3429bb04d619323d969508fbaa",
+          "at": "2026-11-22T15:19:46"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree: it is conditional on R-126 showing a positive contribution of JOINT's residual adaptation, costs about 400,000 starts, and is a fresh-start schedule contrast that should wait for that evidence.",
+          "changes_applied": [],
+          "at": "2026-11-22T15:20:29"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

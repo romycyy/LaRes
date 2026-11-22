@@ -733,6 +733,16 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   placements per signed candidate in one batch (not the objective), a learned single-decision re-capture module, its
   continued training, and co-adapting the residual. What did not: PPO/ARS/draws at 460,800 transitions, grammar or LLM
   structural terms, a slow-memory gate, a second attempt, start-up offsets.
+- **R-126 result (D-087, inconclusive; block transplant, 2026-11-22).** `block_transplant.py` (`--study
+  parameter_block_transplant`; no training): the four combinations of the R-118 / R-121 JOINT residual and module blocks
+  on 32 fresh manifests (4,096 pairs; size set by a frozen formula from a two-manifest pilot). JOINT minus the
+  module-only transplant +0.007 [-0.006, +0.020]. **JOINT's gain over R-118 lives in the re-capture module block
+  (+0.023 [+0.016, +0.031]), not in its retrained residual (+0.002 [-0.012, +0.016]).** Successes of 4,096: reference
+  0.425, R-118 0.762, transplant 0.785, reciprocal 0.764, JOINT 0.792. The 11-parameter transplant on the unchanged
+  R-106 residual is frozen as `config/pen_spin/r126_transplant_finalist/` (derived, not installed). Swapping the
+  residual block changes which cases succeed (discordance about 0.2) without changing how many. **Bite:** an untracked
+  file renamed locally after a sync leaves its old copy on the box (the sync gap), and a manifest glob there then sees
+  duplicates; and never chain `gpu test ... | tail && research.py start` (the pipe hides the test's exit code).
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

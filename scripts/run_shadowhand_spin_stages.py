@@ -73,6 +73,7 @@ PEN_SPIN_STUDIES = {
     "recovery_joint_matched": "recovery_joint",                    # R-121 (joint residual + module adaptation vs module-only, matched)
     "joint_early_phase": "recovery_early",                         # R-122 (start-up offsets for the first 60 steps vs matched continuation)
     "stage3_consolidated_ladder": "ladder_confirmation",           # R-124 (six frozen controllers on 24 fresh manifests)
+    "parameter_block_transplant": "block_transplant",              # R-126 (residual / module block swaps between R-118 and JOINT)
 }
 
 

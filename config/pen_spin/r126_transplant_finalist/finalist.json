@@ -1,0 +1,56 @@
+{
+ "x": [
+  0.6353500850379407,
+  0.7423473760200391,
+  0.6734570922308314,
+  0.043343259052498466,
+  0.39436701939430296,
+  0.9891946300563769,
+  0.6592989900520426,
+  0.7008168020795885,
+  0.0,
+  0.34451502809704027,
+  0.45473634330265067
+ ],
+ "params": {
+  "threshold": 4.176750425189703,
+  "decision_step": 149.08168512240468,
+  "ramp_in": 28.570998228079098,
+  "ramp_out": 6.337430947042382,
+  "depth_WR": 0.39436701939430296,
+  "depth_FF": 0.9891946300563769,
+  "depth_MF": 0.6592989900520426,
+  "depth_RF": 0.7008168020795885,
+  "depth_LF": 0.0,
+  "depth_TH": 0.34451502809704027,
+  "stroke_multiplier": 1.4547363433026508
+ },
+ "sha256": "9e17b365c5176cc0a9e4adee77cf4d87d055d8982672d60a8478c446b2fe5415",
+ "module_bounds": {
+  "threshold": [
+   1.0,
+   6.0
+  ],
+  "ramp_out": [
+   3.0,
+   80.0
+  ]
+ },
+ "root_finalist": "config/pen_spin/r106_success_ars_finalist/finalist.json",
+ "root_theta_sha256": "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef",
+ "source": "R-126 / D-087: the re-capture module of config/pen_spin/r121_joint_finalist (its first 11 coordinates) on the unchanged R-106 residual; derived by transplant, not trained",
+ "confirmation": {
+  "successes_of_4096": 3215,
+  "joint_minus_this": [
+   0.0068,
+   -0.0064,
+   0.02
+  ],
+  "this_minus_r118": [
+   0.0232,
+   0.0155,
+   0.0309
+  ]
+ },
+ "installed_as_incumbent": false
+}

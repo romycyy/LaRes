@@ -1,0 +1,3 @@
+[
+  "{\n  \"ideas\": [],\n  \"status\": \"direction_questions_exhausted\",\n  \"reason\": \"P1 established useful reward-trained symbolic residuals; P2 found no structural contribution; P3's memory gate was null. P4's entry condition is unmet. JOINT continuation and start-up offsets produced no confirmed improvement, and R-125 failed its registered precondition: 1.04% versus the required 7.5%. No further in-direction experiment is justified by the current evidence.\",\n  \"next_step\": \"Stop experimental spending and request a new research direction. Adoption of either frozen finalist remains the user's decision; leave the saved incumbent unchanged and the final-test split locked.\"\n}"
+]
