@@ -7,3 +7,7 @@ logs/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Tier 3 scratch of tests/test_training_pipeline.py (left behind when a run is interrupted)
+_test_llm_evo/
+_test_llm_gen/
