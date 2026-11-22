@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-22T16:27:20 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-22T16:29:12 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -16,6 +16,8 @@ Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic re
 | deferred | 30 |
 | decided | 87 |
 | rejected | 10 |
+
+**Loop guard:** the last 2 propose call(s) were rejected in full at triage. After two in a row the loop stops and asks the user for a new direction.
 
 ## Needs attention
 
