@@ -2,7 +2,8 @@
 
 Prepared by Claude Code on 2026-11-22. A snapshot for an outside reader. The live, generated view is
 `research/STATE.md` (regenerated for this handoff with `python scripts/research.py state`); the pipeline
-description is `docs/PIPELINE_STATE.md`; the narrative decision log is `RESEARCH_HANDOFF.md`.
+description is `docs/PIPELINE_STATE.md`; the narrative decision log is `RESEARCH_HANDOFF.md`. How the research loop works:
+`docs/CHATGPT_HANDOFF_RESEARCH_CYCLE.md`.
 
 ## Where the code is
 
