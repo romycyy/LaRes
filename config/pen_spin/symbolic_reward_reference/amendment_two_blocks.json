@@ -1,0 +1,49 @@
+{
+ "idea": "R-103",
+ "recorded": "2026-11-22, before any selection or fresh case ran",
+ "authority": "advisor consult call_00224 (agreed with the implementer); the user delegated such decisions on 2026-11-22",
+ "evaluated_blocks": [
+  0,
+  1
+ ],
+ "void_block": {
+  "block": 2,
+  "training_seed": 4762,
+  "status": "consumed; b2_draws stopped at 230,272 of 460,800 transitions on its episode allowance, b2_ars and b2_ppo never started",
+  "retired_unused_manifests": [
+   "config/manifests/pen_spin_stage3_reward_selection_s4766.yaml",
+   "config/manifests/pen_spin_stage3_reward_fresh_s4769.yaml"
+  ],
+  "retired_seeds": [
+   4766,
+   4769
+  ]
+ },
+ "cause": "the implementer's episode estimate was wrong: in the draws and ARS arms every generation is a forced full reset (128 starts) and its 360th step times every surviving environment out, auto-resetting it (about 123 more starts of episodes that the next forced reset overwrites); about 2,563 starts per run against an estimated 1,350",
+ "episodes_started_ledger": {
+  "attempt1_smoke_seed_4763": 514,
+  "smoke_seed_4770": 512,
+  "b0_draws": 2562,
+  "b0_ars": 2563,
+  "b0_ppo": 1435,
+  "b1_draws": 2565,
+  "b1_ars": 2563,
+  "b1_ppo": 1435,
+  "b2_draws_partial": 1281,
+  "total_before_evaluation": 15430,
+  "reservation_overrun": "b2_draws started 1,281 against an allowance of 1,243: 38 starts into the evaluation reserve, not a breach of the 20,000 ceiling"
+ },
+ "evaluation": {
+  "scheduled_cases_at_most": 3072,
+  "projected_total_charged": 18502,
+  "ceiling": 20000,
+  "accounting_rule": "as agreed at triage, evaluation is charged one start per manifest case (the 4,608 reserve was defined that way)",
+  "physical_starts_note": "the established evaluator physically places more than one episode per case: env.reset() draws a native placement that the case placement overwrites, and a case that ends is auto-reset while its batch finishes, so a cell of N cases makes roughly 3N physical placements (at most about 9,300 for 3,072 cases). Those are properties of the evaluator every earlier study used; they are reported here and not charged, and no training uses the released reserve"
+ },
+ "rules": [
+  "selection seeds 4764/4765, fresh seeds 4767/4768, whole-manifest fresh processes, deterministic deployment, step 0 eligible, registered tie-breaks: unchanged",
+  "selection finishes for both blocks and the six finalists are hashed before any fresh case",
+  "the six-contrast Holm family, drop bounds and per-block reporting are unchanged, on 256 pairs per contrast; the two-block t interval (1 degree of freedom) is computed and reported beside the case-paired one",
+  "no training extension, rerun or replacement; every verdict is labelled 'incomplete: two of three blocks'; no promotion and no P2 follow"
+ ]
+}

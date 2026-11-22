@@ -1,0 +1,294 @@
+{
+ "study": "symbolic_reward_residual",
+ "config_sha256": "61f9824fc694c65625c6f2af46c068c0f37d3a9b914ae2cb8181f64e78ebc857",
+ "reference": {
+  "name": "d072_qualified_reference",
+  "decisions": [
+   "D-058",
+   "D-070",
+   "D-072"
+  ],
+  "construction": "JointMotionResidual(reference_residual, incumbent_asset): clamp(incumbent + 2 clip(g sign(v_f) max(|v_f| - v0, 0), -b, b) / (hi - lo), -1, 1)",
+  "incumbent_asset": "config/pen_spin/d058_fixed_stroke_incumbent",
+  "incumbent_json_sha256": "1ffcbece3d2f18b35f89461d1079b579f21891fc7f7f8576c3feb217ea711c9c",
+  "incumbent_files": {
+   "parent_source.py": "40782dcdf5a95589d0b34062919728fa92d4e5760fce890e3bd98833285e602d",
+   "state.pt": "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22",
+   "evaluated_source.py": "fdc1da8e2811d94c5bcd1bda2f0e97625a6ea805452e56d65726e587a418c062",
+   "constant_gain.json": "dacec45947d56133b39ca0edb773df4660d73768c0814e85d180e5423b1fcb69"
+  },
+  "stroke_gain_constant": 1.4081491479357957,
+  "residual_params": {
+   "gain": 0.004655481049180921,
+   "deadband": 0.2333555721435132,
+   "tau": 0.18501188209260944,
+   "cap": 0.10269089387249905
+  },
+  "residual_params_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1",
+  "residual_source_sha256": "0dc215bb762295319f273c70242beefbbcabe7e8baf4670fbe64586482318b4e"
+ },
+ "schedule": {
+  "transitions": 460800,
+  "checkpoint_transitions": [
+   92160,
+   184320,
+   276480,
+   368640,
+   460800
+  ],
+  "draws_every": 2,
+  "ars_every": 2,
+  "ppo_every": 24
+ },
+ "smoke": {
+  "mode": "smoke",
+  "seed": 4770,
+  "gates": {
+   "joint_order": {
+    "simulator": [
+     "WRJ1",
+     "WRJ0",
+     "FFJ3",
+     "MFJ3",
+     "RFJ3",
+     "LFJ4",
+     "THJ4",
+     "FFJ2",
+     "MFJ2",
+     "RFJ2",
+     "LFJ3",
+     "THJ3",
+     "FFJ1",
+     "MFJ1",
+     "RFJ1",
+     "LFJ2",
+     "THJ2",
+     "LFJ1",
+     "THJ1",
+     "THJ0"
+    ],
+    "passes": true
+   },
+   "zero_theta_identity": {
+    "compared_env_steps": 44712,
+    "mismatches": 0,
+    "passes": true
+   },
+   "filter_reset": {
+    "reset_events_checked": 128,
+    "violations": 0,
+    "passes": true
+   },
+   "executed_authority": {
+    "probe_magnitude": 0.05,
+    "differs_fraction": 1.0,
+    "pooled_executed_over_proposed": 0.9952697030270569,
+    "joints_at_or_above_min_ratio": 20,
+    "per_joint": {
+     "WRJ1": {
+      "proposed": 0.07328607877587072,
+      "executed": 0.07328607877587072,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "WRJ0": {
+      "proposed": 0.08174749035994561,
+      "executed": 0.08174749035994561,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "FFJ3": {
+      "proposed": 0.07948707978908816,
+      "executed": 0.07948707978908816,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "MFJ3": {
+      "proposed": 0.03205240346142091,
+      "executed": 0.03205240346142091,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "RFJ3": {
+      "proposed": 0.024413344643027003,
+      "executed": 0.024413344643027003,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "LFJ4": {
+      "proposed": 0.03594891441300408,
+      "executed": 0.03594891441300408,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "THJ4": {
+      "proposed": 0.04188107998472535,
+      "executed": 0.041868725033580426,
+      "ratio": 0.9997049992228131,
+      "saturated_fraction": 0.0024088541666666668
+     },
+     "FFJ2": {
+      "proposed": 0.08350506883450887,
+      "executed": 0.08350506883450887,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "MFJ2": {
+      "proposed": 0.030123558384366332,
+      "executed": 0.030123558384366332,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "RFJ2": {
+      "proposed": 0.018946748816071907,
+      "executed": 0.018946748816071907,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "LFJ3": {
+      "proposed": 0.02962366462711038,
+      "executed": 0.029115471920360708,
+      "ratio": 0.9828450425311461,
+      "saturated_fraction": 0.03634982638888889
+     },
+     "THJ3": {
+      "proposed": 0.03646672518920645,
+      "executed": 0.03646672518920645,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "FFJ1": {
+      "proposed": 0.08313155890338951,
+      "executed": 0.08313155890338951,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0020399305555555557
+     },
+     "MFJ1": {
+      "proposed": 0.02536592228368843,
+      "executed": 0.0253659193060432,
+      "ratio": 0.9999998826123806,
+      "saturated_fraction": 2.170138888888889e-05
+     },
+     "RFJ1": {
+      "proposed": 0.027714681335136347,
+      "executed": 0.027714681335136347,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "LFJ2": {
+      "proposed": 0.03515594131038395,
+      "executed": 0.03515594131038395,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "THJ2": {
+      "proposed": 0.021488912388708235,
+      "executed": 0.021488912388708235,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "LFJ1": {
+      "proposed": 0.020237657611465287,
+      "executed": 0.016729753169541558,
+      "ratio": 0.8266645029147845,
+      "saturated_fraction": 0.1529296875
+     },
+     "THJ1": {
+      "proposed": 0.048692862791035116,
+      "executed": 0.048692862791035116,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "THJ0": {
+      "proposed": 0.022983742569340392,
+      "executed": 0.022980785796082474,
+      "ratio": 0.9998713537079961,
+      "saturated_fraction": 0.00021701388888888888
+     }
+    },
+    "passes": true
+   },
+   "likelihood": {
+    "finite_logp": true,
+    "ratio_is_one": true,
+    "kl_at_unchanged_theta": 0.0,
+    "finite_gradient": true,
+    "nonzero_gradient_coefficients": 32,
+    "zero_gradient_coefficients": [],
+    "passes": true
+   },
+   "reconstruction": {
+    "steps": 40,
+    "environments": 118,
+    "mismatches": 0,
+    "theta_sha256": "c007624f87e6224dad4c03e22cb8ab9f20ad9b5e749400a7b27747ed152bd8f6",
+    "passes": true
+   }
+  },
+  "reference_phase": {
+   "falls": 4,
+   "episodes_started": 256
+  },
+  "transitions": 92160,
+  "episodes_started": 512,
+  "falls": 14,
+  "throughput": {
+   "transitions_per_s": 3596.5651377425156,
+   "wall_time_s": 25.624449014663696,
+   "note": "both phases, including the second reference instance of the identity check"
+  },
+  "passes": true
+ },
+ "projected_hours": 1.1369722793499628,
+ "smoke_gate": "pass",
+ "budget": {
+  "ceiling": 20000,
+  "evaluation_reserve": 4608,
+  "episodes_started": 15430
+ },
+ "incomplete": "b2_draws: the episode ceiling was reached; the protocol stops with an incomplete result and no arm is extended or shortened on its own",
+ "training": {
+  "b0_draws": {
+   "transitions": 460800,
+   "episodes_started": 2562,
+   "falls": 73,
+   "complete": true
+  },
+  "b0_ars": {
+   "transitions": 460800,
+   "episodes_started": 2563,
+   "falls": 77,
+   "complete": true
+  },
+  "b0_ppo": {
+   "transitions": 460800,
+   "episodes_started": 1435,
+   "falls": 92,
+   "complete": true
+  },
+  "b1_draws": {
+   "transitions": 460800,
+   "episodes_started": 2565,
+   "falls": 67,
+   "complete": true
+  },
+  "b1_ars": {
+   "transitions": 460800,
+   "episodes_started": 2563,
+   "falls": 57,
+   "complete": true
+  },
+  "b1_ppo": {
+   "transitions": 460800,
+   "episodes_started": 1435,
+   "falls": 94,
+   "complete": true
+  },
+  "b2_draws": {
+   "transitions": 230272,
+   "episodes_started": 1281,
+   "falls": 28,
+   "complete": false
+  }
+ }
+}

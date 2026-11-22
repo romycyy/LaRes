@@ -618,6 +618,18 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   adoption; `config/pen_spin/d058_fixed_stroke_incumbent` is still the incumbent asset until the user says otherwise.
   The first positive, qualified change to the incumbent since the stroke scaling; a 90-pair instrument could not see
   it (D-070), so size the instrument to the effect before calling a small residual null.
+- **R-103 result (D-073, inconclusive, incomplete: two of three blocks; 2026-11-22; direction `docs/NEXT_RESEARCH_DIRECTION.md`).**
+  `symbolic_reward.py` (`--study symbolic_reward_residual`; Isaac child `symbolic_reward_child.py`, one process per smoke
+  stage or `(arm, block)` training run, `python -m` like `pipeline_child`). One 32-coefficient residual on the
+  D-072-qualified reference (`ResettableReference` = R-102's `JointMotionResidual` with a per-environment filter reset;
+  descriptor `config/pen_spin/symbolic_reward_reference/reference.json`), trained from one dense reward by independent
+  draws, ARS and PPO (latent Gaussian `u`, executed `clamp(u, -1, 1)`, neural critic) at exactly 460,800 transitions per
+  run. Fresh, 256 pairs: PPO minus draws +0.004 [-0.059, +0.067]; no arm beats the reference (PPO -0.043, ARS +0.004,
+  draws -0.047); authority is not the limit (executed/proposed 0.99). P2 does not open. **Bites:** action `i` drives
+  `joint_names[actuated_dof_indices[i]]` (sorted), not `env.cfg.actuated_joint_names[i]` (config order;
+  `symbolic_reward.executed_joint_order`); a generation that ends on the 360th step auto-resets every survivor, so a
+  forced reset per generation costs about 2N episode starts, not N (the study hit its 20,000-start ceiling at the
+  seventh run); a 64-case selection manifest cannot rank checkpoints a few points apart.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

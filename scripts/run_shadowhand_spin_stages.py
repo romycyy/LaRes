@@ -60,6 +60,7 @@ PEN_SPIN_STUDIES = {
     "incumbent_residual_fresh": "incumbent_residual",              # R-099 S4 (the frozen winner on 90 fresh cases, 4744)
     "transfer_audit": "transfer_audit",                            # R-101 (ff + rf circumferential transfer, seed 4750)
     "incumbent_residual_confirmation": "incumbent_residual",       # R-102 (final 672-pair confirmation, 4751-4758)
+    "symbolic_reward_residual": "symbolic_reward",                 # R-103 (draws vs ARS vs PPO on one symbolic residual)
 }
 
 

@@ -1,0 +1,26 @@
+{
+ "name": "d072_qualified_reference",
+ "decisions": [
+  "D-058",
+  "D-070",
+  "D-072"
+ ],
+ "construction": "JointMotionResidual(reference_residual, incumbent_asset): clamp(incumbent + 2 clip(g sign(v_f) max(|v_f| - v0, 0), -b, b) / (hi - lo), -1, 1)",
+ "incumbent_asset": "config/pen_spin/d058_fixed_stroke_incumbent",
+ "incumbent_json_sha256": "1ffcbece3d2f18b35f89461d1079b579f21891fc7f7f8576c3feb217ea711c9c",
+ "incumbent_files": {
+  "parent_source.py": "40782dcdf5a95589d0b34062919728fa92d4e5760fce890e3bd98833285e602d",
+  "state.pt": "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22",
+  "evaluated_source.py": "fdc1da8e2811d94c5bcd1bda2f0e97625a6ea805452e56d65726e587a418c062",
+  "constant_gain.json": "dacec45947d56133b39ca0edb773df4660d73768c0814e85d180e5423b1fcb69"
+ },
+ "stroke_gain_constant": 1.4081491479357957,
+ "residual_params": {
+  "gain": 0.004655481049180921,
+  "deadband": 0.2333555721435132,
+  "tau": 0.18501188209260944,
+  "cap": 0.10269089387249905
+ },
+ "residual_params_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1",
+ "residual_source_sha256": "0dc215bb762295319f273c70242beefbbcabe7e8baf4670fbe64586482318b4e"
+}

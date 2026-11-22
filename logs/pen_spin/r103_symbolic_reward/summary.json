@@ -1,0 +1,5168 @@
+{
+ "study": "symbolic_reward_residual",
+ "config_sha256": "61f9824fc694c65625c6f2af46c068c0f37d3a9b914ae2cb8181f64e78ebc857",
+ "reference": {
+  "name": "d072_qualified_reference",
+  "decisions": [
+   "D-058",
+   "D-070",
+   "D-072"
+  ],
+  "construction": "JointMotionResidual(reference_residual, incumbent_asset): clamp(incumbent + 2 clip(g sign(v_f) max(|v_f| - v0, 0), -b, b) / (hi - lo), -1, 1)",
+  "incumbent_asset": "config/pen_spin/d058_fixed_stroke_incumbent",
+  "incumbent_json_sha256": "1ffcbece3d2f18b35f89461d1079b579f21891fc7f7f8576c3feb217ea711c9c",
+  "incumbent_files": {
+   "parent_source.py": "40782dcdf5a95589d0b34062919728fa92d4e5760fce890e3bd98833285e602d",
+   "state.pt": "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22",
+   "evaluated_source.py": "fdc1da8e2811d94c5bcd1bda2f0e97625a6ea805452e56d65726e587a418c062",
+   "constant_gain.json": "dacec45947d56133b39ca0edb773df4660d73768c0814e85d180e5423b1fcb69"
+  },
+  "stroke_gain_constant": 1.4081491479357957,
+  "residual_params": {
+   "gain": 0.004655481049180921,
+   "deadband": 0.2333555721435132,
+   "tau": 0.18501188209260944,
+   "cap": 0.10269089387249905
+  },
+  "residual_params_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1",
+  "residual_source_sha256": "0dc215bb762295319f273c70242beefbbcabe7e8baf4670fbe64586482318b4e"
+ },
+ "schedule": {
+  "transitions": 460800,
+  "checkpoint_transitions": [
+   92160,
+   184320,
+   276480,
+   368640,
+   460800
+  ],
+  "draws_every": 2,
+  "ars_every": 2,
+  "ppo_every": 24
+ },
+ "smoke": {
+  "mode": "smoke",
+  "seed": 4770,
+  "gates": {
+   "joint_order": {
+    "simulator": [
+     "WRJ1",
+     "WRJ0",
+     "FFJ3",
+     "MFJ3",
+     "RFJ3",
+     "LFJ4",
+     "THJ4",
+     "FFJ2",
+     "MFJ2",
+     "RFJ2",
+     "LFJ3",
+     "THJ3",
+     "FFJ1",
+     "MFJ1",
+     "RFJ1",
+     "LFJ2",
+     "THJ2",
+     "LFJ1",
+     "THJ1",
+     "THJ0"
+    ],
+    "passes": true
+   },
+   "zero_theta_identity": {
+    "compared_env_steps": 44712,
+    "mismatches": 0,
+    "passes": true
+   },
+   "filter_reset": {
+    "reset_events_checked": 128,
+    "violations": 0,
+    "passes": true
+   },
+   "executed_authority": {
+    "probe_magnitude": 0.05,
+    "differs_fraction": 1.0,
+    "pooled_executed_over_proposed": 0.9952697030270569,
+    "joints_at_or_above_min_ratio": 20,
+    "per_joint": {
+     "WRJ1": {
+      "proposed": 0.07328607877587072,
+      "executed": 0.07328607877587072,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "WRJ0": {
+      "proposed": 0.08174749035994561,
+      "executed": 0.08174749035994561,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "FFJ3": {
+      "proposed": 0.07948707978908816,
+      "executed": 0.07948707978908816,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "MFJ3": {
+      "proposed": 0.03205240346142091,
+      "executed": 0.03205240346142091,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "RFJ3": {
+      "proposed": 0.024413344643027003,
+      "executed": 0.024413344643027003,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "LFJ4": {
+      "proposed": 0.03594891441300408,
+      "executed": 0.03594891441300408,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "THJ4": {
+      "proposed": 0.04188107998472535,
+      "executed": 0.041868725033580426,
+      "ratio": 0.9997049992228131,
+      "saturated_fraction": 0.0024088541666666668
+     },
+     "FFJ2": {
+      "proposed": 0.08350506883450887,
+      "executed": 0.08350506883450887,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "MFJ2": {
+      "proposed": 0.030123558384366332,
+      "executed": 0.030123558384366332,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "RFJ2": {
+      "proposed": 0.018946748816071907,
+      "executed": 0.018946748816071907,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "LFJ3": {
+      "proposed": 0.02962366462711038,
+      "executed": 0.029115471920360708,
+      "ratio": 0.9828450425311461,
+      "saturated_fraction": 0.03634982638888889
+     },
+     "THJ3": {
+      "proposed": 0.03646672518920645,
+      "executed": 0.03646672518920645,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "FFJ1": {
+      "proposed": 0.08313155890338951,
+      "executed": 0.08313155890338951,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0020399305555555557
+     },
+     "MFJ1": {
+      "proposed": 0.02536592228368843,
+      "executed": 0.0253659193060432,
+      "ratio": 0.9999998826123806,
+      "saturated_fraction": 2.170138888888889e-05
+     },
+     "RFJ1": {
+      "proposed": 0.027714681335136347,
+      "executed": 0.027714681335136347,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "LFJ2": {
+      "proposed": 0.03515594131038395,
+      "executed": 0.03515594131038395,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "THJ2": {
+      "proposed": 0.021488912388708235,
+      "executed": 0.021488912388708235,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "LFJ1": {
+      "proposed": 0.020237657611465287,
+      "executed": 0.016729753169541558,
+      "ratio": 0.8266645029147845,
+      "saturated_fraction": 0.1529296875
+     },
+     "THJ1": {
+      "proposed": 0.048692862791035116,
+      "executed": 0.048692862791035116,
+      "ratio": 1.0,
+      "saturated_fraction": 0.0
+     },
+     "THJ0": {
+      "proposed": 0.022983742569340392,
+      "executed": 0.022980785796082474,
+      "ratio": 0.9998713537079961,
+      "saturated_fraction": 0.00021701388888888888
+     }
+    },
+    "passes": true
+   },
+   "likelihood": {
+    "finite_logp": true,
+    "ratio_is_one": true,
+    "kl_at_unchanged_theta": 0.0,
+    "finite_gradient": true,
+    "nonzero_gradient_coefficients": 32,
+    "zero_gradient_coefficients": [],
+    "passes": true
+   },
+   "reconstruction": {
+    "steps": 40,
+    "environments": 118,
+    "mismatches": 0,
+    "theta_sha256": "c007624f87e6224dad4c03e22cb8ab9f20ad9b5e749400a7b27747ed152bd8f6",
+    "passes": true
+   }
+  },
+  "reference_phase": {
+   "falls": 4,
+   "episodes_started": 256
+  },
+  "transitions": 92160,
+  "episodes_started": 512,
+  "falls": 14,
+  "throughput": {
+   "transitions_per_s": 3596.5651377425156,
+   "wall_time_s": 25.624449014663696,
+   "note": "both phases, including the second reference instance of the identity check"
+  },
+  "passes": true
+ },
+ "projected_hours": 1.1369722793499628,
+ "smoke_gate": "pass",
+ "paired_success_difference": 0.00390625,
+ "paired_success_difference_ci95": [
+  -0.05918205797798318,
+  0.06699455797798318
+ ],
+ "contrasts": {
+  "ppo_minus_draws": {
+   "estimate": 0.00390625,
+   "case_paired": {
+    "n": 256,
+    "mean": 0.00390625,
+    "se": 0.03203573318697741,
+    "low": -0.05918205797798318,
+    "high": 0.06699455797798318,
+    "p_value": 0.9030472021687398
+   },
+   "win_loss_tie": {
+    "wins": 34,
+    "losses": 33,
+    "ties": 189
+   },
+   "per_block": [
+    0.03125,
+    -0.0234375
+   ],
+   "block_level": {
+    "n": 2,
+    "mean": 0.00390625,
+    "se": 0.027343749999999997,
+    "low": -0.34352903576181504,
+    "high": 0.35134153576181504,
+    "p_value": 0.909665529398267
+   },
+   "tail_hit_fraction": {
+    "n": 256,
+    "mean": 0.013395630402690976,
+    "se": 0.030086516491830667,
+    "low": -0.045854064534613215,
+    "high": 0.07264532533999517,
+    "p_value": 0.6565262134048975
+   },
+   "drops": {
+    "mean": 0.0,
+    "one_sided_95_upper": 0.015826812371834593,
+    "margin": 0.05,
+    "non_inferior": true
+   },
+   "threshold": 0.05,
+   "magnitude_supported": false,
+   "magnitude_refuted": false,
+   "learner_level_excludes_zero": false,
+   "holm": {
+    "p": 0.9030472021687398,
+    "p_holm": 1.0,
+    "rejects": false
+   },
+   "positive_effect_claim": false
+  },
+  "ppo_minus_ars": {
+   "estimate": -0.046875,
+   "case_paired": {
+    "n": 256,
+    "mean": -0.046875,
+    "se": 0.03308057509369225,
+    "low": -0.1120209261886981,
+    "high": 0.018270926188698106,
+    "p_value": 0.15770504164994492
+   },
+   "win_loss_tie": {
+    "wins": 30,
+    "losses": 42,
+    "ties": 184
+   },
+   "per_block": [
+    -0.0078125,
+    -0.0859375
+   ],
+   "block_level": {
+    "n": 2,
+    "mean": -0.046875,
+    "se": 0.0390625,
+    "low": -0.5432111225168788,
+    "high": 0.44946112251687875,
+    "p_value": 0.44228412324739086
+   },
+   "tail_hit_fraction": {
+    "n": 256,
+    "mean": -0.04439353870852085,
+    "se": 0.03300765862354247,
+    "low": -0.10939586972183689,
+    "high": 0.02060879230479519,
+    "p_value": 0.17983742541849077
+   },
+   "drops": {
+    "mean": 0.0078125,
+    "one_sided_95_upper": 0.026069873140663814,
+    "margin": 0.05,
+    "non_inferior": true
+   },
+   "threshold": 0.05,
+   "magnitude_supported": false,
+   "magnitude_refuted": true,
+   "learner_level_excludes_zero": false,
+   "holm": {
+    "p": 0.15770504164994492,
+    "p_holm": 0.6419016154540838,
+    "rejects": false
+   },
+   "positive_effect_claim": false
+  },
+  "ars_minus_draws": {
+   "estimate": 0.05078125,
+   "case_paired": {
+    "n": 256,
+    "mean": 0.05078125,
+    "se": 0.033288843720808065,
+    "low": -0.014774821797445256,
+    "high": 0.11633732179744526,
+    "p_value": 0.12838032309081676
+   },
+   "win_loss_tie": {
+    "wins": 43,
+    "losses": 30,
+    "ties": 183
+   },
+   "per_block": [
+    0.0390625,
+    0.0625
+   ],
+   "block_level": {
+    "n": 2,
+    "mean": 0.05078125,
+    "se": 0.011718749999999998,
+    "low": -0.0981195867550636,
+    "high": 0.1996820867550636,
+    "p_value": 0.14438463102129445
+   },
+   "tail_hit_fraction": {
+    "n": 256,
+    "mean": 0.05778916911121183,
+    "se": 0.033069514303603026,
+    "low": -0.007334974946652681,
+    "high": 0.12291331316907635,
+    "p_value": 0.08175336045562746
+   },
+   "drops": {
+    "mean": -0.0078125,
+    "one_sided_95_upper": 0.0012893505889833186,
+    "margin": 0.05,
+    "non_inferior": true
+   },
+   "threshold": 0.05,
+   "magnitude_supported": false,
+   "magnitude_refuted": false,
+   "learner_level_excludes_zero": false,
+   "holm": {
+    "p": 0.12838032309081676,
+    "p_holm": 0.6419016154540838,
+    "rejects": false
+   },
+   "positive_effect_claim": false
+  },
+  "ppo_minus_reference": {
+   "estimate": -0.04296875,
+   "case_paired": {
+    "n": 256,
+    "mean": -0.04296875,
+    "se": 0.030449890467843663,
+    "low": -0.1029340411490747,
+    "high": 0.016996541149074708,
+    "p_value": 0.15942519462469357
+   },
+   "win_loss_tie": {
+    "wins": 25,
+    "losses": 36,
+    "ties": 195
+   },
+   "per_block": [
+    -0.0078125,
+    -0.078125
+   ],
+   "block_level": {
+    "n": 2,
+    "mean": -0.04296875,
+    "se": 0.03515625,
+    "low": -0.48967126026519087,
+    "high": 0.40373376026519087,
+    "p_value": 0.4365489651388925
+   },
+   "tail_hit_fraction": {
+    "n": 256,
+    "mean": -0.029657936227698533,
+    "se": 0.029150206306008994,
+    "low": -0.08706374561940664,
+    "high": 0.027747873164009573,
+    "p_value": 0.3099190869287628
+   },
+   "drops": {
+    "mean": -0.01171875,
+    "one_sided_95_upper": 0.005333179072588418,
+    "margin": 0.05,
+    "non_inferior": true
+   },
+   "threshold": 0.05,
+   "magnitude_supported": false,
+   "magnitude_refuted": true,
+   "learner_level_excludes_zero": false,
+   "holm": {
+    "p": 0.15942519462469357,
+    "p_holm": 0.6419016154540838,
+    "rejects": false
+   },
+   "positive_effect_claim": false
+  },
+  "ars_minus_reference": {
+   "estimate": 0.00390625,
+   "case_paired": {
+    "n": 256,
+    "mean": 0.00390625,
+    "se": 0.02625411199994464,
+    "low": -0.047796250263495516,
+    "high": 0.055608750263495516,
+    "p_value": 0.8818399216063478
+   },
+   "win_loss_tie": {
+    "wins": 23,
+    "losses": 22,
+    "ties": 211
+   },
+   "per_block": [
+    0.0,
+    0.0078125
+   ],
+   "block_level": {
+    "n": 2,
+    "mean": 0.00390625,
+    "se": 0.00390625,
+    "low": -0.04572736225168787,
+    "high": 0.05353986225168787,
+    "p_value": 0.49999999999999956
+   },
+   "tail_hit_fraction": {
+    "n": 256,
+    "mean": 0.014735602480822311,
+    "se": 0.02581619003995094,
+    "low": -0.03610449343808853,
+    "high": 0.06557569839973315,
+    "p_value": 0.5686451925040774
+   },
+   "drops": {
+    "mean": -0.01953125,
+    "one_sided_95_upper": -0.005225200979235071,
+    "margin": 0.05,
+    "non_inferior": true
+   },
+   "threshold": 0.05,
+   "magnitude_supported": false,
+   "magnitude_refuted": false,
+   "learner_level_excludes_zero": false,
+   "holm": {
+    "p": 0.8818399216063478,
+    "p_holm": 1.0,
+    "rejects": false
+   },
+   "positive_effect_claim": false
+  },
+  "draws_minus_reference": {
+   "estimate": -0.046875,
+   "case_paired": {
+    "n": 256,
+    "mean": -0.046875,
+    "se": 0.028610997088737832,
+    "low": -0.10321893898077589,
+    "high": 0.009468938980775894,
+    "p_value": 0.1025806921003464
+   },
+   "win_loss_tie": {
+    "wins": 21,
+    "losses": 33,
+    "ties": 202
+   },
+   "per_block": [
+    -0.0390625,
+    -0.0546875
+   ],
+   "block_level": {
+    "n": 2,
+    "mean": -0.046875,
+    "se": 0.0078125,
+    "low": -0.14614222450337574,
+    "high": 0.052392224503375745,
+    "p_value": 0.10513691342250685
+   },
+   "tail_hit_fraction": {
+    "n": 256,
+    "mean": -0.04305356663038951,
+    "se": 0.02713787774541258,
+    "low": -0.09649647611770569,
+    "high": 0.010389342856926664,
+    "p_value": 0.11387080309688324
+   },
+   "drops": {
+    "mean": -0.01171875,
+    "one_sided_95_upper": -0.0005932706008423255,
+    "margin": 0.05,
+    "non_inferior": true
+   },
+   "threshold": 0.05,
+   "magnitude_supported": false,
+   "magnitude_refuted": true,
+   "learner_level_excludes_zero": false,
+   "holm": {
+    "p": 0.1025806921003464,
+    "p_holm": 0.6154841526020784,
+    "rejects": false
+   },
+   "positive_effect_claim": false
+  }
+ },
+ "selection": {
+  "b0": {
+   "manifest": {
+    "path": "config/manifests/pen_spin_stage3_reward_selection_s4764.yaml",
+    "sha256": "172d78cf7964118b21a3b6d8e651d611a2a3036f0113fef5b68e744977e8bbab"
+   },
+   "reference": {
+    "n": 64,
+    "successes": 32,
+    "success": 0.5,
+    "completed": 0.953125,
+    "tail_hit_fraction": 0.5161186856499356,
+    "hit_fraction": 0.5107217497167881,
+    "mean_length": 343.65625,
+    "mean_abs_spin": 5.079909413121641,
+    "mean_transverse": 1.6616287047509104,
+    "drops": 3,
+    "tail_spin_failures": 29,
+    "median_fall_step": 30.0
+   },
+   "draws": {
+    "checkpoints": [
+     {
+      "k": 1,
+      "transitions": 92160,
+      "theta_sha256": "7086486ad582eecfc5155bd2ac37d5e24afa74f51ef2dd610cca708072f02d52",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 29,
+      "success": 0.453125,
+      "completed": 0.953125,
+      "tail_hit_fraction": 0.4824404761904762,
+      "hit_fraction": 0.47172567233718,
+      "mean_length": 343.59375,
+      "mean_abs_spin": 5.095547538250685,
+      "mean_transverse": 1.70287671755068,
+      "drops": 3,
+      "tail_spin_failures": 32,
+      "median_fall_step": 28.0,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.0014829518040642142,
+       "mean_abs_executed": 0.0014578559203073382,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.00180964230094105,
+         "executed": 0.00180964230094105,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.0011610337533056736,
+         "executed": 0.0011610337533056736,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.0006715859053656459,
+         "executed": 0.0006715859053656459,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.0025376067496836185,
+         "executed": 0.0025376067496836185,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.0008632137905806303,
+         "executed": 0.0008632137905806303,
+         "saturated_fraction": 0.0
+        },
+        "LFJ4": {
+         "proposed": 0.002136560855433345,
+         "executed": 0.002136560855433345,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.0014953779755160213,
+         "executed": 0.0014543435536324978,
+         "saturated_fraction": 0.01532033426183844
+        },
+        "FFJ2": {
+         "proposed": 0.0020680748857557774,
+         "executed": 0.0020680748857557774,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.0015326360007748008,
+         "executed": 0.0015326360007748008,
+         "saturated_fraction": 0.0
+        },
+        "RFJ2": {
+         "proposed": 0.0016567861894145608,
+         "executed": 0.0016567861894145608,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.001059654401615262,
+         "executed": 0.0006742291152477264,
+         "saturated_fraction": 0.26623433147632314
+        },
+        "THJ3": {
+         "proposed": 0.0012396705569699407,
+         "executed": 0.0012396705569699407,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.0007869401015341282,
+         "executed": 0.0007760145235806704,
+         "saturated_fraction": 0.005353412256267409
+        },
+        "MFJ1": {
+         "proposed": 0.0010391399264335632,
+         "executed": 0.0010391399264335632,
+         "saturated_fraction": 0.0
+        },
+        "RFJ1": {
+         "proposed": 0.0008031860925257206,
+         "executed": 0.0008031860925257206,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.0023925788700580597,
+         "executed": 0.0023925788700580597,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.003363231662660837,
+         "executed": 0.003363231662660837,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.0007343555334955454,
+         "executed": 0.0006698196521028876,
+         "saturated_fraction": 0.1875
+        },
+        "THJ1": {
+         "proposed": 0.0016323741292580962,
+         "executed": 0.0016323741292580962,
+         "saturated_fraction": 0.0
+        },
+        "THJ0": {
+         "proposed": 0.0006753898924216628,
+         "executed": 0.0006753898924216628,
+         "saturated_fraction": 0.0
+        }
+       }
+      }
+     },
+     {
+      "k": 2,
+      "transitions": 184320,
+      "theta_sha256": "cf92bb0668618e8fa509a1641cc25568d22821ae8d4f70c38c5c80a676ad8db7",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 32,
+      "success": 0.5,
+      "completed": 0.953125,
+      "tail_hit_fraction": 0.530021315958816,
+      "hit_fraction": 0.523179393953245,
+      "mean_length": 343.65625,
+      "mean_abs_spin": 5.333428245969117,
+      "mean_transverse": 1.7220240265596658,
+      "drops": 3,
+      "tail_spin_failures": 29,
+      "median_fall_step": 30.0,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.008070042356848717,
+       "mean_abs_executed": 0.00784778967499733,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.005539438221603632,
+         "executed": 0.005539438221603632,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.0127564100548625,
+         "executed": 0.0127564100548625,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.009166915901005268,
+         "executed": 0.009166915901005268,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.010861339047551155,
+         "executed": 0.010861339047551155,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.0060349139384925365,
+         "executed": 0.0060349139384925365,
+         "saturated_fraction": 0.0
+        },
+        "LFJ4": {
+         "proposed": 0.013385249301791191,
+         "executed": 0.013385249301791191,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.006402397993952036,
+         "executed": 0.006400128360837698,
+         "saturated_fraction": 0.0010445682451253482
+        },
+        "FFJ2": {
+         "proposed": 0.011886200867593288,
+         "executed": 0.011886200867593288,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.006217431277036667,
+         "executed": 0.006191381718963385,
+         "saturated_fraction": 0.014188718662952645
+        },
+        "RFJ2": {
+         "proposed": 0.005342788062989712,
+         "executed": 0.005342788062989712,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.003993690013885498,
+         "executed": 0.003451893338933587,
+         "saturated_fraction": 0.14484679665738162
+        },
+        "THJ3": {
+         "proposed": 0.013231968507170677,
+         "executed": 0.013231968507170677,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.0023839459754526615,
+         "executed": 0.0023699805606156588,
+         "saturated_fraction": 0.0028725626740947075
+        },
+        "MFJ1": {
+         "proposed": 0.007588785141706467,
+         "executed": 0.007588457781821489,
+         "saturated_fraction": 0.00013057103064066853
+        },
+        "RFJ1": {
+         "proposed": 0.002469636034220457,
+         "executed": 0.002469636034220457,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.01276816800236702,
+         "executed": 0.01276816800236702,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.00547014968469739,
+         "executed": 0.00547014968469739,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.009013565257191658,
+         "executed": 0.005373320542275906,
+         "saturated_fraction": 0.4950383008356546
+        },
+        "THJ1": {
+         "proposed": 0.009614203125238419,
+         "executed": 0.009394693188369274,
+         "saturated_fraction": 0.0297266713091922
+        },
+        "THJ0": {
+         "proposed": 0.0072736237198114395,
+         "executed": 0.007272759452462196,
+         "saturated_fraction": 0.00013057103064066853
+        }
+       }
+      }
+     },
+     {
+      "k": 3,
+      "transitions": 276480,
+      "theta_sha256": "cf92bb0668618e8fa509a1641cc25568d22821ae8d4f70c38c5c80a676ad8db7",
+      "reused_cell": true,
+      "n": 64,
+      "successes": 32,
+      "success": 0.5,
+      "completed": 0.953125,
+      "tail_hit_fraction": 0.530021315958816,
+      "hit_fraction": 0.523179393953245,
+      "mean_length": 343.65625,
+      "mean_abs_spin": 5.333428245969117,
+      "mean_transverse": 1.7220240265596658,
+      "drops": 3,
+      "tail_spin_failures": 29,
+      "median_fall_step": 30.0
+     },
+     {
+      "k": 4,
+      "transitions": 368640,
+      "theta_sha256": "cf92bb0668618e8fa509a1641cc25568d22821ae8d4f70c38c5c80a676ad8db7",
+      "reused_cell": true,
+      "n": 64,
+      "successes": 32,
+      "success": 0.5,
+      "completed": 0.953125,
+      "tail_hit_fraction": 0.530021315958816,
+      "hit_fraction": 0.523179393953245,
+      "mean_length": 343.65625,
+      "mean_abs_spin": 5.333428245969117,
+      "mean_transverse": 1.7220240265596658,
+      "drops": 3,
+      "tail_spin_failures": 29,
+      "median_fall_step": 30.0
+     },
+     {
+      "k": 5,
+      "transitions": 460800,
+      "theta_sha256": "cf92bb0668618e8fa509a1641cc25568d22821ae8d4f70c38c5c80a676ad8db7",
+      "reused_cell": true,
+      "n": 64,
+      "successes": 32,
+      "success": 0.5,
+      "completed": 0.953125,
+      "tail_hit_fraction": 0.530021315958816,
+      "hit_fraction": 0.523179393953245,
+      "mean_length": 343.65625,
+      "mean_abs_spin": 5.333428245969117,
+      "mean_transverse": 1.7220240265596658,
+      "drops": 3,
+      "tail_spin_failures": 29,
+      "median_fall_step": 30.0
+     }
+    ],
+    "selected": 2,
+    "training_rejected": false
+   },
+   "ars": {
+    "checkpoints": [
+     {
+      "k": 1,
+      "transitions": 92160,
+      "theta_sha256": "2f7bcdd784aebcbd4876fc9ac4c899759a9b519bacd44f78b529e164d9f55c43",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 27,
+      "success": 0.421875,
+      "completed": 0.96875,
+      "tail_hit_fraction": 0.45066137566137565,
+      "hit_fraction": 0.4492381514273924,
+      "mean_length": 348.640625,
+      "mean_abs_spin": 4.630893607623875,
+      "mean_transverse": 1.6436437598895282,
+      "drops": 2,
+      "tail_spin_failures": 35,
+      "median_fall_step": 27.5,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.01310766488313675,
+       "mean_abs_executed": 0.013050314970314503,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.0054942648857831955,
+         "executed": 0.0054942648857831955,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.012974275276064873,
+         "executed": 0.012974275276064873,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.016621962189674377,
+         "executed": 0.016621962189674377,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.006768581923097372,
+         "executed": 0.006768581923097372,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.0017240260494872928,
+         "executed": 0.0017240260494872928,
+         "saturated_fraction": 0.0
+        },
+        "LFJ4": {
+         "proposed": 0.022217104211449623,
+         "executed": 0.022217104211449623,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.00863376073539257,
+         "executed": 0.008426681160926819,
+         "saturated_fraction": 0.04112987465181058
+        },
+        "FFJ2": {
+         "proposed": 0.009376783855259418,
+         "executed": 0.009376783855259418,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.014763661660254002,
+         "executed": 0.014716283418238163,
+         "saturated_fraction": 0.007616643454038998
+        },
+        "RFJ2": {
+         "proposed": 0.011763175949454308,
+         "executed": 0.011763175949454308,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.04027017205953598,
+         "executed": 0.03991749510169029,
+         "saturated_fraction": 0.02802924791086351
+        },
+        "THJ3": {
+         "proposed": 0.018174460157752037,
+         "executed": 0.018174460157752037,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.008678602054715157,
+         "executed": 0.008657590486109257,
+         "saturated_fraction": 0.0016974233983286908
+        },
+        "MFJ1": {
+         "proposed": 0.007955855689942837,
+         "executed": 0.007955855689942837,
+         "saturated_fraction": 0.0
+        },
+        "RFJ1": {
+         "proposed": 0.0035413713194429874,
+         "executed": 0.0035413713194429874,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.015050942078232765,
+         "executed": 0.015050942078232765,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.007821870036423206,
+         "executed": 0.007821870036423206,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.03415556252002716,
+         "executed": 0.03364098444581032,
+         "saturated_fraction": 0.09644846796657382
+        },
+        "THJ1": {
+         "proposed": 0.0067435745149850845,
+         "executed": 0.006739309057593346,
+         "saturated_fraction": 0.0006093314763231198
+        },
+        "THJ0": {
+         "proposed": 0.009423276409506798,
+         "executed": 0.009423276409506798,
+         "saturated_fraction": 0.0
+        }
+       }
+      }
+     },
+     {
+      "k": 2,
+      "transitions": 184320,
+      "theta_sha256": "0220e77957980e6742350d66bf49c9bf93da0ac346db3c1a505f5ab464aa9e38",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 23,
+      "success": 0.359375,
+      "completed": 0.96875,
+      "tail_hit_fraction": 0.3978827426564495,
+      "hit_fraction": 0.4121106326285944,
+      "mean_length": 348.65625,
+      "mean_abs_spin": 4.579608710482717,
+      "mean_transverse": 1.652213439811021,
+      "drops": 2,
+      "tail_spin_failures": 39,
+      "median_fall_step": 28.0,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.01716320775449276,
+       "mean_abs_executed": 0.017072364687919617,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.006852986291050911,
+         "executed": 0.006852986291050911,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.016107380390167236,
+         "executed": 0.016107380390167236,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.02400287799537182,
+         "executed": 0.02400287799537182,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.01505219005048275,
+         "executed": 0.01505219005048275,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.014539883472025394,
+         "executed": 0.014539883472025394,
+         "saturated_fraction": 0.0
+        },
+        "LFJ4": {
+         "proposed": 0.013352034613490105,
+         "executed": 0.013352034613490105,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.006821802351623774,
+         "executed": 0.006563861388713121,
+         "saturated_fraction": 0.03725626740947075
+        },
+        "FFJ2": {
+         "proposed": 0.007404101546853781,
+         "executed": 0.007404101546853781,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.029997913166880608,
+         "executed": 0.029945293441414833,
+         "saturated_fraction": 0.005745125348189415
+        },
+        "RFJ2": {
+         "proposed": 0.01998625136911869,
+         "executed": 0.01998625136911869,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.035432104021310806,
+         "executed": 0.03486952185630798,
+         "saturated_fraction": 0.03168523676880223
+        },
+        "THJ3": {
+         "proposed": 0.039509665220975876,
+         "executed": 0.039509665220975876,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.004716071765869856,
+         "executed": 0.004708466585725546,
+         "saturated_fraction": 0.001610376044568245
+        },
+        "MFJ1": {
+         "proposed": 0.003755312180146575,
+         "executed": 0.0037550749257206917,
+         "saturated_fraction": 4.352367688022284e-05
+        },
+        "RFJ1": {
+         "proposed": 0.013114361092448235,
+         "executed": 0.013114361092448235,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.014216535724699497,
+         "executed": 0.014216535724699497,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.014120758511126041,
+         "executed": 0.014120758511126041,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.03850109502673149,
+         "executed": 0.037647780030965805,
+         "saturated_fraction": 0.0775591922005571
+        },
+        "THJ1": {
+         "proposed": 0.017710965126752853,
+         "executed": 0.01763082481920719,
+         "saturated_fraction": 0.017365947075208915
+        },
+        "THJ0": {
+         "proposed": 0.008069900795817375,
+         "executed": 0.008067470975220203,
+         "saturated_fraction": 0.00013057103064066853
+        }
+       }
+      }
+     },
+     {
+      "k": 3,
+      "transitions": 276480,
+      "theta_sha256": "6bc4c52f9898d7a496312548752f83e532c21c9be3122e03490e33338cc7dd5d",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 29,
+      "success": 0.453125,
+      "completed": 0.953125,
+      "tail_hit_fraction": 0.48498677248677247,
+      "hit_fraction": 0.49373575693431193,
+      "mean_length": 343.59375,
+      "mean_abs_spin": 5.384934920817614,
+      "mean_transverse": 1.7579604471102357,
+      "drops": 3,
+      "tail_spin_failures": 32,
+      "median_fall_step": 28.0,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.019424650818109512,
+       "mean_abs_executed": 0.01927192136645317,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.008088747970759869,
+         "executed": 0.008088747970759869,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.013319538906216621,
+         "executed": 0.013319538906216621,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.024027450010180473,
+         "executed": 0.024027450010180473,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.020682524889707565,
+         "executed": 0.020682524889707565,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.015714367851614952,
+         "executed": 0.015714367851614952,
+         "saturated_fraction": 0.0
+        },
+        "LFJ4": {
+         "proposed": 0.02520553581416607,
+         "executed": 0.02520553581416607,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.013052163645625114,
+         "executed": 0.01289849542081356,
+         "saturated_fraction": 0.02985724233983287
+        },
+        "FFJ2": {
+         "proposed": 0.013983734883368015,
+         "executed": 0.013983734883368015,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.021344076842069626,
+         "executed": 0.02124241180717945,
+         "saturated_fraction": 0.008965877437325905
+        },
+        "RFJ2": {
+         "proposed": 0.019352920353412628,
+         "executed": 0.019352920353412628,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.03868379443883896,
+         "executed": 0.03731924295425415,
+         "saturated_fraction": 0.07455605849582173
+        },
+        "THJ3": {
+         "proposed": 0.03753596544265747,
+         "executed": 0.03753596544265747,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.007416433654725552,
+         "executed": 0.007377730682492256,
+         "saturated_fraction": 0.012839484679665739
+        },
+        "MFJ1": {
+         "proposed": 0.017431221902370453,
+         "executed": 0.017428798601031303,
+         "saturated_fraction": 8.704735376044568e-05
+        },
+        "RFJ1": {
+         "proposed": 0.004732242785394192,
+         "executed": 0.004732242785394192,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.02055574394762516,
+         "executed": 0.02055574394762516,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.025481410324573517,
+         "executed": 0.025481410324573517,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.027299482375383377,
+         "executed": 0.025915607810020447,
+         "saturated_fraction": 0.12238857938718663
+        },
+        "THJ1": {
+         "proposed": 0.025342248380184174,
+         "executed": 0.025339657440781593,
+         "saturated_fraction": 0.0002176183844011142
+        },
+        "THJ0": {
+         "proposed": 0.009243412874639034,
+         "executed": 0.009236342273652554,
+         "saturated_fraction": 0.00034818941504178273
+        }
+       }
+      }
+     },
+     {
+      "k": 4,
+      "transitions": 368640,
+      "theta_sha256": "6d97bf87df24fc68829b15bbdce11daa6b61d321af63d53e32f2b38652794f27",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 26,
+      "success": 0.40625,
+      "completed": 0.953125,
+      "tail_hit_fraction": 0.43159722222222224,
+      "hit_fraction": 0.44088135006049345,
+      "mean_length": 344.734375,
+      "mean_abs_spin": 4.7905044397339225,
+      "mean_transverse": 1.722688851179555,
+      "drops": 3,
+      "tail_spin_failures": 35,
+      "median_fall_step": 27.0,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.020248088985681534,
+       "mean_abs_executed": 0.020120184868574142,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.008224773220717907,
+         "executed": 0.008224773220717907,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.01155741699039936,
+         "executed": 0.01155741699039936,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.00932939164340496,
+         "executed": 0.00932939164340496,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.01936035417020321,
+         "executed": 0.01936035417020321,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.00916831474751234,
+         "executed": 0.00916831474751234,
+         "saturated_fraction": 0.0
+        },
+        "LFJ4": {
+         "proposed": 0.027109289541840553,
+         "executed": 0.027109289541840553,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.014059016481041908,
+         "executed": 0.013977057300508022,
+         "saturated_fraction": 0.026462395543175487
+        },
+        "FFJ2": {
+         "proposed": 0.015197631902992725,
+         "executed": 0.015197631902992725,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.017964554950594902,
+         "executed": 0.017811734229326248,
+         "saturated_fraction": 0.011620821727019498
+        },
+        "RFJ2": {
+         "proposed": 0.016859902068972588,
+         "executed": 0.016859902068972588,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.05151798576116562,
+         "executed": 0.05091742053627968,
+         "saturated_fraction": 0.03882311977715877
+        },
+        "THJ3": {
+         "proposed": 0.040401045233011246,
+         "executed": 0.040401045233011246,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.0109099131077528,
+         "executed": 0.010837327688932419,
+         "saturated_fraction": 0.00644150417827298
+        },
+        "MFJ1": {
+         "proposed": 0.006206395570188761,
+         "executed": 0.006206395570188761,
+         "saturated_fraction": 0.0
+        },
+        "RFJ1": {
+         "proposed": 0.009666236117482185,
+         "executed": 0.009666236117482185,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.03350440040230751,
+         "executed": 0.03350440040230751,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.027352768927812576,
+         "executed": 0.027352768927812576,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.028834698721766472,
+         "executed": 0.027194516733288765,
+         "saturated_fraction": 0.14510793871866295
+        },
+        "THJ1": {
+         "proposed": 0.03369465470314026,
+         "executed": 0.03369252011179924,
+         "saturated_fraction": 8.704735376044568e-05
+        },
+        "THJ0": {
+         "proposed": 0.014042988419532776,
+         "executed": 0.014035199768841267,
+         "saturated_fraction": 0.0002176183844011142
+        }
+       }
+      }
+     },
+     {
+      "k": 5,
+      "transitions": 460800,
+      "theta_sha256": "3d1b555bdeb9b478be4e0a5ece9500944b6481baf46a9c4cb5d276bf9e079610",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 30,
+      "success": 0.46875,
+      "completed": 0.953125,
+      "tail_hit_fraction": 0.48463541666666665,
+      "hit_fraction": 0.5014798050139276,
+      "mean_length": 343.578125,
+      "mean_abs_spin": 5.245121126994491,
+      "mean_transverse": 1.6517710105981678,
+      "drops": 3,
+      "tail_spin_failures": 31,
+      "median_fall_step": 27.0,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.02104300819337368,
+       "mean_abs_executed": 0.020924970507621765,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.014347509481012821,
+         "executed": 0.014347509481012821,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.020481674000620842,
+         "executed": 0.020481674000620842,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.015863370150327682,
+         "executed": 0.015863370150327682,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.048605162650346756,
+         "executed": 0.048605162650346756,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.01185891218483448,
+         "executed": 0.01185891218483448,
+         "saturated_fraction": 0.0
+        },
+        "LFJ4": {
+         "proposed": 0.016580158844590187,
+         "executed": 0.016580158844590187,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.01132671907544136,
+         "executed": 0.01085751038044691,
+         "saturated_fraction": 0.04395891364902507
+        },
+        "FFJ2": {
+         "proposed": 0.0229654498398304,
+         "executed": 0.0229654498398304,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.013897186145186424,
+         "executed": 0.013674729503691196,
+         "saturated_fraction": 0.015886142061281337
+        },
+        "RFJ2": {
+         "proposed": 0.010642669163644314,
+         "executed": 0.010642669163644314,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.050850775092840195,
+         "executed": 0.050651535391807556,
+         "saturated_fraction": 0.0196291782729805
+        },
+        "THJ3": {
+         "proposed": 0.014254915527999401,
+         "executed": 0.014254915527999401,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.0049958862364292145,
+         "executed": 0.004966398235410452,
+         "saturated_fraction": 0.0015668523676880223
+        },
+        "MFJ1": {
+         "proposed": 0.009984531439840794,
+         "executed": 0.009983809664845467,
+         "saturated_fraction": 4.352367688022284e-05
+        },
+        "RFJ1": {
+         "proposed": 0.012030519545078278,
+         "executed": 0.012030519545078278,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.053614187985658646,
+         "executed": 0.053614187985658646,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.035154398530721664,
+         "executed": 0.035154398530721664,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.023571789264678955,
+         "executed": 0.022137893363833427,
+         "saturated_fraction": 0.149808495821727
+        },
+        "THJ1": {
+         "proposed": 0.020734641700983047,
+         "executed": 0.020733147859573364,
+         "saturated_fraction": 8.704735376044568e-05
+        },
+        "THJ0": {
+         "proposed": 0.009099719114601612,
+         "executed": 0.009095459245145321,
+         "saturated_fraction": 0.00013057103064066853
+        }
+       }
+      }
+     }
+    ],
+    "selected": 0,
+    "training_rejected": true
+   },
+   "ppo": {
+    "checkpoints": [
+     {
+      "k": 1,
+      "transitions": 92160,
+      "theta_sha256": "8b2f22a05962c0328e0dd3cb93ee95a589bf61ac5168b3373579dc09385b9c5f",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 38,
+      "success": 0.59375,
+      "completed": 0.953125,
+      "tail_hit_fraction": 0.6135027885027885,
+      "hit_fraction": 0.5852218286606343,
+      "mean_length": 343.609375,
+      "mean_abs_spin": 5.512735289521515,
+      "mean_transverse": 1.6601282901829109,
+      "drops": 3,
+      "tail_spin_failures": 23,
+      "median_fall_step": 28.0,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.007583878003060818,
+       "mean_abs_executed": 0.007433965802192688,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.008390343748033047,
+         "executed": 0.008390343748033047,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.01196433138102293,
+         "executed": 0.01196433138102293,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.007480140309780836,
+         "executed": 0.007480140309780836,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.00606963038444519,
+         "executed": 0.00606963038444519,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.007512426003813744,
+         "executed": 0.007512426003813744,
+         "saturated_fraction": 0.0
+        },
+        "LFJ4": {
+         "proposed": 0.004327542148530483,
+         "executed": 0.004327542148530483,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.006122933700680733,
+         "executed": 0.005930035375058651,
+         "saturated_fraction": 0.037299791086350974
+        },
+        "FFJ2": {
+         "proposed": 0.00524106016382575,
+         "executed": 0.00524106016382575,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.006630167830735445,
+         "executed": 0.006604559253901243,
+         "saturated_fraction": 0.007181406685236769
+        },
+        "RFJ2": {
+         "proposed": 0.016392501071095467,
+         "executed": 0.016392501071095467,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.006856210995465517,
+         "executed": 0.004300964530557394,
+         "saturated_fraction": 0.36246518105849584
+        },
+        "THJ3": {
+         "proposed": 0.010303312912583351,
+         "executed": 0.010303312912583351,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.004678011871874332,
+         "executed": 0.004678011871874332,
+         "saturated_fraction": 0.0
+        },
+        "MFJ1": {
+         "proposed": 0.007934316992759705,
+         "executed": 0.007934316992759705,
+         "saturated_fraction": 0.0
+        },
+        "RFJ1": {
+         "proposed": 0.009709872305393219,
+         "executed": 0.009709872305393219,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.00582100311294198,
+         "executed": 0.00582100311294198,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.005020675249397755,
+         "executed": 0.005020675249397755,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.00228503393009305,
+         "executed": 0.0020605262834578753,
+         "saturated_fraction": 0.1762708913649025
+        },
+        "THJ1": {
+         "proposed": 0.006100114900618792,
+         "executed": 0.006100114900618792,
+         "saturated_fraction": 0.0
+        },
+        "THJ0": {
+         "proposed": 0.012837926857173443,
+         "executed": 0.012837926857173443,
+         "saturated_fraction": 0.0
+        }
+       }
+      }
+     },
+     {
+      "k": 2,
+      "transitions": 184320,
+      "theta_sha256": "352347fe17e444c607557c4cd77682d916a81bc526941d11c5f879ac2b0ec958",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 29,
+      "success": 0.453125,
+      "completed": 0.9375,
+      "tail_hit_fraction": 0.4867540001907394,
+      "hit_fraction": 0.4877456146289938,
+      "mean_length": 338.890625,
+      "mean_abs_spin": 5.227690380997956,
+      "mean_transverse": 1.6341229213867337,
+      "drops": 4,
+      "tail_spin_failures": 31,
+      "median_fall_step": 34.0,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.01523775327950716,
+       "mean_abs_executed": 0.015117141418159008,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.02069890685379505,
+         "executed": 0.02069890685379505,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.036639321595430374,
+         "executed": 0.036639321595430374,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.012212825939059258,
+         "executed": 0.012212825939059258,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.013203618116676807,
+         "executed": 0.013203618116676807,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.014558748342096806,
+         "executed": 0.014557910151779652,
+         "saturated_fraction": 8.704735376044568e-05
+        },
+        "LFJ4": {
+         "proposed": 0.004457507748156786,
+         "executed": 0.004457507748156786,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.010754365473985672,
+         "executed": 0.010395926423370838,
+         "saturated_fraction": 0.039258356545961
+        },
+        "FFJ2": {
+         "proposed": 0.013347121886909008,
+         "executed": 0.013347121886909008,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.014216768555343151,
+         "executed": 0.013272490352392197,
+         "saturated_fraction": 0.09814589136490251
+        },
+        "RFJ2": {
+         "proposed": 0.025734681636095047,
+         "executed": 0.025734681636095047,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.002917748410254717,
+         "executed": 0.00209309090860188,
+         "saturated_fraction": 0.2157033426183844
+        },
+        "THJ3": {
+         "proposed": 0.018024472519755363,
+         "executed": 0.018024472519755363,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.012373222038149834,
+         "executed": 0.012288697995245457,
+         "saturated_fraction": 0.01749651810584958
+        },
+        "MFJ1": {
+         "proposed": 0.020057087764143944,
+         "executed": 0.020057087764143944,
+         "saturated_fraction": 0.0
+        },
+        "RFJ1": {
+         "proposed": 0.016496295109391212,
+         "executed": 0.016496295109391212,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.007984684780240059,
+         "executed": 0.007984684780240059,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.007616170682013035,
+         "executed": 0.007616170682013035,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.010526614263653755,
+         "executed": 0.010393799282610416,
+         "saturated_fraction": 0.016930710306406686
+        },
+        "THJ1": {
+         "proposed": 0.010850285179913044,
+         "executed": 0.010783596895635128,
+         "saturated_fraction": 0.014145194986072423
+        },
+        "THJ0": {
+         "proposed": 0.032084621489048004,
+         "executed": 0.032084621489048004,
+         "saturated_fraction": 0.0
+        }
+       }
+      }
+     },
+     {
+      "k": 3,
+      "transitions": 276480,
+      "theta_sha256": "a402e3689514f9dd4dea3b2f39d76fe5f6ac9f2b622f0a636239e4e075e44d1f",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 26,
+      "success": 0.40625,
+      "completed": 0.9375,
+      "tail_hit_fraction": 0.4411988606505266,
+      "hit_fraction": 0.45424580818998805,
+      "mean_length": 338.9375,
+      "mean_abs_spin": 5.122335844673216,
+      "mean_transverse": 1.6682154736481607,
+      "drops": 4,
+      "tail_spin_failures": 34,
+      "median_fall_step": 34.5,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.018685823306441307,
+       "mean_abs_executed": 0.018319817259907722,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.02370690554380417,
+         "executed": 0.02370690554380417,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.038969483226537704,
+         "executed": 0.038969483226537704,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.007018204312771559,
+         "executed": 0.007018204312771559,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.035830844193696976,
+         "executed": 0.035830844193696976,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.014983324334025383,
+         "executed": 0.014983220025897026,
+         "saturated_fraction": 4.352367688022284e-05
+        },
+        "LFJ4": {
+         "proposed": 0.01177900843322277,
+         "executed": 0.01177900843322277,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.011299863457679749,
+         "executed": 0.011045556515455246,
+         "saturated_fraction": 0.04195682451253482
+        },
+        "FFJ2": {
+         "proposed": 0.007551958784461021,
+         "executed": 0.007551958784461021,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.029470274224877357,
+         "executed": 0.02444063499569893,
+         "saturated_fraction": 0.141408426183844
+        },
+        "RFJ2": {
+         "proposed": 0.02770172245800495,
+         "executed": 0.02770172245800495,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.004853468853980303,
+         "executed": 0.0030717465560883284,
+         "saturated_fraction": 0.32594881615598886
+        },
+        "THJ3": {
+         "proposed": 0.016681330278515816,
+         "executed": 0.016681330278515816,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.005687907338142395,
+         "executed": 0.005670607089996338,
+         "saturated_fraction": 0.0020891364902506965
+        },
+        "MFJ1": {
+         "proposed": 0.05002675950527191,
+         "executed": 0.05002675950527191,
+         "saturated_fraction": 0.0
+        },
+        "RFJ1": {
+         "proposed": 0.017336808145046234,
+         "executed": 0.017336808145046234,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.013136789202690125,
+         "executed": 0.013136789202690125,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.008296421729028225,
+         "executed": 0.008296421729028225,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.006316155660897493,
+         "executed": 0.006159486714750528,
+         "saturated_fraction": 0.032990947075208915
+        },
+        "THJ1": {
+         "proposed": 0.01052760612219572,
+         "executed": 0.01044724602252245,
+         "saturated_fraction": 0.013666434540389972
+        },
+        "THJ0": {
+         "proposed": 0.032541606575250626,
+         "executed": 0.032541606575250626,
+         "saturated_fraction": 0.0
+        }
+       }
+      }
+     },
+     {
+      "k": 4,
+      "transitions": 368640,
+      "theta_sha256": "8b2e369c5b380d72cf6f4d7108970955a2a567694417960561373e104945c5ab",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 28,
+      "success": 0.4375,
+      "completed": 0.9375,
+      "tail_hit_fraction": 0.4722811875391983,
+      "hit_fraction": 0.47992974835628277,
+      "mean_length": 338.890625,
+      "mean_abs_spin": 5.539222918450832,
+      "mean_transverse": 1.859856242313981,
+      "drops": 4,
+      "tail_spin_failures": 32,
+      "median_fall_step": 33.5,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.020213184878230095,
+       "mean_abs_executed": 0.019763341173529625,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.015163284726440907,
+         "executed": 0.015163284726440907,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.02131694182753563,
+         "executed": 0.02131694182753563,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.011961381882429123,
+         "executed": 0.011961381882429123,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.05327713117003441,
+         "executed": 0.05327713117003441,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.005959807895123959,
+         "executed": 0.005959345959126949,
+         "saturated_fraction": 8.704735376044568e-05
+        },
+        "LFJ4": {
+         "proposed": 0.014076079241931438,
+         "executed": 0.014076079241931438,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.009785919450223446,
+         "executed": 0.009721378795802593,
+         "saturated_fraction": 0.02620125348189415
+        },
+        "FFJ2": {
+         "proposed": 0.011944483034312725,
+         "executed": 0.011944483034312725,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.039361461997032166,
+         "executed": 0.03413422033190727,
+         "saturated_fraction": 0.12156162952646239
+        },
+        "RFJ2": {
+         "proposed": 0.016646286472678185,
+         "executed": 0.016646286472678185,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.010577469132840633,
+         "executed": 0.0070676617324352264,
+         "saturated_fraction": 0.3151984679665738
+        },
+        "THJ3": {
+         "proposed": 0.01886076293885708,
+         "executed": 0.01886076293885708,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.009368806146085262,
+         "executed": 0.009258651174604893,
+         "saturated_fraction": 0.008313022284122562
+        },
+        "MFJ1": {
+         "proposed": 0.07487523555755615,
+         "executed": 0.07487523555755615,
+         "saturated_fraction": 0.0
+        },
+        "RFJ1": {
+         "proposed": 0.012411651201546192,
+         "executed": 0.012411651201546192,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.010394740849733353,
+         "executed": 0.010394740849733353,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.008265513926744461,
+         "executed": 0.008265513926744461,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.011621855199337006,
+         "executed": 0.011537187732756138,
+         "saturated_fraction": 0.017540041782729804
+        },
+        "THJ1": {
+         "proposed": 0.013707878068089485,
+         "executed": 0.013707878068089485,
+         "saturated_fraction": 0.0
+        },
+        "THJ0": {
+         "proposed": 0.034687019884586334,
+         "executed": 0.034687019884586334,
+         "saturated_fraction": 0.0
+        }
+       }
+      }
+     },
+     {
+      "k": 5,
+      "transitions": 460800,
+      "theta_sha256": "2b519c639f529319e1aa5adf4d4715a8f8bf251fc465624e9809be6093aec812",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 28,
+      "success": 0.4375,
+      "completed": 0.953125,
+      "tail_hit_fraction": 0.45589734213577904,
+      "hit_fraction": 0.46081624301785884,
+      "mean_length": 343.75,
+      "mean_abs_spin": 5.142720140982419,
+      "mean_transverse": 1.6610465878620744,
+      "drops": 3,
+      "tail_spin_failures": 33,
+      "median_fall_step": 34.0,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.017358951270580292,
+       "mean_abs_executed": 0.016808396205306053,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.00688597746193409,
+         "executed": 0.00688597746193409,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.013499664142727852,
+         "executed": 0.013499664142727852,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.013949541375041008,
+         "executed": 0.013949541375041008,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.048455365002155304,
+         "executed": 0.048455365002155304,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.0051177144050598145,
+         "executed": 0.0051177144050598145,
+         "saturated_fraction": 0.0
+        },
+        "LFJ4": {
+         "proposed": 0.008660197257995605,
+         "executed": 0.008660197257995605,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.009155978448688984,
+         "executed": 0.009153855964541435,
+         "saturated_fraction": 0.001131615598885794
+        },
+        "FFJ2": {
+         "proposed": 0.01489773578941822,
+         "executed": 0.01489773578941822,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.04071924835443497,
+         "executed": 0.03191632404923439,
+         "saturated_fraction": 0.14998259052924792
+        },
+        "RFJ2": {
+         "proposed": 0.009736393578350544,
+         "executed": 0.009736393578350544,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.0063723064959049225,
+         "executed": 0.004713644739240408,
+         "saturated_fraction": 0.1750957520891365
+        },
+        "THJ3": {
+         "proposed": 0.012668338604271412,
+         "executed": 0.012668338604271412,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.013694523833692074,
+         "executed": 0.013379856944084167,
+         "saturated_fraction": 0.012447771587743732
+        },
+        "MFJ1": {
+         "proposed": 0.08179213106632233,
+         "executed": 0.0817919671535492,
+         "saturated_fraction": 4.352367688022284e-05
+        },
+        "RFJ1": {
+         "proposed": 0.007377598434686661,
+         "executed": 0.007377598434686661,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.008851887658238411,
+         "executed": 0.008851887658238411,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.0068694958463311195,
+         "executed": 0.0068694958463311195,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.0066038016229867935,
+         "executed": 0.006371216382831335,
+         "saturated_fraction": 0.0676357938718663
+        },
+        "THJ1": {
+         "proposed": 0.010307732969522476,
+         "executed": 0.010307732969522476,
+         "saturated_fraction": 0.0
+        },
+        "THJ0": {
+         "proposed": 0.02156340703368187,
+         "executed": 0.02156340703368187,
+         "saturated_fraction": 0.0
+        }
+       }
+      }
+     }
+    ],
+    "selected": 1,
+    "training_rejected": false
+   }
+  },
+  "b1": {
+   "manifest": {
+    "path": "config/manifests/pen_spin_stage3_reward_selection_s4765.yaml",
+    "sha256": "9375cb1d54127940e49caaf96b98c0f20ff809ebfe1323c2ad69e45dc579ef65"
+   },
+   "reference": {
+    "n": 64,
+    "successes": 29,
+    "success": 0.453125,
+    "completed": 0.890625,
+    "tail_hit_fraction": 0.48614239304626533,
+    "hit_fraction": 0.48770924541395333,
+    "mean_length": 323.578125,
+    "mean_abs_spin": 6.562064561992884,
+    "mean_transverse": 1.7937270414549857,
+    "drops": 7,
+    "tail_spin_failures": 28,
+    "median_fall_step": 35.0
+   },
+   "draws": {
+    "checkpoints": [
+     {
+      "k": 1,
+      "transitions": 92160,
+      "theta_sha256": "a959d5851871f835cae1b3619576658c1b90e21fdbc59ff5ab0091b0cad5f769",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 29,
+      "success": 0.453125,
+      "completed": 0.890625,
+      "tail_hit_fraction": 0.5023871409107656,
+      "hit_fraction": 0.510005235154034,
+      "mean_length": 323.5,
+      "mean_abs_spin": 6.477094022557139,
+      "mean_transverse": 1.7145825643092394,
+      "drops": 7,
+      "tail_spin_failures": 28,
+      "median_fall_step": 32.0,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.01178270298987627,
+       "mean_abs_executed": 0.011655868031084538,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.017157908529043198,
+         "executed": 0.017157908529043198,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.018975423648953438,
+         "executed": 0.018975423648953438,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.01317622046917677,
+         "executed": 0.01317622046917677,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.010345466434955597,
+         "executed": 0.010345466434955597,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.012721423991024494,
+         "executed": 0.012721423991024494,
+         "saturated_fraction": 0.0
+        },
+        "LFJ4": {
+         "proposed": 0.006489416118711233,
+         "executed": 0.006489416118711233,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.01213882490992546,
+         "executed": 0.011527160182595253,
+         "saturated_fraction": 0.09253133704735376
+        },
+        "FFJ2": {
+         "proposed": 0.015966160222887993,
+         "executed": 0.015966160222887993,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.005779809784144163,
+         "executed": 0.00577623350545764,
+         "saturated_fraction": 0.0019585654596100278
+        },
+        "RFJ2": {
+         "proposed": 0.021228859201073647,
+         "executed": 0.021228859201073647,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.0046118637546896935,
+         "executed": 0.00430093752220273,
+         "saturated_fraction": 0.09287952646239554
+        },
+        "THJ3": {
+         "proposed": 0.012139033526182175,
+         "executed": 0.012139033526182175,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.014349478296935558,
+         "executed": 0.013767729513347149,
+         "saturated_fraction": 0.04208739554317549
+        },
+        "MFJ1": {
+         "proposed": 0.014936329796910286,
+         "executed": 0.014936329796910286,
+         "saturated_fraction": 0.0
+        },
+        "RFJ1": {
+         "proposed": 0.013564546592533588,
+         "executed": 0.013564546592533588,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.006490650121122599,
+         "executed": 0.006490650121122599,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.00785608310252428,
+         "executed": 0.00785608310252428,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.006481248885393143,
+         "executed": 0.005913489498198032,
+         "saturated_fraction": 0.14275766016713093
+        },
+        "THJ1": {
+         "proposed": 0.012581411749124527,
+         "executed": 0.012139616534113884,
+         "saturated_fraction": 0.06254352367688022
+        },
+        "THJ0": {
+         "proposed": 0.008663897402584553,
+         "executed": 0.008644656278192997,
+         "saturated_fraction": 0.0011751392757660168
+        }
+       }
+      }
+     },
+     {
+      "k": 2,
+      "transitions": 184320,
+      "theta_sha256": "a959d5851871f835cae1b3619576658c1b90e21fdbc59ff5ab0091b0cad5f769",
+      "reused_cell": true,
+      "n": 64,
+      "successes": 29,
+      "success": 0.453125,
+      "completed": 0.890625,
+      "tail_hit_fraction": 0.5023871409107656,
+      "hit_fraction": 0.510005235154034,
+      "mean_length": 323.5,
+      "mean_abs_spin": 6.477094022557139,
+      "mean_transverse": 1.7145825643092394,
+      "drops": 7,
+      "tail_spin_failures": 28,
+      "median_fall_step": 32.0
+     },
+     {
+      "k": 3,
+      "transitions": 276480,
+      "theta_sha256": "a959d5851871f835cae1b3619576658c1b90e21fdbc59ff5ab0091b0cad5f769",
+      "reused_cell": true,
+      "n": 64,
+      "successes": 29,
+      "success": 0.453125,
+      "completed": 0.890625,
+      "tail_hit_fraction": 0.5023871409107656,
+      "hit_fraction": 0.510005235154034,
+      "mean_length": 323.5,
+      "mean_abs_spin": 6.477094022557139,
+      "mean_transverse": 1.7145825643092394,
+      "drops": 7,
+      "tail_spin_failures": 28,
+      "median_fall_step": 32.0
+     },
+     {
+      "k": 4,
+      "transitions": 368640,
+      "theta_sha256": "a959d5851871f835cae1b3619576658c1b90e21fdbc59ff5ab0091b0cad5f769",
+      "reused_cell": true,
+      "n": 64,
+      "successes": 29,
+      "success": 0.453125,
+      "completed": 0.890625,
+      "tail_hit_fraction": 0.5023871409107656,
+      "hit_fraction": 0.510005235154034,
+      "mean_length": 323.5,
+      "mean_abs_spin": 6.477094022557139,
+      "mean_transverse": 1.7145825643092394,
+      "drops": 7,
+      "tail_spin_failures": 28,
+      "median_fall_step": 32.0
+     },
+     {
+      "k": 5,
+      "transitions": 460800,
+      "theta_sha256": "a959d5851871f835cae1b3619576658c1b90e21fdbc59ff5ab0091b0cad5f769",
+      "reused_cell": true,
+      "n": 64,
+      "successes": 29,
+      "success": 0.453125,
+      "completed": 0.890625,
+      "tail_hit_fraction": 0.5023871409107656,
+      "hit_fraction": 0.510005235154034,
+      "mean_length": 323.5,
+      "mean_abs_spin": 6.477094022557139,
+      "mean_transverse": 1.7145825643092394,
+      "drops": 7,
+      "tail_spin_failures": 28,
+      "median_fall_step": 32.0
+     }
+    ],
+    "selected": 1,
+    "training_rejected": false
+   },
+   "ars": {
+    "checkpoints": [
+     {
+      "k": 1,
+      "transitions": 92160,
+      "theta_sha256": "95de1de07521f4f775aceb9244c6cf81cd72efca30fa9d470407916459b855a5",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 31,
+      "success": 0.484375,
+      "completed": 0.890625,
+      "tail_hit_fraction": 0.5488795047578232,
+      "hit_fraction": 0.5470529611180832,
+      "mean_length": 323.609375,
+      "mean_abs_spin": 7.352265675086528,
+      "mean_transverse": 1.877445457270369,
+      "drops": 7,
+      "tail_spin_failures": 26,
+      "median_fall_step": 35.0,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.015563404187560081,
+       "mean_abs_executed": 0.01543484628200531,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.014176355674862862,
+         "executed": 0.014176355674862862,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.00371021986939013,
+         "executed": 0.00371021986939013,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.01438289787620306,
+         "executed": 0.01438289787620306,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.02314848266541958,
+         "executed": 0.02314848266541958,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.012664108537137508,
+         "executed": 0.012664108537137508,
+         "saturated_fraction": 0.0
+        },
+        "LFJ4": {
+         "proposed": 0.01912662386894226,
+         "executed": 0.01912662386894226,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.00272244936786592,
+         "executed": 0.002653069095686078,
+         "saturated_fraction": 0.04626566852367688
+        },
+        "FFJ2": {
+         "proposed": 0.019634226337075233,
+         "executed": 0.019634226337075233,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.00891511794179678,
+         "executed": 0.008547510020434856,
+         "saturated_fraction": 0.08104108635097493
+        },
+        "RFJ2": {
+         "proposed": 0.021576711907982826,
+         "executed": 0.021576711907982826,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.007423482369631529,
+         "executed": 0.006721572484821081,
+         "saturated_fraction": 0.22823816155988857
+        },
+        "THJ3": {
+         "proposed": 0.028872577473521233,
+         "executed": 0.028872577473521233,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.030729785561561584,
+         "executed": 0.030723104253411293,
+         "saturated_fraction": 0.000826949860724234
+        },
+        "MFJ1": {
+         "proposed": 0.015381776727735996,
+         "executed": 0.015378282405436039,
+         "saturated_fraction": 0.0007834261838440111
+        },
+        "RFJ1": {
+         "proposed": 0.008007938973605633,
+         "executed": 0.008007938973605633,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.016810351982712746,
+         "executed": 0.016810351982712746,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.0077044544741511345,
+         "executed": 0.0077044544741511345,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.021366646513342857,
+         "executed": 0.021080784499645233,
+         "saturated_fraction": 0.10058321727019498
+        },
+        "THJ1": {
+         "proposed": 0.021798785775899887,
+         "executed": 0.02066406048834324,
+         "saturated_fraction": 0.0499216573816156
+        },
+        "THJ0": {
+         "proposed": 0.013115073554217815,
+         "executed": 0.013113580644130707,
+         "saturated_fraction": 0.00017409470752089137
+        }
+       }
+      }
+     },
+     {
+      "k": 2,
+      "transitions": 184320,
+      "theta_sha256": "8e0c3979755a312deb6101a41568d6bd712188b32e11797787fd369a6af38aa7",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 26,
+      "success": 0.40625,
+      "completed": 0.890625,
+      "tail_hit_fraction": 0.4453710279882155,
+      "hit_fraction": 0.46065219094086174,
+      "mean_length": 323.734375,
+      "mean_abs_spin": 6.4918588092550635,
+      "mean_transverse": 1.7958479765802622,
+      "drops": 7,
+      "tail_spin_failures": 31,
+      "median_fall_step": 36.0,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.02668944001197815,
+       "mean_abs_executed": 0.026133814826607704,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.016540294513106346,
+         "executed": 0.016540294513106346,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.007491197902709246,
+         "executed": 0.007491197902709246,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.031663935631513596,
+         "executed": 0.031663935631513596,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.01933297887444496,
+         "executed": 0.01933297887444496,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.01569402776658535,
+         "executed": 0.01569402776658535,
+         "saturated_fraction": 0.0
+        },
+        "LFJ4": {
+         "proposed": 0.026269562542438507,
+         "executed": 0.026269562542438507,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.005467370618134737,
+         "executed": 0.004899848252534866,
+         "saturated_fraction": 0.0813457520891365
+        },
+        "FFJ2": {
+         "proposed": 0.04337260499596596,
+         "executed": 0.04337260499596596,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.007553617469966412,
+         "executed": 0.00749178696423769,
+         "saturated_fraction": 0.02102193593314763
+        },
+        "RFJ2": {
+         "proposed": 0.026789134368300438,
+         "executed": 0.026789134368300438,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.03091822750866413,
+         "executed": 0.02328883484005928,
+         "saturated_fraction": 0.3744341922005571
+        },
+        "THJ3": {
+         "proposed": 0.03167754039168358,
+         "executed": 0.03167754039168358,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.05457395315170288,
+         "executed": 0.05457395315170288,
+         "saturated_fraction": 0.0
+        },
+        "MFJ1": {
+         "proposed": 0.01611027680337429,
+         "executed": 0.01611027680337429,
+         "saturated_fraction": 0.0
+        },
+        "RFJ1": {
+         "proposed": 0.00596179673448205,
+         "executed": 0.00596179673448205,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.0546545535326004,
+         "executed": 0.0546545535326004,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.00850558839738369,
+         "executed": 0.00850558839738369,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.09629492461681366,
+         "executed": 0.09621182829141617,
+         "saturated_fraction": 0.0019585654596100278
+        },
+        "THJ1": {
+         "proposed": 0.027815062552690506,
+         "executed": 0.02504538744688034,
+         "saturated_fraction": 0.1886316155988858
+        },
+        "THJ0": {
+         "proposed": 0.007102176547050476,
+         "executed": 0.007101196330040693,
+         "saturated_fraction": 0.0002176183844011142
+        }
+       }
+      }
+     },
+     {
+      "k": 3,
+      "transitions": 276480,
+      "theta_sha256": "1f76e61ced97c3157c4c2b9e5d595b696da8cf084f7687de386099e0ac66b2c6",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 24,
+      "success": 0.375,
+      "completed": 0.921875,
+      "tail_hit_fraction": 0.4380614895162309,
+      "hit_fraction": 0.45013495748280474,
+      "mean_length": 333.625,
+      "mean_abs_spin": 6.198645639698952,
+      "mean_transverse": 1.7397502462845296,
+      "drops": 5,
+      "tail_spin_failures": 35,
+      "median_fall_step": 35.0,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.025720421224832535,
+       "mean_abs_executed": 0.02539830468595028,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.026535069569945335,
+         "executed": 0.026535069569945335,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.01744433119893074,
+         "executed": 0.01744433119893074,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.02101116068661213,
+         "executed": 0.02101116068661213,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.03421982750296593,
+         "executed": 0.03421982750296593,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.014808150939643383,
+         "executed": 0.014808150939643383,
+         "saturated_fraction": 0.0
+        },
+        "LFJ4": {
+         "proposed": 0.020879104733467102,
+         "executed": 0.020879104733467102,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.006345643196254969,
+         "executed": 0.006311324425041676,
+         "saturated_fraction": 0.02237116991643454
+        },
+        "FFJ2": {
+         "proposed": 0.02123851142823696,
+         "executed": 0.02123851142823696,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.014403642155230045,
+         "executed": 0.01365603320300579,
+         "saturated_fraction": 0.04713614206128134
+        },
+        "RFJ2": {
+         "proposed": 0.01751953735947609,
+         "executed": 0.01751953735947609,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.022394701838493347,
+         "executed": 0.02047475054860115,
+         "saturated_fraction": 0.2244516016713092
+        },
+        "THJ3": {
+         "proposed": 0.03527593985199928,
+         "executed": 0.03527593985199928,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.05904313921928406,
+         "executed": 0.05891724303364754,
+         "saturated_fraction": 0.009749303621169917
+        },
+        "MFJ1": {
+         "proposed": 0.028002353385090828,
+         "executed": 0.028002353385090828,
+         "saturated_fraction": 0.0
+        },
+        "RFJ1": {
+         "proposed": 0.01772645115852356,
+         "executed": 0.01772645115852356,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.0352492518723011,
+         "executed": 0.0352492518723011,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.011023938655853271,
+         "executed": 0.011023938655853271,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.08707298338413239,
+         "executed": 0.08379965275526047,
+         "saturated_fraction": 0.15468314763231197
+        },
+        "THJ1": {
+         "proposed": 0.021587233990430832,
+         "executed": 0.021252276375889778,
+         "saturated_fraction": 0.03403551532033426
+        },
+        "THJ0": {
+         "proposed": 0.0026274281553924084,
+         "executed": 0.0026211468502879143,
+         "saturated_fraction": 0.0006963788300835655
+        }
+       }
+      }
+     },
+     {
+      "k": 4,
+      "transitions": 368640,
+      "theta_sha256": "f0c0f43cbf87922698b149b7dab3c775630b8e094442bb1c97c2226e85d47562",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 32,
+      "success": 0.5,
+      "completed": 0.890625,
+      "tail_hit_fraction": 0.5523276066244817,
+      "hit_fraction": 0.5408392279142052,
+      "mean_length": 324.1875,
+      "mean_abs_spin": 6.930788070894778,
+      "mean_transverse": 1.8250990281812847,
+      "drops": 7,
+      "tail_spin_failures": 25,
+      "median_fall_step": 40.0,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.028820913285017014,
+       "mean_abs_executed": 0.028500627726316452,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.002828468568623066,
+         "executed": 0.002828468568623066,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.019992852583527565,
+         "executed": 0.019992852583527565,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.023428916931152344,
+         "executed": 0.023428916931152344,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.04849030822515488,
+         "executed": 0.04849030822515488,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.03031170926988125,
+         "executed": 0.03031170926988125,
+         "saturated_fraction": 0.0
+        },
+        "LFJ4": {
+         "proposed": 0.039040323346853256,
+         "executed": 0.039040323346853256,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.021250266581773758,
+         "executed": 0.021193206310272217,
+         "saturated_fraction": 0.011577298050139276
+        },
+        "FFJ2": {
+         "proposed": 0.02805405482649803,
+         "executed": 0.02805405482649803,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.020370757207274437,
+         "executed": 0.019537154585123062,
+         "saturated_fraction": 0.04461176880222841
+        },
+        "RFJ2": {
+         "proposed": 0.010948406532406807,
+         "executed": 0.010948406532406807,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.02381528541445732,
+         "executed": 0.022729884833097458,
+         "saturated_fraction": 0.12647980501392758
+        },
+        "THJ3": {
+         "proposed": 0.03583171218633652,
+         "executed": 0.03583171218633652,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.053023844957351685,
+         "executed": 0.05302177369594574,
+         "saturated_fraction": 0.00047876044568245123
+        },
+        "MFJ1": {
+         "proposed": 0.0357842743396759,
+         "executed": 0.0357842743396759,
+         "saturated_fraction": 0.0
+        },
+        "RFJ1": {
+         "proposed": 0.006792695261538029,
+         "executed": 0.006792695261538029,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.028841029852628708,
+         "executed": 0.028841029852628708,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.030424728989601135,
+         "executed": 0.030424728989601135,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.08765055239200592,
+         "executed": 0.08328168094158173,
+         "saturated_fraction": 0.15311629526462395
+        },
+        "THJ1": {
+         "proposed": 0.018685420975089073,
+         "executed": 0.018668340519070625,
+         "saturated_fraction": 0.0009575208913649025
+        },
+        "THJ0": {
+         "proposed": 0.010852683335542679,
+         "executed": 0.010811003856360912,
+         "saturated_fraction": 0.0012621866295264624
+        }
+       }
+      }
+     },
+     {
+      "k": 5,
+      "transitions": 460800,
+      "theta_sha256": "218acf5844451fd0481e032fa219bdacd7f8fdc238fa5f9889ee6b08381c7f21",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 22,
+      "success": 0.34375,
+      "completed": 0.875,
+      "tail_hit_fraction": 0.41850871655147975,
+      "hit_fraction": 0.43026156009836924,
+      "mean_length": 318.859375,
+      "mean_abs_spin": 6.309485563077033,
+      "mean_transverse": 1.9264804203994572,
+      "drops": 8,
+      "tail_spin_failures": 34,
+      "median_fall_step": 37.0,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.026781553402543068,
+       "mean_abs_executed": 0.026403453201055527,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.013970996253192425,
+         "executed": 0.013970996253192425,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.011931303888559341,
+         "executed": 0.011931303888559341,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.01991613209247589,
+         "executed": 0.01991613209247589,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.052535224705934525,
+         "executed": 0.052535224705934525,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.02841532975435257,
+         "executed": 0.02841532975435257,
+         "saturated_fraction": 0.0
+        },
+        "LFJ4": {
+         "proposed": 0.04196055978536606,
+         "executed": 0.04196055978536606,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.017644863575696945,
+         "executed": 0.0169210284948349,
+         "saturated_fraction": 0.08682973537604456
+        },
+        "FFJ2": {
+         "proposed": 0.020537104457616806,
+         "executed": 0.020537104457616806,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.015026983805000782,
+         "executed": 0.013653816655278206,
+         "saturated_fraction": 0.054578690807799445
+        },
+        "RFJ2": {
+         "proposed": 0.01407668273895979,
+         "executed": 0.01407668273895979,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.02068471908569336,
+         "executed": 0.019265066832304,
+         "saturated_fraction": 0.23045786908077995
+        },
+        "THJ3": {
+         "proposed": 0.015653720125555992,
+         "executed": 0.015653720125555992,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.03856545686721802,
+         "executed": 0.0385577566921711,
+         "saturated_fraction": 0.0007834261838440111
+        },
+        "MFJ1": {
+         "proposed": 0.03680601716041565,
+         "executed": 0.03680601716041565,
+         "saturated_fraction": 0.0
+        },
+        "RFJ1": {
+         "proposed": 0.010739414021372795,
+         "executed": 0.010739414021372795,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.026743795722723007,
+         "executed": 0.026743795722723007,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.04112183302640915,
+         "executed": 0.04112183302640915,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.07879458367824554,
+         "executed": 0.07478976249694824,
+         "saturated_fraction": 0.19868558495821728
+        },
+        "THJ1": {
+         "proposed": 0.02058299630880356,
+         "executed": 0.02058223821222782,
+         "saturated_fraction": 8.704735376044568e-05
+        },
+        "THJ0": {
+         "proposed": 0.009923321194946766,
+         "executed": 0.009891281835734844,
+         "saturated_fraction": 0.001088091922005571
+        }
+       }
+      }
+     }
+    ],
+    "selected": 4,
+    "training_rejected": false
+   },
+   "ppo": {
+    "checkpoints": [
+     {
+      "k": 1,
+      "transitions": 92160,
+      "theta_sha256": "26179690a03698d32ed686650a65c691ef60341c6d8e19d936e349731cfa4c53",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 24,
+      "success": 0.375,
+      "completed": 0.875,
+      "tail_hit_fraction": 0.42547164140513066,
+      "hit_fraction": 0.4360297600216581,
+      "mean_length": 318.6875,
+      "mean_abs_spin": 6.038218573667109,
+      "mean_transverse": 1.8712338502518833,
+      "drops": 8,
+      "tail_spin_failures": 32,
+      "median_fall_step": 36.0,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.0075246007181704044,
+       "mean_abs_executed": 0.007380399852991104,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.00464602978900075,
+         "executed": 0.00464602978900075,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.006568582728505135,
+         "executed": 0.006568582728505135,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.0031511534471064806,
+         "executed": 0.0031511534471064806,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.008403373882174492,
+         "executed": 0.008403373882174492,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.012672384269535542,
+         "executed": 0.012672384269535542,
+         "saturated_fraction": 0.0
+        },
+        "LFJ4": {
+         "proposed": 0.004451223649084568,
+         "executed": 0.004451223649084568,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.006876800674945116,
+         "executed": 0.006742748431861401,
+         "saturated_fraction": 0.021500696378830085
+        },
+        "FFJ2": {
+         "proposed": 0.005482979118824005,
+         "executed": 0.005482979118824005,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.007804389111697674,
+         "executed": 0.0077841938473284245,
+         "saturated_fraction": 0.005701601671309192
+        },
+        "RFJ2": {
+         "proposed": 0.018582694232463837,
+         "executed": 0.018582694232463837,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.011178473941981792,
+         "executed": 0.008560589514672756,
+         "saturated_fraction": 0.19977367688022285
+        },
+        "THJ3": {
+         "proposed": 0.010844836011528969,
+         "executed": 0.010844836011528969,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.0020598755218088627,
+         "executed": 0.002045168774202466,
+         "saturated_fraction": 0.0026114206128133705
+        },
+        "MFJ1": {
+         "proposed": 0.011167800053954124,
+         "executed": 0.011167800053954124,
+         "saturated_fraction": 0.0
+        },
+        "RFJ1": {
+         "proposed": 0.01396249234676361,
+         "executed": 0.01396249234676361,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.002616159152239561,
+         "executed": 0.002616159152239561,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.006730907596647739,
+         "executed": 0.006730907596647739,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.002140619559213519,
+         "executed": 0.002050489652901888,
+         "saturated_fraction": 0.10167130919220056
+        },
+        "THJ1": {
+         "proposed": 0.005620257928967476,
+         "executed": 0.005613463930785656,
+         "saturated_fraction": 0.0008704735376044568
+        },
+        "THJ0": {
+         "proposed": 0.0055309743620455265,
+         "executed": 0.005530717317014933,
+         "saturated_fraction": 0.00013057103064066853
+        }
+       }
+      }
+     },
+     {
+      "k": 2,
+      "transitions": 184320,
+      "theta_sha256": "1c6287ae750c04778b08f9896ff761e751424bd5e641e99141b388581c49ca64",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 27,
+      "success": 0.421875,
+      "completed": 0.9375,
+      "tail_hit_fraction": 0.47260631698931677,
+      "hit_fraction": 0.46067792794567697,
+      "mean_length": 338.703125,
+      "mean_abs_spin": 5.299540201202035,
+      "mean_transverse": 1.5354808608535677,
+      "drops": 4,
+      "tail_spin_failures": 33,
+      "median_fall_step": 33.5,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.016232315450906754,
+       "mean_abs_executed": 0.015985157340765,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.01732046715915203,
+         "executed": 0.01732046715915203,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.026257332414388657,
+         "executed": 0.026257332414388657,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.012061203829944134,
+         "executed": 0.012061203829944134,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.023291293531656265,
+         "executed": 0.023291293531656265,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.02380996383726597,
+         "executed": 0.023788824677467346,
+         "saturated_fraction": 0.002132660167130919
+        },
+        "LFJ4": {
+         "proposed": 0.014347306452691555,
+         "executed": 0.014347306452691555,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.013845952227711678,
+         "executed": 0.013168341480195522,
+         "saturated_fraction": 0.11955954038997214
+        },
+        "FFJ2": {
+         "proposed": 0.018588587641716003,
+         "executed": 0.018588587641716003,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.022223375737667084,
+         "executed": 0.020072996616363525,
+         "saturated_fraction": 0.0731633008356546
+        },
+        "RFJ2": {
+         "proposed": 0.029938802123069763,
+         "executed": 0.029938802123069763,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.006297778338193893,
+         "executed": 0.004623508546501398,
+         "saturated_fraction": 0.2630571030640669
+        },
+        "THJ3": {
+         "proposed": 0.007983188144862652,
+         "executed": 0.007983188144862652,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.011618099175393581,
+         "executed": 0.011590213514864445,
+         "saturated_fraction": 0.005179317548746518
+        },
+        "MFJ1": {
+         "proposed": 0.023230141028761864,
+         "executed": 0.023230141028761864,
+         "saturated_fraction": 0.0
+        },
+        "RFJ1": {
+         "proposed": 0.029529472813010216,
+         "executed": 0.029529472813010216,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.004859861917793751,
+         "executed": 0.004859861917793751,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.012078871950507164,
+         "executed": 0.012078871950507164,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.0036398377269506454,
+         "executed": 0.0032724023330956697,
+         "saturated_fraction": 0.04395891364902507
+        },
+        "THJ1": {
+         "proposed": 0.00958588719367981,
+         "executed": 0.009561399929225445,
+         "saturated_fraction": 0.0039171309192200555
+        },
+        "THJ0": {
+         "proposed": 0.014138872735202312,
+         "executed": 0.014138872735202312,
+         "saturated_fraction": 0.0
+        }
+       }
+      }
+     },
+     {
+      "k": 3,
+      "transitions": 276480,
+      "theta_sha256": "849d1d5bf18c75d30f5dcdd2ec2ccbeb11cd12abb969f80ecf279ee1dc84a7c6",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 29,
+      "success": 0.453125,
+      "completed": 0.9375,
+      "tail_hit_fraction": 0.4982091543513958,
+      "hit_fraction": 0.4965349435807365,
+      "mean_length": 338.6875,
+      "mean_abs_spin": 5.96033886494115,
+      "mean_transverse": 1.4583507382776588,
+      "drops": 4,
+      "tail_spin_failures": 31,
+      "median_fall_step": 32.5,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.017480330541729927,
+       "mean_abs_executed": 0.017094794660806656,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.02176804281771183,
+         "executed": 0.02176804281771183,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.02896272949874401,
+         "executed": 0.02896272949874401,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.009527629241347313,
+         "executed": 0.009527629241347313,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.03066147118806839,
+         "executed": 0.03066147118806839,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.021891966462135315,
+         "executed": 0.02188844047486782,
+         "saturated_fraction": 0.000826949860724234
+        },
+        "LFJ4": {
+         "proposed": 0.010545017197728157,
+         "executed": 0.010545017197728157,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.013617332093417645,
+         "executed": 0.012973124161362648,
+         "saturated_fraction": 0.13579387186629527
+        },
+        "FFJ2": {
+         "proposed": 0.008218491449952126,
+         "executed": 0.008218491449952126,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.028539802879095078,
+         "executed": 0.024163372814655304,
+         "saturated_fraction": 0.09396761838440111
+        },
+        "RFJ2": {
+         "proposed": 0.02659757249057293,
+         "executed": 0.02659757249057293,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.00704092625528574,
+         "executed": 0.005245252512395382,
+         "saturated_fraction": 0.22192722841225626
+        },
+        "THJ3": {
+         "proposed": 0.009423569776117802,
+         "executed": 0.009423569776117802,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.015009235590696335,
+         "executed": 0.014989729039371014,
+         "saturated_fraction": 0.001392757660167131
+        },
+        "MFJ1": {
+         "proposed": 0.03994280844926834,
+         "executed": 0.03994280844926834,
+         "saturated_fraction": 0.0
+        },
+        "RFJ1": {
+         "proposed": 0.03165750205516815,
+         "executed": 0.03165750205516815,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.007958322763442993,
+         "executed": 0.007958322763442993,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.012831853702664375,
+         "executed": 0.012831853702664375,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.0027232940774410963,
+         "executed": 0.0019571525044739246,
+         "saturated_fraction": 0.24325383008356546
+        },
+        "THJ1": {
+         "proposed": 0.011301103048026562,
+         "executed": 0.011195897124707699,
+         "saturated_fraction": 0.03725626740947075
+        },
+        "THJ0": {
+         "proposed": 0.011387920938432217,
+         "executed": 0.011387920938432217,
+         "saturated_fraction": 0.0
+        }
+       }
+      }
+     },
+     {
+      "k": 4,
+      "transitions": 368640,
+      "theta_sha256": "c7c5bd31d739ef45007904aaa402ae74724caba9d0254326044b2242d8f7748f",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 33,
+      "success": 0.515625,
+      "completed": 0.9375,
+      "tail_hit_fraction": 0.5777958516617792,
+      "hit_fraction": 0.5635048523581578,
+      "mean_length": 338.828125,
+      "mean_abs_spin": 6.512733264360577,
+      "mean_transverse": 1.5527171755675226,
+      "drops": 4,
+      "tail_spin_failures": 27,
+      "median_fall_step": 35.0,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.021002354100346565,
+       "mean_abs_executed": 0.020616907626390457,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.02200145833194256,
+         "executed": 0.02200145833194256,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.03364767134189606,
+         "executed": 0.03364767134189606,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.03673440217971802,
+         "executed": 0.03673440217971802,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.028531983494758606,
+         "executed": 0.028531983494758606,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.014628671109676361,
+         "executed": 0.014628671109676361,
+         "saturated_fraction": 0.0
+        },
+        "LFJ4": {
+         "proposed": 0.00707128643989563,
+         "executed": 0.00707128643989563,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.011294428259134293,
+         "executed": 0.01090121828019619,
+         "saturated_fraction": 0.11163823119777158
+        },
+        "FFJ2": {
+         "proposed": 0.03816556930541992,
+         "executed": 0.03816556930541992,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.030508382245898247,
+         "executed": 0.026683827862143517,
+         "saturated_fraction": 0.08095403899721448
+        },
+        "RFJ2": {
+         "proposed": 0.014225363731384277,
+         "executed": 0.014225363731384277,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.007136473897844553,
+         "executed": 0.0054282438941299915,
+         "saturated_fraction": 0.23276462395543177
+        },
+        "THJ3": {
+         "proposed": 0.009380936622619629,
+         "executed": 0.009380936622619629,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.05030315741896629,
+         "executed": 0.04994722455739975,
+         "saturated_fraction": 0.015886142061281337
+        },
+        "MFJ1": {
+         "proposed": 0.053173210471868515,
+         "executed": 0.053173210471868515,
+         "saturated_fraction": 0.0
+        },
+        "RFJ1": {
+         "proposed": 0.017315194010734558,
+         "executed": 0.017315194010734558,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.006506430450826883,
+         "executed": 0.006506430450826883,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.013391438871622086,
+         "executed": 0.013391438871622086,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.0036469644401222467,
+         "executed": 0.0022887070663273335,
+         "saturated_fraction": 0.2970926183844011
+        },
+        "THJ1": {
+         "proposed": 0.01210508681833744,
+         "executed": 0.012036400847136974,
+         "saturated_fraction": 0.009705779944289693
+        },
+        "THJ0": {
+         "proposed": 0.010278941132128239,
+         "executed": 0.010278941132128239,
+         "saturated_fraction": 0.0
+        }
+       }
+      }
+     },
+     {
+      "k": 5,
+      "transitions": 460800,
+      "theta_sha256": "88f21e0d8573d34f248fad685035f04f52f57dff904cb02c62ec38cceba78607",
+      "reused_cell": false,
+      "n": 64,
+      "successes": 28,
+      "success": 0.4375,
+      "completed": 0.921875,
+      "tail_hit_fraction": 0.5174967106985756,
+      "hit_fraction": 0.5098147817292163,
+      "mean_length": 333.671875,
+      "mean_abs_spin": 6.437998194247484,
+      "mean_transverse": 1.7731195837259293,
+      "drops": 5,
+      "tail_spin_failures": 31,
+      "median_fall_step": 31.0,
+      "residual_activity": {
+       "values": 22976,
+       "mean_abs_proposed": 0.02106313966214657,
+       "mean_abs_executed": 0.020542602986097336,
+       "per_joint": {
+        "WRJ1": {
+         "proposed": 0.02142498269677162,
+         "executed": 0.02142498269677162,
+         "saturated_fraction": 0.0
+        },
+        "WRJ0": {
+         "proposed": 0.031293462961912155,
+         "executed": 0.031293462961912155,
+         "saturated_fraction": 0.0
+        },
+        "FFJ3": {
+         "proposed": 0.03365166485309601,
+         "executed": 0.03365166485309601,
+         "saturated_fraction": 0.0
+        },
+        "MFJ3": {
+         "proposed": 0.03155351057648659,
+         "executed": 0.03155351057648659,
+         "saturated_fraction": 0.0
+        },
+        "RFJ3": {
+         "proposed": 0.005025119055062532,
+         "executed": 0.005025119055062532,
+         "saturated_fraction": 0.0
+        },
+        "LFJ4": {
+         "proposed": 0.013292885385453701,
+         "executed": 0.013292885385453701,
+         "saturated_fraction": 0.0
+        },
+        "THJ4": {
+         "proposed": 0.024270756170153618,
+         "executed": 0.020736435428261757,
+         "saturated_fraction": 0.3220316852367688
+        },
+        "FFJ2": {
+         "proposed": 0.03349784389138222,
+         "executed": 0.03349784389138222,
+         "saturated_fraction": 0.0
+        },
+        "MFJ2": {
+         "proposed": 0.03711656853556633,
+         "executed": 0.03241802379488945,
+         "saturated_fraction": 0.08978934540389973
+        },
+        "RFJ2": {
+         "proposed": 0.008915271610021591,
+         "executed": 0.008915271610021591,
+         "saturated_fraction": 0.0
+        },
+        "LFJ3": {
+         "proposed": 0.006231130100786686,
+         "executed": 0.004682072903960943,
+         "saturated_fraction": 0.19350626740947074
+        },
+        "THJ3": {
+         "proposed": 0.009463598020374775,
+         "executed": 0.009463598020374775,
+         "saturated_fraction": 0.0
+        },
+        "FFJ1": {
+         "proposed": 0.03359513357281685,
+         "executed": 0.03330935537815094,
+         "saturated_fraction": 0.025374303621169915
+        },
+        "MFJ1": {
+         "proposed": 0.062806136906147,
+         "executed": 0.062806136906147,
+         "saturated_fraction": 0.0
+        },
+        "RFJ1": {
+         "proposed": 0.011655661277472973,
+         "executed": 0.011655661277472973,
+         "saturated_fraction": 0.0
+        },
+        "LFJ2": {
+         "proposed": 0.006537818815559149,
+         "executed": 0.006537818815559149,
+         "saturated_fraction": 0.0
+        },
+        "THJ2": {
+         "proposed": 0.014780036173760891,
+         "executed": 0.014780036173760891,
+         "saturated_fraction": 0.0
+        },
+        "LFJ1": {
+         "proposed": 0.011212960816919804,
+         "executed": 0.011135403998196125,
+         "saturated_fraction": 0.01932451253481894
+        },
+        "THJ1": {
+         "proposed": 0.01485429797321558,
+         "executed": 0.014588875696063042,
+         "saturated_fraction": 0.03634227019498607
+        },
+        "THJ0": {
+         "proposed": 0.010083949193358421,
+         "executed": 0.010083949193358421,
+         "saturated_fraction": 0.0
+        }
+       }
+      }
+     }
+    ],
+    "selected": 4,
+    "training_rejected": false
+   }
+  }
+ },
+ "fresh": {
+  "b0": {
+   "manifest": {
+    "path": "config/manifests/pen_spin_stage3_reward_fresh_s4767.yaml",
+    "sha256": "70ff32ca63fbb931aa98ae9e905c2207759aa696a232e1bf2f0b24d28a529754"
+   },
+   "reference": {
+    "n": 128,
+    "successes": 59,
+    "success": 0.4609375,
+    "completed": 0.9453125,
+    "tail_hit_fraction": 0.4925547258344237,
+    "hit_fraction": 0.4841060547573578,
+    "mean_length": 341.5703125,
+    "mean_abs_spin": 5.2349716811440885,
+    "mean_transverse": 1.5858244494884275,
+    "drops": 7,
+    "tail_spin_failures": 62,
+    "median_fall_step": 39.0
+   },
+   "draws": {
+    "reused_cell": false,
+    "n": 128,
+    "successes": 54,
+    "success": 0.421875,
+    "completed": 0.9453125,
+    "tail_hit_fraction": 0.4499345260919998,
+    "hit_fraction": 0.45139764702979,
+    "mean_length": 341.7734375,
+    "mean_abs_spin": 4.985860411543399,
+    "mean_transverse": 1.6418400580296293,
+    "drops": 7,
+    "tail_spin_failures": 67,
+    "median_fall_step": 44.0,
+    "residual_activity": {
+     "values": 45952,
+     "mean_abs_proposed": 0.008411490358412266,
+     "mean_abs_executed": 0.008181946352124214,
+     "per_joint": {
+      "WRJ1": {
+       "proposed": 0.005823575891554356,
+       "executed": 0.005823575891554356,
+       "saturated_fraction": 0.0
+      },
+      "WRJ0": {
+       "proposed": 0.013109926134347916,
+       "executed": 0.013109926134347916,
+       "saturated_fraction": 0.0
+      },
+      "FFJ3": {
+       "proposed": 0.00926342885941267,
+       "executed": 0.00926342885941267,
+       "saturated_fraction": 0.0
+      },
+      "MFJ3": {
+       "proposed": 0.01252649910748005,
+       "executed": 0.01252649910748005,
+       "saturated_fraction": 0.0
+      },
+      "RFJ3": {
+       "proposed": 0.0063186874613165855,
+       "executed": 0.0063186874613165855,
+       "saturated_fraction": 0.0
+      },
+      "LFJ4": {
+       "proposed": 0.014826793223619461,
+       "executed": 0.014826793223619461,
+       "saturated_fraction": 0.0
+      },
+      "THJ4": {
+       "proposed": 0.006471738684922457,
+       "executed": 0.006468777544796467,
+       "saturated_fraction": 0.0013057103064066853
+      },
+      "FFJ2": {
+       "proposed": 0.012037056498229504,
+       "executed": 0.012037056498229504,
+       "saturated_fraction": 0.0
+      },
+      "MFJ2": {
+       "proposed": 0.006181948818266392,
+       "executed": 0.006154819391667843,
+       "saturated_fraction": 0.014493384401114206
+      },
+      "RFJ2": {
+       "proposed": 0.00561908446252346,
+       "executed": 0.00561908446252346,
+       "saturated_fraction": 0.0
+      },
+      "LFJ3": {
+       "proposed": 0.004442797042429447,
+       "executed": 0.004103225190192461,
+       "saturated_fraction": 0.12893889275766016
+      },
+      "THJ3": {
+       "proposed": 0.013261758722364902,
+       "executed": 0.013261758722364902,
+       "saturated_fraction": 0.0
+      },
+      "FFJ1": {
+       "proposed": 0.0024128335062414408,
+       "executed": 0.002374404575675726,
+       "saturated_fraction": 0.017714136490250696
+      },
+      "MFJ1": {
+       "proposed": 0.007418809924274683,
+       "executed": 0.007418809924274683,
+       "saturated_fraction": 0.0
+      },
+      "RFJ1": {
+       "proposed": 0.0024175511207431555,
+       "executed": 0.0024175511207431555,
+       "saturated_fraction": 0.0
+      },
+      "LFJ2": {
+       "proposed": 0.013731224462389946,
+       "executed": 0.013731224462389946,
+       "saturated_fraction": 0.0
+      },
+      "THJ2": {
+       "proposed": 0.005214598961174488,
+       "executed": 0.005214598961174488,
+       "saturated_fraction": 0.0
+      },
+      "LFJ1": {
+       "proposed": 0.009970591403543949,
+       "executed": 0.005816308315843344,
+       "saturated_fraction": 0.48428795264623953
+      },
+      "THJ1": {
+       "proposed": 0.009677714668214321,
+       "executed": 0.009649218060076237,
+       "saturated_fraction": 0.006854979108635097
+      },
+      "THJ0": {
+       "proposed": 0.007503179367631674,
+       "executed": 0.007503179367631674,
+       "saturated_fraction": 0.0
+      }
+     }
+    }
+   },
+   "ars": {
+    "reused_cell": true,
+    "n": 128,
+    "successes": 59,
+    "success": 0.4609375,
+    "completed": 0.9453125,
+    "tail_hit_fraction": 0.4925547258344237,
+    "hit_fraction": 0.4841060547573578,
+    "mean_length": 341.5703125,
+    "mean_abs_spin": 5.2349716811440885,
+    "mean_transverse": 1.5858244494884275,
+    "drops": 7,
+    "tail_spin_failures": 62,
+    "median_fall_step": 39.0
+   },
+   "ppo": {
+    "reused_cell": false,
+    "n": 128,
+    "successes": 58,
+    "success": 0.453125,
+    "completed": 0.96875,
+    "tail_hit_fraction": 0.48127459026664,
+    "hit_fraction": 0.4793860253873456,
+    "mean_length": 348.9375,
+    "mean_abs_spin": 4.971469219075516,
+    "mean_transverse": 1.4861563695012592,
+    "drops": 4,
+    "tail_spin_failures": 66,
+    "median_fall_step": 38.0,
+    "residual_activity": {
+     "values": 45952,
+     "mean_abs_proposed": 0.007486164569854736,
+     "mean_abs_executed": 0.007342712488025427,
+     "per_joint": {
+      "WRJ1": {
+       "proposed": 0.007863392122089863,
+       "executed": 0.007863392122089863,
+       "saturated_fraction": 0.0
+      },
+      "WRJ0": {
+       "proposed": 0.010918817482888699,
+       "executed": 0.010918817482888699,
+       "saturated_fraction": 0.0
+      },
+      "FFJ3": {
+       "proposed": 0.007856967858970165,
+       "executed": 0.007856967858970165,
+       "saturated_fraction": 0.0
+      },
+      "MFJ3": {
+       "proposed": 0.005307257641106844,
+       "executed": 0.005307257641106844,
+       "saturated_fraction": 0.0
+      },
+      "RFJ3": {
+       "proposed": 0.006842245813459158,
+       "executed": 0.006842245813459158,
+       "saturated_fraction": 0.0
+      },
+      "LFJ4": {
+       "proposed": 0.004885741509497166,
+       "executed": 0.004885741509497166,
+       "saturated_fraction": 0.0
+      },
+      "THJ4": {
+       "proposed": 0.006716777570545673,
+       "executed": 0.006510624196380377,
+       "saturated_fraction": 0.05351236072423398
+      },
+      "FFJ2": {
+       "proposed": 0.005362639203667641,
+       "executed": 0.005362639203667641,
+       "saturated_fraction": 0.0
+      },
+      "MFJ2": {
+       "proposed": 0.006004256661981344,
+       "executed": 0.005980507470667362,
+       "saturated_fraction": 0.0078125
+      },
+      "RFJ2": {
+       "proposed": 0.016960540786385536,
+       "executed": 0.016960540786385536,
+       "saturated_fraction": 0.0
+      },
+      "LFJ3": {
+       "proposed": 0.007801270578056574,
+       "executed": 0.0053693875670433044,
+       "saturated_fraction": 0.3113030988857939
+      },
+      "THJ3": {
+       "proposed": 0.009387356229126453,
+       "executed": 0.009387356229126453,
+       "saturated_fraction": 0.0
+      },
+      "FFJ1": {
+       "proposed": 0.0049633244052529335,
+       "executed": 0.004915730562061071,
+       "saturated_fraction": 0.009923398328690807
+      },
+      "MFJ1": {
+       "proposed": 0.007331616245210171,
+       "executed": 0.007331539876759052,
+       "saturated_fraction": 2.176183844011142e-05
+      },
+      "RFJ1": {
+       "proposed": 0.009545356035232544,
+       "executed": 0.009545356035232544,
+       "saturated_fraction": 0.0
+      },
+      "LFJ2": {
+       "proposed": 0.006687521003186703,
+       "executed": 0.006687521003186703,
+       "saturated_fraction": 0.0
+      },
+      "THJ2": {
+       "proposed": 0.004669134970754385,
+       "executed": 0.004669134970754385,
+       "saturated_fraction": 0.0
+      },
+      "LFJ1": {
+       "proposed": 0.002625576686114073,
+       "executed": 0.002466721460223198,
+       "saturated_fraction": 0.09949512534818941
+      },
+      "THJ1": {
+       "proposed": 0.005090074613690376,
+       "executed": 0.005089328158646822,
+       "saturated_fraction": 8.704735376044568e-05
+      },
+      "THJ0": {
+       "proposed": 0.012903434224426746,
+       "executed": 0.012903434224426746,
+       "saturated_fraction": 0.0
+      }
+     }
+    }
+   }
+  },
+  "b1": {
+   "manifest": {
+    "path": "config/manifests/pen_spin_stage3_reward_fresh_s4768.yaml",
+    "sha256": "53e7ec8a6588fc8a39bbf39b2002015320b999469536e6604c86cdae6e0eb67f"
+   },
+   "reference": {
+    "n": 128,
+    "successes": 58,
+    "success": 0.453125,
+    "completed": 0.9296875,
+    "tail_hit_fraction": 0.4882221017415352,
+    "hit_fraction": 0.4849742093445929,
+    "mean_length": 337.2109375,
+    "mean_abs_spin": 5.605397189501673,
+    "mean_transverse": 1.6149255456402898,
+    "drops": 9,
+    "tail_spin_failures": 61,
+    "median_fall_step": 35.0
+   },
+   "draws": {
+    "reused_cell": false,
+    "n": 128,
+    "successes": 51,
+    "success": 0.3984375,
+    "completed": 0.953125,
+    "tail_hit_fraction": 0.44473516822318004,
+    "hit_fraction": 0.45081644996986203,
+    "mean_length": 343.9609375,
+    "mean_abs_spin": 5.319469106616452,
+    "mean_transverse": 1.579156352672726,
+    "drops": 6,
+    "tail_spin_failures": 71,
+    "median_fall_step": 29.5,
+    "residual_activity": {
+     "values": 45952,
+     "mean_abs_proposed": 0.01187849324196577,
+     "mean_abs_executed": 0.01170298270881176,
+     "per_joint": {
+      "WRJ1": {
+       "proposed": 0.017765695229172707,
+       "executed": 0.017765695229172707,
+       "saturated_fraction": 0.0
+      },
+      "WRJ0": {
+       "proposed": 0.01958099938929081,
+       "executed": 0.01958099938929081,
+       "saturated_fraction": 0.0
+      },
+      "FFJ3": {
+       "proposed": 0.013176309876143932,
+       "executed": 0.013176309876143932,
+       "saturated_fraction": 0.0
+      },
+      "MFJ3": {
+       "proposed": 0.009168214164674282,
+       "executed": 0.009168214164674282,
+       "saturated_fraction": 0.0
+      },
+      "RFJ3": {
+       "proposed": 0.012676328420639038,
+       "executed": 0.012676328420639038,
+       "saturated_fraction": 0.0
+      },
+      "LFJ4": {
+       "proposed": 0.006263452582061291,
+       "executed": 0.006263452582061291,
+       "saturated_fraction": 0.0
+      },
+      "THJ4": {
+       "proposed": 0.012012897059321404,
+       "executed": 0.010784819722175598,
+       "saturated_fraction": 0.1491774025069638
+      },
+      "FFJ2": {
+       "proposed": 0.016625087708234787,
+       "executed": 0.016625087708234787,
+       "saturated_fraction": 0.0
+      },
+      "MFJ2": {
+       "proposed": 0.006159901153296232,
+       "executed": 0.006152966059744358,
+       "saturated_fraction": 0.001871518105849582
+      },
+      "RFJ2": {
+       "proposed": 0.02183545008301735,
+       "executed": 0.02183545008301735,
+       "saturated_fraction": 0.0
+      },
+      "LFJ3": {
+       "proposed": 0.004411149304360151,
+       "executed": 0.003724451409652829,
+       "saturated_fraction": 0.14941678272980502
+      },
+      "THJ3": {
+       "proposed": 0.012383414432406425,
+       "executed": 0.012383414432406425,
+       "saturated_fraction": 0.0
+      },
+      "FFJ1": {
+       "proposed": 0.014568602666258812,
+       "executed": 0.014157766476273537,
+       "saturated_fraction": 0.020499651810584957
+      },
+      "MFJ1": {
+       "proposed": 0.015716781839728355,
+       "executed": 0.015716781839728355,
+       "saturated_fraction": 0.0
+      },
+      "RFJ1": {
+       "proposed": 0.012857303954660892,
+       "executed": 0.012857303954660892,
+       "saturated_fraction": 0.0
+      },
+      "LFJ2": {
+       "proposed": 0.0053933365270495415,
+       "executed": 0.0053933365270495415,
+       "saturated_fraction": 0.0
+      },
+      "THJ2": {
+       "proposed": 0.007727906107902527,
+       "executed": 0.007727906107902527,
+       "saturated_fraction": 0.0
+      },
+      "LFJ1": {
+       "proposed": 0.0066914306953549385,
+       "executed": 0.006285522133111954,
+       "saturated_fraction": 0.09442461699164345
+      },
+      "THJ1": {
+       "proposed": 0.013584638945758343,
+       "executed": 0.012817742303013802,
+       "saturated_fraction": 0.09503394846796658
+      },
+      "THJ0": {
+       "proposed": 0.008970953524112701,
+       "executed": 0.008966140449047089,
+       "saturated_fraction": 0.00026114206128133706
+      }
+     }
+    }
+   },
+   "ars": {
+    "reused_cell": false,
+    "n": 128,
+    "successes": 59,
+    "success": 0.4609375,
+    "completed": 0.96875,
+    "tail_hit_fraction": 0.5176933067031798,
+    "hit_fraction": 0.511730200273282,
+    "mean_length": 348.8046875,
+    "mean_abs_spin": 6.339448525337502,
+    "mean_transverse": 1.547552173724398,
+    "drops": 4,
+    "tail_spin_failures": 65,
+    "median_fall_step": 33.0,
+    "residual_activity": {
+     "values": 45952,
+     "mean_abs_proposed": 0.02890615165233612,
+     "mean_abs_executed": 0.028626078739762306,
+     "per_joint": {
+      "WRJ1": {
+       "proposed": 0.0027771492023020983,
+       "executed": 0.0027771492023020983,
+       "saturated_fraction": 0.0
+      },
+      "WRJ0": {
+       "proposed": 0.020186301320791245,
+       "executed": 0.020186301320791245,
+       "saturated_fraction": 0.0
+      },
+      "FFJ3": {
+       "proposed": 0.024132512509822845,
+       "executed": 0.024132512509822845,
+       "saturated_fraction": 0.0
+      },
+      "MFJ3": {
+       "proposed": 0.04662204906344414,
+       "executed": 0.04662204906344414,
+       "saturated_fraction": 0.0
+      },
+      "RFJ3": {
+       "proposed": 0.030915558338165283,
+       "executed": 0.030915558338165283,
+       "saturated_fraction": 0.0
+      },
+      "LFJ4": {
+       "proposed": 0.03931751102209091,
+       "executed": 0.03931751102209091,
+       "saturated_fraction": 0.0
+      },
+      "THJ4": {
+       "proposed": 0.02176418900489807,
+       "executed": 0.021469561383128166,
+       "saturated_fraction": 0.04186977715877437
+      },
+      "FFJ2": {
+       "proposed": 0.02877623215317726,
+       "executed": 0.02877623215317726,
+       "saturated_fraction": 0.0
+      },
+      "MFJ2": {
+       "proposed": 0.019900327548384666,
+       "executed": 0.018436428159475327,
+       "saturated_fraction": 0.053882311977715876
+      },
+      "RFJ2": {
+       "proposed": 0.011252309195697308,
+       "executed": 0.011252309195697308,
+       "saturated_fraction": 0.0
+      },
+      "LFJ3": {
+       "proposed": 0.021066121757030487,
+       "executed": 0.020316118374466896,
+       "saturated_fraction": 0.12961350974930363
+      },
+      "THJ3": {
+       "proposed": 0.03601611778140068,
+       "executed": 0.03601611778140068,
+       "saturated_fraction": 0.0
+      },
+      "FFJ1": {
+       "proposed": 0.05562056601047516,
+       "executed": 0.05562024191021919,
+       "saturated_fraction": 6.528551532033427e-05
+      },
+      "MFJ1": {
+       "proposed": 0.0371461845934391,
+       "executed": 0.0371461845934391,
+       "saturated_fraction": 0.0
+      },
+      "RFJ1": {
+       "proposed": 0.006772725377231836,
+       "executed": 0.006772725377231836,
+       "saturated_fraction": 0.0
+      },
+      "LFJ2": {
+       "proposed": 0.026967046782374382,
+       "executed": 0.026967046782374382,
+       "saturated_fraction": 0.0
+      },
+      "THJ2": {
+       "proposed": 0.02943241409957409,
+       "executed": 0.02943241409957409,
+       "saturated_fraction": 0.0
+      },
+      "LFJ1": {
+       "proposed": 0.08663510531187057,
+       "executed": 0.08356741070747375,
+       "saturated_fraction": 0.1274808495821727
+      },
+      "THJ1": {
+       "proposed": 0.021002987399697304,
+       "executed": 0.02099539153277874,
+       "saturated_fraction": 0.00034818941504178273
+      },
+      "THJ0": {
+       "proposed": 0.011819623410701752,
+       "executed": 0.011802325025200844,
+       "saturated_fraction": 0.000674616991643454
+      }
+     }
+    }
+   },
+   "ppo": {
+    "reused_cell": false,
+    "n": 128,
+    "successes": 48,
+    "success": 0.375,
+    "completed": 0.9296875,
+    "tail_hit_fraction": 0.44018636485392193,
+    "hit_fraction": 0.4463529444732348,
+    "mean_length": 336.453125,
+    "mean_abs_spin": 5.721522737760097,
+    "mean_transverse": 1.661525423754938,
+    "drops": 9,
+    "tail_spin_failures": 71,
+    "median_fall_step": 42.0,
+    "residual_activity": {
+     "values": 45952,
+     "mean_abs_proposed": 0.02086157351732254,
+     "mean_abs_executed": 0.02033705823123455,
+     "per_joint": {
+      "WRJ1": {
+       "proposed": 0.023530786857008934,
+       "executed": 0.023530786857008934,
+       "saturated_fraction": 0.0
+      },
+      "WRJ0": {
+       "proposed": 0.03302261233329773,
+       "executed": 0.03302261233329773,
+       "saturated_fraction": 0.0
+      },
+      "FFJ3": {
+       "proposed": 0.037259891629219055,
+       "executed": 0.037259891629219055,
+       "saturated_fraction": 0.0
+      },
+      "MFJ3": {
+       "proposed": 0.027134191244840622,
+       "executed": 0.027134191244840622,
+       "saturated_fraction": 0.0
+      },
+      "RFJ3": {
+       "proposed": 0.01617533713579178,
+       "executed": 0.01617533713579178,
+       "saturated_fraction": 0.0
+      },
+      "LFJ4": {
+       "proposed": 0.008307241834700108,
+       "executed": 0.008307241834700108,
+       "saturated_fraction": 0.0
+      },
+      "THJ4": {
+       "proposed": 0.010724375955760479,
+       "executed": 0.01044378336519003,
+       "saturated_fraction": 0.04872475626740947
+      },
+      "FFJ2": {
+       "proposed": 0.03708023205399513,
+       "executed": 0.03708023205399513,
+       "saturated_fraction": 0.0
+      },
+      "MFJ2": {
+       "proposed": 0.028376799076795578,
+       "executed": 0.022510996088385582,
+       "saturated_fraction": 0.12019063370473537
+      },
+      "RFJ2": {
+       "proposed": 0.014192886650562286,
+       "executed": 0.014192886650562286,
+       "saturated_fraction": 0.0
+      },
+      "LFJ3": {
+       "proposed": 0.008319344371557236,
+       "executed": 0.005240988451987505,
+       "saturated_fraction": 0.3492775069637883
+      },
+      "THJ3": {
+       "proposed": 0.008905879221856594,
+       "executed": 0.008905879221856594,
+       "saturated_fraction": 0.0
+      },
+      "FFJ1": {
+       "proposed": 0.04532602056860924,
+       "executed": 0.045255888253450394,
+       "saturated_fraction": 0.005222841225626741
+      },
+      "MFJ1": {
+       "proposed": 0.05516192689538002,
+       "executed": 0.05516192689538002,
+       "saturated_fraction": 0.0
+      },
+      "RFJ1": {
+       "proposed": 0.017927540466189384,
+       "executed": 0.017927540466189384,
+       "saturated_fraction": 0.0
+      },
+      "LFJ2": {
+       "proposed": 0.007637565024197102,
+       "executed": 0.007637565024197102,
+       "saturated_fraction": 0.0
+      },
+      "THJ2": {
+       "proposed": 0.012349075637757778,
+       "executed": 0.012349075637757778,
+       "saturated_fraction": 0.0
+      },
+      "LFJ1": {
+       "proposed": 0.004127763211727142,
+       "executed": 0.003142888890579343,
+       "saturated_fraction": 0.2737639275766017
+      },
+      "THJ1": {
+       "proposed": 0.011480550281703472,
+       "executed": 0.01126997172832489,
+       "saturated_fraction": 0.04304491643454039
+      },
+      "THJ0": {
+       "proposed": 0.010191462934017181,
+       "executed": 0.010191462934017181,
+       "saturated_fraction": 0.0
+      }
+     }
+    }
+   }
+  }
+ },
+ "finalists": {
+  "b0_draws": {
+   "block": 0,
+   "arm": "draws",
+   "checkpoint": 2,
+   "theta": [
+    -0.013760671950876713,
+    0.022076165303587914,
+    0.014777337200939655,
+    -0.021582404151558876,
+    -0.01089010015130043,
+    -0.020661870017647743,
+    -0.005756129510700703,
+    0.020692728459835052,
+    0.003533005015924573,
+    -0.00909725483506918,
+    -0.003991227596998215,
+    0.01662786863744259,
+    0.00218486157245934,
+    -0.0006448900676332414,
+    -0.005448545329272747,
+    0.02133087068796158,
+    -0.01223826315253973,
+    -0.012622897513210773,
+    -0.021564049646258354,
+    -0.021415678784251213,
+    0.010900037363171577,
+    -0.012069386430084705,
+    0.022000502794981003,
+    0.008499388583004475,
+    -0.020029162988066673,
+    -0.005643568001687527,
+    -0.0034188430290669203,
+    0.014180902391672134,
+    -0.002318604849278927,
+    -0.010015124455094337,
+    -0.003341090166941285,
+    0.02102702297270298
+   ],
+   "theta_sha256": "cf92bb0668618e8fa509a1641cc25568d22821ae8d4f70c38c5c80a676ad8db7"
+  },
+  "b0_ars": {
+   "block": 0,
+   "arm": "ars",
+   "checkpoint": 0,
+   "theta": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "theta_sha256": "66377c70afde9ebc990b6e75e4c7f2fd0d11ca2489aa10f767b24405bf5fc6cd"
+  },
+  "b0_ppo": {
+   "block": 0,
+   "arm": "ppo",
+   "checkpoint": 1,
+   "theta": [
+    -0.013484909199178219,
+    -0.01773025654256344,
+    0.007068806793540716,
+    0.0005199498846195638,
+    0.009035086259245872,
+    0.010881705209612846,
+    0.011601410806179047,
+    0.0007974893087521195,
+    0.012185250408947468,
+    -0.013775519095361233,
+    -0.014068863354623318,
+    0.021506672725081444,
+    0.012443878687918186,
+    -0.005167286843061447,
+    -0.0015697552589699626,
+    -0.007349051535129547,
+    0.004352065268903971,
+    -0.0020717859733849764,
+    -0.0020722311455756426,
+    -0.0073564136400818825,
+    0.04406115040183067,
+    -0.01575719378888607,
+    0.012238073162734509,
+    0.029812870547175407,
+    0.007665927056223154,
+    -0.021743902936577797,
+    0.006619966123253107,
+    -0.00034600842627696693,
+    -0.02074306644499302,
+    0.023748166859149933,
+    -0.011278004385530949,
+    -0.02059810422360897
+   ],
+   "theta_sha256": "8b2f22a05962c0328e0dd3cb93ee95a589bf61ac5168b3373579dc09385b9c5f"
+  },
+  "b1_draws": {
+   "block": 1,
+   "arm": "draws",
+   "checkpoint": 1,
+   "theta": [
+    0.028498312458395958,
+    0.025546493008732796,
+    0.03112591989338398,
+    0.009601415134966373,
+    -0.00045713354484178126,
+    -0.005074731074273586,
+    0.019936738535761833,
+    -0.018496856093406677,
+    0.011132641695439816,
+    0.008568423800170422,
+    -0.0007831366383470595,
+    -0.0033791528549045324,
+    -0.029925616458058357,
+    0.020415669307112694,
+    0.030306624248623848,
+    -0.009660043753683567,
+    -0.0007707912591286004,
+    0.015528899617493153,
+    -0.019427023828029633,
+    0.007113798521459103,
+    0.024265877902507782,
+    0.01971108466386795,
+    -0.0031607390847057104,
+    -0.02831626683473587,
+    -0.019450686872005463,
+    0.019702304154634476,
+    0.011867650784552097,
+    -0.010603267699480057,
+    -0.033349476754665375,
+    -0.026122530922293663,
+    0.03113526664674282,
+    0.03041970357298851
+   ],
+   "theta_sha256": "a959d5851871f835cae1b3619576658c1b90e21fdbc59ff5ab0091b0cad5f769"
+  },
+  "b1_ars": {
+   "block": 1,
+   "arm": "ars",
+   "checkpoint": 4,
+   "theta": [
+    -0.0025932074058800936,
+    -0.027239156886935234,
+    0.01550283469259739,
+    -0.0716773271560669,
+    0.08230284601449966,
+    -0.005276591517031193,
+    -0.001026224810630083,
+    0.0028199527878314257,
+    0.04469035565853119,
+    0.0295704435557127,
+    -0.013074262998998165,
+    -0.08150188624858856,
+    0.06670624017715454,
+    -0.10000000149011612,
+    -0.01923440769314766,
+    0.027040617540478706,
+    0.003271948779001832,
+    -0.007170300465077162,
+    -0.028133651241660118,
+    -0.016797542572021484,
+    0.011632181704044342,
+    0.07774627208709717,
+    0.08852715790271759,
+    0.016533490270376205,
+    -0.02533990703523159,
+    -0.06736776232719421,
+    -0.026533501222729683,
+    -0.01156259048730135,
+    0.008054854348301888,
+    0.0075580351985991,
+    -0.10000000149011612,
+    0.056013189256191254
+   ],
+   "theta_sha256": "f0c0f43cbf87922698b149b7dab3c775630b8e094442bb1c97c2226e85d47562"
+  },
+  "b1_ppo": {
+   "block": 1,
+   "arm": "ppo",
+   "checkpoint": 4,
+   "theta": [
+    0.02044752798974514,
+    0.003937351983040571,
+    0.003641416085883975,
+    0.0005141132860444486,
+    -0.015085321851074696,
+    0.015332803130149841,
+    0.0003246761334594339,
+    0.0010832346742972732,
+    0.08136214315891266,
+    -0.008521261624991894,
+    -0.015933075919747353,
+    -0.007552736438810825,
+    -0.0009263517567887902,
+    0.01930030807852745,
+    0.01823730394244194,
+    -0.014469297602772713,
+    0.005657900590449572,
+    -0.009796091355383396,
+    0.002822997746989131,
+    0.007031529676169157,
+    0.10000000149011612,
+    0.06447034329175949,
+    0.052318841218948364,
+    0.0338406004011631,
+    0.005716605111956596,
+    0.03887118026614189,
+    0.08164652436971664,
+    -0.036525070667266846,
+    -0.08666370064020157,
+    -0.0012704876717180014,
+    0.00034087078529410064,
+    -0.028191793709993362
+   ],
+   "theta_sha256": "c7c5bd31d739ef45007904aaa402ae74724caba9d0254326044b2242d8f7748f"
+  }
+ },
+ "training": {
+  "b0_draws": {
+   "transitions": 460800,
+   "episodes_started": 2562,
+   "falls": 73,
+   "wall_time_s": 112.88280630111694,
+   "updates": 0,
+   "final_theta_sha256": "cf92bb0668618e8fa509a1641cc25568d22821ae8d4f70c38c5c80a676ad8db7",
+   "final_theta_abs_max": 0.022076165303587914,
+   "curve_first_last": [
+    {
+     "at": "generation 1",
+     "transitions": 46080,
+     "mean_step_reward": 0.31488921397378566,
+     "predicate_fraction": 0.4517578125,
+     "mean_abs_spin": 4.329696913808585,
+     "falls_so_far": 13,
+     "candidate_scores": [
+      92.87915802001953,
+      98.68925476074219,
+      123.98295593261719,
+      87.59701538085938,
+      133.957275390625,
+      100.66116333007812,
+      141.46694946289062,
+      127.64726257324219
+     ],
+     "candidate_abs_max": [
+      0.07250872794830425,
+      0.009437762589711055,
+      0.006822948945092221,
+      0.039451919412285506,
+      0.04679364324818949,
+      0.057075290332461885,
+      0.060469877065071065,
+      0.02587046959643273
+     ],
+     "nominee_abs_max": 0.060469877065071065,
+     "best": {
+      "draw": 6,
+      "score": 141.46694946289062
+     }
+    },
+    {
+     "at": "generation 10",
+     "transitions": 460800,
+     "mean_step_reward": 0.3164184326742543,
+     "predicate_fraction": 0.4516059027777778,
+     "mean_abs_spin": 4.431927570866214,
+     "falls_so_far": 73,
+     "candidate_scores": [
+      150.87734985351562,
+      98.41754150390625,
+      122.02581787109375,
+      127.55708312988281,
+      94.6756591796875,
+      130.15744018554688,
+      104.61968994140625,
+      82.95440673828125
+     ],
+     "candidate_abs_max": [
+      0.005925062075972604,
+      0.012451943774183113,
+      0.062059200006015364,
+      0.04019641068071837,
+      0.0077456367465725965,
+      0.0030823992491628336,
+      0.03844932932451154,
+      0.012013188279583312
+     ],
+     "nominee_abs_max": 0.022076165540816,
+     "best": {
+      "draw": 16,
+      "score": 167.10008239746094
+     }
+    }
+   ]
+  },
+  "b0_ars": {
+   "transitions": 460800,
+   "episodes_started": 2563,
+   "falls": 77,
+   "wall_time_s": 113.3497588634491,
+   "updates": 10,
+   "final_theta_sha256": "3d1b555bdeb9b478be4e0a5ece9500944b6481baf46a9c4cb5d276bf9e079610",
+   "final_theta_abs_max": 0.10000000149011612,
+   "curve_first_last": [
+    {
+     "at": "generation 1",
+     "transitions": 46080,
+     "mean_step_reward": 0.3081755261431681,
+     "predicate_fraction": 0.4480251736111111,
+     "mean_abs_spin": 4.499863010727697,
+     "falls_so_far": 11,
+     "candidate_scores": [
+      94.04556274414062,
+      123.97722625732422,
+      97.19393920898438,
+      75.84104919433594,
+      150.26443481445312,
+      63.71635818481445,
+      144.10292053222656,
+      119.54634094238281,
+      97.32806396484375,
+      138.84336853027344,
+      110.67293548583984,
+      74.80854797363281,
+      148.7183380126953,
+      99.09272766113281,
+      112.64201354980469,
+      124.29744720458984
+     ],
+     "candidate_abs_max": [
+      0.04369404304626333,
+      0.06745399859164575,
+      0.046419321172324265,
+      0.04442933784377044,
+      0.039552367366727126,
+      0.04798662590321149,
+      0.03197598285006456,
+      0.038060771826070774,
+      0.04369404304626333,
+      0.06745399859164575,
+      0.046419321172324265,
+      0.04442933784377044,
+      0.039552367366727126,
+      0.04798662590321149,
+      0.03197598285006456,
+      0.038060771826070774
+     ],
+     "nominee_abs_max": 0.02497747240029839,
+     "sigma_r": 13.485255434635414,
+     "used": [
+      4,
+      6,
+      1,
+      7
+     ]
+    },
+    {
+     "at": "generation 10",
+     "transitions": 460800,
+     "mean_step_reward": 0.30468548103106313,
+     "predicate_fraction": 0.39696180555555555,
+     "mean_abs_spin": 3.954640889170373,
+     "falls_so_far": 77,
+     "candidate_scores": [
+      140.72735595703125,
+      121.99498748779297,
+      109.45321655273438,
+      83.01033020019531,
+      84.3677978515625,
+      112.72195434570312,
+      98.43035125732422,
+      89.2407455444336,
+      113.6882095336914,
+      84.26878356933594,
+      125.35832977294922,
+      149.78509521484375,
+      136.84616088867188,
+      128.69882202148438,
+      88.07730865478516,
+      88.31889343261719
+     ],
+     "candidate_abs_max": [
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1
+     ],
+     "nominee_abs_max": 0.1,
+     "sigma_r": 23.436209464290133,
+     "used": [
+      3,
+      0,
+      4,
+      5
+     ]
+    }
+   ]
+  },
+  "b0_ppo": {
+   "transitions": 460800,
+   "episodes_started": 1435,
+   "falls": 92,
+   "wall_time_s": 133.05634999275208,
+   "updates": 115,
+   "final_theta_sha256": "2b519c639f529319e1aa5adf4d4715a8f8bf251fc465624e9809be6093aec812",
+   "final_theta_abs_max": 0.09878551214933395,
+   "curve_first_last": [
+    {
+     "at": "update 1",
+     "transitions": 3840,
+     "mean_step_reward": 0.3258376121520996,
+     "predicate_fraction": 0.4205729166666667,
+     "mean_abs_spin": 5.844439208010832,
+     "falls_so_far": 4,
+     "kl": null,
+     "value_loss": 0.035088566481135786,
+     "surrogate": null,
+     "actor_lr": 0.003,
+     "theta_abs_max": 0.0,
+     "explained_variance": -0.10817837715148926
+    },
+    {
+     "at": "update 120",
+     "transitions": 460800,
+     "mean_step_reward": 0.32153230905532837,
+     "predicate_fraction": 0.49192708333333335,
+     "mean_abs_spin": 5.367851662635803,
+     "falls_so_far": 92,
+     "kl": 0.008456356317765312,
+     "value_loss": 0.020641193084884435,
+     "surrogate": 0.0011141736613353714,
+     "actor_lr": 0.03,
+     "theta_abs_max": 0.09878551214933395,
+     "explained_variance": 0.9840657114982605
+    }
+   ]
+  },
+  "b1_draws": {
+   "transitions": 460800,
+   "episodes_started": 2565,
+   "falls": 67,
+   "wall_time_s": 112.19430804252625,
+   "updates": 0,
+   "final_theta_sha256": "a959d5851871f835cae1b3619576658c1b90e21fdbc59ff5ab0091b0cad5f769",
+   "final_theta_abs_max": 0.033349476754665375,
+   "curve_first_last": [
+    {
+     "at": "generation 1",
+     "transitions": 46080,
+     "mean_step_reward": 0.3537115439652957,
+     "predicate_fraction": 0.49932725694444446,
+     "mean_abs_spin": 4.786901083257463,
+     "falls_so_far": 4,
+     "candidate_scores": [
+      159.1605682373047,
+      150.06153869628906,
+      111.34307861328125,
+      115.84721374511719,
+      111.5018081665039,
+      116.01561737060547,
+      117.10944366455078,
+      137.64987182617188
+     ],
+     "candidate_abs_max": [
+      0.033349477533671984,
+      0.06141540063212103,
+      0.016357351149949847,
+      0.002944513966517757,
+      0.08363547240169396,
+      0.05062510321474655,
+      0.010512050681771381,
+      0.010383689021846616
+     ],
+     "nominee_abs_max": 0.033349477533671984,
+     "best": {
+      "draw": 0,
+      "score": 159.1605682373047
+     }
+    },
+    {
+     "at": "generation 10",
+     "transitions": 460800,
+     "mean_step_reward": 0.3416350955156506,
+     "predicate_fraction": 0.4993489583333333,
+     "mean_abs_spin": 4.643783641068472,
+     "falls_so_far": 67,
+     "candidate_scores": [
+      136.44357299804688,
+      143.50289916992188,
+      105.25621795654297,
+      140.24794006347656,
+      121.69947814941406,
+      102.92320251464844,
+      112.81065368652344,
+      121.02494049072266
+     ],
+     "candidate_abs_max": [
+      0.030679234575669012,
+      0.003941043394491799,
+      0.019436554195712847,
+      0.057426153548992005,
+      0.021440664153585982,
+      0.02631401827355049,
+      0.021774873386640994,
+      0.005571543097283324
+     ],
+     "nominee_abs_max": 0.033349477533671984,
+     "best": {
+      "draw": 0,
+      "score": 159.1605682373047
+     }
+    }
+   ]
+  },
+  "b1_ars": {
+   "transitions": 460800,
+   "episodes_started": 2563,
+   "falls": 57,
+   "wall_time_s": 113.09554147720337,
+   "updates": 10,
+   "final_theta_sha256": "218acf5844451fd0481e032fa219bdacd7f8fdc238fa5f9889ee6b08381c7f21",
+   "final_theta_abs_max": 0.09462910145521164,
+   "curve_first_last": [
+    {
+     "at": "generation 1",
+     "transitions": 46080,
+     "mean_step_reward": 0.3545151599699036,
+     "predicate_fraction": 0.5023871527777778,
+     "mean_abs_spin": 4.736038802564144,
+     "falls_so_far": 5,
+     "candidate_scores": [
+      153.08352661132812,
+      112.28825378417969,
+      106.32575988769531,
+      133.02285766601562,
+      107.4050064086914,
+      142.20968627929688,
+      121.75987243652344,
+      140.4765625,
+      70.28136444091797,
+      140.52874755859375,
+      95.07388305664062,
+      155.59591674804688,
+      140.0792236328125,
+      138.8004608154297,
+      141.63961791992188,
+      143.43630981445312
+     ],
+     "candidate_abs_max": [
+      0.04110963207846754,
+      0.05242045650463717,
+      0.042440511435753725,
+      0.048032685058286145,
+      0.040344519362515284,
+      0.03895102363187996,
+      0.03465874702554577,
+      0.045384520459879146,
+      0.04110963207846754,
+      0.05242045650463717,
+      0.042440511435753725,
+      0.048032685058286145,
+      0.040344519362515284,
+      0.03895102363187996,
+      0.03465874702554577,
+      0.045384520459879146
+     ],
+     "nominee_abs_max": 0.033275996235999444,
+     "sigma_r": 25.273522869257615,
+     "used": [
+      3,
+      0,
+      7,
+      5
+     ]
+    },
+    {
+     "at": "generation 10",
+     "transitions": 460800,
+     "mean_step_reward": 0.3355948400463805,
+     "predicate_fraction": 0.4988064236111111,
+     "mean_abs_spin": 5.27065704038703,
+     "falls_so_far": 57,
+     "candidate_scores": [
+      177.683837890625,
+      152.58197021484375,
+      113.27397155761719,
+      101.43305969238281,
+      89.76724243164062,
+      110.83092498779297,
+      101.8984375,
+      116.75680541992188,
+      139.1717987060547,
+      99.88213348388672,
+      124.77899169921875,
+      121.4508285522461,
+      116.42294311523438,
+      104.68287658691406,
+      168.04754638671875,
+      94.36332702636719
+     ],
+     "candidate_abs_max": [
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.09819680627780566,
+      0.1,
+      0.09658118662048287,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1
+     ],
+     "nominee_abs_max": 0.09462909847176053,
+     "sigma_r": 27.715403099748865,
+     "used": [
+      0,
+      6,
+      1,
+      2
+     ]
+    }
+   ]
+  },
+  "b1_ppo": {
+   "transitions": 460800,
+   "episodes_started": 1435,
+   "falls": 94,
+   "wall_time_s": 132.75786781311035,
+   "updates": 115,
+   "final_theta_sha256": "88f21e0d8573d34f248fad685035f04f52f57dff904cb02c62ec38cceba78607",
+   "final_theta_abs_max": 0.10000000149011612,
+   "curve_first_last": [
+    {
+     "at": "update 1",
+     "transitions": 3840,
+     "mean_step_reward": 0.3355403542518616,
+     "predicate_fraction": 0.4119791666666667,
+     "mean_abs_spin": 5.174202775458495,
+     "falls_so_far": 2,
+     "kl": null,
+     "value_loss": 0.059893989469856024,
+     "surrogate": null,
+     "actor_lr": 0.003,
+     "theta_abs_max": 0.0,
+     "explained_variance": -0.0662233829498291
+    },
+    {
+     "at": "update 120",
+     "transitions": 460800,
+     "mean_step_reward": 0.38509154319763184,
+     "predicate_fraction": 0.62578125,
+     "mean_abs_spin": 6.849185307820638,
+     "falls_so_far": 94,
+     "kl": 0.011859388832817785,
+     "value_loss": 0.028380228905007243,
+     "surrogate": 7.246504537761211e-05,
+     "actor_lr": 0.03,
+     "theta_abs_max": 0.10000000149011612,
+     "explained_variance": 0.9779177308082581
+    }
+   ]
+  },
+  "b2_draws": {
+   "transitions": 230272,
+   "episodes_started": 1281,
+   "falls": 28,
+   "wall_time_s": 58.34625864028931,
+   "updates": 0,
+   "final_theta_sha256": "69db4c5eced8e2ceea4ac0a281bd4d98c83d4f60a0efe77b22fc88d1180a1626",
+   "final_theta_abs_max": 0.05974012613296509,
+   "curve_first_last": [
+    {
+     "at": "generation 1",
+     "transitions": 46080,
+     "mean_step_reward": 0.33929527394761355,
+     "predicate_fraction": 0.5005208333333333,
+     "mean_abs_spin": 4.723651564245423,
+     "falls_so_far": 7,
+     "candidate_scores": [
+      111.06875610351562,
+      111.34010314941406,
+      129.56153869628906,
+      113.44276428222656,
+      96.39808654785156,
+      167.43995666503906,
+      140.62713623046875,
+      107.2918701171875
+     ],
+     "candidate_abs_max": [
+      0.06487489223126382,
+      0.004788041736783236,
+      0.006430473579777871,
+      0.00603421143515381,
+      0.004499182493890684,
+      0.05974012582662741,
+      0.016361378799506037,
+      0.007103342595212827
+     ],
+     "nominee_abs_max": 0.05974012582662741,
+     "best": {
+      "draw": 5,
+      "score": 167.43995666503906
+     }
+    },
+    {
+     "at": "generation 4",
+     "transitions": 184320,
+     "mean_step_reward": 0.323494016760944,
+     "predicate_fraction": 0.438671875,
+     "mean_abs_spin": 4.557576181674894,
+     "falls_so_far": 21,
+     "candidate_scores": [
+      85.18949890136719,
+      80.407958984375,
+      143.92587280273438,
+      141.2253875732422,
+      108.80689239501953,
+      130.13243103027344,
+      103.0810546875,
+      138.8936767578125
+     ],
+     "candidate_abs_max": [
+      0.04843108798876839,
+      0.0658591788267764,
+      0.060690689407293934,
+      0.021444134937483664,
+      0.00693422739442483,
+      0.006649809826058308,
+      0.04991476362174292,
+      0.0032112895501589973
+     ],
+     "nominee_abs_max": 0.05974012582662741,
+     "best": {
+      "draw": 5,
+      "score": 167.43995666503906
+     }
+    }
+   ]
+  }
+ },
+ "accounting": {
+  "training_transitions": 2995072,
+  "training_episodes_started": 14404,
+  "smoke_transitions": 92160,
+  "smoke_episodes_started": 512,
+  "episodes_started_total": 17926,
+  "episode_ceiling": 20000,
+  "evaluation_processes": 32,
+  "evaluation_episodes": 2496,
+  "llm_calls": 0,
+  "driver_wall_time_s_this_invocation": 676.9493243694305
+ },
+ "symbolic_complexity": {
+  "coefficients": 32,
+  "features": [
+   "axial_rate_deficit",
+   "filtered_joint_velocity",
+   "posture_error"
+  ],
+  "trainable_state": 0
+ },
+ "limitation": "a finite pilot: training runs of 460,800 transitions per learner and block; the case-paired intervals are conditional on the evaluated finalists; no promotion follows from it",
+ "evaluated_blocks": [
+  0,
+  1
+ ],
+ "incomplete": "incomplete: 2 of 3 blocks. Training stopped on the episode ceiling at b2_draws; that block is void and excluded from selection and inference (amendment)",
+ "amendment": {
+  "idea": "R-103",
+  "recorded": "2026-11-22, before any selection or fresh case ran",
+  "authority": "advisor consult call_00224 (agreed with the implementer); the user delegated such decisions on 2026-11-22",
+  "evaluated_blocks": [
+   0,
+   1
+  ],
+  "void_block": {
+   "block": 2,
+   "training_seed": 4762,
+   "status": "consumed; b2_draws stopped at 230,272 of 460,800 transitions on its episode allowance, b2_ars and b2_ppo never started",
+   "retired_unused_manifests": [
+    "config/manifests/pen_spin_stage3_reward_selection_s4766.yaml",
+    "config/manifests/pen_spin_stage3_reward_fresh_s4769.yaml"
+   ],
+   "retired_seeds": [
+    4766,
+    4769
+   ]
+  },
+  "cause": "the implementer's episode estimate was wrong: in the draws and ARS arms every generation is a forced full reset (128 starts) and its 360th step times every surviving environment out, auto-resetting it (about 123 more starts of episodes that the next forced reset overwrites); about 2,563 starts per run against an estimated 1,350",
+  "episodes_started_ledger": {
+   "attempt1_smoke_seed_4763": 514,
+   "smoke_seed_4770": 512,
+   "b0_draws": 2562,
+   "b0_ars": 2563,
+   "b0_ppo": 1435,
+   "b1_draws": 2565,
+   "b1_ars": 2563,
+   "b1_ppo": 1435,
+   "b2_draws_partial": 1281,
+   "total_before_evaluation": 15430,
+   "reservation_overrun": "b2_draws started 1,281 against an allowance of 1,243: 38 starts into the evaluation reserve, not a breach of the 20,000 ceiling"
+  },
+  "evaluation": {
+   "scheduled_cases_at_most": 3072,
+   "projected_total_charged": 18502,
+   "ceiling": 20000,
+   "accounting_rule": "as agreed at triage, evaluation is charged one start per manifest case (the 4,608 reserve was defined that way)",
+   "physical_starts_note": "the established evaluator physically places more than one episode per case: env.reset() draws a native placement that the case placement overwrites, and a case that ends is auto-reset while its batch finishes, so a cell of N cases makes roughly 3N physical placements (at most about 9,300 for 3,072 cases). Those are properties of the evaluator every earlier study used; they are reported here and not charged, and no training uses the released reserve"
+  },
+  "rules": [
+   "selection seeds 4764/4765, fresh seeds 4767/4768, whole-manifest fresh processes, deterministic deployment, step 0 eligible, registered tie-breaks: unchanged",
+   "selection finishes for both blocks and the six finalists are hashed before any fresh case",
+   "the six-contrast Holm family, drop bounds and per-block reporting are unchanged, on 256 pairs per contrast; the two-block t interval (1 degree of freedom) is computed and reported beside the case-paired one",
+   "no training extension, rerun or replacement; every verdict is labelled 'incomplete: two of three blocks'; no promotion and no P2 follow"
+  ]
+ }
+}
