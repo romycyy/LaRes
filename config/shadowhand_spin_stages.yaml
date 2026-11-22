@@ -1713,3 +1713,31 @@ research_protocols:
     threshold: 0.05
     drop_margin: 0.05
     start_ceiling: 440000
+  # R-124 (no training, no LLM): the whole construction ladder, six frozen controllers, each once per manifest in its
+  # own fresh process on 24 fresh 128-case manifests (ladder_confirmation.py). 144 cells, 18,432 cases.
+  #   python scripts/run_shadowhand_spin_stages.py --study stage3_consolidated_ladder
+  stage3_consolidated_ladder:
+    log_dir: "logs/pen_spin/r124_consolidated_ladder"
+    incumbent_asset: "config/pen_spin/d058_fixed_stroke_incumbent"
+    reference_descriptor: "config/pen_spin/symbolic_reward_reference/reference.json"
+    reference_residual: *d070_selected
+    reference_residual_sha256: *d070_selected_sha256
+    control_dt: 0.016666666666666666
+    pool_seed: 5025
+    actor: *sr_actor
+    normalization_path: "logs/pen_spin/r103_symbolic_reward/normalization.json"
+    normalization_sha256: "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac"
+    root_finalist: "config/pen_spin/r106_success_ars_finalist/finalist.json"
+    root_theta_sha256: "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef"
+    module_bounds: {threshold: [1.0, 6.0], ramp_out: [3.0, 80.0]}   # the R-121 asset's ranges; R-116 / R-118 use the original ones
+    assets:
+      r116: {path: "config/pen_spin/r116_recovery_finalist/finalist.json", sha256: "f7f9313d7eaea2072536e37923b6a1f7b429c521c269fc0893475e07cf4d70df"}
+      r118: {path: "config/pen_spin/r118_continue_finalist/finalist.json", sha256: "03e10e1ced46dd0e2af34701306900fc54a76994c56bc10f36f7e3d5df2a2ff8"}
+      r121: {path: "config/pen_spin/r121_joint_finalist/finalist.json", sha256: "1527eb5643a59f9b77858f0dc5852280badd1f6ec012c0efa7c30019c794713c"}
+    centre_tolerance: 0.08
+    confirmation_seeds: [5025, 5041, 5042, 5043, 5044, 5045, 5046, 5047, 5048, 5049, 5050, 5051, 5052, 5053, 5054, 5055, 5056, 5057, 5058, 5059, 5060, 5061, 5062, 5063]
+    confirmation_cases: 128
+    confirmation_manifest_template: "config/manifests/pen_spin_stage3_ladder_s{seed}.yaml"
+    threshold: 0.30
+    step_threshold: 0.05
+    drop_margin: 0.05

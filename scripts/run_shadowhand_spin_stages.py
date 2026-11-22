@@ -72,6 +72,7 @@ PEN_SPIN_STUDIES = {
     "recovery_tail_archive_audit": "recovery_tail_audit",          # R-120 (archive-only: which failures continued training removed)
     "recovery_joint_matched": "recovery_joint",                    # R-121 (joint residual + module adaptation vs module-only, matched)
     "joint_early_phase": "recovery_early",                         # R-122 (start-up offsets for the first 60 steps vs matched continuation)
+    "stage3_consolidated_ladder": "ladder_confirmation",           # R-124 (six frozen controllers on 24 fresh manifests)
 }
 
 

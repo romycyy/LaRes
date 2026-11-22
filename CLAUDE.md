@@ -722,6 +722,17 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   R-121 JOINT finalist: EARLY minus CONTINUE +0.013 [-0.009, +0.035]; neither improves on JOINT (CONTINUE -0.016, EARLY
   -0.003). **JOINT has plateaued under ARS continuation at about 0.79-0.81** (1,207 of 1,536 here) and stays the best
   controller. The offsets cut early drops 42 -> 29 but persistent-slow failures rose 158 -> 174.
+- **R-124 result (D-086, supported; the consolidated ladder, 2026-11-22).** `ladder_confirmation.py` (`--study
+  stage3_consolidated_ladder`): six frozen controllers on the same 24 fresh manifests (3,072 cases each). **Sustained
+  success: D-058 saved incumbent 0.371; D-072 reference 0.431; R-106 residual 0.548; R-116 re-capture module 0.644;
+  R-118 continued module 0.772; R-121 JOINT 0.796.** JOINT minus D-072 +0.365 [+0.344, +0.386]; JOINT minus D-058
+  +0.425 [+0.404, +0.446]; every adjacent step positive after Holm, drop bounds hold (drops 140 / 140 / 96 / 127 / 136 /
+  136). The qualified assets are `config/pen_spin/r106_success_ars_finalist`, `r116_recovery_finalist`,
+  `r118_continue_finalist`, `r121_joint_finalist`; **`config/pen_spin/d058_fixed_stroke_incumbent` is still the saved
+  incumbent until the user says otherwise.** What worked under `docs/NEXT_RESEARCH_DIRECTION.md`: ARS with 512 shared
+  placements per signed candidate in one batch (not the objective), a learned single-decision re-capture module, its
+  continued training, and co-adapting the residual. What did not: PPO/ARS/draws at 460,800 transitions, grammar or LLM
+  structural terms, a slow-memory gate, a second attempt, start-up offsets.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

@@ -1,0 +1,2319 @@
+{
+ "study": "stage3_consolidated_ladder",
+ "config_sha256": "382a81faec315d36feb292d5863e0ac0ac25432bf132c35f18d874d7199db76f",
+ "cases_per_policy": 3072,
+ "manifests": 24,
+ "paired_success_difference": 0.3649088541666667,
+ "paired_success_difference_ci95": [
+  0.34426353618009553,
+  0.38555417215323784
+ ],
+ "policies": {
+  "d058": {
+   "successes": 1141,
+   "drops": 140,
+   "success": 0.3714192708333333,
+   "manifest_ci95": [
+    0.3557038134737818,
+    0.3871347281928848
+   ],
+   "manifest_min_max": [
+    0.2890625,
+    0.4296875
+   ]
+  },
+  "d072": {
+   "successes": 1325,
+   "drops": 140,
+   "success": 0.4313151041666667,
+   "manifest_ci95": [
+    0.41288368707243794,
+    0.4497465212608954
+   ],
+   "manifest_min_max": [
+    0.3203125,
+    0.515625
+   ]
+  },
+  "r106": {
+   "successes": 1684,
+   "drops": 96,
+   "success": 0.5481770833333334,
+   "manifest_ci95": [
+    0.5250197824805904,
+    0.5713343841860763
+   ],
+   "manifest_min_max": [
+    0.4609375,
+    0.65625
+   ]
+  },
+  "r116": {
+   "successes": 1978,
+   "drops": 127,
+   "success": 0.6438802083333334,
+   "manifest_ci95": [
+    0.6201726481917172,
+    0.6675877684749495
+   ],
+   "manifest_min_max": [
+    0.546875,
+    0.75
+   ]
+  },
+  "r118": {
+   "successes": 2372,
+   "drops": 136,
+   "success": 0.7721354166666666,
+   "manifest_ci95": [
+    0.7560424891286229,
+    0.7882283442047103
+   ],
+   "manifest_min_max": [
+    0.703125,
+    0.8671875
+   ]
+  },
+  "r121": {
+   "successes": 2446,
+   "drops": 136,
+   "success": 0.7962239583333334,
+   "manifest_ci95": [
+    0.7802416702156608,
+    0.8122062464510059
+   ],
+   "manifest_min_max": [
+    0.75,
+    0.875
+   ]
+  }
+ },
+ "contrasts": {
+  "r121_minus_d072": {
+   "pooled": {
+    "success": {
+     "n": 3072,
+     "mean": 0.3649088541666667,
+     "se": 0.010529367540576649,
+     "low": 0.34426353618009553,
+     "high": 0.38555417215323784,
+     "p_value": 2.0331129450485326e-222
+    },
+    "success_win_loss_tie": {
+     "wins": 1288,
+     "losses": 167,
+     "ties": 1617
+    },
+    "tail_hit_fraction": {
+     "n": 3072,
+     "mean": 0.3927067324296048,
+     "se": 0.009935458233696884,
+     "low": 0.37322591425258683,
+     "high": 0.41218755060662277,
+     "p_value": 1.3781698019685526e-276
+    },
+    "drops": {
+     "n": 3072,
+     "mean": -0.0013020833333333333,
+     "se": 0.0031564679278160406,
+     "low": -0.0064955777048255735,
+     "high": 0.0038914110381589075,
+     "p_value": 0.6799924163655624,
+     "one_sided_95_upper": 0.0038914110381589075,
+     "margin": 0.05,
+     "non_inferior": true,
+     "counts": [
+      136,
+      140
+     ]
+    },
+    "promotes": true,
+    "adopts": true,
+    "prediction": {
+     "threshold": 0.3,
+     "supported": true,
+     "refuted": false
+    }
+   },
+   "per_manifest": {
+    "s5025": {
+     "n": 128,
+     "selected": 100,
+     "parent": 54,
+     "difference": 0.359375,
+     "drops": [
+      3,
+      4
+     ]
+    },
+    "s5041": {
+     "n": 128,
+     "selected": 104,
+     "parent": 59,
+     "difference": 0.3515625,
+     "drops": [
+      3,
+      2
+     ]
+    },
+    "s5042": {
+     "n": 128,
+     "selected": 99,
+     "parent": 50,
+     "difference": 0.3828125,
+     "drops": [
+      5,
+      7
+     ]
+    },
+    "s5043": {
+     "n": 128,
+     "selected": 100,
+     "parent": 57,
+     "difference": 0.3359375,
+     "drops": [
+      6,
+      6
+     ]
+    },
+    "s5044": {
+     "n": 128,
+     "selected": 105,
+     "parent": 53,
+     "difference": 0.40625,
+     "drops": [
+      4,
+      9
+     ]
+    },
+    "s5045": {
+     "n": 128,
+     "selected": 97,
+     "parent": 52,
+     "difference": 0.3515625,
+     "drops": [
+      5,
+      4
+     ]
+    },
+    "s5046": {
+     "n": 128,
+     "selected": 105,
+     "parent": 61,
+     "difference": 0.34375,
+     "drops": [
+      7,
+      6
+     ]
+    },
+    "s5047": {
+     "n": 128,
+     "selected": 96,
+     "parent": 41,
+     "difference": 0.4296875,
+     "drops": [
+      7,
+      8
+     ]
+    },
+    "s5048": {
+     "n": 128,
+     "selected": 103,
+     "parent": 48,
+     "difference": 0.4296875,
+     "drops": [
+      4,
+      6
+     ]
+    },
+    "s5049": {
+     "n": 128,
+     "selected": 96,
+     "parent": 59,
+     "difference": 0.2890625,
+     "drops": [
+      6,
+      8
+     ]
+    },
+    "s5050": {
+     "n": 128,
+     "selected": 106,
+     "parent": 49,
+     "difference": 0.4453125,
+     "drops": [
+      11,
+      8
+     ]
+    },
+    "s5051": {
+     "n": 128,
+     "selected": 108,
+     "parent": 63,
+     "difference": 0.3515625,
+     "drops": [
+      4,
+      5
+     ]
+    },
+    "s5052": {
+     "n": 128,
+     "selected": 96,
+     "parent": 52,
+     "difference": 0.34375,
+     "drops": [
+      8,
+      7
+     ]
+    },
+    "s5053": {
+     "n": 128,
+     "selected": 109,
+     "parent": 53,
+     "difference": 0.4375,
+     "drops": [
+      2,
+      2
+     ]
+    },
+    "s5054": {
+     "n": 128,
+     "selected": 100,
+     "parent": 54,
+     "difference": 0.359375,
+     "drops": [
+      4,
+      3
+     ]
+    },
+    "s5055": {
+     "n": 128,
+     "selected": 111,
+     "parent": 59,
+     "difference": 0.40625,
+     "drops": [
+      4,
+      7
+     ]
+    },
+    "s5056": {
+     "n": 128,
+     "selected": 104,
+     "parent": 60,
+     "difference": 0.34375,
+     "drops": [
+      7,
+      8
+     ]
+    },
+    "s5057": {
+     "n": 128,
+     "selected": 101,
+     "parent": 59,
+     "difference": 0.328125,
+     "drops": [
+      6,
+      4
+     ]
+    },
+    "s5058": {
+     "n": 128,
+     "selected": 97,
+     "parent": 52,
+     "difference": 0.3515625,
+     "drops": [
+      10,
+      8
+     ]
+    },
+    "s5059": {
+     "n": 128,
+     "selected": 112,
+     "parent": 66,
+     "difference": 0.359375,
+     "drops": [
+      3,
+      2
+     ]
+    },
+    "s5060": {
+     "n": 128,
+     "selected": 98,
+     "parent": 51,
+     "difference": 0.3671875,
+     "drops": [
+      7,
+      4
+     ]
+    },
+    "s5061": {
+     "n": 128,
+     "selected": 99,
+     "parent": 54,
+     "difference": 0.3515625,
+     "drops": [
+      11,
+      11
+     ]
+    },
+    "s5062": {
+     "n": 128,
+     "selected": 97,
+     "parent": 58,
+     "difference": 0.3046875,
+     "drops": [
+      8,
+      8
+     ]
+    },
+    "s5063": {
+     "n": 128,
+     "selected": 103,
+     "parent": 61,
+     "difference": 0.328125,
+     "drops": [
+      1,
+      3
+     ]
+    }
+   },
+   "manifest_clustered": {
+    "n": 24,
+    "mean": 0.3649088541666667,
+    "se": 0.008418513073201149,
+    "low": 0.3474938330293769,
+    "high": 0.38232387530395645,
+    "p_value": 1.4725247576155084e-23
+   },
+   "intervals_agree_on_sign": true,
+   "pairs": 3072,
+   "successes": [
+    2446,
+    1325
+   ],
+   "holm": {
+    "p": 2.0331129450485326e-222,
+    "p_holm": 1.2198677670291196e-221,
+    "rejects": true
+   },
+   "qualifies": true
+  },
+  "d072_minus_d058": {
+   "pooled": {
+    "success": {
+     "n": 3072,
+     "mean": 0.059895833333333336,
+     "se": 0.007516308600615968,
+     "low": 0.045158330767588746,
+     "high": 0.07463333589907793,
+     "p_value": 2.2378205548775097e-15
+    },
+    "success_win_loss_tie": {
+     "wins": 364,
+     "losses": 180,
+     "ties": 2528
+    },
+    "tail_hit_fraction": {
+     "n": 3072,
+     "mean": 0.06315572470521673,
+     "se": 0.0074591651386178405,
+     "low": 0.04853026542595241,
+     "high": 0.07778118398448106,
+     "p_value": 3.849903810122456e-17
+    },
+    "drops": {
+     "n": 3072,
+     "mean": 0.0,
+     "se": 0.0013812927700906337,
+     "low": -0.002272710000830624,
+     "high": 0.002272710000830624,
+     "p_value": 1.0,
+     "one_sided_95_upper": 0.002272710000830624,
+     "margin": 0.05,
+     "non_inferior": true,
+     "counts": [
+      140,
+      140
+     ]
+    },
+    "promotes": true,
+    "adopts": true,
+    "prediction": {
+     "threshold": 0.05,
+     "supported": true,
+     "refuted": false
+    }
+   },
+   "per_manifest": {
+    "s5025": {
+     "n": 128,
+     "selected": 54,
+     "parent": 52,
+     "difference": 0.015625,
+     "drops": [
+      4,
+      3
+     ]
+    },
+    "s5041": {
+     "n": 128,
+     "selected": 59,
+     "parent": 54,
+     "difference": 0.0390625,
+     "drops": [
+      2,
+      2
+     ]
+    },
+    "s5042": {
+     "n": 128,
+     "selected": 50,
+     "parent": 47,
+     "difference": 0.0234375,
+     "drops": [
+      7,
+      6
+     ]
+    },
+    "s5043": {
+     "n": 128,
+     "selected": 57,
+     "parent": 45,
+     "difference": 0.09375,
+     "drops": [
+      6,
+      6
+     ]
+    },
+    "s5044": {
+     "n": 128,
+     "selected": 53,
+     "parent": 42,
+     "difference": 0.0859375,
+     "drops": [
+      9,
+      8
+     ]
+    },
+    "s5045": {
+     "n": 128,
+     "selected": 52,
+     "parent": 47,
+     "difference": 0.0390625,
+     "drops": [
+      4,
+      3
+     ]
+    },
+    "s5046": {
+     "n": 128,
+     "selected": 61,
+     "parent": 52,
+     "difference": 0.0703125,
+     "drops": [
+      6,
+      7
+     ]
+    },
+    "s5047": {
+     "n": 128,
+     "selected": 41,
+     "parent": 37,
+     "difference": 0.03125,
+     "drops": [
+      8,
+      9
+     ]
+    },
+    "s5048": {
+     "n": 128,
+     "selected": 48,
+     "parent": 46,
+     "difference": 0.015625,
+     "drops": [
+      6,
+      6
+     ]
+    },
+    "s5049": {
+     "n": 128,
+     "selected": 59,
+     "parent": 49,
+     "difference": 0.078125,
+     "drops": [
+      8,
+      9
+     ]
+    },
+    "s5050": {
+     "n": 128,
+     "selected": 49,
+     "parent": 45,
+     "difference": 0.03125,
+     "drops": [
+      8,
+      9
+     ]
+    },
+    "s5051": {
+     "n": 128,
+     "selected": 63,
+     "parent": 55,
+     "difference": 0.0625,
+     "drops": [
+      5,
+      5
+     ]
+    },
+    "s5052": {
+     "n": 128,
+     "selected": 52,
+     "parent": 52,
+     "difference": 0.0,
+     "drops": [
+      7,
+      7
+     ]
+    },
+    "s5053": {
+     "n": 128,
+     "selected": 53,
+     "parent": 42,
+     "difference": 0.0859375,
+     "drops": [
+      2,
+      1
+     ]
+    },
+    "s5054": {
+     "n": 128,
+     "selected": 54,
+     "parent": 47,
+     "difference": 0.0546875,
+     "drops": [
+      3,
+      3
+     ]
+    },
+    "s5055": {
+     "n": 128,
+     "selected": 59,
+     "parent": 53,
+     "difference": 0.046875,
+     "drops": [
+      7,
+      7
+     ]
+    },
+    "s5056": {
+     "n": 128,
+     "selected": 60,
+     "parent": 47,
+     "difference": 0.1015625,
+     "drops": [
+      8,
+      8
+     ]
+    },
+    "s5057": {
+     "n": 128,
+     "selected": 59,
+     "parent": 47,
+     "difference": 0.09375,
+     "drops": [
+      4,
+      4
+     ]
+    },
+    "s5058": {
+     "n": 128,
+     "selected": 52,
+     "parent": 39,
+     "difference": 0.1015625,
+     "drops": [
+      8,
+      8
+     ]
+    },
+    "s5059": {
+     "n": 128,
+     "selected": 66,
+     "parent": 52,
+     "difference": 0.109375,
+     "drops": [
+      2,
+      3
+     ]
+    },
+    "s5060": {
+     "n": 128,
+     "selected": 51,
+     "parent": 44,
+     "difference": 0.0546875,
+     "drops": [
+      4,
+      4
+     ]
+    },
+    "s5061": {
+     "n": 128,
+     "selected": 54,
+     "parent": 45,
+     "difference": 0.0703125,
+     "drops": [
+      11,
+      12
+     ]
+    },
+    "s5062": {
+     "n": 128,
+     "selected": 58,
+     "parent": 49,
+     "difference": 0.0703125,
+     "drops": [
+      8,
+      7
+     ]
+    },
+    "s5063": {
+     "n": 128,
+     "selected": 61,
+     "parent": 53,
+     "difference": 0.0625,
+     "drops": [
+      3,
+      3
+     ]
+    }
+   },
+   "manifest_clustered": {
+    "n": 24,
+    "mean": 0.059895833333333336,
+    "se": 0.006285752210951998,
+    "low": 0.04689276418493917,
+    "high": 0.07289890248172749,
+    "p_value": 1.885309433183453e-09
+   },
+   "intervals_agree_on_sign": true,
+   "pairs": 3072,
+   "successes": [
+    1325,
+    1141
+   ],
+   "holm": {
+    "p": 2.2378205548775097e-15,
+    "p_holm": 4.475641109755019e-15,
+    "rejects": true
+   },
+   "qualifies": true
+  },
+  "r106_minus_d072": {
+   "pooled": {
+    "success": {
+     "n": 3072,
+     "mean": 0.11686197916666667,
+     "se": 0.010852145641033012,
+     "low": 0.09558377829350784,
+     "high": 0.1381401800398255,
+     "p_value": 1.4358410315882893e-26
+    },
+    "success_win_loss_tie": {
+     "wins": 756,
+     "losses": 397,
+     "ties": 1919
+    },
+    "tail_hit_fraction": {
+     "n": 3072,
+     "mean": 0.12682775691105103,
+     "se": 0.010584799866663726,
+     "low": 0.10607375072508018,
+     "high": 0.14758176309702187,
+     "p_value": 2.2978044918996873e-32
+    },
+    "drops": {
+     "n": 3072,
+     "mean": -0.014322916666666666,
+     "se": 0.002672280781162848,
+     "low": -0.01871975373689746,
+     "high": -0.009926079596435874,
+     "p_value": 8.94717342137501e-08,
+     "one_sided_95_upper": -0.009926079596435874,
+     "margin": 0.05,
+     "non_inferior": true,
+     "counts": [
+      96,
+      140
+     ]
+    },
+    "promotes": true,
+    "adopts": true,
+    "prediction": {
+     "threshold": 0.05,
+     "supported": true,
+     "refuted": false
+    }
+   },
+   "per_manifest": {
+    "s5025": {
+     "n": 128,
+     "selected": 62,
+     "parent": 54,
+     "difference": 0.0625,
+     "drops": [
+      2,
+      4
+     ]
+    },
+    "s5041": {
+     "n": 128,
+     "selected": 77,
+     "parent": 59,
+     "difference": 0.140625,
+     "drops": [
+      2,
+      2
+     ]
+    },
+    "s5042": {
+     "n": 128,
+     "selected": 63,
+     "parent": 50,
+     "difference": 0.1015625,
+     "drops": [
+      3,
+      7
+     ]
+    },
+    "s5043": {
+     "n": 128,
+     "selected": 70,
+     "parent": 57,
+     "difference": 0.1015625,
+     "drops": [
+      6,
+      6
+     ]
+    },
+    "s5044": {
+     "n": 128,
+     "selected": 70,
+     "parent": 53,
+     "difference": 0.1328125,
+     "drops": [
+      6,
+      9
+     ]
+    },
+    "s5045": {
+     "n": 128,
+     "selected": 75,
+     "parent": 52,
+     "difference": 0.1796875,
+     "drops": [
+      3,
+      4
+     ]
+    },
+    "s5046": {
+     "n": 128,
+     "selected": 73,
+     "parent": 61,
+     "difference": 0.09375,
+     "drops": [
+      3,
+      6
+     ]
+    },
+    "s5047": {
+     "n": 128,
+     "selected": 61,
+     "parent": 41,
+     "difference": 0.15625,
+     "drops": [
+      5,
+      8
+     ]
+    },
+    "s5048": {
+     "n": 128,
+     "selected": 69,
+     "parent": 48,
+     "difference": 0.1640625,
+     "drops": [
+      4,
+      6
+     ]
+    },
+    "s5049": {
+     "n": 128,
+     "selected": 74,
+     "parent": 59,
+     "difference": 0.1171875,
+     "drops": [
+      5,
+      8
+     ]
+    },
+    "s5050": {
+     "n": 128,
+     "selected": 59,
+     "parent": 49,
+     "difference": 0.078125,
+     "drops": [
+      6,
+      8
+     ]
+    },
+    "s5051": {
+     "n": 128,
+     "selected": 81,
+     "parent": 63,
+     "difference": 0.140625,
+     "drops": [
+      2,
+      5
+     ]
+    },
+    "s5052": {
+     "n": 128,
+     "selected": 67,
+     "parent": 52,
+     "difference": 0.1171875,
+     "drops": [
+      5,
+      7
+     ]
+    },
+    "s5053": {
+     "n": 128,
+     "selected": 84,
+     "parent": 53,
+     "difference": 0.2421875,
+     "drops": [
+      1,
+      2
+     ]
+    },
+    "s5054": {
+     "n": 128,
+     "selected": 71,
+     "parent": 54,
+     "difference": 0.1328125,
+     "drops": [
+      2,
+      3
+     ]
+    },
+    "s5055": {
+     "n": 128,
+     "selected": 76,
+     "parent": 59,
+     "difference": 0.1328125,
+     "drops": [
+      4,
+      7
+     ]
+    },
+    "s5056": {
+     "n": 128,
+     "selected": 64,
+     "parent": 60,
+     "difference": 0.03125,
+     "drops": [
+      5,
+      8
+     ]
+    },
+    "s5057": {
+     "n": 128,
+     "selected": 61,
+     "parent": 59,
+     "difference": 0.015625,
+     "drops": [
+      2,
+      4
+     ]
+    },
+    "s5058": {
+     "n": 128,
+     "selected": 67,
+     "parent": 52,
+     "difference": 0.1171875,
+     "drops": [
+      9,
+      8
+     ]
+    },
+    "s5059": {
+     "n": 128,
+     "selected": 81,
+     "parent": 66,
+     "difference": 0.1171875,
+     "drops": [
+      2,
+      2
+     ]
+    },
+    "s5060": {
+     "n": 128,
+     "selected": 62,
+     "parent": 51,
+     "difference": 0.0859375,
+     "drops": [
+      2,
+      4
+     ]
+    },
+    "s5061": {
+     "n": 128,
+     "selected": 74,
+     "parent": 54,
+     "difference": 0.15625,
+     "drops": [
+      11,
+      11
+     ]
+    },
+    "s5062": {
+     "n": 128,
+     "selected": 68,
+     "parent": 58,
+     "difference": 0.078125,
+     "drops": [
+      5,
+      8
+     ]
+    },
+    "s5063": {
+     "n": 128,
+     "selected": 75,
+     "parent": 61,
+     "difference": 0.109375,
+     "drops": [
+      1,
+      3
+     ]
+    }
+   },
+   "manifest_clustered": {
+    "n": 24,
+    "mean": 0.11686197916666667,
+    "se": 0.009745554178444613,
+    "low": 0.09670176434767613,
+    "high": 0.1370221939856572,
+    "p_value": 2.2423657747398784e-11
+   },
+   "intervals_agree_on_sign": true,
+   "pairs": 3072,
+   "successes": [
+    1684,
+    1325
+   ],
+   "holm": {
+    "p": 1.4358410315882893e-26,
+    "p_holm": 4.307523094764868e-26,
+    "rejects": true
+   },
+   "qualifies": true
+  },
+  "r116_minus_r106": {
+   "pooled": {
+    "success": {
+     "n": 3072,
+     "mean": 0.095703125,
+     "se": 0.005427065536166283,
+     "low": 0.08506207810935476,
+     "high": 0.10634417189064524,
+     "p_value": 2.2521632771555802e-66
+    },
+    "success_win_loss_tie": {
+     "wins": 300,
+     "losses": 6,
+     "ties": 2766
+    },
+    "tail_hit_fraction": {
+     "n": 3072,
+     "mean": 0.13055013020833334,
+     "se": 0.005884134198708783,
+     "low": 0.11901289198962188,
+     "high": 0.1420873684270448,
+     "p_value": 2.7835148225676246e-101
+    },
+    "drops": {
+     "n": 3072,
+     "mean": 0.010091145833333334,
+     "se": 0.001803548964272048,
+     "low": 0.007123676621270605,
+     "high": 0.013058615045396063,
+     "p_value": 2.3979308120915338e-08,
+     "one_sided_95_upper": 0.013058615045396063,
+     "margin": 0.05,
+     "non_inferior": true,
+     "counts": [
+      127,
+      96
+     ]
+    },
+    "promotes": true,
+    "adopts": true,
+    "prediction": {
+     "threshold": 0.05,
+     "supported": true,
+     "refuted": false
+    }
+   },
+   "per_manifest": {
+    "s5025": {
+     "n": 128,
+     "selected": 81,
+     "parent": 62,
+     "difference": 0.1484375,
+     "drops": [
+      4,
+      2
+     ]
+    },
+    "s5041": {
+     "n": 128,
+     "selected": 87,
+     "parent": 77,
+     "difference": 0.078125,
+     "drops": [
+      4,
+      2
+     ]
+    },
+    "s5042": {
+     "n": 128,
+     "selected": 74,
+     "parent": 63,
+     "difference": 0.0859375,
+     "drops": [
+      6,
+      3
+     ]
+    },
+    "s5043": {
+     "n": 128,
+     "selected": 83,
+     "parent": 70,
+     "difference": 0.1015625,
+     "drops": [
+      7,
+      6
+     ]
+    },
+    "s5044": {
+     "n": 128,
+     "selected": 84,
+     "parent": 70,
+     "difference": 0.109375,
+     "drops": [
+      6,
+      6
+     ]
+    },
+    "s5045": {
+     "n": 128,
+     "selected": 88,
+     "parent": 75,
+     "difference": 0.1015625,
+     "drops": [
+      5,
+      3
+     ]
+    },
+    "s5046": {
+     "n": 128,
+     "selected": 84,
+     "parent": 73,
+     "difference": 0.0859375,
+     "drops": [
+      4,
+      3
+     ]
+    },
+    "s5047": {
+     "n": 128,
+     "selected": 70,
+     "parent": 61,
+     "difference": 0.0703125,
+     "drops": [
+      7,
+      5
+     ]
+    },
+    "s5048": {
+     "n": 128,
+     "selected": 85,
+     "parent": 69,
+     "difference": 0.125,
+     "drops": [
+      4,
+      4
+     ]
+    },
+    "s5049": {
+     "n": 128,
+     "selected": 86,
+     "parent": 74,
+     "difference": 0.09375,
+     "drops": [
+      8,
+      5
+     ]
+    },
+    "s5050": {
+     "n": 128,
+     "selected": 70,
+     "parent": 59,
+     "difference": 0.0859375,
+     "drops": [
+      10,
+      6
+     ]
+    },
+    "s5051": {
+     "n": 128,
+     "selected": 94,
+     "parent": 81,
+     "difference": 0.1015625,
+     "drops": [
+      3,
+      2
+     ]
+    },
+    "s5052": {
+     "n": 128,
+     "selected": 75,
+     "parent": 67,
+     "difference": 0.0625,
+     "drops": [
+      5,
+      5
+     ]
+    },
+    "s5053": {
+     "n": 128,
+     "selected": 96,
+     "parent": 84,
+     "difference": 0.09375,
+     "drops": [
+      1,
+      1
+     ]
+    },
+    "s5054": {
+     "n": 128,
+     "selected": 81,
+     "parent": 71,
+     "difference": 0.078125,
+     "drops": [
+      3,
+      2
+     ]
+    },
+    "s5055": {
+     "n": 128,
+     "selected": 87,
+     "parent": 76,
+     "difference": 0.0859375,
+     "drops": [
+      6,
+      4
+     ]
+    },
+    "s5056": {
+     "n": 128,
+     "selected": 78,
+     "parent": 64,
+     "difference": 0.109375,
+     "drops": [
+      7,
+      5
+     ]
+    },
+    "s5057": {
+     "n": 128,
+     "selected": 77,
+     "parent": 61,
+     "difference": 0.125,
+     "drops": [
+      3,
+      2
+     ]
+    },
+    "s5058": {
+     "n": 128,
+     "selected": 73,
+     "parent": 67,
+     "difference": 0.046875,
+     "drops": [
+      10,
+      9
+     ]
+    },
+    "s5059": {
+     "n": 128,
+     "selected": 95,
+     "parent": 81,
+     "difference": 0.109375,
+     "drops": [
+      2,
+      2
+     ]
+    },
+    "s5060": {
+     "n": 128,
+     "selected": 80,
+     "parent": 62,
+     "difference": 0.140625,
+     "drops": [
+      4,
+      2
+     ]
+    },
+    "s5061": {
+     "n": 128,
+     "selected": 86,
+     "parent": 74,
+     "difference": 0.09375,
+     "drops": [
+      11,
+      11
+     ]
+    },
+    "s5062": {
+     "n": 128,
+     "selected": 79,
+     "parent": 68,
+     "difference": 0.0859375,
+     "drops": [
+      5,
+      5
+     ]
+    },
+    "s5063": {
+     "n": 128,
+     "selected": 85,
+     "parent": 75,
+     "difference": 0.078125,
+     "drops": [
+      2,
+      1
+     ]
+    }
+   },
+   "manifest_clustered": {
+    "n": 24,
+    "mean": 0.095703125,
+    "se": 0.004801462276911406,
+    "low": 0.08577054351972728,
+    "high": 0.10563570648027272,
+    "p_value": 5.20786637854645e-16
+   },
+   "intervals_agree_on_sign": true,
+   "pairs": 3072,
+   "successes": [
+    1978,
+    1684
+   ],
+   "holm": {
+    "p": 2.2521632771555802e-66,
+    "p_holm": 9.008653108622321e-66,
+    "rejects": true
+   },
+   "qualifies": true
+  },
+  "r118_minus_r116": {
+   "pooled": {
+    "success": {
+     "n": 3072,
+     "mean": 0.12825520833333334,
+     "se": 0.006604154542721788,
+     "low": 0.11530619975883709,
+     "high": 0.1412042169078296,
+     "p_value": 2.466252256917273e-79
+    },
+    "success_win_loss_tie": {
+     "wins": 428,
+     "losses": 34,
+     "ties": 2610
+    },
+    "tail_hit_fraction": {
+     "n": 3072,
+     "mean": 0.11060112847222221,
+     "se": 0.006048894215723859,
+     "low": 0.09874083923172423,
+     "high": 0.12246141771272019,
+     "p_value": 5.622240320147079e-71
+    },
+    "drops": {
+     "n": 3072,
+     "mean": 0.0029296875,
+     "se": 0.002183375692419181,
+     "low": -0.000662729603150382,
+     "high": 0.006522104603150382,
+     "p_value": 0.17975500449451992,
+     "one_sided_95_upper": 0.006522104603150382,
+     "margin": 0.05,
+     "non_inferior": true,
+     "counts": [
+      136,
+      127
+     ]
+    },
+    "promotes": true,
+    "adopts": true,
+    "prediction": {
+     "threshold": 0.05,
+     "supported": true,
+     "refuted": false
+    }
+   },
+   "per_manifest": {
+    "s5025": {
+     "n": 128,
+     "selected": 101,
+     "parent": 81,
+     "difference": 0.15625,
+     "drops": [
+      5,
+      4
+     ]
+    },
+    "s5041": {
+     "n": 128,
+     "selected": 103,
+     "parent": 87,
+     "difference": 0.125,
+     "drops": [
+      2,
+      4
+     ]
+    },
+    "s5042": {
+     "n": 128,
+     "selected": 100,
+     "parent": 74,
+     "difference": 0.203125,
+     "drops": [
+      6,
+      6
+     ]
+    },
+    "s5043": {
+     "n": 128,
+     "selected": 96,
+     "parent": 83,
+     "difference": 0.1015625,
+     "drops": [
+      8,
+      7
+     ]
+    },
+    "s5044": {
+     "n": 128,
+     "selected": 101,
+     "parent": 84,
+     "difference": 0.1328125,
+     "drops": [
+      7,
+      6
+     ]
+    },
+    "s5045": {
+     "n": 128,
+     "selected": 100,
+     "parent": 88,
+     "difference": 0.09375,
+     "drops": [
+      7,
+      5
+     ]
+    },
+    "s5046": {
+     "n": 128,
+     "selected": 98,
+     "parent": 84,
+     "difference": 0.109375,
+     "drops": [
+      6,
+      4
+     ]
+    },
+    "s5047": {
+     "n": 128,
+     "selected": 94,
+     "parent": 70,
+     "difference": 0.1875,
+     "drops": [
+      6,
+      7
+     ]
+    },
+    "s5048": {
+     "n": 128,
+     "selected": 101,
+     "parent": 85,
+     "difference": 0.125,
+     "drops": [
+      4,
+      4
+     ]
+    },
+    "s5049": {
+     "n": 128,
+     "selected": 94,
+     "parent": 86,
+     "difference": 0.0625,
+     "drops": [
+      7,
+      8
+     ]
+    },
+    "s5050": {
+     "n": 128,
+     "selected": 95,
+     "parent": 70,
+     "difference": 0.1953125,
+     "drops": [
+      9,
+      10
+     ]
+    },
+    "s5051": {
+     "n": 128,
+     "selected": 111,
+     "parent": 94,
+     "difference": 0.1328125,
+     "drops": [
+      3,
+      3
+     ]
+    },
+    "s5052": {
+     "n": 128,
+     "selected": 97,
+     "parent": 75,
+     "difference": 0.171875,
+     "drops": [
+      8,
+      5
+     ]
+    },
+    "s5053": {
+     "n": 128,
+     "selected": 106,
+     "parent": 96,
+     "difference": 0.078125,
+     "drops": [
+      1,
+      1
+     ]
+    },
+    "s5054": {
+     "n": 128,
+     "selected": 93,
+     "parent": 81,
+     "difference": 0.09375,
+     "drops": [
+      4,
+      3
+     ]
+    },
+    "s5055": {
+     "n": 128,
+     "selected": 102,
+     "parent": 87,
+     "difference": 0.1171875,
+     "drops": [
+      5,
+      6
+     ]
+    },
+    "s5056": {
+     "n": 128,
+     "selected": 98,
+     "parent": 78,
+     "difference": 0.15625,
+     "drops": [
+      6,
+      7
+     ]
+    },
+    "s5057": {
+     "n": 128,
+     "selected": 101,
+     "parent": 77,
+     "difference": 0.1875,
+     "drops": [
+      2,
+      3
+     ]
+    },
+    "s5058": {
+     "n": 128,
+     "selected": 92,
+     "parent": 73,
+     "difference": 0.1484375,
+     "drops": [
+      12,
+      10
+     ]
+    },
+    "s5059": {
+     "n": 128,
+     "selected": 103,
+     "parent": 95,
+     "difference": 0.0625,
+     "drops": [
+      3,
+      2
+     ]
+    },
+    "s5060": {
+     "n": 128,
+     "selected": 90,
+     "parent": 80,
+     "difference": 0.078125,
+     "drops": [
+      5,
+      4
+     ]
+    },
+    "s5061": {
+     "n": 128,
+     "selected": 102,
+     "parent": 86,
+     "difference": 0.125,
+     "drops": [
+      12,
+      11
+     ]
+    },
+    "s5062": {
+     "n": 128,
+     "selected": 93,
+     "parent": 79,
+     "difference": 0.109375,
+     "drops": [
+      7,
+      5
+     ]
+    },
+    "s5063": {
+     "n": 128,
+     "selected": 101,
+     "parent": 85,
+     "difference": 0.125,
+     "drops": [
+      1,
+      2
+     ]
+    }
+   },
+   "manifest_clustered": {
+    "n": 24,
+    "mean": 0.12825520833333334,
+    "se": 0.008371591512377182,
+    "low": 0.11093725183993484,
+    "high": 0.14557316482673185,
+    "p_value": 1.4682671966070196e-13
+   },
+   "intervals_agree_on_sign": true,
+   "pairs": 3072,
+   "successes": [
+    2372,
+    1978
+   ],
+   "holm": {
+    "p": 2.466252256917273e-79,
+    "p_holm": 1.2331261284586366e-78,
+    "rejects": true
+   },
+   "qualifies": true
+  },
+  "r121_minus_r118": {
+   "pooled": {
+    "success": {
+     "n": 3072,
+     "mean": 0.024088541666666668,
+     "se": 0.008002876541627508,
+     "low": 0.008397007453195559,
+     "high": 0.03978007588013778,
+     "p_value": 0.0026338517835062763
+    },
+    "success_win_loss_tie": {
+     "wins": 340,
+     "losses": 266,
+     "ties": 2466
+    },
+    "tail_hit_fraction": {
+     "n": 3072,
+     "mean": 0.02472771683799821,
+     "se": 0.006774703342188161,
+     "low": 0.011444306963172909,
+     "high": 0.03801112671282351,
+     "p_value": 0.0002666013500007445
+    },
+    "drops": {
+     "n": 3072,
+     "mean": 0.0,
+     "se": 0.0027625855401812675,
+     "low": -0.004545420001661248,
+     "high": 0.004545420001661248,
+     "p_value": 1.0,
+     "one_sided_95_upper": 0.004545420001661248,
+     "margin": 0.05,
+     "non_inferior": true,
+     "counts": [
+      136,
+      136
+     ]
+    },
+    "promotes": true,
+    "adopts": true,
+    "prediction": {
+     "threshold": 0.05,
+     "supported": false,
+     "refuted": true
+    }
+   },
+   "per_manifest": {
+    "s5025": {
+     "n": 128,
+     "selected": 100,
+     "parent": 101,
+     "difference": -0.0078125,
+     "drops": [
+      3,
+      5
+     ]
+    },
+    "s5041": {
+     "n": 128,
+     "selected": 104,
+     "parent": 103,
+     "difference": 0.0078125,
+     "drops": [
+      3,
+      2
+     ]
+    },
+    "s5042": {
+     "n": 128,
+     "selected": 99,
+     "parent": 100,
+     "difference": -0.0078125,
+     "drops": [
+      5,
+      6
+     ]
+    },
+    "s5043": {
+     "n": 128,
+     "selected": 100,
+     "parent": 96,
+     "difference": 0.03125,
+     "drops": [
+      6,
+      8
+     ]
+    },
+    "s5044": {
+     "n": 128,
+     "selected": 105,
+     "parent": 101,
+     "difference": 0.03125,
+     "drops": [
+      4,
+      7
+     ]
+    },
+    "s5045": {
+     "n": 128,
+     "selected": 97,
+     "parent": 100,
+     "difference": -0.0234375,
+     "drops": [
+      5,
+      7
+     ]
+    },
+    "s5046": {
+     "n": 128,
+     "selected": 105,
+     "parent": 98,
+     "difference": 0.0546875,
+     "drops": [
+      7,
+      6
+     ]
+    },
+    "s5047": {
+     "n": 128,
+     "selected": 96,
+     "parent": 94,
+     "difference": 0.015625,
+     "drops": [
+      7,
+      6
+     ]
+    },
+    "s5048": {
+     "n": 128,
+     "selected": 103,
+     "parent": 101,
+     "difference": 0.015625,
+     "drops": [
+      4,
+      4
+     ]
+    },
+    "s5049": {
+     "n": 128,
+     "selected": 96,
+     "parent": 94,
+     "difference": 0.015625,
+     "drops": [
+      6,
+      7
+     ]
+    },
+    "s5050": {
+     "n": 128,
+     "selected": 106,
+     "parent": 95,
+     "difference": 0.0859375,
+     "drops": [
+      11,
+      9
+     ]
+    },
+    "s5051": {
+     "n": 128,
+     "selected": 108,
+     "parent": 111,
+     "difference": -0.0234375,
+     "drops": [
+      4,
+      3
+     ]
+    },
+    "s5052": {
+     "n": 128,
+     "selected": 96,
+     "parent": 97,
+     "difference": -0.0078125,
+     "drops": [
+      8,
+      8
+     ]
+    },
+    "s5053": {
+     "n": 128,
+     "selected": 109,
+     "parent": 106,
+     "difference": 0.0234375,
+     "drops": [
+      2,
+      1
+     ]
+    },
+    "s5054": {
+     "n": 128,
+     "selected": 100,
+     "parent": 93,
+     "difference": 0.0546875,
+     "drops": [
+      4,
+      4
+     ]
+    },
+    "s5055": {
+     "n": 128,
+     "selected": 111,
+     "parent": 102,
+     "difference": 0.0703125,
+     "drops": [
+      4,
+      5
+     ]
+    },
+    "s5056": {
+     "n": 128,
+     "selected": 104,
+     "parent": 98,
+     "difference": 0.046875,
+     "drops": [
+      7,
+      6
+     ]
+    },
+    "s5057": {
+     "n": 128,
+     "selected": 101,
+     "parent": 101,
+     "difference": 0.0,
+     "drops": [
+      6,
+      2
+     ]
+    },
+    "s5058": {
+     "n": 128,
+     "selected": 97,
+     "parent": 92,
+     "difference": 0.0390625,
+     "drops": [
+      10,
+      12
+     ]
+    },
+    "s5059": {
+     "n": 128,
+     "selected": 112,
+     "parent": 103,
+     "difference": 0.0703125,
+     "drops": [
+      3,
+      3
+     ]
+    },
+    "s5060": {
+     "n": 128,
+     "selected": 98,
+     "parent": 90,
+     "difference": 0.0625,
+     "drops": [
+      7,
+      5
+     ]
+    },
+    "s5061": {
+     "n": 128,
+     "selected": 99,
+     "parent": 102,
+     "difference": -0.0234375,
+     "drops": [
+      11,
+      12
+     ]
+    },
+    "s5062": {
+     "n": 128,
+     "selected": 97,
+     "parent": 93,
+     "difference": 0.03125,
+     "drops": [
+      8,
+      7
+     ]
+    },
+    "s5063": {
+     "n": 128,
+     "selected": 103,
+     "parent": 101,
+     "difference": 0.015625,
+     "drops": [
+      1,
+      1
+     ]
+    }
+   },
+   "manifest_clustered": {
+    "n": 24,
+    "mean": 0.024088541666666668,
+    "se": 0.006497666409624139,
+    "low": 0.01064709459843353,
+    "high": 0.03752998873489981,
+    "p_value": 0.0011603791193521727
+   },
+   "intervals_agree_on_sign": true,
+   "pairs": 3072,
+   "successes": [
+    2446,
+    2372
+   ],
+   "holm": {
+    "p": 0.0026338517835062763,
+    "p_holm": 0.0026338517835062763,
+    "rejects": true
+   },
+   "qualifies": true
+  },
+  "r121_minus_d058": {
+   "pooled": {
+    "success": {
+     "n": 3072,
+     "mean": 0.4248046875,
+     "se": 0.01058305201245904,
+     "low": 0.4040541083960178,
+     "high": 0.4455552666039822,
+     "p_value": 1.3428803744299408e-283
+    },
+    "success_win_loss_tie": {
+     "wins": 1458,
+     "losses": 153,
+     "ties": 1461
+    },
+    "tail_hit_fraction": {
+     "n": 3072,
+     "mean": 0.4558624571348216,
+     "se": 0.009934955688585982,
+     "low": 0.4363826243164757,
+     "high": 0.4753422899531675,
+     "p_value": 0.0
+    },
+    "drops": {
+     "n": 3072,
+     "mean": -0.0013020833333333333,
+     "se": 0.003122706061117806,
+     "low": -0.006440027618881987,
+     "high": 0.0038358609522153213,
+     "p_value": 0.6767274839100708,
+     "one_sided_95_upper": 0.0038358609522153213,
+     "margin": 0.05,
+     "non_inferior": true,
+     "counts": [
+      136,
+      140
+     ]
+    },
+    "promotes": true,
+    "adopts": true,
+    "prediction": {
+     "threshold": 0.05,
+     "supported": true,
+     "refuted": false
+    }
+   },
+   "per_manifest": {
+    "s5025": {
+     "n": 128,
+     "selected": 100,
+     "parent": 52,
+     "difference": 0.375,
+     "drops": [
+      3,
+      3
+     ]
+    },
+    "s5041": {
+     "n": 128,
+     "selected": 104,
+     "parent": 54,
+     "difference": 0.390625,
+     "drops": [
+      3,
+      2
+     ]
+    },
+    "s5042": {
+     "n": 128,
+     "selected": 99,
+     "parent": 47,
+     "difference": 0.40625,
+     "drops": [
+      5,
+      6
+     ]
+    },
+    "s5043": {
+     "n": 128,
+     "selected": 100,
+     "parent": 45,
+     "difference": 0.4296875,
+     "drops": [
+      6,
+      6
+     ]
+    },
+    "s5044": {
+     "n": 128,
+     "selected": 105,
+     "parent": 42,
+     "difference": 0.4921875,
+     "drops": [
+      4,
+      8
+     ]
+    },
+    "s5045": {
+     "n": 128,
+     "selected": 97,
+     "parent": 47,
+     "difference": 0.390625,
+     "drops": [
+      5,
+      3
+     ]
+    },
+    "s5046": {
+     "n": 128,
+     "selected": 105,
+     "parent": 52,
+     "difference": 0.4140625,
+     "drops": [
+      7,
+      7
+     ]
+    },
+    "s5047": {
+     "n": 128,
+     "selected": 96,
+     "parent": 37,
+     "difference": 0.4609375,
+     "drops": [
+      7,
+      9
+     ]
+    },
+    "s5048": {
+     "n": 128,
+     "selected": 103,
+     "parent": 46,
+     "difference": 0.4453125,
+     "drops": [
+      4,
+      6
+     ]
+    },
+    "s5049": {
+     "n": 128,
+     "selected": 96,
+     "parent": 49,
+     "difference": 0.3671875,
+     "drops": [
+      6,
+      9
+     ]
+    },
+    "s5050": {
+     "n": 128,
+     "selected": 106,
+     "parent": 45,
+     "difference": 0.4765625,
+     "drops": [
+      11,
+      9
+     ]
+    },
+    "s5051": {
+     "n": 128,
+     "selected": 108,
+     "parent": 55,
+     "difference": 0.4140625,
+     "drops": [
+      4,
+      5
+     ]
+    },
+    "s5052": {
+     "n": 128,
+     "selected": 96,
+     "parent": 52,
+     "difference": 0.34375,
+     "drops": [
+      8,
+      7
+     ]
+    },
+    "s5053": {
+     "n": 128,
+     "selected": 109,
+     "parent": 42,
+     "difference": 0.5234375,
+     "drops": [
+      2,
+      1
+     ]
+    },
+    "s5054": {
+     "n": 128,
+     "selected": 100,
+     "parent": 47,
+     "difference": 0.4140625,
+     "drops": [
+      4,
+      3
+     ]
+    },
+    "s5055": {
+     "n": 128,
+     "selected": 111,
+     "parent": 53,
+     "difference": 0.453125,
+     "drops": [
+      4,
+      7
+     ]
+    },
+    "s5056": {
+     "n": 128,
+     "selected": 104,
+     "parent": 47,
+     "difference": 0.4453125,
+     "drops": [
+      7,
+      8
+     ]
+    },
+    "s5057": {
+     "n": 128,
+     "selected": 101,
+     "parent": 47,
+     "difference": 0.421875,
+     "drops": [
+      6,
+      4
+     ]
+    },
+    "s5058": {
+     "n": 128,
+     "selected": 97,
+     "parent": 39,
+     "difference": 0.453125,
+     "drops": [
+      10,
+      8
+     ]
+    },
+    "s5059": {
+     "n": 128,
+     "selected": 112,
+     "parent": 52,
+     "difference": 0.46875,
+     "drops": [
+      3,
+      3
+     ]
+    },
+    "s5060": {
+     "n": 128,
+     "selected": 98,
+     "parent": 44,
+     "difference": 0.421875,
+     "drops": [
+      7,
+      4
+     ]
+    },
+    "s5061": {
+     "n": 128,
+     "selected": 99,
+     "parent": 45,
+     "difference": 0.421875,
+     "drops": [
+      11,
+      12
+     ]
+    },
+    "s5062": {
+     "n": 128,
+     "selected": 97,
+     "parent": 49,
+     "difference": 0.375,
+     "drops": [
+      8,
+      7
+     ]
+    },
+    "s5063": {
+     "n": 128,
+     "selected": 103,
+     "parent": 53,
+     "difference": 0.390625,
+     "drops": [
+      1,
+      3
+     ]
+    }
+   },
+   "manifest_clustered": {
+    "n": 24,
+    "mean": 0.4248046875,
+    "se": 0.008694196662163426,
+    "low": 0.4068193714083358,
+    "high": 0.4427900035916642,
+    "p_value": 9.642281415963648e-25
+   },
+   "intervals_agree_on_sign": true,
+   "pairs": 3072,
+   "successes": [
+    2446,
+    1141
+   ],
+   "holm": {
+    "p": 1.3428803744299408e-283,
+    "p_holm": 9.400162621009586e-283,
+    "rejects": true
+   },
+   "qualifies": true
+  }
+ },
+ "labels": {
+  "d058": {
+   "success": 1141,
+   "drop_early": 133,
+   "drop_late": 7,
+   "off_centre": 138,
+   "persistent_slow": 1610,
+   "intermittent": 36,
+   "near_miss": 7
+  },
+  "d072": {
+   "success": 1325,
+   "drop_early": 133,
+   "drop_late": 7,
+   "off_centre": 111,
+   "persistent_slow": 1446,
+   "intermittent": 32,
+   "near_miss": 18
+  },
+  "r106": {
+   "success": 1684,
+   "drop_early": 89,
+   "drop_late": 7,
+   "off_centre": 22,
+   "persistent_slow": 1159,
+   "intermittent": 62,
+   "near_miss": 49
+  },
+  "r116": {
+   "success": 1978,
+   "drop_early": 89,
+   "drop_late": 38,
+   "off_centre": 38,
+   "persistent_slow": 670,
+   "intermittent": 164,
+   "near_miss": 95
+  },
+  "r118": {
+   "success": 2372,
+   "drop_early": 89,
+   "drop_late": 47,
+   "off_centre": 45,
+   "persistent_slow": 346,
+   "intermittent": 101,
+   "near_miss": 72
+  },
+  "r121": {
+   "success": 2446,
+   "drop_early": 94,
+   "drop_late": 42,
+   "off_centre": 39,
+   "persistent_slow": 281,
+   "intermittent": 91,
+   "near_miss": 79
+  }
+ },
+ "accounting": {
+  "cells": 144,
+  "episodes": 18432,
+  "llm_calls": 0,
+  "training": "none"
+ },
+ "limitation": "one evaluation of six frozen controllers; no training and no selection; one fixed set of 24 manifests"
+}

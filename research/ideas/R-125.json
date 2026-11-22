@@ -1,0 +1,108 @@
+{
+  "id": "R-125",
+  "title": "2. Conditional R-123 revision: frozen early-latch authority gate",
+  "hypothesis": "A persistent early slow-state latch can redirect JOINT's existing single re-capture before the slow attractor settles without adding another recovery attempt.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "config/pen_spin/r121_joint_finalist/",
+    "rationale": "Revises deferred R-123: D-085 meets its prerequisite, but replace its approximately 400,000-start learning experiment with a frozen authority gate. Run only after the consolidated study is decided, existing exhaustion rules permit continuation, and its archive shows at least 7.5% of all JOINT cases both satisfy the proposed early latch and finish persistent-slow. Otherwise cancel without simulator spending. Compare D-072, unchanged JOINT, EARLY_INSTANT and EARLY_LATCH. At step 60, INSTANT triggers if alive, centered and absolute axial speed < 3 rad/s; LATCH additionally requires that condition throughout steps 30-60. Triggering advances the unchanged JOINT re-capture waveform and consumes its sole attempt; non-triggering cases retain JOINT's original decision. Freeze every coefficient, bound and waveform duration, with no fitting or checkpoint selection. Unlike D-079, memory controls a discrete recovery event rather than an additive residual; unlike D-085, it does not perturb capture commands. Freeze confirmation size before execution using historical discordance for five-point sensitivity. Use whole 128-case manifests in fresh processes and Holm-adjust LATCH/JOINT, INSTANT/JOINT, LATCH/INSTANT and both challengers/D-072. Require strict success and drop qualification against JOINT and D-072. Attribute benefit to persistence only if LATCH also positively outperforms INSTANT. An inconclusive or negative gate does not authorize training, threshold tuning or another confirmation."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study stage3_early_latch_gate",
+    "seeds": [
+      5064,
+      5065,
+      5066,
+      5067,
+      5068,
+      5069,
+      5070,
+      5071,
+      5072,
+      5073,
+      5074,
+      5075
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_early_latch_gate_s5064.yaml",
+      "config/manifests/pen_spin_stage3_early_latch_gate_s5065.yaml",
+      "config/manifests/pen_spin_stage3_early_latch_gate_s5066.yaml",
+      "config/manifests/pen_spin_stage3_early_latch_gate_s5067.yaml",
+      "config/manifests/pen_spin_stage3_early_latch_gate_s5068.yaml",
+      "config/manifests/pen_spin_stage3_early_latch_gate_s5069.yaml",
+      "config/manifests/pen_spin_stage3_early_latch_gate_s5070.yaml",
+      "config/manifests/pen_spin_stage3_early_latch_gate_s5071.yaml",
+      "config/manifests/pen_spin_stage3_early_latch_gate_s5072.yaml",
+      "config/manifests/pen_spin_stage3_early_latch_gate_s5073.yaml",
+      "config/manifests/pen_spin_stage3_early_latch_gate_s5074.yaml",
+      "config/manifests/pen_spin_stage3_early_latch_gate_s5075.yaml"
+    ],
+    "episodes": 6144,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py",
+      "config/shadowhand_spin_stages.yaml",
+      "tests/test_shadowhand_spin_early_latch.py"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "The upper 95% paired bound for EARLY_LATCH minus JOINT is below +0.05; an interval spanning +0.05 is inconclusive about that magnitude, and no memory-specific benefit is established unless LATCH minus INSTANT also has a positive paired lower bound.",
+  "cost_estimate": {
+    "episodes": 6144,
+    "llm_calls": 0,
+    "wall_time_minutes": 25
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "12ac0ffd0763fc5c9b055b6c642ab6a46bcbbb95b132645700663de1760c59c7",
+  "proposal_call_id": "call_00282",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-22T14:21:00",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-22T14:20:05",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Using persistent early slowness to advance the sole re-capture tests discrete recovery authority, unlike D-079's additive memory residual or D-085's capture offsets. Its weakest point is whether enough eligible failures remain: the 6,144 simulator episodes and 0 LLM calls must wait until R-124 is decided, exhaustion rules permit continuation and the archive establishes the required 7.5% eligible persistent-slow mass. Retain the prediction of paired_success_difference increase >= 0.05 for EARLY_LATCH against config/pen_spin/r121_joint_finalist/. An upper 95% paired bound below +0.05 would refute that magnitude, and persistence earns credit only if LATCH also has a strictly positive paired lower bound against INSTANT.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00283",
+          "briefing_sha256": "a64d5df0d50e5cfd8457851db37a72052799a396800ab87f40d966b6dab02595",
+          "at": "2026-11-22T14:21:00"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree: it is conditional on the consolidated study's archive (at least 7.5% of JOINT cases latched early and finishing persistent slow) and on the exhaustion rules; cancel without spending otherwise.",
+          "changes_applied": [],
+          "at": "2026-11-22T14:21:00"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}
