@@ -704,6 +704,11 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   CONTINUE 1,141 (0.74); drops 76 / 48 / 70 / 72. Best controller so far: `config/pen_spin/r118_continue_finalist/`
   (11 parameters on the R-106 finalist; threshold at its 4.0 bound, ramp-out near its 10-step bound; not installed as the
   incumbent, the user's call).
+- **R-120 result (D-083, supported; archive only, 2026-11-22).** `recovery_tail_audit.py` (`--study
+  recovery_tail_archive_audit`): persistent-slow episodes of 1,536 fall down the ladder 699 (reference) -> 568 (R-106) ->
+  333 (R-116) -> 194 (CONTINUE); R-116 minus CONTINUE +0.090 [+0.073, +0.108]. CONTINUE's remaining failures: 194
+  persistent slow, 97 fast but unsteady, 46 early drops (the same cases for every trained policy; before step 60), 26
+  late drops, 32 off-centre.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

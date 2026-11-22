@@ -1,0 +1,202 @@
+{
+ "study": "recovery_tail_archive_audit",
+ "failure_labels": 0.09049479166666667,
+ "failure_labels_ci95": [
+  0.07295979126911795,
+  0.1080297920642154
+ ],
+ "threshold": 0.05,
+ "verdict": "supported",
+ "persistent_slow": {
+  "difference": 0.09049479166666667,
+  "ci95": [
+   0.07295979126911795,
+   0.1080297920642154
+  ],
+  "manifest_clustered_ci95": [
+   0.07920359666227907,
+   0.10178598667105428
+  ],
+  "a_count": 333,
+  "b_count": 194
+ },
+ "cases": 1536,
+ "label_table": {
+  "reference": {
+   "success": 665,
+   "drop_early": 75,
+   "drop_late": 1,
+   "off_centre": 52,
+   "persistent_slow": 699,
+   "intermittent": 29,
+   "near_miss": 15
+  },
+  "r106": {
+   "success": 838,
+   "drop_early": 46,
+   "drop_late": 2,
+   "off_centre": 18,
+   "persistent_slow": 568,
+   "intermittent": 41,
+   "near_miss": 23
+  },
+  "r116": {
+   "success": 982,
+   "drop_early": 46,
+   "drop_late": 24,
+   "off_centre": 24,
+   "persistent_slow": 333,
+   "intermittent": 74,
+   "near_miss": 53
+  },
+  "continue": {
+   "success": 1141,
+   "drop_early": 46,
+   "drop_late": 26,
+   "off_centre": 32,
+   "persistent_slow": 194,
+   "intermittent": 58,
+   "near_miss": 39
+  },
+  "retry": {
+   "success": 1147,
+   "drop_early": 46,
+   "drop_late": 20,
+   "off_centre": 27,
+   "persistent_slow": 191,
+   "intermittent": 58,
+   "near_miss": 47
+  }
+ },
+ "paired_differences_parent_minus_candidate": {
+  "success": {
+   "difference": -0.103515625,
+   "ci95": [
+    -0.12114898636278676,
+    -0.08588226363721324
+   ],
+   "manifest_clustered_ci95": [
+    -0.11819881938279797,
+    -0.08883243061720203
+   ],
+   "a_count": 982,
+   "b_count": 1141
+  },
+  "drop_early": {
+   "difference": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "manifest_clustered_ci95": [
+    0.0,
+    0.0
+   ],
+   "a_count": 46,
+   "b_count": 46
+  },
+  "drop_late": {
+   "difference": -0.0013020833333333333,
+   "ci95": [
+    -0.007815453987780888,
+    0.005211287321114222
+   ],
+   "manifest_clustered_ci95": [
+    -0.006834966250985534,
+    0.004230799584318868
+   ],
+   "a_count": 24,
+   "b_count": 26
+  },
+  "off_centre": {
+   "difference": -0.005208333333333333,
+   "ci95": [
+    -0.010311439879198796,
+    -0.00010522678746787122
+   ],
+   "manifest_clustered_ci95": [
+    -0.008441466327686829,
+    -0.0019752003389798367
+   ],
+   "a_count": 24,
+   "b_count": 32
+  },
+  "persistent_slow": {
+   "difference": 0.09049479166666667,
+   "ci95": [
+    0.07295979126911795,
+    0.1080297920642154
+   ],
+   "manifest_clustered_ci95": [
+    0.07920359666227907,
+    0.10178598667105428
+   ],
+   "a_count": 333,
+   "b_count": 194
+  },
+  "intermittent": {
+   "difference": 0.010416666666666666,
+   "ci95": [
+    0.0010439280502646479,
+    0.019789405283068683
+   ],
+   "manifest_clustered_ci95": [
+    0.0043066196247688445,
+    0.016526713708564487
+   ],
+   "a_count": 74,
+   "b_count": 58
+  },
+  "near_miss": {
+   "difference": 0.009114583333333334,
+   "ci95": [
+    0.00027598391762976085,
+    0.017953182749036907
+   ],
+   "manifest_clustered_ci95": [
+    -0.0005462492982523503,
+    0.018775415964919016
+   ],
+   "a_count": 53,
+   "b_count": 39
+  }
+ },
+ "transitions_parent_to_candidate": {
+  "success->success": 958,
+  "success->drop_late": 1,
+  "success->persistent_slow": 12,
+  "success->intermittent": 5,
+  "success->near_miss": 6,
+  "drop_early->drop_early": 46,
+  "drop_late->success": 2,
+  "drop_late->drop_late": 12,
+  "drop_late->off_centre": 4,
+  "drop_late->persistent_slow": 6,
+  "off_centre->success": 3,
+  "off_centre->off_centre": 20,
+  "off_centre->persistent_slow": 1,
+  "persistent_slow->success": 127,
+  "persistent_slow->drop_late": 12,
+  "persistent_slow->off_centre": 7,
+  "persistent_slow->persistent_slow": 163,
+  "persistent_slow->intermittent": 13,
+  "persistent_slow->near_miss": 11,
+  "intermittent->success": 25,
+  "intermittent->drop_late": 1,
+  "intermittent->off_centre": 1,
+  "intermittent->persistent_slow": 8,
+  "intermittent->intermittent": 39,
+  "near_miss->success": 26,
+  "near_miss->persistent_slow": 4,
+  "near_miss->intermittent": 1,
+  "near_miss->near_miss": 22
+ },
+ "candidate_failure_tail_rate": {
+  "off_centre": 1.639844298362732,
+  "persistent_slow": 1.8562774658203125,
+  "intermittent": 6.2509379386901855,
+  "near_miss": 7.038674354553223
+ },
+ "note": "labels are descriptive; the registered statistic is the paired persistent-slow difference",
+ "simulation": "none"
+}

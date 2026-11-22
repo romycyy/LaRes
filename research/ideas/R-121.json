@@ -1,0 +1,129 @@
+{
+  "id": "R-121",
+  "title": "2. Supersede R-119: joint adaptation with matched boundary controls",
+  "hypothesis": "Co-adapting the residual with re-capture improves post-recovery rolling beyond what continued module-only optimization achieves.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "MODULE_WIDE: matched 24-update module-only ARS from config/pen_spin/r118_continue_finalist/",
+    "rationale": "JOINT minus MODULE_WIDE isolates co-adaptation; MODULE_ORIGINAL additionally separates relaxed bounds from ordinary continuation. This supersedes deferred R-119 because D-082 now establishes the simpler structure and a substantially stronger qualified parent; neither D-082 nor the frozen-residual plateau tests this coupling."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study recovery_joint_matched",
+    "seeds": [
+      4997,
+      4998,
+      4999,
+      5000,
+      5001,
+      5002,
+      5003,
+      5004,
+      5005,
+      5006,
+      5007,
+      5008,
+      5009,
+      5010
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_joint_smoke_s4997.yaml",
+      "config/manifests/pen_spin_stage3_joint_train_s4998.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s4999.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5000.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5001.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5002.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5003.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5004.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5005.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5006.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5007.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5008.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5009.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s5010.yaml"
+    ],
+    "episodes": 602000,
+    "llm_calls": 0,
+    "code_changes": [
+      "recovery_module.py: reuse the generic training child. Support original and widened bounds: trigger upper bound 6 rad/s and ramp-out lower bound 3 steps. Re-express the parent without changing its initial actions; test inheritance, bound mapping and frozen-coordinate behavior.",
+      "recovery_retry.py and symbolic_reward.py: extend existing interfaces for three matched arms: MODULE_ORIGINAL, MODULE_WIDE and JOINT. Each receives 24 exact-success ARS updates with 512 shared placements per signed candidate and the established direction count, optimizer settings and return normalization. Share module direction draws in physical parameter units across arms; JOINT additionally updates the inherited 32 residual coefficients with the existing 0.10 bound. Do not renormalize whole direction vectors by dimension.",
+      "recovery_retry.py: freeze terminal means without checkpoint selection. Confirm all three finalists, CONTINUE, R-106 and D-072 once on twelve fresh 128-case manifests. Prospectively retain 1,536 pairs using D-082's discordance and the supplied SE range to size a five-point contrast; verify the power calculation before training and freeze it at triage.",
+      "config/shadowhand_spin_stages.yaml: predeclare primary JOINT-minus-MODULE_WIDE, secondary MODULE_WIDE-minus-MODULE_ORIGINAL, and each finalist versus CONTINUE and D-072 as one eight-contrast Holm family. Require the established strictly positive paired t lower bound and challenger-minus-reference drop upper bound <= 0.05 against CONTINUE and D-072 for qualification. Report magnitude evidence separately from positivity.",
+      "scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml: register the planned handler and manifests before execution. Run only after the archive audit is recorded; verify seeds against the live ledger and supersede R-119 through tooling without consuming its reserved seeds.",
+      "recovery_retry.py: preserve the Stage-3 task, fixed paired layouts and one whole confirmation manifest per fresh Isaac process. Record all shared-contract diagnostics, curves, per-case outcomes, manifest uncertainty, action norms, saturation, hashes, checkpoints and actual costs. Preserve the saved incumbent and D-072 reference; add no controller-generation calls or temporal structure. Estimated cost includes approximately 590,400 training starts, 9,216 confirmation starts and bounded interface smoke checks; follow existing exhaustion and handoff rules."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "proposed",
+  "source": "advisor",
+  "falsified_by": "The upper paired 95% confidence bound for JOINT-minus-MODULE_WIDE is below 0.05. An interval including zero is not evidence of improvement; failure of the strict success or drop gate prevents qualification regardless of the point estimate.",
+  "cost_estimate": {
+    "episodes": 602000,
+    "llm_calls": 0,
+    "wall_time_minutes": 85
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "ba139e110ee8e512ee40a878d21849aa642826a7a337854f9d9a261c692bb21d",
+  "proposal_call_id": "call_00271",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [],
+  "created_at": "2026-11-22T11:54:16",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "The matched original-bound, widened-bound and joint arms separate continued optimization, boundary relief and co-adaptation, addressing questions D-082 and the frozen-residual plateau did not settle. Before committing approximately 602,000 simulator episodes and zero LLM calls, the weakest point is the unrecorded power justification: RETRY-versus-CONTINUE discordance need not describe JOINT-versus-MODULE_WIDE, and the referenced SE range is not supplied. The paired_success_difference prediction of an increase of at least 0.05 versus MODULE_WIDE is refuted if its upper paired 95% bound is below 0.05; qualification still requires the strict success and drop gates.",
+          "suggested_changes": [
+            "Supply and freeze the numerical power calculation before approval: specify the target power, anticipated JOINT-minus-MODULE_WIDE discordance or SE range, its justification from the recorded evidence, and sensitivity to a higher-discordance contrast.",
+            "Show whether 1,536 pairs meet that target under the declared eight-contrast Holm procedure, explicitly distinguishing power to establish positivity from precision for judging the predicted 0.05 magnitude. If they do not, return revised sizing and an explicit total simulator-episode ceiling before spending any episodes; retain the existing script, config, terminal-mean rule and fresh-seed checks."
+          ],
+          "priority": 2,
+          "call_id": "call_00272",
+          "briefing_sha256": "c59836776a78ab32d2cd15709202d030fdd4eb89745663b9af2eeb3f5631f0f0",
+          "at": "2026-11-22T11:55:48"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Right main experiment and I accept the three matched arms; it needs its executable details: (1) widened bounds for MODULE_WIDE and JOINT: threshold upper bound 4 -> 6 rad/s and ramp-out lower bound 10 -> 3 steps, all other ranges unchanged, the parent re-expressed in the new normalised coordinates and verified in the smoke to reproduce the parent's actions in lockstep; MODULE_ORIGINAL keeps the R-116 ranges; (2) JOINT's 43 coordinates = the 11 module parameters followed by the 32 residual coefficients in the unit coordinate y = (theta + 0.10)/0.20, so that nu 0.1 and alpha 0.05 reproduce exactly R-106's residual step sizes (0.02 and 0.01) and the 0.10 coefficient bound and residual cap are unchanged; (3) one (4, 43) direction draw per update from default_rng(4998 + 2000), the module arms taking the first 11 columns; same placements cases.placements(4998, 12288); 24 updates per arm, one process per arm, terminal means frozen; (4) seeds 4997 smoke, 4998 training, 4999-5010 confirmation; (5) confirmation of six policies (D-072, R-106 root, CONTINUE parent, three finalists): 3 x 24 x about 8,200 + 8,200 + 6 x 1,536 x 2 = about 617,000 starts, ceiling 640,000; (6) contrasts: JOINT minus MODULE_WIDE (primary), MODULE_WIDE minus MODULE_ORIGINAL (what the bounds buy), each finalist minus the parent (usefulness: strict paired rule, Holm over the three, drop bound against the parent and D-072). I will write these into the record after R-120 is decided, since R-121 runs second.",
+          "changes_applied": [],
+          "at": "2026-11-22T11:55:51"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "I accept the implementer's inheritance checks, residual-coordinate mapping, shared direction stream and corrected estimate of approximately 617,000 simulator starts with a 640,000-start ceiling and zero LLM calls. The matched arms would distinguish continued fitting, boundary relief and joint adaptation, but normalized module directions require physical-unit matching across changed bounds to isolate boundary relief. The numerical power justification remains absent, and the implementer's three-comparison Holm proposal omits five contrasts from the submitted eight-contrast family without justification. The paired_success_difference prediction is an increase of at least 0.05 for JOINT versus MODULE_WIDE, falsified if its upper paired 95% bound is below 0.05; an interval including zero establishes no improvement.",
+          "suggested_changes": [
+            "Apply the implementer's executable details to the protocol using scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml: action-equivalent inheritance, 43-coordinate ordering, residual scaling, shared placements, 24 updates per arm and terminal-mean freezing. Match module perturbation and update scales in physical parameter units across original and widened bounds, without whole-vector dimension normalization.",
+            "Before approval, supply and freeze target power, anticipated discordance or SE with its recorded justification, and higher-discordance sensitivity. Calculate power for a true +0.05 JOINT-minus-MODULE_WIDE difference under the eight-contrast Holm procedure, distinguishing evidence of positivity from evidence that the gain reaches 0.05; revise sizing prospectively if necessary.",
+            "Retain the submitted eight-contrast Holm family: the primary joint contrast, the boundary contrast, and each finalist versus CONTINUE and D-072. Qualification must retain strictly positive paired success lower bounds and challenger-minus-control drop upper bounds <= 0.05 against both CONTINUE and D-072; do not substitute the narrower three-comparison gate.",
+            "Replace the stale 602,000-episode estimate with the reconciled approximately 617,000-start estimate and explicit 640,000-start ceiling, including smoke checks and evaluation overhead. After R-120 is recorded, verify and reserve seeds 4997-5010 against the live ledger, supersede R-119 without consuming its reserved seeds, and preserve the saved incumbent."
+          ],
+          "priority": 2,
+          "call_id": "call_00273",
+          "briefing_sha256": "7d1150021f2bc6758d59b742305f0f56054d3094e614b7efef5d70001321c14b",
+          "at": "2026-11-22T11:56:27"
+        },
+        "implementer": null,
+        "outcome": null
+      }
+    ],
+    "outcome": null
+  },
+  "escalation": {},
+  "revisions": []
+}

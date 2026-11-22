@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-22T11:52:23 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-22T11:58:01 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -12,14 +12,15 @@ Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic re
 | analysed | 0 |
 | running | 0 |
 | approved | 0 |
-| proposed | 0 |
+| proposed | 1 |
 | deferred | 27 |
-| decided | 82 |
+| decided | 83 |
 | rejected | 10 |
 
 ## Needs attention
 
-- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
+- **R-121** [proposed] 2. Supersede R-119: joint adaptation with matched boundary controls
+  - advisor said **revise** in round 2; implementer answers: `python scripts/research.py position R-121 --position <approve|revise|defer|reject> --reasoning ...`
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
@@ -53,6 +54,9 @@ Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic re
 
 ## Last 5 decisions
 
+- D-083 · R-120 · **supported** · 2026-11-22
+  Archive-only audit of R-118's confirmation episodes (recovery_tail_audit.py; no simulator, no LLM): labels per episode (success, early/late drop, off-centre, persistent slow = completed, centred, final-second hit fraction <= 0.2, intermittent, near miss). SUPPORTED: R-116 minus CONTINUE in the persistent-slow indicator +0.090, 95% [+0.073, +0.108] over 1,536 paired cases (333 vs 194), manifest-clustered [+0.079, +0.102]. Persistent-slow episodes of 1,536 down the ladder: reference 699, R-106 root 568, R-116 333, CONTINUE 194. Of R-116's 333, 127 become CONTINUE successes and 163 stay slow. CONTINUE's remaining 395 non-successes: 194 persistent slow, 58 intermittent and 39 near misses (rolling at 6-7 rad/s but missing the every-step rule), 46 early drops (the same cases in every trained policy), 26 late drops, 32 off-centre.
+  Next: CONTINUE's remaining failures: 194 persistent slow (12.6%), 97 fast-but-unsteady (intermittent or near miss, 6.3%), 46 early drops (3.0%, the same cases for every trained policy), 26 late drops, 32 off-centre. Run R-121 (joint adaptation with matched boundary controls) next; the early drops are a separate lever (the capture transient before step 60) that nothing has addressed.
 - D-082 · R-118 · **refuted** · 2026-11-22
   From the frozen R-116 re-capture module, two ARS arms of 24 updates on the same placements with shared direction draws (recovery_retry.py; no LLM): CONTINUE (the same 11 parameters, one decision) and RETRY (the same plus a gap and a second-attempt depth, initially 0 = the parent bit for bit). Terminal means frozen, then the D-072 reference, the R-106 root, the R-116 module and both finalists on twelve fresh 128-case manifests (seeds 4971-4982). REFUTED: RETRY minus CONTINUE +0.004, 95% [-0.009, +0.017] over 1,536 pairs against a predicted +0.05; the learned second-attempt depth is 0.09. But continued optimisation itself is a large, qualified gain: CONTINUE minus R-116 +0.104 [+0.086, +0.121] (1,141 vs 982; 183 wins, 24 losses; Holm p 1.7e-29; drops 72 vs 70, bound holds), RETRY minus R-116 +0.107 [+0.090, +0.125]. Sustained successes of 1,536: reference 665 (0.433), R-106 root 838 (0.546), R-116 982 (0.639), CONTINUE 1,141 (0.743), RETRY 1,147 (0.747); drops 76 / 48 / 70 / 72 / 66. CONTINUE minus the reference +0.310 [+0.279, +0.340]. R-116 replicates on new cases (+0.094 over the root, 144 wins, 0 losses). Learned changes: trigger threshold at its upper bound 4.0 rad/s, ramp-out 10.8 steps (bound 10), little-finger depth 0.15, decision step 151; the module triggers in 565 of 1,536 episodes. No deviation; 417,228 starts charged. The CONTINUE finalist (simpler structure) is frozen in config/pen_spin/r118_continue_finalist/; the saved incumbent asset is unchanged.
   Next: Adopt the simpler structure: the CONTINUE finalist (11 parameters, one decision) is the qualified best controller; freeze it as an asset; installing it as the incumbent is the user's call. Next within the direction: (1) two parameters are on their bounds (threshold 4.0, ramp-out near 10) and training was still improving at update 24, so widen those bounds and continue (a cheap, budget-matched question: does it keep improving?); (2) R-119 (joint adaptation of the residual with the module) is now the main structural question and should be re-triaged from the CONTINUE finalist; (3) re-audit the remaining 26% of failures on this archive before choosing.
@@ -65,17 +69,14 @@ Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic re
 - D-079 · R-112 · **refuted** · 2026-11-22
   P3 pilot (memory_study.py; no LLM): three arms from the frozen R-106 finalist, each adding the same 26 zero-initialised coefficients (20 gated posture offsets, 6 gated reference-action gains), the gate being the instantaneous spin deficit (INSTANT), the same through the reference's ~11-step filter (SINGLE_FILTER), or a 60-step slow memory that is 0 at reset (TWO_TIMESCALE); same placements and ARS direction streams, 12 exact-success ARS updates, terminal means frozen, then the reference, the root and the three finalists on twelve fresh 128-case manifests. REFUTED: TWO_TIMESCALE minus SINGLE_FILTER -0.001, 95% [-0.029, +0.027] over 1,536 pairs (manifest-clustered [-0.031, +0.029]) against a predicted +0.05. SINGLE_FILTER minus INSTANT -0.008 [-0.035, +0.019]. No arm improves on the root (instant +0.012, single filter +0.004, two-timescale +0.003; all intervals within [-0.024, +0.039]; Holm p 1.0) although each moved its new coefficients (posture offsets up to 0.06-0.07). Root minus reference +0.110 [+0.079, +0.141], the fourth independent confirmation of D-075. Smoke passed first time (bitwise inheritance, activation, per-environment state reset; the slow state spans its range). No deviation; 318,673 starts charged. Together with D-077: more updates, structural terms and memory all leave the bounded residual at about 0.54 success; the 0.10-capped residual-on-reference form looks saturated.
   Next: Three different additions to the bounded residual have now failed to move the root (more updates, structural terms, memory): the residual-on-reference form with a 0.10 cap looks saturated at about 0.54 success. What is untested is authority, not information: whether ANY intervention gets a stuck episode out of the slow mode. Before more learning, run the cheap scripted diagnostic: in episodes that are slow at a fixed step, apply a scripted re-capture (for example return to the reset grasp posture for N steps, or a larger-amplitude stroke) and measure the conversion rate against untouched stuck episodes on the same cases; if nothing scripted converts them, the slow mode needs a different controller (P4 on the reference's own stroke), and if something does, learn its trigger. R-113 (direction-odd term) is another bounded residual term and should stay deferred.
-- D-078 · R-110 · **refuted** · 2026-11-22
-  Archive-only audit (slow_mode_audit.py; no simulator, no LLM) of the R-106 finalist's 4,608 archived confirmation episodes from R-109: can a class-balanced L2 logistic gate on the 29 reset placement draws and their squares, held out by manifest group, separate slow-spin failures (1,904) from sustained successes (2,507)? REFUTED at the registered strength: held-out balanced accuracy 0.608, advantage +0.108 over the constant control, manifest-bootstrap 95% [+0.095, +0.120], against a predicted +0.15 (a real but weak dependence; mostly the pen's y position and second rotation draw). Diagnostics, not registered: the mode is largely settled in the first second (prefix gates 0.752 at 30 steps and 0.811 at 60, AUC 0.90; no separation at step 10); it is not a property of the case (of the reference's 1,932 successes on the same cases the finalist is slow on 574, and 1,071 of the reference's 2,271 slow cases become finalist successes); episodes rolling in the negative direction (689) succeed at 0.32 against 0.61 for the positive direction (3,722). Reading: the slow mode is an early, sensitive capture outcome that then persists for five seconds; a memoryless controller cannot distinguish 'starting' from 'stuck'. R-111 (posture-then-stroke native fitting, conditional on a reset dependence) stays deferred.
-  Next: Do not run R-111 as written (posture-then-stroke fitting was conditional on a reset/capture-posture dependence; the dependence found is weak). The evidence points to (i) the first 60 steps (capture transient) and (ii) episodes that, once slow, stay slow for the remaining five seconds: a controller with no memory cannot tell 'still starting' from 'stuck', so P3 (compact memory) is now motivated by traces: e.g. a slow-for-N-steps latch that triggers a re-start of the capture/stroke transient, compared against the same term without memory. Alternatively a roll-direction-aware term (the reference and its residual treat both directions alike, and the negative direction is twice as likely to fail). Ask the advisor to choose.
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
+- R-120 round 2 · advisor approve / implementer approve → agreed (approved)
+- R-121 round 1 · advisor revise / implementer revise → agreed (proposed)
+- R-120 round 1 · advisor approve / implementer revise → disagreed (proposed)
 - R-118 round 3 · advisor approve / implementer approve → agreed (approved)
 - R-118 round 2 · advisor revise / implementer revise → agreed (proposed)
-- R-118 round 1 · advisor approve / implementer revise → disagreed (proposed)
-- R-119 round 1 · advisor defer / implementer defer → agreed (deferred)
-- R-116 round 3 · advisor approve / implementer approve → agreed (approved)
 
 ## Standing constraints
 

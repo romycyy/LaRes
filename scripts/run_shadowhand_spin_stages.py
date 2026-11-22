@@ -69,6 +69,7 @@ PEN_SPIN_STUDIES = {
     "recovery_authority": "recovery_authority",                    # R-114 (scripted re-capture / stroke / residual probes on stuck episodes)
     "symbolic_recovery_ars": "recovery_module",                    # R-116 (learned re-capture module on the R-106 finalist)
     "recovery_retry_vs_continue": "recovery_retry",                # R-118 (second re-capture attempt vs matched continuation)
+    "recovery_tail_archive_audit": "recovery_tail_audit",          # R-120 (archive-only: which failures continued training removed)
 }
 
 

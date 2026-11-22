@@ -1636,3 +1636,18 @@ research_protocols:
     threshold: 0.05
     drop_margin: 0.05
     start_ceiling: 430000
+  # R-120 (no Isaac, no LLM, no episode): label R-118's archived confirmation episodes and compare the R-116 module
+  # with the CONTINUE finalist case by case (recovery_tail_audit.py).
+  #   python scripts/run_shadowhand_spin_stages.py --study recovery_tail_archive_audit
+  recovery_tail_archive_audit:
+    log_dir: "logs/pen_spin/r120_tail_audit"
+    source_log_dir: "logs/pen_spin/r118_recovery_retry"
+    manifests: 12
+    policies: ["reference", "r106", "r116", "continue", "retry"]
+    parent: "r116"
+    candidate: "continue"
+    early_drop_step: 60
+    slow_hit_max: 0.2
+    near_hit_min: 0.8
+    threshold: 0.05
+    pool_seed: 0
