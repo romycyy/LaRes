@@ -52,7 +52,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "An upper 95% paired success-difference bound below +0.05 refutes the predicted magnitude; an interval containing zero establishes no success improvement. A drop-difference lower bound above +0.05 refutes drop safety, while an upper bound exceeding +0.05 merely fails to establish the required safety bound. Unless both strict adoption gates pass, retain the incumbent; there will be no retuning or further replication.",
   "cost_estimate": {
@@ -74,12 +74,177 @@
     "started_at": "2026-11-22T00:25:30",
     "git_sha": "a6bd76f807ef85a2cb03a3c55ccae3d3f61a19b4",
     "dirty_worktree": true,
-    "log_dir": "logs/pen_spin/r102_residual_confirmation"
+    "log_dir": "logs/pen_spin/r102_residual_confirmation",
+    "finished_at": "2026-11-22T00:31:34"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.05505952380952381,
+      "paired_success_difference_ci95": [
+        0.0237075470102162,
+        0.08641150060883142
+      ],
+      "manifest_clustered_ci95": [
+        0.02595157496230188,
+        0.08416747265674573
+      ],
+      "pairs": 672,
+      "successes_selected_parent": [
+        267,
+        230
+      ],
+      "win_loss_tie": {
+        "wins": 77,
+        "losses": 40,
+        "ties": 555
+      },
+      "drop_difference_one_sided_95_upper": 0.00600837448906957,
+      "drops_selected_parent": [
+        34,
+        34
+      ],
+      "promotes": true,
+      "adopts": true,
+      "prediction_supported": true,
+      "intervals_agree_on_sign": true
+    },
+    "controls": {
+      "per_manifest": {
+        "s4751": {
+          "n": 84,
+          "selected": 35,
+          "parent": 29,
+          "difference": 0.07142857142857142,
+          "drops": [
+            4,
+            4
+          ]
+        },
+        "s4752": {
+          "n": 84,
+          "selected": 39,
+          "parent": 41,
+          "difference": -0.023809523809523808,
+          "drops": [
+            3,
+            3
+          ]
+        },
+        "s4753": {
+          "n": 84,
+          "selected": 32,
+          "parent": 25,
+          "difference": 0.08333333333333333,
+          "drops": [
+            4,
+            5
+          ]
+        },
+        "s4754": {
+          "n": 84,
+          "selected": 29,
+          "parent": 25,
+          "difference": 0.047619047619047616,
+          "drops": [
+            6,
+            6
+          ]
+        },
+        "s4755": {
+          "n": 84,
+          "selected": 33,
+          "parent": 28,
+          "difference": 0.05952380952380952,
+          "drops": [
+            5,
+            4
+          ]
+        },
+        "s4756": {
+          "n": 84,
+          "selected": 33,
+          "parent": 29,
+          "difference": 0.047619047619047616,
+          "drops": [
+            5,
+            6
+          ]
+        },
+        "s4757": {
+          "n": 84,
+          "selected": 35,
+          "parent": 29,
+          "difference": 0.07142857142857142,
+          "drops": [
+            7,
+            5
+          ]
+        },
+        "s4758": {
+          "n": 84,
+          "selected": 31,
+          "parent": 24,
+          "difference": 0.08333333333333333,
+          "drops": [
+            0,
+            1
+          ]
+        }
+      },
+      "tail_hit_fraction_difference": {
+        "n": 672,
+        "mean": 0.07119713470986723,
+        "se": 0.015931222323328182,
+        "low": 0.03991608905417193,
+        "high": 0.10247818036556253,
+        "p_value": 9.222045366981003e-06
+      },
+      "unsigned_roll_rad_selected_parent": [
+        25.369612455368042,
+        20.787664890289307
+      ],
+      "slow_spin_selected_parent": [
+        347,
+        377
+      ],
+      "selected_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1"
+    },
+    "artifacts": [
+      "logs/pen_spin/r102_residual_confirmation/summary.json"
+    ],
+    "notes": "1,344 episodes (8 manifests x 84 cases x 2 arms, seeds 4751-4758, 16 fresh processes), 0 LLM generation calls, about 12 minutes on the box. The residual is D-070's frozen draw, verified by hash, unchanged. Incumbent 230/672 = 0.342, residual 267/672 = 0.397. The difference is positive in 7 of 8 manifests (-0.024 in s4752). D-070's 90 pairs are not pooled in. No retuning and no further replication."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.05505952380952381,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "supported",
+      "confidence": 0.9,
+      "reasoning": "Paired sustained-success difference +0.055 [+0.024, +0.086] over 672 fresh pairs (267 vs 230; 77 wins, 40 losses): the mean is at least the predicted +0.05 and the lower bound is above zero, so the strict rule is met. The manifest-clustered interval over the 8 per-manifest differences agrees, [+0.026, +0.084], positive in 7 of 8. Drops 34 vs 34, one-sided 95% upper bound +0.006 against a +0.05 margin. Both declared adoption gates pass with the residual frozen before any of these cases. Scope: one frozen residual on this incumbent; the effect is small (0.34 to 0.40) and slow spin remains the dominant failure. The point estimate matches D-070's +0.056, so that estimate was not a selection artefact.",
+      "cited_artifacts": [],
+      "next_experiment": "None under this direction: it declared this the last replication. Whether to install the residual as the incumbent asset is the user's call.",
+      "recorded_at": "2026-11-22T00:31:36",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "supported",
+      "confidence": 0.93,
+      "reasoning": "Against config/pen_spin/d058_fixed_stroke_incumbent, paired_success_difference increased by 0.05506, exceeding the predicted 0.05 point-estimate threshold [logs/pen_spin/r102_residual_confirmation/summary.json]. The primary 95% paired interval [0.02371, 0.08641] excludes zero; the improvement comes from 77 wins versus 40 losses, not the 555 ties [logs/pen_spin/r102_residual_confirmation/summary.json]. The manifest-clustered interval [0.02595, 0.08417] also excludes zero, so the declared analyses agree on improvement [logs/pen_spin/r102_residual_confirmation/summary.json]. Drops were equal at 34 per arm, and the one-sided 95% drop-difference upper bound of 0.00601 is below 0.05, satisfying the remaining adoption gate [logs/pen_spin/r102_residual_confirmation/summary.json]. Adopt the frozen residual under the predeclared rule, while distinguishing the supported improvement from the still-uncertain minimum magnitude: the success interval includes effects below 0.05, and these aggregate outcomes do not establish the proposed mechanism [logs/pen_spin/r102_residual_confirmation/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r102_residual_confirmation/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-22T00:31:57",
+      "call_id": "call_00216"
+    }
+  ],
+  "decision_id": "D-072",
   "history": [
     {
       "at": "2026-11-22T00:16:38",
@@ -104,6 +269,18 @@
       "from": "approved",
       "to": "running",
       "note": "git a6bd76f807 (dirty)"
+    },
+    {
+      "at": "2026-11-22T00:31:34",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-22T00:32:09",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-072: supported"
     }
   ],
   "created_at": "2026-11-22T00:14:52",

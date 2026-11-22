@@ -611,6 +611,13 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   D-069's "tracking" fingers were moving in free space. Check `capsule_frames(...)["distance"]` before reading a
   fingertip's tracking as contact control. Launch a `--study` driver on the box under Isaac's environment
   (`source ~/IsaacLab/source_env.sh`), not through `gpu run`'s venv: its children use the driver's interpreter.
+- **R-102 result (D-072, supported; 2026-11-22).** `incumbent_residual.py --study incumbent_residual_confirmation`
+  (`run_confirmation`, `confirmation_contrast`): D-070's frozen residual, unchanged, on 8 fresh manifests of 84 cases
+  (seeds 4751-4758), each once per arm: **+0.055 [+0.024, +0.086]** over 672 pairs (267 vs 230), manifest-clustered
+  [+0.026, +0.084], drops 34 vs 34. It passes the strict paired rule and the drop bound, so the residual qualifies for
+  adoption; `config/pen_spin/d058_fixed_stroke_incumbent` is still the incumbent asset until the user says otherwise.
+  The first positive, qualified change to the incumbent since the stroke scaling; a 90-pair instrument could not see
+  it (D-070), so size the instrument to the effect before calling a small residual null.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override
