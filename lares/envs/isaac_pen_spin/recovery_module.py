@@ -41,10 +41,15 @@ STUDY = "symbolic_recovery_ars"
 #: (name, low, high, initial): the initial point is the D-080 script
 PARAMS = (("threshold", 1.0, 4.0, 3.0), ("decision_step", 60.0, 180.0, 120.0), ("ramp_in", 5.0, 40.0, 20.0),
           ("ramp_out", 10.0, 80.0, 40.0), *((f"depth_{g}", 0.0, 1.0, 1.0) for g in sr.GROUPS), ("stroke_multiplier", 1.0, 2.0, 1.0))
-NAMES = tuple(p[0] for p in PARAMS)
-LOW, HIGH, INIT = (np.array([p[i] for p in PARAMS]) for i in (1, 2, 3))
-DIM = len(PARAMS)
-SCRIPT_X = (INIT - LOW) / (HIGH - LOW)
+#: R-118: an optional second attempt; with ``retry_depth`` 0 the module is the 11-parameter one bit for bit
+RETRY_PARAMS = (("retry_gap", 30.0, 150.0, 60.0), ("retry_depth", 0.0, 1.0, 0.0))
+ALL_PARAMS = PARAMS + RETRY_PARAMS
+NAMES = tuple(p[0] for p in ALL_PARAMS)
+LOW, HIGH, INIT = (np.array([p[i] for p in ALL_PARAMS]) for i in (1, 2, 3))
+DIM, DIM_RETRY = len(PARAMS), len(ALL_PARAMS)
+SCRIPT_X = ((INIT - LOW) / (HIGH - LOW))[:DIM]
+RETRY_INIT_TAIL = ((INIT - LOW) / (HIGH - LOW))[DIM:]
+RETRY_DEADLINE = 300
 WINDOW, BOOST_STEPS = 30, 60
 SCRIPT_TOLERANCE = 1e-5
 POLICIES = ("reference", "r106", "scripted", "trained")
@@ -53,13 +58,15 @@ CONTRASTS = (("trained", "r106"), ("scripted", "r106"), ("trained", "scripted"),
 
 
 def to_params(x) -> np.ndarray:
-    return LOW + np.clip(np.asarray(x, dtype=float), 0.0, 1.0) * (HIGH - LOW)
+    x = np.asarray(x, dtype=float)
+    d = x.shape[-1]
+    return LOW[:d] + np.clip(x, 0.0, 1.0) * (HIGH[:d] - LOW[:d])
 
 
 def x_record(x) -> dict:
     xs = [float(v) for v in np.asarray(x, dtype=np.float64).reshape(-1)]
-    if len(xs) != DIM:
-        raise ValueError(f"the module has {DIM} parameters")
+    if len(xs) not in (DIM, DIM_RETRY):
+        raise ValueError(f"the module has {DIM} parameters ({DIM_RETRY} with a second attempt)")
     return {"x": xs, "params": dict(zip(NAMES, [float(v) for v in to_params(xs)])),
             "sha256": sha256_text(json.dumps(xs, separators=(",", ":")))}
 
@@ -91,11 +98,16 @@ class RecoveryController:
         dev, dt = self.device, self.dtype
         p = torch.as_tensor(to_params(np.atleast_2d(x)), device=dev, dtype=dt)
         if p.shape[0] == 1:
-            p = p.expand(self.n, DIM)
+            p = p.expand(self.n, p.shape[1])
         self.threshold, self.T = p[:, 0], torch.round(p[:, 1]).long()
         self.n_in, self.n_out = p[:, 2], p[:, 3]
         self.depth = p[:, 4:10].index_select(1, torch.as_tensor(sr.GROUP_OF, device=dev))
         self.mult = p[:, 10]
+        if p.shape[1] == DIM_RETRY:                           # R-118: the second attempt
+            gap, self.kappa = torch.round(p[:, 11]).long(), p[:, 12]
+        else:
+            gap, self.kappa = torch.zeros_like(self.T), torch.zeros_like(self.mult)
+        self.T2 = self.T + torch.round(self.n_in + self.n_out).long() + gap
 
     def reset(self, ctx):
         self.root.reset(ctx)
@@ -109,7 +121,8 @@ class RecoveryController:
         self.step = torch.zeros(self.n, dtype=torch.long, device=self.device)
         self.hist = torch.zeros(self.n, WINDOW, device=self.device, dtype=self.dtype)
         self.elig = torch.zeros(self.n, dtype=torch.bool, device=self.device)
-        self.triggered = 0
+        self.elig2 = torch.zeros(self.n, dtype=torch.bool, device=self.device)
+        self.triggered = self.triggered2 = 0
         self.last_root = None
         self.set_x(self._x)
 
@@ -118,6 +131,7 @@ class RecoveryController:
         m = mask.to(self.device)
         self.step = torch.where(m, torch.zeros_like(self.step), self.step)
         self.elig = self.elig & ~m
+        self.elig2 = self.elig2 & ~m
         self.hist = torch.where(m.unsqueeze(1), torch.zeros_like(self.hist), self.hist)
 
     def signals(self, obs) -> tuple:
@@ -137,6 +151,15 @@ class RecoveryController:
         beta = torch.where(self.elig, blend(u, self.n_in, self.n_out), torch.zeros_like(u))
         end = self.n_in + self.n_out
         boost = self.elig & (u >= end) & (u < end + BOOST_STEPS)
+        if self.enabled:                                     # one retry: after a real first attempt, still slow and centred
+            new2 = ((self.step == self.T2) & self.elig & (self.kappa > 0) & (centre < self.tolerance)
+                    & (self.hist.mean(dim=1) < self.threshold) & (self.T2.to(self.dtype) + end <= RETRY_DEADLINE))
+            self.elig2 = self.elig2 | new2
+            self.triggered2 += int(new2.sum())
+        u2 = (self.step - self.T2).to(self.dtype)
+        beta2 = torch.where(self.elig2, blend(u2, self.n_in, self.n_out), torch.zeros_like(u2))
+        beta = beta + beta2 * self.kappa                     # kappa = 0 leaves beta unchanged exactly
+        boost = boost | (self.elig2 & (u2 >= end) & (u2 < end + BOOST_STEPS))
         self.gain.scale[:] = torch.where(boost, self.mult, torch.ones_like(self.mult)).unsqueeze(1).cpu()
         a_root = self.root(obs, t, ctx)
         self.last_root = a_root
@@ -146,7 +169,8 @@ class RecoveryController:
         return sent
 
     def extra_trace(self) -> dict:
-        self.params["recovery"] = {"triggered_environment_episodes": int(self.triggered)}
+        self.params["recovery"] = {"triggered_environment_episodes": int(self.triggered),
+                                   "second_attempts": int(self.triggered2)}
         return self.root.extra_trace()
 
 
@@ -375,7 +399,7 @@ def _rollout(env, ctx, ctrl, vecs, x_env, *, plain=None, script_check: dict | No
     sc = first_episode_scores(pred.cpu().numpy(), length.cpu().numpy(), completed.cpu().numpy())
     return {"sustained": sc["sustained"], "completed": completed.cpu().numpy(), "starts": starts, "env_steps": int((t + 1) * n),
             "identity": {"compared": compared, "mismatches": mism}, "script_mismatches": script_bad,
-            "eligibility_mismatches": elig_bad, "triggered": int(ctrl.triggered)}
+            "eligibility_mismatches": elig_bad, "triggered": int(ctrl.triggered), "triggered2": int(ctrl.triggered2)}
 
 
 def _child(req: dict, cfg: dict, device: str) -> dict:
@@ -385,7 +409,7 @@ def _child(req: dict, cfg: dict, device: str) -> dict:
 
     lay = {"slots": 4, "per": int(cfg["cases_per_slot"]), "directions": int(cfg["ars"]["directions"])}
     n = lay["slots"] * lay["per"]
-    seed = int(cfg["smoke_seed"] if req["mode"] == "smoke" else cfg["training_seed"])
+    seed = int(cfg["smoke_seed"] if req["mode"].startswith("smoke") else cfg["training_seed"])
     env = make_training_env(n, device, seed)
     try:
         ctx = ControllerContext(env)
@@ -423,9 +447,12 @@ def _child(req: dict, cfg: dict, device: str) -> dict:
             out["throughput"] = {"transitions_per_s": (a["env_steps"] + b["env_steps"]) / (time.time() - t0)}
             out["passes"] = all(g["passes"] for g in out["gates"].values())
             return out
-        ctrl = build(cfg, "train", SCRIPT_X)
+        if req["mode"] == "smoke_retry":
+            return _smoke_retry(env, ctx, cfg, lay, seed, device)
+        x = np.asarray(req.get("init_x", SCRIPT_X), dtype=float).copy()      # R-118 trains from a given point
+        dim, draw_dim = len(x), int(req.get("direction_dim", len(x)))
+        ctrl = build(cfg, "train", x)
         rng = np.random.default_rng(seed + 2000)
-        x = SCRIPT_X.copy()
         ars = cfg["ars"]
         cap, starts, transitions, updates, complete, note = int(req["start_cap"]), 0, 0, [], True, None
         t0 = time.time()
@@ -433,11 +460,11 @@ def _child(req: dict, cfg: dict, device: str) -> dict:
             if starts + 4 * n > cap:
                 complete, note = False, f"update {u + 1}: {starts} starts, cap {cap}"
                 break
-            delta = rng.standard_normal((lay["directions"], DIM))
+            delta = rng.standard_normal((lay["directions"], draw_dim))[:, :dim]   # arms share the leading coordinates' draws
             cand = ars_candidates(x, delta, float(ars["nu"]))
             raw = np.concatenate([x + float(ars["nu"]) * delta, x - float(ars["nu"]) * delta])
             vecs = sa.tile(cases.placements(seed, lay["per"] * int(ars["iterations"]))[lay["per"] * u:lay["per"] * (u + 1)], lay["slots"])
-            slot_scores, trig, drops = [], [], []
+            slot_scores, trig, trig2, drops = [], [], [], []
             for r in range(2):
                 rc = sa.rollout_candidates(cand, r, lay)
                 res = _rollout(env, ctx, ctrl, vecs, sa.slot_thetas(rc, lay["per"]))
@@ -446,6 +473,7 @@ def _child(req: dict, cfg: dict, device: str) -> dict:
                 slot_scores.append(res["sustained"].reshape(lay["slots"], lay["per"]).mean(axis=1))
                 drops.append((~res["completed"]).reshape(lay["slots"], lay["per"]).mean(axis=1))
                 trig.append(res["triggered"] / n)
+                trig2.append(res["triggered2"] / n)
             scores = sa.ars_scores(slot_scores, lay)
             x, sigma = ars_step(x, delta, scores, float(ars["alpha"]))
             d = lay["directions"]
@@ -453,12 +481,50 @@ def _child(req: dict, cfg: dict, device: str) -> dict:
                             "mean_candidate_success": float(scores.mean()), "sigma_r": sigma, "triggered_fraction": trig,
                             "slot_drop_rates": [[float(v) for v in dd] for dd in drops],
                             "clipped_candidate_coordinates": int((raw != cand).sum()),
+                            "second_attempt_fraction": trig2,
                             "params": dict(zip(NAMES, [float(v) for v in to_params(x)])), "starts_so_far": starts})
             print("update", json.dumps(updates[-1]), flush=True)
         return {"mode": "train", "seed": seed, "complete": complete, "note": note, "updates": updates, "starts": starts,
                 "transitions": transitions, "wall_time_s": time.time() - t0, "final_x": [float(v) for v in x] if complete else None}
     finally:
         env.close()
+
+
+def _smoke_retry(env, ctx, cfg: dict, lay: dict, seed: int, device: str) -> dict:
+    """R-118's gate: RETRY at kappa = 0 is the parent module bit for bit; at kappa = 1 second attempts fire."""
+    from lares.envs.isaac_pen_spin import success_ars as sa
+
+    n = lay["slots"] * lay["per"]
+    parent = np.asarray(_load(cfg["module_finalist"])["x"], dtype=float)
+    x_off = np.concatenate([parent, RETRY_INIT_TAIL])
+    x_on = np.concatenate([parent, [RETRY_INIT_TAIL[0], 1.0]])
+    vecs = sa.tile(cases.placements(seed, lay["per"]), lay["slots"])
+    out = {"mode": "smoke_retry", "gates": {}}
+    t0 = time.time()
+    a = _rollout(env, ctx, build(cfg, "retry_off", x_off), vecs, x_off, plain=build(cfg, "parent", parent))
+    out["gates"]["inheritance_identity"] = {**a["identity"], "second_attempts": a["triggered2"],
+                                            "passes": a["identity"]["mismatches"] == 0 and a["identity"]["compared"] > 0 and a["triggered2"] == 0}
+    sus = a["sustained"].reshape(lay["slots"], lay["per"])
+    out["aa"] = sa.aa_statistics(sus)
+    out["gates"]["scorer_live"] = {"parent_successes": int(sus.sum()), "passes": bool(sus.any())}
+    on = build(cfg, "retry_on", x_on)
+    b = _rollout(env, ctx, on, vecs, x_on)
+    earliest = int((on.T2 - on.T - torch.round(on.n_in + on.n_out).long()).min())
+    out["gates"]["second_attempt"] = {"first_attempts": b["triggered"], "second_attempts": b["triggered2"], "steps_between_attempts_min": earliest,
+                                      "passes": b["triggered2"] > 0 and b["triggered2"] <= b["triggered"] and earliest >= int(RETRY_PARAMS[0][1])}
+    half = torch.arange(n, device=device) % 2 == 0
+    on.step[:] = 7
+    on.elig[:] = True
+    on.elig2[:] = True
+    on.reset_envs(half)
+    out["gates"]["state_reset"] = {"passes": bool((on.step[half] == 0).all() and (~on.elig[half]).all() and (~on.elig2[half]).all()
+                                                  and on.elig[~half].all() and on.elig2[~half].all() and (on.step[~half] == 7).all())}
+    out["retry_at_full_depth"] = {"success": float(b["sustained"].mean()), "drops": int((~b["completed"]).sum()),
+                                  "parent_success_same_placements": float(a["sustained"].mean()), "parent_drops": int((~a["completed"]).sum())}
+    out["starts"] = a["starts"] + b["starts"]
+    out["throughput"] = {"transitions_per_s": (a["env_steps"] + b["env_steps"]) / (time.time() - t0)}
+    out["passes"] = all(g["passes"] for g in out["gates"].values())
+    return out
 
 
 def child_main(request_path: str) -> None:

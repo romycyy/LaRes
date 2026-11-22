@@ -1,0 +1,523 @@
+{
+ "metrics": {
+  "paired_success_difference": 0.00390625,
+  "paired_success_difference_ci95": [
+   -0.008738258970575837,
+   0.016550758970575837
+  ],
+  "pairs": 1536,
+  "successes_of_1536": {
+   "reference": 665,
+   "r106": 838,
+   "r116": 982,
+   "continue": 1141,
+   "retry": 1147
+  },
+  "drops_of_1536": {
+   "reference": 76,
+   "r106": 48,
+   "r116": 70,
+   "continue": 72,
+   "retry": 66
+  },
+  "first_and_second_attempts_of_1536": {
+   "r116": [
+    428,
+    0
+   ],
+   "continue": [
+    565,
+    0
+   ],
+   "retry": [
+    546,
+    174
+   ]
+  },
+  "contrasts": {
+   "retry_minus_continue": {
+    "difference": 0.00390625,
+    "ci95": [
+     -0.008738258970575837,
+     0.016550758970575837
+    ],
+    "win_loss_tie": {
+     "wins": 52,
+     "losses": 46,
+     "ties": 1438
+    },
+    "manifest_clustered_ci95": [
+     -0.011283086081573235,
+     0.019095586081573235
+    ],
+    "manifests_positive": 8,
+    "drop_difference": -0.00390625,
+    "drop_difference_one_sided_95_upper": -0.0008790053118370674,
+    "adopts": false,
+    "useful": null,
+    "holm": null
+   },
+   "retry_minus_r116": {
+    "difference": 0.107421875,
+    "ci95": [
+     0.08984717398850957,
+     0.12499657601149043
+    ],
+    "win_loss_tie": {
+     "wins": 186,
+     "losses": 21,
+     "ties": 1329
+    },
+    "manifest_clustered_ci95": [
+     0.08789360642248148,
+     0.12695014357751852
+    ],
+    "manifests_positive": 12,
+    "drop_difference": -0.0026041666666666665,
+    "drop_difference_one_sided_95_upper": 0.002422130247640444,
+    "adopts": true,
+    "useful": true,
+    "holm": {
+     "p": 1.0047687125924694e-31,
+     "p_holm": 2.009537425184939e-31,
+     "rejects": true
+    }
+   },
+   "continue_minus_r116": {
+    "difference": 0.103515625,
+    "ci95": [
+     0.08588226363721324,
+     0.12114898636278676
+    ],
+    "win_loss_tie": {
+     "wins": 183,
+     "losses": 24,
+     "ties": 1329
+    },
+    "manifest_clustered_ci95": [
+     0.08883243061720203,
+     0.11819881938279797
+    ],
+    "manifests_positive": 12,
+    "drop_difference": 0.0013020833333333333,
+    "drop_difference_one_sided_95_upper": 0.006767264498900404,
+    "adopts": true,
+    "useful": true,
+    "holm": {
+     "p": 1.735010198369908e-29,
+     "p_holm": 1.735010198369908e-29,
+     "rejects": true
+    }
+   },
+   "retry_minus_r106": {
+    "difference": 0.201171875,
+    "ci95": [
+     0.18093993912842946,
+     0.22140381087157054
+    ],
+    "win_loss_tie": {
+     "wins": 311,
+     "losses": 2,
+     "ties": 1223
+    },
+    "manifest_clustered_ci95": [
+     0.18409104205820215,
+     0.21825270794179785
+    ],
+    "manifests_positive": 12,
+    "drop_difference": 0.01171875,
+    "drop_difference_one_sided_95_upper": 0.016239559116621803,
+    "adopts": true,
+    "useful": null,
+    "holm": null
+   },
+   "continue_minus_r106": {
+    "difference": 0.197265625,
+    "ci95": [
+     0.177179777989636,
+     0.217351472010364
+    ],
+    "win_loss_tie": {
+     "wins": 305,
+     "losses": 2,
+     "ties": 1229
+    },
+    "manifest_clustered_ci95": [
+     0.1870873062429352,
+     0.2074439437570648
+    ],
+    "manifests_positive": 12,
+    "drop_difference": 0.015625,
+    "drop_difference_one_sided_95_upper": 0.020834853943755033,
+    "adopts": true,
+    "useful": null,
+    "holm": null
+   },
+   "retry_minus_reference": {
+    "difference": 0.3138020833333333,
+    "ci95": [
+     0.28328360757270793,
+     0.3443205590939587
+    ],
+    "win_loss_tie": {
+     "wins": 602,
+     "losses": 120,
+     "ties": 814
+    },
+    "manifest_clustered_ci95": [
+     0.2777683431523692,
+     0.34983582351429743
+    ],
+    "manifests_positive": 12,
+    "drop_difference": -0.006510416666666667,
+    "drop_difference_one_sided_95_upper": 0.0015060142892455,
+    "adopts": true,
+    "useful": null,
+    "holm": null
+   },
+   "continue_minus_reference": {
+    "difference": 0.3098958333333333,
+    "ci95": [
+     0.27943778121789814,
+     0.3403538854487685
+    ],
+    "win_loss_tie": {
+     "wins": 596,
+     "losses": 120,
+     "ties": 820
+    },
+    "manifest_clustered_ci95": [
+     0.2791993072543107,
+     0.34059235941235594
+    ],
+    "manifests_positive": 12,
+    "drop_difference": -0.0026041666666666665,
+    "drop_difference_one_sided_95_upper": 0.00569773456704239,
+    "adopts": true,
+    "useful": null,
+    "holm": null
+   },
+   "r116_minus_r106": {
+    "difference": 0.09375,
+    "ci95": [
+     0.07915694814794863,
+     0.10834305185205137
+    ],
+    "win_loss_tie": {
+     "wins": 144,
+     "losses": 0,
+     "ties": 1392
+    },
+    "manifest_clustered_ci95": [
+     0.07763058881394044,
+     0.10986941118605956
+    ],
+    "manifests_positive": 12,
+    "drop_difference": 0.014322916666666666,
+    "drop_difference_one_sided_95_upper": 0.019314269948092554,
+    "adopts": true,
+    "useful": null,
+    "holm": null
+   },
+   "r116_minus_reference": {
+    "difference": 0.20638020833333334,
+    "ci95": [
+     0.17478897289626938,
+     0.2379714437703973
+    ],
+    "win_loss_tie": {
+     "wins": 497,
+     "losses": 180,
+     "ties": 859
+    },
+    "manifest_clustered_ci95": [
+     0.16772963286166687,
+     0.24503078380499982
+    ],
+    "manifests_positive": 12,
+    "drop_difference": -0.00390625,
+    "drop_difference_one_sided_95_upper": 0.004255172680498569,
+    "adopts": true,
+    "useful": null,
+    "holm": null
+   }
+  }
+ },
+ "controls": {
+  "smoke_gates": {
+   "inheritance_identity": true,
+   "scorer_live": true,
+   "second_attempt": true,
+   "state_reset": true
+  },
+  "smoke_second_attempt": {
+   "first_attempts": 635,
+   "second_attempts": 141,
+   "steps_between_attempts_min": 60,
+   "passes": true
+  },
+  "smoke_retry_at_full_depth": {
+   "success": 0.65576171875,
+   "drops": 90,
+   "parent_success_same_placements": 0.63671875,
+   "parent_drops": 93
+  },
+  "finalists": {
+   "continue": {
+    "x": [
+     1.0,
+     0.7590946238371126,
+     0.6592184626353792,
+     0.011149543043778999,
+     0.5991259424696785,
+     0.8623236308553709,
+     0.6776634821220447,
+     0.8538341943356329,
+     0.14553711849982642,
+     0.4088089759260884,
+     0.05921356163379062
+    ],
+    "params": {
+     "threshold": 4.0,
+     "decision_step": 151.09135486045352,
+     "ramp_in": 28.07264619223827,
+     "ramp_out": 10.78046801306453,
+     "depth_WR": 0.5991259424696785,
+     "depth_FF": 0.8623236308553709,
+     "depth_MF": 0.6776634821220447,
+     "depth_RF": 0.8538341943356329,
+     "depth_LF": 0.14553711849982642,
+     "depth_TH": 0.4088089759260884,
+     "stroke_multiplier": 1.0592135616337905
+    },
+    "sha256": "03e10e1ced46dd0e2af34701306900fc54a76994c56bc10f36f7e3d5df2a2ff8"
+   },
+   "retry": {
+    "x": [
+     0.9913143024930104,
+     0.5064957466073109,
+     0.5189719408972912,
+     0.029125033930051294,
+     0.7605834980699858,
+     0.7819765264752429,
+     0.6335768134921097,
+     0.9484642431837125,
+     0.18007051515604952,
+     0.35564876865987527,
+     0.139739442572418,
+     0.12493207318591108,
+     0.09286818305669468
+    ],
+    "params": {
+     "threshold": 3.9739429074790316,
+     "decision_step": 120.7794895928773,
+     "ramp_in": 23.16401793140519,
+     "ramp_out": 12.038752375103591,
+     "depth_WR": 0.7605834980699858,
+     "depth_FF": 0.7819765264752429,
+     "depth_MF": 0.6335768134921097,
+     "depth_RF": 0.9484642431837125,
+     "depth_LF": 0.18007051515604952,
+     "depth_TH": 0.35564876865987527,
+     "stroke_multiplier": 1.1397394425724179,
+     "retry_gap": 44.99184878230933,
+     "retry_depth": 0.09286818305669468
+    },
+    "sha256": "ae64e95fec3f43d9fb7eb9d4e7569c6f0846d7698fef80f8ba3d0bbe1cd14b74"
+   }
+  },
+  "initial": {
+   "continue": {
+    "x": [
+     0.5451714185776565,
+     0.3095346063397585,
+     0.5932001425341059,
+     0.3436430975673391,
+     0.7894474026723622,
+     0.8600155249500486,
+     0.8092522018654211,
+     1.0,
+     0.6865736389544153,
+     0.42246673453484396,
+     0.0
+    ],
+    "params": {
+     "threshold": 2.6355142557329696,
+     "decision_step": 97.14415276077102,
+     "ramp_in": 25.762004988693707,
+     "ramp_out": 34.055016829713736,
+     "depth_WR": 0.7894474026723622,
+     "depth_FF": 0.8600155249500486,
+     "depth_MF": 0.8092522018654211,
+     "depth_RF": 1.0,
+     "depth_LF": 0.6865736389544153,
+     "depth_TH": 0.42246673453484396,
+     "stroke_multiplier": 1.0
+    },
+    "sha256": "f7f9313d7eaea2072536e37923b6a1f7b429c521c269fc0893475e07cf4d70df"
+   },
+   "retry": {
+    "x": [
+     0.5451714185776565,
+     0.3095346063397585,
+     0.5932001425341059,
+     0.3436430975673391,
+     0.7894474026723622,
+     0.8600155249500486,
+     0.8092522018654211,
+     1.0,
+     0.6865736389544153,
+     0.42246673453484396,
+     0.0,
+     0.25,
+     0.0
+    ],
+    "params": {
+     "threshold": 2.6355142557329696,
+     "decision_step": 97.14415276077102,
+     "ramp_in": 25.762004988693707,
+     "ramp_out": 34.055016829713736,
+     "depth_WR": 0.7894474026723622,
+     "depth_FF": 0.8600155249500486,
+     "depth_MF": 0.8092522018654211,
+     "depth_RF": 1.0,
+     "depth_LF": 0.6865736389544153,
+     "depth_TH": 0.42246673453484396,
+     "stroke_multiplier": 1.0,
+     "retry_gap": 60.0,
+     "retry_depth": 0.0
+    },
+    "sha256": "da4fa8538b1778fa0918499d0495ef0fe6ce7238ec148dcf68d4fb8b648b812e"
+   }
+  },
+  "training_mean_candidate_success": {
+   "continue": [
+    0.6044921875,
+    0.606201171875,
+    0.65283203125,
+    0.64892578125,
+    0.67236328125,
+    0.63671875,
+    0.65380859375,
+    0.67431640625,
+    0.6875,
+    0.72412109375,
+    0.688720703125,
+    0.69970703125,
+    0.68359375,
+    0.7060546875,
+    0.735595703125,
+    0.716552734375,
+    0.707275390625,
+    0.727294921875,
+    0.747314453125,
+    0.7373046875,
+    0.73681640625,
+    0.725341796875,
+    0.735595703125,
+    0.760498046875
+   ],
+   "retry": [
+    0.603515625,
+    0.599609375,
+    0.651123046875,
+    0.6513671875,
+    0.67041015625,
+    0.633544921875,
+    0.65087890625,
+    0.6708984375,
+    0.658203125,
+    0.701171875,
+    0.68701171875,
+    0.711181640625,
+    0.700439453125,
+    0.724365234375,
+    0.739990234375,
+    0.731689453125,
+    0.7275390625,
+    0.72509765625,
+    0.75146484375,
+    0.723876953125,
+    0.74755859375,
+    0.7197265625,
+    0.738525390625,
+    0.751953125
+   ]
+  },
+  "training_clipped_coordinates": {
+   "continue": [
+    9,
+    11,
+    10,
+    7,
+    8,
+    9,
+    7,
+    14,
+    12,
+    16,
+    17,
+    13,
+    12,
+    15,
+    12,
+    10,
+    17,
+    12,
+    14,
+    14,
+    14,
+    11,
+    10,
+    15
+   ],
+   "retry": [
+    13,
+    15,
+    13,
+    14,
+    13,
+    13,
+    13,
+    17,
+    16,
+    17,
+    21,
+    18,
+    16,
+    19,
+    18,
+    17,
+    20,
+    18,
+    22,
+    26,
+    22,
+    15,
+    10,
+    13
+   ]
+  },
+  "accounting": {
+   "smoke_starts": 8204,
+   "training_starts": {
+    "continue": 196829,
+    "retry": 196835
+   },
+   "confirmation_charged_starts": 15360,
+   "charged_total": 417228,
+   "ceiling": 430000,
+   "llm_calls": 0
+  },
+  "config_sha256": "2bc4b1b824f521416d36b31261a7577cb8250e4caa6d8384fcaf4adc605ebe47"
+ },
+ "artifacts": [
+  "logs/pen_spin/r118_recovery_retry/summary.json",
+  "logs/pen_spin/r118_recovery_retry/finalists.json",
+  "logs/pen_spin/r118_recovery_retry/train_continue.json",
+  "logs/pen_spin/r118_recovery_retry/train_retry.json",
+  "logs/pen_spin/r118_recovery_retry/smoke.json",
+  "logs/pen_spin/r118_recovery_retry/frozen_config.json"
+ ],
+ "notes": "No deviation: the smoke passed first time (RETRY at kappa = 0 equals the R-116 module bit for bit in lockstep; at kappa = 1 second attempts fire in 141 of 635 treated environments, never within 60 steps of the first attempt's end; state reset; scorer; A/A), both arms ran 24 updates on seed 4970's placements with shared direction draws, both terminal means were frozen in finalists.json before any confirmation case, and five policies were confirmed once on twelve fresh manifests (seeds 4971-4982). The registered contrast is null: RETRY minus CONTINUE +0.004 [-0.009, +0.017]. RETRY's learned second-attempt depth is only 0.093 (it fired in 174 episodes but blends less than a tenth of the way), i.e. ARS found little use for a retry; whether a deeper, differently shaped retry could help is not tested. The large effect is the continuation itself: CONTINUE reaches 1,141 of 1,536 sustained successes (0.743) against the R-116 module's 982 (0.639), the root's 838 (0.546) and the reference's 665 (0.433); CONTINUE minus R-116 is +0.104 [+0.086, +0.121] (183 wins, 24 losses, Holm p 1.7e-29), drops 72 vs 70 (upper bound +0.007), so it passes the strict rule and the drop bound against R-116 and against D-072. What the extra 24 updates changed: the trigger threshold ran to its upper bound 4.0 rad/s (the success threshold itself: any episode not yet rolling at success speed is treated), the ramp-out fell to 10.8 steps (bound 10: a quick hand-back), the little-finger depth to 0.15 and the wrist to 0.60, the decision step moved later (151) in CONTINUE and stayed near 121 in RETRY; the module now triggers in 565 of 1,536 episodes (R-116: 428). Two parameters sit on bounds, so the bounds may now be what limits it. R-116 replicates on these new cases: +0.094 [+0.079, +0.108] over the root, 144 wins and 0 losses. Scope: one matched pair of ARS trajectories from one parent, a single confirmation; training-time candidate success was still rising at update 24 (0.74-0.76)."
+}

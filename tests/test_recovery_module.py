@@ -59,7 +59,7 @@ class TestParameters(unittest.TestCase):
         self.assertEqual((p["threshold"], p["decision_step"], p["ramp_in"], p["ramp_out"], p["stroke_multiplier"]), (3.0, 120.0, 20.0, 40.0, 1.0))
         self.assertEqual([p[f"depth_{g}"] for g in sr.GROUPS], [1.0] * 6)
         self.assertEqual(rm.DIM, 11)
-        np.testing.assert_allclose(rm.to_params(np.full(11, 2.0)), rm.HIGH)       # projection
+        np.testing.assert_allclose(rm.to_params(np.full(11, 2.0)), rm.HIGH[:11])      # projection
 
     def test_blend_is_the_d080_schedule_at_the_script(self):
         cfg = {"t0": 120, "window": 60, "ramp_in": 20}

@@ -68,6 +68,7 @@ PEN_SPIN_STUDIES = {
     "compact_memory_matched": "memory_study",                      # R-112 (P3: instant vs filtered vs slow-memory gate)
     "recovery_authority": "recovery_authority",                    # R-114 (scripted re-capture / stroke / residual probes on stuck episodes)
     "symbolic_recovery_ars": "recovery_module",                    # R-116 (learned re-capture module on the R-106 finalist)
+    "recovery_retry_vs_continue": "recovery_retry",                # R-118 (second re-capture attempt vs matched continuation)
 }
 
 

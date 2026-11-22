@@ -1,0 +1,231 @@
+{
+ "config_sha256": "2bc4b1b824f521416d36b31261a7577cb8250e4caa6d8384fcaf4adc605ebe47",
+ "config": {
+  "actor": {
+   "bound": 0.1,
+   "cap": 0.1,
+   "coefficients": 32,
+   "feature_clip_sigmas": 3.0,
+   "rms_floor_posture": 0.01,
+   "rms_floor_velocity": 0.05,
+   "spin_target": 7.0
+  },
+  "ars": {
+   "alpha": 0.05,
+   "directions": 4,
+   "iterations": 24,
+   "nu": 0.1
+  },
+  "cases_per_slot": 512,
+  "centre_tolerance": 0.08,
+  "confirmation_cases": 128,
+  "confirmation_manifest_template": "config/manifests/pen_spin_stage3_retry_confirm_s{seed}.yaml",
+  "confirmation_seeds": [
+   4971,
+   4972,
+   4973,
+   4974,
+   4975,
+   4976,
+   4977,
+   4978,
+   4979,
+   4980,
+   4981,
+   4982
+  ],
+  "control_dt": 0.016666666666666666,
+  "drop_margin": 0.05,
+  "incumbent_asset": "config/pen_spin/d058_fixed_stroke_incumbent",
+  "log_dir": "logs/pen_spin/r118_recovery_retry",
+  "module_finalist": "config/pen_spin/r116_recovery_finalist/finalist.json",
+  "module_sha256": "f7f9313d7eaea2072536e37923b6a1f7b429c521c269fc0893475e07cf4d70df",
+  "normalization_path": "logs/pen_spin/r103_symbolic_reward/normalization.json",
+  "normalization_sha256": "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac",
+  "pool_seed": 4971,
+  "reference_descriptor": "config/pen_spin/symbolic_reward_reference/reference.json",
+  "reference_residual": {
+   "cap": 0.10269089387249905,
+   "deadband": 0.2333555721435132,
+   "gain": 0.004655481049180921,
+   "tau": 0.18501188209260944
+  },
+  "reference_residual_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1",
+  "root_finalist": "config/pen_spin/r106_success_ars_finalist/finalist.json",
+  "root_theta_sha256": "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef",
+  "smoke_seed": 4954,
+  "start_ceiling": 430000,
+  "threshold": 0.05,
+  "training_seed": 4970
+ },
+ "reference": {
+  "name": "d072_qualified_reference",
+  "decisions": [
+   "D-058",
+   "D-070",
+   "D-072"
+  ],
+  "construction": "JointMotionResidual(reference_residual, incumbent_asset): clamp(incumbent + 2 clip(g sign(v_f) max(|v_f| - v0, 0), -b, b) / (hi - lo), -1, 1)",
+  "incumbent_asset": "config/pen_spin/d058_fixed_stroke_incumbent",
+  "incumbent_json_sha256": "1ffcbece3d2f18b35f89461d1079b579f21891fc7f7f8576c3feb217ea711c9c",
+  "incumbent_files": {
+   "parent_source.py": "40782dcdf5a95589d0b34062919728fa92d4e5760fce890e3bd98833285e602d",
+   "state.pt": "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22",
+   "evaluated_source.py": "fdc1da8e2811d94c5bcd1bda2f0e97625a6ea805452e56d65726e587a418c062",
+   "constant_gain.json": "dacec45947d56133b39ca0edb773df4660d73768c0814e85d180e5423b1fcb69"
+  },
+  "stroke_gain_constant": 1.4081491479357957,
+  "residual_params": {
+   "gain": 0.004655481049180921,
+   "deadband": 0.2333555721435132,
+   "tau": 0.18501188209260944,
+   "cap": 0.10269089387249905
+  },
+  "residual_params_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1",
+  "residual_source_sha256": "0dc215bb762295319f273c70242beefbbcabe7e8baf4670fbe64586482318b4e"
+ },
+ "parameters": [
+  [
+   "threshold",
+   1.0,
+   4.0,
+   3.0
+  ],
+  [
+   "decision_step",
+   60.0,
+   180.0,
+   120.0
+  ],
+  [
+   "ramp_in",
+   5.0,
+   40.0,
+   20.0
+  ],
+  [
+   "ramp_out",
+   10.0,
+   80.0,
+   40.0
+  ],
+  [
+   "depth_WR",
+   0.0,
+   1.0,
+   1.0
+  ],
+  [
+   "depth_FF",
+   0.0,
+   1.0,
+   1.0
+  ],
+  [
+   "depth_MF",
+   0.0,
+   1.0,
+   1.0
+  ],
+  [
+   "depth_RF",
+   0.0,
+   1.0,
+   1.0
+  ],
+  [
+   "depth_LF",
+   0.0,
+   1.0,
+   1.0
+  ],
+  [
+   "depth_TH",
+   0.0,
+   1.0,
+   1.0
+  ],
+  [
+   "stroke_multiplier",
+   1.0,
+   2.0,
+   1.0
+  ],
+  [
+   "retry_gap",
+   30.0,
+   150.0,
+   60.0
+  ],
+  [
+   "retry_depth",
+   0.0,
+   1.0,
+   0.0
+  ]
+ ],
+ "initial": {
+  "continue": {
+   "x": [
+    0.5451714185776565,
+    0.3095346063397585,
+    0.5932001425341059,
+    0.3436430975673391,
+    0.7894474026723622,
+    0.8600155249500486,
+    0.8092522018654211,
+    1.0,
+    0.6865736389544153,
+    0.42246673453484396,
+    0.0
+   ],
+   "params": {
+    "threshold": 2.6355142557329696,
+    "decision_step": 97.14415276077102,
+    "ramp_in": 25.762004988693707,
+    "ramp_out": 34.055016829713736,
+    "depth_WR": 0.7894474026723622,
+    "depth_FF": 0.8600155249500486,
+    "depth_MF": 0.8092522018654211,
+    "depth_RF": 1.0,
+    "depth_LF": 0.6865736389544153,
+    "depth_TH": 0.42246673453484396,
+    "stroke_multiplier": 1.0
+   },
+   "sha256": "f7f9313d7eaea2072536e37923b6a1f7b429c521c269fc0893475e07cf4d70df"
+  },
+  "retry": {
+   "x": [
+    0.5451714185776565,
+    0.3095346063397585,
+    0.5932001425341059,
+    0.3436430975673391,
+    0.7894474026723622,
+    0.8600155249500486,
+    0.8092522018654211,
+    1.0,
+    0.6865736389544153,
+    0.42246673453484396,
+    0.0,
+    0.25,
+    0.0
+   ],
+   "params": {
+    "threshold": 2.6355142557329696,
+    "decision_step": 97.14415276077102,
+    "ramp_in": 25.762004988693707,
+    "ramp_out": 34.055016829713736,
+    "depth_WR": 0.7894474026723622,
+    "depth_FF": 0.8600155249500486,
+    "depth_MF": 0.8092522018654211,
+    "depth_RF": 1.0,
+    "depth_LF": 0.6865736389544153,
+    "depth_TH": 0.42246673453484396,
+    "stroke_multiplier": 1.0,
+    "retry_gap": 60.0,
+    "retry_depth": 0.0
+   },
+   "sha256": "da4fa8538b1778fa0918499d0495ef0fe6ce7238ec148dcf68d4fb8b648b812e"
+  }
+ }
+}

@@ -1,0 +1,111 @@
+{
+  "id": "R-119",
+  "title": "2. Conditional joint adaptation of the residual and recovery module",
+  "hypothesis": "Jointly adapting the residual and re-capture parameters removes action conflicts created by training the residual without recovery, improving sustained success beyond module-only continuation.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "MODULE_ONLY: budget-matched 11-parameter continuation from the same qualified single-attempt parent",
+    "rationale": "Queue only: decide the first protocol before reserving or consuming these seeds. Run this version only if RETRY does not qualify and a qualified single-attempt parent remains; otherwise re-triage around the qualified retry structure. Initialize from the first protocol's qualified CONTINUE policy, or frozen R-116 if CONTINUE does not qualify. JOINT learns the inherited 32 residual coefficients plus 11 recovery parameters; MODULE_ONLY freezes the 32 coefficients. Give each 24 exact-success ARS updates, identical placements and matched directions on shared coordinates, preserving existing bounds and action caps; freeze terminal means without selection. D-077 tested residual fitting without recovery, while D-081 froze the residual during recovery learning, so neither settles this coupling mechanism. Confirm JOINT, MODULE_ONLY, their frozen parent and D-072 on 1,536 fresh pairs with fixed case layout and one whole manifest per fresh process. At the measured discordance of approximately 0.088, projected SE is about 0.0075 and case-paired power for +0.05 exceeds 99.9%; this is conditional planning, not an assumption that the new contrast has identical discordance. At discordance 0.48, projected power is approximately 80%, before manifest heterogeneity. Report both uncertainty levels. Apply the strict paired rule with Holm correction across the two candidate-versus-parent usefulness comparisons, and require the one-sided 95% drop bound <=0.05 against both the frozen parent and D-072. Reuse the existing recovery and ARS implementations through a new dispatcher handler; record the complete shared result contract and leave the saved incumbent unchanged."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study recovery_joint_coadaptation",
+    "seeds": [
+      4983,
+      4984,
+      4985,
+      4986,
+      4987,
+      4988,
+      4989,
+      4990,
+      4991,
+      4992,
+      4993,
+      4994,
+      4995,
+      4996
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_joint_smoke_s4983.yaml",
+      "config/manifests/pen_spin_stage3_joint_train_s4984.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s4985.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s4986.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s4987.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s4988.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s4989.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s4990.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s4991.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s4992.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s4993.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s4994.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s4995.yaml",
+      "config/manifests/pen_spin_stage3_joint_confirm_s4996.yaml"
+    ],
+    "episodes": 406912,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py",
+      "config/shadowhand_spin_stages.yaml"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "A JOINT-minus-MODULE_ONLY interval with upper bound below +0.05 refutes the registered magnitude; an upper bound at or below zero refutes a positive co-adaptation benefit. If the interval spans zero, the result is inconclusive. A useful gain must also beat the frozen parent under the strict paired rule and satisfy both drop bounds; improving training return alone does not count.",
+  "cost_estimate": {
+    "episodes": 406912,
+    "llm_calls": 0,
+    "wall_time_minutes": 60
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "eb049cdf5f48de4642726ebccbbadb6eb6abbc70b11c97c6c58efff0a4b0c019",
+  "proposal_call_id": "call_00266",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-22T10:53:34",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-22T10:52:23",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Joint adaptation tests coupling left unresolved by D-077 and D-081, but its 406,912 episodes and zero LLM calls should wait until R-118 determines the appropriate structure and qualified parent. The predicted paired_success_difference increase of at least 0.05 for JOINT versus MODULE_ONLY is falsified in magnitude by an interval upper bound below +0.05; an interval including zero is inconclusive. Its weakest point is that a negative result with 43 jointly trained parameters could reflect optimization difficulty rather than absence of action conflicts. If RETRY qualifies, re-triage around that structure; otherwise follow the specified single-attempt parent fallback, without reserving these seeds now.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00267",
+          "briefing_sha256": "d691c389c38955e1642b3bc2ac725358d93337a648e7c57048a0f8a83d3a0967",
+          "at": "2026-11-22T10:53:33"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree: queue it behind R-118 and re-triage around whichever structure qualifies.",
+          "changes_applied": [],
+          "at": "2026-11-22T10:53:34"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

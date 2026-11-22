@@ -1,0 +1,815 @@
+{
+  "id": "R-118",
+  "title": "1. Repeated re-capture versus budget-matched single-attempt continuation",
+  "hypothesis": "A second state-gated re-capture can escape persistent slow states that survive one attempt, beyond gains obtainable by continuing optimization of the original module.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "CONTINUE: budget-matched optimization of the inherited 11-parameter single-attempt module",
+    "rationale": "Run first. Initialize both arms from config/pen_spin/r116_recovery_finalist/. CONTINUE retains 11 parameters; RETRY adds a gap in [30,150] steps and a second-attempt depth multiplier in [0,1], initialized to zero for exact inheritance. Share the first attempt's shape and threshold; retry only after an actual first attempt, while alive, centered and still slow, and only if the second attempt finishes before step 300. This targets the 333 fully slow failures rather than adding another bounded feedback term. Supersede R-117: repeated re-capture is distinct from event-terminated stroke support, whose prerequisite failed; leave its reserved seeds untouched. Give each arm 24 exact-success ARS updates with identical shared placements, existing normalized bounds and matched direction streams on shared coordinates; freeze terminal means without checkpoint selection. Confirm RETRY, CONTINUE, frozen R-116, the R-106 root and D-072 on 1,536 fresh pairs. This size is prospectively based on archived discordance 134/1536, corroborated by 135/1536 against the script: projected SE is about 0.0075 and case-paired power exceeds 99.9% for +0.05 if discordance transfers; power remains approximately 80% at discordance 0.48. New-arm discordance and manifest heterogeneity remain uncertainties. Report case-paired and manifest-level intervals. Qualify candidates against frozen R-116 using the strict paired rule with Holm correction across the two usefulness comparisons, and require the one-sided 95% drop bound <=0.05 against both R-116 and D-072. Preserve all shared diagnostics, per-case records, hashes and research_result.json fields; do not alter the saved incumbent.\n\nFROZEN SPECIFICATION (triage round 1, implementer's pinning of the open details; nothing else changes). Both arms start from config/pen_spin/r116_recovery_finalist/finalist.json (x0, 11 normalised parameters, hash verified). CONTINUE: the unchanged 11-parameter single-decision controller. RETRY: the same controller plus two parameters, gap g in [30, 150] steps (initial 60) and second-attempt depth multiplier kappa in [0, 1] (initial 0, so the initial RETRY policy equals the R-116 module bit for bit; smoke gate). Second decision at step T2 = T + round(n_in + n_out) + round(g), only in an environment whose first attempt actually triggered, and only if kappa > 0, the pen is centred (< 0.08 m), the mean |axial rate| over the 30 observations ending at T2 is below the same threshold, and T2 + n_in + n_out <= 300. The second attempt uses the same ramps and the blend depths kappa x d_g; the stroke multiplier m is held for 60 steps after each attempt. One retry at most. ARS exactly as R-116 (normalised coordinates, clipping projection, nu 0.1, alpha 0.05, 4 antithetic directions all used, 512 shared placements per signed candidate, sustained-success fraction), 24 updates per arm, one persistent process per arm, both arms on the same placements cases.placements(4970, 12288) (512 per update); directions: one (4, 13) standard-normal draw per update from default_rng(4970 + 2000); RETRY uses all 13 columns and CONTINUE the first 11 (matched on the shared coordinates). Terminal means frozen and hashed before confirmation; no selection. Smoke (seed 4954): RETRY at kappa = 0 equals the R-116 module in lockstep bit for bit; with kappa = 1 a second attempt fires in some environments and never before the first has ended; state reset; scorer; A/A. Confirmation, once, twelve 128-case manifests (seeds 4971-4982), fresh process per cell: D-072 reference, R-106 root, frozen R-116 module, CONTINUE, RETRY (1,536 pairs per contrast). Contrasts: RETRY minus CONTINUE (primary); RETRY minus R-116 and CONTINUE minus R-116 (usefulness: strict paired rule, Holm over these two, one-sided 95% drop bound <= 0.05 against both R-116 and D-072); each minus the root and the reference reported. Budget: training 2 x 24 x about 8,200 = 393,600 starts, smoke 8,200, confirmation 5 x 1,536 cases charged at 2 = 15,360: about 417,200; hard ceiling 430,000 enforced before every rollout; a started seeded child is never relaunched."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study recovery_retry_vs_continue",
+    "seeds": [
+      4954,
+      4970,
+      4971,
+      4972,
+      4973,
+      4974,
+      4975,
+      4976,
+      4977,
+      4978,
+      4979,
+      4980,
+      4981,
+      4982
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_retry_confirm_s4971.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4972.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4973.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4974.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4975.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4976.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4977.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4978.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4979.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4980.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4981.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4982.yaml"
+    ],
+    "episodes": 417200,
+    "llm_calls": 0,
+    "code_changes": [
+      "lares/envs/isaac_pen_spin/recovery_module.py: the optional second attempt (gap, depth multiplier; inactive and bit-identical at kappa = 0) and a child that trains from a given initial point, dimension and update count.",
+      "lares/envs/isaac_pen_spin/recovery_retry.py (new): the two-arm driver, evaluation controllers and contrasts.",
+      "scripts/run_shadowhand_spin_stages.py: one registry entry, recovery_retry_vs_continue.",
+      "config/shadowhand_spin_stages.yaml: the recovery_retry_vs_continue block.",
+      "tests/test_recovery_retry.py (new).",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4971.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4972.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4973.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4974.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4975.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4976.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4977.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4978.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4979.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4980.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4981.yaml",
+      "config/manifests/pen_spin_stage3_retry_confirm_s4982.yaml"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "decided",
+  "source": "advisor",
+  "falsified_by": "A primary RETRY-minus-CONTINUE interval with upper bound below +0.05 refutes the registered magnitude; an upper bound at or below zero also refutes a positive retry benefit. An interval spanning zero is inconclusive, not improvement. A positive effect below +0.05 is smaller than predicted; failure of either drop bound prevents qualification regardless of success gain.",
+  "cost_estimate": {
+    "episodes": 417200,
+    "llm_calls": 0,
+    "wall_time_minutes": 70
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "eb049cdf5f48de4642726ebccbbadb6eb6abbc70b11c97c6c58efff0a4b0c019",
+  "proposal_call_id": "call_00266",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-22T10:55:01",
+    "advisor_call_id": "call_00269",
+    "round": 3,
+    "note": "I accept the implementer's four corrections: timing and eligibility, exact-inheritance initialization, matched direction streams and corrected accounting are now pinned, resolving my revision requests. Using scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, this tests whe"
+  },
+  "run": {
+    "started_at": "2026-11-22T10:57:06",
+    "git_sha": "bb25e1703666cfe3ada8470ee45e8a43acfba034",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r118_recovery_retry",
+    "finished_at": "2026-11-22T11:51:31"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.00390625,
+      "paired_success_difference_ci95": [
+        -0.008738258970575837,
+        0.016550758970575837
+      ],
+      "pairs": 1536,
+      "successes_of_1536": {
+        "reference": 665,
+        "r106": 838,
+        "r116": 982,
+        "continue": 1141,
+        "retry": 1147
+      },
+      "drops_of_1536": {
+        "reference": 76,
+        "r106": 48,
+        "r116": 70,
+        "continue": 72,
+        "retry": 66
+      },
+      "first_and_second_attempts_of_1536": {
+        "r116": [
+          428,
+          0
+        ],
+        "continue": [
+          565,
+          0
+        ],
+        "retry": [
+          546,
+          174
+        ]
+      },
+      "contrasts": {
+        "retry_minus_continue": {
+          "difference": 0.00390625,
+          "ci95": [
+            -0.008738258970575837,
+            0.016550758970575837
+          ],
+          "win_loss_tie": {
+            "wins": 52,
+            "losses": 46,
+            "ties": 1438
+          },
+          "manifest_clustered_ci95": [
+            -0.011283086081573235,
+            0.019095586081573235
+          ],
+          "manifests_positive": 8,
+          "drop_difference": -0.00390625,
+          "drop_difference_one_sided_95_upper": -0.0008790053118370674,
+          "adopts": false,
+          "useful": null,
+          "holm": null
+        },
+        "retry_minus_r116": {
+          "difference": 0.107421875,
+          "ci95": [
+            0.08984717398850957,
+            0.12499657601149043
+          ],
+          "win_loss_tie": {
+            "wins": 186,
+            "losses": 21,
+            "ties": 1329
+          },
+          "manifest_clustered_ci95": [
+            0.08789360642248148,
+            0.12695014357751852
+          ],
+          "manifests_positive": 12,
+          "drop_difference": -0.0026041666666666665,
+          "drop_difference_one_sided_95_upper": 0.002422130247640444,
+          "adopts": true,
+          "useful": true,
+          "holm": {
+            "p": 1.0047687125924694e-31,
+            "p_holm": 2.009537425184939e-31,
+            "rejects": true
+          }
+        },
+        "continue_minus_r116": {
+          "difference": 0.103515625,
+          "ci95": [
+            0.08588226363721324,
+            0.12114898636278676
+          ],
+          "win_loss_tie": {
+            "wins": 183,
+            "losses": 24,
+            "ties": 1329
+          },
+          "manifest_clustered_ci95": [
+            0.08883243061720203,
+            0.11819881938279797
+          ],
+          "manifests_positive": 12,
+          "drop_difference": 0.0013020833333333333,
+          "drop_difference_one_sided_95_upper": 0.006767264498900404,
+          "adopts": true,
+          "useful": true,
+          "holm": {
+            "p": 1.735010198369908e-29,
+            "p_holm": 1.735010198369908e-29,
+            "rejects": true
+          }
+        },
+        "retry_minus_r106": {
+          "difference": 0.201171875,
+          "ci95": [
+            0.18093993912842946,
+            0.22140381087157054
+          ],
+          "win_loss_tie": {
+            "wins": 311,
+            "losses": 2,
+            "ties": 1223
+          },
+          "manifest_clustered_ci95": [
+            0.18409104205820215,
+            0.21825270794179785
+          ],
+          "manifests_positive": 12,
+          "drop_difference": 0.01171875,
+          "drop_difference_one_sided_95_upper": 0.016239559116621803,
+          "adopts": true,
+          "useful": null,
+          "holm": null
+        },
+        "continue_minus_r106": {
+          "difference": 0.197265625,
+          "ci95": [
+            0.177179777989636,
+            0.217351472010364
+          ],
+          "win_loss_tie": {
+            "wins": 305,
+            "losses": 2,
+            "ties": 1229
+          },
+          "manifest_clustered_ci95": [
+            0.1870873062429352,
+            0.2074439437570648
+          ],
+          "manifests_positive": 12,
+          "drop_difference": 0.015625,
+          "drop_difference_one_sided_95_upper": 0.020834853943755033,
+          "adopts": true,
+          "useful": null,
+          "holm": null
+        },
+        "retry_minus_reference": {
+          "difference": 0.3138020833333333,
+          "ci95": [
+            0.28328360757270793,
+            0.3443205590939587
+          ],
+          "win_loss_tie": {
+            "wins": 602,
+            "losses": 120,
+            "ties": 814
+          },
+          "manifest_clustered_ci95": [
+            0.2777683431523692,
+            0.34983582351429743
+          ],
+          "manifests_positive": 12,
+          "drop_difference": -0.006510416666666667,
+          "drop_difference_one_sided_95_upper": 0.0015060142892455,
+          "adopts": true,
+          "useful": null,
+          "holm": null
+        },
+        "continue_minus_reference": {
+          "difference": 0.3098958333333333,
+          "ci95": [
+            0.27943778121789814,
+            0.3403538854487685
+          ],
+          "win_loss_tie": {
+            "wins": 596,
+            "losses": 120,
+            "ties": 820
+          },
+          "manifest_clustered_ci95": [
+            0.2791993072543107,
+            0.34059235941235594
+          ],
+          "manifests_positive": 12,
+          "drop_difference": -0.0026041666666666665,
+          "drop_difference_one_sided_95_upper": 0.00569773456704239,
+          "adopts": true,
+          "useful": null,
+          "holm": null
+        },
+        "r116_minus_r106": {
+          "difference": 0.09375,
+          "ci95": [
+            0.07915694814794863,
+            0.10834305185205137
+          ],
+          "win_loss_tie": {
+            "wins": 144,
+            "losses": 0,
+            "ties": 1392
+          },
+          "manifest_clustered_ci95": [
+            0.07763058881394044,
+            0.10986941118605956
+          ],
+          "manifests_positive": 12,
+          "drop_difference": 0.014322916666666666,
+          "drop_difference_one_sided_95_upper": 0.019314269948092554,
+          "adopts": true,
+          "useful": null,
+          "holm": null
+        },
+        "r116_minus_reference": {
+          "difference": 0.20638020833333334,
+          "ci95": [
+            0.17478897289626938,
+            0.2379714437703973
+          ],
+          "win_loss_tie": {
+            "wins": 497,
+            "losses": 180,
+            "ties": 859
+          },
+          "manifest_clustered_ci95": [
+            0.16772963286166687,
+            0.24503078380499982
+          ],
+          "manifests_positive": 12,
+          "drop_difference": -0.00390625,
+          "drop_difference_one_sided_95_upper": 0.004255172680498569,
+          "adopts": true,
+          "useful": null,
+          "holm": null
+        }
+      }
+    },
+    "controls": {
+      "smoke_gates": {
+        "inheritance_identity": true,
+        "scorer_live": true,
+        "second_attempt": true,
+        "state_reset": true
+      },
+      "smoke_second_attempt": {
+        "first_attempts": 635,
+        "second_attempts": 141,
+        "steps_between_attempts_min": 60,
+        "passes": true
+      },
+      "smoke_retry_at_full_depth": {
+        "success": 0.65576171875,
+        "drops": 90,
+        "parent_success_same_placements": 0.63671875,
+        "parent_drops": 93
+      },
+      "finalists": {
+        "continue": {
+          "x": [
+            1.0,
+            0.7590946238371126,
+            0.6592184626353792,
+            0.011149543043778999,
+            0.5991259424696785,
+            0.8623236308553709,
+            0.6776634821220447,
+            0.8538341943356329,
+            0.14553711849982642,
+            0.4088089759260884,
+            0.05921356163379062
+          ],
+          "params": {
+            "threshold": 4.0,
+            "decision_step": 151.09135486045352,
+            "ramp_in": 28.07264619223827,
+            "ramp_out": 10.78046801306453,
+            "depth_WR": 0.5991259424696785,
+            "depth_FF": 0.8623236308553709,
+            "depth_MF": 0.6776634821220447,
+            "depth_RF": 0.8538341943356329,
+            "depth_LF": 0.14553711849982642,
+            "depth_TH": 0.4088089759260884,
+            "stroke_multiplier": 1.0592135616337905
+          },
+          "sha256": "03e10e1ced46dd0e2af34701306900fc54a76994c56bc10f36f7e3d5df2a2ff8"
+        },
+        "retry": {
+          "x": [
+            0.9913143024930104,
+            0.5064957466073109,
+            0.5189719408972912,
+            0.029125033930051294,
+            0.7605834980699858,
+            0.7819765264752429,
+            0.6335768134921097,
+            0.9484642431837125,
+            0.18007051515604952,
+            0.35564876865987527,
+            0.139739442572418,
+            0.12493207318591108,
+            0.09286818305669468
+          ],
+          "params": {
+            "threshold": 3.9739429074790316,
+            "decision_step": 120.7794895928773,
+            "ramp_in": 23.16401793140519,
+            "ramp_out": 12.038752375103591,
+            "depth_WR": 0.7605834980699858,
+            "depth_FF": 0.7819765264752429,
+            "depth_MF": 0.6335768134921097,
+            "depth_RF": 0.9484642431837125,
+            "depth_LF": 0.18007051515604952,
+            "depth_TH": 0.35564876865987527,
+            "stroke_multiplier": 1.1397394425724179,
+            "retry_gap": 44.99184878230933,
+            "retry_depth": 0.09286818305669468
+          },
+          "sha256": "ae64e95fec3f43d9fb7eb9d4e7569c6f0846d7698fef80f8ba3d0bbe1cd14b74"
+        }
+      },
+      "initial": {
+        "continue": {
+          "x": [
+            0.5451714185776565,
+            0.3095346063397585,
+            0.5932001425341059,
+            0.3436430975673391,
+            0.7894474026723622,
+            0.8600155249500486,
+            0.8092522018654211,
+            1.0,
+            0.6865736389544153,
+            0.42246673453484396,
+            0.0
+          ],
+          "params": {
+            "threshold": 2.6355142557329696,
+            "decision_step": 97.14415276077102,
+            "ramp_in": 25.762004988693707,
+            "ramp_out": 34.055016829713736,
+            "depth_WR": 0.7894474026723622,
+            "depth_FF": 0.8600155249500486,
+            "depth_MF": 0.8092522018654211,
+            "depth_RF": 1.0,
+            "depth_LF": 0.6865736389544153,
+            "depth_TH": 0.42246673453484396,
+            "stroke_multiplier": 1.0
+          },
+          "sha256": "f7f9313d7eaea2072536e37923b6a1f7b429c521c269fc0893475e07cf4d70df"
+        },
+        "retry": {
+          "x": [
+            0.5451714185776565,
+            0.3095346063397585,
+            0.5932001425341059,
+            0.3436430975673391,
+            0.7894474026723622,
+            0.8600155249500486,
+            0.8092522018654211,
+            1.0,
+            0.6865736389544153,
+            0.42246673453484396,
+            0.0,
+            0.25,
+            0.0
+          ],
+          "params": {
+            "threshold": 2.6355142557329696,
+            "decision_step": 97.14415276077102,
+            "ramp_in": 25.762004988693707,
+            "ramp_out": 34.055016829713736,
+            "depth_WR": 0.7894474026723622,
+            "depth_FF": 0.8600155249500486,
+            "depth_MF": 0.8092522018654211,
+            "depth_RF": 1.0,
+            "depth_LF": 0.6865736389544153,
+            "depth_TH": 0.42246673453484396,
+            "stroke_multiplier": 1.0,
+            "retry_gap": 60.0,
+            "retry_depth": 0.0
+          },
+          "sha256": "da4fa8538b1778fa0918499d0495ef0fe6ce7238ec148dcf68d4fb8b648b812e"
+        }
+      },
+      "training_mean_candidate_success": {
+        "continue": [
+          0.6044921875,
+          0.606201171875,
+          0.65283203125,
+          0.64892578125,
+          0.67236328125,
+          0.63671875,
+          0.65380859375,
+          0.67431640625,
+          0.6875,
+          0.72412109375,
+          0.688720703125,
+          0.69970703125,
+          0.68359375,
+          0.7060546875,
+          0.735595703125,
+          0.716552734375,
+          0.707275390625,
+          0.727294921875,
+          0.747314453125,
+          0.7373046875,
+          0.73681640625,
+          0.725341796875,
+          0.735595703125,
+          0.760498046875
+        ],
+        "retry": [
+          0.603515625,
+          0.599609375,
+          0.651123046875,
+          0.6513671875,
+          0.67041015625,
+          0.633544921875,
+          0.65087890625,
+          0.6708984375,
+          0.658203125,
+          0.701171875,
+          0.68701171875,
+          0.711181640625,
+          0.700439453125,
+          0.724365234375,
+          0.739990234375,
+          0.731689453125,
+          0.7275390625,
+          0.72509765625,
+          0.75146484375,
+          0.723876953125,
+          0.74755859375,
+          0.7197265625,
+          0.738525390625,
+          0.751953125
+        ]
+      },
+      "training_clipped_coordinates": {
+        "continue": [
+          9,
+          11,
+          10,
+          7,
+          8,
+          9,
+          7,
+          14,
+          12,
+          16,
+          17,
+          13,
+          12,
+          15,
+          12,
+          10,
+          17,
+          12,
+          14,
+          14,
+          14,
+          11,
+          10,
+          15
+        ],
+        "retry": [
+          13,
+          15,
+          13,
+          14,
+          13,
+          13,
+          13,
+          17,
+          16,
+          17,
+          21,
+          18,
+          16,
+          19,
+          18,
+          17,
+          20,
+          18,
+          22,
+          26,
+          22,
+          15,
+          10,
+          13
+        ]
+      },
+      "accounting": {
+        "smoke_starts": 8204,
+        "training_starts": {
+          "continue": 196829,
+          "retry": 196835
+        },
+        "confirmation_charged_starts": 15360,
+        "charged_total": 417228,
+        "ceiling": 430000,
+        "llm_calls": 0
+      },
+      "config_sha256": "2bc4b1b824f521416d36b31261a7577cb8250e4caa6d8384fcaf4adc605ebe47"
+    },
+    "artifacts": [
+      "logs/pen_spin/r118_recovery_retry/summary.json",
+      "logs/pen_spin/r118_recovery_retry/finalists.json",
+      "logs/pen_spin/r118_recovery_retry/train_continue.json",
+      "logs/pen_spin/r118_recovery_retry/train_retry.json",
+      "logs/pen_spin/r118_recovery_retry/smoke.json",
+      "logs/pen_spin/r118_recovery_retry/frozen_config.json"
+    ],
+    "notes": "No deviation: the smoke passed first time (RETRY at kappa = 0 equals the R-116 module bit for bit in lockstep; at kappa = 1 second attempts fire in 141 of 635 treated environments, never within 60 steps of the first attempt's end; state reset; scorer; A/A), both arms ran 24 updates on seed 4970's placements with shared direction draws, both terminal means were frozen in finalists.json before any confirmation case, and five policies were confirmed once on twelve fresh manifests (seeds 4971-4982). The registered contrast is null: RETRY minus CONTINUE +0.004 [-0.009, +0.017]. RETRY's learned second-attempt depth is only 0.093 (it fired in 174 episodes but blends less than a tenth of the way), i.e. ARS found little use for a retry; whether a deeper, differently shaped retry could help is not tested. The large effect is the continuation itself: CONTINUE reaches 1,141 of 1,536 sustained successes (0.743) against the R-116 module's 982 (0.639), the root's 838 (0.546) and the reference's 665 (0.433); CONTINUE minus R-116 is +0.104 [+0.086, +0.121] (183 wins, 24 losses, Holm p 1.7e-29), drops 72 vs 70 (upper bound +0.007), so it passes the strict rule and the drop bound against R-116 and against D-072. What the extra 24 updates changed: the trigger threshold ran to its upper bound 4.0 rad/s (the success threshold itself: any episode not yet rolling at success speed is treated), the ramp-out fell to 10.8 steps (bound 10: a quick hand-back), the little-finger depth to 0.15 and the wrist to 0.60, the decision step moved later (151) in CONTINUE and stayed near 121 in RETRY; the module now triggers in 565 of 1,536 episodes (R-116: 428). Two parameters sit on bounds, so the bounds may now be what limits it. R-116 replicates on these new cases: +0.094 [+0.079, +0.108] over the root, 144 wins and 0 losses. Scope: one matched pair of ARS trajectories from one parent, a single confirmation; training-time candidate success was still rising at update 24 (0.74-0.76)."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.00390625,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.9,
+      "reasoning": "The registered contrast, RETRY minus budget-matched CONTINUE, is +0.004 paired sustained success with a 95% interval [-0.009, +0.017] over 1,536 fresh pairs (52 wins, 46 losses; manifest-clustered [-0.011, +0.019]); the upper bound is far below the predicted +0.05, so the prediction that a second attempt adds five points beyond continued optimisation is refuted (the learned second-attempt depth is 0.09: the optimiser barely used it). Separately and importantly, both arms qualify as useful against the frozen R-116 module: CONTINUE +0.104 [+0.086, +0.121] and RETRY +0.107 [+0.090, +0.125], Holm p < 1e-28, drop bounds hold against R-116 and D-072. CONTINUE, the simpler structure, reaches 0.743 sustained success (1,141 of 1,536) against the reference's 0.433.",
+      "cited_artifacts": [],
+      "next_experiment": "Adopt the simpler structure: the CONTINUE finalist (11 parameters, one decision) is the qualified best controller; freeze it as an asset; installing it as the incumbent is the user's call. Next within the direction: (1) two parameters are on their bounds (threshold 4.0, ramp-out near 10) and training was still improving at update 24, so widen those bounds and continue (a cheap, budget-matched question: does it keep improving?); (2) R-119 (joint adaptation of the residual with the module) is now the main structural question and should be re-triaged from the CONTINUE finalist; (3) re-audit the remaining 26% of failures on this archive before choosing.",
+      "recorded_at": "2026-11-22T11:51:33",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "RETRY minus budget-matched CONTINUE was +0.003906 over 1,536 pairs, with a case-paired 95% interval of [-0.008738, +0.016551] [logs/pen_spin/r118_recovery_retry/summary.json]. The manifest-clustered interval was [-0.011283, +0.019096]; both upper bounds are below the registered +0.05 threshold, refuting the predicted magnitude [logs/pen_spin/r118_recovery_retry/summary.json]. Both intervals include zero, so a positive retry benefit remains inconclusive rather than demonstrated, and equivalence is not established [logs/pen_spin/r118_recovery_retry/summary.json]. CONTINUE and RETRY separately passed Holm-corrected usefulness against the inherited parent and both required drop gates, but those improvements do not establish an advantage from adding retry [logs/pen_spin/r118_recovery_retry/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r118_recovery_retry/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-22T11:51:57",
+      "call_id": "call_00270"
+    }
+  ],
+  "decision_id": "D-082",
+  "history": [
+    {
+      "at": "2026-11-22T10:55:01",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-22T10:57:06",
+      "from": "approved",
+      "to": "running",
+      "note": "git bb25e17036 (dirty)"
+    },
+    {
+      "at": "2026-11-22T11:51:31",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-22T11:52:23",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-082: refuted"
+    }
+  ],
+  "created_at": "2026-11-22T10:52:23",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "D-081 motivates this 409,984-episode, zero-LLM-call comparison using scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml. The predicted paired_success_difference increase of at least 0.05 for RETRY versus CONTINUE isolates repeated recovery from additional optimization of the unconverged parent. Its weakest point is one training trajectory per arm: case-paired and manifest-level intervals cannot establish reliability across learner seeds. An interval upper bound below +0.05 falsifies the registered magnitude; an interval including zero establishes no benefit, and qualification still requires the registered Holm-corrected usefulness and both drop gates.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00267",
+          "briefing_sha256": "d691c389c38955e1642b3bc2ac725358d93337a648e7c57048a0f8a83d3a0967",
+          "at": "2026-11-22T10:53:33"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "The design is right and I want to run it; four details must be in the record before it is executable: the second decision's exact time and conditions (T2 = T + round(n_in + n_out) + round(gap), same threshold and window, finishing by step 300), the gap's initial value (60) alongside kappa = 0 for exact inheritance, how 'matched directions on shared coordinates' is realised (one 13-column draw per update, CONTINUE takes the first 11), and the corrected start count (2 x 24 updates x about 8,200 + smoke + five policies' confirmation = about 417,200, ceiling 430,000), with seeds 4954 (smoke), 4970 (training) and 4971-4982 (confirmation). The patch adds exactly these and changes nothing else.",
+          "changes_applied": [],
+          "at": "2026-11-22T10:53:36"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "The predicted paired_success_difference increase of at least 0.05 for RETRY versus budget-matched CONTINUE isolates repeated re-capture from further parent optimization. I accept the implementer's four corrections: timing, initialization, direction matching and budget accounting must be explicit before spending, so my earlier approval was premature. The weakest point remains one learner trajectory per arm; additional evaluation pairs cannot establish reliability across training seeds. A RETRY-minus-CONTINUE interval upper bound below +0.05 falsifies the predicted magnitude; an interval including zero establishes no improvement, and either failed drop gate prevents qualification.",
+          "suggested_changes": [
+            "Specify T2 = T + round(n_in + n_out) + round(gap), using the first attempt's threshold and observation window; require an actual first attempt, alive/centered/still-slow eligibility, and second-attempt completion by step 300.",
+            "Initialize gap to 60 and the second-attempt depth multiplier kappa to zero; verify exact inheritance in smoke.",
+            "Generate one shared 13-column direction draw per update, with CONTINUE taking its first 11 columns.",
+            "Update protocol and cost_estimate to approximately 417,200 simulator episodes with a hard ceiling of 430,000 and zero LLM calls. Retain scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, using seed 4954 for smoke, 4970 for training and 4971–4982 for confirmation; leave R-117's reservations untouched."
+          ],
+          "priority": 1,
+          "call_id": "call_00268",
+          "briefing_sha256": "5dce2de040848fed218d8dae0671985f8d14e8ebfaae43a0283110487a2e479c",
+          "at": "2026-11-22T10:53:54"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agreed; these are exactly the four changes in my patch, now applied to the record.",
+          "changes_applied": [],
+          "at": "2026-11-22T10:54:01"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the implementer's four corrections: timing and eligibility, exact-inheritance initialization, matched direction streams and corrected accounting are now pinned, resolving my revision requests. Using scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, this tests whether repeated re-capture increases paired_success_difference by at least 0.05 versus budget-matched CONTINUE, for approximately 417,200 simulator episodes and zero controller-generation LLM calls. Its weakest point remains one training trajectory per arm, so confirmation measures these frozen policies rather than reliability across learner seeds. The prediction is falsified_by a primary interval upper bound below +0.05; an interval including zero establishes no improvement, and qualification separately requires the registered Holm-corrected usefulness and both drop gates.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00269",
+          "briefing_sha256": "209550e59fb2896cc43f78c3eea7e350108bf14a6031ba8992093c516eeab2c9",
+          "at": "2026-11-22T10:54:16"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve: the second attempt's timing and conditions, the exact-inheritance initial point, shared direction draws, seeds and the 430,000-start ceiling are frozen; CONTINUE is the budget-matched control the unconverged R-116 module needs, and RETRY targets the 333 episodes that stay slow after one attempt.",
+          "changes_applied": [],
+          "at": "2026-11-22T10:55:01"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 3
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-22T10:53:59",
+      "round": 2,
+      "patch": {
+        "prediction": {
+          "rationale": "Run first. Initialize both arms from config/pen_spin/r116_recovery_finalist/. CONTINUE retains 11 parameters; RETRY adds a gap in [30,150] steps and a second-attempt depth multiplier in [0,1], initialized to zero for exact inheritance. Share the first attempt's shape and threshold; retry only after an actual first attempt, while alive, centered and still slow, and only if the second attempt finishes before step 300. This targets the 333 fully slow failures rather than adding another bounded feedback term. Supersede R-117: repeated re-capture is distinct from event-terminated stroke support, whose prerequisite failed; leave its reserved seeds untouched. Give each arm 24 exact-success ARS updates with identical shared placements, existing normalized bounds and matched direction streams on shared coordinates; freeze terminal means without checkpoint selection. Confirm RETRY, CONTINUE, frozen R-116, the R-106 root and D-072 on 1,536 fresh pairs. This size is prospectively based on archived discordance 134/1536, corroborated by 135/1536 against the script: projected SE is about 0.0075 and case-paired power exceeds 99.9% for +0.05 if discordance transfers; power remains approximately 80% at discordance 0.48. New-arm discordance and manifest heterogeneity remain uncertainties. Report case-paired and manifest-level intervals. Qualify candidates against frozen R-116 using the strict paired rule with Holm correction across the two usefulness comparisons, and require the one-sided 95% drop bound <=0.05 against both R-116 and D-072. Preserve all shared diagnostics, per-case records, hashes and research_result.json fields; do not alter the saved incumbent.\n\nFROZEN SPECIFICATION (triage round 1, implementer's pinning of the open details; nothing else changes). Both arms start from config/pen_spin/r116_recovery_finalist/finalist.json (x0, 11 normalised parameters, hash verified). CONTINUE: the unchanged 11-parameter single-decision controller. RETRY: the same controller plus two parameters, gap g in [30, 150] steps (initial 60) and second-attempt depth multiplier kappa in [0, 1] (initial 0, so the initial RETRY policy equals the R-116 module bit for bit; smoke gate). Second decision at step T2 = T + round(n_in + n_out) + round(g), only in an environment whose first attempt actually triggered, and only if kappa > 0, the pen is centred (< 0.08 m), the mean |axial rate| over the 30 observations ending at T2 is below the same threshold, and T2 + n_in + n_out <= 300. The second attempt uses the same ramps and the blend depths kappa x d_g; the stroke multiplier m is held for 60 steps after each attempt. One retry at most. ARS exactly as R-116 (normalised coordinates, clipping projection, nu 0.1, alpha 0.05, 4 antithetic directions all used, 512 shared placements per signed candidate, sustained-success fraction), 24 updates per arm, one persistent process per arm, both arms on the same placements cases.placements(4970, 12288) (512 per update); directions: one (4, 13) standard-normal draw per update from default_rng(4970 + 2000); RETRY uses all 13 columns and CONTINUE the first 11 (matched on the shared coordinates). Terminal means frozen and hashed before confirmation; no selection. Smoke (seed 4954): RETRY at kappa = 0 equals the R-116 module in lockstep bit for bit; with kappa = 1 a second attempt fires in some environments and never before the first has ended; state reset; scorer; A/A. Confirmation, once, twelve 128-case manifests (seeds 4971-4982), fresh process per cell: D-072 reference, R-106 root, frozen R-116 module, CONTINUE, RETRY (1,536 pairs per contrast). Contrasts: RETRY minus CONTINUE (primary); RETRY minus R-116 and CONTINUE minus R-116 (usefulness: strict paired rule, Holm over these two, one-sided 95% drop bound <= 0.05 against both R-116 and D-072); each minus the root and the reference reported. Budget: training 2 x 24 x about 8,200 = 393,600 starts, smoke 8,200, confirmation 5 x 1,536 cases charged at 2 = 15,360: about 417,200; hard ceiling 430,000 enforced before every rollout; a started seeded child is never relaunched."
+        },
+        "protocol": {
+          "seeds": [
+            4954,
+            4970,
+            4971,
+            4972,
+            4973,
+            4974,
+            4975,
+            4976,
+            4977,
+            4978,
+            4979,
+            4980,
+            4981,
+            4982
+          ],
+          "episodes": 417200,
+          "manifests": [
+            "config/manifests/pen_spin_stage3_retry_confirm_s4971.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4972.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4973.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4974.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4975.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4976.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4977.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4978.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4979.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4980.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4981.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4982.yaml"
+          ],
+          "code_changes": [
+            "lares/envs/isaac_pen_spin/recovery_module.py: the optional second attempt (gap, depth multiplier; inactive and bit-identical at kappa = 0) and a child that trains from a given initial point, dimension and update count.",
+            "lares/envs/isaac_pen_spin/recovery_retry.py (new): the two-arm driver, evaluation controllers and contrasts.",
+            "scripts/run_shadowhand_spin_stages.py: one registry entry, recovery_retry_vs_continue.",
+            "config/shadowhand_spin_stages.yaml: the recovery_retry_vs_continue block.",
+            "tests/test_recovery_retry.py (new).",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4971.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4972.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4973.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4974.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4975.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4976.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4977.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4978.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4979.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4980.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4981.yaml",
+            "config/manifests/pen_spin_stage3_retry_confirm_s4982.yaml"
+          ]
+        },
+        "cost_estimate": {
+          "episodes": 417200,
+          "llm_calls": 0,
+          "wall_time_minutes": 70
+        }
+      },
+      "note": "Round 2 agreed revise: second-decision time and conditions, gap 60 / kappa 0 initial point, shared 13-column direction draws, seeds 4954 / 4970 / 4971-4982, about 417,200 starts under a 430,000 ceiling."
+    }
+  ]
+}

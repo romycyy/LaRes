@@ -1606,3 +1606,33 @@ research_protocols:
     threshold: 0.05
     drop_margin: 0.05
     start_ceiling: 125000
+  # R-118 (no LLM): from the frozen R-116 re-capture module, 24 ARS updates of the same 11 parameters (continue) against
+  # the same plus a second attempt (gap, depth multiplier kappa, initially 0 = the parent bit for bit) (retry); same
+  # placements, shared direction draws (recovery_retry.py; controller, learner and child in recovery_module.py).
+  #   python scripts/run_shadowhand_spin_stages.py --study recovery_retry_vs_continue
+  recovery_retry_vs_continue:
+    log_dir: "logs/pen_spin/r118_recovery_retry"
+    incumbent_asset: "config/pen_spin/d058_fixed_stroke_incumbent"
+    reference_descriptor: "config/pen_spin/symbolic_reward_reference/reference.json"
+    reference_residual: *d070_selected
+    reference_residual_sha256: *d070_selected_sha256
+    control_dt: 0.016666666666666666
+    pool_seed: 4971
+    actor: *sr_actor
+    normalization_path: "logs/pen_spin/r103_symbolic_reward/normalization.json"
+    normalization_sha256: "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac"
+    root_finalist: "config/pen_spin/r106_success_ars_finalist/finalist.json"
+    root_theta_sha256: "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef"
+    module_finalist: "config/pen_spin/r116_recovery_finalist/finalist.json"
+    module_sha256: "f7f9313d7eaea2072536e37923b6a1f7b429c521c269fc0893475e07cf4d70df"
+    centre_tolerance: 0.08
+    cases_per_slot: 512
+    smoke_seed: 4954
+    training_seed: 4970
+    ars: {iterations: 24, directions: 4, nu: 0.1, alpha: 0.05}
+    confirmation_seeds: [4971, 4972, 4973, 4974, 4975, 4976, 4977, 4978, 4979, 4980, 4981, 4982]
+    confirmation_cases: 128
+    confirmation_manifest_template: "config/manifests/pen_spin_stage3_retry_confirm_s{seed}.yaml"
+    threshold: 0.05
+    drop_margin: 0.05
+    start_ceiling: 430000

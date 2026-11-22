@@ -1,0 +1,25 @@
+{
+ "name": "r118_continue_finalist",
+ "decision": "D-082 / R-118",
+ "status": "qualified against the R-116 module (+0.104 [+0.086, +0.121] over 1,536 fresh pairs; drops 72 vs 70) and the D-072 reference (+0.310 [+0.279, +0.340]; 1,141 vs 665); about 0.74 sustained success; NOT installed as the default incumbent",
+ "construction": "lares.envs.isaac_pen_spin.recovery_module.build(protocol_cfg, name, x): the frozen R-106 finalist plus the single-decision re-capture module with the normalised parameters x (11)",
+ "module_sha256": "03e10e1ced46dd0e2af34701306900fc54a76994c56bc10f36f7e3d5df2a2ff8",
+ "params": {
+  "threshold": 4.0,
+  "decision_step": 151.09135486045352,
+  "ramp_in": 28.07264619223827,
+  "ramp_out": 10.78046801306453,
+  "depth_WR": 0.5991259424696785,
+  "depth_FF": 0.8623236308553709,
+  "depth_MF": 0.6776634821220447,
+  "depth_RF": 0.8538341943356329,
+  "depth_LF": 0.14553711849982642,
+  "depth_TH": 0.4088089759260884,
+  "stroke_multiplier": 1.0592135616337905
+ },
+ "files": {
+  "finalist.json": "0a0f0eaacd1c7b799d3d94f021a71b7eaa176f165e6f82df446f1b62f50fcaa2"
+ },
+ "config_block": "research_protocols.recovery_retry_vs_continue",
+ "evaluated_in": "logs/pen_spin/r118_recovery_retry/summary.json"
+}

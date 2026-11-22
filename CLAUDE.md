@@ -696,6 +696,14 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   Learning halved how far the thumb opens (depth 0.42) and moved the decision to step 97. Frozen in
   `config/pen_spin/r116_recovery_finalist/` (about 0.62 sustained success; not installed as the incumbent, the user's
   call). Compare a float32 tensor schedule with a Python-float one to a tolerance, never bit for bit.
+- **R-118 result (D-082, refuted on its contrast; a large qualified gain beside it; 2026-11-22).** `recovery_retry.py`
+  (`--study recovery_retry_vs_continue`; the controller's optional second attempt and the generic training child are
+  in `recovery_module.py`). A second re-capture attempt adds nothing over budget-matched continuation (+0.004
+  [-0.009, +0.017]), but 24 more ARS updates of the R-116 module do: **CONTINUE minus R-116 +0.104 [+0.086, +0.121]**
+  over 1,536 fresh pairs. Sustained success of 1,536: reference 665 (0.43), R-106 root 838 (0.55), R-116 982 (0.64),
+  CONTINUE 1,141 (0.74); drops 76 / 48 / 70 / 72. Best controller so far: `config/pen_spin/r118_continue_finalist/`
+  (11 parameters on the R-106 finalist; threshold at its 4.0 bound, ramp-out near its 10-step bound; not installed as the
+  incumbent, the user's call).
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override
