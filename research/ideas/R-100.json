@@ -1,0 +1,94 @@
+{
+  "id": "R-100",
+  "title": "Resolve D-070 with 360 fresh pairs and the unchanged frozen residual",
+  "hypothesis": "Bounded reinforcement of filtered joint motion strengthens weak rolling without assuming a roll sign, improving sustained success without a material increase in drops.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "Unchanged D-058 incumbent at config/pen_spin/d058_fixed_stroke_incumbent on the same 360 fresh Stage-3 cases",
+    "rationale": "D-070's +0.056 estimate had SE 0.048 and established no improvement; +0.05 rounds that estimate down. With per-pair SD about 0.46, 360 pairs should give SE about 0.024 and a 95% interval half-width about 0.05. This changes measurement precision, not the mechanism or controller; D-070 remains unresolved, and D-057 supplies the larger-instrument precedent."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study incumbent_residual_360",
+    "seeds": [
+      4746,
+      4747,
+      4748,
+      4749
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_incumbent_residual_360_s4746.yaml",
+      "config/manifests/pen_spin_stage3_incumbent_residual_360_s4747.yaml",
+      "config/manifests/pen_spin_stage3_incumbent_residual_360_s4748.yaml",
+      "config/manifests/pen_spin_stage3_incumbent_residual_360_s4749.yaml"
+    ],
+    "episodes": 720,
+    "llm_calls": 0,
+    "code_changes": [
+      "Reuse scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml; register incumbent_residual_360 as evaluation-only, with no tuning, new parameter draws, controller changes, fitting or LLM calls.",
+      "Before any rollout, verify the frozen D-070 residual in lares/envs/isaac_pen_spin/incumbent_residual.py: gain 0.004655481049180921, deadband 0.2333555721435132, tau 0.18501188209260944, cap 0.10269089387249905, SHA-256 2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1; keep D-058 unchanged.",
+      "Create and freeze the four listed 90-case Stage-3 manifests before evaluation. Run remotely via gpu run, one protocol at a time, with each whole manifest evaluated in one fresh Isaac process per controller: eight sequential processes total.",
+      "Predeclare analysis of all 360 new paired sustained-success differences, excluding D-070 observations and without interim stopping. Adopt only if the pooled mean is strictly positive, its two-sided 95% paired t-interval lower bound is strictly positive, and the one-sided 95% paired drop-rate upper bound, computed as in D-070, is <= +0.05.",
+      "Report pooled and per-manifest success differences, intervals and win/loss/tie counts; also report tail-hit fraction, sustained unsigned angular progress, slow-spin counts and drop counts. Use per-manifest differences as a heterogeneity check, not for controller selection."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "rejected",
+  "source": "advisor",
+  "falsified_by": "A pooled 95% paired t-interval upper bound below +0.05 refutes the predicted magnitude. An interval including zero establishes no improvement and cannot support adoption; failure of the drop non-inferiority gate also blocks adoption.",
+  "cost_estimate": {
+    "episodes": 720,
+    "llm_calls": 0,
+    "wall_time_minutes": 20
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "883438f0b9b7d953bfd1ff0ca13255da23e670a67efc7354bd02ab6752bdcbdb",
+  "proposal_call_id": "call_00207",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-21T19:28:39",
+      "from": "proposed",
+      "to": "rejected",
+      "note": "triage round 1: both say reject"
+    }
+  ],
+  "created_at": "2026-11-21T19:27:11",
+  "direction": "No LLM calls in any protocol. Test bounded residual repairs of the working fixed-stroke incumbent (config/pen_spin/d058_fixed_stroke_incumbent) on Stage 3, in four separately gated steps: (S1) reproduce the incumbent on fixed cases and quantify its slow-spin failures, with angular progress measured along each case's own roll direction; (S2) qualify the contact-frame decoder DURING ROLLING on top of the incumbent stroke, reporting requested, feasible (after bounds and least squares) and achieved motion separately, with tracking error, directional agreement and bound activity as pass/fail criteria (controllability gate); (S3) only if S2 passes, compare incumbent alone, a hand-authored contact-frame residual and a hand-authored anonymous-coordinate joint residual, with matched tuning budgets (same parameter count, same number of probe evaluations, same tuning method, tuned on probe cases and frozen before any fresh case), candidates ranked by tail-hit fraction with sustained unsigned angular progress and retention inspected; (S4) evaluate the selected controllers on fresh paired cases, 90 pairs per comparison, Holm correction over the two comparisons, promotion requires the strict paired sustained-success rule AND a pre-declared numeric non-inferiority bound on drops (usefulness gate). Residuals must not assume a roll sign. If S2 fails, the anonymous residual may still be compared against the incumbent alone. A failed hand-authored controller shelves that decoder/controller family only. No BC, RL, curriculum or gradient fitting. One protocol at a time on the box.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "reject",
+          "reasoning": "This frozen-controller replication addresses uncertainty left open by D-070; its predicted magnitude is falsified if the paired interval upper bound is below +0.05. However, spending 720 simulator episodes and zero LLM calls on one 360-pair comparison conflicts with the direction's explicit 90-pair S4 design; D-057's precedent does not override that requirement. At the proposed SE of 0.024, power to pass the success gate for a true +0.05 gain is only about 55%, so the larger instrument is not reliably decisive either. Reconsider only under a direction permitting larger confirmatory comparisons, with a predeclared power target justifying the budget.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00208",
+          "briefing_sha256": "d805d0ab02b911d2c3ab42e2365e83fb2503a175860fd5cd4e5a4b5028508e29",
+          "at": "2026-11-21T19:28:20"
+        },
+        "implementer": {
+          "position": "reject",
+          "reasoning": "I change my position from approve to reject; both of the advisor's arguments hold. (1) The direction fixes S4 at 90 pairs per comparison; a 360-pair confirmatory instrument is a change of scope that is the user's to make, and D-057's precedent was set under a different direction. (2) I sized the instrument for an interval half-width of 0.05, not for power: with SE 0.024 the strict rule needs an estimate above about +0.047, so a true +0.05 passes only about 55% of the time, and the run would most likely leave D-070 where it is. A decisive version needs a pre-declared power target (80% power for +0.05 is about 670 pairs, 1,340 episodes) under a direction that permits it. D-058 stays the incumbent and D-070 stays inconclusive; no rollout was launched and the four manifests I froze for this idea are removed with it.",
+          "changes_applied": [],
+          "at": "2026-11-21T19:28:39"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "reject",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

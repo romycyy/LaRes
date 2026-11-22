@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-21T19:26:20 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-21T19:28:41 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -15,7 +15,9 @@ No LLM calls in any protocol. Test bounded residual repairs of the working fixed
 | proposed | 0 |
 | deferred | 20 |
 | decided | 70 |
-| rejected | 9 |
+| rejected | 10 |
+
+**Loop guard:** the last 1 propose call(s) were rejected in full at triage. After two in a row the loop stops and asks the user for a new direction.
 
 ## Needs attention
 
@@ -64,11 +66,11 @@ No LLM calls in any protocol. Test bounded residual repairs of the working fixed
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
+- R-100 round 1 · advisor reject / implementer reject → agreed (rejected)
 - R-099 round 3 · advisor approve / implementer approve → agreed (approved)
 - R-099 round 2 · advisor revise / implementer revise → agreed (proposed)
 - R-097 round 2 · advisor approve / implementer approve → agreed (approved)
 - R-098 round 1 · advisor defer / implementer defer → agreed (deferred)
-- R-099 round 1 · advisor defer / implementer defer → agreed (deferred)
 
 ## Standing constraints
 
