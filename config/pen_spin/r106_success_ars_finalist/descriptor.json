@@ -1,0 +1,16 @@
+{
+ "name": "r106_success_ars_finalist",
+ "decision": "D-075 / R-106",
+ "status": "qualified against the D-072 reference (+0.109 [+0.079, +0.138] over 1,536 fresh pairs; drops 71 vs 83); NOT installed as the default incumbent",
+ "construction": "lares.envs.isaac_pen_spin.symbolic_reward.build_controller(protocol_cfg, name, theta, normalization): clamp(reference + clip(a s + b_g vhat + c_g ehat, -0.10, 0.10), -1, 1) on the reference of config/pen_spin/symbolic_reward_reference/reference.json",
+ "theta_sha256": "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef",
+ "files": {
+  "finalist.json": "cab640259df407ce98c2c286f4331f7017ce8145ee36e3eeb2ed1b82fbea9982"
+ },
+ "normalization": {
+  "path": "logs/pen_spin/r103_symbolic_reward/normalization.json",
+  "sha256": "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac"
+ },
+ "config_block": "research_protocols.symbolic_exact_success_ars (actor, reference_residual)",
+ "evaluated_in": "logs/pen_spin/r106_exact_success_ars/summary.json"
+}

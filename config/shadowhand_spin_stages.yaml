@@ -1384,7 +1384,7 @@ research_protocols:
     reference_residual_sha256: *d070_selected_sha256
     control_dt: 0.016666666666666666
     pool_seed: 4764
-    actor: {coefficients: 32, bound: 0.10, cap: 0.10, spin_target: 7.0, feature_clip_sigmas: 3.0,
+    actor: &sr_actor {coefficients: 32, bound: 0.10, cap: 0.10, spin_target: 7.0, feature_clip_sigmas: 3.0,
             rms_floor_velocity: 0.05, rms_floor_posture: 0.01}
     reward: {center_scale: 0.08, spin_cap: 6.0, fall_penalty: 5.0, residual_cost: 0.01}
     training: {num_envs: 128, horizon: 360, transitions: 460800, cap: 500000, checkpoints: 5,
@@ -1430,3 +1430,34 @@ research_protocols:
     resamples: 2000
     seed: 4771
     pool_seed: 4771
+  # R-106 (no LLM): ARS on the exact sustained-success count in R-103's 32-coefficient family (success_ars.py; child
+  # success_ars_child.py). 12 updates x 4 antithetic directions; each update is two 2,048-env rollouts, every signed
+  # candidate on the same 512 placements; the final mean is frozen and confirmed once on twelve 128-case manifests.
+  #   python scripts/run_shadowhand_spin_stages.py --study symbolic_exact_success_ars
+  symbolic_exact_success_ars:
+    log_dir: "logs/pen_spin/r106_exact_success_ars"
+    incumbent_asset: "config/pen_spin/d058_fixed_stroke_incumbent"
+    reference_descriptor: "config/pen_spin/symbolic_reward_reference/reference.json"
+    reference_residual: *d070_selected
+    reference_residual_sha256: *d070_selected_sha256
+    control_dt: 0.016666666666666666
+    pool_seed: 4780
+    actor: *sr_actor
+    normalization_path: "logs/pen_spin/r103_symbolic_reward/normalization.json"
+    normalization_sha256: "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac"
+    training: {seed: 4779, slots: 4, cases_per_slot: 512, rollouts_per_update: 2, horizon: 360}
+    ars: {iterations: 12, directions: 4, top: 4, nu: 0.02, alpha: 0.01, rng_offset: 2000}
+    # Amendment (advisor consult call_00235, decision delegated by the user, before any training): the first smoke
+    # (seed 4778, 8,204 starts) exposed two defects in the new child: completed episodes have 359 recorded steps, not
+    # 360, so every episode scored as a failure; and two slots with the same placements are not bit-identical at step 0.
+    # The scorer now uses the evaluator's rule, the duplicate-slot check a 1e-4 tolerance; the smoke is rerun once on
+    # seed 4792; the ceiling is 125,000 including the failed attempt's starts. Artifacts: <log_dir>/attempt1_smoke/.
+    prior_starts: 8204
+    smoke: {seed: 4792, probe_magnitude: 0.05, pooled_ratio_min: 0.50, reconstruction_steps: 40, duplicate_slot_tolerance: 0.0001}
+    confirmation_seeds: [4780, 4781, 4782, 4783, 4784, 4785, 4786, 4787, 4788, 4789, 4790, 4791]
+    confirmation_cases: 128
+    confirmation_manifest_template: "config/manifests/pen_spin_stage3_exact_success_confirm_s{seed}.yaml"
+    threshold: 0.05
+    drop_margin: 0.05
+    start_ceiling: 125000
+    max_hours: 4.0

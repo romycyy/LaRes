@@ -1,0 +1,953 @@
+{
+ "metrics": {
+  "paired_success_difference": 0.10872395833333333,
+  "paired_success_difference_ci95": [
+   0.07945848077826864,
+   0.13798943588839802
+  ],
+  "pairs": 1536,
+  "successes_finalist_reference": [
+   806,
+   639
+  ],
+  "win_loss_tie": {
+   "wins": 355,
+   "losses": 188,
+   "ties": 993
+  },
+  "manifest_clustered_ci95": [
+   0.08372871251167538,
+   0.13371920415499128
+  ],
+  "manifests_positive": 12,
+  "manifests": 12,
+  "drops_finalist_reference": [
+   71,
+   83
+  ],
+  "drop_difference_one_sided_95_upper": -0.0013896960648434537,
+  "tail_hit_fraction_difference": 0.11625635526944834,
+  "tail_hit_ci95": [
+   0.08757470828078338,
+   0.14493800225811332
+  ],
+  "promotes": true,
+  "adopts": true,
+  "prediction_supported": true,
+  "intervals_agree_on_sign": true
+ },
+ "controls": {
+  "per_manifest": {
+   "s4780": {
+    "n": 128,
+    "selected": 73,
+    "parent": 56,
+    "difference": 0.1328125,
+    "drops": [
+     3,
+     6
+    ]
+   },
+   "s4781": {
+    "n": 128,
+    "selected": 70,
+    "parent": 50,
+    "difference": 0.15625,
+    "drops": [
+     5,
+     5
+    ]
+   },
+   "s4782": {
+    "n": 128,
+    "selected": 59,
+    "parent": 41,
+    "difference": 0.140625,
+    "drops": [
+     8,
+     9
+    ]
+   },
+   "s4783": {
+    "n": 128,
+    "selected": 60,
+    "parent": 56,
+    "difference": 0.03125,
+    "drops": [
+     4,
+     5
+    ]
+   },
+   "s4784": {
+    "n": 128,
+    "selected": 70,
+    "parent": 62,
+    "difference": 0.0625,
+    "drops": [
+     5,
+     4
+    ]
+   },
+   "s4785": {
+    "n": 128,
+    "selected": 61,
+    "parent": 46,
+    "difference": 0.1171875,
+    "drops": [
+     9,
+     10
+    ]
+   },
+   "s4786": {
+    "n": 128,
+    "selected": 67,
+    "parent": 51,
+    "difference": 0.125,
+    "drops": [
+     7,
+     9
+    ]
+   },
+   "s4787": {
+    "n": 128,
+    "selected": 71,
+    "parent": 57,
+    "difference": 0.109375,
+    "drops": [
+     6,
+     8
+    ]
+   },
+   "s4788": {
+    "n": 128,
+    "selected": 68,
+    "parent": 53,
+    "difference": 0.1171875,
+    "drops": [
+     6,
+     6
+    ]
+   },
+   "s4789": {
+    "n": 128,
+    "selected": 69,
+    "parent": 57,
+    "difference": 0.09375,
+    "drops": [
+     5,
+     6
+    ]
+   },
+   "s4790": {
+    "n": 128,
+    "selected": 70,
+    "parent": 50,
+    "difference": 0.15625,
+    "drops": [
+     9,
+     9
+    ]
+   },
+   "s4791": {
+    "n": 128,
+    "selected": 68,
+    "parent": 60,
+    "difference": 0.0625,
+    "drops": [
+     4,
+     6
+    ]
+   }
+  },
+  "smoke_gates_seed_4792": {
+   "joint_order": true,
+   "zero_theta_identity": true,
+   "scorer_live": true,
+   "executed_authority": true,
+   "per_environment_theta": true,
+   "reconstruction": true
+  },
+  "aa_noise_floor": {
+   "slot_success": [
+    0.46484375,
+    0.46484375,
+    0.458984375,
+    0.458984375
+   ],
+   "pairwise_discordance": [
+    0.07421875,
+    0.080078125,
+    0.083984375,
+    0.083984375,
+    0.103515625,
+    0.08203125
+   ],
+   "mean_discordance": 0.08463541666666667,
+   "sd_of_slot_differences": 0.0030257682392245445,
+   "max_abs_slot_difference": 0.005859375,
+   "slot_drops": [
+    21,
+    20,
+    21,
+    21
+   ]
+  },
+  "probe_slot_success_zero_plus_minus_plus": [
+   0.451171875,
+   0.392578125,
+   0.431640625,
+   0.390625
+  ],
+  "executed_over_proposed_smoke": 0.9624481366849842,
+  "training_updates": [
+   {
+    "update": 1,
+    "plus": [
+     0.39453125,
+     0.36328125,
+     0.396484375,
+     0.3828125
+    ],
+    "minus": [
+     0.388671875,
+     0.46484375,
+     0.38671875,
+     0.4453125
+    ],
+    "mean_candidate_success": 0.40283203125,
+    "sigma_r": 0.0319852172561764,
+    "theta_l2": 0.06214185996588217,
+    "theta_abs_max": 0.028484204964233942,
+    "starts_so_far": 8209
+   },
+   {
+    "update": 2,
+    "plus": [
+     0.4375,
+     0.4453125,
+     0.423828125,
+     0.447265625
+    ],
+    "minus": [
+     0.439453125,
+     0.44140625,
+     0.478515625,
+     0.458984375
+    ],
+    "mean_candidate_success": 0.446533203125,
+    "sigma_r": 0.015221144971451503,
+    "theta_l2": 0.08017853044008687,
+    "theta_abs_max": 0.02829288361160616,
+    "starts_so_far": 16414
+   },
+   {
+    "update": 3,
+    "plus": [
+     0.43359375,
+     0.4609375,
+     0.42578125,
+     0.40234375
+    ],
+    "minus": [
+     0.466796875,
+     0.416015625,
+     0.46484375,
+     0.447265625
+    ],
+    "mean_candidate_success": 0.439697265625,
+    "sigma_r": 0.022533796148042892,
+    "theta_l2": 0.10356914831937752,
+    "theta_abs_max": 0.033611048700026624,
+    "starts_so_far": 24618
+   },
+   {
+    "update": 4,
+    "plus": [
+     0.40234375,
+     0.423828125,
+     0.4296875,
+     0.501953125
+    ],
+    "minus": [
+     0.50390625,
+     0.4609375,
+     0.466796875,
+     0.41015625
+    ],
+    "mean_candidate_success": 0.449951171875,
+    "sigma_r": 0.0370185141251105,
+    "theta_l2": 0.14213143310282236,
+    "theta_abs_max": 0.04844264497962805,
+    "starts_so_far": 32824
+   },
+   {
+    "update": 5,
+    "plus": [
+     0.50390625,
+     0.451171875,
+     0.48828125,
+     0.509765625
+    ],
+    "minus": [
+     0.521484375,
+     0.5,
+     0.470703125,
+     0.490234375
+    ],
+    "mean_candidate_success": 0.491943359375,
+    "sigma_r": 0.021000351584988173,
+    "theta_l2": 0.14883677668629675,
+    "theta_abs_max": 0.04779589171327358,
+    "starts_so_far": 41025
+   },
+   {
+    "update": 6,
+    "plus": [
+     0.474609375,
+     0.515625,
+     0.48046875,
+     0.515625
+    ],
+    "minus": [
+     0.47265625,
+     0.44921875,
+     0.5,
+     0.490234375
+    ],
+    "mean_candidate_success": 0.4873046875,
+    "sigma_r": 0.02135079209870649,
+    "theta_l2": 0.16039691254143296,
+    "theta_abs_max": 0.062429258217453334,
+    "starts_so_far": 49223
+   },
+   {
+    "update": 7,
+    "plus": [
+     0.482421875,
+     0.556640625,
+     0.515625,
+     0.478515625
+    ],
+    "minus": [
+     0.515625,
+     0.44140625,
+     0.51171875,
+     0.5
+    ],
+    "mean_candidate_success": 0.500244140625,
+    "sigma_r": 0.03169599797591502,
+    "theta_l2": 0.18813361830209452,
+    "theta_abs_max": 0.07119144582759757,
+    "starts_so_far": 57423
+   },
+   {
+    "update": 8,
+    "plus": [
+     0.55859375,
+     0.51171875,
+     0.498046875,
+     0.501953125
+    ],
+    "minus": [
+     0.494140625,
+     0.48828125,
+     0.525390625,
+     0.53125
+    ],
+    "mean_candidate_success": 0.513671875,
+    "sigma_r": 0.022010600917157508,
+    "theta_l2": 0.19980058045966625,
+    "theta_abs_max": 0.08568139446409627,
+    "starts_so_far": 65625
+   },
+   {
+    "update": 9,
+    "plus": [
+     0.490234375,
+     0.546875,
+     0.51953125,
+     0.53515625
+    ],
+    "minus": [
+     0.572265625,
+     0.544921875,
+     0.505859375,
+     0.546875
+    ],
+    "mean_candidate_success": 0.53271484375,
+    "sigma_r": 0.024545544389759387,
+    "theta_l2": 0.20778307754714218,
+    "theta_abs_max": 0.0815671626996029,
+    "starts_so_far": 73822
+   },
+   {
+    "update": 10,
+    "plus": [
+     0.517578125,
+     0.501953125,
+     0.513671875,
+     0.515625
+    ],
+    "minus": [
+     0.509765625,
+     0.52734375,
+     0.52734375,
+     0.5078125
+    ],
+    "mean_candidate_success": 0.51513671875,
+    "sigma_r": 0.008386505877596517,
+    "theta_l2": 0.22283128585870102,
+    "theta_abs_max": 0.08323132851225212,
+    "starts_so_far": 82019
+   },
+   {
+    "update": 11,
+    "plus": [
+     0.509765625,
+     0.513671875,
+     0.482421875,
+     0.498046875
+    ],
+    "minus": [
+     0.51953125,
+     0.541015625,
+     0.544921875,
+     0.521484375
+    ],
+    "mean_candidate_success": 0.516357421875,
+    "sigma_r": 0.019358057797797815,
+    "theta_l2": 0.23209277140668774,
+    "theta_abs_max": 0.09268818194731136,
+    "starts_so_far": 90214
+   },
+   {
+    "update": 12,
+    "plus": [
+     0.53515625,
+     0.55078125,
+     0.564453125,
+     0.5234375
+    ],
+    "minus": [
+     0.5390625,
+     0.52734375,
+     0.501953125,
+     0.55859375
+    ],
+    "mean_candidate_success": 0.53759765625,
+    "sigma_r": 0.01910546635401743,
+    "theta_l2": 0.24587907755354188,
+    "theta_abs_max": 0.08558132534058609,
+    "starts_so_far": 98413
+   }
+  ],
+  "finalist": {
+   "theta_sha256": "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef",
+   "theta_abs_max": 0.08558132499456406,
+   "theta_l2": 0.24587907918026775,
+   "theta": {
+    "a_WRJ1": -0.01858418807387352,
+    "a_WRJ0": 0.01715891994535923,
+    "a_FFJ3": -0.06355895847082138,
+    "a_MFJ3": 0.03493227809667587,
+    "a_RFJ3": -0.012171543203294277,
+    "a_LFJ4": -0.039162348955869675,
+    "a_THJ4": 0.07739319652318954,
+    "a_FFJ2": 0.06330852955579758,
+    "a_MFJ2": 0.07624620944261551,
+    "a_RFJ2": 0.05116640776395798,
+    "a_LFJ3": -0.01680872030556202,
+    "a_THJ3": -0.08558132499456406,
+    "a_FFJ1": 0.0497421957552433,
+    "a_MFJ1": 0.0052507477812469006,
+    "a_RFJ1": 0.0224281195551157,
+    "a_LFJ2": -0.017856433987617493,
+    "a_THJ2": -0.020122762769460678,
+    "a_LFJ1": -0.05285736173391342,
+    "a_THJ1": -0.08142826706171036,
+    "a_THJ0": 0.04616057500243187,
+    "b_WR": 0.03403157740831375,
+    "b_FF": -0.0037891401443630457,
+    "b_MF": -0.02213726006448269,
+    "b_RF": 0.008957518264651299,
+    "b_LF": -0.026828134432435036,
+    "b_TH": 0.031987618654966354,
+    "c_WR": 0.010851177386939526,
+    "c_FF": 0.02668248675763607,
+    "c_MF": 0.006424954626709223,
+    "c_RF": -0.026641936972737312,
+    "c_LF": -0.07671978324651718,
+    "c_TH": 0.024548832327127457
+   }
+  },
+  "finalist_residual_activity_first_manifest": {
+   "mean_abs_proposed": 0.0232960544526577,
+   "mean_abs_executed": 0.02112410217523575
+  },
+  "cells": {
+   "s4780/reference": {
+    "n": 128,
+    "successes": 56,
+    "success": 0.4375,
+    "completed": 0.953125,
+    "tail_hit_fraction": 0.45903139353025024,
+    "hit_fraction": 0.4656260514188785,
+    "mean_length": 344.5859375,
+    "mean_abs_spin": 5.024750405456871,
+    "mean_transverse": 1.5629051339346915,
+    "drops": 6,
+    "tail_spin_failures": 66,
+    "median_fall_step": 41.0,
+    "tail_failures": 66,
+    "off_centre": 7,
+    "slow_spin": 59,
+    "unsigned_roll_rad": 25.910686492919922
+   },
+   "s4780/finalist": {
+    "n": 128,
+    "successes": 73,
+    "success": 0.5703125,
+    "completed": 0.9765625,
+    "tail_hit_fraction": 0.5850881865530303,
+    "hit_fraction": 0.5760131372261965,
+    "mean_length": 351.4140625,
+    "mean_abs_spin": 5.877230458892882,
+    "mean_transverse": 1.4167671430623159,
+    "drops": 3,
+    "tail_spin_failures": 52,
+    "median_fall_step": 32.0,
+    "tail_failures": 52,
+    "off_centre": 1,
+    "slow_spin": 51,
+    "unsigned_roll_rad": 32.5789794921875
+   },
+   "s4781/reference": {
+    "n": 128,
+    "successes": 50,
+    "success": 0.390625,
+    "completed": 0.9609375,
+    "tail_hit_fraction": 0.4257187255175934,
+    "hit_fraction": 0.433336094366247,
+    "mean_length": 346.296875,
+    "mean_abs_spin": 5.031717607751489,
+    "mean_transverse": 1.6069213876035064,
+    "drops": 5,
+    "tail_spin_failures": 73,
+    "median_fall_step": 31.0,
+    "tail_failures": 73,
+    "off_centre": 6,
+    "slow_spin": 67,
+    "unsigned_roll_rad": 26.714263916015625
+   },
+   "s4781/finalist": {
+    "n": 128,
+    "successes": 70,
+    "success": 0.546875,
+    "completed": 0.9609375,
+    "tail_hit_fraction": 0.5919124980107324,
+    "hit_fraction": 0.5911958081314381,
+    "mean_length": 346.21875,
+    "mean_abs_spin": 6.460659773088992,
+    "mean_transverse": 1.5064759704982862,
+    "drops": 5,
+    "tail_spin_failures": 53,
+    "median_fall_step": 32.0,
+    "tail_failures": 53,
+    "off_centre": 1,
+    "slow_spin": 52,
+    "unsigned_roll_rad": 35.09943389892578
+   },
+   "s4782/reference": {
+    "n": 128,
+    "successes": 41,
+    "success": 0.3203125,
+    "completed": 0.9296875,
+    "tail_hit_fraction": 0.3503367292429792,
+    "hit_fraction": 0.35543652168075035,
+    "mean_length": 336.3671875,
+    "mean_abs_spin": 4.6521505957935005,
+    "mean_transverse": 1.7976452313596383,
+    "drops": 9,
+    "tail_spin_failures": 78,
+    "median_fall_step": 34.0,
+    "tail_failures": 78,
+    "off_centre": 4,
+    "slow_spin": 74,
+    "unsigned_roll_rad": 22.203990936279297
+   },
+   "s4782/finalist": {
+    "n": 128,
+    "successes": 59,
+    "success": 0.4609375,
+    "completed": 0.9375,
+    "tail_hit_fraction": 0.4924439914647079,
+    "hit_fraction": 0.4849397841759428,
+    "mean_length": 338.5859375,
+    "mean_abs_spin": 5.834447373636067,
+    "mean_transverse": 1.6765997564652935,
+    "drops": 8,
+    "tail_spin_failures": 61,
+    "median_fall_step": 32.5,
+    "tail_failures": 61,
+    "off_centre": 4,
+    "slow_spin": 57,
+    "unsigned_roll_rad": 28.78220558166504
+   },
+   "s4783/reference": {
+    "n": 128,
+    "successes": 56,
+    "success": 0.4375,
+    "completed": 0.9609375,
+    "tail_hit_fraction": 0.45759092377489263,
+    "hit_fraction": 0.4604011025121257,
+    "mean_length": 346.4296875,
+    "mean_abs_spin": 4.946688004769385,
+    "mean_transverse": 1.6230848622508347,
+    "drops": 5,
+    "tail_spin_failures": 67,
+    "median_fall_step": 35.0,
+    "tail_failures": 67,
+    "off_centre": 4,
+    "slow_spin": 63,
+    "unsigned_roll_rad": 26.32114028930664
+   },
+   "s4783/finalist": {
+    "n": 128,
+    "successes": 60,
+    "success": 0.46875,
+    "completed": 0.96875,
+    "tail_hit_fraction": 0.5021729451507795,
+    "hit_fraction": 0.4941908350090305,
+    "mean_length": 349.53125,
+    "mean_abs_spin": 5.42670577368699,
+    "mean_transverse": 1.5286598656093702,
+    "drops": 4,
+    "tail_spin_failures": 64,
+    "median_fall_step": 41.0,
+    "tail_failures": 64,
+    "off_centre": 2,
+    "slow_spin": 62,
+    "unsigned_roll_rad": 29.82778549194336
+   },
+   "s4784/reference": {
+    "n": 128,
+    "successes": 62,
+    "success": 0.484375,
+    "completed": 0.96875,
+    "tail_hit_fraction": 0.5056687023318329,
+    "hit_fraction": 0.4972581144720372,
+    "mean_length": 348.796875,
+    "mean_abs_spin": 5.152077830862254,
+    "mean_transverse": 1.536179132410325,
+    "drops": 4,
+    "tail_spin_failures": 62,
+    "median_fall_step": 29.5,
+    "tail_failures": 62,
+    "off_centre": 4,
+    "slow_spin": 58,
+    "unsigned_roll_rad": 28.015371322631836
+   },
+   "s4784/finalist": {
+    "n": 128,
+    "successes": 70,
+    "success": 0.546875,
+    "completed": 0.9609375,
+    "tail_hit_fraction": 0.6001731122286079,
+    "hit_fraction": 0.5822725493223869,
+    "mean_length": 346.171875,
+    "mean_abs_spin": 6.395021757110953,
+    "mean_transverse": 1.5714697450166568,
+    "drops": 5,
+    "tail_spin_failures": 53,
+    "median_fall_step": 29.0,
+    "tail_failures": 53,
+    "off_centre": 1,
+    "slow_spin": 52,
+    "unsigned_roll_rad": 34.61183166503906
+   },
+   "s4785/reference": {
+    "n": 128,
+    "successes": 46,
+    "success": 0.359375,
+    "completed": 0.921875,
+    "tail_hit_fraction": 0.39080914727162613,
+    "hit_fraction": 0.39838117895686287,
+    "mean_length": 333.4375,
+    "mean_abs_spin": 5.063800652511418,
+    "mean_transverse": 1.817397748120129,
+    "drops": 10,
+    "tail_spin_failures": 72,
+    "median_fall_step": 30.0,
+    "tail_failures": 72,
+    "off_centre": 8,
+    "slow_spin": 64,
+    "unsigned_roll_rad": 22.896072387695312
+   },
+   "s4785/finalist": {
+    "n": 128,
+    "successes": 61,
+    "success": 0.4765625,
+    "completed": 0.9296875,
+    "tail_hit_fraction": 0.5075021471310889,
+    "hit_fraction": 0.5092379579444293,
+    "mean_length": 336.296875,
+    "mean_abs_spin": 5.850880654295906,
+    "mean_transverse": 1.6593911555828527,
+    "drops": 9,
+    "tail_spin_failures": 58,
+    "median_fall_step": 29.0,
+    "tail_failures": 58,
+    "off_centre": 1,
+    "slow_spin": 57,
+    "unsigned_roll_rad": 28.767601013183594
+   },
+   "s4786/reference": {
+    "n": 128,
+    "successes": 51,
+    "success": 0.3984375,
+    "completed": 0.9296875,
+    "tail_hit_fraction": 0.43927094901221675,
+    "hit_fraction": 0.44380901772159465,
+    "mean_length": 336.109375,
+    "mean_abs_spin": 5.256824292708188,
+    "mean_transverse": 1.8042919582221657,
+    "drops": 9,
+    "tail_spin_failures": 68,
+    "median_fall_step": 33.0,
+    "tail_failures": 68,
+    "off_centre": 4,
+    "slow_spin": 64,
+    "unsigned_roll_rad": 25.151329040527344
+   },
+   "s4786/finalist": {
+    "n": 128,
+    "successes": 67,
+    "success": 0.5234375,
+    "completed": 0.9453125,
+    "tail_hit_fraction": 0.5736708688552791,
+    "hit_fraction": 0.5607407098487796,
+    "mean_length": 341.484375,
+    "mean_abs_spin": 5.819813820067793,
+    "mean_transverse": 1.553819318243768,
+    "drops": 7,
+    "tail_spin_failures": 54,
+    "median_fall_step": 40.0,
+    "tail_failures": 54,
+    "off_centre": 1,
+    "slow_spin": 53,
+    "unsigned_roll_rad": 30.167524337768555
+   },
+   "s4787/reference": {
+    "n": 128,
+    "successes": 57,
+    "success": 0.4453125,
+    "completed": 0.9375,
+    "tail_hit_fraction": 0.4744475507659101,
+    "hit_fraction": 0.4676353699395406,
+    "mean_length": 338.5546875,
+    "mean_abs_spin": 5.436173809692264,
+    "mean_transverse": 1.714962900383398,
+    "drops": 8,
+    "tail_spin_failures": 63,
+    "median_fall_step": 31.0,
+    "tail_failures": 63,
+    "off_centre": 2,
+    "slow_spin": 61,
+    "unsigned_roll_rad": 27.059755325317383
+   },
+   "s4787/finalist": {
+    "n": 128,
+    "successes": 71,
+    "success": 0.5546875,
+    "completed": 0.953125,
+    "tail_hit_fraction": 0.5883117019489248,
+    "hit_fraction": 0.577372388462388,
+    "mean_length": 343.6953125,
+    "mean_abs_spin": 6.252712253015488,
+    "mean_transverse": 1.582281190319918,
+    "drops": 6,
+    "tail_spin_failures": 51,
+    "median_fall_step": 32.0,
+    "tail_failures": 51,
+    "off_centre": 0,
+    "slow_spin": 51,
+    "unsigned_roll_rad": 32.92876434326172
+   },
+   "s4788/reference": {
+    "n": 128,
+    "successes": 53,
+    "success": 0.4140625,
+    "completed": 0.953125,
+    "tail_hit_fraction": 0.45142701325398193,
+    "hit_fraction": 0.4484859007888009,
+    "mean_length": 343.625,
+    "mean_abs_spin": 4.960181233938783,
+    "mean_transverse": 1.686177262570709,
+    "drops": 6,
+    "tail_spin_failures": 69,
+    "median_fall_step": 30.5,
+    "tail_failures": 69,
+    "off_centre": 4,
+    "slow_spin": 65,
+    "unsigned_roll_rad": 25.254669189453125
+   },
+   "s4788/finalist": {
+    "n": 128,
+    "successes": 68,
+    "success": 0.53125,
+    "completed": 0.953125,
+    "tail_hit_fraction": 0.5492714588565912,
+    "hit_fraction": 0.5519586832066378,
+    "mean_length": 343.8203125,
+    "mean_abs_spin": 6.203776333015412,
+    "mean_transverse": 1.593970250338316,
+    "drops": 6,
+    "tail_spin_failures": 54,
+    "median_fall_step": 33.5,
+    "tail_failures": 54,
+    "off_centre": 0,
+    "slow_spin": 54,
+    "unsigned_roll_rad": 32.41070556640625
+   },
+   "s4789/reference": {
+    "n": 128,
+    "successes": 57,
+    "success": 0.4453125,
+    "completed": 0.953125,
+    "tail_hit_fraction": 0.4960423668071694,
+    "hit_fraction": 0.4858008186644735,
+    "mean_length": 344.1015625,
+    "mean_abs_spin": 5.320324145024642,
+    "mean_transverse": 1.754410102032125,
+    "drops": 6,
+    "tail_spin_failures": 65,
+    "median_fall_step": 34.5,
+    "tail_failures": 65,
+    "off_centre": 3,
+    "slow_spin": 62,
+    "unsigned_roll_rad": 27.85293197631836
+   },
+   "s4789/finalist": {
+    "n": 128,
+    "successes": 69,
+    "success": 0.5390625,
+    "completed": 0.9609375,
+    "tail_hit_fraction": 0.5805192873933199,
+    "hit_fraction": 0.5778788509959196,
+    "mean_length": 346.25,
+    "mean_abs_spin": 5.943169927224517,
+    "mean_transverse": 1.644563778070733,
+    "drops": 5,
+    "tail_spin_failures": 54,
+    "median_fall_step": 34.0,
+    "tail_failures": 54,
+    "off_centre": 4,
+    "slow_spin": 50,
+    "unsigned_roll_rad": 32.3705940246582
+   },
+   "s4790/reference": {
+    "n": 128,
+    "successes": 50,
+    "success": 0.390625,
+    "completed": 0.9296875,
+    "tail_hit_fraction": 0.4194204676903924,
+    "hit_fraction": 0.4233336089392317,
+    "mean_length": 336.171875,
+    "mean_abs_spin": 5.395194560755044,
+    "mean_transverse": 1.679643462295644,
+    "drops": 9,
+    "tail_spin_failures": 69,
+    "median_fall_step": 33.0,
+    "tail_failures": 69,
+    "off_centre": 2,
+    "slow_spin": 67,
+    "unsigned_roll_rad": 25.70068359375
+   },
+   "s4790/finalist": {
+    "n": 128,
+    "successes": 70,
+    "success": 0.546875,
+    "completed": 0.9296875,
+    "tail_hit_fraction": 0.6144373479334416,
+    "hit_fraction": 0.6038320786669608,
+    "mean_length": 336.1796875,
+    "mean_abs_spin": 6.817370715783909,
+    "mean_transverse": 1.5664231120608747,
+    "drops": 9,
+    "tail_spin_failures": 49,
+    "median_fall_step": 36.0,
+    "tail_failures": 49,
+    "off_centre": 1,
+    "slow_spin": 48,
+    "unsigned_roll_rad": 34.25417709350586
+   },
+   "s4791/reference": {
+    "n": 128,
+    "successes": 60,
+    "success": 0.46875,
+    "completed": 0.953125,
+    "tail_hit_fraction": 0.5041702001201527,
+    "hit_fraction": 0.5080365534163458,
+    "mean_length": 343.8046875,
+    "mean_abs_spin": 5.5431001405231655,
+    "mean_transverse": 1.7032716340618208,
+    "drops": 6,
+    "tail_spin_failures": 62,
+    "median_fall_step": 34.5,
+    "tail_failures": 62,
+    "off_centre": 1,
+    "slow_spin": 61,
+    "unsigned_roll_rad": 28.716182708740234
+   },
+   "s4791/finalist": {
+    "n": 128,
+    "successes": 68,
+    "success": 0.53125,
+    "completed": 0.96875,
+    "tail_hit_fraction": 0.5835068870258746,
+    "hit_fraction": 0.5771397357956054,
+    "mean_length": 348.953125,
+    "mean_abs_spin": 6.16610535280779,
+    "mean_transverse": 1.4145743923727423,
+    "drops": 4,
+    "tail_spin_failures": 56,
+    "median_fall_step": 37.5,
+    "tail_failures": 56,
+    "off_centre": 1,
+    "slow_spin": 55,
+    "unsigned_roll_rad": 33.602664947509766
+   }
+  },
+  "accounting": {
+   "prior_attempt_starts": 8204,
+   "smoke_starts": 8211,
+   "training_starts": 98413,
+   "confirmation_cases": 3072,
+   "confirmation_charged_starts": 6144,
+   "charged_total": 120972,
+   "ceiling": 125000,
+   "training_transitions": 17645568,
+   "training_scored_episodes": 49152,
+   "llm_calls": 0
+  },
+  "throughput_transitions_per_s": 33727.07093974855,
+  "training_wall_time_s": 471.74406933784485,
+  "symbolic_complexity": {
+   "coefficients": 32,
+   "trainable_state": 0
+  },
+  "config_sha256": "c627004b3d73f6b9c7ea6db3598a6ab4c7dedec553bac249bd4d9be6a336a59c"
+ },
+ "artifacts": [
+  "logs/pen_spin/r106_exact_success_ars/summary.json",
+  "logs/pen_spin/r106_exact_success_ars/finalist.json",
+  "logs/pen_spin/r106_exact_success_ars/train.json",
+  "logs/pen_spin/r106_exact_success_ars/smoke.json",
+  "logs/pen_spin/r106_exact_success_ars/frozen_config.json",
+  "logs/pen_spin/r106_exact_success_ars/confirmation",
+  "logs/pen_spin/r106_exact_success_ars/attempt1_smoke",
+  "config/pen_spin/symbolic_reward_reference/amendment_r106_smoke.json",
+  "config/pen_spin/symbolic_reward_reference/reference.json"
+ ],
+ "notes": "The finalist is the final ARS parameter mean after 12 updates (no checkpoint selection, no fallback), frozen and hashed in finalist.json before any confirmation case; confirmation is the established evaluator (one whole 128-case manifest per fresh process, reference then finalist), twelve manifests on seeds 4780-4791 never used before. Deviation (recorded in amendment_r106_smoke.json before any training, advisor consult call_00235, decision delegated by the user): the first smoke (seed 4778, 8,204 starts) failed on two defects in the implementer's new child: the scorer required 360 recorded steps for a completed episode (a time-out episode has 359), scoring every episode a failure, and a duplicate-slot check demanded bit identity across environments. Both were fixed (scorer = cases.sustained on the episode's own length, with an equivalence test; tolerance 1e-4, measured 6.4e-6), the smoke was rerun once on new seed 4792 and passed every gate, and the ceiling was raised from 115,000 to 125,000 starts including the failed attempt; 120,972 were charged. A/A yardstick (identical zero-theta policy, identical 512 placements, four slots of one batch): slot success 0.465/0.465/0.459/0.459, pairwise case discordance 0.074-0.104, SD of slot differences 0.003: a 512-case training contrast between two candidates in one batch is far less noisy than two fresh processes would suggest. Training-time candidate success rose from about 0.36-0.47 (update 1) to 0.50-0.56 (update 12) on different placements each update; that drift is not the evidence, the fresh confirmation is. The interval shows a positive effect and its lower bound (+0.079) is above +0.05. Scope: one ARS trajectory, one residual family; it does not show ARS beats PPO or draws given the same objective and budget, nor that the exact-success objective (rather than the 38x larger training budget and 512 shared cases per candidate) is the cause; R-103's arms had 460,800 transitions each, this run 17.6 M. The saved incumbent asset is unchanged. The finalist has no reference slot in training, so 'training rejected' was not an available outcome by design."
+}

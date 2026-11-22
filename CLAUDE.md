@@ -636,6 +636,17 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   case-level reward misalignment did not limit R-103. Between policies mean reward and success are not ordered
   together. **Sizing to remember:** two pen-spin policies disagree on 0.16-0.41 of cases; a paired success difference
   on 64 cases has SD 0.05-0.08; +0.05 at 80% power needs about 500-1,270 pairs.
+- **R-106 result (D-075, supported; 2026-11-22).** `success_ars.py` (`--study symbolic_exact_success_ars`; child
+  `success_ars_child.py`): ARS on the **exact sustained-success count** in R-103's 32-coefficient family, 12 updates x 4
+  antithetic directions, every signed candidate on the same 512 placements (four slots of one 2,048-env batch, placements
+  written as the evaluator writes them), final mean frozen with no selection. Confirmed once on twelve fresh 128-case
+  manifests (4780-4791): **+0.109 [+0.079, +0.138]** over 1,536 pairs (806 vs 639), 12 of 12 manifests positive, drops
+  71 vs 83. Both adoption gates pass; the finalist is `config/pen_spin/r106_success_ars_finalist/` (not installed as the
+  incumbent; the user's call). The direction's P2 condition is met. **Bites and numbers:** a time-out episode has 359
+  recorded steps (score with `cases.sustained` on the episode's own length, `success_ars.first_episode_scores`); the same
+  placement in two environments is not bit-identical in observation; at 2,048 envs the T4 runs 33,800 transitions/s (128
+  envs: 3,650), so 17.6 M transitions take 8 minutes; the same policy on the same 512 placements in different slots of
+  one batch differs by at most 0.006 in success (a within-batch contrast is far quieter than two processes).
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

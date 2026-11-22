@@ -1,0 +1,155 @@
+{
+  "id": "R-107",
+  "title": "2. Conditional anchored finger-chain replacement versus simultaneous fitting",
+  "hypothesis": "Freezing earlier finger-chain replacements while optimizing later ones preserves successful coordination and reduces destructive interference relative to simultaneous replacement.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "same-protocol simultaneous anchored replacement",
+    "rationale": "Wait for idea 1: run only if it fails usefulness qualification, its success interval excludes +0.05, and existing escalation/exhaustion rules permit another structure experiment; an inconclusive result does not automatically unlock this spend. A confirmed useful learner instead returns to the prescribed structure-comparison decision. This changes the intervention from whole-residual optimization to the explicitly conditional P4 mechanism, without opening grammar or LLM evolution. Build a fixed replacement graph from exact copies of the qualified reference's five finger-chain output expressions, with 32 adjustable coefficients total covering existing component terms and sparse state-conditioned terms. Unlike the preceding residual-only family, replacement may alter the selected component's existing stroke/feedback coefficients. Freeze coefficient mapping, domains, symbolic complexity and finger-chain order from the actuator map before training. Unselected outputs remain bit-identical to the reference; initialization reproduces it exactly, and no neural controller output is used. Compare five sequential stages, optimizing only the newly activated chain and freezing earlier chains, against all chains trainable throughout. Both arms inherit reference parameters and receive ten ARS updates, four antithetic directions per update and 256 shared cases per signed candidate: 20,480 scored training episodes per arm. Use exact episode success, no checkpoint selection, identical case schedules and matched total simulator budget. Individual training contrasts have SE approximately 0.025-0.040 and are not decisive five-point tests. Freeze both final policies, then evaluate them and the reference on twelve fresh 128-case manifests. The primary incremental-minus-simultaneous contrast has nominal 87%-99.8% case-paired power for +0.05 at discordance 0.16-0.41; report manifest-level uncertainty separately. Apply Holm correction to the two reference comparisons, strict promotion and the drop bound. Incremental superiority without beating the reference does not qualify a useful controller. Reuse existing actor/ARS/contrast machinery, adding only component masking and coefficient replacement interfaces. Conservative cost includes two starts per scored episode and 64 smoke starts; freeze a 94,000-start ceiling. Reserve seeds only through the live ledger and run nothing concurrently."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study symbolic_anchored_chain_replacement",
+    "seeds": [
+      4806,
+      4807,
+      4808,
+      4809,
+      4810,
+      4811,
+      4812,
+      4813,
+      4814,
+      4815,
+      4816,
+      4817,
+      4818,
+      4819
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_anchored_chain_smoke_s4806.yaml",
+      "config/manifests/pen_spin_stage3_anchored_chain_train_s4807.yaml",
+      "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4808.yaml",
+      "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4809.yaml",
+      "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4810.yaml",
+      "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4811.yaml",
+      "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4812.yaml",
+      "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4813.yaml",
+      "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4814.yaml",
+      "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4815.yaml",
+      "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4816.yaml",
+      "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4817.yaml",
+      "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4818.yaml",
+      "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4819.yaml"
+    ],
+    "episodes": 91200,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py",
+      "config/shadowhand_spin_stages.yaml",
+      "symbolic_reward.py",
+      "symbolic_reward_child.py"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "deferred",
+  "source": "advisor",
+  "falsified_by": "An upper confidence bound below +0.05 for incremental minus simultaneous replacement refutes the predicted magnitude; an upper bound at or below zero refutes the directional coordination advantage. An interval containing zero and +0.05 is inconclusive. Failure to beat the qualified reference under the success and drop gates rules out usefulness at this budget even if incremental replacement beats simultaneous replacement.",
+  "cost_estimate": {
+    "episodes": 91200,
+    "llm_calls": 0,
+    "wall_time_minutes": 100
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "596179d8f76bfc88dd7f141d327522a8c3d8a2b0135a77a572910431e3289001",
+  "proposal_call_id": "call_00231",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-22T03:47:14",
+      "from": "proposed",
+      "to": "deferred",
+      "note": "triage round 1: both say defer"
+    }
+  ],
+  "created_at": "2026-11-22T03:45:39",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Anchored replacement is a distinct intervention, but its 91,200 estimated simulator starts, 94,000-start ceiling and zero controller-generation LLM calls should wait for R-106 and the existing escalation/exhaustion gate. Its weakest point is that failed residual optimization does not itself establish destructive cross-chain interference; the preceding evidence must motivate replacement, while a useful learner instead returns to the prescribed structure comparison. The predicted paired_success_difference increase of at least 0.05 against same-protocol simultaneous anchored replacement is falsified in magnitude by an interval upper bound below 0.05; superiority without passing the reference success/drop gates is not useful qualification.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00232",
+          "briefing_sha256": "9f98c1861e0bd9170050b69a0aba997b3e1d5360f0a3f3e4c0d241ecfc58e0ed",
+          "at": "2026-11-22T03:46:59"
+        },
+        "implementer": {
+          "position": "defer",
+          "reasoning": "Agree: conditional on R-106, and a failed residual search would not by itself show cross-chain interference; it also needs a component-replacement interface that does not exist yet.",
+          "changes_applied": [],
+          "at": "2026-11-22T03:47:14"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "defer",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-22T03:54:52",
+      "round": 1,
+      "patch": {
+        "protocol": {
+          "seeds": [
+            4806,
+            4807,
+            4808,
+            4809,
+            4810,
+            4811,
+            4812,
+            4813,
+            4814,
+            4815,
+            4816,
+            4817,
+            4818,
+            4819
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_anchored_chain_smoke_s4806.yaml",
+            "config/manifests/pen_spin_stage3_anchored_chain_train_s4807.yaml",
+            "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4808.yaml",
+            "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4809.yaml",
+            "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4810.yaml",
+            "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4811.yaml",
+            "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4812.yaml",
+            "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4813.yaml",
+            "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4814.yaml",
+            "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4815.yaml",
+            "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4816.yaml",
+            "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4817.yaml",
+            "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4818.yaml",
+            "config/manifests/pen_spin_stage3_anchored_chain_confirm_s4819.yaml"
+          ]
+        }
+      },
+      "note": "Bookkeeping only while deferred: R-106's amended smoke rerun uses seed 4792 (advisor consult call_00235); this idea's fourteen seeds move to 4806-4819. Nothing else changes."
+    }
+  ]
+}

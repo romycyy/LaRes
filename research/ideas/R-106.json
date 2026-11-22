@@ -1,0 +1,1251 @@
+{
+  "id": "R-106",
+  "title": "1. Optimize exact episode success with paired parameter-space ARS",
+  "hypothesis": "Training ARS on paired differences in exact sustained-success indicators removes incentives to improve reward within unsuccessful episodes and produces a useful residual.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "config/pen_spin/symbolic_reward_reference/reference.json",
+    "rationale": "Use the unchanged D-072-qualified reference and existing 32-coefficient family. Unlike deferred R-105, optimize the binary episode-success indicator, not a sustained-tail surrogate; D-074 did not test this policy-level objective. Initialize at zero residual. Run eight ARS updates with four antithetic directions per update, scoring each signed candidate on the same 512 cases; refresh the training batch between updates. Freeze perturbation scale 0.01, update scale 0.002, and the existing 0.10 coefficient/action bounds at triage. Shared cases give individual training contrasts SE approximately 0.018-0.028 at discordance 0.16-0.41: informative but not individually decisive for +0.05. Evaluate only the final parameter mean, frozen and hashed before confirmation; no checkpoint selection or reference fallback. Confirm once on twelve fresh 128-case manifests, totaling 1,536 pairs. At the observed discordance range, nominal case-paired power for +0.05 is approximately 87%-99.8% with a two-sided 95% interval; manifest-level uncertainty must also be reported and may be wider. This is an existential learner-versus-reference test, not evidence that ARS beats draws or PPO. Omitting those arms preserves endpoint precision. Apply the shared evaluation/result contract, strict paired promotion rule and one-sided 95% drop-difference upper bound <=0.05. A positive interval establishes improvement, not necessarily improvement exceeding five points. Keep the saved incumbent unchanged and P2 closed pending an agreed usefulness decision. Add the study handler and registry entry before execution. Estimated charged episodes conservatively allow two starts per scored training or confirmation episode plus 64 smoke starts; freeze a 74,000-start ceiling. Run this protocol first and alone.\n\nFROZEN REVISION (triage round 2, agreed; supersedes the numbers above where they differ). Learner: ARS on the 32-coefficient family from theta = 0; perturbation scale nu 0.02, update scale alpha 0.01, 12 updates, 4 antithetic directions per update, all four used (top b = 4), step alpha / (b sigma_R) sum((r+ - r-) delta), projection to [-0.10, 0.10]; direction RNG numpy default_rng(4779 + 2000). A signed candidate's return is its count of sustained successes (unchanged rule: time-out without a fall and the predicate on all final 60 steps) divided by 512. Layout: one persistent training process; each update is two 2,048-environment rollouts, each holding two antithetic pairs (4 signed candidates x the SAME 512 placements, slot k = environments 512k..512k+511), placements written into the simulator as the evaluator does and each environment scored on its first episode only. Update u uses cases.placements(4779, 6144)[512u:512(u+1)]; the smoke uses cases.placements(4778, 512). Placement hashes and provenance are saved before execution and checked disjoint from every committed pen-spin manifest (the locked split is never read). Smoke (seed 4778, two 2,048-environment rollouts, stops the study on failure): rollout A = the same 512 placements in four slots, all zero theta: zero-theta identity against an independently built reference (0 mismatches), and the A/A yardstick (all pairwise slot discordances and the SD of slot success differences, reported and never used to retune); rollout B = slots at theta 0, +probe, -probe, +probe with the probe at magnitude 0.05 and signs from default_rng(4778): executed authority (pooled executed/proposed >= 0.50), a per-environment-theta check (the two +probe slots propose identical residual statistics), checkpoint reconstruction through the evaluation controller factory, and throughput (stop if it projects more than 4 h). Only the final parameter mean is evaluated: frozen and hashed in finalist.json before any confirmation case, no checkpoint selection, no fallback to the reference. Confirmation: twelve 128-case manifests (seeds 4780-4791), the reference and the finalist each once per manifest in its own fresh process, 1,536 pairs; case-paired t interval (primary), manifest-clustered t interval over twelve differences, wins/losses/ties, drop difference with its one-sided 95% upper bound against 0.05, tail-hit fraction, proposed and executed residual by joint. Budget: actual simulator starts are counted (initial placement, every auto-reset); estimate 112,640 = 24 training rollouts x 2,048 x 2 + smoke 8,192 + confirmation 3,072 cases charged at 2; hard ceiling 115,000 enforced before every rollout; a failed child is never relaunched from its seed; no enlargement and no shortened confirmation after outcomes. One ARS trajectory: this tests this learner configuration against the reference, not ARS against other learners and not the exhaustion of the family."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "python scripts/run_shadowhand_spin_stages.py --study symbolic_exact_success_ars",
+    "seeds": [
+      4778,
+      4779,
+      4780,
+      4781,
+      4782,
+      4783,
+      4784,
+      4785,
+      4786,
+      4787,
+      4788,
+      4789,
+      4790,
+      4791
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4780.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4781.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4782.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4783.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4784.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4785.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4786.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4787.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4788.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4789.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4790.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4791.yaml"
+    ],
+    "episodes": 112640,
+    "llm_calls": 0,
+    "code_changes": [
+      "lares/envs/isaac_pen_spin/success_ars.py (new): the exact-success ARS driver (placement slices, slot layout, A/A statistics, finalist freezing, confirmation contrast), reusing symbolic_reward's actor, ARS and reference; the frozen R-103 handler is not modified.",
+      "lares/envs/isaac_pen_spin/success_ars_child.py (new): the Isaac child for the smoke and the training process.",
+      "scripts/run_shadowhand_spin_stages.py: one registry entry, symbolic_exact_success_ars.",
+      "config/shadowhand_spin_stages.yaml: the symbolic_exact_success_ars block.",
+      "tests/test_success_ars.py (new).",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4780.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4781.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4782.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4783.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4784.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4785.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4786.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4787.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4788.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4789.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4790.yaml",
+      "config/manifests/pen_spin_stage3_exact_success_confirm_s4791.yaml"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "decided",
+  "source": "advisor",
+  "falsified_by": "The confirmation interval's upper bound below +0.05 refutes the predicted magnitude; an upper bound at or below zero also refutes a beneficial effect. An interval containing both zero and +0.05 is inconclusive. Failure of the drop bound prevents usefulness qualification regardless of success improvement.",
+  "cost_estimate": {
+    "episodes": 112640,
+    "llm_calls": 0,
+    "wall_time_minutes": 120
+  },
+  "open_question_refs": [],
+  "briefing_sha256": "596179d8f76bfc88dd7f141d327522a8c3d8a2b0135a77a572910431e3289001",
+  "proposal_call_id": "call_00231",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-22T03:50:47",
+    "advisor_call_id": "call_00234",
+    "round": 3,
+    "note": "This tests whether optimizing exact sustained success can produce a useful residual, addressing policy-level reward mismatch left unresolved by D-074; one trajectory cannot establish objective-change causality, ARS superiority or family exhaustion. I accept the implementer's larger steps as reducing"
+  },
+  "run": {
+    "started_at": "2026-11-22T03:51:28",
+    "git_sha": "a0899e8e6b8aab50ccc0022bb53bea0edaad6eb8",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r106_exact_success_ars",
+    "finished_at": "2026-11-22T04:13:36"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.10872395833333333,
+      "paired_success_difference_ci95": [
+        0.07945848077826864,
+        0.13798943588839802
+      ],
+      "pairs": 1536,
+      "successes_finalist_reference": [
+        806,
+        639
+      ],
+      "win_loss_tie": {
+        "wins": 355,
+        "losses": 188,
+        "ties": 993
+      },
+      "manifest_clustered_ci95": [
+        0.08372871251167538,
+        0.13371920415499128
+      ],
+      "manifests_positive": 12,
+      "manifests": 12,
+      "drops_finalist_reference": [
+        71,
+        83
+      ],
+      "drop_difference_one_sided_95_upper": -0.0013896960648434537,
+      "tail_hit_fraction_difference": 0.11625635526944834,
+      "tail_hit_ci95": [
+        0.08757470828078338,
+        0.14493800225811332
+      ],
+      "promotes": true,
+      "adopts": true,
+      "prediction_supported": true,
+      "intervals_agree_on_sign": true
+    },
+    "controls": {
+      "per_manifest": {
+        "s4780": {
+          "n": 128,
+          "selected": 73,
+          "parent": 56,
+          "difference": 0.1328125,
+          "drops": [
+            3,
+            6
+          ]
+        },
+        "s4781": {
+          "n": 128,
+          "selected": 70,
+          "parent": 50,
+          "difference": 0.15625,
+          "drops": [
+            5,
+            5
+          ]
+        },
+        "s4782": {
+          "n": 128,
+          "selected": 59,
+          "parent": 41,
+          "difference": 0.140625,
+          "drops": [
+            8,
+            9
+          ]
+        },
+        "s4783": {
+          "n": 128,
+          "selected": 60,
+          "parent": 56,
+          "difference": 0.03125,
+          "drops": [
+            4,
+            5
+          ]
+        },
+        "s4784": {
+          "n": 128,
+          "selected": 70,
+          "parent": 62,
+          "difference": 0.0625,
+          "drops": [
+            5,
+            4
+          ]
+        },
+        "s4785": {
+          "n": 128,
+          "selected": 61,
+          "parent": 46,
+          "difference": 0.1171875,
+          "drops": [
+            9,
+            10
+          ]
+        },
+        "s4786": {
+          "n": 128,
+          "selected": 67,
+          "parent": 51,
+          "difference": 0.125,
+          "drops": [
+            7,
+            9
+          ]
+        },
+        "s4787": {
+          "n": 128,
+          "selected": 71,
+          "parent": 57,
+          "difference": 0.109375,
+          "drops": [
+            6,
+            8
+          ]
+        },
+        "s4788": {
+          "n": 128,
+          "selected": 68,
+          "parent": 53,
+          "difference": 0.1171875,
+          "drops": [
+            6,
+            6
+          ]
+        },
+        "s4789": {
+          "n": 128,
+          "selected": 69,
+          "parent": 57,
+          "difference": 0.09375,
+          "drops": [
+            5,
+            6
+          ]
+        },
+        "s4790": {
+          "n": 128,
+          "selected": 70,
+          "parent": 50,
+          "difference": 0.15625,
+          "drops": [
+            9,
+            9
+          ]
+        },
+        "s4791": {
+          "n": 128,
+          "selected": 68,
+          "parent": 60,
+          "difference": 0.0625,
+          "drops": [
+            4,
+            6
+          ]
+        }
+      },
+      "smoke_gates_seed_4792": {
+        "joint_order": true,
+        "zero_theta_identity": true,
+        "scorer_live": true,
+        "executed_authority": true,
+        "per_environment_theta": true,
+        "reconstruction": true
+      },
+      "aa_noise_floor": {
+        "slot_success": [
+          0.46484375,
+          0.46484375,
+          0.458984375,
+          0.458984375
+        ],
+        "pairwise_discordance": [
+          0.07421875,
+          0.080078125,
+          0.083984375,
+          0.083984375,
+          0.103515625,
+          0.08203125
+        ],
+        "mean_discordance": 0.08463541666666667,
+        "sd_of_slot_differences": 0.0030257682392245445,
+        "max_abs_slot_difference": 0.005859375,
+        "slot_drops": [
+          21,
+          20,
+          21,
+          21
+        ]
+      },
+      "probe_slot_success_zero_plus_minus_plus": [
+        0.451171875,
+        0.392578125,
+        0.431640625,
+        0.390625
+      ],
+      "executed_over_proposed_smoke": 0.9624481366849842,
+      "training_updates": [
+        {
+          "update": 1,
+          "plus": [
+            0.39453125,
+            0.36328125,
+            0.396484375,
+            0.3828125
+          ],
+          "minus": [
+            0.388671875,
+            0.46484375,
+            0.38671875,
+            0.4453125
+          ],
+          "mean_candidate_success": 0.40283203125,
+          "sigma_r": 0.0319852172561764,
+          "theta_l2": 0.06214185996588217,
+          "theta_abs_max": 0.028484204964233942,
+          "starts_so_far": 8209
+        },
+        {
+          "update": 2,
+          "plus": [
+            0.4375,
+            0.4453125,
+            0.423828125,
+            0.447265625
+          ],
+          "minus": [
+            0.439453125,
+            0.44140625,
+            0.478515625,
+            0.458984375
+          ],
+          "mean_candidate_success": 0.446533203125,
+          "sigma_r": 0.015221144971451503,
+          "theta_l2": 0.08017853044008687,
+          "theta_abs_max": 0.02829288361160616,
+          "starts_so_far": 16414
+        },
+        {
+          "update": 3,
+          "plus": [
+            0.43359375,
+            0.4609375,
+            0.42578125,
+            0.40234375
+          ],
+          "minus": [
+            0.466796875,
+            0.416015625,
+            0.46484375,
+            0.447265625
+          ],
+          "mean_candidate_success": 0.439697265625,
+          "sigma_r": 0.022533796148042892,
+          "theta_l2": 0.10356914831937752,
+          "theta_abs_max": 0.033611048700026624,
+          "starts_so_far": 24618
+        },
+        {
+          "update": 4,
+          "plus": [
+            0.40234375,
+            0.423828125,
+            0.4296875,
+            0.501953125
+          ],
+          "minus": [
+            0.50390625,
+            0.4609375,
+            0.466796875,
+            0.41015625
+          ],
+          "mean_candidate_success": 0.449951171875,
+          "sigma_r": 0.0370185141251105,
+          "theta_l2": 0.14213143310282236,
+          "theta_abs_max": 0.04844264497962805,
+          "starts_so_far": 32824
+        },
+        {
+          "update": 5,
+          "plus": [
+            0.50390625,
+            0.451171875,
+            0.48828125,
+            0.509765625
+          ],
+          "minus": [
+            0.521484375,
+            0.5,
+            0.470703125,
+            0.490234375
+          ],
+          "mean_candidate_success": 0.491943359375,
+          "sigma_r": 0.021000351584988173,
+          "theta_l2": 0.14883677668629675,
+          "theta_abs_max": 0.04779589171327358,
+          "starts_so_far": 41025
+        },
+        {
+          "update": 6,
+          "plus": [
+            0.474609375,
+            0.515625,
+            0.48046875,
+            0.515625
+          ],
+          "minus": [
+            0.47265625,
+            0.44921875,
+            0.5,
+            0.490234375
+          ],
+          "mean_candidate_success": 0.4873046875,
+          "sigma_r": 0.02135079209870649,
+          "theta_l2": 0.16039691254143296,
+          "theta_abs_max": 0.062429258217453334,
+          "starts_so_far": 49223
+        },
+        {
+          "update": 7,
+          "plus": [
+            0.482421875,
+            0.556640625,
+            0.515625,
+            0.478515625
+          ],
+          "minus": [
+            0.515625,
+            0.44140625,
+            0.51171875,
+            0.5
+          ],
+          "mean_candidate_success": 0.500244140625,
+          "sigma_r": 0.03169599797591502,
+          "theta_l2": 0.18813361830209452,
+          "theta_abs_max": 0.07119144582759757,
+          "starts_so_far": 57423
+        },
+        {
+          "update": 8,
+          "plus": [
+            0.55859375,
+            0.51171875,
+            0.498046875,
+            0.501953125
+          ],
+          "minus": [
+            0.494140625,
+            0.48828125,
+            0.525390625,
+            0.53125
+          ],
+          "mean_candidate_success": 0.513671875,
+          "sigma_r": 0.022010600917157508,
+          "theta_l2": 0.19980058045966625,
+          "theta_abs_max": 0.08568139446409627,
+          "starts_so_far": 65625
+        },
+        {
+          "update": 9,
+          "plus": [
+            0.490234375,
+            0.546875,
+            0.51953125,
+            0.53515625
+          ],
+          "minus": [
+            0.572265625,
+            0.544921875,
+            0.505859375,
+            0.546875
+          ],
+          "mean_candidate_success": 0.53271484375,
+          "sigma_r": 0.024545544389759387,
+          "theta_l2": 0.20778307754714218,
+          "theta_abs_max": 0.0815671626996029,
+          "starts_so_far": 73822
+        },
+        {
+          "update": 10,
+          "plus": [
+            0.517578125,
+            0.501953125,
+            0.513671875,
+            0.515625
+          ],
+          "minus": [
+            0.509765625,
+            0.52734375,
+            0.52734375,
+            0.5078125
+          ],
+          "mean_candidate_success": 0.51513671875,
+          "sigma_r": 0.008386505877596517,
+          "theta_l2": 0.22283128585870102,
+          "theta_abs_max": 0.08323132851225212,
+          "starts_so_far": 82019
+        },
+        {
+          "update": 11,
+          "plus": [
+            0.509765625,
+            0.513671875,
+            0.482421875,
+            0.498046875
+          ],
+          "minus": [
+            0.51953125,
+            0.541015625,
+            0.544921875,
+            0.521484375
+          ],
+          "mean_candidate_success": 0.516357421875,
+          "sigma_r": 0.019358057797797815,
+          "theta_l2": 0.23209277140668774,
+          "theta_abs_max": 0.09268818194731136,
+          "starts_so_far": 90214
+        },
+        {
+          "update": 12,
+          "plus": [
+            0.53515625,
+            0.55078125,
+            0.564453125,
+            0.5234375
+          ],
+          "minus": [
+            0.5390625,
+            0.52734375,
+            0.501953125,
+            0.55859375
+          ],
+          "mean_candidate_success": 0.53759765625,
+          "sigma_r": 0.01910546635401743,
+          "theta_l2": 0.24587907755354188,
+          "theta_abs_max": 0.08558132534058609,
+          "starts_so_far": 98413
+        }
+      ],
+      "finalist": {
+        "theta_sha256": "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef",
+        "theta_abs_max": 0.08558132499456406,
+        "theta_l2": 0.24587907918026775,
+        "theta": {
+          "a_WRJ1": -0.01858418807387352,
+          "a_WRJ0": 0.01715891994535923,
+          "a_FFJ3": -0.06355895847082138,
+          "a_MFJ3": 0.03493227809667587,
+          "a_RFJ3": -0.012171543203294277,
+          "a_LFJ4": -0.039162348955869675,
+          "a_THJ4": 0.07739319652318954,
+          "a_FFJ2": 0.06330852955579758,
+          "a_MFJ2": 0.07624620944261551,
+          "a_RFJ2": 0.05116640776395798,
+          "a_LFJ3": -0.01680872030556202,
+          "a_THJ3": -0.08558132499456406,
+          "a_FFJ1": 0.0497421957552433,
+          "a_MFJ1": 0.0052507477812469006,
+          "a_RFJ1": 0.0224281195551157,
+          "a_LFJ2": -0.017856433987617493,
+          "a_THJ2": -0.020122762769460678,
+          "a_LFJ1": -0.05285736173391342,
+          "a_THJ1": -0.08142826706171036,
+          "a_THJ0": 0.04616057500243187,
+          "b_WR": 0.03403157740831375,
+          "b_FF": -0.0037891401443630457,
+          "b_MF": -0.02213726006448269,
+          "b_RF": 0.008957518264651299,
+          "b_LF": -0.026828134432435036,
+          "b_TH": 0.031987618654966354,
+          "c_WR": 0.010851177386939526,
+          "c_FF": 0.02668248675763607,
+          "c_MF": 0.006424954626709223,
+          "c_RF": -0.026641936972737312,
+          "c_LF": -0.07671978324651718,
+          "c_TH": 0.024548832327127457
+        }
+      },
+      "finalist_residual_activity_first_manifest": {
+        "mean_abs_proposed": 0.0232960544526577,
+        "mean_abs_executed": 0.02112410217523575
+      },
+      "cells": {
+        "s4780/reference": {
+          "n": 128,
+          "successes": 56,
+          "success": 0.4375,
+          "completed": 0.953125,
+          "tail_hit_fraction": 0.45903139353025024,
+          "hit_fraction": 0.4656260514188785,
+          "mean_length": 344.5859375,
+          "mean_abs_spin": 5.024750405456871,
+          "mean_transverse": 1.5629051339346915,
+          "drops": 6,
+          "tail_spin_failures": 66,
+          "median_fall_step": 41.0,
+          "tail_failures": 66,
+          "off_centre": 7,
+          "slow_spin": 59,
+          "unsigned_roll_rad": 25.910686492919922
+        },
+        "s4780/finalist": {
+          "n": 128,
+          "successes": 73,
+          "success": 0.5703125,
+          "completed": 0.9765625,
+          "tail_hit_fraction": 0.5850881865530303,
+          "hit_fraction": 0.5760131372261965,
+          "mean_length": 351.4140625,
+          "mean_abs_spin": 5.877230458892882,
+          "mean_transverse": 1.4167671430623159,
+          "drops": 3,
+          "tail_spin_failures": 52,
+          "median_fall_step": 32.0,
+          "tail_failures": 52,
+          "off_centre": 1,
+          "slow_spin": 51,
+          "unsigned_roll_rad": 32.5789794921875
+        },
+        "s4781/reference": {
+          "n": 128,
+          "successes": 50,
+          "success": 0.390625,
+          "completed": 0.9609375,
+          "tail_hit_fraction": 0.4257187255175934,
+          "hit_fraction": 0.433336094366247,
+          "mean_length": 346.296875,
+          "mean_abs_spin": 5.031717607751489,
+          "mean_transverse": 1.6069213876035064,
+          "drops": 5,
+          "tail_spin_failures": 73,
+          "median_fall_step": 31.0,
+          "tail_failures": 73,
+          "off_centre": 6,
+          "slow_spin": 67,
+          "unsigned_roll_rad": 26.714263916015625
+        },
+        "s4781/finalist": {
+          "n": 128,
+          "successes": 70,
+          "success": 0.546875,
+          "completed": 0.9609375,
+          "tail_hit_fraction": 0.5919124980107324,
+          "hit_fraction": 0.5911958081314381,
+          "mean_length": 346.21875,
+          "mean_abs_spin": 6.460659773088992,
+          "mean_transverse": 1.5064759704982862,
+          "drops": 5,
+          "tail_spin_failures": 53,
+          "median_fall_step": 32.0,
+          "tail_failures": 53,
+          "off_centre": 1,
+          "slow_spin": 52,
+          "unsigned_roll_rad": 35.09943389892578
+        },
+        "s4782/reference": {
+          "n": 128,
+          "successes": 41,
+          "success": 0.3203125,
+          "completed": 0.9296875,
+          "tail_hit_fraction": 0.3503367292429792,
+          "hit_fraction": 0.35543652168075035,
+          "mean_length": 336.3671875,
+          "mean_abs_spin": 4.6521505957935005,
+          "mean_transverse": 1.7976452313596383,
+          "drops": 9,
+          "tail_spin_failures": 78,
+          "median_fall_step": 34.0,
+          "tail_failures": 78,
+          "off_centre": 4,
+          "slow_spin": 74,
+          "unsigned_roll_rad": 22.203990936279297
+        },
+        "s4782/finalist": {
+          "n": 128,
+          "successes": 59,
+          "success": 0.4609375,
+          "completed": 0.9375,
+          "tail_hit_fraction": 0.4924439914647079,
+          "hit_fraction": 0.4849397841759428,
+          "mean_length": 338.5859375,
+          "mean_abs_spin": 5.834447373636067,
+          "mean_transverse": 1.6765997564652935,
+          "drops": 8,
+          "tail_spin_failures": 61,
+          "median_fall_step": 32.5,
+          "tail_failures": 61,
+          "off_centre": 4,
+          "slow_spin": 57,
+          "unsigned_roll_rad": 28.78220558166504
+        },
+        "s4783/reference": {
+          "n": 128,
+          "successes": 56,
+          "success": 0.4375,
+          "completed": 0.9609375,
+          "tail_hit_fraction": 0.45759092377489263,
+          "hit_fraction": 0.4604011025121257,
+          "mean_length": 346.4296875,
+          "mean_abs_spin": 4.946688004769385,
+          "mean_transverse": 1.6230848622508347,
+          "drops": 5,
+          "tail_spin_failures": 67,
+          "median_fall_step": 35.0,
+          "tail_failures": 67,
+          "off_centre": 4,
+          "slow_spin": 63,
+          "unsigned_roll_rad": 26.32114028930664
+        },
+        "s4783/finalist": {
+          "n": 128,
+          "successes": 60,
+          "success": 0.46875,
+          "completed": 0.96875,
+          "tail_hit_fraction": 0.5021729451507795,
+          "hit_fraction": 0.4941908350090305,
+          "mean_length": 349.53125,
+          "mean_abs_spin": 5.42670577368699,
+          "mean_transverse": 1.5286598656093702,
+          "drops": 4,
+          "tail_spin_failures": 64,
+          "median_fall_step": 41.0,
+          "tail_failures": 64,
+          "off_centre": 2,
+          "slow_spin": 62,
+          "unsigned_roll_rad": 29.82778549194336
+        },
+        "s4784/reference": {
+          "n": 128,
+          "successes": 62,
+          "success": 0.484375,
+          "completed": 0.96875,
+          "tail_hit_fraction": 0.5056687023318329,
+          "hit_fraction": 0.4972581144720372,
+          "mean_length": 348.796875,
+          "mean_abs_spin": 5.152077830862254,
+          "mean_transverse": 1.536179132410325,
+          "drops": 4,
+          "tail_spin_failures": 62,
+          "median_fall_step": 29.5,
+          "tail_failures": 62,
+          "off_centre": 4,
+          "slow_spin": 58,
+          "unsigned_roll_rad": 28.015371322631836
+        },
+        "s4784/finalist": {
+          "n": 128,
+          "successes": 70,
+          "success": 0.546875,
+          "completed": 0.9609375,
+          "tail_hit_fraction": 0.6001731122286079,
+          "hit_fraction": 0.5822725493223869,
+          "mean_length": 346.171875,
+          "mean_abs_spin": 6.395021757110953,
+          "mean_transverse": 1.5714697450166568,
+          "drops": 5,
+          "tail_spin_failures": 53,
+          "median_fall_step": 29.0,
+          "tail_failures": 53,
+          "off_centre": 1,
+          "slow_spin": 52,
+          "unsigned_roll_rad": 34.61183166503906
+        },
+        "s4785/reference": {
+          "n": 128,
+          "successes": 46,
+          "success": 0.359375,
+          "completed": 0.921875,
+          "tail_hit_fraction": 0.39080914727162613,
+          "hit_fraction": 0.39838117895686287,
+          "mean_length": 333.4375,
+          "mean_abs_spin": 5.063800652511418,
+          "mean_transverse": 1.817397748120129,
+          "drops": 10,
+          "tail_spin_failures": 72,
+          "median_fall_step": 30.0,
+          "tail_failures": 72,
+          "off_centre": 8,
+          "slow_spin": 64,
+          "unsigned_roll_rad": 22.896072387695312
+        },
+        "s4785/finalist": {
+          "n": 128,
+          "successes": 61,
+          "success": 0.4765625,
+          "completed": 0.9296875,
+          "tail_hit_fraction": 0.5075021471310889,
+          "hit_fraction": 0.5092379579444293,
+          "mean_length": 336.296875,
+          "mean_abs_spin": 5.850880654295906,
+          "mean_transverse": 1.6593911555828527,
+          "drops": 9,
+          "tail_spin_failures": 58,
+          "median_fall_step": 29.0,
+          "tail_failures": 58,
+          "off_centre": 1,
+          "slow_spin": 57,
+          "unsigned_roll_rad": 28.767601013183594
+        },
+        "s4786/reference": {
+          "n": 128,
+          "successes": 51,
+          "success": 0.3984375,
+          "completed": 0.9296875,
+          "tail_hit_fraction": 0.43927094901221675,
+          "hit_fraction": 0.44380901772159465,
+          "mean_length": 336.109375,
+          "mean_abs_spin": 5.256824292708188,
+          "mean_transverse": 1.8042919582221657,
+          "drops": 9,
+          "tail_spin_failures": 68,
+          "median_fall_step": 33.0,
+          "tail_failures": 68,
+          "off_centre": 4,
+          "slow_spin": 64,
+          "unsigned_roll_rad": 25.151329040527344
+        },
+        "s4786/finalist": {
+          "n": 128,
+          "successes": 67,
+          "success": 0.5234375,
+          "completed": 0.9453125,
+          "tail_hit_fraction": 0.5736708688552791,
+          "hit_fraction": 0.5607407098487796,
+          "mean_length": 341.484375,
+          "mean_abs_spin": 5.819813820067793,
+          "mean_transverse": 1.553819318243768,
+          "drops": 7,
+          "tail_spin_failures": 54,
+          "median_fall_step": 40.0,
+          "tail_failures": 54,
+          "off_centre": 1,
+          "slow_spin": 53,
+          "unsigned_roll_rad": 30.167524337768555
+        },
+        "s4787/reference": {
+          "n": 128,
+          "successes": 57,
+          "success": 0.4453125,
+          "completed": 0.9375,
+          "tail_hit_fraction": 0.4744475507659101,
+          "hit_fraction": 0.4676353699395406,
+          "mean_length": 338.5546875,
+          "mean_abs_spin": 5.436173809692264,
+          "mean_transverse": 1.714962900383398,
+          "drops": 8,
+          "tail_spin_failures": 63,
+          "median_fall_step": 31.0,
+          "tail_failures": 63,
+          "off_centre": 2,
+          "slow_spin": 61,
+          "unsigned_roll_rad": 27.059755325317383
+        },
+        "s4787/finalist": {
+          "n": 128,
+          "successes": 71,
+          "success": 0.5546875,
+          "completed": 0.953125,
+          "tail_hit_fraction": 0.5883117019489248,
+          "hit_fraction": 0.577372388462388,
+          "mean_length": 343.6953125,
+          "mean_abs_spin": 6.252712253015488,
+          "mean_transverse": 1.582281190319918,
+          "drops": 6,
+          "tail_spin_failures": 51,
+          "median_fall_step": 32.0,
+          "tail_failures": 51,
+          "off_centre": 0,
+          "slow_spin": 51,
+          "unsigned_roll_rad": 32.92876434326172
+        },
+        "s4788/reference": {
+          "n": 128,
+          "successes": 53,
+          "success": 0.4140625,
+          "completed": 0.953125,
+          "tail_hit_fraction": 0.45142701325398193,
+          "hit_fraction": 0.4484859007888009,
+          "mean_length": 343.625,
+          "mean_abs_spin": 4.960181233938783,
+          "mean_transverse": 1.686177262570709,
+          "drops": 6,
+          "tail_spin_failures": 69,
+          "median_fall_step": 30.5,
+          "tail_failures": 69,
+          "off_centre": 4,
+          "slow_spin": 65,
+          "unsigned_roll_rad": 25.254669189453125
+        },
+        "s4788/finalist": {
+          "n": 128,
+          "successes": 68,
+          "success": 0.53125,
+          "completed": 0.953125,
+          "tail_hit_fraction": 0.5492714588565912,
+          "hit_fraction": 0.5519586832066378,
+          "mean_length": 343.8203125,
+          "mean_abs_spin": 6.203776333015412,
+          "mean_transverse": 1.593970250338316,
+          "drops": 6,
+          "tail_spin_failures": 54,
+          "median_fall_step": 33.5,
+          "tail_failures": 54,
+          "off_centre": 0,
+          "slow_spin": 54,
+          "unsigned_roll_rad": 32.41070556640625
+        },
+        "s4789/reference": {
+          "n": 128,
+          "successes": 57,
+          "success": 0.4453125,
+          "completed": 0.953125,
+          "tail_hit_fraction": 0.4960423668071694,
+          "hit_fraction": 0.4858008186644735,
+          "mean_length": 344.1015625,
+          "mean_abs_spin": 5.320324145024642,
+          "mean_transverse": 1.754410102032125,
+          "drops": 6,
+          "tail_spin_failures": 65,
+          "median_fall_step": 34.5,
+          "tail_failures": 65,
+          "off_centre": 3,
+          "slow_spin": 62,
+          "unsigned_roll_rad": 27.85293197631836
+        },
+        "s4789/finalist": {
+          "n": 128,
+          "successes": 69,
+          "success": 0.5390625,
+          "completed": 0.9609375,
+          "tail_hit_fraction": 0.5805192873933199,
+          "hit_fraction": 0.5778788509959196,
+          "mean_length": 346.25,
+          "mean_abs_spin": 5.943169927224517,
+          "mean_transverse": 1.644563778070733,
+          "drops": 5,
+          "tail_spin_failures": 54,
+          "median_fall_step": 34.0,
+          "tail_failures": 54,
+          "off_centre": 4,
+          "slow_spin": 50,
+          "unsigned_roll_rad": 32.3705940246582
+        },
+        "s4790/reference": {
+          "n": 128,
+          "successes": 50,
+          "success": 0.390625,
+          "completed": 0.9296875,
+          "tail_hit_fraction": 0.4194204676903924,
+          "hit_fraction": 0.4233336089392317,
+          "mean_length": 336.171875,
+          "mean_abs_spin": 5.395194560755044,
+          "mean_transverse": 1.679643462295644,
+          "drops": 9,
+          "tail_spin_failures": 69,
+          "median_fall_step": 33.0,
+          "tail_failures": 69,
+          "off_centre": 2,
+          "slow_spin": 67,
+          "unsigned_roll_rad": 25.70068359375
+        },
+        "s4790/finalist": {
+          "n": 128,
+          "successes": 70,
+          "success": 0.546875,
+          "completed": 0.9296875,
+          "tail_hit_fraction": 0.6144373479334416,
+          "hit_fraction": 0.6038320786669608,
+          "mean_length": 336.1796875,
+          "mean_abs_spin": 6.817370715783909,
+          "mean_transverse": 1.5664231120608747,
+          "drops": 9,
+          "tail_spin_failures": 49,
+          "median_fall_step": 36.0,
+          "tail_failures": 49,
+          "off_centre": 1,
+          "slow_spin": 48,
+          "unsigned_roll_rad": 34.25417709350586
+        },
+        "s4791/reference": {
+          "n": 128,
+          "successes": 60,
+          "success": 0.46875,
+          "completed": 0.953125,
+          "tail_hit_fraction": 0.5041702001201527,
+          "hit_fraction": 0.5080365534163458,
+          "mean_length": 343.8046875,
+          "mean_abs_spin": 5.5431001405231655,
+          "mean_transverse": 1.7032716340618208,
+          "drops": 6,
+          "tail_spin_failures": 62,
+          "median_fall_step": 34.5,
+          "tail_failures": 62,
+          "off_centre": 1,
+          "slow_spin": 61,
+          "unsigned_roll_rad": 28.716182708740234
+        },
+        "s4791/finalist": {
+          "n": 128,
+          "successes": 68,
+          "success": 0.53125,
+          "completed": 0.96875,
+          "tail_hit_fraction": 0.5835068870258746,
+          "hit_fraction": 0.5771397357956054,
+          "mean_length": 348.953125,
+          "mean_abs_spin": 6.16610535280779,
+          "mean_transverse": 1.4145743923727423,
+          "drops": 4,
+          "tail_spin_failures": 56,
+          "median_fall_step": 37.5,
+          "tail_failures": 56,
+          "off_centre": 1,
+          "slow_spin": 55,
+          "unsigned_roll_rad": 33.602664947509766
+        }
+      },
+      "accounting": {
+        "prior_attempt_starts": 8204,
+        "smoke_starts": 8211,
+        "training_starts": 98413,
+        "confirmation_cases": 3072,
+        "confirmation_charged_starts": 6144,
+        "charged_total": 120972,
+        "ceiling": 125000,
+        "training_transitions": 17645568,
+        "training_scored_episodes": 49152,
+        "llm_calls": 0
+      },
+      "throughput_transitions_per_s": 33727.07093974855,
+      "training_wall_time_s": 471.74406933784485,
+      "symbolic_complexity": {
+        "coefficients": 32,
+        "trainable_state": 0
+      },
+      "config_sha256": "c627004b3d73f6b9c7ea6db3598a6ab4c7dedec553bac249bd4d9be6a336a59c"
+    },
+    "artifacts": [
+      "logs/pen_spin/r106_exact_success_ars/summary.json",
+      "logs/pen_spin/r106_exact_success_ars/finalist.json",
+      "logs/pen_spin/r106_exact_success_ars/train.json",
+      "logs/pen_spin/r106_exact_success_ars/smoke.json",
+      "logs/pen_spin/r106_exact_success_ars/frozen_config.json",
+      "logs/pen_spin/r106_exact_success_ars/confirmation",
+      "logs/pen_spin/r106_exact_success_ars/attempt1_smoke",
+      "config/pen_spin/symbolic_reward_reference/amendment_r106_smoke.json",
+      "config/pen_spin/symbolic_reward_reference/reference.json"
+    ],
+    "notes": "The finalist is the final ARS parameter mean after 12 updates (no checkpoint selection, no fallback), frozen and hashed in finalist.json before any confirmation case; confirmation is the established evaluator (one whole 128-case manifest per fresh process, reference then finalist), twelve manifests on seeds 4780-4791 never used before. Deviation (recorded in amendment_r106_smoke.json before any training, advisor consult call_00235, decision delegated by the user): the first smoke (seed 4778, 8,204 starts) failed on two defects in the implementer's new child: the scorer required 360 recorded steps for a completed episode (a time-out episode has 359), scoring every episode a failure, and a duplicate-slot check demanded bit identity across environments. Both were fixed (scorer = cases.sustained on the episode's own length, with an equivalence test; tolerance 1e-4, measured 6.4e-6), the smoke was rerun once on new seed 4792 and passed every gate, and the ceiling was raised from 115,000 to 125,000 starts including the failed attempt; 120,972 were charged. A/A yardstick (identical zero-theta policy, identical 512 placements, four slots of one batch): slot success 0.465/0.465/0.459/0.459, pairwise case discordance 0.074-0.104, SD of slot differences 0.003: a 512-case training contrast between two candidates in one batch is far less noisy than two fresh processes would suggest. Training-time candidate success rose from about 0.36-0.47 (update 1) to 0.50-0.56 (update 12) on different placements each update; that drift is not the evidence, the fresh confirmation is. The interval shows a positive effect and its lower bound (+0.079) is above +0.05. Scope: one ARS trajectory, one residual family; it does not show ARS beats PPO or draws given the same objective and budget, nor that the exact-success objective (rather than the 38x larger training budget and 512 shared cases per candidate) is the cause; R-103's arms had 460,800 transitions each, this run 17.6 M. The saved incumbent asset is unchanged. The finalist has no reference slot in training, so 'training rejected' was not an available outcome by design."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.10872395833333333,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "supported",
+      "confidence": 0.9,
+      "reasoning": "The frozen final ARS mean beats the qualified reference by +0.109 paired sustained success, case-paired 95% interval [+0.079, +0.138] over 1,536 fresh pairs (806 vs 639; 355 wins, 188 losses); the manifest-clustered interval is [+0.084, +0.134] and all twelve manifests are positive. The lower bound is above the predicted +0.05, so the prediction is supported, not merely a positive effect. Drops 71 vs 83, one-sided 95% upper bound -0.001 against +0.05: both the strict paired rule and the drop gate pass. The finalist was fixed before any confirmation case, nothing was selected, and the confirmation manifests were never used before. Instrument checks passed on the rerun smoke, and the A/A rollout puts the training-contrast noise at an SD of 0.003. Limits: one ARS trajectory; the cause is not isolated (the objective changed AND each candidate got 512 shared cases and the run 38x R-103's transitions); a single confirmation, though a large one.",
+      "cited_artifacts": [],
+      "next_experiment": "This meets the direction's condition for P2 (a frozen finalist with prospectively confirmed improvement over the qualified reference that passes the drop bound). Next: propose P2 (fixed structure vs grammar edits vs LLM edits with this inner learner, inherited parameters, explicit call budget), with the R-106 finalist as the experimental reference. Whether to install the finalist as the incumbent asset is the user's call. A cheap attribution ablation (dense-reward ARS in the identical layout and budget) would say whether the objective or the instrument size mattered, but it is not needed to open P2.",
+      "recorded_at": "2026-11-22T04:13:37",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "supported",
+      "confidence": 0.99,
+      "reasoning": "Against the named reference, paired_success_difference increased by 0.108724, with a 95% paired interval [0.079458, 0.137989] entirely above the predicted +0.05 threshold [logs/pen_spin/r106_exact_success_ars/summary.json; config/pen_spin/symbolic_reward_reference/reference.json]. The manifest-clustered interval [0.083729, 0.133719] also exceeds +0.05, with positive differences on all twelve manifests [logs/pen_spin/r106_exact_success_ars/summary.json]. The drop-difference one-sided 95% upper bound is -0.001390, below the allowed +0.05, so both success and drop usefulness gates pass [logs/pen_spin/r106_exact_success_ars/summary.json]. The documented pre-training amendment covers the failed smoke, corrected fresh-seed rerun and budget increase; charged starts were 120,972 against the amended 125,000 ceiling, with zero experiment LLM calls [config/pen_spin/symbolic_reward_reference/amendment_r106_smoke.json; logs/pen_spin/r106_exact_success_ars/summary.json]. This establishes a useful frozen finalist from this trajectory, not that the objective change caused the gain or that ARS outperforms matched-budget alternatives [logs/pen_spin/r106_exact_success_ars/finalist.json; logs/pen_spin/r106_exact_success_ars/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r106_exact_success_ars/summary.json",
+        "config/pen_spin/symbolic_reward_reference/reference.json",
+        "config/pen_spin/symbolic_reward_reference/amendment_r106_smoke.json",
+        "logs/pen_spin/r106_exact_success_ars/finalist.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-22T04:14:06",
+      "call_id": "call_00236"
+    }
+  ],
+  "decision_id": "D-075",
+  "history": [
+    {
+      "at": "2026-11-22T03:50:47",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-22T03:51:28",
+      "from": "approved",
+      "to": "running",
+      "note": "git a0899e8e6b (dirty)"
+    },
+    {
+      "at": "2026-11-22T04:13:36",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-22T04:14:29",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-075: supported"
+    }
+  ],
+  "created_at": "2026-11-22T03:45:39",
+  "direction": "Continue Stage-3 Shadow Hand axial rolling by testing reward-trained symbolic residuals and incremental policy construction. Use the frozen D-072-qualified controller as the experimental reference, without changing the saved default incumbent. First compare independent parameter draws, ARS/CEM and PPO on one identical sparse, state-conditioned symbolic residual family. If an inner learner produces a confirmed useful gain, compare fixed structure, grammar-based structural evolution and LLM-guided structural evolution with that learner and inherited parameters. Investigate compact memory or anchored component replacement only when the preceding results motivate them. Preserve the task, frozen evaluation manifests and strict paired promotion/drop criteria. Run one protocol at a time. No controller-generation LLM calls during P1; advisor calls for the research loop remain allowed. Later controller-generation calls need an agreed protocol and explicit call budget. Do not repeat R-102, retune its confirmation cases, reopen cold whole-controller generation, or resume expert cloning. Continue evidence-driven follow-ups within this direction through the existing loop, including its escalation and exhaustion rules.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This directly tests policy-level objective mismatch, unlike D-074's ranking audit and R-105's tail surrogate, while removing checkpoint selection. Its weakest point is one short ARS trajectory: it tests this learner configuration, not ARS superiority or residual-family exhaustion. Approve 71,744 estimated simulator starts within the 74,000-start ceiling and zero controller-generation LLM calls, reusing the named script/config and preserving both reference and saved incumbent. The predicted paired_success_difference increase of at least 0.05 against config/pen_spin/symbolic_reward_reference/reference.json is falsified in magnitude by a confirmation interval upper bound below 0.05; an interval containing both zero and 0.05 remains inconclusive, and usefulness still requires both promotion and drop gates.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00232",
+          "briefing_sha256": "9f98c1861e0bd9170050b69a0aba997b3e1d5360f0a3f3e4c0d241ecfc58e0ed",
+          "at": "2026-11-22T03:46:59"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Right test (exact episode success as the objective, no checkpoint selection, one 1,536-pair confirmation), and I want to run it, but as written the learner cannot move, so a null would be uninformative. (1) Step size: ARS normalises by the return SD, so each update moves theta by about 2.8 x alpha in norm (four random directions in 32 dimensions): with alpha 0.002 that is 0.006 per update, about 0.001 per coefficient, and after 8 updates at most ~0.008 against a 0.10 bound if every step agreed, ~0.003 as a random walk. The confirmation would then test something indistinguishable from the reference. Use R-103's nu 0.02 (a perturbation of 0.02 produced visible changes there) and alpha 0.01 (~0.005 per coefficient per update), and 12 updates. (2) The noise floor is unknown: a signed candidate's success on 512 cases differs between batch slots even for identical policies (D-035: outcomes depend on the batch). Add to the smoke an A/A rollout: the same 512 placements in four slots of one 2,048-env batch, all zero-theta; report the pairwise discordance and the SD of slot differences. That is the yardstick for every training contrast and costs one rollout. (3) Layout must be frozen: each update is two 2,048-env rollouts in one persistent training process, each holding two antithetic pairs (4 signed candidates x the SAME 512 placements, written into the simulator as the evaluator does, each env scored on its first episode only by the unchanged sustained rule); placements for update u are cases.placements(4779, 512 x 12)[512u : 512(u+1)], checked disjoint from every manifest by hash; no training manifest file and no smoke manifest are needed (the smoke uses 4778 the same way), so those two paths leave protocol.manifests. (4) Use all four directions in the update (top b = 4): with four directions, discarding half on noisy binary returns throws away data. (5) Budget with measured starts: 24 training rollouts x 2,048 x about 2 starts = 98,304, smoke 2 rollouts = 8,192, confirmation 2 policies x 1,536 cases charged at 2 = 6,144: ceiling 115,000 starts, enforced; stop if smoke throughput implies more than 4 h. (6) Code lives in a new module lares/envs/isaac_pen_spin/success_ars.py plus its child, reusing symbolic_reward's actor/ARS/contrast code without editing the frozen R-103 handler; tests in tests/test_success_ars.py. Everything else (reference, family, bounds, zero init, final mean only, hashed before confirmation, twelve 128-case manifests 4780-4791, strict rule, drop bound, manifest-level interval) stays as you wrote it.",
+          "changes_applied": [],
+          "at": "2026-11-22T03:47:15"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "This tests whether optimizing exact sustained success avoids dense-reward objective mismatch, but one ARS trajectory cannot establish learner superiority or residual-family exhaustion. I accept your step-scale argument as a risk of an uninformative near-reference null, not proof that learning cannot move, and accept the larger steps, twelve updates, all four directions, A/A calibration and corrected start accounting. Retain the prediction of paired_success_difference increasing by at least 0.05 against config/pen_spin/symbolic_reward_reference/reference.json; falsified_by is a confirmation interval upper bound below 0.05, while an interval containing both zero and 0.05 is inconclusive. These are substantive protocol and budget changes, so the unchanged written proposal cannot run yet.",
+          "suggested_changes": [
+            "Freeze perturbation scale 0.02, update scale 0.01, twelve updates and top b=4 using all four antithetic directions; retain zero initialization, the identical 32-coefficient family and existing 0.10 coefficient/action bounds.",
+            "Use the proposed two-rollout smoke budget, including one A/A rollout with the same 512 placements in four slots of a 2,048-environment batch, all at zero theta; report all pairwise slot discordances and the SD of slot differences without using smoke outcomes to retune learning.",
+            "Freeze each update as two 2,048-environment rollouts in one persistent training process, each containing two antithetic pairs on identical 512-case placements, scored only on each environment's first episode using the unchanged sustained-success rule. Use the proposed disjoint slices of cases.placements(4779, 6144), and seed 4778 for smoke; save placement hashes and provenance before execution, checking disjointness without reading the locked final-test split.",
+            "Remove only the proposed smoke and training manifest paths; retain the twelve 128-case confirmation manifests on free seeds 4780-4791. Evaluate only the final parameter mean, frozen and hashed before confirmation, with no checkpoint selection or reference fallback.",
+            "Replace the cost estimate with 112,640 simulator starts, a hard 115,000-start ceiling and zero controller-generation LLM calls. Count actual starts throughout, stop if smoke throughput projects more than four hours, and do not enlarge the budget or shorten the registered confirmation after seeing outcomes.",
+            "Reuse scripts/run_shadowhand_spin_stages.py, config/shadowhand_spin_stages.yaml and existing actor, ARS, contrast and evaluation code. Isolate only the missing exact-success/layout handler and its necessary child/tests in the proposed new module rather than modifying the frozen R-103 handler.",
+            "Retain case-paired and manifest-level uncertainty reporting, the strict paired promotion rule and the one-sided 95% drop-difference upper bound <=0.05; a positive success interval alone does not establish a five-point gain. Keep the saved incumbent unchanged and P2 closed pending an agreed usefulness decision."
+          ],
+          "priority": 1,
+          "call_id": "call_00233",
+          "briefing_sha256": "0277d8dedd281db4e2eb5f20e9146b7136c48e3c58d83c1251f56ed8557a41d3",
+          "at": "2026-11-22T03:47:52"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agreed on every change, including the correction that my step-scale argument is a risk of an uninformative null rather than proof; the patch records them verbatim.",
+          "changes_applied": [],
+          "at": "2026-11-22T03:48:12"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This tests whether optimizing exact sustained success can produce a useful residual, addressing policy-level reward mismatch left unresolved by D-074; one trajectory cannot establish objective-change causality, ARS superiority or family exhaustion. I accept the implementer's larger steps as reducing near-reference-null risk, A/A calibration as necessary context for noisy contrasts, and the corrected layout and start accounting; the frozen revision now incorporates our agreed changes. Approve 112,640 estimated simulator starts within the enforced 115,000 ceiling, zero experiment LLM calls and seeds 4778–4791, with final-mean-only confirmation, unchanged reference and saved incumbent, strict promotion/drop gates and P2 remaining closed. Retain the prediction of paired_success_difference increasing by at least 0.05 against config/pen_spin/symbolic_reward_reference/reference.json: falsified_by is a confirmation interval upper bound below 0.05, while an interval containing both zero and 0.05 is inconclusive.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00234",
+          "briefing_sha256": "264ea9da63e106022e09e4fe4bd3cc8ca0a42b3701bb279ad4197128d67d09b3",
+          "at": "2026-11-22T03:48:34"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve: the learner settings, slot layout on shared placements, A/A noise yardstick, final-mean-only finalist, 1,536-pair confirmation and the enforced 115,000-start ceiling are frozen; it is the first test in this family whose training signal and confirmation instrument are both sized against the measured discordance. Weakest point, shared with the advisor: a single ARS trajectory, so a null speaks about this configuration only.",
+          "changes_applied": [],
+          "at": "2026-11-22T03:50:47"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 3
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-22T03:48:13",
+      "round": 2,
+      "patch": {
+        "prediction": {
+          "rationale": "Use the unchanged D-072-qualified reference and existing 32-coefficient family. Unlike deferred R-105, optimize the binary episode-success indicator, not a sustained-tail surrogate; D-074 did not test this policy-level objective. Initialize at zero residual. Run eight ARS updates with four antithetic directions per update, scoring each signed candidate on the same 512 cases; refresh the training batch between updates. Freeze perturbation scale 0.01, update scale 0.002, and the existing 0.10 coefficient/action bounds at triage. Shared cases give individual training contrasts SE approximately 0.018-0.028 at discordance 0.16-0.41: informative but not individually decisive for +0.05. Evaluate only the final parameter mean, frozen and hashed before confirmation; no checkpoint selection or reference fallback. Confirm once on twelve fresh 128-case manifests, totaling 1,536 pairs. At the observed discordance range, nominal case-paired power for +0.05 is approximately 87%-99.8% with a two-sided 95% interval; manifest-level uncertainty must also be reported and may be wider. This is an existential learner-versus-reference test, not evidence that ARS beats draws or PPO. Omitting those arms preserves endpoint precision. Apply the shared evaluation/result contract, strict paired promotion rule and one-sided 95% drop-difference upper bound <=0.05. A positive interval establishes improvement, not necessarily improvement exceeding five points. Keep the saved incumbent unchanged and P2 closed pending an agreed usefulness decision. Add the study handler and registry entry before execution. Estimated charged episodes conservatively allow two starts per scored training or confirmation episode plus 64 smoke starts; freeze a 74,000-start ceiling. Run this protocol first and alone.\n\nFROZEN REVISION (triage round 2, agreed; supersedes the numbers above where they differ). Learner: ARS on the 32-coefficient family from theta = 0; perturbation scale nu 0.02, update scale alpha 0.01, 12 updates, 4 antithetic directions per update, all four used (top b = 4), step alpha / (b sigma_R) sum((r+ - r-) delta), projection to [-0.10, 0.10]; direction RNG numpy default_rng(4779 + 2000). A signed candidate's return is its count of sustained successes (unchanged rule: time-out without a fall and the predicate on all final 60 steps) divided by 512. Layout: one persistent training process; each update is two 2,048-environment rollouts, each holding two antithetic pairs (4 signed candidates x the SAME 512 placements, slot k = environments 512k..512k+511), placements written into the simulator as the evaluator does and each environment scored on its first episode only. Update u uses cases.placements(4779, 6144)[512u:512(u+1)]; the smoke uses cases.placements(4778, 512). Placement hashes and provenance are saved before execution and checked disjoint from every committed pen-spin manifest (the locked split is never read). Smoke (seed 4778, two 2,048-environment rollouts, stops the study on failure): rollout A = the same 512 placements in four slots, all zero theta: zero-theta identity against an independently built reference (0 mismatches), and the A/A yardstick (all pairwise slot discordances and the SD of slot success differences, reported and never used to retune); rollout B = slots at theta 0, +probe, -probe, +probe with the probe at magnitude 0.05 and signs from default_rng(4778): executed authority (pooled executed/proposed >= 0.50), a per-environment-theta check (the two +probe slots propose identical residual statistics), checkpoint reconstruction through the evaluation controller factory, and throughput (stop if it projects more than 4 h). Only the final parameter mean is evaluated: frozen and hashed in finalist.json before any confirmation case, no checkpoint selection, no fallback to the reference. Confirmation: twelve 128-case manifests (seeds 4780-4791), the reference and the finalist each once per manifest in its own fresh process, 1,536 pairs; case-paired t interval (primary), manifest-clustered t interval over twelve differences, wins/losses/ties, drop difference with its one-sided 95% upper bound against 0.05, tail-hit fraction, proposed and executed residual by joint. Budget: actual simulator starts are counted (initial placement, every auto-reset); estimate 112,640 = 24 training rollouts x 2,048 x 2 + smoke 8,192 + confirmation 3,072 cases charged at 2; hard ceiling 115,000 enforced before every rollout; a failed child is never relaunched from its seed; no enlargement and no shortened confirmation after outcomes. One ARS trajectory: this tests this learner configuration against the reference, not ARS against other learners and not the exhaustion of the family."
+        },
+        "protocol": {
+          "seeds": [
+            4778,
+            4779,
+            4780,
+            4781,
+            4782,
+            4783,
+            4784,
+            4785,
+            4786,
+            4787,
+            4788,
+            4789,
+            4790,
+            4791
+          ],
+          "episodes": 112640,
+          "manifests": [
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4780.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4781.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4782.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4783.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4784.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4785.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4786.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4787.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4788.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4789.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4790.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4791.yaml"
+          ],
+          "code_changes": [
+            "lares/envs/isaac_pen_spin/success_ars.py (new): the exact-success ARS driver (placement slices, slot layout, A/A statistics, finalist freezing, confirmation contrast), reusing symbolic_reward's actor, ARS and reference; the frozen R-103 handler is not modified.",
+            "lares/envs/isaac_pen_spin/success_ars_child.py (new): the Isaac child for the smoke and the training process.",
+            "scripts/run_shadowhand_spin_stages.py: one registry entry, symbolic_exact_success_ars.",
+            "config/shadowhand_spin_stages.yaml: the symbolic_exact_success_ars block.",
+            "tests/test_success_ars.py (new).",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4780.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4781.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4782.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4783.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4784.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4785.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4786.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4787.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4788.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4789.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4790.yaml",
+            "config/manifests/pen_spin_stage3_exact_success_confirm_s4791.yaml"
+          ]
+        },
+        "cost_estimate": {
+          "episodes": 112640,
+          "llm_calls": 0,
+          "wall_time_minutes": 120
+        }
+      },
+      "note": "Round 2 agreed revise: nu 0.02, alpha 0.01, 12 updates, top 4; frozen two-rollout slot layout on shared placements; A/A smoke; confirmation manifests only; 112,640 starts estimated, 115,000 hard ceiling; new module success_ars.py."
+    }
+  ]
+}

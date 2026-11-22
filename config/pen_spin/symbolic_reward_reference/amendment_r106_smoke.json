@@ -1,0 +1,23 @@
+{
+ "idea": "R-106",
+ "recorded": "2026-11-22, before any training rollout",
+ "authority": "advisor consult call_00235; the user delegated such decisions on 2026-11-22",
+ "defects": [
+  "scoring: the child required 360 recorded steps for a completed episode; a time-out episode has 359 (the time-out fires at episode_length_buf >= max - 1), so the reference scored 0/2048 in the A/A rollout; fixed by scoring with the evaluator's own rule (cases.sustained on the episode's own length), with an equivalence test against cases.reduce_episodes",
+  "gate: two slots holding the same placements and the same theta were required to act bit-identically at step 0; observations are world-frame values minus per-environment origins and differ in float32 rounding; the check is now max |difference| <= 1e-4, reported"
+ ],
+ "unchanged": "actor, reference, normalisation, ARS settings, slot layout, training seed 4779, confirmation seeds 4780-4791 and all 1,536 pairs, final-mean-only finalist, thresholds",
+ "smoke_rerun": {
+  "seed": 4792,
+  "spent_seed": 4778,
+  "attempts_allowed": 1,
+  "on_failure": "R-106 closes inconclusive with no training"
+ },
+ "ceiling": {
+  "original": 115000,
+  "replacement": 125000,
+  "includes_failed_attempt_starts": 8204,
+  "further_enlargement": "none"
+ },
+ "artifacts": "logs/pen_spin/r106_exact_success_ars/attempt1_smoke/"
+}

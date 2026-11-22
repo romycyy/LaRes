@@ -62,6 +62,7 @@ PEN_SPIN_STUDIES = {
     "incumbent_residual_confirmation": "incumbent_residual",       # R-102 (final 672-pair confirmation, 4751-4758)
     "symbolic_reward_residual": "symbolic_reward",                 # R-103 (draws vs ARS vs PPO on one symbolic residual)
     "symbolic_reward_alignment_audit": "symbolic_reward_audit",    # R-104 (archive-only score/success alignment, no Isaac)
+    "symbolic_exact_success_ars": "success_ars",                   # R-106 (ARS on the exact sustained-success count)
 }
 
 
