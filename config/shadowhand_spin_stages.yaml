@@ -1866,3 +1866,27 @@ research_protocols:
     margin: -0.05
     drop_margin: 0.05
     max_minutes: 240
+  # R-130 (Q3 of direction V2, first spend; no Isaac, no LLM, no episode): align the archived JOINT / transplant cells
+  # of R-124 and R-126 to the frozen module's decision, the end of its support and the end of its stroke boost, and
+  # count the failures that follow a healthy hand-back within 30 steps (recovery_handback_audit.py). Labels, windows
+  # and the 0.06 gate are fixed here before any case outcome is read.
+  #   python scripts/run_shadowhand_spin_stages.py --study recovery_handback_archive
+  recovery_handback_archive:
+    log_dir: "logs/pen_spin/r130_handback_audit"
+    pool_seed: 0
+    module_asset: "config/pen_spin/r121_joint_finalist/finalist.json"
+    module_sha256: "1527eb5643a59f9b77858f0dc5852280badd1f6ec012c0efa7c30019c794713c"
+    module_bounds: {threshold: [1.0, 6.0], ramp_out: [3.0, 80.0]}
+    centre_tolerance: 0.08
+    archives:
+      r124_joint: {log_dir: "logs/pen_spin/r124_consolidated_ladder", cell: "r121", manifests: 24}
+      r126_joint: {log_dir: "logs/pen_spin/r126_block_transplant", cell: "joint", manifests: 32}
+      r126_transplant: {log_dir: "logs/pen_spin/r126_block_transplant", cell: "transplant", manifests: 32}
+    gate_archives: ["r124_joint", "r126_joint"]
+    healthy_steps: 10
+    loss_window: 30
+    sensitivity_windows: [15, 60]
+    early_drop_step: 60
+    slow_hit_max: 0.2
+    near_hit_min: 0.8
+    threshold: 0.06

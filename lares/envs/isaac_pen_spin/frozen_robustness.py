@@ -170,6 +170,11 @@ class Conditioned:
     def __call__(self, obs, t, ctx):
         return self.inner(obs, t, ctx)
 
+    def extra_trace(self) -> dict:
+        """The inner controller's diagnostics (a recovery module adds its trigger count to ``params`` here; R-129's
+        own cells predate this and have no count)."""
+        return self.inner.extra_trace() if callable(getattr(self.inner, "extra_trace", None)) else {}
+
 
 def make_controller(name: str, protocol_cfg: dict, out_dir: str | None = None):
     controller, _, condition = name.partition("@")
@@ -432,9 +437,9 @@ def run(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
         rm._dump(os.path.join(out_dir, "summary.json"), summary)
         return summary
     summary.update(analyse(cells, cfg))
-    summary["triggered"] = {"unavailable": "an evaluation cell does not record how many environments triggered the re-capture "
-                                           "(the count lives in the training child); only each asset's frozen decision step is known",
-                            "decision_step": {c: asset_record(cfg)[c]["decision_step"] for c in ("joint", "transplant")}}
+    summary["triggered"] = {c: {k: sum((rm._load(os.path.join(out_dir, "cells", f"s{s}", f"{cell_name(c, k)}_cell.json"))["controller_params"]
+                                         .get("recovery") or {}).get("triggered_environment_episodes", float("nan")) for s in cfg["panel_seeds"])
+                                for k in conditions(cfg)} for c in ("joint", "transplant")}
     summary["limitation"] = ("frozen controllers from one training lineage on a one-factor panel; no combined shifts; secondary cells have "
                              "512 cases; robustness here says nothing about which component provides it")
     rm._dump(os.path.join(out_dir, "summary.json"), summary)

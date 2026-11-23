@@ -1,0 +1,96 @@
+{
+  "id": "R-130",
+  "title": "Q3 first spend: archive-only recovery hand-back diagnosis",
+  "hypothesis": "Timed withdrawal of recovery support leaves a transition-associated loss of rolling large enough to make state-dependent hand-back worth testing.",
+  "prediction": {
+    "metric": "failure_labels",
+    "direction": "increase",
+    "threshold": 0.06,
+    "against": "baseline",
+    "rationale": "Compute the fraction of all archived cases labelled triggered-and-lost-after-hand-back; the comparison is against a zero-prevalence null, not another controller or a treatment-effect estimate. Predict an absolute fraction >=0.06 separately for JOINT in R-124 and R-126. This is twice the later intervention's proposed +0.03 success effect; report the transplant replication separately."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'source ~/IsaacLab/source_env.sh && python -u scripts/run_shadowhand_spin_stages.py --study recovery_handback_archive'",
+    "seeds": [],
+    "manifests": [],
+    "episodes": 0,
+    "llm_calls": 0,
+    "code_changes": [
+      "Add scripts/recovery_handback_audit.py as one archive-only module; reuse existing recovery_tail_audit.py labelling and interval utilities where available. This implements the archive prerequisite of deferred R-117, not its simulation or training proposal; the earlier R-118 tail audit did not align frozen JOINT/transplant failures to support termination.",
+      "Add recovery_handback_archive dispatch to scripts/run_shadowhand_spin_stages.py and its archive-only configuration to config/shadowhand_spin_stages.yaml. Dispatch without initializing Isaac or modifying controller assets. Process existing manifests only; no seed is consumed.",
+      "Read logs/pen_spin/r124_consolidated_ladder/confirmation/s*/r121_cell.{json,npz}: 24 manifests, 3,072 cases; and logs/pen_spin/r126_block_transplant/confirmation/s*/{joint,transplant}_cell.{json,npz}: 32 manifests, 4,096 cases per controller. Preserve inputs and write a separate audit report with source hashes.",
+      "Reconstruct each first-episode trigger at step 149 from centre distance <0.08 and the previous 30 steps' mean absolute axial rate <4.18. Verify indexing and transition timing against the frozen module implementation; align traces to onset, completion of blending at approximately step 184, and boost termination at approximately step 244. Report one-step indexing sensitivity.",
+      "For every cell report reconstructed triggers, recorded total triggers, their signed difference and any violation of the recorded-count upper bound. Excess recorded triggers can reflect later auto-reset episodes and must not be presented as a measured per-case mismatch rate. Report reconstruction uncertainty explicitly; aggregate counts cannot certify individual flags.",
+      "Before reading case outcomes, freeze the operational labels and windows: at each hand-back boundary, classify dropped, off-centre, rolling above 4 rad/s, or slow using only signals through that boundary and existing audit definitions. Define healthy hand-back conservatively as the archived success predicate true and centre distance <0.08 throughout the preceding 10 steps, including the boundary.",
+      "Define the registered reachable subset as reconstructed-triggered, ultimately unsuccessful cases with healthy hand-back at either boundary and the first subsequent predicate loss or recorded drop within the next 30 steps. Count the union once per case. This is a temporal-association screening subset, not proof the loss caused eventual failure or that a hand-back rule could recover it. Report whether rolling subsequently recovers and when intermittent rolling, off-centring and drops begin; retain persistent-slow and intermittent/near-miss labels separately.",
+      "Partition remaining failures into untriggered, never re-captured, lost during blending, other pre-boundary losses, later losses outside the registered windows, and ambiguous cases. Do not assume persistent slowness and intermittent failures share a mechanism. Compute case-level and manifest-clustered 95% intervals for all-case fractions separately for R-124 JOINT, R-126 JOINT and R-126 transplant; report 15- and 60-step window sensitivities without replacing the registered 30-step result.",
+      "Write gate_statistics containing both JOINT reachable fractions and their uncertainty. Simulation is eligible for a separate agreement only if each JOINT archive has registered reachable mass >=0.06 and reconstruction sensitivity does not invalidate that assessment; discuss transplant concordance explicitly. Below-threshold results close Q3 without a training sweep; unresolved reconstruction leaves it inconclusive. No oracle gate, fitting, controller generation or automatic simulation escalation is permitted."
+    ],
+    "needs_gpu": false,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "The registered reachable fraction is below 0.06 in either JOINT archive; an upper 95% interval below 0.06 refutes the predicted magnitude, while an interval spanning 0.06 leaves its magnitude inconclusive. Unresolved trigger-reconstruction ambiguity also makes the diagnosis inconclusive, not grounds for simulation.",
+  "cost_estimate": {
+    "episodes": 0,
+    "llm_calls": 0,
+    "wall_time_minutes": 45
+  },
+  "open_question_refs": [
+    3
+  ],
+  "briefing_sha256": "1f25f6136f157f16c2d217e0086c40621baeb770cf156865b0b212c9dff8b010",
+  "proposal_call_id": "call_00303",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-23T06:39:15",
+    "advisor_call_id": "call_00304",
+    "round": 1,
+    "note": "With Q1 and Q2 completed, this archive-only screen is the right next step to decide whether recovery hand-back warrants a separately agreed intervention. Its weakest point is trigger reconstruction: temporal association cannot establish recoverability, but the protocol explicitly reports ambiguity a"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-23T06:39:15",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 1: both say approve"
+    }
+  ],
+  "created_at": "2026-11-23T06:38:34",
+  "direction": "Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT controller. Prioritize independent training reproducibility, then robustness of frozen controllers. Reproduce the successful residual-plus-recovery construction across independent training seeds before claiming a reliable learning algorithm. Evaluate longer horizons and predeclared physical/reset perturbations without fitting. Use archived failures to decide whether recovery hand-back deserves a state-dependent transition study. Then investigate whether LLM-guided construction can discover useful recovery-module structure against grammar search and the hand-designed template under matched budgets. Preserve the original six-second task and evaluation contract. Use JOINT as the experimental reference, preserve all existing assets, and leave default-incumbent installation separate. Run one protocol at a time through the existing advisor/implementer loop. Continue justified follow-ups within this direction; honor its escalation and exhaustion rules. No new global budget ceiling is imposed; each protocol must declare finite simulator, wall-time and model-call costs before agreement. No controller-generation calls for Q1–Q3. Q4 requires a separately agreed generation budget. Advisor calls for the research loop remain permitted throughout.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "With Q1 and Q2 completed, this archive-only screen is the right next step to decide whether recovery hand-back warrants a separately agreed intervention. Its weakest point is trigger reconstruction: temporal association cannot establish recoverability, but the protocol explicitly reports ambiguity and blocks simulation escalation when reconstruction is unresolved. Reusing the existing entry point and audit utilities makes the declared cost of zero simulator episodes, zero model calls and 45 minutes justified; the registered threshold and falsification rule make the screen decision-relevant.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00304",
+          "briefing_sha256": "5a7a588f17fc1c100e066a9f5ea5dea11907d15c8c2260d030662d1964a0808a",
+          "at": "2026-11-23T06:39:04"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve: zero-episode, zero-call archive screen with labels, windows and the 0.06 gate fixed before any case outcome is read; it is the direction's required first spend for Q3 and a below-threshold result closes Q3 without a sweep. One implementation note on record, not a design change: the study registry of scripts/run_shadowhand_spin_stages.py resolves a study name to a module inside lares/envs/isaac_pen_spin (and scripts never import from other scripts), so the audit module will be lares/envs/isaac_pen_spin/recovery_handback_audit.py rather than scripts/recovery_handback_audit.py; everything else as written. I will read the transition timing off the frozen module code (decision at the step whose counter equals round(decision_step), blend from ramp_in and ramp_out, 60 boost steps) rather than the approximate step numbers.",
+          "changes_applied": [],
+          "at": "2026-11-23T06:39:15"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}
