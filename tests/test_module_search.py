@@ -69,6 +69,33 @@ class TestStreams(unittest.TestCase):
             self.assertEqual(len(ms.branch_records(PARENT, props, arm, 3)), 3)
 
 
+class TestSmoke(unittest.TestCase):
+    def test_probe_is_admissible_and_every_edit_is_active(self):
+        p = ms.smoke_probe()                                      # the first launch built a four-edit probe, past the cap
+        self.assertEqual((p["edits"], p["parameters"]), (3, 17))
+        self.assertEqual(ml.check_record(p)["params"]["max_extra"], 60.0)
+        sig = signals()
+        tpl = ml.template_record()
+        a, b = ml.replay(tpl["spec"], tpl["x"], sig), ml.replay(p["spec"], p["x"], sig)
+        self.assertGreaterEqual(b["fired"].sum(), a["fired"].sum())
+        self.assertGreater(b["boost"].sum(), a["boost"].sum())
+        self.assertGreater(b["beta"].sum(), a["beta"].sum())
+
+    def test_a_dead_child_is_charged_on_relaunch(self):
+        with tempfile.TemporaryDirectory() as d:
+            budget = ms.Budget(os.path.join(d, "a.json"), CFG)
+            stem = os.path.join(d, "smoke")
+            open(stem + ".request.json", "w").write("{}")
+            req = {"mode": "smoke", "response_path": stem + ".json"}
+
+            def shell(env, cmd, log=None):
+                ms._dump(req["response_path"], {"starts": 16000, "transitions": 5})
+
+            with mock.patch.object(ms, "isaac_shell", shell):
+                ms.run_child({**CFG, "isaac_env": "x"}, req, stem, budget, 20000)
+            self.assertEqual((budget.data["starts"], budget.data["relaunches"][0]["charged_starts"]), (36000, 20000))
+
+
 class TestSelection(unittest.TestCase):
     def test_frozen_ranking(self):
         s = lambda ok, drops=10: {"successes": ok, "drops": drops, "cases": 512}  # noqa: E731

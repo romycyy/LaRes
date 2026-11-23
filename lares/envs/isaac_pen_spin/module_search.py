@@ -495,8 +495,10 @@ def run_child(cfg: dict, request: dict, stem: str, budget: Budget, need: int) ->
         return _load(resp)
     if not budget.room(need):
         raise SystemExit(f"a ceiling leaves no room for {stem} ({budget.data})")
-    if os.path.exists(stem + ".request.json"):
-        budget.data["relaunches"].append(stem)
+    if os.path.exists(stem + ".request.json"):              # an earlier attempt died: charge it at its full allowance
+        budget.data["relaunches"].append({"child": stem, "charged_starts": int(need)})
+        budget.data["starts"] += int(need)
+        _dump(budget.path, budget.data)
     _dump(stem + ".request.json", {**request, "config_path": cfg["config_path"], "config_key": CONFIG_KEY, "config_sha256": config_sha256(cfg)})
     print("running", request["mode"], stem, flush=True)
     t0 = time.time()
@@ -740,6 +742,17 @@ def _rollout(env, ctx, ctrl, vecs, params, ops, record: bool = False) -> dict:
     return out
 
 
+def smoke_probe() -> dict:
+    """The smoke's second structure: three edits (the language's depth cap), each trained away from its identity value."""
+    tpl = ml.template_record()
+    spec = ml.canonical({"schedule": "periodic", "conditions": [], "support_end": "event", "boost_end": "event", "target": "reset", "attempts": 1})
+    x, idx = ml.inherit(tpl, spec), ml.active(spec)
+    for name, value in (("extra_window", 60.0), ("max_hold", 20.0), ("settle_level", 0.5), ("max_extra", 60.0), ("release_level", 8.0)):
+        k = ml.I[name]
+        x[idx.index(k)] = (value - ml.LOW[k]) / (ml.HIGH[k] - ml.LOW[k])
+    return ml.record(spec, x)
+
+
 def slot_stats(res: dict, sl: slice) -> dict:
     rows = [{"sustained": bool(res["sustained"][i]), "completed": bool(res["completed"][i]), "length": int(res["length"][i]),
              "final_center_dist": float(res["final_centre"][i]), "tail_hit_fraction": float(res["tail_hit"][i])}
@@ -842,12 +855,7 @@ def _child(req: dict, cfg: dict, device: str) -> dict:
         out["gates"]["template_triggers"] = {"fired_fraction": float(a["fired"].mean()), "passes": bool(0.1 < a["fired"].mean() < 0.6)}
         out["gates"]["equal_slots_agree"] = {"max_abs_slot_difference": out["aa"]["max_abs_slot_difference"],
                                              "passes": bool(out["aa"]["max_abs_slot_difference"] <= float(cfg["smoke_aa_tolerance"]))}
-        probe_spec = ml.canonical({"schedule": "periodic", "conditions": [], "support_end": "event", "boost_end": "event", "target": "hold", "attempts": 1})
-        px = ml.inherit(tpl, probe_spec)
-        for name, value in (("extra_window", 60.0), ("max_hold", 20.0), ("settle_level", 0.5), ("max_extra", 60.0), ("release_level", 8.0), ("mix_hold", 0.5)):
-            j = ml.active(probe_spec).index(ml.I[name])
-            px[j] = (value - ml.LOW[ml.I[name]]) / (ml.HIGH[ml.I[name]] - ml.LOW[ml.I[name]])
-        probe = ml.record(probe_spec, px)
+        probe = smoke_probe()
         c = _rollout(env, ctx, ctrl, vecs, *_tile_modules([tpl, probe, tpl, probe], per))
         s2 = c["sustained"].reshape(SLOTS, per).mean(axis=1)
         fired = c["fired"].reshape(SLOTS, per).mean(axis=1)
@@ -856,7 +864,8 @@ def _child(req: dict, cfg: dict, device: str) -> dict:
             "slot_success": [float(v) for v in s2], "fired_fraction": [float(v) for v in fired],
             "hold_steps": [float(v) for v in hold], "extra_boost_steps": [float(v) for v in extra],
             "passes": bool(abs(s2[0] - s2[2]) <= float(cfg["smoke_aa_tolerance"]) and abs(s2[1] - s2[3]) <= float(cfg["smoke_aa_tolerance"])
-                           and hold[0] == 0 and extra[0] == 0 and hold[1] > 0 and extra[1] > 0 and fired[1] > fired[0])}
+                           and hold[0] == 0 and extra[0] == 0 and hold[2] == 0 and extra[2] == 0 and hold[1] > 0 and extra[1] > 0
+                           and hold[3] > 0 and extra[3] > 0)}
         out["starts"] = a["starts"] + c["starts"]
         out["transitions"] = a["env_steps"] + c["env_steps"]
         out["throughput"] = {"transitions_per_s": out["transitions"] / (time.time() - t0)}
