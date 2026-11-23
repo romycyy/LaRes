@@ -726,6 +726,16 @@ class PenSpinStudy:
         return [mod.freeze_manifests(block)] + [getattr(mod, fn)(block) for fn in self.freeze_extra]
 
 
+def run_pen_spin_module_search(cfg, overrides: dict) -> None:
+    """R-131 (Q4): fixed template vs grammar vs LLM edits of the recovery module on the frozen R-106 residual."""
+    from lares.envs.isaac_pen_spin import module_search
+
+    scfg = _study_block(cfg, PEN_SPIN_STUDIES["module_search"], overrides, isaac_env=cfg.pen_spin["isaac_env"])
+    summary = module_search.run_study(scfg, openai_client())
+    print(json.dumps({k: v for k, v in summary.items() if k in ("smoke_gate", "paired_success_difference", "paired_success_difference_ci95",
+                                                                "arms", "accounting", "llm", "note")}, indent=2))
+
+
 #: Insertion order is the ``--study`` choice order and the ``--freeze-manifests`` print order.
 PEN_SPIN_STUDIES = {s.name: s for s in (
     PenSpinStudy("keyframe_repair", "pen_spin", "study", run_pen_spin_study),
@@ -739,6 +749,7 @@ PEN_SPIN_STUDIES = {s.name: s for s in (
     PenSpinStudy("modular_cold", "modular_cold", "modular_cold", run_pen_spin_modular_cold),
     PenSpinStudy("contact_rules", "contact_rules", "contact_rules", run_pen_spin_contact_rules),
     PenSpinStudy("structure_search", "pen_spin_structure", "structure_search", run_pen_spin_structure_search),
+    PenSpinStudy("module_search", "pen_spin_module_search", "module_search", run_pen_spin_module_search),
 )}
 
 

@@ -251,6 +251,61 @@ pen_spin_structure:
   max_calls_per_slot: 2             # one generation call plus at most one linked correction; 12 slots, 24 calls at most
   llm_workers: 16
 
+pen_spin_module_search:
+  # R-131 (Q4 of docs/NEXT_RESEARCH_DIRECTION_V2.md; approved 2026-11-23, advisor call_00309): on the frozen R-106
+  # residual, five blocks x three arms (fixed template / grammar edits / LLM edits of the recovery module), every arm
+  # 36 ARS updates: two rounds of three branches x 4 updates with one frozen ranking each, then 12 updates of the
+  # round-2 winner (lares/envs/isaac_pen_spin/module_language.py, module_search.py). Frozen at triage.
+  #   python scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study module_search
+  study_dir: "logs/pen_spin/r131_module_search"
+  config_path: "config/pen_spin_plateau_repair.yaml"
+  block_seeds: [5300, 5301, 5302, 5303, 5304]   # namespaces: every stream is SeedSequence([block seed, arm, round, branch, role, update])
+  smoke_seed: 5305
+  smoke_aa_tolerance: 0.03
+  incumbent_asset: "config/pen_spin/d058_fixed_stroke_incumbent"
+  reference_descriptor: "config/pen_spin/symbolic_reward_reference/reference.json"
+  reference_residual: {"gain": 0.004655481049180921, "deadband": 0.2333555721435132, "tau": 0.18501188209260944, "cap": 0.10269089387249905}
+  reference_residual_sha256: "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1"
+  control_dt: 0.016666666666666666
+  actor: {coefficients: 32, bound: 0.10, cap: 0.10, spin_target: 7.0, feature_clip_sigmas: 3.0, rms_floor_velocity: 0.05, rms_floor_posture: 0.01}
+  normalization_path: "logs/pen_spin/r103_symbolic_reward/normalization.json"
+  normalization_sha256: "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac"
+  root_finalist: "config/pen_spin/r106_success_ars_finalist/finalist.json"
+  root_theta_sha256: "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef"
+  centre_tolerance: 0.08
+  module_bounds: {threshold: [1.0, 6.0], ramp_out: [3.0, 80.0]}   # the frozen JOINT control only; search modules use the language's own ranges
+  controls:
+    r118: {path: "config/pen_spin/r118_continue_finalist/finalist.json", sha256: "03e10e1ced46dd0e2af34701306900fc54a76994c56bc10f36f7e3d5df2a2ff8"}
+    r121: {path: "config/pen_spin/r121_joint_finalist/finalist.json", sha256: "1527eb5643a59f9b77858f0dc5852280badd1f6ec012c0efa7c30019c794713c"}
+  layout: {slots: 4, cases_per_slot: 512, horizon: 360}
+  ars: {directions: 4, nu: 0.1, alpha: 0.05}
+  rounds: 2
+  branches: 3
+  updates_per_branch: 4
+  continuation_updates: 12
+  confirmation_seeds: [5310, 5311, 5312, 5313, 5314, 5315, 5316, 5317, 5318, 5319, 5320, 5321]
+  confirmation_cases: 128
+  confirmation_manifest_template: "config/manifests/pen_spin_stage3_modsearch_s{seed}.yaml"
+  threshold: 0.05
+  drop_margin: 0.05
+  start_ceiling: 4900000
+  max_minutes: 660
+  max_calls_per_slot: 2             # one generation call plus at most one linked correction; 20 slots, 40 calls at most
+  max_output_tokens: 32000
+  max_input_chars: 48000            # about 16,000 tokens at most
+  llm_workers: 16
+  # the one immutable paragraph of prior findings every proposer prompt carries (the grammar cannot read it)
+  prior_findings: >-
+    Measured on a trained version of the template module (success about 0.73-0.79 of episodes): of ALL episodes,
+    about 7.8% fail without the module ever firing (mostly the pen is dropped before step 60); about 7.2% fire and
+    roll again but are not rolling steadily (above 4 rad/s, centred) when the blend and the 60 boost steps have
+    ended, and mostly finish persistently slow; about 3.2% fire and never roll again (a third of them drop the pen
+    late); about 1.6% roll steadily at the end of the blend or boost and lose it within 30 steps. An earlier study
+    found that a second attempt added nothing over simply training the single attempt longer, and that small fixed
+    joint offsets during the first 60 steps added nothing. Performance falls sharply when the pen starts from a wider
+    range of reset poses. Without any module the root controller succeeds in about 0.55 of episodes and about 41% of
+    episodes roll persistently slowly (about 2 rad/s).
+
 log_dir: "logs/pen_spin/r042_keyframe_repair"
 record_demo_gif: false
 

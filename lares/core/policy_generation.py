@@ -254,12 +254,16 @@ def _call_llm(
     transcript_counter=None,
     transcript_label="completion",
     reasoning_effort=None,
+    max_completion_tokens=None,
 ):
     """Call the OpenAI chat completion API, retrying transient errors only; any other failure raises.
 
-    ``reasoning_effort`` is sent only when set, so models without the parameter still work.
+    ``reasoning_effort`` is sent only when set, so models without the parameter still work. ``max_completion_tokens``
+    (R-131) caps a reply, reasoning tokens included; unset, there is no cap.
     """
     extra = {"reasoning_effort": reasoning_effort} if reasoning_effort else {}
+    if max_completion_tokens:
+        extra["max_completion_tokens"] = int(max_completion_tokens)
     total_samples = 0
     total_token = 0
     total_completion_token = 0

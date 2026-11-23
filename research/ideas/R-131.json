@@ -1,0 +1,204 @@
+{
+  "id": "R-131",
+  "title": "Q4: Matched-budget recovery-module construction",
+  "hypothesis": "Failure-informed LLM edits will target slow re-capture and trigger timing more efficiently than uniform grammar edits, improving recovery success under identical ARS and rollout budgets.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "module_search/GRAMMAR at the same total simulator budget",
+    "rationale": "Use the equal-weight mean of five independent block-level LLM-minus-GRAMMAR differences; support requires the two-sided 95% t interval on 4 df to have lower bound >= 0.05. Unlike exploratory R-109, this searches recovery structure with prospectively frozen selection. D-090 closed the isolated healthy-hand-back hypothesis, not this construction comparison."
+  },
+  "protocol": {
+    "script": "scripts/run_full_evolution.py",
+    "config": "config/pen_spin_plateau_repair.yaml",
+    "command": "gpu run 'source ~/.profile; python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study module_search'",
+    "seeds": [
+      5300,
+      5301,
+      5302,
+      5303,
+      5304,
+      5305,
+      5310,
+      5311,
+      5312,
+      5313,
+      5314,
+      5315,
+      5316,
+      5317,
+      5318,
+      5319,
+      5320,
+      5321
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_modsearch_s5310.yaml",
+      "config/manifests/pen_spin_stage3_modsearch_s5311.yaml",
+      "config/manifests/pen_spin_stage3_modsearch_s5312.yaml",
+      "config/manifests/pen_spin_stage3_modsearch_s5313.yaml",
+      "config/manifests/pen_spin_stage3_modsearch_s5314.yaml",
+      "config/manifests/pen_spin_stage3_modsearch_s5315.yaml",
+      "config/manifests/pen_spin_stage3_modsearch_s5316.yaml",
+      "config/manifests/pen_spin_stage3_modsearch_s5317.yaml",
+      "config/manifests/pen_spin_stage3_modsearch_s5318.yaml",
+      "config/manifests/pen_spin_stage3_modsearch_s5319.yaml",
+      "config/manifests/pen_spin_stage3_modsearch_s5320.yaml",
+      "config/manifests/pen_spin_stage3_modsearch_s5321.yaml"
+    ],
+    "episodes": 4900000,
+    "llm_calls": 40,
+    "code_changes": [
+      "config/pen_spin_plateau_repair.yaml: register module_search before outcomes. Use the frozen config/pen_spin/r106_success_ars_finalist residual, the scripted 11-parameter recovery initialization, and the unchanged six-second Stage-3 evaluation contract. Search recovery modules only; keep the residual frozen. Hash and preserve all existing assets; no default-incumbent installation.",
+      "lares/envs/isaac_pen_spin/module_language.py: add the missing strict-JSON recovery language, shared validator, uniform grammar sampler and RecoveryController-compatible interpreter. Operations: single, periodic-until-fired or two-step trigger schedules; bounded conjunctions over windowed mean absolute axial rate, centre distance, transverse rate, rate trend and one resettable leaky deficit integral; bounded finger-group posture blending with ramps; timed or observation-terminated support and boost with hard maxima; blend targets frozen as reset posture, mid-range zero action, or the root action held from trigger time; one attempt or two with a re-arm condition. Reset all memory per episode. Freeze primitive definitions and numeric bounds before generation. One interpreter with per-environment structural switches, so one batch can hold different structures.",
+      "lares/envs/isaac_pen_spin/module_language.py: each edit changes exactly one component and introduces at most four bounded parameters, including any activation gate needed for identity initialization. Inherit unchanged parameters exactly. Identity before training is checked by replay, not simulation: the smoke records the module's input signal histories (windowed rate, centre distance, transverse rate, step) for all 2,048 smoke cases, including triggered ones; the shared validator replays them through parent and child and requires matching module outputs (per-group blend weight, target selector, boost scale) within 1e-6 at every step; a failing edit is invalid. This is a checked equivalence on those histories, not a proof for every history. Common caps: three edits deep, 23 module parameters, bounded state, unchanged action limits and frozen root. The two-round protocol reaches at most two edits. Reject edits lacking an identity-preserving representation.",
+      "lares/envs/isaac_pen_spin/module_search.py (a sibling study module that is also its own Isaac child), registered through scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml: reuse llm_pool, R-109's generation/correction pattern and recovery_module's rollouts; the decided structure_search.py is left unchanged. Run five independent blocks with no cross-block outcome feedback and no concurrent research protocol. One Isaac process per (block, arm, round) trains its three branches in sequence and one per (block, arm) runs the 12-update continuation; every training rollout runs the full 360 steps for all 2,048 environments, so transition accounting is identical across arms.",
+      "config/pen_spin_plateau_repair.yaml: give all arms the same language, bounds, root interface, scripted template JSON, and immutable prior-findings paragraph covering D-090's failure proportions, D-082's null second attempt, D-085's null offsets and D-089's reset weakness. Each arm has access to its own parent parameters, training/selection statistics and failure-category table. No source-code examples, traces, or trained R-118/JOINT module parameters are supplied to construction. The only example is the scripted template JSON. GRAMMAR samples uniformly without replacement from valid structural edits; FIXED cannot edit structure.",
+      "config/pen_spin_plateau_repair.yaml: all three arms use frozen ARS settings: four antithetic direction pairs, 512 common placements per signed candidate, existing 2,048-env batching, nu 0.1 and alpha 0.05. Each round trains three branches for four updates each; after two rounds, the selected branch continues for 12 updates. FIXED uses three prespecified stochastic-ARS continuations of the unchanged template per round; GRAMMAR and LLM use one parent-structure continuation and two edits. Thus every arm spends 36 updates, including identical branch and continuation allocations. This replaces duplicate FIXED checkpoint scoring with useful parameter-search allocation and identical selection rules.",
+      "config/pen_spin_plateau_repair.yaml: selection. After a round's three branches are trained, one four-slot 2,048-environment batch scores the unchanged entering parent and the three trained branches on the same 512 fresh search-validation placements (4 x 512 selection episodes per arm per round, 61,440 in all); that round's selection outcomes are withheld until its construction and training have finished. Placements are paired across arms within a block. Rank eligible branches by sustained-success count, requiring empirical drop-rate increase <= 0.05 against the entering parent; ties prefer the parent structure, then earlier slot. If none qualifies, retain the entering parent. This ranking is frozen before any outcome; it is not a promotion gate. No other validation access.",
+      "scripts/run_full_evolution.py: LLM uses gpt-6.1-sol, reasoning_effort high, temperature 1. Explicit controller-generation budget requiring agreement: 20 initial calls plus at most one linked correction per slot, maximum 40 calls total. Cap each call at 16,000 input and 32,000 output tokens, including reasoning, for at most 1,920,000 tokens. An invalid or duplicate edit after correction becomes a logged parent-copy branch trained with its allocated budget; no replacement generation. Record calls, tokens, latency and invalid-slot rate separately.",
+      "lares/envs/isaac_pen_spin/module_search.py: seeds 5300-5304 are the block namespaces, 5305 the smoke, 5310-5321 confirmation. Every other stream is a canonical numpy SeedSequence child keyed by the full tuple (block seed, arm, round, branch, role, update); no further integer seed is consumed. Placement streams are shared across arms by omitting the arm from the key and direction streams share their leading coordinates; every intentional sharing is logged as an alias. Precompute all keys and test uniqueness and seed-ledger disjointness before generation; check every placement hash against the committed pen-spin manifests. Full-duration batches equalize stepped transitions; early termination cannot purchase extra evaluations or updates.",
+      "config/pen_spin_plateau_repair.yaml: freeze all 15 terminal finalists before confirmation. Evaluate them plus frozen R-106, D-072, R-118 and R-121 JOINT on the same twelve fresh 128-case manifests: 19 policies, 228 cells, 29,184 scored episodes. JOINT remains the experimental reference. No confirmation feedback returns to construction.",
+      "scripts/run_full_evolution.py: primary inference uses five block-level paired differences, not pooled episode pseudo-replicates. Predeclare one Holm family for the five secondary block-level contrasts (each search minus FIXED; each arm minus R-106) and 15 finalist-minus-JOINT qualification tests. Qualification requires a strictly positive paired-success interval lower bound and paired drop-increase interval upper bound <= 0.05. Report unadjusted estimates alongside adjusted inference, all finalists, and the limited five-block precision; no automatic replication or budget expansion.",
+      "scripts/run_full_evolution.py: report success against parameters, active components, simulator transitions, model tokens and wall time. Measure executed authority using trigger/transition counts, support/boost durations, bound activity and action differences against the identity-disabled edit at identical observations. Budget accounting: 2,211,840 scored training episodes, 61,440 selection episodes and 29,184 confirmation episodes; at most 20,000 smoke starts. The 4,900,000-start ceiling includes all warm-up, reset and padding overhead, with at most 1,764,000,000 simulator transitions and 660 wall-time minutes. Stop at a ceiling; additional spending needs a new agreement.",
+      "tests/test_module_language.py and tests/test_module_search.py: add schema, bounds, memory reset, identity initialization, parameter inheritance, uniform-sampler and full-tuple seed-uniqueness tests; test matched arm accounting and frozen selection before any controller-generation call."
+    ],
+    "needs_gpu": true,
+    "needs_llm": true
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "The block-level 95% interval upper bound is below +0.05; otherwise failure to meet the support criterion is inconclusive. An interval including zero is not evidence of an LLM advantage. Report grammar success without LLM advantage if that is the outcome.",
+  "cost_estimate": {
+    "episodes": 4900000,
+    "llm_calls": 40,
+    "wall_time_minutes": 660
+  },
+  "open_question_refs": [
+    4
+  ],
+  "briefing_sha256": "aaf0f7becfa6adf7e7c52c39b979e74340162e2f5ce2b58af57a4d4a9a23a58d",
+  "proposal_call_id": "call_00306",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-23T06:51:21",
+    "advisor_call_id": "call_00309",
+    "round": 3,
+    "note": "With Q1–Q3 complete, this tests whether failure-informed LLM recovery edits outperform matched grammar search; it does not reopen D-090's isolated hand-back hypothesis. I accept the implementer's package isolation, replay-based equivalence check, batching, selection timing, seed-stream design and to"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-23T06:51:21",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    }
+  ],
+  "created_at": "2026-11-23T06:47:24",
+  "direction": "Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT controller. Prioritize independent training reproducibility, then robustness of frozen controllers. Reproduce the successful residual-plus-recovery construction across independent training seeds before claiming a reliable learning algorithm. Evaluate longer horizons and predeclared physical/reset perturbations without fitting. Use archived failures to decide whether recovery hand-back deserves a state-dependent transition study. Then investigate whether LLM-guided construction can discover useful recovery-module structure against grammar search and the hand-designed template under matched budgets. Preserve the original six-second task and evaluation contract. Use JOINT as the experimental reference, preserve all existing assets, and leave default-incumbent installation separate. Run one protocol at a time through the existing advisor/implementer loop. Continue justified follow-ups within this direction; honor its escalation and exhaustion rules. No new global budget ceiling is imposed; each protocol must declare finite simulator, wall-time and model-call costs before agreement. No controller-generation calls for Q1–Q3. Q4 requires a separately agreed generation budget. Advisor calls for the research loop remain permitted throughout.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "Q1–Q3 are complete; matched training budgets, prospective selection and independent search blocks make this the appropriate next construction comparison, distinct from D-090's isolated hand-back hypothesis. The predicted paired_success_difference increase of at least 0.05 versus module_search/GRAMMAR is falsified if the block-level 95% interval upper bound is below 0.05; an interval including zero establishes no advantage. Five blocks limit precision, and conclusions concern recovery construction on the frozen R-106 residual, not end-to-end training reproducibility. Approve reuse of the existing driver and config with the declared ceilings: 4,900,000 simulator starts, 660 wall-time minutes, and 20 initial plus at most 20 correction calls, capped at 1,280,000 total tokens.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00307",
+          "briefing_sha256": "255ccadd9b50a3c97b8f3affdf0a1ff366c68dfb1f987968fcffe7fa8d454435",
+          "at": "2026-11-23T06:49:21"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "I agree with the study, its three arms, the 3-branch x 4-update rounds with FIXED spending its branches on stochastic continuations, the frozen ranking rule, five blocks, the primary and the budgets; I would approve after these protocol corrections, which are needed for it to be implementable and none of which changes the hypothesis. (1) Code location and reuse: Isaac children import from the lares package and scripts never import from other scripts, so the language/validator/sampler/interpreter is lares/envs/isaac_pen_spin/module_language.py (not scripts/isaac/), and the search is a sibling module lares/envs/isaac_pen_spin/module_search.py (its own Isaac child) registered in scripts/run_full_evolution.py, reusing llm_pool, R-109's generation/correction pattern and recovery_module's rollout, instead of extending structure_search.py in place: that file is the decided R-109 study and editing its dispatch would change a recorded protocol's code. (2) Identity check: make it exact and free instead of 16 simulated cases per edit. The module is a function of (windowed rate, centre distance, transverse rate, step) -> (per-group blend weight, target selector, boost scale). The smoke records those signal sequences for all its cases (2,048, including triggered ones); the shared validator replays them through parent and child and requires identical outputs at every step (tolerance 1e-6) before any training; a failed edit is invalid. No simulator spend per edit. (3) Blend targets: in this environment the reset posture and the neutral action are the same action, so the targets are reset posture | mid-range (zero action) | hold of the root action at trigger time. (4) One interpreter with per-environment structural switches, so a batch can hold different structures (the selection rollout holds the entering parent and the three branches as four 512-placement slots: one 2,048-env rollout per arm per round, which is the 61,440 selection episodes budgeted). (5) Processes: one Isaac process per (block, arm, round) trains its three branches in sequence and one per (block, arm) runs the 12-update continuation; training rollouts were never fresh-process evaluations. Every training rollout already runs the full 360 steps for all 2,048 environments, so transitions are equal by construction. (6) Seeds: 5300-5304, 5305 and 5310-5321 as declared; every other stream is a numpy SeedSequence over the full tuple (block seed, arm, round, branch, role, update), with placements drawn from it, so no further integer seeds are consumed; placement streams are shared across arms by omitting the arm from the key (logged as an alias), direction streams are per branch with shared leading coordinates; uniqueness of all keys and disjointness of all placement hashes from every committed manifest are tested before generation. (7) Tokens: the model accepts no temperature other than 1 and its reasoning tokens count as output; a 16,000 output cap risks truncating a high-effort reply into an invalid slot. Cap output at 32,000 per call (40 calls, at most 1,920,000 tokens) and record actual usage. (8) Launch: gpu run 'source ~/.profile; python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study module_search' (verified without any call: the key is present and the driver interpreter is the LLM venv).",
+          "changes_applied": [],
+          "at": "2026-11-23T06:49:46"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "This remains the appropriate Q4 comparison, but five blocks limit precision and the frozen residual limits claims to recovery construction. I accept the implementer's package-isolation, replay, batching, process, seed-stream and token-cap arguments because they preserve the comparison while protecting recorded code and avoiding unnecessary simulator spending. Retain the prediction that paired_success_difference will increase by at least 0.05 versus module_search/GRAMMAR, supported only when the block-level 95% interval lower bound reaches 0.05 and falsified_by an upper bound below 0.05; an interval containing zero establishes no advantage. Because these corrections have not been applied, revise rather than authorize spending against the obsolete protocol.",
+          "suggested_changes": [
+            "Use lares/envs/isaac_pen_spin/module_language.py and the necessary sibling module_search.py Isaac child, registered through scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml. Reuse llm_pool, R-109's generation/correction pattern and recovery_module rollouts; leave the decided structure_search.py unchanged.",
+            "Replace per-edit simulated identity checks with parent/child replay of all 2,048 smoke-case signal histories, including triggered cases, requiring matching module outputs within 1e-6 before training. Retain identity-preserving edit representations and parameter-inheritance tests; describe replay as a checked equivalence on those histories, not proof for every possible history. Charge smoke episodes within the existing ceiling.",
+            "Freeze the common target set as reset posture, mid-range zero action, or root action held from trigger time. Use one interpreter with per-environment structural switches and reset all module memory per episode.",
+            "Adopt the proposed sequential branch-training processes and four-slot selection batches. Resolve the timing contradiction explicitly: score the unchanged entering parent together with the three trained branches after training, withholding that round's selection outcomes until construction and training finish. Preserve the 61,440 selection-episode allocation, frozen ranking and identical full-duration transition accounting.",
+            "Replace the additional integer-seed reservation with canonical SeedSequence child streams rooted only in the listed free namespaces 5300–5305 and 5310–5321. Precompute full stream keys, log intentional placement/direction sharing, and test uniqueness and ledger disjointness before generation. Check placement hashes using permitted manifests or existing provenance metadata without reading any locked split.",
+            "Update the separately agreed generation ceiling to 20 initial calls plus at most 20 linked corrections, each capped at 16,000 input and 32,000 output tokens including reasoning: at most 1,920,000 total tokens. Retain gpt-6.1-sol, high reasoning effort, temperature 1, invalid-slot parent copies and actual-usage logging.",
+            "Retain the ceilings of 4,900,000 simulator starts, 1,764,000,000 transitions and 660 wall-time minutes, with no automatic extension. Update the launch command to gpu run 'source ~/.profile; python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study module_search' and preserve all frozen assets, JOINT qualification comparisons and the unchanged six-second contract."
+          ],
+          "priority": 1,
+          "call_id": "call_00308",
+          "briefing_sha256": "3329c5aecdbb06fba75c15d222e2d810f771c71f83f2ea9e9a3b40782f10f2fa",
+          "at": "2026-11-23T06:50:28"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agreed: the advisor's round-2 list is exactly my corrections plus the explicit selection timing (the unchanged entering parent is scored together with the three trained branches after training, in one four-slot batch) and the replay wording (a checked equivalence on the smoke histories, not a proof). I apply them as written.",
+          "changes_applied": [],
+          "at": "2026-11-23T06:50:49"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "With Q1–Q3 complete, this tests whether failure-informed LLM recovery edits outperform matched grammar search; it does not reopen D-090's isolated hand-back hypothesis. I accept the implementer's package isolation, replay-based equivalence check, batching, selection timing, seed-stream design and token-cap correction, now incorporated while reusing scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml. The weakest points are five-block precision and conditioning on the frozen R-106 residual: the prediction remains paired_success_difference increase >= 0.05 against module_search/GRAMMAR, supported only by a block-level 95% interval lower bound >= 0.05 and falsified_by an upper bound < 0.05; an interval including zero establishes no advantage. Approve the separate generation budget and hard ceilings of 4,900,000 simulator starts, 1,764,000,000 transitions, 660 wall-time minutes and 40 model calls totaling at most 1,920,000 tokens, with JOINT retained as reference and no incumbent installation.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00309",
+          "briefing_sha256": "e6b9365bf99c8908f04e5e1ae2788356d02073fd32e2186a865a9c399c2fd2ec",
+          "at": "2026-11-23T06:51:14"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve the revised protocol: three arms with identical ARS, branch and continuation allocations (36 updates each), a ranking rule frozen before outcomes, five independent blocks, replay-checked identity inheritance, non-colliding SeedSequence streams, 40 generation calls at most, 4.9 M starts and 660 minutes, and a block-level primary with its limited precision stated. The implementation is one language module, one search module with its child, a config block and tests.",
+          "changes_applied": [],
+          "at": "2026-11-23T06:51:21"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 3
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-23T06:50:51",
+      "round": 2,
+      "patch": {
+        "protocol": {
+          "code_changes": [
+            "config/pen_spin_plateau_repair.yaml: register module_search before outcomes. Use the frozen config/pen_spin/r106_success_ars_finalist residual, the scripted 11-parameter recovery initialization, and the unchanged six-second Stage-3 evaluation contract. Search recovery modules only; keep the residual frozen. Hash and preserve all existing assets; no default-incumbent installation.",
+            "lares/envs/isaac_pen_spin/module_language.py: add the missing strict-JSON recovery language, shared validator, uniform grammar sampler and RecoveryController-compatible interpreter. Operations: single, periodic-until-fired or two-step trigger schedules; bounded conjunctions over windowed mean absolute axial rate, centre distance, transverse rate, rate trend and one resettable leaky deficit integral; bounded finger-group posture blending with ramps; timed or observation-terminated support and boost with hard maxima; blend targets frozen as reset posture, mid-range zero action, or the root action held from trigger time; one attempt or two with a re-arm condition. Reset all memory per episode. Freeze primitive definitions and numeric bounds before generation. One interpreter with per-environment structural switches, so one batch can hold different structures.",
+            "lares/envs/isaac_pen_spin/module_language.py: each edit changes exactly one component and introduces at most four bounded parameters, including any activation gate needed for identity initialization. Inherit unchanged parameters exactly. Identity before training is checked by replay, not simulation: the smoke records the module's input signal histories (windowed rate, centre distance, transverse rate, step) for all 2,048 smoke cases, including triggered ones; the shared validator replays them through parent and child and requires matching module outputs (per-group blend weight, target selector, boost scale) within 1e-6 at every step; a failing edit is invalid. This is a checked equivalence on those histories, not a proof for every history. Common caps: three edits deep, 23 module parameters, bounded state, unchanged action limits and frozen root. The two-round protocol reaches at most two edits. Reject edits lacking an identity-preserving representation.",
+            "lares/envs/isaac_pen_spin/module_search.py (a sibling study module that is also its own Isaac child), registered through scripts/run_full_evolution.py and config/pen_spin_plateau_repair.yaml: reuse llm_pool, R-109's generation/correction pattern and recovery_module's rollouts; the decided structure_search.py is left unchanged. Run five independent blocks with no cross-block outcome feedback and no concurrent research protocol. One Isaac process per (block, arm, round) trains its three branches in sequence and one per (block, arm) runs the 12-update continuation; every training rollout runs the full 360 steps for all 2,048 environments, so transition accounting is identical across arms.",
+            "config/pen_spin_plateau_repair.yaml: give all arms the same language, bounds, root interface, scripted template JSON, and immutable prior-findings paragraph covering D-090's failure proportions, D-082's null second attempt, D-085's null offsets and D-089's reset weakness. Each arm has access to its own parent parameters, training/selection statistics and failure-category table. No source-code examples, traces, or trained R-118/JOINT module parameters are supplied to construction. The only example is the scripted template JSON. GRAMMAR samples uniformly without replacement from valid structural edits; FIXED cannot edit structure.",
+            "config/pen_spin_plateau_repair.yaml: all three arms use frozen ARS settings: four antithetic direction pairs, 512 common placements per signed candidate, existing 2,048-env batching, nu 0.1 and alpha 0.05. Each round trains three branches for four updates each; after two rounds, the selected branch continues for 12 updates. FIXED uses three prespecified stochastic-ARS continuations of the unchanged template per round; GRAMMAR and LLM use one parent-structure continuation and two edits. Thus every arm spends 36 updates, including identical branch and continuation allocations. This replaces duplicate FIXED checkpoint scoring with useful parameter-search allocation and identical selection rules.",
+            "config/pen_spin_plateau_repair.yaml: selection. After a round's three branches are trained, one four-slot 2,048-environment batch scores the unchanged entering parent and the three trained branches on the same 512 fresh search-validation placements (4 x 512 selection episodes per arm per round, 61,440 in all); that round's selection outcomes are withheld until its construction and training have finished. Placements are paired across arms within a block. Rank eligible branches by sustained-success count, requiring empirical drop-rate increase <= 0.05 against the entering parent; ties prefer the parent structure, then earlier slot. If none qualifies, retain the entering parent. This ranking is frozen before any outcome; it is not a promotion gate. No other validation access.",
+            "scripts/run_full_evolution.py: LLM uses gpt-6.1-sol, reasoning_effort high, temperature 1. Explicit controller-generation budget requiring agreement: 20 initial calls plus at most one linked correction per slot, maximum 40 calls total. Cap each call at 16,000 input and 32,000 output tokens, including reasoning, for at most 1,920,000 tokens. An invalid or duplicate edit after correction becomes a logged parent-copy branch trained with its allocated budget; no replacement generation. Record calls, tokens, latency and invalid-slot rate separately.",
+            "lares/envs/isaac_pen_spin/module_search.py: seeds 5300-5304 are the block namespaces, 5305 the smoke, 5310-5321 confirmation. Every other stream is a canonical numpy SeedSequence child keyed by the full tuple (block seed, arm, round, branch, role, update); no further integer seed is consumed. Placement streams are shared across arms by omitting the arm from the key and direction streams share their leading coordinates; every intentional sharing is logged as an alias. Precompute all keys and test uniqueness and seed-ledger disjointness before generation; check every placement hash against the committed pen-spin manifests. Full-duration batches equalize stepped transitions; early termination cannot purchase extra evaluations or updates.",
+            "config/pen_spin_plateau_repair.yaml: freeze all 15 terminal finalists before confirmation. Evaluate them plus frozen R-106, D-072, R-118 and R-121 JOINT on the same twelve fresh 128-case manifests: 19 policies, 228 cells, 29,184 scored episodes. JOINT remains the experimental reference. No confirmation feedback returns to construction.",
+            "scripts/run_full_evolution.py: primary inference uses five block-level paired differences, not pooled episode pseudo-replicates. Predeclare one Holm family for the five secondary block-level contrasts (each search minus FIXED; each arm minus R-106) and 15 finalist-minus-JOINT qualification tests. Qualification requires a strictly positive paired-success interval lower bound and paired drop-increase interval upper bound <= 0.05. Report unadjusted estimates alongside adjusted inference, all finalists, and the limited five-block precision; no automatic replication or budget expansion.",
+            "scripts/run_full_evolution.py: report success against parameters, active components, simulator transitions, model tokens and wall time. Measure executed authority using trigger/transition counts, support/boost durations, bound activity and action differences against the identity-disabled edit at identical observations. Budget accounting: 2,211,840 scored training episodes, 61,440 selection episodes and 29,184 confirmation episodes; at most 20,000 smoke starts. The 4,900,000-start ceiling includes all warm-up, reset and padding overhead, with at most 1,764,000,000 simulator transitions and 660 wall-time minutes. Stop at a ceiling; additional spending needs a new agreement.",
+            "tests/test_module_language.py and tests/test_module_search.py: add schema, bounds, memory reset, identity initialization, parameter inheritance, uniform-sampler and full-tuple seed-uniqueness tests; test matched arm accounting and frozen selection before any controller-generation call."
+          ],
+          "command": "gpu run 'source ~/.profile; python -u scripts/run_full_evolution.py --config config/pen_spin_plateau_repair.yaml --study module_search'"
+        }
+      },
+      "note": "Agreed round-2 corrections: package modules, replay identity check, frozen target set, union interpreter, process layout, post-training four-slot selection, SeedSequence streams, 32k output cap, launch command"
+    }
+  ]
+}
