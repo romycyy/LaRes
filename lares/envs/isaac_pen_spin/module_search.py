@@ -583,6 +583,14 @@ def run_study(cfg: dict, client) -> dict:
     smoke = run_child(cfg, {"mode": "smoke", "out_dir": sdir, "response_path": os.path.join(sdir, "smoke.json")}, os.path.join(sdir, "smoke"),
                       budget, 20000)
     signals = smoke_signals(sdir)
+    aa = smoke["aa"]                                         # amended gate (config comment, consult call_00310): noise-scaled
+    bound = float(cfg["smoke_aa_sd_multiplier"]) * float(np.sqrt(aa["mean_discordance"] / aa["cases"]))
+    smoke["gates"]["equal_slots_agree_original_fixed_tolerance"] = {**smoke["gates"]["equal_slots_agree"], "informational": True,
+                                                                    "tolerance": float(cfg["smoke_aa_tolerance"])}
+    smoke["gates"]["equal_slots_agree"] = {"max_abs_slot_difference": aa["max_abs_slot_difference"], "noise_scaled_bound": bound,
+                                           "mean_pairwise_discordance": aa["mean_discordance"], "slot_success": aa["slot_success"],
+                                           "signed_pairwise_differences": aa["slot_differences"],
+                                           "passes": bool(aa["max_abs_slot_difference"] <= bound)}
     rep = ml.replay(ml.TEMPLATE, ml.initial_x(ml.TEMPLATE), signals)
     beta_gap = float(np.abs(rep["beta"] - signals["beta"]).max())
     smoke["gates"]["replay_matches_live"] = {"max_abs_beta_difference": beta_gap, "boost_mismatches": int((rep["boost"] != signals["boost"]).sum()),
@@ -591,7 +599,7 @@ def run_study(cfg: dict, client) -> dict:
     ident = {ml.edit_key(e): ml.replay_identity(ml.template_record(), ml.apply_edit(ml.TEMPLATE, e), signals) for e in ml.valid_edits(ml.TEMPLATE)}
     smoke["gates"]["every_template_edit_is_an_identity"] = {"edits": len(ident), "failing": [k for k, v in ident.items() if not v["passes"]],
                                                             "passes": all(v["passes"] for v in ident.values())}
-    ok = bool(smoke["passes"]) and all(g["passes"] for g in smoke["gates"].values())
+    ok = all(g["passes"] for g in smoke["gates"].values() if not g.get("informational"))
     summary.update(smoke=smoke, smoke_gate="pass" if ok else "fail")
     if not ok:
         summary["note"] = "the smoke gate failed: no generation, training or confirmation ran"

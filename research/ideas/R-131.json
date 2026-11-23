@@ -67,7 +67,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "approved",
+  "status": "running",
   "source": "advisor",
   "falsified_by": "The block-level 95% interval upper bound is below +0.05; otherwise failure to meet the support criterion is inconclusive. An interval including zero is not evidence of an LLM advantage. Report grammar success without LLM advantage if that is the outcome.",
   "cost_estimate": {
@@ -87,7 +87,12 @@
     "round": 3,
     "note": "With Q1–Q3 complete, this tests whether failure-informed LLM recovery edits outperform matched grammar search; it does not reopen D-090's isolated hand-back hypothesis. I accept the implementer's package isolation, replay-based equivalence check, batching, selection timing, seed-stream design and to"
   },
-  "run": {},
+  "run": {
+    "started_at": "2026-11-23T07:05:48",
+    "git_sha": "0222443ee7aff5ad34aff3603317481885e3d597",
+    "dirty_worktree": false,
+    "log_dir": "logs/pen_spin/r131_module_search"
+  },
   "result": {},
   "prediction_outcome": {},
   "verdicts": [],
@@ -98,6 +103,12 @@
       "from": "proposed",
       "to": "approved",
       "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-23T07:05:48",
+      "from": "approved",
+      "to": "running",
+      "note": "git 0222443ee7"
     }
   ],
   "created_at": "2026-11-23T06:47:24",

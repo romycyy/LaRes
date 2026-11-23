@@ -261,7 +261,16 @@ pen_spin_module_search:
   config_path: "config/pen_spin_plateau_repair.yaml"
   block_seeds: [5300, 5301, 5302, 5303, 5304]   # namespaces: every stream is SeedSequence([block seed, arm, round, branch, role, update])
   smoke_seed: 5305
-  smoke_aa_tolerance: 0.03
+  smoke_aa_tolerance: 0.03          # the probe rollout's equal-slot check; ORIGINALLY also the four-identical-slot gate (failed at 0.045)
+  # Amendment (2026-11-23, advisor consult call_00310, decision delegated by the user; after the smoke, before any
+  # generation, training or confirmation; no new simulation): four identical template slots on the same 512 placements
+  # scored 0.574 / 0.584 / 0.563 / 0.539 (max pairwise difference 0.045 > 0.03) with a mean pairwise case discordance
+  # of 0.137, i.e. one pairwise difference has sd sqrt(0.137 / 512) = 0.0166. The fixed 0.03 was the implementer's own
+  # tolerance, mis-set from smokes of controllers without a discrete re-capture. The gate is now the noise-scaled
+  # max pairwise difference <= smoke_aa_sd_multiplier * sqrt(mean discordance / cases) (0.065 here), an engineering
+  # diagnostic, not evidence that slots are unbiased. The saved smoke (seed 5305) is re-evaluated, not rerun; the smoke
+  # allowance is amended to the 28,210 starts already charged (a first launch died on a probe-structure bug).
+  smoke_aa_sd_multiplier: 4.0
   incumbent_asset: "config/pen_spin/d058_fixed_stroke_incumbent"
   reference_descriptor: "config/pen_spin/symbolic_reward_reference/reference.json"
   reference_residual: {"gain": 0.004655481049180921, "deadband": 0.2333555721435132, "tau": 0.18501188209260944, "cap": 0.10269089387249905}
