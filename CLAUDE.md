@@ -773,6 +773,15 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   run is `length >= 359` and the predicate on steps 299..358, and it differs from the six-second cell on 1-2 of 512
   cases for the module controllers; `runner.py` imports Isaac at module level, so anything a test needs lives in
   `cases.py`.
+- **R-130 result (D-090, refuted; hand-back archive screen, 2026-11-23; direction V2, Q3 first spend).**
+  `recovery_handback_audit.py` (`--study recovery_handback_archive`; no Isaac): the archived JOINT / transplant cells of
+  R-124 and R-126 aligned to the frozen module's decision (step 149; the per-case trigger is *reconstructed* from the
+  trace: centred and mean |rate| of archive indices 119..148 under 4.18), the end of support (index 183) and the end
+  of the stroke boost (243). **Failures that follow a healthy hand-back within 30 steps are 1.6% of cases** (48 of
+  3,072; 67 of 4,096; transplant 1.0%) against a 0.06 gate, so **Q3 closes with no hand-back simulation**. JOINT's
+  failures (R-124, of 3,072): 239 untriggered (94 early drops), 222 triggered and rolling again but not steadily by
+  the boundaries (147 persistent slow), 97 triggered and never rolling again (31 late drops), 20 lost later, 48
+  reachable. The observation at control step `t` is the state the archive stores at index `t - 1`.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

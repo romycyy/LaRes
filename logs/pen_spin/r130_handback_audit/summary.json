@@ -1,0 +1,1442 @@
+{
+ "study": "recovery_handback_archive",
+ "timeline": {
+  "decision_step": 149,
+  "threshold": 4.176750425189703,
+  "centre_tolerance": 0.08,
+  "rate_window": 30,
+  "support_steps": 35,
+  "boost_steps": 60,
+  "support_end": 183,
+  "boost_end": 243,
+  "stroke_multiplier": 1.4547363433026508
+ },
+ "simulation": "none",
+ "definitions": {
+  "healthy_steps": 10,
+  "loss_window": 30,
+  "reachable": "reconstructed trigger, eventual failure, healthy hand-back at either boundary (the predicate true and the pen centred on each of the preceding steps), first predicate loss or drop within the window",
+  "caveat": "a temporal-association screen: not evidence that the loss caused the failure or that a hand-back rule could recover it; trigger flags are reconstructed, not recorded"
+ },
+ "failure_labels": 0.015625,
+ "gate_statistics": {
+  "threshold": 0.06,
+  "fractions": {
+   "r124_joint": 0.015625,
+   "r126_joint": 0.016357421875
+  },
+  "ci95": {
+   "r124_joint": [
+    0.011236969036932401,
+    0.0200130309630676
+   ],
+   "r126_joint": [
+    0.012471217750304534,
+    0.020243625999695466
+   ]
+  },
+  "verdict": "refuted",
+  "simulation_eligible": false,
+  "rule": "supported: every gate archive's lower 95% bound at or above the threshold; refuted: any gate archive's upper bound below it; simulation is eligible for a separate agreement only if every gate archive's fraction reaches the threshold"
+ },
+ "verdict": "refuted",
+ "archives": {
+  "r124_joint": {
+   "cases": 3072,
+   "manifests": 24,
+   "reachable": {
+    "count": 48,
+    "cases": 3072,
+    "fraction": 0.015625,
+    "ci95": [
+     0.011236969036932401,
+     0.0200130309630676
+    ],
+    "manifest_clustered_ci95": [
+     0.010570176607173031,
+     0.02067982339282697
+    ]
+   },
+   "categories": {
+    "success": {
+     "count": 2446,
+     "cases": 3072,
+     "fraction": 0.7962239583333334,
+     "ci95": [
+      0.7819720321510949,
+      0.8104758845155718
+     ],
+     "manifest_clustered_ci95": [
+      0.7802416702156608,
+      0.8122062464510059
+     ]
+    },
+    "untriggered_failure": {
+     "count": 239,
+     "cases": 3072,
+     "fraction": 0.07779947916666667,
+     "ci95": [
+      0.06832227123916992,
+      0.08727668709416342
+     ],
+     "manifest_clustered_ci95": [
+      0.06946062813078907,
+      0.08613833020254427
+     ]
+    },
+    "reachable": {
+     "count": 48,
+     "cases": 3072,
+     "fraction": 0.015625,
+     "ci95": [
+      0.011236969036932401,
+      0.0200130309630676
+     ],
+     "manifest_clustered_ci95": [
+      0.010570176607173031,
+      0.02067982339282697
+     ]
+    },
+    "dropped_during_blend": {
+     "count": 0,
+     "cases": 3072,
+     "fraction": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "manifest_clustered_ci95": [
+      0.0,
+      0.0
+     ]
+    },
+    "never_recaptured": {
+     "count": 97,
+     "cases": 3072,
+     "fraction": 0.031575520833333336,
+     "ci95": [
+      0.02538841530521403,
+      0.03776262636145264
+     ],
+     "manifest_clustered_ci95": [
+      0.026031478427552702,
+      0.037119563239113966
+     ]
+    },
+    "pre_boundary_loss": {
+     "count": 222,
+     "cases": 3072,
+     "fraction": 0.072265625,
+     "ci95": [
+      0.06310432534681314,
+      0.08142692465318686
+     ],
+     "manifest_clustered_ci95": [
+      0.06417030550721431,
+      0.08036094449278569
+     ]
+    },
+    "later_loss": {
+     "count": 20,
+     "cases": 3072,
+     "fraction": 0.006510416666666667,
+     "ci95": [
+      0.003664871825479277,
+      0.009355961507854057
+     ],
+     "manifest_clustered_ci95": [
+      0.003485854773185331,
+      0.009534978560148004
+     ]
+    }
+   },
+   "triggered": {
+    "reconstructed": 1191,
+    "successes": 804,
+    "failures": 387,
+    "recorded_all_episodes": 1236,
+    "cells_exceeding_recorded_upper_bound": 0
+   },
+   "indexing_sensitivity": {
+    "trigger_flags_changed": 8,
+    "reachable_one_step_later": {
+     "count": 47,
+     "cases": 3072,
+     "fraction": 0.015299479166666666,
+     "ci95": [
+      0.010956679560551406,
+      0.019642278772781928
+     ],
+     "manifest_clustered_ci95": [
+      0.010108040312414506,
+      0.020490918020918826
+     ]
+    }
+   },
+   "window_sensitivity": {
+    "15": {
+     "count": 38,
+     "cases": 3072,
+     "fraction": 0.012369791666666666,
+     "ci95": [
+      0.008459062342952933,
+      0.0162805209903804
+     ],
+     "manifest_clustered_ci95": [
+      0.008368672369129544,
+      0.01637091096420379
+     ]
+    },
+    "60": {
+     "count": 55,
+     "cases": 3072,
+     "fraction": 0.017903645833333332,
+     "ci95": [
+      0.01321197892538438,
+      0.022595312741282285
+     ],
+     "manifest_clustered_ci95": [
+      0.013291381297559544,
+      0.02251591036910712
+     ]
+    }
+   },
+   "reachable_by_boundary": {
+    "support_end": 15,
+    "boost_end": 33
+   },
+   "reachable_by_final_label": {
+    "drop_early": 0,
+    "drop_late": 0,
+    "off_centre": 1,
+    "persistent_slow": 28,
+    "intermittent": 11,
+    "near_miss": 8
+   },
+   "failure_labels_by_category": {
+    "untriggered_failure": {
+     "drop_early": 94,
+     "drop_late": 4,
+     "off_centre": 30,
+     "persistent_slow": 42,
+     "intermittent": 32,
+     "near_miss": 37
+    },
+    "reachable": {
+     "drop_early": 0,
+     "drop_late": 0,
+     "off_centre": 1,
+     "persistent_slow": 28,
+     "intermittent": 11,
+     "near_miss": 8
+    },
+    "dropped_during_blend": {
+     "drop_early": 0,
+     "drop_late": 0,
+     "off_centre": 0,
+     "persistent_slow": 0,
+     "intermittent": 0,
+     "near_miss": 0
+    },
+    "never_recaptured": {
+     "drop_early": 0,
+     "drop_late": 31,
+     "off_centre": 3,
+     "persistent_slow": 63,
+     "intermittent": 0,
+     "near_miss": 0
+    },
+    "pre_boundary_loss": {
+     "drop_early": 0,
+     "drop_late": 7,
+     "off_centre": 5,
+     "persistent_slow": 147,
+     "intermittent": 44,
+     "near_miss": 19
+    },
+    "later_loss": {
+     "drop_early": 0,
+     "drop_late": 0,
+     "off_centre": 0,
+     "persistent_slow": 1,
+     "intermittent": 4,
+     "near_miss": 15
+    }
+   },
+   "reachable_loss_delay_quartiles": [
+    2.0,
+    4.0,
+    9.0
+   ],
+   "reachable_rolling_recovers": 16,
+   "per_cell": [
+    {
+     "manifest": "s5025",
+     "reconstructed_first_episode_triggers": 55,
+     "recorded_all_episode_triggers": 55,
+     "recorded_minus_reconstructed": 0,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "e9ac7489718c361990127b003724ec5830eefdfa62159962be3ed99f8af4823d"
+    },
+    {
+     "manifest": "s5041",
+     "reconstructed_first_episode_triggers": 48,
+     "recorded_all_episode_triggers": 49,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "5bffdf063c9eb35c94bda8623fffd7c01a68c07cc4d34d191d3b8fea0336e199"
+    },
+    {
+     "manifest": "s5042",
+     "reconstructed_first_episode_triggers": 49,
+     "recorded_all_episode_triggers": 51,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "1e99430e12c645e50b53fed5bec5db52416e9e973c54c7c65c8b45e2789fd4e7"
+    },
+    {
+     "manifest": "s5043",
+     "reconstructed_first_episode_triggers": 50,
+     "recorded_all_episode_triggers": 54,
+     "recorded_minus_reconstructed": 4,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "c011970888f8e8b015e501e13350aa7391b2859a001fc5a1066e1b43f11fb18d"
+    },
+    {
+     "manifest": "s5044",
+     "reconstructed_first_episode_triggers": 47,
+     "recorded_all_episode_triggers": 50,
+     "recorded_minus_reconstructed": 3,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "c2b0c2ca33f8e8f2111349654d5426e42fe08b019f225f56a6065f18a34cfa36"
+    },
+    {
+     "manifest": "s5045",
+     "reconstructed_first_episode_triggers": 45,
+     "recorded_all_episode_triggers": 46,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "07531f3dad8cb3d969bd0fff796f27d34e5b9fcd8e7d67e26050d39560fefde1"
+    },
+    {
+     "manifest": "s5046",
+     "reconstructed_first_episode_triggers": 47,
+     "recorded_all_episode_triggers": 51,
+     "recorded_minus_reconstructed": 4,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "a2d8f8b3a9bc4ccc71796f350c5c3a6eaab38337ba04ce98229e82b40ee69938"
+    },
+    {
+     "manifest": "s5047",
+     "reconstructed_first_episode_triggers": 55,
+     "recorded_all_episode_triggers": 57,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "bb4f6b276cd277a8c736d9f806e8d7b4f70230a61b6594bde757b35d20b1f4b0"
+    },
+    {
+     "manifest": "s5048",
+     "reconstructed_first_episode_triggers": 45,
+     "recorded_all_episode_triggers": 46,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "988106226b6826481e2a6d45149af4dfa4fa1617be8459c193687a6ca86c2fb0"
+    },
+    {
+     "manifest": "s5049",
+     "reconstructed_first_episode_triggers": 51,
+     "recorded_all_episode_triggers": 56,
+     "recorded_minus_reconstructed": 5,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "4ad98d159c13c77b955f19bad3cdd9ffba8a5e907ef637a8821c49edbf1c49d0"
+    },
+    {
+     "manifest": "s5050",
+     "reconstructed_first_episode_triggers": 48,
+     "recorded_all_episode_triggers": 50,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "82eac8aecf814e31debfce31cdc97407de52e976f07f1b679b0bf07164a143a7"
+    },
+    {
+     "manifest": "s5051",
+     "reconstructed_first_episode_triggers": 50,
+     "recorded_all_episode_triggers": 52,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "98bb3832cc96b5cb805bcfa8f4ee501296480e56289902ab7e0d72cc5335c393"
+    },
+    {
+     "manifest": "s5052",
+     "reconstructed_first_episode_triggers": 60,
+     "recorded_all_episode_triggers": 63,
+     "recorded_minus_reconstructed": 3,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "4f78815dedb00d168f38fd136f5af5729c8b1ad0cb8c607fd16485c5dcf12fc4"
+    },
+    {
+     "manifest": "s5053",
+     "reconstructed_first_episode_triggers": 40,
+     "recorded_all_episode_triggers": 40,
+     "recorded_minus_reconstructed": 0,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "eced2e3d9f71697702085ac7516c1b560773478011068c1dea97bb50700afec8"
+    },
+    {
+     "manifest": "s5054",
+     "reconstructed_first_episode_triggers": 48,
+     "recorded_all_episode_triggers": 49,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "c80f03fca089585c25b7eabb543238cda14678cc888b7db338999affd16f71b6"
+    },
+    {
+     "manifest": "s5055",
+     "reconstructed_first_episode_triggers": 48,
+     "recorded_all_episode_triggers": 50,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "8dc43da34b73e5085b28f4e6a88cb248702c608941a48e6c8396258acb0076a0"
+    },
+    {
+     "manifest": "s5056",
+     "reconstructed_first_episode_triggers": 55,
+     "recorded_all_episode_triggers": 56,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "ad94e196dd39b967ce003f4796c2e4b86e7aa0ec260e5d46f120118d5089c156"
+    },
+    {
+     "manifest": "s5057",
+     "reconstructed_first_episode_triggers": 58,
+     "recorded_all_episode_triggers": 58,
+     "recorded_minus_reconstructed": 0,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "dce5176f219266508a6e6d89438d846ee6c7f0d59f5cdf11b0737ce62f9f02d4"
+    },
+    {
+     "manifest": "s5058",
+     "reconstructed_first_episode_triggers": 54,
+     "recorded_all_episode_triggers": 59,
+     "recorded_minus_reconstructed": 5,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "92b5240cb3d93c3666abf4aa436652793476775f3f9aa99c227080f9c6a4ca6e"
+    },
+    {
+     "manifest": "s5059",
+     "reconstructed_first_episode_triggers": 37,
+     "recorded_all_episode_triggers": 38,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "bbe3c07b5e85c5dbc885b19302c188839a00871f72a01906f4dda3d4197e6d18"
+    },
+    {
+     "manifest": "s5060",
+     "reconstructed_first_episode_triggers": 55,
+     "recorded_all_episode_triggers": 56,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "b99032e711d5d5a5baed90939c3eb29dd3de2b08f0d15cf8342e42b9fc265ec7"
+    },
+    {
+     "manifest": "s5061",
+     "reconstructed_first_episode_triggers": 49,
+     "recorded_all_episode_triggers": 51,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "e14da1f88c6efd9c03a092d5d4239646e12447e69e54bd21e5d75124de203cf4"
+    },
+    {
+     "manifest": "s5062",
+     "reconstructed_first_episode_triggers": 42,
+     "recorded_all_episode_triggers": 44,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "7f96ef04e0373ca8418442c387715f2a77cc0ab483882fa4db08dde060f47f54"
+    },
+    {
+     "manifest": "s5063",
+     "reconstructed_first_episode_triggers": 55,
+     "recorded_all_episode_triggers": 55,
+     "recorded_minus_reconstructed": 0,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "7e6ac83f82e62575666b9b68dc23abf97c97279b1c1290115fc5aa429af93db0"
+    }
+   ]
+  },
+  "r126_joint": {
+   "cases": 4096,
+   "manifests": 32,
+   "reachable": {
+    "count": 67,
+    "cases": 4096,
+    "fraction": 0.016357421875,
+    "ci95": [
+     0.012471217750304534,
+     0.020243625999695466
+    ],
+    "manifest_clustered_ci95": [
+     0.013376553444837552,
+     0.01933829030516245
+    ]
+   },
+   "categories": {
+    "success": {
+     "count": 3243,
+     "cases": 4096,
+     "fraction": 0.791748046875,
+     "ci95": [
+      0.779307554675402,
+      0.804188539074598
+     ],
+     "manifest_clustered_ci95": [
+      0.7793024149042813,
+      0.8041936788457187
+     ]
+    },
+    "untriggered_failure": {
+     "count": 337,
+     "cases": 4096,
+     "fraction": 0.082275390625,
+     "ci95": [
+      0.07385677489209255,
+      0.09069400635790745
+     ],
+     "manifest_clustered_ci95": [
+      0.07443860238293219,
+      0.09011217886706781
+     ]
+    },
+    "reachable": {
+     "count": 67,
+     "cases": 4096,
+     "fraction": 0.016357421875,
+     "ci95": [
+      0.012471217750304534,
+      0.020243625999695466
+     ],
+     "manifest_clustered_ci95": [
+      0.013376553444837552,
+      0.01933829030516245
+     ]
+    },
+    "dropped_during_blend": {
+     "count": 0,
+     "cases": 4096,
+     "fraction": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "manifest_clustered_ci95": [
+      0.0,
+      0.0
+     ]
+    },
+    "never_recaptured": {
+     "count": 116,
+     "cases": 4096,
+     "fraction": 0.0283203125,
+     "ci95": [
+      0.023238014760746512,
+      0.03340261023925349
+     ],
+     "manifest_clustered_ci95": [
+      0.023428536379786445,
+      0.033212088620213555
+     ]
+    },
+    "pre_boundary_loss": {
+     "count": 302,
+     "cases": 4096,
+     "fraction": 0.07373046875,
+     "ci95": [
+      0.06572398718360452,
+      0.08173695031639548
+     ],
+     "manifest_clustered_ci95": [
+      0.06592794376786947,
+      0.08153299373213053
+     ]
+    },
+    "later_loss": {
+     "count": 31,
+     "cases": 4096,
+     "fraction": 0.007568359375,
+     "ci95": [
+      0.004913138246632416,
+      0.010223580503367583
+     ],
+     "manifest_clustered_ci95": [
+      0.005251780785542788,
+      0.009884937964457212
+     ]
+    }
+   },
+   "triggered": {
+    "reconstructed": 1597,
+    "successes": 1081,
+    "failures": 516,
+    "recorded_all_episodes": 1658,
+    "cells_exceeding_recorded_upper_bound": 0
+   },
+   "indexing_sensitivity": {
+    "trigger_flags_changed": 8,
+    "reachable_one_step_later": {
+     "count": 67,
+     "cases": 4096,
+     "fraction": 0.016357421875,
+     "ci95": [
+      0.012471217750304534,
+      0.020243625999695466
+     ],
+     "manifest_clustered_ci95": [
+      0.013376553444837552,
+      0.01933829030516245
+     ]
+    }
+   },
+   "window_sensitivity": {
+    "15": {
+     "count": 45,
+     "cases": 4096,
+     "fraction": 0.010986328125,
+     "ci95": [
+      0.00779275436074927,
+      0.01417990188925073
+     ],
+     "manifest_clustered_ci95": [
+      0.008228443862972968,
+      0.013744212387027032
+     ]
+    },
+    "60": {
+     "count": 88,
+     "cases": 4096,
+     "fraction": 0.021484375,
+     "ci95": [
+      0.017042209182987992,
+      0.025926540817012008
+     ],
+     "manifest_clustered_ci95": [
+      0.017979428559047377,
+      0.024989321440952623
+     ]
+    }
+   },
+   "reachable_by_boundary": {
+    "support_end": 20,
+    "boost_end": 47
+   },
+   "reachable_by_final_label": {
+    "drop_early": 0,
+    "drop_late": 0,
+    "off_centre": 6,
+    "persistent_slow": 27,
+    "intermittent": 18,
+    "near_miss": 16
+   },
+   "failure_labels_by_category": {
+    "untriggered_failure": {
+     "drop_early": 146,
+     "drop_late": 8,
+     "off_centre": 35,
+     "persistent_slow": 52,
+     "intermittent": 51,
+     "near_miss": 45
+    },
+    "reachable": {
+     "drop_early": 0,
+     "drop_late": 0,
+     "off_centre": 6,
+     "persistent_slow": 27,
+     "intermittent": 18,
+     "near_miss": 16
+    },
+    "dropped_during_blend": {
+     "drop_early": 0,
+     "drop_late": 0,
+     "off_centre": 0,
+     "persistent_slow": 0,
+     "intermittent": 0,
+     "near_miss": 0
+    },
+    "never_recaptured": {
+     "drop_early": 0,
+     "drop_late": 52,
+     "off_centre": 2,
+     "persistent_slow": 62,
+     "intermittent": 0,
+     "near_miss": 0
+    },
+    "pre_boundary_loss": {
+     "drop_early": 0,
+     "drop_late": 6,
+     "off_centre": 2,
+     "persistent_slow": 231,
+     "intermittent": 42,
+     "near_miss": 21
+    },
+    "later_loss": {
+     "drop_early": 0,
+     "drop_late": 0,
+     "off_centre": 0,
+     "persistent_slow": 3,
+     "intermittent": 5,
+     "near_miss": 23
+    }
+   },
+   "reachable_loss_delay_quartiles": [
+    3.0,
+    7.0,
+    20.5
+   ],
+   "reachable_rolling_recovers": 40,
+   "per_cell": [
+    {
+     "manifest": "s5078",
+     "reconstructed_first_episode_triggers": 51,
+     "recorded_all_episode_triggers": 52,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "4f0044cbe7162fb54b3a1e1cdff55bda93bc1250044de162af629b02e3f36ee1"
+    },
+    {
+     "manifest": "s5079",
+     "reconstructed_first_episode_triggers": 52,
+     "recorded_all_episode_triggers": 54,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "c945287e7d4ad1e374a5b8a1362a9080479ae0981e84f1d3bcd461e4a48b578b"
+    },
+    {
+     "manifest": "s5080",
+     "reconstructed_first_episode_triggers": 57,
+     "recorded_all_episode_triggers": 61,
+     "recorded_minus_reconstructed": 4,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "cb67fc183979ecce1047fe47046bc2959849172b78e6261bd77540e6533578b6"
+    },
+    {
+     "manifest": "s5081",
+     "reconstructed_first_episode_triggers": 51,
+     "recorded_all_episode_triggers": 54,
+     "recorded_minus_reconstructed": 3,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "fc1c00cadcb3c0d4118c28db71672a49e07b9efca4a7f5f332464213691a1fb1"
+    },
+    {
+     "manifest": "s5082",
+     "reconstructed_first_episode_triggers": 55,
+     "recorded_all_episode_triggers": 56,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "0778b88a8935888dcfb7f1f9b1a0625bdad7aa717f1ec392312ef717d9f86d9e"
+    },
+    {
+     "manifest": "s5083",
+     "reconstructed_first_episode_triggers": 57,
+     "recorded_all_episode_triggers": 59,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "523e90dca9479fb551750e5dcf001b55f772d4dfa9a47f4b7562fecc220523db"
+    },
+    {
+     "manifest": "s5084",
+     "reconstructed_first_episode_triggers": 46,
+     "recorded_all_episode_triggers": 49,
+     "recorded_minus_reconstructed": 3,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "f1288d8ec2da7e36d55bdff2cb98511acb0a6658e127b6b5f6f45687cfe2d1ac"
+    },
+    {
+     "manifest": "s5085",
+     "reconstructed_first_episode_triggers": 36,
+     "recorded_all_episode_triggers": 37,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "e88aa358a8bea2a63c3d3a1c13ecdfc235bea6f0a46bcf0aa6a8cd49ee7fa5d9"
+    },
+    {
+     "manifest": "s5086",
+     "reconstructed_first_episode_triggers": 50,
+     "recorded_all_episode_triggers": 53,
+     "recorded_minus_reconstructed": 3,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "15cd1d5e4e0c5ec86d3885bef2bb2da71ef07155992cb48a1d0acf884ecd2d6a"
+    },
+    {
+     "manifest": "s5087",
+     "reconstructed_first_episode_triggers": 65,
+     "recorded_all_episode_triggers": 67,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "397b759bd3188030e2cfb4c1c795b7da84b76a2fa2c4dfe2852373d673413f7b"
+    },
+    {
+     "manifest": "s5088",
+     "reconstructed_first_episode_triggers": 46,
+     "recorded_all_episode_triggers": 49,
+     "recorded_minus_reconstructed": 3,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "d8c6f3f1cd1067c93909bb6b3b32d71de64ee7c2ec06f4d3bfb2e6b9e48ad103"
+    },
+    {
+     "manifest": "s5089",
+     "reconstructed_first_episode_triggers": 45,
+     "recorded_all_episode_triggers": 45,
+     "recorded_minus_reconstructed": 0,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "7bb7546c1667f048ab145fd6c59b1e9a2168a65a08a1f553d49abfe753292ffc"
+    },
+    {
+     "manifest": "s5090",
+     "reconstructed_first_episode_triggers": 46,
+     "recorded_all_episode_triggers": 49,
+     "recorded_minus_reconstructed": 3,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "cba655447cc7c1c2d1ab0a748bfdd2552cc83eb33eefafc5070914e96b0266a0"
+    },
+    {
+     "manifest": "s5091",
+     "reconstructed_first_episode_triggers": 39,
+     "recorded_all_episode_triggers": 40,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "678a17d55305d0c02fda5196a1fd5328cbe1ddce7bd5de3a58976053f77878ef"
+    },
+    {
+     "manifest": "s5092",
+     "reconstructed_first_episode_triggers": 43,
+     "recorded_all_episode_triggers": 45,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "d509f0cc26ffbc66e7381bf2d0bc28ca72a850f686ec6fbf9a24578cbec408aa"
+    },
+    {
+     "manifest": "s5093",
+     "reconstructed_first_episode_triggers": 46,
+     "recorded_all_episode_triggers": 46,
+     "recorded_minus_reconstructed": 0,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "2682c921ebca7a12c02b3c3fd24846dfd29023edbef60c33d417a97afe9f0509"
+    },
+    {
+     "manifest": "s5114",
+     "reconstructed_first_episode_triggers": 57,
+     "recorded_all_episode_triggers": 60,
+     "recorded_minus_reconstructed": 3,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "6e92651a5826592d6da0498fee76ba9bc9bb60fdf37e0c368396ce3cc3329d1a"
+    },
+    {
+     "manifest": "s5115",
+     "reconstructed_first_episode_triggers": 50,
+     "recorded_all_episode_triggers": 50,
+     "recorded_minus_reconstructed": 0,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "3373d97decf283f53be56a45f4b804f5b8d4084351cce31be17dea61f2b86996"
+    },
+    {
+     "manifest": "s5116",
+     "reconstructed_first_episode_triggers": 53,
+     "recorded_all_episode_triggers": 55,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "62258108d68fc362917153e5b81fb838c4b8141a82d30ab97986e66406926635"
+    },
+    {
+     "manifest": "s5117",
+     "reconstructed_first_episode_triggers": 52,
+     "recorded_all_episode_triggers": 55,
+     "recorded_minus_reconstructed": 3,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "d2743ddc864f6a9277ec1fbba719f1f1a382ad35ab20f1f5f739bc66c73b3e51"
+    },
+    {
+     "manifest": "s5118",
+     "reconstructed_first_episode_triggers": 59,
+     "recorded_all_episode_triggers": 60,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "0a7de1268d454ed8681edf3aa1f3e328046bd158e87b2951d094edef13edf598"
+    },
+    {
+     "manifest": "s5119",
+     "reconstructed_first_episode_triggers": 43,
+     "recorded_all_episode_triggers": 43,
+     "recorded_minus_reconstructed": 0,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "1f9b46cb09546494d0c1fe6f6f6bf737ff08516fa377c61f164002cc2757bee2"
+    },
+    {
+     "manifest": "s5120",
+     "reconstructed_first_episode_triggers": 52,
+     "recorded_all_episode_triggers": 53,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "fd3263d3b9d545503361e679416fc48462ecd550c6fe7649eb0601c69fbda701"
+    },
+    {
+     "manifest": "s5121",
+     "reconstructed_first_episode_triggers": 44,
+     "recorded_all_episode_triggers": 46,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "ea4dd765babf5680dbc7c0951cf375dc6fd0af4a0305ca13684aa9695ccf1708"
+    },
+    {
+     "manifest": "s5122",
+     "reconstructed_first_episode_triggers": 44,
+     "recorded_all_episode_triggers": 50,
+     "recorded_minus_reconstructed": 6,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "bce057523568a1d5407a0bdeb71cf4369324697d8a9e4341286c4c4da9968914"
+    },
+    {
+     "manifest": "s5123",
+     "reconstructed_first_episode_triggers": 53,
+     "recorded_all_episode_triggers": 55,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "c3258052457d7b4e69ce40ac68f6f36747b6b44c9c985c5119e4c03a90db3c88"
+    },
+    {
+     "manifest": "s5124",
+     "reconstructed_first_episode_triggers": 48,
+     "recorded_all_episode_triggers": 50,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "91c0ff12fd5465e683b3cfbefda5f370ba663ee52d716d6d6c65ac67cc909ffe"
+    },
+    {
+     "manifest": "s5125",
+     "reconstructed_first_episode_triggers": 56,
+     "recorded_all_episode_triggers": 59,
+     "recorded_minus_reconstructed": 3,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "c157627bead05791ca9a7a75bdcfba282ca7ae95240fa4fef69e0953f163da1e"
+    },
+    {
+     "manifest": "s5126",
+     "reconstructed_first_episode_triggers": 53,
+     "recorded_all_episode_triggers": 55,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "9646cef0f31f93a43b687c4c187f493172d0c92865583be4d622cea20d57b994"
+    },
+    {
+     "manifest": "s5127",
+     "reconstructed_first_episode_triggers": 50,
+     "recorded_all_episode_triggers": 51,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "405d89b000ed149183a0d19e58fcd7f48fe603ff6f4e5de13cccfbb24773dba9"
+    },
+    {
+     "manifest": "s5128",
+     "reconstructed_first_episode_triggers": 50,
+     "recorded_all_episode_triggers": 51,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "909a95983c751c9a9825f815cdc825ff956bc640209ccebc86bf1f04b6d76867"
+    },
+    {
+     "manifest": "s5129",
+     "reconstructed_first_episode_triggers": 48,
+     "recorded_all_episode_triggers": 49,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "2d0ba84b861c7cabd9c3a5d634d3603d5ea8fef23e4ff92eba095a8e4fd2f63f"
+    }
+   ]
+  },
+  "r126_transplant": {
+   "cases": 4096,
+   "manifests": 32,
+   "reachable": {
+    "count": 40,
+    "cases": 4096,
+    "fraction": 0.009765625,
+    "ci95": [
+     0.006752837213008898,
+     0.012778412786991102
+    ],
+    "manifest_clustered_ci95": [
+     0.00690384821462738,
+     0.012627401785372621
+    ]
+   },
+   "categories": {
+    "success": {
+     "count": 3215,
+     "cases": 4096,
+     "fraction": 0.784912109375,
+     "ci95": [
+      0.7723237823645387,
+      0.7975004363854613
+     ],
+     "manifest_clustered_ci95": [
+      0.7726869206884822,
+      0.7971372980615178
+     ]
+    },
+    "untriggered_failure": {
+     "count": 393,
+     "cases": 4096,
+     "fraction": 0.095947265625,
+     "ci95": [
+      0.08692402155954682,
+      0.10497050969045318
+     ],
+     "manifest_clustered_ci95": [
+      0.08644950813477767,
+      0.10544502311522233
+     ]
+    },
+    "reachable": {
+     "count": 40,
+     "cases": 4096,
+     "fraction": 0.009765625,
+     "ci95": [
+      0.006752837213008898,
+      0.012778412786991102
+     ],
+     "manifest_clustered_ci95": [
+      0.00690384821462738,
+      0.012627401785372621
+     ]
+    },
+    "dropped_during_blend": {
+     "count": 0,
+     "cases": 4096,
+     "fraction": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "manifest_clustered_ci95": [
+      0.0,
+      0.0
+     ]
+    },
+    "never_recaptured": {
+     "count": 117,
+     "cases": 4096,
+     "fraction": 0.028564453125,
+     "ci95": [
+      0.023460937205812195,
+      0.033667969044187805
+     ],
+     "manifest_clustered_ci95": [
+      0.02487388605743581,
+      0.03225502019256419
+     ]
+    },
+    "pre_boundary_loss": {
+     "count": 314,
+     "cases": 4096,
+     "fraction": 0.07666015625,
+     "ci95": [
+      0.0685090761744768,
+      0.0848112363255232
+     ],
+     "manifest_clustered_ci95": [
+      0.06699669251410689,
+      0.08632361998589311
+     ]
+    },
+    "later_loss": {
+     "count": 17,
+     "cases": 4096,
+     "fraction": 0.004150390625,
+     "ci95": [
+      0.002180732342193055,
+      0.006120048907806945
+     ],
+     "manifest_clustered_ci95": [
+      0.002128785973756635,
+      0.0061719952762433646
+     ]
+    }
+   },
+   "triggered": {
+    "reconstructed": 1545,
+    "successes": 1057,
+    "failures": 488,
+    "recorded_all_episodes": 1596,
+    "cells_exceeding_recorded_upper_bound": 0
+   },
+   "indexing_sensitivity": {
+    "trigger_flags_changed": 8,
+    "reachable_one_step_later": {
+     "count": 40,
+     "cases": 4096,
+     "fraction": 0.009765625,
+     "ci95": [
+      0.006752837213008898,
+      0.012778412786991102
+     ],
+     "manifest_clustered_ci95": [
+      0.00690384821462738,
+      0.012627401785372621
+     ]
+    }
+   },
+   "window_sensitivity": {
+    "15": {
+     "count": 31,
+     "cases": 4096,
+     "fraction": 0.007568359375,
+     "ci95": [
+      0.004913138246632416,
+      0.010223580503367583
+     ],
+     "manifest_clustered_ci95": [
+      0.0048454972864145395,
+      0.010291221463585461
+     ]
+    },
+    "60": {
+     "count": 49,
+     "cases": 4096,
+     "fraction": 0.011962890625,
+     "ci95": [
+      0.008632047218975206,
+      0.015293734031024794
+     ],
+     "manifest_clustered_ci95": [
+      0.008685533375479719,
+      0.015240247874520281
+     ]
+    }
+   },
+   "reachable_by_boundary": {
+    "support_end": 15,
+    "boost_end": 25
+   },
+   "reachable_by_final_label": {
+    "drop_early": 0,
+    "drop_late": 1,
+    "off_centre": 5,
+    "persistent_slow": 19,
+    "intermittent": 9,
+    "near_miss": 6
+   },
+   "failure_labels_by_category": {
+    "untriggered_failure": {
+     "drop_early": 139,
+     "drop_late": 11,
+     "off_centre": 39,
+     "persistent_slow": 70,
+     "intermittent": 82,
+     "near_miss": 52
+    },
+    "reachable": {
+     "drop_early": 0,
+     "drop_late": 1,
+     "off_centre": 5,
+     "persistent_slow": 19,
+     "intermittent": 9,
+     "near_miss": 6
+    },
+    "dropped_during_blend": {
+     "drop_early": 0,
+     "drop_late": 0,
+     "off_centre": 0,
+     "persistent_slow": 0,
+     "intermittent": 0,
+     "near_miss": 0
+    },
+    "never_recaptured": {
+     "drop_early": 0,
+     "drop_late": 53,
+     "off_centre": 3,
+     "persistent_slow": 61,
+     "intermittent": 0,
+     "near_miss": 0
+    },
+    "pre_boundary_loss": {
+     "drop_early": 0,
+     "drop_late": 15,
+     "off_centre": 10,
+     "persistent_slow": 203,
+     "intermittent": 53,
+     "near_miss": 33
+    },
+    "later_loss": {
+     "drop_early": 0,
+     "drop_late": 0,
+     "off_centre": 0,
+     "persistent_slow": 0,
+     "intermittent": 5,
+     "near_miss": 12
+    }
+   },
+   "reachable_loss_delay_quartiles": [
+    3.0,
+    5.0,
+    11.75
+   ],
+   "reachable_rolling_recovers": 18,
+   "per_cell": [
+    {
+     "manifest": "s5078",
+     "reconstructed_first_episode_triggers": 55,
+     "recorded_all_episode_triggers": 57,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "8139e0383287a3e77090716963f899cc8289cf9f95d2bfd7ad796fde012b6241"
+    },
+    {
+     "manifest": "s5079",
+     "reconstructed_first_episode_triggers": 53,
+     "recorded_all_episode_triggers": 54,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "d6eaf970f1b1da5ec9835fcf7b762fb5065a4d50b192f76d3209fcb73ffc29fd"
+    },
+    {
+     "manifest": "s5080",
+     "reconstructed_first_episode_triggers": 51,
+     "recorded_all_episode_triggers": 52,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "e0917b08391678ca9b14f64d355cc7f53a8673f3dea947ef2e91f992949072b8"
+    },
+    {
+     "manifest": "s5081",
+     "reconstructed_first_episode_triggers": 51,
+     "recorded_all_episode_triggers": 55,
+     "recorded_minus_reconstructed": 4,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "8434af16f5d01a221c2412c23234efeb8ef4c4d4b1b1227b3a58c2912158e748"
+    },
+    {
+     "manifest": "s5082",
+     "reconstructed_first_episode_triggers": 53,
+     "recorded_all_episode_triggers": 55,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "2552e1110a4ec5486efc61c5c66f71871760c84c22a4246663286cff79bc1d4b"
+    },
+    {
+     "manifest": "s5083",
+     "reconstructed_first_episode_triggers": 50,
+     "recorded_all_episode_triggers": 52,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "60dc77760b4511c4053754c856468edd0e84a2d44061c3b0b6d50c3619de8785"
+    },
+    {
+     "manifest": "s5084",
+     "reconstructed_first_episode_triggers": 44,
+     "recorded_all_episode_triggers": 45,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "9af2afe7b916aff3e15b17c885641a5858b608b05ff7d9a8f9d2fe5307805d6e"
+    },
+    {
+     "manifest": "s5085",
+     "reconstructed_first_episode_triggers": 38,
+     "recorded_all_episode_triggers": 40,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "5c20a0c8a837fd379c420e3ec43bac032daa17b71866d908838ed3407ea4a1e2"
+    },
+    {
+     "manifest": "s5086",
+     "reconstructed_first_episode_triggers": 47,
+     "recorded_all_episode_triggers": 49,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "9fa941262011ea2858343ed0ea012c216d91192a7dbd0957bb7a5eb50e5f1771"
+    },
+    {
+     "manifest": "s5087",
+     "reconstructed_first_episode_triggers": 59,
+     "recorded_all_episode_triggers": 60,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "de25586b3f912cc8c2a86fe4097cf08f13505198fb3e9deeb5d73ddc6a722f02"
+    },
+    {
+     "manifest": "s5088",
+     "reconstructed_first_episode_triggers": 46,
+     "recorded_all_episode_triggers": 49,
+     "recorded_minus_reconstructed": 3,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "d706bfda97cb973491c72f82e39be88448545b6384db982cd45dfa7d96b4fcbe"
+    },
+    {
+     "manifest": "s5089",
+     "reconstructed_first_episode_triggers": 46,
+     "recorded_all_episode_triggers": 48,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "47268071e16e523a5be76b1dd213f037e5c564886b148d07868df233e2cc60a3"
+    },
+    {
+     "manifest": "s5090",
+     "reconstructed_first_episode_triggers": 44,
+     "recorded_all_episode_triggers": 46,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "71fe6df2a474b49ebf97cf8be565d1a8b979bde38d0dfb6dace76819d364cb6a"
+    },
+    {
+     "manifest": "s5091",
+     "reconstructed_first_episode_triggers": 40,
+     "recorded_all_episode_triggers": 44,
+     "recorded_minus_reconstructed": 4,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "3be55215e52172c8fdad631c88fbbe865806fcd438357a5469f8417905177751"
+    },
+    {
+     "manifest": "s5092",
+     "reconstructed_first_episode_triggers": 54,
+     "recorded_all_episode_triggers": 56,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "1c3ced5b89257d700f88edbd761d90150c40c4b3121789db1fffa9e5ded2ebbc"
+    },
+    {
+     "manifest": "s5093",
+     "reconstructed_first_episode_triggers": 41,
+     "recorded_all_episode_triggers": 43,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "3f33866771db2bb654aa96708c99dce01f63c15b327f048cb7ef5a6ba4caca49"
+    },
+    {
+     "manifest": "s5114",
+     "reconstructed_first_episode_triggers": 41,
+     "recorded_all_episode_triggers": 42,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "f279a3a1f359ba36376477da3d188836d36208dfcc321f3465cc9981414b0c50"
+    },
+    {
+     "manifest": "s5115",
+     "reconstructed_first_episode_triggers": 53,
+     "recorded_all_episode_triggers": 53,
+     "recorded_minus_reconstructed": 0,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "29fa9226477b9480e13a45362573de48b2bb2c4d1e5d5c9ae1c766803437eb01"
+    },
+    {
+     "manifest": "s5116",
+     "reconstructed_first_episode_triggers": 49,
+     "recorded_all_episode_triggers": 51,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "c3780fba50a6b62dea1cbcbec38b64d38d468ba7fa4d59c837afaad4a139f87f"
+    },
+    {
+     "manifest": "s5117",
+     "reconstructed_first_episode_triggers": 54,
+     "recorded_all_episode_triggers": 55,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "12a1dc65cc7baa511a0bf6a3ac295d549ad36f657dfd846e726a94cf7e8b3883"
+    },
+    {
+     "manifest": "s5118",
+     "reconstructed_first_episode_triggers": 53,
+     "recorded_all_episode_triggers": 54,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "a5a0070c4b2f1bc6b18b7c6d3207dee2b150e502b16b3b8225b5e3881d99a4e4"
+    },
+    {
+     "manifest": "s5119",
+     "reconstructed_first_episode_triggers": 36,
+     "recorded_all_episode_triggers": 37,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "fa891050574b8a524e9258228f04a466ccaf31a856e3d0f6db3a5c624ad1d851"
+    },
+    {
+     "manifest": "s5120",
+     "reconstructed_first_episode_triggers": 42,
+     "recorded_all_episode_triggers": 43,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "d89130369a1521f86434a33f5aa4bddcfaeadee85009180909eb55bf448ddf45"
+    },
+    {
+     "manifest": "s5121",
+     "reconstructed_first_episode_triggers": 48,
+     "recorded_all_episode_triggers": 48,
+     "recorded_minus_reconstructed": 0,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "0148718af273a13cc421a3ab3666a8391e0b0ce954ad485b487ae5265acd3f5a"
+    },
+    {
+     "manifest": "s5122",
+     "reconstructed_first_episode_triggers": 55,
+     "recorded_all_episode_triggers": 56,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "ab018bdb6bdf93b0019881239384d1d2162b8ae5dcd0f73815c9d0cef0ea1c4a"
+    },
+    {
+     "manifest": "s5123",
+     "reconstructed_first_episode_triggers": 50,
+     "recorded_all_episode_triggers": 52,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "669b1b985515faf230f446437b8a811a6c2acc318ee77dfd45988d70a41876f2"
+    },
+    {
+     "manifest": "s5124",
+     "reconstructed_first_episode_triggers": 40,
+     "recorded_all_episode_triggers": 42,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "284990c9ff7b98c0dfe4ffdf872793c7a4549f0b1413f573eebbde70c9bf0e96"
+    },
+    {
+     "manifest": "s5125",
+     "reconstructed_first_episode_triggers": 49,
+     "recorded_all_episode_triggers": 51,
+     "recorded_minus_reconstructed": 2,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "cb229b2bf4cfa17ac9cb71d16588563da39886d915c02324c2e2c863aa50c749"
+    },
+    {
+     "manifest": "s5126",
+     "reconstructed_first_episode_triggers": 59,
+     "recorded_all_episode_triggers": 60,
+     "recorded_minus_reconstructed": 1,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "348d25e4f0581574556859ac6b19e651ecc1039f47dc14fc7a1ce1feff4389d2"
+    },
+    {
+     "manifest": "s5127",
+     "reconstructed_first_episode_triggers": 47,
+     "recorded_all_episode_triggers": 47,
+     "recorded_minus_reconstructed": 0,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "f836e888c1e6a2bda59424937a51570a4a05df4a2d57d2727db95a3dcb3e0a5c"
+    },
+    {
+     "manifest": "s5128",
+     "reconstructed_first_episode_triggers": 50,
+     "recorded_all_episode_triggers": 50,
+     "recorded_minus_reconstructed": 0,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "35a07c2a6b67715b4a149021476dd7a31c9c76013bcac01f1fbd2f6043292378"
+    },
+    {
+     "manifest": "s5129",
+     "reconstructed_first_episode_triggers": 47,
+     "recorded_all_episode_triggers": 50,
+     "recorded_minus_reconstructed": 3,
+     "exceeds_recorded_upper_bound": false,
+     "sha256": "72b4337fa3f0be5448ece31da1d3968dd915aa3cfd957cb1f3ebb439ded7dd5d"
+    }
+   ]
+  }
+ }
+}

@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-23T06:39:16 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-23T06:43:07 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -11,16 +11,15 @@ Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT 
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 1 |
+| approved | 0 |
 | proposed | 0 |
 | deferred | 30 |
-| decided | 89 |
+| decided | 90 |
 | rejected | 10 |
 
 ## Needs attention
 
-- **R-130** [approved] Q3 first spend: archive-only recovery hand-back diagnosis
-  - `python scripts/research.py start R-130` then run its command
+- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
@@ -57,6 +56,9 @@ Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT 
 
 ## Last 5 decisions
 
+- D-090 · R-130 · **refuted** · 2026-11-23
+  Q3 of direction V2, first spend (archive only, no episode): the archived JOINT and transplant cells of R-124 and R-126 aligned to the frozen module's decision (step 149, reconstructed per case from the trace), the end of its support (183) and the end of its stroke boost (243). Failures that follow a healthy hand-back within 30 steps are 48 of 3,072 JOINT cases (0.0156 [0.011, 0.020]) and 67 of 4,096 (0.0164 [0.012, 0.020]), the transplant 40 of 4,096, against a 0.06 gate; 0.018-0.021 even with a 60-step window. Q3 closes without a hand-back simulation. JOINT's failures are elsewhere: 7.8% of cases fail untriggered (mostly early drops), 7.2% trigger and roll again but are not rolling steadily when support and boost end, 3.2% trigger and never roll again. Trigger flags are reconstructed (stable under one-step re-indexing; no cell exceeds its recorded count).
+  Next: Close Q3. The archive points elsewhere: 7.2% of cases trigger and re-capture without reaching steady rolling by the end of support and boost, 3.2% trigger and never roll again, 7.8% fail untriggered (mostly early drops). Move to Q4 (LLM vs grammar construction of the recovery module) with a separately agreed generation budget; R-129's reset-distribution weakness is a separate training-distribution question.
 - D-089 · R-129 · **supported** · 2026-11-23
   Q2 of direction V2: four frozen controllers (R-121 JOINT, the R-126 transplant, D-072, the PPO expert) on a predeclared one-factor panel, 204 cells on ten fresh manifests, no fitting (frozen_robustness.py). Primary: JOINT at 0.8x pen friction minus nominal JOINT -0.015 [-0.035, +0.005] over 1,280 pairs, inside the -0.05 margin (non-inferiority supported; not an improvement). Horizons: no retention loss, JOINT's terminal success 0.775 at 12 s and 0.781 at 30 s against 0.766 on the first six seconds, no drop after second 4. Mass, friction, radius and length at +/-10-20% leave JOINT within -0.023 to +0.041 of nominal (512 pairs each, nothing Holm-significant). The expanded reset distribution (1.5x) is the weakness: JOINT 0.770 -> 0.486 (-0.281 [-0.331, -0.232]), transplant -0.322, D-072 -0.141, PPO -0.125. The transplant is within +/-0.035 of JOINT in every condition. PPO 0.994 nominal, 0.887 at 0.9x length. Re-capture trigger counts are unavailable in evaluation cells.
   Next: The robustness gap is capture from wider resets, not dynamics or retention. That is a training-distribution question (propose separately, never retune on this panel). Proceed to Q3's archive-only diagnosis of recovery hand-back on JOINT/transplant traces, noting that evaluation cells do not record trigger events.
@@ -69,9 +71,6 @@ Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT 
 - D-086 · R-124 · **supported** · 2026-11-22
   Consolidated confirmation of the frozen construction ladder (ladder_confirmation.py; no training, no LLM): six hash-verified controllers, each once per manifest in a fresh process on 24 fresh 128-case manifests (seeds 5025, 5041-5063; 3,072 cases per policy, 144 cells). Sustained success: D-058 saved incumbent 1,141 (0.371); D-072 reference 1,325 (0.431); R-106 residual 1,684 (0.548); R-116 re-capture module 1,978 (0.644); R-118 continued module 2,372 (0.772); R-121 JOINT 2,446 (0.796). SUPPORTED: JOINT minus D-072 +0.365, 95% [+0.344, +0.386] (manifest-clustered [+0.348, +0.382], 24 of 24 manifests; registered threshold +0.30); JOINT minus D-058 +0.425 [+0.404, +0.446]. Every adjacent step is positive after Holm with a positive lower bound and a drop bound within 0.05: D-072 over D-058 +0.060 [+0.045, +0.075]; R-106 over D-072 +0.117 [+0.096, +0.138]; R-116 over R-106 +0.096 [+0.085, +0.106]; R-118 over R-116 +0.128 [+0.115, +0.141]; JOINT over R-118 +0.024 [+0.008, +0.040]. Drops of 3,072: 140 / 140 / 96 / 127 / 136 / 136. Persistent-slow failures: 1,610 / 1,446 / 1,159 / 670 / 346 / 281. No deviation in the evaluation. The assets are frozen under config/pen_spin/ (r106_success_ars_finalist, r116_recovery_finalist, r118_continue_finalist, r121_joint_finalist); the saved incumbent asset is unchanged and adopting any of them is the user's decision.
   Next: The direction's central question is answered: reward-trained symbolic construction on a competent reference, with an instrument sized to the effect, takes sustained success from 0.37 (saved incumbent) / 0.43 (reference) to 0.80. Report to the user: installing the R-121 JOINT finalist (or the simpler R-118 one, 0.772) as the incumbent asset is their decision. Within the loop: R-125's precondition can be checked for free on this archive (how many JOINT cases are slow through steps 30-60 and finish persistent slow); otherwise the remaining mechanism ideas are returning nulls and the direction is close to exhausted.
-- D-085 · R-122 · **refuted** · 2026-11-22
-  From the frozen R-121 JOINT finalist, two ARS arms of 24 updates on the same placements with shared direction draws (recovery_early.py; no LLM): CONTINUE (its 43 coordinates) and EARLY (the same plus 20 per-joint start-up offsets inside the residual clamp, multiplied by max(0, 1 - t/60), zero initially). Terminal means frozen; the D-072 reference, JOINT and both finalists on twelve fresh 128-case manifests (seeds 5013-5024); five-contrast Holm family. REFUTED: EARLY minus CONTINUE +0.013, 95% [-0.009, +0.035] over 1,536 pairs against a predicted +0.05. Neither finalist improves on JOINT: CONTINUE -0.016 [-0.038, +0.006], EARLY -0.003 [-0.026, +0.020]; neither qualifies. Sustained successes of 1,536: reference 662, JOINT 1,207 (0.786), CONTINUE 1,182, EARLY 1,202; drops 70 / 71 / 74 / 59. The start-up offsets cut early drops from 42 to 29 (the first change there since the R-106 residual) but persistent-slow failures rose from 158 to 174. JOINT has plateaued under ARS continuation at about 0.79-0.81; it remains the best qualified controller (+0.355 [+0.325, +0.385] over D-072 here). No deviation; 414,155 starts charged.
-  Next: JOINT has plateaued under ARS continuation, so further 'more updates' or small additive terms are unlikely to pay; keep the R-121 JOINT finalist as the best controller. The early-drop reduction is real but small (13 episodes of 1,536) and was offset elsewhere. Remaining failures of JOINT here: 158 persistent slow, 75 fast-but-unsteady, 42 early and 29 late drops, 25 off-centre. R-123's precondition is met (neither finalist qualifies), but the direction should now weigh a consolidated replication of the ladder and a hand-off to the user against one more mechanism.
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
