@@ -1,0 +1,16 @@
+{
+ "lineage": 0,
+ "seeds": {
+  "A": 5200,
+  "B": 5201,
+  "C": 5202,
+  "D": 5203
+ },
+ "endpoints": {},
+ "training": {},
+ "ended": {
+  "stage": "A",
+  "reason": "terminal mean outside its range"
+ },
+ "rule": "each stage's final ARS mean; no selection, no rerun of a seed"
+}

@@ -1,0 +1,378 @@
+{
+ "metrics": {
+  "paired_success_difference": 0.3084635416666667,
+  "paired_success_difference_ci95_two_level": [
+   0.24739798856087028,
+   0.3695290947724631
+  ],
+  "lineage_t_interval_4df": [
+   0.25322898693225254,
+   0.3636980964010808
+  ],
+  "registered_verdict_rule": "inconclusive",
+  "per_lineage_joint_gain_over_d072": [
+   0.3167317708333333,
+   0.3154296875,
+   0.23209635416666666,
+   0.33203125,
+   0.3460286458333333
+  ],
+  "per_lineage_success_by_stage": {
+   "A": [
+    0.5384114583333334,
+    0.5400390625,
+    0.54296875,
+    0.5445963541666666,
+    0.5625
+   ],
+   "B": [
+    0.5764973958333334,
+    0.6643880208333334,
+    0.623046875,
+    0.6764322916666666,
+    0.7122395833333334
+   ],
+   "C": [
+    0.7353515625,
+    0.7418619791666666,
+    0.6682942708333334,
+    0.7473958333333334,
+    0.7587890625
+   ],
+   "D": [
+    0.7513020833333334,
+    0.75,
+    0.6666666666666666,
+    0.7666015625,
+    0.7805989583333334
+   ]
+  },
+  "stage_mean_success": {
+   "A": 0.545703125,
+   "B": 0.6505208333333334,
+   "C": 0.7303385416666667,
+   "D": 0.7430338541666667
+  },
+  "stage_sd_across_lineages": {
+   "A": 0.009696478289377166,
+   "B": 0.052218757045483344,
+   "C": 0.03573441921880613,
+   "D": 0.044484300756338566
+  },
+  "stage_median_success": {
+   "A": 0.54296875,
+   "B": 0.6643880208333334,
+   "C": 0.7418619791666666,
+   "D": 0.7513020833333334
+  },
+  "stage_min_max": {
+   "A": [
+    0.5384114583333334,
+    0.5625
+   ],
+   "B": [
+    0.5764973958333334,
+    0.7122395833333334
+   ],
+   "C": [
+    0.6682942708333334,
+    0.7587890625
+   ],
+   "D": [
+    0.6666666666666666,
+    0.7805989583333334
+   ]
+  },
+  "d072_success": 0.4345703125,
+  "historical_joint_success": 0.7923177083333334,
+  "variance_components": {
+   "lineage": 0.0019493213598278981,
+   "manifest": 0.0021113298941349634,
+   "residual": 0.0007087596948596014
+  },
+  "lineage_sd": 0.04415111957615456,
+  "qualified_contrasts": 21,
+  "contrasts_in_family": 25,
+  "joint_step_over_stage_C": {
+   "L0_D_minus_L0_C": [
+    0.015950520833333332,
+    -0.0005016888538670883,
+    0.03240273052053375,
+    false
+   ],
+   "L1_D_minus_L1_C": [
+    0.008138020833333334,
+    -0.009400127142231233,
+    0.0256761688088979,
+    false
+   ],
+   "L2_D_minus_L2_C": [
+    -0.0016276041666666667,
+    -0.019896343122867987,
+    0.01664113478953465,
+    false
+   ],
+   "L3_D_minus_L3_C": [
+    0.019205729166666668,
+    0.0032610885157635244,
+    0.03515036981756981,
+    false
+   ],
+   "L4_D_minus_L4_C": [
+    0.021809895833333332,
+    0.005465534421090237,
+    0.03815425724557643,
+    true
+   ]
+  },
+  "replicated_joint_minus_historical_joint": {
+   "L0_D": [
+    -0.041015625,
+    -0.057049025666519926,
+    -0.02498222433348007
+   ],
+   "L1_D": [
+    -0.042317708333333336,
+    -0.05889674663199483,
+    -0.02573867003467184
+   ],
+   "L2_D": [
+    -0.12565104166666666,
+    -0.14421306219088814,
+    -0.10708902114244517
+   ],
+   "L3_D": [
+    -0.025716145833333332,
+    -0.04056369374385228,
+    -0.01086859792281438
+   ],
+   "L4_D": [
+    -0.01171875,
+    -0.02745386211371912,
+    0.00401636211371912
+   ]
+  }
+ },
+ "controls": {
+  "drops_of_3072": {
+   "d072": 149,
+   "r121": 145,
+   "L0_A": 104,
+   "L0_B": 206,
+   "L0_C": 152,
+   "L0_D": 164,
+   "L1_A": 83,
+   "L1_B": 153,
+   "L1_C": 135,
+   "L1_D": 138,
+   "L2_A": 89,
+   "L2_B": 191,
+   "L2_C": 148,
+   "L2_D": 133,
+   "L3_A": 101,
+   "L3_B": 151,
+   "L3_C": 174,
+   "L3_D": 197,
+   "L4_A": 97,
+   "L4_B": 156,
+   "L4_C": 143,
+   "L4_D": 141
+  },
+  "labels_joint_stage": {
+   "d072": {
+    "success": 1335,
+    "drop_early": 144,
+    "drop_late": 5,
+    "off_centre": 118,
+    "persistent_slow": 1410,
+    "intermittent": 30,
+    "near_miss": 30
+   },
+   "r121": {
+    "success": 2434,
+    "drop_early": 90,
+    "drop_late": 55,
+    "off_centre": 41,
+    "persistent_slow": 289,
+    "intermittent": 82,
+    "near_miss": 81
+   },
+   "L0_D": {
+    "success": 2308,
+    "drop_early": 111,
+    "drop_late": 53,
+    "off_centre": 68,
+    "persistent_slow": 338,
+    "intermittent": 131,
+    "near_miss": 63
+   },
+   "L1_D": {
+    "success": 2304,
+    "drop_early": 110,
+    "drop_late": 28,
+    "off_centre": 72,
+    "persistent_slow": 408,
+    "intermittent": 89,
+    "near_miss": 61
+   },
+   "L2_D": {
+    "success": 2048,
+    "drop_early": 93,
+    "drop_late": 40,
+    "off_centre": 45,
+    "persistent_slow": 376,
+    "intermittent": 288,
+    "near_miss": 182
+   },
+   "L3_D": {
+    "success": 2355,
+    "drop_early": 103,
+    "drop_late": 94,
+    "off_centre": 80,
+    "persistent_slow": 287,
+    "intermittent": 86,
+    "near_miss": 67
+   },
+   "L4_D": {
+    "success": 2398,
+    "drop_early": 97,
+    "drop_late": 44,
+    "off_centre": 48,
+    "persistent_slow": 263,
+    "intermittent": 124,
+    "near_miss": 98
+   }
+  },
+  "all_drop_bounds_hold": true,
+  "smoke": {
+   "joint_order": true,
+   "zero_theta_identity": true,
+   "scorer_live": true,
+   "derived_root_identity": true,
+   "joint_inheritance": true,
+   "per_slot_candidates": true
+  },
+  "accounting": {
+   "starts": {
+    "smoke": 16471,
+    "L0_A": 98417,
+    "L0_B": 98544,
+    "L0_C": 196954,
+    "L0_D": 196958,
+    "L1_A": 98407,
+    "L1_B": 98480,
+    "L1_C": 196929,
+    "L1_D": 196872,
+    "L2_A": 98393,
+    "L2_B": 98490,
+    "L2_C": 196944,
+    "L2_D": 196870,
+    "L3_A": 98401,
+    "L3_B": 98477,
+    "L3_C": 196978,
+    "L3_D": 197004,
+    "L4_A": 98414,
+    "L4_B": 98472,
+    "L4_C": 196893,
+    "L4_D": 196899,
+    "confirmation": 135168
+   },
+   "charged_total": 3105435,
+   "ceiling": 3200000,
+   "wall_minutes": 422.17718690633774,
+   "max_minutes": 720.0,
+   "training_scored_episodes": 1474560,
+   "training_transitions": 529367040,
+   "confirmation_cells": 528,
+   "reruns": [],
+   "llm_calls": 0
+  },
+  "stage_D_module_params": {
+   "L0": {
+    "threshold": 3.9347282895808986,
+    "decision_step": 94.31816217611288,
+    "ramp_in": 26.93364523740396,
+    "ramp_out": 12.539625820010036,
+    "depth_WR": 0.7082879775604826,
+    "depth_FF": 0.7756756889048572,
+    "depth_MF": 0.7803201754594001,
+    "depth_RF": 0.8662898625225725,
+    "depth_LF": 0.16070398282344303,
+    "depth_TH": 0.3941194411602549,
+    "stroke_multiplier": 1.3562815792226326
+   },
+   "L1": {
+    "threshold": 3.8439376288642935,
+    "decision_step": 109.86539343797932,
+    "ramp_in": 26.07494003921935,
+    "ramp_out": 3.0,
+    "depth_WR": 0.6914592718007564,
+    "depth_FF": 0.9998326481053842,
+    "depth_MF": 0.8020718422704888,
+    "depth_RF": 0.8544583327142341,
+    "depth_LF": 0.24932545342349546,
+    "depth_TH": 0.4356484385997381,
+    "stroke_multiplier": 1.3083570465352268
+   },
+   "L2": {
+    "threshold": 3.801165208208788,
+    "decision_step": 96.63753146343834,
+    "ramp_in": 25.291285971259427,
+    "ramp_out": 38.37554759039422,
+    "depth_WR": 0.8071441369096117,
+    "depth_FF": 0.959288531784036,
+    "depth_MF": 0.8999272482286342,
+    "depth_RF": 0.6411694572796172,
+    "depth_LF": 0.7195725512793957,
+    "depth_TH": 0.2744916269800532,
+    "stroke_multiplier": 1.0374745584837028
+   },
+   "L3": {
+    "threshold": 4.2753943570413675,
+    "decision_step": 127.03343229343956,
+    "ramp_in": 35.96030843032527,
+    "ramp_out": 3.0,
+    "depth_WR": 0.8212944312867873,
+    "depth_FF": 0.6435610184829093,
+    "depth_MF": 0.8914434645479417,
+    "depth_RF": 0.6434480798019452,
+    "depth_LF": 0.0,
+    "depth_TH": 0.36484884166217624,
+    "stroke_multiplier": 1.5576698386915209
+   },
+   "L4": {
+    "threshold": 4.028710190015953,
+    "decision_step": 138.93209674324433,
+    "ramp_in": 34.45708458312781,
+    "ramp_out": 4.877775999996298,
+    "depth_WR": 0.24120708181163497,
+    "depth_FF": 0.9369087478370942,
+    "depth_MF": 0.7332234863682637,
+    "depth_RF": 0.44772192034449126,
+    "depth_LF": 0.01009183959571024,
+    "depth_TH": 0.3203963974524559,
+    "stroke_multiplier": 1.2188421220038732
+   }
+  }
+ },
+ "artifacts": [
+  "logs/pen_spin/r128_training_replication/summary.json",
+  "logs/pen_spin/r128_training_replication/frozen_config.json",
+  "logs/pen_spin/r128_training_replication/accounting.json",
+  "logs/pen_spin/r128_training_replication/smoke.json",
+  "logs/pen_spin/r128_training_replication/lineage_0/endpoints.json",
+  "logs/pen_spin/r128_training_replication/lineage_1/endpoints.json",
+  "logs/pen_spin/r128_training_replication/lineage_2/endpoints.json",
+  "logs/pen_spin/r128_training_replication/lineage_3/endpoints.json",
+  "logs/pen_spin/r128_training_replication/lineage_4/endpoints.json"
+ ],
+ "notes": [
+  "Five lineages, all four stages each, no child death, no rerun, no lineage ended; 22 cells x 24 fresh manifests (3,072 cases per policy); 3,105,435 charged starts of 3,200,000; 422 of 720 minutes; no model calls.",
+  "Primary (frozen rule): equal-weight mean JOINT-stage gain over D-072 +0.308, two-level 95% interval [0.247, 0.370] on 4 df: lower bound below 0.30 and upper bound above it, so INCONCLUSIVE on the registered magnitude. The interval excludes zero by a wide margin; every lineage's stage-D endpoint qualifies against D-072 (gains 0.317, 0.315, 0.232, 0.332, 0.346).",
+  "Stage means (sd across lineages): A 0.546 (0.010), B 0.651 (0.052), C 0.730 (0.036), D 0.743 (0.044); D-072 0.435; historical JOINT 0.792 on the same cases. All five replicated JOINT endpoints score below the historical asset (differences -0.012 to -0.126; four intervals exclude zero): the historical lineage is the best of six, so 0.79-0.80 overstates what the recipe yields on average.",
+  "Stage A replicates tightly; variance enters at stage B (0.576 to 0.712). Stages A, B and C qualify over their parent in all five lineages; the JOINT stage D qualifies over C in only one of five after Holm (steps +0.016, +0.008, -0.002, +0.019, +0.022).",
+  "Lineage 2 is the low one (0.667): it kept a long ramp-out (38 steps) and a stroke multiplier near 1, and has 288 intermittent and 182 near-miss failures against 86-131 and 61-98 elsewhere.",
+  "Deviations: (1) the smoke used 16,471 starts against an estimated at most 16,400. (2) Implementer bug, no outcome seen: the driver's divergence check rejected lineage 0's stage-A terminal mean because a coefficient clipped at -0.10 is stored as float32 (-0.1000000015); the driver was stopped while lineage 1 stage A was training (that child finished untouched), the tolerance was fixed (1e-6), the wrong state file was kept as lineage_0/endpoints.false_divergence.json, and the driver was relaunched reusing both finished stages unchanged; no seed was rerun. (3) The manifests are named shadowhand_spin_q1_s<seed>.yaml as registered, outside the pen_spin_stage3_* pattern older studies glob for disjointness; this module globs both.",
+  "Limits: five lineages (4 df) on one task, simulator and reference; per-case cells and traces stay on the GPU box."
+ ]
+}

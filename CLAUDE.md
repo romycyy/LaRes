@@ -743,6 +743,21 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   residual block changes which cases succeed (discordance about 0.2) without changing how many. **Bite:** an untracked
   file renamed locally after a sync leaves its old copy on the box (the sync gap), and a manifest glob there then sees
   duplicates; and never chain `gpu test ... | tail && research.py start` (the pipe hides the test's exit code).
+- **R-128 result (D-088, inconclusive on its +0.30 magnitude; training replication, 2026-11-23; direction
+  `docs/NEXT_RESEARCH_DIRECTION_V2.md`, Q1).** `training_replication.py` (`--study q1_training_replication`; its own
+  Isaac child for a four-rollout smoke): the R-106 -> R-116 -> R-118 -> R-121 recipe in **five independent training
+  lineages** (stages A to D, archived schedules, 4,096 scored episodes per update), every endpoint plus D-072 and the
+  historical JOINT asset on 24 fresh manifests (3,072 cases each). Mean JOINT-stage gain over D-072 **+0.308, two-level
+  interval [0.247, 0.370]** (4 df). Stage-D success per lineage 0.751 / 0.750 / 0.667 / 0.767 / 0.781 (mean 0.743, sd
+  0.044); D-072 0.435; **the historical JOINT asset scores 0.792, above all five**, so 0.79-0.80 is a favourable lineage,
+  not the recipe's average. Stage means: A 0.546 (sd 0.010), B 0.651 (0.052), C 0.730, D 0.743. All five endpoints
+  qualify against D-072; stages A to C qualify over their parent in 5 of 5; the JOINT stage over stage C in 1 of 5.
+  The archived training children take a lineage's seeds, schedule and root through `cfg_overrides` in the request;
+  endpoints are in `logs/pen_spin/r128_training_replication/lineage_<k>/endpoints.json`. `research.py`'s loop guard now
+  counts only propose calls made under the current direction. **Bites:** a coefficient clipped at its bound is stored
+  as float32 (-0.1000000015), so compare to a bound with a tolerance; "episodes" in a budget must say scored episodes or
+  starts (starts are about twice the scored count); this study's manifests are `shadowhand_spin_q1_s<seed>.yaml`,
+  outside the `pen_spin_stage3_*` glob older studies use for disjointness (glob both).
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

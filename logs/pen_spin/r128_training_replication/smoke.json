@@ -1,0 +1,80 @@
+{
+ "mode": "smoke",
+ "seed": 5220,
+ "gates": {
+  "joint_order": {
+   "passes": true
+  },
+  "zero_theta_identity": {
+   "compared": 689576,
+   "mismatches": 0,
+   "passes": true
+  },
+  "scorer_live": {
+   "reference_successes": 847,
+   "passes": true
+  },
+  "derived_root_identity": {
+   "compared": 676581,
+   "mismatches": 0,
+   "triggered": 0,
+   "root_theta_sha256": "a2a75c18b6b9e761a2d8756dc9afa29beeeb1c0cc4aa90f0475ea7ed1634ae5b",
+   "passes": true
+  },
+  "joint_inheritance": {
+   "compared": 667307,
+   "mismatches": 0,
+   "triggered": 793,
+   "passes": true
+  },
+  "per_slot_candidates": {
+   "slot_success": [
+    0.412109375,
+    0.30078125,
+    0.3984375,
+    0.30859375
+   ],
+   "triggered": 1053,
+   "equal_slots_max_difference": 0.013671875,
+   "passes": true
+  }
+ },
+ "aa": {
+  "slot_success": [
+   0.416015625,
+   0.40625,
+   0.412109375,
+   0.419921875
+  ],
+  "pairwise_discordance": [
+   0.041015625,
+   0.078125,
+   0.0703125,
+   0.068359375,
+   0.080078125,
+   0.1015625
+  ],
+  "mean_discordance": 0.0732421875,
+  "slot_differences": [
+   0.009765625,
+   0.00390625,
+   -0.00390625,
+   -0.005859375,
+   -0.013671875,
+   -0.0078125
+  ],
+  "sd_of_slot_differences": 0.00844599543376549,
+  "max_abs_slot_difference": 0.013671875,
+  "cases": 512
+ },
+ "scripted_on_probe_root": {
+  "success": 0.40185546875,
+  "drops": 234
+ },
+ "starts": 16471,
+ "throughput": {
+  "transitions_per_s": 33353.942249388805,
+  "wall_time_s": 88.17332625389099
+ },
+ "passes": true
+}
