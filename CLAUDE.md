@@ -782,6 +782,23 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   failures (R-124, of 3,072): 239 untriggered (94 early drops), 222 triggered and rolling again but not steadily by
   the boundaries (147 persistent slow), 97 triggered and never rolling again (31 late drops), 20 lost later, 48
   reachable. The observation at control step `t` is the state the archive stores at index `t - 1`.
+- **R-131 result (D-091, inconclusive; LLM vs grammar construction of the recovery module, 2026-11-23; direction V2,
+  Q4).** `module_language.py` (no Isaac: the R-116 module as a template in a fixed 27-slot parameter layout; an edit
+  changes one component and adds at most four parameters that start at an identity value; 13 edits of the template;
+  `ModuleState` is the batched interpreter with per-environment parameters and condition switches; `replay_identity`
+  checks a child against its parent on recorded signal histories) and `module_search.py` (`run_full_evolution.py
+  --config config/pen_spin_plateau_repair.yaml --study module_search`, block `pen_spin_module_search`; its own Isaac
+  child; `ModuleController` reproduces `rm.RecoveryController` within 1e-5 for the template and the second attempt).
+  Five blocks x {fixed, grammar, llm}, 36 ARS updates per arm (two rounds of three branches x 4 updates with a frozen
+  ranking on 512 placements, then 12 updates), 1,536 fresh cases per finalist. **LLM minus grammar +0.030
+  [-0.017, +0.076] (five blocks, 4 df); fixed 0.742, grammar 0.713, LLM 0.743**: no search arm beats the template
+  with the same budget; all beat the root (0.572); none reaches JOINT (0.801). 20 calls, all valid, 49k tokens.
+  `_call_llm(max_completion_tokens=)` caps a reply. **Bites:** with a discrete re-capture, four identical slots on the
+  same 512 placements differ by up to 0.045 in success (mean case discordance 0.137), so a fixed A/A tolerance from
+  residual-only controllers (0.006-0.014) is wrong: scale it by sqrt(discordance / cases); a ranking after 4 updates on
+  512 placements cannot separate structures a few points apart; streams keyed by a `SeedSequence` over the full
+  (block, arm, round, branch, role, update) tuple need no further integer seeds; a `gpu run` whose ssh session drops
+  leaves the driver running on the box (check `pgrep` before relaunching).
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

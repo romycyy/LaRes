@@ -1,0 +1,40 @@
+[
+ {
+  "edit": {
+   "component": "target",
+   "value": "hold"
+  },
+  "rationale": "Mixing toward the root action at firing can reduce disruption from the current full-depth reset, addressing the low success among fired episodes with just one new parameter to train.",
+  "calls": [
+   "call_00002"
+  ],
+  "usage": [
+   {
+    "prompt": 1727,
+    "completion": 835,
+    "total": 2562,
+    "wall_s": 23.843044757843018
+   }
+  ],
+  "errors": []
+ },
+ {
+  "edit": {
+   "component": "target",
+   "value": "midrange"
+  },
+  "rationale": "Only 12.7% of fired episodes succeed, so improving the recovery posture directly with one mixing parameter is more promising within the short search budget than adding trigger opportunities or extending an ineffective intervention.",
+  "calls": [
+   "call_00008"
+  ],
+  "usage": [
+   {
+    "prompt": 1753,
+    "completion": 772,
+    "total": 2525,
+    "wall_s": 23.550687313079834
+   }
+  ],
+  "errors": []
+ }
+]

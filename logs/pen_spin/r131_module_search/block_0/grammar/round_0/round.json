@@ -1,0 +1,552 @@
+{
+ "block": 0,
+ "round": 0,
+ "arm": "grammar",
+ "entering_parent": {
+  "spec": {
+   "schedule": "single",
+   "support_end": "timed",
+   "boost_end": "timed",
+   "target": "reset",
+   "attempts": 1,
+   "conditions": []
+  },
+  "x": [
+   0.6666666666666666,
+   0.5,
+   0.42857142857142855,
+   0.42857142857142855,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   0.0
+  ],
+  "params": {
+   "threshold": 3.0,
+   "decision_step": 120.0,
+   "ramp_in": 20.0,
+   "ramp_out": 40.0,
+   "depth_WR": 1.0,
+   "depth_FF": 1.0,
+   "depth_MF": 1.0,
+   "depth_RF": 1.0,
+   "depth_LF": 1.0,
+   "depth_TH": 1.0,
+   "stroke_multiplier": 1.0
+  },
+  "edits": 0,
+  "parameters": 11,
+  "sha256": "e6701db8ab54405725159ad6b53608b8ea0bef788b4084b5679f874805044c22"
+ },
+ "branches": [
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.6666666666666666,
+    0.5,
+    0.42857142857142855,
+    0.42857142857142855,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0
+   ],
+   "params": {
+    "threshold": 3.0,
+    "decision_step": 120.0,
+    "ramp_in": 20.0,
+    "ramp_out": 40.0,
+    "depth_WR": 1.0,
+    "depth_FF": 1.0,
+    "depth_MF": 1.0,
+    "depth_RF": 1.0,
+    "depth_LF": 1.0,
+    "depth_TH": 1.0,
+    "stroke_multiplier": 1.0
+   },
+   "edits": 0,
+   "parameters": 11,
+   "sha256": "e6701db8ab54405725159ad6b53608b8ea0bef788b4084b5679f874805044c22",
+   "edit": null
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": [
+     {
+      "primitive": "trend",
+      "op": "gt"
+     }
+    ]
+   },
+   "x": [
+    0.6666666666666666,
+    0.5,
+    0.42857142857142855,
+    0.42857142857142855,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    0.0
+   ],
+   "params": {
+    "threshold": 3.0,
+    "decision_step": 120.0,
+    "ramp_in": 20.0,
+    "ramp_out": 40.0,
+    "depth_WR": 1.0,
+    "depth_FF": 1.0,
+    "depth_MF": 1.0,
+    "depth_RF": 1.0,
+    "depth_LF": 1.0,
+    "depth_TH": 1.0,
+    "stroke_multiplier": 1.0,
+    "level_trend": -4.0
+   },
+   "edits": 1,
+   "parameters": 12,
+   "sha256": "44c08065343ba9fc0d1145df78c900b8182837e7250f4a875e38efc5e606bf12",
+   "edit": {
+    "component": "conditions",
+    "add": {
+     "primitive": "trend",
+     "op": "gt"
+    }
+   }
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": [
+     {
+      "primitive": "transverse",
+      "op": "gt"
+     }
+    ]
+   },
+   "x": [
+    0.6666666666666666,
+    0.5,
+    0.42857142857142855,
+    0.42857142857142855,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    0.0
+   ],
+   "params": {
+    "threshold": 3.0,
+    "decision_step": 120.0,
+    "ramp_in": 20.0,
+    "ramp_out": 40.0,
+    "depth_WR": 1.0,
+    "depth_FF": 1.0,
+    "depth_MF": 1.0,
+    "depth_RF": 1.0,
+    "depth_LF": 1.0,
+    "depth_TH": 1.0,
+    "stroke_multiplier": 1.0,
+    "level_transverse": 0.0
+   },
+   "edits": 1,
+   "parameters": 12,
+   "sha256": "1ca294b0849969d30429dd1d4976563f995baab39216f16bb2ceadb005588ba4",
+   "edit": {
+    "component": "conditions",
+    "add": {
+     "primitive": "transverse",
+     "op": "gt"
+    }
+   }
+  }
+ ],
+ "trained": [
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.6842517201178786,
+    0.6247117230074041,
+    0.42389350191333613,
+    0.29626535620192374,
+    0.9142889714009048,
+    0.9892269756261567,
+    0.9013770338902833,
+    0.913849734406235,
+    0.8624529755542109,
+    0.9037690475962165,
+    0.09889904269580259
+   ],
+   "params": {
+    "threshold": 3.0527551603536356,
+    "decision_step": 134.96540676088847,
+    "ramp_in": 19.836272566966763,
+    "ramp_out": 30.73857493413466,
+    "depth_WR": 0.9142889714009048,
+    "depth_FF": 0.9892269756261567,
+    "depth_MF": 0.9013770338902833,
+    "depth_RF": 0.913849734406235,
+    "depth_LF": 0.8624529755542109,
+    "depth_TH": 0.9037690475962165,
+    "stroke_multiplier": 1.0988990426958025
+   },
+   "edits": 0,
+   "parameters": 11,
+   "sha256": "5ed8aaf1c17a9b4d4f9e326ecf8c5ccfccd6b7359b3c51c226111fecc8bedf0b"
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": [
+     {
+      "primitive": "trend",
+      "op": "gt"
+     }
+    ]
+   },
+   "x": [
+    0.6579202207402832,
+    0.4480563387654394,
+    0.5046446274985846,
+    0.4736993766114054,
+    0.961476210281534,
+    0.9166771273262394,
+    0.8928223194355573,
+    1.0,
+    0.9208785854159772,
+    0.8003643800217447,
+    0.0,
+    0.0975378658671656
+   ],
+   "params": {
+    "threshold": 2.9737606622208497,
+    "decision_step": 113.76676065185274,
+    "ramp_in": 22.66256196245046,
+    "ramp_out": 43.15895636279838,
+    "depth_WR": 0.961476210281534,
+    "depth_FF": 0.9166771273262394,
+    "depth_MF": 0.8928223194355573,
+    "depth_RF": 1.0,
+    "depth_LF": 0.9208785854159772,
+    "depth_TH": 0.8003643800217447,
+    "stroke_multiplier": 1.0,
+    "level_trend": -3.219697073062675
+   },
+   "edits": 1,
+   "parameters": 12,
+   "sha256": "1d1de22daf301f1e2a1a3489b3e92bdf2f1185a2cddf5e6e0e99dacf2048d067"
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": [
+     {
+      "primitive": "transverse",
+      "op": "gt"
+     }
+    ]
+   },
+   "x": [
+    0.6043385466845606,
+    0.5688865979970791,
+    0.5060926391514299,
+    0.30571312669292644,
+    1.0,
+    1.0,
+    0.9775560108395235,
+    0.8256446031954737,
+    0.9691779906761564,
+    0.9468751995066469,
+    0.1110337122626354,
+    0.0
+   ],
+   "params": {
+    "threshold": 2.8130156400536817,
+    "decision_step": 128.26639175964948,
+    "ramp_in": 22.713242370300044,
+    "ramp_out": 31.39991886850485,
+    "depth_WR": 1.0,
+    "depth_FF": 1.0,
+    "depth_MF": 0.9775560108395235,
+    "depth_RF": 0.8256446031954737,
+    "depth_LF": 0.9691779906761564,
+    "depth_TH": 0.9468751995066469,
+    "stroke_multiplier": 1.1110337122626355,
+    "level_transverse": 0.0
+   },
+   "edits": 1,
+   "parameters": 12,
+   "sha256": "95c99741a5fa5ca2b771e9032e8477fd67e8e4ba82da3f88c02454d3ebf910c8"
+  }
+ ],
+ "training": [
+  {
+   "mean_candidate_success": [
+    0.58349609375,
+    0.587890625,
+    0.57080078125,
+    0.57666015625
+   ]
+  },
+  {
+   "mean_candidate_success": [
+    0.58349609375,
+    0.591064453125,
+    0.583984375,
+    0.586181640625
+   ]
+  },
+  {
+   "mean_candidate_success": [
+    0.58154296875,
+    0.5810546875,
+    0.57275390625,
+    0.563232421875
+   ]
+  }
+ ],
+ "selection": [
+  {
+   "cases": 512,
+   "successes": 288,
+   "drops": 34,
+   "labels": {
+    "success": 288,
+    "drop_early": 21,
+    "drop_late": 13,
+    "off_centre": 8,
+    "persistent_slow": 84,
+    "intermittent": 52,
+    "near_miss": 46
+   },
+   "authority": {
+    "fired_fraction": 0.291015625,
+    "success_among_fired": 0.1342281879194631,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 305,
+   "drops": 39,
+   "labels": {
+    "success": 305,
+    "drop_early": 21,
+    "drop_late": 18,
+    "off_centre": 6,
+    "persistent_slow": 55,
+    "intermittent": 48,
+    "near_miss": 59
+   },
+   "authority": {
+    "fired_fraction": 0.3046875,
+    "success_among_fired": 0.1346153846153846,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 313,
+   "drops": 34,
+   "labels": {
+    "success": 313,
+    "drop_early": 21,
+    "drop_late": 13,
+    "off_centre": 8,
+    "persistent_slow": 73,
+    "intermittent": 40,
+    "near_miss": 44
+   },
+   "authority": {
+    "fired_fraction": 0.294921875,
+    "success_among_fired": 0.2847682119205298,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 299,
+   "drops": 34,
+   "labels": {
+    "success": 299,
+    "drop_early": 20,
+    "drop_late": 14,
+    "off_centre": 7,
+    "persistent_slow": 81,
+    "intermittent": 43,
+    "near_miss": 48
+   },
+   "authority": {
+    "fired_fraction": 0.296875,
+    "success_among_fired": 0.20394736842105263,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  }
+ ],
+ "decision": {
+  "winner": 1,
+  "eligible": [
+   0,
+   1,
+   2
+  ],
+  "retained": "branch_1",
+  "successes": [
+   288,
+   305,
+   313,
+   299
+  ],
+  "drops": [
+   34,
+   39,
+   34,
+   34
+  ]
+ },
+ "winner": {
+  "spec": {
+   "schedule": "single",
+   "support_end": "timed",
+   "boost_end": "timed",
+   "target": "reset",
+   "attempts": 1,
+   "conditions": [
+    {
+     "primitive": "trend",
+     "op": "gt"
+    }
+   ]
+  },
+  "x": [
+   0.6579202207402832,
+   0.4480563387654394,
+   0.5046446274985846,
+   0.4736993766114054,
+   0.961476210281534,
+   0.9166771273262394,
+   0.8928223194355573,
+   1.0,
+   0.9208785854159772,
+   0.8003643800217447,
+   0.0,
+   0.0975378658671656
+  ],
+  "params": {
+   "threshold": 2.9737606622208497,
+   "decision_step": 113.76676065185274,
+   "ramp_in": 22.66256196245046,
+   "ramp_out": 43.15895636279838,
+   "depth_WR": 0.961476210281534,
+   "depth_FF": 0.9166771273262394,
+   "depth_MF": 0.8928223194355573,
+   "depth_RF": 1.0,
+   "depth_LF": 0.9208785854159772,
+   "depth_TH": 0.8003643800217447,
+   "stroke_multiplier": 1.0,
+   "level_trend": -3.219697073062675
+  },
+  "edits": 1,
+  "parameters": 12,
+  "sha256": "1d1de22daf301f1e2a1a3489b3e92bdf2f1185a2cddf5e6e0e99dacf2048d067"
+ },
+ "tried": [
+  {
+   "edit": {
+    "component": "conditions",
+    "add": {
+     "primitive": "trend",
+     "op": "gt"
+    }
+   },
+   "round": 0,
+   "outcome": "313 of 512 validation successes after 4 updates (parent structure branch: 305; entering parent: 288); SELECTED"
+  },
+  {
+   "edit": {
+    "component": "conditions",
+    "add": {
+     "primitive": "transverse",
+     "op": "gt"
+    }
+   },
+   "round": 0,
+   "outcome": "299 of 512 validation successes after 4 updates (parent structure branch: 305; entering parent: 288)"
+  }
+ ],
+ "proposals": [
+  {
+   "edit": {
+    "component": "conditions",
+    "add": {
+     "primitive": "trend",
+     "op": "gt"
+    }
+   },
+   "rationale": "uniform draw",
+   "calls": [],
+   "usage": [],
+   "errors": []
+  },
+  {
+   "edit": {
+    "component": "conditions",
+    "add": {
+     "primitive": "transverse",
+     "op": "gt"
+    }
+   },
+   "rationale": "uniform draw",
+   "calls": [],
+   "usage": [],
+   "errors": []
+  }
+ ]
+}

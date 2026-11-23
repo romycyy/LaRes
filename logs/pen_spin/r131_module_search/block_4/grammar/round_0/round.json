@@ -1,0 +1,511 @@
+{
+ "block": 4,
+ "round": 0,
+ "arm": "grammar",
+ "entering_parent": {
+  "spec": {
+   "schedule": "single",
+   "support_end": "timed",
+   "boost_end": "timed",
+   "target": "reset",
+   "attempts": 1,
+   "conditions": []
+  },
+  "x": [
+   0.6666666666666666,
+   0.5,
+   0.42857142857142855,
+   0.42857142857142855,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   0.0
+  ],
+  "params": {
+   "threshold": 3.0,
+   "decision_step": 120.0,
+   "ramp_in": 20.0,
+   "ramp_out": 40.0,
+   "depth_WR": 1.0,
+   "depth_FF": 1.0,
+   "depth_MF": 1.0,
+   "depth_RF": 1.0,
+   "depth_LF": 1.0,
+   "depth_TH": 1.0,
+   "stroke_multiplier": 1.0
+  },
+  "edits": 0,
+  "parameters": 11,
+  "sha256": "e6701db8ab54405725159ad6b53608b8ea0bef788b4084b5679f874805044c22"
+ },
+ "branches": [
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.6666666666666666,
+    0.5,
+    0.42857142857142855,
+    0.42857142857142855,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0
+   ],
+   "params": {
+    "threshold": 3.0,
+    "decision_step": 120.0,
+    "ramp_in": 20.0,
+    "ramp_out": 40.0,
+    "depth_WR": 1.0,
+    "depth_FF": 1.0,
+    "depth_MF": 1.0,
+    "depth_RF": 1.0,
+    "depth_LF": 1.0,
+    "depth_TH": 1.0,
+    "stroke_multiplier": 1.0
+   },
+   "edits": 0,
+   "parameters": 11,
+   "sha256": "e6701db8ab54405725159ad6b53608b8ea0bef788b4084b5679f874805044c22",
+   "edit": null
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "event",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.6666666666666666,
+    0.5,
+    0.42857142857142855,
+    0.42857142857142855,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    0.0,
+    0.3
+   ],
+   "params": {
+    "threshold": 3.0,
+    "decision_step": 120.0,
+    "ramp_in": 20.0,
+    "ramp_out": 40.0,
+    "depth_WR": 1.0,
+    "depth_FF": 1.0,
+    "depth_MF": 1.0,
+    "depth_RF": 1.0,
+    "depth_LF": 1.0,
+    "depth_TH": 1.0,
+    "stroke_multiplier": 1.0,
+    "max_hold": 0.0,
+    "settle_level": 3.0
+   },
+   "edits": 1,
+   "parameters": 13,
+   "sha256": "224dafd0cbdd9ae8a08b2baeaaea382f76862732841dbad4d55d8d6da084b014",
+   "edit": {
+    "component": "support_end",
+    "value": "event"
+   }
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "hold",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.6666666666666666,
+    0.5,
+    0.42857142857142855,
+    0.42857142857142855,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    0.0
+   ],
+   "params": {
+    "threshold": 3.0,
+    "decision_step": 120.0,
+    "ramp_in": 20.0,
+    "ramp_out": 40.0,
+    "depth_WR": 1.0,
+    "depth_FF": 1.0,
+    "depth_MF": 1.0,
+    "depth_RF": 1.0,
+    "depth_LF": 1.0,
+    "depth_TH": 1.0,
+    "stroke_multiplier": 1.0,
+    "mix_hold": 0.0
+   },
+   "edits": 1,
+   "parameters": 12,
+   "sha256": "05b561cda17ea7e9a3a53117c273be87ee3529b4d787301111ac1398bb70e111",
+   "edit": {
+    "component": "target",
+    "value": "hold"
+   }
+  }
+ ],
+ "trained": [
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.661393979159749,
+    0.40121230365495153,
+    0.5136987300286701,
+    0.39630689923041906,
+    0.9673039754642505,
+    0.9414585554151258,
+    1.0,
+    1.0,
+    0.9194387801901107,
+    0.9515715889396406,
+    0.04177558055564504
+   ],
+   "params": {
+    "threshold": 2.9841819374792466,
+    "decision_step": 108.14547643859419,
+    "ramp_in": 22.97945555100345,
+    "ramp_out": 37.74148294612934,
+    "depth_WR": 0.9673039754642505,
+    "depth_FF": 0.9414585554151258,
+    "depth_MF": 1.0,
+    "depth_RF": 1.0,
+    "depth_LF": 0.9194387801901107,
+    "depth_TH": 0.9515715889396406,
+    "stroke_multiplier": 1.041775580555645
+   },
+   "edits": 0,
+   "parameters": 11,
+   "sha256": "df07e87659a6bde5165d31086d457cf51bdbcc6a5733a9150a97948112a8b4bd"
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "event",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.6816096399331762,
+    0.48328126512701963,
+    0.538864547649338,
+    0.334724960138577,
+    0.9543348889386744,
+    0.9665925375643448,
+    0.97734201485994,
+    0.9347603150929874,
+    0.8281114575754298,
+    1.0,
+    0.003384029939837711,
+    0.0,
+    0.2572671983637873
+   ],
+   "params": {
+    "threshold": 3.044828919799529,
+    "decision_step": 117.99375181524235,
+    "ramp_in": 23.86025916772683,
+    "ramp_out": 33.430747209700385,
+    "depth_WR": 0.9543348889386744,
+    "depth_FF": 0.9665925375643448,
+    "depth_MF": 0.97734201485994,
+    "depth_RF": 0.9347603150929874,
+    "depth_LF": 0.8281114575754298,
+    "depth_TH": 1.0,
+    "stroke_multiplier": 1.0033840299398378,
+    "max_hold": 0.0,
+    "settle_level": 2.572671983637873
+   },
+   "edits": 1,
+   "parameters": 13,
+   "sha256": "ac4c05bcc12a3d251bcbeffdb6a8d3e42b75a56d7f441f657f11370e8489e9e8"
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "hold",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.6567941956753278,
+    0.46644748120419616,
+    0.4753074861235342,
+    0.4319926818632491,
+    0.929124169830697,
+    0.9517639944001869,
+    0.9934162914849249,
+    1.0,
+    0.8871304787415694,
+    0.9807085257269579,
+    0.034719567898830406,
+    0.08370634199507995
+   ],
+   "params": {
+    "threshold": 2.9703825870259832,
+    "decision_step": 115.97369774450354,
+    "ramp_in": 21.635762014323696,
+    "ramp_out": 40.239487730427435,
+    "depth_WR": 0.929124169830697,
+    "depth_FF": 0.9517639944001869,
+    "depth_MF": 0.9934162914849249,
+    "depth_RF": 1.0,
+    "depth_LF": 0.8871304787415694,
+    "depth_TH": 0.9807085257269579,
+    "stroke_multiplier": 1.0347195678988304,
+    "mix_hold": 0.08370634199507995
+   },
+   "edits": 1,
+   "parameters": 12,
+   "sha256": "dbdffcd9068905e28ecba777abba5882c2561511ef6d55ca84a20a9ce3563cf5"
+  }
+ ],
+ "training": [
+  {
+   "mean_candidate_success": [
+    0.5673828125,
+    0.605224609375,
+    0.572509765625,
+    0.564697265625
+   ]
+  },
+  {
+   "mean_candidate_success": [
+    0.5634765625,
+    0.593994140625,
+    0.578857421875,
+    0.560791015625
+   ]
+  },
+  {
+   "mean_candidate_success": [
+    0.5751953125,
+    0.60986328125,
+    0.5947265625,
+    0.56982421875
+   ]
+  }
+ ],
+ "selection": [
+  {
+   "cases": 512,
+   "successes": 310,
+   "drops": 26,
+   "labels": {
+    "success": 310,
+    "drop_early": 15,
+    "drop_late": 11,
+    "off_centre": 5,
+    "persistent_slow": 80,
+    "intermittent": 45,
+    "near_miss": 46
+   },
+   "authority": {
+    "fired_fraction": 0.267578125,
+    "success_among_fired": 0.11678832116788321,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 329,
+   "drops": 24,
+   "labels": {
+    "success": 329,
+    "drop_early": 16,
+    "drop_late": 8,
+    "off_centre": 6,
+    "persistent_slow": 76,
+    "intermittent": 33,
+    "near_miss": 44
+   },
+   "authority": {
+    "fired_fraction": 0.267578125,
+    "success_among_fired": 0.22627737226277372,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 320,
+   "drops": 28,
+   "labels": {
+    "success": 320,
+    "drop_early": 16,
+    "drop_late": 12,
+    "off_centre": 7,
+    "persistent_slow": 73,
+    "intermittent": 38,
+    "near_miss": 46
+   },
+   "authority": {
+    "fired_fraction": 0.275390625,
+    "success_among_fired": 0.20567375886524822,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 302,
+   "drops": 25,
+   "labels": {
+    "success": 302,
+    "drop_early": 15,
+    "drop_late": 10,
+    "off_centre": 6,
+    "persistent_slow": 73,
+    "intermittent": 54,
+    "near_miss": 52
+   },
+   "authority": {
+    "fired_fraction": 0.287109375,
+    "success_among_fired": 0.14965986394557823,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  }
+ ],
+ "decision": {
+  "winner": 0,
+  "eligible": [
+   0,
+   1,
+   2
+  ],
+  "retained": "branch_0",
+  "successes": [
+   310,
+   329,
+   320,
+   302
+  ],
+  "drops": [
+   26,
+   24,
+   28,
+   25
+  ]
+ },
+ "winner": {
+  "spec": {
+   "schedule": "single",
+   "support_end": "timed",
+   "boost_end": "timed",
+   "target": "reset",
+   "attempts": 1,
+   "conditions": []
+  },
+  "x": [
+   0.661393979159749,
+   0.40121230365495153,
+   0.5136987300286701,
+   0.39630689923041906,
+   0.9673039754642505,
+   0.9414585554151258,
+   1.0,
+   1.0,
+   0.9194387801901107,
+   0.9515715889396406,
+   0.04177558055564504
+  ],
+  "params": {
+   "threshold": 2.9841819374792466,
+   "decision_step": 108.14547643859419,
+   "ramp_in": 22.97945555100345,
+   "ramp_out": 37.74148294612934,
+   "depth_WR": 0.9673039754642505,
+   "depth_FF": 0.9414585554151258,
+   "depth_MF": 1.0,
+   "depth_RF": 1.0,
+   "depth_LF": 0.9194387801901107,
+   "depth_TH": 0.9515715889396406,
+   "stroke_multiplier": 1.041775580555645
+  },
+  "edits": 0,
+  "parameters": 11,
+  "sha256": "df07e87659a6bde5165d31086d457cf51bdbcc6a5733a9150a97948112a8b4bd"
+ },
+ "tried": [
+  {
+   "edit": {
+    "component": "support_end",
+    "value": "event"
+   },
+   "round": 0,
+   "outcome": "320 of 512 validation successes after 4 updates (parent structure branch: 329; entering parent: 310)"
+  },
+  {
+   "edit": {
+    "component": "target",
+    "value": "hold"
+   },
+   "round": 0,
+   "outcome": "302 of 512 validation successes after 4 updates (parent structure branch: 329; entering parent: 310)"
+  }
+ ],
+ "proposals": [
+  {
+   "edit": {
+    "component": "support_end",
+    "value": "event"
+   },
+   "rationale": "uniform draw",
+   "calls": [],
+   "usage": [],
+   "errors": []
+  },
+  {
+   "edit": {
+    "component": "target",
+    "value": "hold"
+   },
+   "rationale": "uniform draw",
+   "calls": [],
+   "usage": [],
+   "errors": []
+  }
+ ]
+}

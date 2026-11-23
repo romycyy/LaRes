@@ -1,0 +1,40 @@
+[
+ {
+  "edit": {
+   "component": "boost_end",
+   "value": "event"
+  },
+  "rationale": "Extending boost while the pen remains slow directly targets the dominant persistent-slow failures and documented post-boost relapses without repeating the disruptive posture reset.",
+  "calls": [
+   "call_00011"
+  ],
+  "usage": [
+   {
+    "prompt": 1858,
+    "completion": 427,
+    "total": 2285,
+    "wall_s": 14.582796812057495
+   }
+  ],
+  "errors": []
+ },
+ {
+  "edit": {
+   "component": "schedule",
+   "value": "periodic"
+  },
+  "rationale": "Periodic rechecks can catch persistent or late-onset slow rolling missed by the single step-112 check, expanding recovery coverage beyond the current 30% firing rate without requiring a second intervention.",
+  "calls": [
+   "call_00016"
+  ],
+  "usage": [
+   {
+    "prompt": 1885,
+    "completion": 529,
+    "total": 2414,
+    "wall_s": 14.858655452728271
+   }
+  ],
+  "errors": []
+ }
+]

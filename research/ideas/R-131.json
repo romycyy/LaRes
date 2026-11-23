@@ -67,7 +67,7 @@
     "needs_gpu": true,
     "needs_llm": true
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The block-level 95% interval upper bound is below +0.05; otherwise failure to meet the support criterion is inconclusive. An interval including zero is not evidence of an LLM advantage. Report grammar success without LLM advantage if that is the outcome.",
   "cost_estimate": {
@@ -91,12 +91,1806 @@
     "started_at": "2026-11-23T07:05:48",
     "git_sha": "0222443ee7aff5ad34aff3603317481885e3d597",
     "dirty_worktree": false,
-    "log_dir": "logs/pen_spin/r131_module_search"
+    "log_dir": "logs/pen_spin/r131_module_search",
+    "finished_at": "2026-11-23T15:28:41"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.029557291666666662,
+      "paired_success_difference_ci95": [
+        -0.017142021968526076,
+        0.0762566053018594
+      ],
+      "per_block_llm_minus_grammar": [
+        0.0859375,
+        -0.0006510416666666666,
+        0.048177083333333336,
+        0.017578125,
+        -0.0032552083333333335
+      ],
+      "registered_verdict_rule": "inconclusive",
+      "arm_mean_success": {
+        "fixed": 0.7416666666666666,
+        "grammar": 0.7134114583333333,
+        "llm": 0.7429687500000001
+      },
+      "arm_success_per_block": {
+        "fixed": [
+          0.6770833333333334,
+          0.7662760416666666,
+          0.7526041666666666,
+          0.7545572916666666,
+          0.7578125
+        ],
+        "grammar": [
+          0.6888020833333334,
+          0.787109375,
+          0.6920572916666666,
+          0.75390625,
+          0.6451822916666666
+        ],
+        "llm": [
+          0.7747395833333334,
+          0.7864583333333334,
+          0.740234375,
+          0.771484375,
+          0.6419270833333334
+        ]
+      },
+      "arm_parameters_per_block": {
+        "fixed": [
+          11,
+          11,
+          11,
+          11,
+          11
+        ],
+        "grammar": [
+          14,
+          12,
+          12,
+          11,
+          12
+        ],
+        "llm": [
+          12,
+          12,
+          13,
+          12,
+          13
+        ]
+      },
+      "arm_edits_per_block": {
+        "fixed": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "grammar": [
+          2,
+          1,
+          1,
+          0,
+          1
+        ],
+        "llm": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "secondary_block_level": {
+        "grammar_minus_fixed": {
+          "mean": -0.02825520833333333,
+          "ci95": [
+            -0.09885416575600636,
+            0.042343749089339695
+          ],
+          "per_block": [
+            0.01171875,
+            0.020833333333333332,
+            -0.060546875,
+            -0.0006510416666666666,
+            -0.11263020833333333
+          ],
+          "holm_p": 0.8639016708023534,
+          "rejects": false
+        },
+        "llm_minus_fixed": {
+          "mean": 0.0013020833333333315,
+          "ci95": [
+            -0.09448438482840359,
+            0.09708855149507024
+          ],
+          "per_block": [
+            0.09765625,
+            0.020182291666666668,
+            -0.012369791666666666,
+            0.016927083333333332,
+            -0.11588541666666667
+          ],
+          "holm_p": 0.9717019752634649,
+          "rejects": false
+        },
+        "fixed_minus_r106": {
+          "mean": 0.16940104166666664,
+          "ci95": [
+            0.12410534435903936,
+            0.21469673897429392
+          ],
+          "per_block": [
+            0.10481770833333333,
+            0.19401041666666666,
+            0.18033854166666666,
+            0.18229166666666666,
+            0.185546875
+          ],
+          "holm_p": 0.005342738464253501,
+          "rejects": true
+        },
+        "grammar_minus_r106": {
+          "mean": 0.14114583333333333,
+          "ci95": [
+            0.07093950017576504,
+            0.2113521664909016
+          ],
+          "per_block": [
+            0.11653645833333333,
+            0.21484375,
+            0.11979166666666667,
+            0.181640625,
+            0.07291666666666667
+          ],
+          "holm_p": 0.03535728485823006,
+          "rejects": true
+        },
+        "llm_minus_r106": {
+          "mean": 0.170703125,
+          "ci95": [
+            0.09742715288813775,
+            0.24397909711186228
+          ],
+          "per_block": [
+            0.20247395833333334,
+            0.21419270833333334,
+            0.16796875,
+            0.19921875,
+            0.06966145833333333
+          ],
+          "holm_p": 0.026490831477073512,
+          "rejects": true
+        }
+      },
+      "controls_success": {
+        "r106": 0.572265625,
+        "d072": 0.4244791666666667,
+        "r118": 0.7903645833333334,
+        "r121": 0.80078125
+      },
+      "finalists_qualifying_against_joint": 0,
+      "finalist_minus_joint": {
+        "b0_fixed_minus_r121": [
+          -0.12369791666666667,
+          -0.1502028144745314,
+          -0.09719301885880194
+        ],
+        "b0_grammar_minus_r121": [
+          -0.11197916666666667,
+          -0.1384915189358571,
+          -0.08546681439747626
+        ],
+        "b0_llm_minus_r121": [
+          -0.026041666666666668,
+          -0.050244314960844486,
+          -0.0018390183724888466
+        ],
+        "b1_fixed_minus_r121": [
+          -0.034505208333333336,
+          -0.058238510086725384,
+          -0.010771906579941284
+        ],
+        "b1_grammar_minus_r121": [
+          -0.013671875,
+          -0.036333869810046826,
+          0.00899011981004683
+        ],
+        "b1_llm_minus_r121": [
+          -0.014322916666666666,
+          -0.03701988080202788,
+          0.00837404746869455
+        ],
+        "b2_fixed_minus_r121": [
+          -0.048177083333333336,
+          -0.07229451061547228,
+          -0.024059656051194395
+        ],
+        "b2_grammar_minus_r121": [
+          -0.10872395833333333,
+          -0.13542348790418243,
+          -0.08202442876248422
+        ],
+        "b2_llm_minus_r121": [
+          -0.060546875,
+          -0.08496469014700264,
+          -0.03612905985299736
+        ],
+        "b3_fixed_minus_r121": [
+          -0.046223958333333336,
+          -0.06976904060702338,
+          -0.022678876059643294
+        ],
+        "b3_grammar_minus_r121": [
+          -0.046875,
+          -0.07031264937579955,
+          -0.023437350624200447
+        ],
+        "b3_llm_minus_r121": [
+          -0.029296875,
+          -0.052840693818058906,
+          -0.005753056181941097
+        ],
+        "b4_fixed_minus_r121": [
+          -0.04296875,
+          -0.06724564469547534,
+          -0.01869185530452466
+        ],
+        "b4_grammar_minus_r121": [
+          -0.15559895833333334,
+          -0.18238905819813983,
+          -0.12880885846852685
+        ],
+        "b4_llm_minus_r121": [
+          -0.15885416666666666,
+          -0.1867609061856776,
+          -0.13094742714765573
+        ]
+      },
+      "final_structures": {
+        "b0_fixed": {},
+        "b0_grammar": {
+          "schedule": "periodic",
+          "conditions": [
+            {
+              "primitive": "trend",
+              "op": "gt"
+            }
+          ]
+        },
+        "b0_llm": {
+          "target": "midrange"
+        },
+        "b1_fixed": {},
+        "b1_grammar": {
+          "target": "midrange"
+        },
+        "b1_llm": {
+          "target": "midrange"
+        },
+        "b2_fixed": {},
+        "b2_grammar": {
+          "conditions": [
+            {
+              "primitive": "trend",
+              "op": "lt"
+            }
+          ]
+        },
+        "b2_llm": {
+          "support_end": "event"
+        },
+        "b3_fixed": {},
+        "b3_grammar": {},
+        "b3_llm": {
+          "target": "midrange"
+        },
+        "b4_fixed": {},
+        "b4_grammar": {
+          "conditions": [
+            {
+              "primitive": "trend",
+              "op": "lt"
+            }
+          ]
+        },
+        "b4_llm": {
+          "support_end": "event"
+        }
+      }
+    },
+    "controls": {
+      "drops_of_1536": {
+        "b0_fixed": 73,
+        "b0_grammar": 74,
+        "b0_llm": 63,
+        "b1_fixed": 55,
+        "b1_grammar": 68,
+        "b1_llm": 67,
+        "b2_fixed": 62,
+        "b2_grammar": 70,
+        "b2_llm": 58,
+        "b3_fixed": 64,
+        "b3_grammar": 64,
+        "b3_llm": 62,
+        "b4_fixed": 54,
+        "b4_grammar": 69,
+        "b4_llm": 66,
+        "r106": 48,
+        "d072": 68,
+        "r118": 58,
+        "r121": 69
+      },
+      "search": {
+        "b0_fixed": [
+          {
+            "round": 0,
+            "edits": [
+              null,
+              null,
+              null
+            ],
+            "decision": {
+              "winner": 1,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_1",
+              "successes": [
+                288,
+                305,
+                314,
+                292
+              ],
+              "drops": [
+                34,
+                39,
+                35,
+                35
+              ]
+            }
+          },
+          {
+            "round": 1,
+            "edits": [
+              null,
+              null,
+              null
+            ],
+            "decision": {
+              "winner": 1,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_1",
+              "successes": [
+                317,
+                312,
+                327,
+                316
+              ],
+              "drops": [
+                34,
+                31,
+                28,
+                31
+              ]
+            }
+          }
+        ],
+        "b0_grammar": [
+          {
+            "round": 0,
+            "edits": [
+              null,
+              {
+                "component": "conditions",
+                "add": {
+                  "primitive": "trend",
+                  "op": "gt"
+                }
+              },
+              {
+                "component": "conditions",
+                "add": {
+                  "primitive": "transverse",
+                  "op": "gt"
+                }
+              }
+            ],
+            "decision": {
+              "winner": 1,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_1",
+              "successes": [
+                288,
+                305,
+                313,
+                299
+              ],
+              "drops": [
+                34,
+                39,
+                34,
+                34
+              ]
+            }
+          },
+          {
+            "round": 1,
+            "edits": [
+              null,
+              {
+                "component": "schedule",
+                "value": "periodic"
+              },
+              {
+                "component": "conditions",
+                "add": {
+                  "primitive": "deficit",
+                  "op": "lt"
+                }
+              }
+            ],
+            "decision": {
+              "winner": 1,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_1",
+              "successes": [
+                310,
+                311,
+                313,
+                309
+              ],
+              "drops": [
+                31,
+                31,
+                28,
+                30
+              ]
+            }
+          }
+        ],
+        "b0_llm": [
+          {
+            "round": 0,
+            "edits": [
+              null,
+              {
+                "component": "target",
+                "value": "hold"
+              },
+              {
+                "component": "target",
+                "value": "midrange"
+              }
+            ],
+            "decision": {
+              "winner": 2,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_2",
+              "successes": [
+                288,
+                307,
+                305,
+                327
+              ],
+              "drops": [
+                34,
+                39,
+                31,
+                30
+              ]
+            }
+          },
+          {
+            "round": 1,
+            "edits": [
+              null,
+              {
+                "component": "boost_end",
+                "value": "event"
+              },
+              {
+                "component": "schedule",
+                "value": "periodic"
+              }
+            ],
+            "decision": {
+              "winner": 0,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_0",
+              "successes": [
+                329,
+                363,
+                358,
+                361
+              ],
+              "drops": [
+                27,
+                25,
+                28,
+                26
+              ]
+            }
+          }
+        ],
+        "b1_fixed": [
+          {
+            "round": 0,
+            "edits": [
+              null,
+              null,
+              null
+            ],
+            "decision": {
+              "winner": 0,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_0",
+              "successes": [
+                310,
+                338,
+                326,
+                334
+              ],
+              "drops": [
+                32,
+                32,
+                28,
+                26
+              ]
+            }
+          },
+          {
+            "round": 1,
+            "edits": [
+              null,
+              null,
+              null
+            ],
+            "decision": {
+              "winner": 0,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_0",
+              "successes": [
+                317,
+                322,
+                311,
+                307
+              ],
+              "drops": [
+                37,
+                32,
+                42,
+                28
+              ]
+            }
+          }
+        ],
+        "b1_grammar": [
+          {
+            "round": 0,
+            "edits": [
+              null,
+              {
+                "component": "conditions",
+                "add": {
+                  "primitive": "transverse",
+                  "op": "lt"
+                }
+              },
+              {
+                "component": "target",
+                "value": "midrange"
+              }
+            ],
+            "decision": {
+              "winner": 2,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_2",
+              "successes": [
+                310,
+                340,
+                326,
+                353
+              ],
+              "drops": [
+                32,
+                32,
+                28,
+                24
+              ]
+            }
+          },
+          {
+            "round": 1,
+            "edits": [
+              null,
+              {
+                "component": "boost_end",
+                "value": "event"
+              },
+              {
+                "component": "conditions",
+                "add": {
+                  "primitive": "transverse",
+                  "op": "gt"
+                }
+              }
+            ],
+            "decision": {
+              "winner": 0,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_0",
+              "successes": [
+                336,
+                363,
+                363,
+                341
+              ],
+              "drops": [
+                25,
+                28,
+                30,
+                22
+              ]
+            }
+          }
+        ],
+        "b1_llm": [
+          {
+            "round": 0,
+            "edits": [
+              null,
+              {
+                "component": "target",
+                "value": "hold"
+              },
+              {
+                "component": "target",
+                "value": "midrange"
+              }
+            ],
+            "decision": {
+              "winner": 2,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_2",
+              "successes": [
+                310,
+                336,
+                330,
+                353
+              ],
+              "drops": [
+                32,
+                32,
+                25,
+                24
+              ]
+            }
+          },
+          {
+            "round": 1,
+            "edits": [
+              null,
+              {
+                "component": "boost_end",
+                "value": "event"
+              },
+              {
+                "component": "schedule",
+                "value": "periodic"
+              }
+            ],
+            "decision": {
+              "winner": 0,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_0",
+              "successes": [
+                342,
+                375,
+                367,
+                357
+              ],
+              "drops": [
+                25,
+                28,
+                29,
+                25
+              ]
+            }
+          }
+        ],
+        "b2_fixed": [
+          {
+            "round": 0,
+            "edits": [
+              null,
+              null,
+              null
+            ],
+            "decision": {
+              "winner": 0,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_0",
+              "successes": [
+                311,
+                335,
+                331,
+                312
+              ],
+              "drops": [
+                27,
+                28,
+                30,
+                29
+              ]
+            }
+          },
+          {
+            "round": 1,
+            "edits": [
+              null,
+              null,
+              null
+            ],
+            "decision": {
+              "winner": 2,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_2",
+              "successes": [
+                325,
+                319,
+                325,
+                338
+              ],
+              "drops": [
+                31,
+                32,
+                30,
+                27
+              ]
+            }
+          }
+        ],
+        "b2_grammar": [
+          {
+            "round": 0,
+            "edits": [
+              null,
+              {
+                "component": "attempts",
+                "value": 2
+              },
+              {
+                "component": "conditions",
+                "add": {
+                  "primitive": "transverse",
+                  "op": "lt"
+                }
+              }
+            ],
+            "decision": {
+              "winner": 0,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_0",
+              "successes": [
+                312,
+                334,
+                328,
+                307
+              ],
+              "drops": [
+                27,
+                28,
+                29,
+                28
+              ]
+            }
+          },
+          {
+            "round": 1,
+            "edits": [
+              null,
+              {
+                "component": "conditions",
+                "add": {
+                  "primitive": "deficit",
+                  "op": "gt"
+                }
+              },
+              {
+                "component": "conditions",
+                "add": {
+                  "primitive": "trend",
+                  "op": "lt"
+                }
+              }
+            ],
+            "decision": {
+              "winner": 2,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_2",
+              "successes": [
+                328,
+                321,
+                323,
+                342
+              ],
+              "drops": [
+                31,
+                32,
+                31,
+                32
+              ]
+            }
+          }
+        ],
+        "b2_llm": [
+          {
+            "round": 0,
+            "edits": [
+              null,
+              {
+                "component": "target",
+                "value": "hold"
+              },
+              {
+                "component": "target",
+                "value": "midrange"
+              }
+            ],
+            "decision": {
+              "winner": 0,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_0",
+              "successes": [
+                311,
+                337,
+                327,
+                317
+              ],
+              "drops": [
+                27,
+                28,
+                30,
+                26
+              ]
+            }
+          },
+          {
+            "round": 1,
+            "edits": [
+              null,
+              {
+                "component": "boost_end",
+                "value": "event"
+              },
+              {
+                "component": "support_end",
+                "value": "event"
+              }
+            ],
+            "decision": {
+              "winner": 2,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_2",
+              "successes": [
+                327,
+                319,
+                319,
+                328
+              ],
+              "drops": [
+                31,
+                32,
+                28,
+                30
+              ]
+            }
+          }
+        ],
+        "b3_fixed": [
+          {
+            "round": 0,
+            "edits": [
+              null,
+              null,
+              null
+            ],
+            "decision": {
+              "winner": 0,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_0",
+              "successes": [
+                285,
+                306,
+                289,
+                293
+              ],
+              "drops": [
+                30,
+                32,
+                31,
+                32
+              ]
+            }
+          },
+          {
+            "round": 1,
+            "edits": [
+              null,
+              null,
+              null
+            ],
+            "decision": {
+              "winner": 0,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_0",
+              "successes": [
+                311,
+                329,
+                301,
+                314
+              ],
+              "drops": [
+                32,
+                32,
+                35,
+                29
+              ]
+            }
+          }
+        ],
+        "b3_grammar": [
+          {
+            "round": 0,
+            "edits": [
+              null,
+              {
+                "component": "conditions",
+                "add": {
+                  "primitive": "transverse",
+                  "op": "gt"
+                }
+              },
+              {
+                "component": "conditions",
+                "add": {
+                  "primitive": "trend",
+                  "op": "lt"
+                }
+              }
+            ],
+            "decision": {
+              "winner": 0,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_0",
+              "successes": [
+                287,
+                308,
+                284,
+                302
+              ],
+              "drops": [
+                30,
+                32,
+                30,
+                29
+              ]
+            }
+          },
+          {
+            "round": 1,
+            "edits": [
+              null,
+              {
+                "component": "attempts",
+                "value": 2
+              },
+              {
+                "component": "boost_end",
+                "value": "event"
+              }
+            ],
+            "decision": {
+              "winner": 0,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_0",
+              "successes": [
+                309,
+                328,
+                312,
+                307
+              ],
+              "drops": [
+                32,
+                32,
+                32,
+                31
+              ]
+            }
+          }
+        ],
+        "b3_llm": [
+          {
+            "round": 0,
+            "edits": [
+              null,
+              {
+                "component": "target",
+                "value": "hold"
+              },
+              {
+                "component": "target",
+                "value": "midrange"
+              }
+            ],
+            "decision": {
+              "winner": 2,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_2",
+              "successes": [
+                284,
+                310,
+                287,
+                326
+              ],
+              "drops": [
+                30,
+                32,
+                31,
+                24
+              ]
+            }
+          },
+          {
+            "round": 1,
+            "edits": [
+              null,
+              {
+                "component": "boost_end",
+                "value": "event"
+              },
+              {
+                "component": "schedule",
+                "value": "periodic"
+              }
+            ],
+            "decision": {
+              "winner": 0,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_0",
+              "successes": [
+                345,
+                363,
+                359,
+                348
+              ],
+              "drops": [
+                29,
+                25,
+                26,
+                30
+              ]
+            }
+          }
+        ],
+        "b4_fixed": [
+          {
+            "round": 0,
+            "edits": [
+              null,
+              null,
+              null
+            ],
+            "decision": {
+              "winner": 0,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_0",
+              "successes": [
+                310,
+                329,
+                318,
+                306
+              ],
+              "drops": [
+                26,
+                24,
+                30,
+                26
+              ]
+            }
+          },
+          {
+            "round": 1,
+            "edits": [
+              null,
+              null,
+              null
+            ],
+            "decision": {
+              "winner": 2,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_2",
+              "successes": [
+                304,
+                320,
+                313,
+                324
+              ],
+              "drops": [
+                33,
+                30,
+                30,
+                29
+              ]
+            }
+          }
+        ],
+        "b4_grammar": [
+          {
+            "round": 0,
+            "edits": [
+              null,
+              {
+                "component": "support_end",
+                "value": "event"
+              },
+              {
+                "component": "target",
+                "value": "hold"
+              }
+            ],
+            "decision": {
+              "winner": 0,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_0",
+              "successes": [
+                310,
+                329,
+                320,
+                302
+              ],
+              "drops": [
+                26,
+                24,
+                28,
+                25
+              ]
+            }
+          },
+          {
+            "round": 1,
+            "edits": [
+              null,
+              {
+                "component": "schedule",
+                "value": "periodic"
+              },
+              {
+                "component": "conditions",
+                "add": {
+                  "primitive": "trend",
+                  "op": "lt"
+                }
+              }
+            ],
+            "decision": {
+              "winner": 2,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_2",
+              "successes": [
+                306,
+                317,
+                321,
+                322
+              ],
+              "drops": [
+                33,
+                30,
+                27,
+                30
+              ]
+            }
+          }
+        ],
+        "b4_llm": [
+          {
+            "round": 0,
+            "edits": [
+              null,
+              {
+                "component": "target",
+                "value": "hold"
+              },
+              {
+                "component": "target",
+                "value": "midrange"
+              }
+            ],
+            "decision": {
+              "winner": 0,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_0",
+              "successes": [
+                310,
+                328,
+                306,
+                319
+              ],
+              "drops": [
+                26,
+                24,
+                33,
+                25
+              ]
+            }
+          },
+          {
+            "round": 1,
+            "edits": [
+              null,
+              {
+                "component": "boost_end",
+                "value": "event"
+              },
+              {
+                "component": "support_end",
+                "value": "event"
+              }
+            ],
+            "decision": {
+              "winner": 2,
+              "eligible": [
+                0,
+                1,
+                2
+              ],
+              "retained": "branch_2",
+              "successes": [
+                306,
+                317,
+                315,
+                320
+              ],
+              "drops": [
+                33,
+                30,
+                28,
+                29
+              ]
+            }
+          }
+        ]
+      },
+      "llm": {
+        "calls": 20,
+        "max_calls": 40,
+        "prompt_tokens": 36147,
+        "completion_tokens": 12867,
+        "total_tokens": 49014,
+        "wall_s": 411.58968591690063,
+        "slots": 20,
+        "invalid_slots": 0,
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "high"
+      },
+      "accounting": {
+        "starts": 4641049,
+        "transitions": 817577984,
+        "wall_s": 28969.995438098907,
+        "children": 304,
+        "relaunches": [
+          {
+            "child": "logs/pen_spin/r131_module_search/smoke",
+            "charged_starts": 20000
+          }
+        ],
+        "wall_minutes": 482.8332573016485,
+        "start_ceiling": 4900000,
+        "max_minutes": 660.0,
+        "scored_training_episodes": 2211840,
+        "selection_episodes": 61440,
+        "confirmation_episodes": 29184
+      },
+      "executed_authority": {
+        "b0_fixed": {
+          "triggered_environment_episodes": 533.0,
+          "hold_steps": 0.0,
+          "extra_boost_steps": 0.0,
+          "boost_steps": 31980.0,
+          "abs_action_change": 232996.18611764908,
+          "steps": 551424.0,
+          "mean_abs_action_change_per_env_step": 0.4225354466212009
+        },
+        "b0_grammar": {
+          "triggered_environment_episodes": 562.0,
+          "hold_steps": 0.0,
+          "extra_boost_steps": 0.0,
+          "boost_steps": 33720.0,
+          "abs_action_change": 223591.42948003113,
+          "steps": 551424.0,
+          "mean_abs_action_change_per_env_step": 0.4054800470781669
+        },
+        "b0_llm": {
+          "triggered_environment_episodes": 538.0,
+          "hold_steps": 0.0,
+          "extra_boost_steps": 0.0,
+          "boost_steps": 32280.0,
+          "abs_action_change": 126258.3560886383,
+          "steps": 551424.0,
+          "mean_abs_action_change_per_env_step": 0.22896782890958375
+        },
+        "b1_fixed": {
+          "triggered_environment_episodes": 518.0,
+          "hold_steps": 0.0,
+          "extra_boost_steps": 0.0,
+          "boost_steps": 31080.0,
+          "abs_action_change": 65423.864318847656,
+          "steps": 551424.0,
+          "mean_abs_action_change_per_env_step": 0.11864529711954441
+        },
+        "b1_grammar": {
+          "triggered_environment_episodes": 527.0,
+          "hold_steps": 0.0,
+          "extra_boost_steps": 0.0,
+          "boost_steps": 31620.0,
+          "abs_action_change": 169102.4333356619,
+          "steps": 551424.0,
+          "mean_abs_action_change_per_env_step": 0.30666498617336546
+        },
+        "b1_llm": {
+          "triggered_environment_episodes": 532.0,
+          "hold_steps": 0.0,
+          "extra_boost_steps": 0.0,
+          "boost_steps": 31920.0,
+          "abs_action_change": 156366.8129143715,
+          "steps": 551424.0,
+          "mean_abs_action_change_per_env_step": 0.28356911000314006
+        },
+        "b2_fixed": {
+          "triggered_environment_episodes": 520.0,
+          "hold_steps": 0.0,
+          "extra_boost_steps": 0.0,
+          "boost_steps": 31200.0,
+          "abs_action_change": 91322.06153583527,
+          "steps": 551424.0,
+          "mean_abs_action_change_per_env_step": 0.16561132909673004
+        },
+        "b2_grammar": {
+          "triggered_environment_episodes": 531.0,
+          "hold_steps": 0.0,
+          "extra_boost_steps": 0.0,
+          "boost_steps": 31860.0,
+          "abs_action_change": 121194.8516960144,
+          "steps": 551424.0,
+          "mean_abs_action_change_per_env_step": 0.21978523186516075
+        },
+        "b2_llm": {
+          "triggered_environment_episodes": 505.0,
+          "hold_steps": 0.0,
+          "extra_boost_steps": 0.0,
+          "boost_steps": 30300.0,
+          "abs_action_change": 75268.19306230545,
+          "steps": 551424.0,
+          "mean_abs_action_change_per_env_step": 0.13649785475841722
+        },
+        "b3_fixed": {
+          "triggered_environment_episodes": 512.0,
+          "hold_steps": 0.0,
+          "extra_boost_steps": 0.0,
+          "boost_steps": 30720.0,
+          "abs_action_change": 99777.69183921814,
+          "steps": 551424.0,
+          "mean_abs_action_change_per_env_step": 0.18094550081102406
+        },
+        "b3_grammar": {
+          "triggered_environment_episodes": 508.0,
+          "hold_steps": 0.0,
+          "extra_boost_steps": 0.0,
+          "boost_steps": 30480.0,
+          "abs_action_change": 98982.95873403549,
+          "steps": 551424.0,
+          "mean_abs_action_change_per_env_step": 0.17950426302452466
+        },
+        "b3_llm": {
+          "triggered_environment_episodes": 528.0,
+          "hold_steps": 0.0,
+          "extra_boost_steps": 0.0,
+          "boost_steps": 31680.0,
+          "abs_action_change": 113132.1958603859,
+          "steps": 551424.0,
+          "mean_abs_action_change_per_env_step": 0.20516371405739667
+        },
+        "b4_fixed": {
+          "triggered_environment_episodes": 528.0,
+          "hold_steps": 0.0,
+          "extra_boost_steps": 0.0,
+          "boost_steps": 31680.0,
+          "abs_action_change": 70459.55873584747,
+          "steps": 551424.0,
+          "mean_abs_action_change_per_env_step": 0.12777746114758784
+        },
+        "b4_grammar": {
+          "triggered_environment_episodes": 438.0,
+          "hold_steps": 0.0,
+          "extra_boost_steps": 0.0,
+          "boost_steps": 26280.0,
+          "abs_action_change": 146653.563073799,
+          "steps": 551424.0,
+          "mean_abs_action_change_per_env_step": 0.265954262189892
+        },
+        "b4_llm": {
+          "triggered_environment_episodes": 443.0,
+          "hold_steps": 0.0,
+          "extra_boost_steps": 0.0,
+          "boost_steps": 26580.0,
+          "abs_action_change": 161550.3502178192,
+          "steps": 551424.0,
+          "mean_abs_action_change_per_env_step": 0.2929693851153001
+        }
+      },
+      "smoke_gates": {
+        "scorer_live": true,
+        "template_triggers": true,
+        "equal_slots_agree": true,
+        "per_slot_structures": true,
+        "equal_slots_agree_original_fixed_tolerance": false,
+        "replay_matches_live": true,
+        "every_template_edit_is_an_identity": true
+      },
+      "smoke_equal_slots": {
+        "max_abs_slot_difference": 0.044921875,
+        "noise_scaled_bound": 0.0654418326725472,
+        "mean_pairwise_discordance": 0.13704427083333334,
+        "slot_success": [
+          0.57421875,
+          0.583984375,
+          0.5625,
+          0.5390625
+        ],
+        "signed_pairwise_differences": [
+          -0.009765625,
+          0.01171875,
+          0.03515625,
+          0.021484375,
+          0.044921875,
+          0.0234375
+        ],
+        "passes": true
+      },
+      "labels": {
+        "b0_fixed": {
+          "success": 1040,
+          "drop_early": 45,
+          "drop_late": 28,
+          "off_centre": 23,
+          "persistent_slow": 216,
+          "intermittent": 93,
+          "near_miss": 91
+        },
+        "b0_grammar": {
+          "success": 1058,
+          "drop_early": 45,
+          "drop_late": 29,
+          "off_centre": 21,
+          "persistent_slow": 172,
+          "intermittent": 108,
+          "near_miss": 103
+        },
+        "b0_llm": {
+          "success": 1190,
+          "drop_early": 45,
+          "drop_late": 18,
+          "off_centre": 27,
+          "persistent_slow": 157,
+          "intermittent": 44,
+          "near_miss": 55
+        },
+        "b1_fixed": {
+          "success": 1177,
+          "drop_early": 45,
+          "drop_late": 10,
+          "off_centre": 18,
+          "persistent_slow": 183,
+          "intermittent": 54,
+          "near_miss": 49
+        },
+        "b1_grammar": {
+          "success": 1209,
+          "drop_early": 45,
+          "drop_late": 23,
+          "off_centre": 45,
+          "persistent_slow": 146,
+          "intermittent": 31,
+          "near_miss": 37
+        },
+        "b1_llm": {
+          "success": 1208,
+          "drop_early": 45,
+          "drop_late": 22,
+          "off_centre": 39,
+          "persistent_slow": 153,
+          "intermittent": 35,
+          "near_miss": 34
+        },
+        "b2_fixed": {
+          "success": 1156,
+          "drop_early": 45,
+          "drop_late": 17,
+          "off_centre": 37,
+          "persistent_slow": 173,
+          "intermittent": 45,
+          "near_miss": 63
+        },
+        "b2_grammar": {
+          "success": 1063,
+          "drop_early": 45,
+          "drop_late": 25,
+          "off_centre": 20,
+          "persistent_slow": 210,
+          "intermittent": 99,
+          "near_miss": 74
+        },
+        "b2_llm": {
+          "success": 1137,
+          "drop_early": 45,
+          "drop_late": 13,
+          "off_centre": 27,
+          "persistent_slow": 202,
+          "intermittent": 44,
+          "near_miss": 68
+        },
+        "b3_fixed": {
+          "success": 1159,
+          "drop_early": 45,
+          "drop_late": 19,
+          "off_centre": 40,
+          "persistent_slow": 187,
+          "intermittent": 40,
+          "near_miss": 46
+        },
+        "b3_grammar": {
+          "success": 1158,
+          "drop_early": 45,
+          "drop_late": 19,
+          "off_centre": 40,
+          "persistent_slow": 185,
+          "intermittent": 42,
+          "near_miss": 47
+        },
+        "b3_llm": {
+          "success": 1185,
+          "drop_early": 45,
+          "drop_late": 17,
+          "off_centre": 27,
+          "persistent_slow": 164,
+          "intermittent": 41,
+          "near_miss": 57
+        },
+        "b4_fixed": {
+          "success": 1164,
+          "drop_early": 45,
+          "drop_late": 9,
+          "off_centre": 25,
+          "persistent_slow": 197,
+          "intermittent": 48,
+          "near_miss": 48
+        },
+        "b4_grammar": {
+          "success": 991,
+          "drop_early": 45,
+          "drop_late": 24,
+          "off_centre": 19,
+          "persistent_slow": 312,
+          "intermittent": 73,
+          "near_miss": 72
+        },
+        "b4_llm": {
+          "success": 986,
+          "drop_early": 45,
+          "drop_late": 21,
+          "off_centre": 19,
+          "persistent_slow": 367,
+          "intermittent": 53,
+          "near_miss": 45
+        },
+        "r106": {
+          "success": 879,
+          "drop_early": 45,
+          "drop_late": 3,
+          "off_centre": 16,
+          "persistent_slow": 534,
+          "intermittent": 30,
+          "near_miss": 29
+        },
+        "d072": {
+          "success": 652,
+          "drop_early": 63,
+          "drop_late": 5,
+          "off_centre": 60,
+          "persistent_slow": 735,
+          "intermittent": 13,
+          "near_miss": 8
+        },
+        "r118": {
+          "success": 1214,
+          "drop_early": 45,
+          "drop_late": 13,
+          "off_centre": 22,
+          "persistent_slow": 153,
+          "intermittent": 43,
+          "near_miss": 46
+        },
+        "r121": {
+          "success": 1230,
+          "drop_early": 48,
+          "drop_late": 21,
+          "off_centre": 13,
+          "persistent_slow": 138,
+          "intermittent": 50,
+          "near_miss": 36
+        }
+      }
+    },
+    "artifacts": [
+      "logs/pen_spin/r131_module_search/summary.json",
+      "logs/pen_spin/r131_module_search/frozen_config.json",
+      "logs/pen_spin/r131_module_search/frozen_config.pre_amendment.json",
+      "logs/pen_spin/r131_module_search/summary.failed_fixed_tolerance.json",
+      "logs/pen_spin/r131_module_search/finalists.json",
+      "logs/pen_spin/r131_module_search/accounting.json",
+      "logs/pen_spin/r131_module_search/smoke.json",
+      "logs/pen_spin/r131_module_search/llm_calls.jsonl"
+    ],
+    "notes": "Five blocks x three arms, every arm 36 ARS updates (two rounds of three branches x 4 updates with the frozen ranking, then 12 updates), 15 finalists plus four frozen controls on twelve fresh 128-case manifests (1,536 cases per policy). 4,641,049 charged starts of 4,900,000; 483 of 660 minutes; 817.6 M transitions; 20 controller-generation calls of 40 allowed (none needed a correction, no invalid slot), 49,014 tokens. PRIMARY (blocks as units, 4 df): LLM minus GRAMMAR +0.030, 95% interval [-0.017, +0.076]; per block +0.086, -0.001, +0.048, +0.018, -0.003. The interval contains zero and 0.05: INCONCLUSIVE; no LLM advantage is established. Arm means: FIXED 0.742, GRAMMAR 0.713, LLM 0.743. Neither search beats the fixed template spending its branches on stochastic continuations: GRAMMAR minus FIXED -0.028 [-0.099, +0.042], LLM minus FIXED +0.001 [-0.095, +0.097]. Every arm beats the R-106 root (0.572) by 0.14-0.17 (Holm-significant). No finalist qualifies against the frozen JOINT (0.801); R-118 scored 0.790. Block 4 is low for both search arms (0.645, 0.642) against 0.758 for FIXED. What the LLM chose: round 1, in all five blocks, the two blend-target edits (hold, midrange), citing the template's 12.7% success among fired episodes; round 2, boost_end event in all five plus schedule periodic (three blocks) or support_end event (two). What survived the frozen ranking: target midrange in three LLM finalists, support_end event in two; boost_end event, the edit aimed at the largest D-090 failure category, was never selected in the LLM arm. The grammar's finalists: trend conditions (three), midrange (one), periodic + trend (one), the unedited template (one). So the LLM's choices were sensible and consistent, the selected structures are small (12-13 parameters), and they bought nothing measurable over continued fitting of the template at this budget. Instrument note: selection ranks branches on 512 placements after 4 updates, where identical slots differ by up to 0.045 (smoke), so the ranking is noisy; this was the agreed, frozen rule. Deviations, all before any generation or training: (1) the first launch died in the smoke on an implementer bug (a four-edit probe structure, past the language's three-edit cap); fixed, tested, and charged 20,000 starts on relaunch. (2) Smoke-gate amendment (advisor consult call_00310; the advisor left continuation to the user, the implementer continued under the user's standing delegation): the four-identical-slot check, a fixed 0.03 the implementer had set, failed at 0.045; it was replaced by a noise-scaled bound (4 x sqrt(mean discordance / cases) = 0.065) and the saved smoke re-evaluated without new simulation; the original failed gate and the pre-amendment frozen configuration are kept; no consistent slot bias was found in the saved data, but one batch cannot exclude it. (3) The smoke allowance was exceeded (28,210 starts charged against 20,000). (4) Executed authority is reported as trigger counts, hold and extra-boost steps and the mean action change against the root action; the protocol's 'action difference against the identity-disabled edit at identical observations' was not computed. (5) The driver's ssh session dropped during the continuations; the driver itself ran on uninterrupted. Limits: five blocks (4 df); one frozen residual root; a 13-edit language in which the LLM and the grammar choose from the same small menu; at most two edits per structure; 20 path updates on the final structure."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.029557291666666662,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.85,
+      "reasoning": "By the frozen rule: LLM minus GRAMMAR is +0.030 with a five-block 95% interval of [-0.017, +0.076]; it contains both zero and the registered 0.05, so neither support (lower bound >= 0.05) nor refutation (upper bound < 0.05) holds. Substantively no search arm improved on the fixed template under the same 36 updates (FIXED 0.742, GRAMMAR 0.713, LLM 0.743; LLM minus FIXED +0.001 [-0.095, +0.097]), all three beat the root by 0.14-0.17, none reaches the frozen JOINT or R-118, and the LLM's edits (consistent, failure-informed, all valid on the first call) were mostly not retained by a ranking made on 512 placements after 4 updates. The comparison is limited by five blocks and by a language in which both proposers choose from 13 edits.",
+      "cited_artifacts": [],
+      "next_experiment": "Do not repeat this comparison at the same size. If construction is pursued, the bottleneck to address first is the selection instrument (4 updates and 512 placements cannot rank structures a few points apart) and the between-block variance, not the proposer. The direction's four questions are now each decided once; propose only a follow-up that the results justify (for example the reset-distribution weakness from D-089), otherwise let the loop stop for a new direction.",
+      "recorded_at": "2026-11-23T15:28:44",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 0.99,
+      "reasoning": "The five-block LLM-minus-GRAMMAR paired_success_difference was +0.02956, with a 95% interval of [-0.01714, +0.07626] [logs/pen_spin/r131_module_search/summary.json]. The lower bound does not reach +0.05, while the upper bound is not below +0.05, so the registered prediction is neither supported nor refuted; inclusion of zero establishes no LLM advantage [logs/pen_spin/r131_module_search/summary.json]. GRAMMAR achieved 0.7134 mean success, and neither search arm demonstrated an advantage over the matched-budget FIXED template [logs/pen_spin/r131_module_search/summary.json]. No finalist qualified against frozen JOINT [logs/pen_spin/r131_module_search/summary.json]. The amended smoke gate, exceeded smoke allowance and missing identity-disabled action comparison are protocol limitations, not evidence that selection noise or recovery targeting explains the outcome [logs/pen_spin/r131_module_search/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r131_module_search/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-23T15:29:11",
+      "call_id": "call_00311"
+    }
+  ],
+  "decision_id": "D-091",
   "history": [
     {
       "at": "2026-11-23T06:51:21",
@@ -109,6 +1903,18 @@
       "from": "approved",
       "to": "running",
       "note": "git 0222443ee7"
+    },
+    {
+      "at": "2026-11-23T15:28:41",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-23T15:29:33",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-091: inconclusive"
     }
   ],
   "created_at": "2026-11-23T06:47:24",

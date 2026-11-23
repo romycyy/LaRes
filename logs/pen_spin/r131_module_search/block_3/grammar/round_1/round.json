@@ -1,0 +1,537 @@
+{
+ "block": 3,
+ "round": 1,
+ "arm": "grammar",
+ "entering_parent": {
+  "spec": {
+   "schedule": "single",
+   "support_end": "timed",
+   "boost_end": "timed",
+   "target": "reset",
+   "attempts": 1,
+   "conditions": []
+  },
+  "x": [
+   0.7397911264376281,
+   0.3322224356982661,
+   0.49480977936439674,
+   0.36662570975552056,
+   0.9140805648850004,
+   0.9317767066134007,
+   0.9833943603678017,
+   0.9604743642817638,
+   0.8198983718474332,
+   0.7748554807208985,
+   0.09312576414076262
+  ],
+  "params": {
+   "threshold": 3.2193733793128843,
+   "decision_step": 99.86669228379193,
+   "ramp_in": 22.318342277753885,
+   "ramp_out": 35.663799682886435,
+   "depth_WR": 0.9140805648850004,
+   "depth_FF": 0.9317767066134007,
+   "depth_MF": 0.9833943603678017,
+   "depth_RF": 0.9604743642817638,
+   "depth_LF": 0.8198983718474332,
+   "depth_TH": 0.7748554807208985,
+   "stroke_multiplier": 1.0931257641407626
+  },
+  "edits": 0,
+  "parameters": 11,
+  "sha256": "81fdb8e5a314267e211bb087cd65c523bc6bc853427b10a885300c98a5039716"
+ },
+ "branches": [
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.7397911264376281,
+    0.3322224356982661,
+    0.49480977936439674,
+    0.36662570975552056,
+    0.9140805648850004,
+    0.9317767066134007,
+    0.9833943603678017,
+    0.9604743642817638,
+    0.8198983718474332,
+    0.7748554807208985,
+    0.09312576414076262
+   ],
+   "params": {
+    "threshold": 3.2193733793128843,
+    "decision_step": 99.86669228379193,
+    "ramp_in": 22.318342277753885,
+    "ramp_out": 35.663799682886435,
+    "depth_WR": 0.9140805648850004,
+    "depth_FF": 0.9317767066134007,
+    "depth_MF": 0.9833943603678017,
+    "depth_RF": 0.9604743642817638,
+    "depth_LF": 0.8198983718474332,
+    "depth_TH": 0.7748554807208985,
+    "stroke_multiplier": 1.0931257641407626
+   },
+   "edits": 0,
+   "parameters": 11,
+   "sha256": "81fdb8e5a314267e211bb087cd65c523bc6bc853427b10a885300c98a5039716",
+   "edit": null
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 2,
+    "conditions": []
+   },
+   "x": [
+    0.7397911264376281,
+    0.3322224356982661,
+    0.49480977936439674,
+    0.36662570975552056,
+    0.9140805648850004,
+    0.9317767066134007,
+    0.9833943603678017,
+    0.9604743642817638,
+    0.8198983718474332,
+    0.7748554807208985,
+    0.09312576414076262,
+    0.25,
+    0.0
+   ],
+   "params": {
+    "threshold": 3.2193733793128843,
+    "decision_step": 99.86669228379193,
+    "ramp_in": 22.318342277753885,
+    "ramp_out": 35.663799682886435,
+    "depth_WR": 0.9140805648850004,
+    "depth_FF": 0.9317767066134007,
+    "depth_MF": 0.9833943603678017,
+    "depth_RF": 0.9604743642817638,
+    "depth_LF": 0.8198983718474332,
+    "depth_TH": 0.7748554807208985,
+    "stroke_multiplier": 1.0931257641407626,
+    "retry_gap": 60.0,
+    "retry_depth": 0.0
+   },
+   "edits": 1,
+   "parameters": 13,
+   "sha256": "496e9073e64b771494c3979c65da66ecda8c000fbdfb762341c489c0b314cb84",
+   "edit": {
+    "component": "attempts",
+    "value": 2
+   }
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "event",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.7397911264376281,
+    0.3322224356982661,
+    0.49480977936439674,
+    0.36662570975552056,
+    0.9140805648850004,
+    0.9317767066134007,
+    0.9833943603678017,
+    0.9604743642817638,
+    0.8198983718474332,
+    0.7748554807208985,
+    0.09312576414076262,
+    0.0,
+    0.3333333333333333
+   ],
+   "params": {
+    "threshold": 3.2193733793128843,
+    "decision_step": 99.86669228379193,
+    "ramp_in": 22.318342277753885,
+    "ramp_out": 35.663799682886435,
+    "depth_WR": 0.9140805648850004,
+    "depth_FF": 0.9317767066134007,
+    "depth_MF": 0.9833943603678017,
+    "depth_RF": 0.9604743642817638,
+    "depth_LF": 0.8198983718474332,
+    "depth_TH": 0.7748554807208985,
+    "stroke_multiplier": 1.0931257641407626,
+    "max_extra": 0.0,
+    "release_level": 6.0
+   },
+   "edits": 1,
+   "parameters": 13,
+   "sha256": "d985629d679e824d185d7451f3b0654e74df93e395648d28335d8e795793c7e5",
+   "edit": {
+    "component": "boost_end",
+    "value": "event"
+   }
+  }
+ ],
+ "trained": [
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.8066103778291474,
+    0.28718893765398085,
+    0.4640733398769645,
+    0.1788474992763834,
+    0.8452558153117956,
+    0.8566521437972162,
+    0.9491992340780789,
+    0.9845385739150023,
+    0.7267613836427819,
+    0.6697726615739638,
+    0.01991265071464752
+   ],
+   "params": {
+    "threshold": 3.419831133487442,
+    "decision_step": 94.4626725184777,
+    "ramp_in": 21.242566895693756,
+    "ramp_out": 22.51932494934684,
+    "depth_WR": 0.8452558153117956,
+    "depth_FF": 0.8566521437972162,
+    "depth_MF": 0.9491992340780789,
+    "depth_RF": 0.9845385739150023,
+    "depth_LF": 0.7267613836427819,
+    "depth_TH": 0.6697726615739638,
+    "stroke_multiplier": 1.0199126507146474
+   },
+   "edits": 0,
+   "parameters": 11,
+   "sha256": "4b0750c26aea8701aca9c1b9964f6a2b02b7c80da486dabe3fdd425096cde475"
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 2,
+    "conditions": []
+   },
+   "x": [
+    0.8050470660605952,
+    0.25753576318493865,
+    0.657038405435332,
+    0.3251516304013234,
+    0.8398405984741115,
+    1.0,
+    0.9191645312803599,
+    1.0,
+    0.6234493895543047,
+    0.6592578964727602,
+    0.0651762678547388,
+    0.28652300602328373,
+    0.0
+   ],
+   "params": {
+    "threshold": 3.4151411981817854,
+    "decision_step": 90.90429158219264,
+    "ramp_in": 27.99634419023662,
+    "ramp_out": 32.76061412809264,
+    "depth_WR": 0.8398405984741115,
+    "depth_FF": 1.0,
+    "depth_MF": 0.9191645312803599,
+    "depth_RF": 1.0,
+    "depth_LF": 0.6234493895543047,
+    "depth_TH": 0.6592578964727602,
+    "stroke_multiplier": 1.0651762678547387,
+    "retry_gap": 64.38276072279405,
+    "retry_depth": 0.0
+   },
+   "edits": 1,
+   "parameters": 13,
+   "sha256": "a198042aebcd715a49a7dd12affb603abac23b6d18f00152fd70479c14edf064"
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "event",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.6966565920182328,
+    0.2678278737399773,
+    0.4043149125162297,
+    0.33890959324131015,
+    0.897260627718482,
+    0.9613814430062346,
+    0.9857320255464772,
+    0.9796247536537895,
+    0.6570051483873265,
+    0.6954831387639112,
+    0.06505471606626971,
+    0.03019153949450178,
+    0.22698638780308547
+   ],
+   "params": {
+    "threshold": 3.0899697760546987,
+    "decision_step": 92.13934484879728,
+    "ramp_in": 19.15102193806804,
+    "ramp_out": 33.72367152689171,
+    "depth_WR": 0.897260627718482,
+    "depth_FF": 0.9613814430062346,
+    "depth_MF": 0.9857320255464772,
+    "depth_RF": 0.9796247536537895,
+    "depth_LF": 0.6570051483873265,
+    "depth_TH": 0.6954831387639112,
+    "stroke_multiplier": 1.0650547160662698,
+    "max_extra": 3.4720270418677046,
+    "release_level": 5.361918326818513
+   },
+   "edits": 1,
+   "parameters": 13,
+   "sha256": "23ae45c8b621358a4b9763b16fe343a2a675da9f5693b22422c7657011f16f72"
+  }
+ ],
+ "training": [
+  {
+   "mean_candidate_success": [
+    0.638671875,
+    0.616455078125,
+    0.60205078125,
+    0.619140625
+   ]
+  },
+  {
+   "mean_candidate_success": [
+    0.635498046875,
+    0.60791015625,
+    0.618408203125,
+    0.626220703125
+   ]
+  },
+  {
+   "mean_candidate_success": [
+    0.623779296875,
+    0.604736328125,
+    0.600830078125,
+    0.618408203125
+   ]
+  }
+ ],
+ "selection": [
+  {
+   "cases": 512,
+   "successes": 309,
+   "drops": 32,
+   "labels": {
+    "success": 309,
+    "drop_early": 17,
+    "drop_late": 15,
+    "off_centre": 8,
+    "persistent_slow": 88,
+    "intermittent": 47,
+    "near_miss": 28
+   },
+   "authority": {
+    "fired_fraction": 0.291015625,
+    "success_among_fired": 0.19463087248322147,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 328,
+   "drops": 32,
+   "labels": {
+    "success": 328,
+    "drop_early": 17,
+    "drop_late": 15,
+    "off_centre": 8,
+    "persistent_slow": 88,
+    "intermittent": 37,
+    "near_miss": 19
+   },
+   "authority": {
+    "fired_fraction": 0.30859375,
+    "success_among_fired": 0.2974683544303797,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 312,
+   "drops": 32,
+   "labels": {
+    "success": 312,
+    "drop_early": 17,
+    "drop_late": 15,
+    "off_centre": 6,
+    "persistent_slow": 102,
+    "intermittent": 33,
+    "near_miss": 27
+   },
+   "authority": {
+    "fired_fraction": 0.333984375,
+    "success_among_fired": 0.29239766081871343,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 307,
+   "drops": 31,
+   "labels": {
+    "success": 307,
+    "drop_early": 17,
+    "drop_late": 14,
+    "off_centre": 6,
+    "persistent_slow": 95,
+    "intermittent": 45,
+    "near_miss": 28
+   },
+   "authority": {
+    "fired_fraction": 0.310546875,
+    "success_among_fired": 0.23270440251572327,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 1.7358490228652954
+   }
+  }
+ ],
+ "decision": {
+  "winner": 0,
+  "eligible": [
+   0,
+   1,
+   2
+  ],
+  "retained": "branch_0",
+  "successes": [
+   309,
+   328,
+   312,
+   307
+  ],
+  "drops": [
+   32,
+   32,
+   32,
+   31
+  ]
+ },
+ "winner": {
+  "spec": {
+   "schedule": "single",
+   "support_end": "timed",
+   "boost_end": "timed",
+   "target": "reset",
+   "attempts": 1,
+   "conditions": []
+  },
+  "x": [
+   0.8066103778291474,
+   0.28718893765398085,
+   0.4640733398769645,
+   0.1788474992763834,
+   0.8452558153117956,
+   0.8566521437972162,
+   0.9491992340780789,
+   0.9845385739150023,
+   0.7267613836427819,
+   0.6697726615739638,
+   0.01991265071464752
+  ],
+  "params": {
+   "threshold": 3.419831133487442,
+   "decision_step": 94.4626725184777,
+   "ramp_in": 21.242566895693756,
+   "ramp_out": 22.51932494934684,
+   "depth_WR": 0.8452558153117956,
+   "depth_FF": 0.8566521437972162,
+   "depth_MF": 0.9491992340780789,
+   "depth_RF": 0.9845385739150023,
+   "depth_LF": 0.7267613836427819,
+   "depth_TH": 0.6697726615739638,
+   "stroke_multiplier": 1.0199126507146474
+  },
+  "edits": 0,
+  "parameters": 11,
+  "sha256": "4b0750c26aea8701aca9c1b9964f6a2b02b7c80da486dabe3fdd425096cde475"
+ },
+ "tried": [
+  {
+   "edit": {
+    "component": "conditions",
+    "add": {
+     "primitive": "transverse",
+     "op": "gt"
+    }
+   },
+   "round": 0,
+   "outcome": "284 of 512 validation successes after 4 updates (parent structure branch: 308; entering parent: 287)"
+  },
+  {
+   "edit": {
+    "component": "conditions",
+    "add": {
+     "primitive": "trend",
+     "op": "lt"
+    }
+   },
+   "round": 0,
+   "outcome": "302 of 512 validation successes after 4 updates (parent structure branch: 308; entering parent: 287)"
+  },
+  {
+   "edit": {
+    "component": "attempts",
+    "value": 2
+   },
+   "round": 1,
+   "outcome": "312 of 512 validation successes after 4 updates (parent structure branch: 328; entering parent: 309)"
+  },
+  {
+   "edit": {
+    "component": "boost_end",
+    "value": "event"
+   },
+   "round": 1,
+   "outcome": "307 of 512 validation successes after 4 updates (parent structure branch: 328; entering parent: 309)"
+  }
+ ],
+ "proposals": [
+  {
+   "edit": {
+    "component": "attempts",
+    "value": 2
+   },
+   "rationale": "uniform draw",
+   "calls": [],
+   "usage": [],
+   "errors": []
+  },
+  {
+   "edit": {
+    "component": "boost_end",
+    "value": "event"
+   },
+   "rationale": "uniform draw",
+   "calls": [],
+   "usage": [],
+   "errors": []
+  }
+ ]
+}

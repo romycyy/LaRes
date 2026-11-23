@@ -1,0 +1,40 @@
+[
+ {
+  "edit": {
+   "component": "target",
+   "value": "hold"
+  },
+  "rationale": "With full-depth resets and only 12.7% success among fired episodes, a one-parameter mix toward the firing-time root action offers a low-dimensional way to preserve the grasp while softening a potentially disruptive reset.",
+  "calls": [
+   "call_00005"
+  ],
+  "usage": [
+   {
+    "prompt": 1727,
+    "completion": 1217,
+    "total": 2944,
+    "wall_s": 35.89184522628784
+   }
+  ],
+  "errors": []
+ },
+ {
+  "edit": {
+   "component": "target",
+   "value": "midrange"
+  },
+  "rationale": "A one-parameter reset\u2013midrange blend can improve the recovery posture within a short search, directly addressing the current module\u2019s low 12.7% success among episodes where it fires.",
+  "calls": [
+   "call_00010"
+  ],
+  "usage": [
+   {
+    "prompt": 1753,
+    "completion": 573,
+    "total": 2326,
+    "wall_s": 18.62096118927002
+   }
+  ],
+  "errors": []
+ }
+]

@@ -1,0 +1,40 @@
+[
+ {
+  "edit": {
+   "component": "target",
+   "value": "hold"
+  },
+  "rationale": "Mixing toward the root action at firing offers a less disruptive recovery target for the currently low-success interventions, with one directly effective parameter that a short search can tune.",
+  "calls": [
+   "call_00003"
+  ],
+  "usage": [
+   {
+    "prompt": 1727,
+    "completion": 726,
+    "total": 2453,
+    "wall_s": 25.010721445083618
+   }
+  ],
+  "errors": []
+ },
+ {
+  "edit": {
+   "component": "target",
+   "value": "midrange"
+  },
+  "rationale": "A single posture-mixing parameter offers a low-dimensional way to improve the current 12.7% success among fired episodes, whereas extending the boost has no effect at the current unit stroke multiplier.",
+  "calls": [
+   "call_00006"
+  ],
+  "usage": [
+   {
+    "prompt": 1753,
+    "completion": 398,
+    "total": 2151,
+    "wall_s": 13.775878667831421
+   }
+  ],
+  "errors": []
+ }
+]

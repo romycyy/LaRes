@@ -1,0 +1,40 @@
+[
+ {
+  "edit": {
+   "component": "boost_end",
+   "value": "event"
+  },
+  "rationale": "Extending the boost while axial speed remains low directly targets the documented post-recovery persistent-slow failures while preserving the original boost duration for episodes that have already recovered.",
+  "calls": [
+   "call_00014"
+  ],
+  "usage": [
+   {
+    "prompt": 1869,
+    "completion": 502,
+    "total": 2371,
+    "wall_s": 16.93049907684326
+   }
+  ],
+  "errors": []
+ },
+ {
+  "edit": {
+   "component": "support_end",
+   "value": "event"
+  },
+  "rationale": "Adapting the support duration to residual tumbling could help fired episodes settle before returning control to the root, addressing failures to regain steady rolling without adding another recovery attempt.",
+  "calls": [
+   "call_00018"
+  ],
+  "usage": [
+   {
+    "prompt": 1896,
+    "completion": 569,
+    "total": 2465,
+    "wall_s": 18.514730215072632
+   }
+  ],
+  "errors": []
+ }
+]

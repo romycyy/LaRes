@@ -1,0 +1,40 @@
+[
+ {
+  "edit": {
+   "component": "target",
+   "value": "hold"
+  },
+  "rationale": "This single new parameter can soften the full-depth reset toward the root\u2019s existing grasp command, offering a quickly trainable way to improve the very low success rate among fired episodes.",
+  "calls": [
+   "call_00001"
+  ],
+  "usage": [
+   {
+    "prompt": 1727,
+    "completion": 679,
+    "total": 2406,
+    "wall_s": 22.144933938980103
+   }
+  ],
+  "errors": []
+ },
+ {
+  "edit": {
+   "component": "target",
+   "value": "midrange"
+  },
+  "rationale": "A single posture-mixture parameter is inexpensive to tune and directly changes the recovery grasp, offering a better chance of restoring rolling than the current reset target, which succeeds in only 12.7% of fired episodes.",
+  "calls": [
+   "call_00007"
+  ],
+  "usage": [
+   {
+    "prompt": 1753,
+    "completion": 563,
+    "total": 2316,
+    "wall_s": 18.87527585029602
+   }
+  ],
+  "errors": []
+ }
+]

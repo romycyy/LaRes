@@ -1,0 +1,40 @@
+[
+ {
+  "edit": {
+   "component": "boost_end",
+   "value": "event"
+  },
+  "rationale": "Extending the boost while axial speed remains low directly targets the documented post-recovery slow failures without introducing another potentially disruptive posture reset.",
+  "calls": [
+   "call_00015"
+  ],
+  "usage": [
+   {
+    "prompt": 1858,
+    "completion": 561,
+    "total": 2419,
+    "wall_s": 20.10133719444275
+   }
+  ],
+  "errors": []
+ },
+ {
+  "edit": {
+   "component": "schedule",
+   "value": "periodic"
+  },
+  "rationale": "Periodic rechecks can catch centred stalls arising after the single step-126 check, potentially reducing persistent-slow and intermittent failures while retaining the one-intervention limit.",
+  "calls": [
+   "call_00019"
+  ],
+  "usage": [
+   {
+    "prompt": 1885,
+    "completion": 645,
+    "total": 2530,
+    "wall_s": 21.98640203475952
+   }
+  ],
+  "errors": []
+ }
+]

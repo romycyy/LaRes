@@ -1,0 +1,457 @@
+{
+ "block": 3,
+ "round": 0,
+ "arm": "fixed",
+ "entering_parent": {
+  "spec": {
+   "schedule": "single",
+   "support_end": "timed",
+   "boost_end": "timed",
+   "target": "reset",
+   "attempts": 1,
+   "conditions": []
+  },
+  "x": [
+   0.6666666666666666,
+   0.5,
+   0.42857142857142855,
+   0.42857142857142855,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   0.0
+  ],
+  "params": {
+   "threshold": 3.0,
+   "decision_step": 120.0,
+   "ramp_in": 20.0,
+   "ramp_out": 40.0,
+   "depth_WR": 1.0,
+   "depth_FF": 1.0,
+   "depth_MF": 1.0,
+   "depth_RF": 1.0,
+   "depth_LF": 1.0,
+   "depth_TH": 1.0,
+   "stroke_multiplier": 1.0
+  },
+  "edits": 0,
+  "parameters": 11,
+  "sha256": "e6701db8ab54405725159ad6b53608b8ea0bef788b4084b5679f874805044c22"
+ },
+ "branches": [
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.6666666666666666,
+    0.5,
+    0.42857142857142855,
+    0.42857142857142855,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0
+   ],
+   "params": {
+    "threshold": 3.0,
+    "decision_step": 120.0,
+    "ramp_in": 20.0,
+    "ramp_out": 40.0,
+    "depth_WR": 1.0,
+    "depth_FF": 1.0,
+    "depth_MF": 1.0,
+    "depth_RF": 1.0,
+    "depth_LF": 1.0,
+    "depth_TH": 1.0,
+    "stroke_multiplier": 1.0
+   },
+   "edits": 0,
+   "parameters": 11,
+   "sha256": "e6701db8ab54405725159ad6b53608b8ea0bef788b4084b5679f874805044c22",
+   "edit": null
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.6666666666666666,
+    0.5,
+    0.42857142857142855,
+    0.42857142857142855,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0
+   ],
+   "params": {
+    "threshold": 3.0,
+    "decision_step": 120.0,
+    "ramp_in": 20.0,
+    "ramp_out": 40.0,
+    "depth_WR": 1.0,
+    "depth_FF": 1.0,
+    "depth_MF": 1.0,
+    "depth_RF": 1.0,
+    "depth_LF": 1.0,
+    "depth_TH": 1.0,
+    "stroke_multiplier": 1.0
+   },
+   "edits": 0,
+   "parameters": 11,
+   "sha256": "e6701db8ab54405725159ad6b53608b8ea0bef788b4084b5679f874805044c22",
+   "edit": null,
+   "parent_copy": false
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.6666666666666666,
+    0.5,
+    0.42857142857142855,
+    0.42857142857142855,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0
+   ],
+   "params": {
+    "threshold": 3.0,
+    "decision_step": 120.0,
+    "ramp_in": 20.0,
+    "ramp_out": 40.0,
+    "depth_WR": 1.0,
+    "depth_FF": 1.0,
+    "depth_MF": 1.0,
+    "depth_RF": 1.0,
+    "depth_LF": 1.0,
+    "depth_TH": 1.0,
+    "stroke_multiplier": 1.0
+   },
+   "edits": 0,
+   "parameters": 11,
+   "sha256": "e6701db8ab54405725159ad6b53608b8ea0bef788b4084b5679f874805044c22",
+   "edit": null,
+   "parent_copy": false
+  }
+ ],
+ "trained": [
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.7397911264376281,
+    0.3322224356982661,
+    0.49480977936439674,
+    0.36662570975552056,
+    0.9140805648850004,
+    0.9317767066134007,
+    0.9833943603678017,
+    0.9604743642817638,
+    0.8198983718474332,
+    0.7748554807208985,
+    0.09312576414076262
+   ],
+   "params": {
+    "threshold": 3.2193733793128843,
+    "decision_step": 99.86669228379193,
+    "ramp_in": 22.318342277753885,
+    "ramp_out": 35.663799682886435,
+    "depth_WR": 0.9140805648850004,
+    "depth_FF": 0.9317767066134007,
+    "depth_MF": 0.9833943603678017,
+    "depth_RF": 0.9604743642817638,
+    "depth_LF": 0.8198983718474332,
+    "depth_TH": 0.7748554807208985,
+    "stroke_multiplier": 1.0931257641407626
+   },
+   "edits": 0,
+   "parameters": 11,
+   "sha256": "81fdb8e5a314267e211bb087cd65c523bc6bc853427b10a885300c98a5039716"
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.7336248097668358,
+    0.4619004126496422,
+    0.5029108593063548,
+    0.4034954485593568,
+    1.0,
+    1.0,
+    1.0,
+    0.9255966258727926,
+    0.9267064309934829,
+    0.8791346006307756,
+    0.030993933424800536
+   ],
+   "params": {
+    "threshold": 3.2008744293005074,
+    "decision_step": 115.42804951795706,
+    "ramp_in": 22.60188007572242,
+    "ramp_out": 38.24468139915498,
+    "depth_WR": 1.0,
+    "depth_FF": 1.0,
+    "depth_MF": 1.0,
+    "depth_RF": 0.9255966258727926,
+    "depth_LF": 0.9267064309934829,
+    "depth_TH": 0.8791346006307756,
+    "stroke_multiplier": 1.0309939334248006
+   },
+   "edits": 0,
+   "parameters": 11,
+   "sha256": "2ab40bab8ee5b52b0bccd92d561437f96b73e5ff4f6221428c34dada29712efc"
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.78239703011222,
+    0.4030432774928482,
+    0.5407713448986148,
+    0.2583897435786286,
+    0.9619101518866948,
+    1.0,
+    0.9629916494570131,
+    1.0,
+    0.8918229513417327,
+    0.8188970746445765,
+    0.006603734312873595
+   ],
+   "params": {
+    "threshold": 3.34719109033666,
+    "decision_step": 108.36519329914178,
+    "ramp_in": 23.926997071451517,
+    "ramp_out": 28.087282050504,
+    "depth_WR": 0.9619101518866948,
+    "depth_FF": 1.0,
+    "depth_MF": 0.9629916494570131,
+    "depth_RF": 1.0,
+    "depth_LF": 0.8918229513417327,
+    "depth_TH": 0.8188970746445765,
+    "stroke_multiplier": 1.0066037343128735
+   },
+   "edits": 0,
+   "parameters": 11,
+   "sha256": "eac506057c63727ce518a48f3adfc7c8d9857988d1914682d11bf50cde38988d"
+  }
+ ],
+ "training": [
+  {
+   "mean_candidate_success": [
+    0.550048828125,
+    0.572998046875,
+    0.59033203125,
+    0.613525390625
+   ]
+  },
+  {
+   "mean_candidate_success": [
+    0.546630859375,
+    0.5693359375,
+    0.5947265625,
+    0.587646484375
+   ]
+  },
+  {
+   "mean_candidate_success": [
+    0.550048828125,
+    0.5849609375,
+    0.597900390625,
+    0.614013671875
+   ]
+  }
+ ],
+ "selection": [
+  {
+   "cases": 512,
+   "successes": 285,
+   "drops": 30,
+   "labels": {
+    "success": 285,
+    "drop_early": 13,
+    "drop_late": 17,
+    "off_centre": 8,
+    "persistent_slow": 103,
+    "intermittent": 46,
+    "near_miss": 40
+   },
+   "authority": {
+    "fired_fraction": 0.29296875,
+    "success_among_fired": 0.12,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 306,
+   "drops": 32,
+   "labels": {
+    "success": 306,
+    "drop_early": 14,
+    "drop_late": 18,
+    "off_centre": 11,
+    "persistent_slow": 77,
+    "intermittent": 55,
+    "near_miss": 31
+   },
+   "authority": {
+    "fired_fraction": 0.326171875,
+    "success_among_fired": 0.23952095808383234,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 289,
+   "drops": 31,
+   "labels": {
+    "success": 289,
+    "drop_early": 14,
+    "drop_late": 17,
+    "off_centre": 10,
+    "persistent_slow": 89,
+    "intermittent": 43,
+    "near_miss": 50
+   },
+   "authority": {
+    "fired_fraction": 0.3125,
+    "success_among_fired": 0.16875,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 293,
+   "drops": 32,
+   "labels": {
+    "success": 293,
+    "drop_early": 13,
+    "drop_late": 19,
+    "off_centre": 9,
+    "persistent_slow": 78,
+    "intermittent": 63,
+    "near_miss": 37
+   },
+   "authority": {
+    "fired_fraction": 0.337890625,
+    "success_among_fired": 0.1676300578034682,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  }
+ ],
+ "decision": {
+  "winner": 0,
+  "eligible": [
+   0,
+   1,
+   2
+  ],
+  "retained": "branch_0",
+  "successes": [
+   285,
+   306,
+   289,
+   293
+  ],
+  "drops": [
+   30,
+   32,
+   31,
+   32
+  ]
+ },
+ "winner": {
+  "spec": {
+   "schedule": "single",
+   "support_end": "timed",
+   "boost_end": "timed",
+   "target": "reset",
+   "attempts": 1,
+   "conditions": []
+  },
+  "x": [
+   0.7397911264376281,
+   0.3322224356982661,
+   0.49480977936439674,
+   0.36662570975552056,
+   0.9140805648850004,
+   0.9317767066134007,
+   0.9833943603678017,
+   0.9604743642817638,
+   0.8198983718474332,
+   0.7748554807208985,
+   0.09312576414076262
+  ],
+  "params": {
+   "threshold": 3.2193733793128843,
+   "decision_step": 99.86669228379193,
+   "ramp_in": 22.318342277753885,
+   "ramp_out": 35.663799682886435,
+   "depth_WR": 0.9140805648850004,
+   "depth_FF": 0.9317767066134007,
+   "depth_MF": 0.9833943603678017,
+   "depth_RF": 0.9604743642817638,
+   "depth_LF": 0.8198983718474332,
+   "depth_TH": 0.7748554807208985,
+   "stroke_multiplier": 1.0931257641407626
+  },
+  "edits": 0,
+  "parameters": 11,
+  "sha256": "81fdb8e5a314267e211bb087cd65c523bc6bc853427b10a885300c98a5039716"
+ },
+ "tried": [],
+ "proposals": null
+}

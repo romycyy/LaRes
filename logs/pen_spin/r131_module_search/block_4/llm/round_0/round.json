@@ -1,0 +1,525 @@
+{
+ "block": 4,
+ "round": 0,
+ "arm": "llm",
+ "entering_parent": {
+  "spec": {
+   "schedule": "single",
+   "support_end": "timed",
+   "boost_end": "timed",
+   "target": "reset",
+   "attempts": 1,
+   "conditions": []
+  },
+  "x": [
+   0.6666666666666666,
+   0.5,
+   0.42857142857142855,
+   0.42857142857142855,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   0.0
+  ],
+  "params": {
+   "threshold": 3.0,
+   "decision_step": 120.0,
+   "ramp_in": 20.0,
+   "ramp_out": 40.0,
+   "depth_WR": 1.0,
+   "depth_FF": 1.0,
+   "depth_MF": 1.0,
+   "depth_RF": 1.0,
+   "depth_LF": 1.0,
+   "depth_TH": 1.0,
+   "stroke_multiplier": 1.0
+  },
+  "edits": 0,
+  "parameters": 11,
+  "sha256": "e6701db8ab54405725159ad6b53608b8ea0bef788b4084b5679f874805044c22"
+ },
+ "branches": [
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.6666666666666666,
+    0.5,
+    0.42857142857142855,
+    0.42857142857142855,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0
+   ],
+   "params": {
+    "threshold": 3.0,
+    "decision_step": 120.0,
+    "ramp_in": 20.0,
+    "ramp_out": 40.0,
+    "depth_WR": 1.0,
+    "depth_FF": 1.0,
+    "depth_MF": 1.0,
+    "depth_RF": 1.0,
+    "depth_LF": 1.0,
+    "depth_TH": 1.0,
+    "stroke_multiplier": 1.0
+   },
+   "edits": 0,
+   "parameters": 11,
+   "sha256": "e6701db8ab54405725159ad6b53608b8ea0bef788b4084b5679f874805044c22",
+   "edit": null
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "hold",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.6666666666666666,
+    0.5,
+    0.42857142857142855,
+    0.42857142857142855,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    0.0
+   ],
+   "params": {
+    "threshold": 3.0,
+    "decision_step": 120.0,
+    "ramp_in": 20.0,
+    "ramp_out": 40.0,
+    "depth_WR": 1.0,
+    "depth_FF": 1.0,
+    "depth_MF": 1.0,
+    "depth_RF": 1.0,
+    "depth_LF": 1.0,
+    "depth_TH": 1.0,
+    "stroke_multiplier": 1.0,
+    "mix_hold": 0.0
+   },
+   "edits": 1,
+   "parameters": 12,
+   "sha256": "05b561cda17ea7e9a3a53117c273be87ee3529b4d787301111ac1398bb70e111",
+   "edit": {
+    "component": "target",
+    "value": "hold"
+   }
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "midrange",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.6666666666666666,
+    0.5,
+    0.42857142857142855,
+    0.42857142857142855,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    0.0
+   ],
+   "params": {
+    "threshold": 3.0,
+    "decision_step": 120.0,
+    "ramp_in": 20.0,
+    "ramp_out": 40.0,
+    "depth_WR": 1.0,
+    "depth_FF": 1.0,
+    "depth_MF": 1.0,
+    "depth_RF": 1.0,
+    "depth_LF": 1.0,
+    "depth_TH": 1.0,
+    "stroke_multiplier": 1.0,
+    "mix_midrange": 0.0
+   },
+   "edits": 1,
+   "parameters": 12,
+   "sha256": "aa349d0332b8e5284112bc3df9b297e00cc48d83a1aa22aa2007964855b0b458",
+   "edit": {
+    "component": "target",
+    "value": "midrange"
+   }
+  }
+ ],
+ "trained": [
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.661393979159749,
+    0.40121230365495153,
+    0.5136987300286701,
+    0.39630689923041906,
+    0.9673039754642505,
+    0.9414585554151258,
+    1.0,
+    1.0,
+    0.9194387801901107,
+    0.9515715889396406,
+    0.04177558055564504
+   ],
+   "params": {
+    "threshold": 2.9841819374792466,
+    "decision_step": 108.14547643859419,
+    "ramp_in": 22.97945555100345,
+    "ramp_out": 37.74148294612934,
+    "depth_WR": 0.9673039754642505,
+    "depth_FF": 0.9414585554151258,
+    "depth_MF": 1.0,
+    "depth_RF": 1.0,
+    "depth_LF": 0.9194387801901107,
+    "depth_TH": 0.9515715889396406,
+    "stroke_multiplier": 1.041775580555645
+   },
+   "edits": 0,
+   "parameters": 11,
+   "sha256": "df07e87659a6bde5165d31086d457cf51bdbcc6a5733a9150a97948112a8b4bd"
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "hold",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.7372073152768985,
+    0.5240062974642093,
+    0.5502140199324397,
+    0.25994913983685364,
+    1.0,
+    0.9497373607838567,
+    0.9796893656244796,
+    1.0,
+    1.0,
+    0.9563402182108514,
+    0.06171385086252351,
+    0.012064028672799905
+   ],
+   "params": {
+    "threshold": 3.2116219458306956,
+    "decision_step": 122.88075569570512,
+    "ramp_in": 24.25749069763539,
+    "ramp_out": 28.196439788579756,
+    "depth_WR": 1.0,
+    "depth_FF": 0.9497373607838567,
+    "depth_MF": 0.9796893656244796,
+    "depth_RF": 1.0,
+    "depth_LF": 1.0,
+    "depth_TH": 0.9563402182108514,
+    "stroke_multiplier": 1.0617138508625235,
+    "mix_hold": 0.012064028672799905
+   },
+   "edits": 1,
+   "parameters": 12,
+   "sha256": "a2422c2bbf35ed7857cb51df9ae5cd20b199e7e05570e485cd66e8171c4a6615"
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "midrange",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.6492648305493042,
+    0.43074395014443695,
+    0.3812898909433571,
+    0.5118947258123822,
+    0.9982233131703779,
+    0.8321638839105411,
+    1.0,
+    0.9475402218878269,
+    0.8416583353264876,
+    0.9564994540264413,
+    0.01660443022477994,
+    0.19921358906543515
+   ],
+   "params": {
+    "threshold": 2.9477944916479126,
+    "decision_step": 111.68927401733244,
+    "ramp_in": 18.345146183017498,
+    "ramp_out": 45.83263080686675,
+    "depth_WR": 0.9982233131703779,
+    "depth_FF": 0.8321638839105411,
+    "depth_MF": 1.0,
+    "depth_RF": 0.9475402218878269,
+    "depth_LF": 0.8416583353264876,
+    "depth_TH": 0.9564994540264413,
+    "stroke_multiplier": 1.0166044302247799,
+    "mix_midrange": 0.19921358906543515
+   },
+   "edits": 1,
+   "parameters": 12,
+   "sha256": "435a1a39ef425cfe6e070bee69762cd742daeb697398abbffbc77f2d4d40980b"
+  }
+ ],
+ "training": [
+  {
+   "mean_candidate_success": [
+    0.5673828125,
+    0.605224609375,
+    0.572509765625,
+    0.564697265625
+   ]
+  },
+  {
+   "mean_candidate_success": [
+    0.568115234375,
+    0.60302734375,
+    0.589111328125,
+    0.568359375
+   ]
+  },
+  {
+   "mean_candidate_success": [
+    0.568603515625,
+    0.60888671875,
+    0.578369140625,
+    0.575439453125
+   ]
+  }
+ ],
+ "selection": [
+  {
+   "cases": 512,
+   "successes": 310,
+   "drops": 26,
+   "labels": {
+    "success": 310,
+    "drop_early": 15,
+    "drop_late": 11,
+    "off_centre": 5,
+    "persistent_slow": 80,
+    "intermittent": 46,
+    "near_miss": 45
+   },
+   "authority": {
+    "fired_fraction": 0.267578125,
+    "success_among_fired": 0.11678832116788321,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 328,
+   "drops": 24,
+   "labels": {
+    "success": 328,
+    "drop_early": 16,
+    "drop_late": 8,
+    "off_centre": 6,
+    "persistent_slow": 76,
+    "intermittent": 35,
+    "near_miss": 43
+   },
+   "authority": {
+    "fired_fraction": 0.267578125,
+    "success_among_fired": 0.21897810218978103,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 306,
+   "drops": 33,
+   "labels": {
+    "success": 306,
+    "drop_early": 16,
+    "drop_late": 17,
+    "off_centre": 6,
+    "persistent_slow": 73,
+    "intermittent": 52,
+    "near_miss": 42
+   },
+   "authority": {
+    "fired_fraction": 0.2890625,
+    "success_among_fired": 0.0945945945945946,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 319,
+   "drops": 25,
+   "labels": {
+    "success": 319,
+    "drop_early": 15,
+    "drop_late": 10,
+    "off_centre": 5,
+    "persistent_slow": 68,
+    "intermittent": 37,
+    "near_miss": 58
+   },
+   "authority": {
+    "fired_fraction": 0.28125,
+    "success_among_fired": 0.2708333333333333,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  }
+ ],
+ "decision": {
+  "winner": 0,
+  "eligible": [
+   0,
+   1,
+   2
+  ],
+  "retained": "branch_0",
+  "successes": [
+   310,
+   328,
+   306,
+   319
+  ],
+  "drops": [
+   26,
+   24,
+   33,
+   25
+  ]
+ },
+ "winner": {
+  "spec": {
+   "schedule": "single",
+   "support_end": "timed",
+   "boost_end": "timed",
+   "target": "reset",
+   "attempts": 1,
+   "conditions": []
+  },
+  "x": [
+   0.661393979159749,
+   0.40121230365495153,
+   0.5136987300286701,
+   0.39630689923041906,
+   0.9673039754642505,
+   0.9414585554151258,
+   1.0,
+   1.0,
+   0.9194387801901107,
+   0.9515715889396406,
+   0.04177558055564504
+  ],
+  "params": {
+   "threshold": 2.9841819374792466,
+   "decision_step": 108.14547643859419,
+   "ramp_in": 22.97945555100345,
+   "ramp_out": 37.74148294612934,
+   "depth_WR": 0.9673039754642505,
+   "depth_FF": 0.9414585554151258,
+   "depth_MF": 1.0,
+   "depth_RF": 1.0,
+   "depth_LF": 0.9194387801901107,
+   "depth_TH": 0.9515715889396406,
+   "stroke_multiplier": 1.041775580555645
+  },
+  "edits": 0,
+  "parameters": 11,
+  "sha256": "df07e87659a6bde5165d31086d457cf51bdbcc6a5733a9150a97948112a8b4bd"
+ },
+ "tried": [
+  {
+   "edit": {
+    "component": "target",
+    "value": "hold"
+   },
+   "round": 0,
+   "outcome": "306 of 512 validation successes after 4 updates (parent structure branch: 328; entering parent: 310)"
+  },
+  {
+   "edit": {
+    "component": "target",
+    "value": "midrange"
+   },
+   "round": 0,
+   "outcome": "319 of 512 validation successes after 4 updates (parent structure branch: 328; entering parent: 310)"
+  }
+ ],
+ "proposals": [
+  {
+   "edit": {
+    "component": "target",
+    "value": "hold"
+   },
+   "rationale": "Mixing toward the root action at firing can reduce disruption from the current full-depth reset, addressing the low success among fired episodes with just one new parameter to train.",
+   "calls": [
+    "call_00002"
+   ],
+   "usage": [
+    {
+     "prompt": 1727,
+     "completion": 835,
+     "total": 2562,
+     "wall_s": 23.843044757843018
+    }
+   ],
+   "errors": []
+  },
+  {
+   "edit": {
+    "component": "target",
+    "value": "midrange"
+   },
+   "rationale": "Only 12.7% of fired episodes succeed, so improving the recovery posture directly with one mixing parameter is more promising within the short search budget than adding trigger opportunities or extending an ineffective intervention.",
+   "calls": [
+    "call_00008"
+   ],
+   "usage": [
+    {
+     "prompt": 1753,
+     "completion": 772,
+     "total": 2525,
+     "wall_s": 23.550687313079834
+    }
+   ],
+   "errors": []
+  }
+ ]
+}

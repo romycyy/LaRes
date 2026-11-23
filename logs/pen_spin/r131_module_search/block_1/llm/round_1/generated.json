@@ -1,0 +1,40 @@
+[
+ {
+  "edit": {
+   "component": "boost_end",
+   "value": "event"
+  },
+  "rationale": "Rate-gated boost extension directly targets the substantial persistent-slow failures by giving incomplete recoveries more time without adding another potentially disruptive posture reset.",
+  "calls": [
+   "call_00012"
+  ],
+  "usage": [
+   {
+    "prompt": 1853,
+    "completion": 523,
+    "total": 2376,
+    "wall_s": 15.76811671257019
+   }
+  ],
+  "errors": []
+ },
+ {
+  "edit": {
+   "component": "schedule",
+   "value": "periodic"
+  },
+  "rationale": "Periodic rechecks can catch persistent slowdowns missed by the single decision near step 102 while allowing training to move the initial check earlier without forfeiting later recovery opportunities.",
+  "calls": [
+   "call_00017"
+  ],
+  "usage": [
+   {
+    "prompt": 1880,
+    "completion": 422,
+    "total": 2302,
+    "wall_s": 13.48823094367981
+   }
+  ],
+  "errors": []
+ }
+]

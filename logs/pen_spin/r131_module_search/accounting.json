@@ -1,0 +1,12 @@
+{
+ "starts": 4641049,
+ "transitions": 817577984,
+ "wall_s": 28969.995438098907,
+ "children": 304,
+ "relaunches": [
+  {
+   "child": "logs/pen_spin/r131_module_search/smoke",
+   "charged_starts": 20000
+  }
+ ]
+}

@@ -1,0 +1,40 @@
+[
+ {
+  "edit": {
+   "component": "target",
+   "value": "hold"
+  },
+  "rationale": "With only 12.7% success among fired episodes, a one-parameter mix with the firing-time root action could make the full-depth reset less disruptive while preserving the existing grasp.",
+  "calls": [
+   "call_00004"
+  ],
+  "usage": [
+   {
+    "prompt": 1727,
+    "completion": 1089,
+    "total": 2816,
+    "wall_s": 32.57769966125488
+   }
+  ],
+  "errors": []
+ },
+ {
+  "edit": {
+   "component": "target",
+   "value": "midrange"
+  },
+  "rationale": "Mixing in a midrange posture offers a one-parameter way to reduce disruption from the current full-depth reset, addressing poor outcomes after firing within the short training budget.",
+  "calls": [
+   "call_00009"
+  ],
+  "usage": [
+   {
+    "prompt": 1753,
+    "completion": 660,
+    "total": 2413,
+    "wall_s": 21.22118902206421
+   }
+  ],
+  "errors": []
+ }
+]

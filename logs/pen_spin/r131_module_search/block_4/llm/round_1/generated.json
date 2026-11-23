@@ -1,0 +1,40 @@
+[
+ {
+  "edit": {
+   "component": "boost_end",
+   "value": "event"
+  },
+  "rationale": "A rate-gated boost extension directly targets persistent slowness after recovery, giving marginal recoveries longer support without another disruptive posture reset.",
+  "calls": [
+   "call_00013"
+  ],
+  "usage": [
+   {
+    "prompt": 1868,
+    "completion": 425,
+    "total": 2293,
+    "wall_s": 16.837097644805908
+   }
+  ],
+  "errors": []
+ },
+ {
+  "edit": {
+   "component": "support_end",
+   "value": "event"
+  },
+  "rationale": "Holding the recovery posture while transverse motion settles could improve the low success among fired episodes without increasing intervention frequency or disturbing successful no-fire episodes.",
+  "calls": [
+   "call_00020"
+  ],
+  "usage": [
+   {
+    "prompt": 1895,
+    "completion": 752,
+    "total": 2647,
+    "wall_s": 23.00958275794983
+   }
+  ],
+  "errors": []
+ }
+]

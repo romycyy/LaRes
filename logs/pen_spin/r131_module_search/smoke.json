@@ -1,0 +1,99 @@
+{
+ "mode": "smoke",
+ "gates": {
+  "scorer_live": {
+   "successes": 1157,
+   "passes": true
+  },
+  "template_triggers": {
+   "fired_fraction": 0.31103515625,
+   "passes": true
+  },
+  "equal_slots_agree": {
+   "max_abs_slot_difference": 0.044921875,
+   "passes": false
+  },
+  "per_slot_structures": {
+   "slot_success": [
+    0.568359375,
+    0.544921875,
+    0.578125,
+    0.55859375
+   ],
+   "fired_fraction": [
+    0.31640625,
+    0.330078125,
+    0.302734375,
+    0.328125
+   ],
+   "hold_steps": [
+    0.0,
+    3068.0,
+    0.0,
+    2993.0
+   ],
+   "extra_boost_steps": [
+    0.0,
+    5379.0,
+    0.0,
+    4816.0
+   ],
+   "passes": true
+  }
+ },
+ "template_fired": 637,
+ "aa": {
+  "slot_success": [
+   0.57421875,
+   0.583984375,
+   0.5625,
+   0.5390625
+  ],
+  "pairwise_discordance": [
+   0.134765625,
+   0.13671875,
+   0.1328125,
+   0.138671875,
+   0.134765625,
+   0.14453125
+  ],
+  "mean_discordance": 0.13704427083333334,
+  "slot_differences": [
+   -0.009765625,
+   0.01171875,
+   0.03515625,
+   0.021484375,
+   0.044921875,
+   0.0234375
+  ],
+  "sd_of_slot_differences": 0.019033367638409505,
+  "max_abs_slot_difference": 0.044921875,
+  "cases": 512
+ },
+ "template_stats": {
+  "cases": 2048,
+  "successes": 1157,
+  "drops": 125,
+  "labels": {
+   "success": 1157,
+   "drop_early": 76,
+   "drop_late": 49,
+   "off_centre": 42,
+   "persistent_slow": 338,
+   "intermittent": 219,
+   "near_miss": 167
+  },
+  "authority": {
+   "fired_fraction": 0.31103515625,
+   "success_among_fired": 0.1271585557299843,
+   "mean_hold_steps_among_fired": 0.0,
+   "mean_extra_boost_steps_among_fired": 0.0
+  }
+ },
+ "starts": 8210,
+ "transitions": 1470464,
+ "throughput": {
+  "transitions_per_s": 33773.84605611493
+ },
+ "passes": false
+}

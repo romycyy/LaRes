@@ -1,0 +1,565 @@
+{
+ "block": 1,
+ "round": 1,
+ "arm": "llm",
+ "entering_parent": {
+  "spec": {
+   "schedule": "single",
+   "support_end": "timed",
+   "boost_end": "timed",
+   "target": "midrange",
+   "attempts": 1,
+   "conditions": []
+  },
+  "x": [
+   0.6706201686216827,
+   0.34941241552091395,
+   0.461653484584643,
+   0.2801762439060678,
+   1.0,
+   0.9302733902542756,
+   0.9074544395190924,
+   1.0,
+   0.9803442079947109,
+   1.0,
+   0.11374706604198004,
+   0.31133468283075805
+  ],
+  "params": {
+   "threshold": 3.011860505865048,
+   "decision_step": 101.92948986250968,
+   "ramp_in": 21.157871960462504,
+   "ramp_out": 29.612337073424747,
+   "depth_WR": 1.0,
+   "depth_FF": 0.9302733902542756,
+   "depth_MF": 0.9074544395190924,
+   "depth_RF": 1.0,
+   "depth_LF": 0.9803442079947109,
+   "depth_TH": 1.0,
+   "stroke_multiplier": 1.11374706604198,
+   "mix_midrange": 0.31133468283075805
+  },
+  "edits": 1,
+  "parameters": 12,
+  "sha256": "3ab83d95889b63698fbea60d0d8ca502395c4cda185568c523ac5764b9ff745b"
+ },
+ "branches": [
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "midrange",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.6706201686216827,
+    0.34941241552091395,
+    0.461653484584643,
+    0.2801762439060678,
+    1.0,
+    0.9302733902542756,
+    0.9074544395190924,
+    1.0,
+    0.9803442079947109,
+    1.0,
+    0.11374706604198004,
+    0.31133468283075805
+   ],
+   "params": {
+    "threshold": 3.011860505865048,
+    "decision_step": 101.92948986250968,
+    "ramp_in": 21.157871960462504,
+    "ramp_out": 29.612337073424747,
+    "depth_WR": 1.0,
+    "depth_FF": 0.9302733902542756,
+    "depth_MF": 0.9074544395190924,
+    "depth_RF": 1.0,
+    "depth_LF": 0.9803442079947109,
+    "depth_TH": 1.0,
+    "stroke_multiplier": 1.11374706604198,
+    "mix_midrange": 0.31133468283075805
+   },
+   "edits": 1,
+   "parameters": 12,
+   "sha256": "3ab83d95889b63698fbea60d0d8ca502395c4cda185568c523ac5764b9ff745b",
+   "edit": null
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "event",
+    "target": "midrange",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.6706201686216827,
+    0.34941241552091395,
+    0.461653484584643,
+    0.2801762439060678,
+    1.0,
+    0.9302733902542756,
+    0.9074544395190924,
+    1.0,
+    0.9803442079947109,
+    1.0,
+    0.11374706604198004,
+    0.0,
+    0.3333333333333333,
+    0.31133468283075805
+   ],
+   "params": {
+    "threshold": 3.011860505865048,
+    "decision_step": 101.92948986250968,
+    "ramp_in": 21.157871960462504,
+    "ramp_out": 29.612337073424747,
+    "depth_WR": 1.0,
+    "depth_FF": 0.9302733902542756,
+    "depth_MF": 0.9074544395190924,
+    "depth_RF": 1.0,
+    "depth_LF": 0.9803442079947109,
+    "depth_TH": 1.0,
+    "stroke_multiplier": 1.11374706604198,
+    "max_extra": 0.0,
+    "release_level": 6.0,
+    "mix_midrange": 0.31133468283075805
+   },
+   "edits": 2,
+   "parameters": 14,
+   "sha256": "b7b0fcb00b6396ceb2700cecd7d0843302003616dd1e8fdc2c9b1b8f60c4156b",
+   "edit": {
+    "component": "boost_end",
+    "value": "event"
+   }
+  },
+  {
+   "spec": {
+    "schedule": "periodic",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "midrange",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.6706201686216827,
+    0.34941241552091395,
+    0.461653484584643,
+    0.2801762439060678,
+    1.0,
+    0.9302733902542756,
+    0.9074544395190924,
+    1.0,
+    0.9803442079947109,
+    1.0,
+    0.11374706604198004,
+    0.09090909090909091,
+    0.0,
+    0.31133468283075805
+   ],
+   "params": {
+    "threshold": 3.011860505865048,
+    "decision_step": 101.92948986250968,
+    "ramp_in": 21.157871960462504,
+    "ramp_out": 29.612337073424747,
+    "depth_WR": 1.0,
+    "depth_FF": 0.9302733902542756,
+    "depth_MF": 0.9074544395190924,
+    "depth_RF": 1.0,
+    "depth_LF": 0.9803442079947109,
+    "depth_TH": 1.0,
+    "stroke_multiplier": 1.11374706604198,
+    "period": 10.0,
+    "extra_window": 0.0,
+    "mix_midrange": 0.31133468283075805
+   },
+   "edits": 2,
+   "parameters": 14,
+   "sha256": "524b5f84a1d7c11069c1bfb6ea9ae46e012d691737878ee6aeb9cce57a0c5674",
+   "edit": {
+    "component": "schedule",
+    "value": "periodic"
+   }
+  }
+ ],
+ "trained": [
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "midrange",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.754751078055786,
+    0.2915047066586858,
+    0.5139914628773193,
+    0.15195697563084665,
+    0.9556052326043358,
+    1.0,
+    0.9073042628428801,
+    1.0,
+    0.9320779504459875,
+    0.808343361246967,
+    0.120143388518193,
+    0.6374537898909572
+   ],
+   "params": {
+    "threshold": 3.264253234167358,
+    "decision_step": 94.9805647990423,
+    "ramp_in": 22.989701200706175,
+    "ramp_out": 20.636988294159266,
+    "depth_WR": 0.9556052326043358,
+    "depth_FF": 1.0,
+    "depth_MF": 0.9073042628428801,
+    "depth_RF": 1.0,
+    "depth_LF": 0.9320779504459875,
+    "depth_TH": 0.808343361246967,
+    "stroke_multiplier": 1.120143388518193,
+    "mix_midrange": 0.6374537898909572
+   },
+   "edits": 1,
+   "parameters": 12,
+   "sha256": "bbbb68cacc74b02431edef1c36f30f1b71005e2f85d04ece7ed84cc9db9b4b34"
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "event",
+    "target": "midrange",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.8186224687191334,
+    0.24923622769991577,
+    0.5669743969197811,
+    0.29597707371695303,
+    0.9392621148545235,
+    0.9854478479104748,
+    0.8333914848583506,
+    0.9122714375564265,
+    0.9483415389883626,
+    0.8724864154283621,
+    0.2121959367812166,
+    0.013214573250218159,
+    0.35893788490330364,
+    0.5211243256255854
+   ],
+   "params": {
+    "threshold": 3.4558674061574,
+    "decision_step": 89.90834732398989,
+    "ramp_in": 24.84410389219234,
+    "ramp_out": 30.718395160186713,
+    "depth_WR": 0.9392621148545235,
+    "depth_FF": 0.9854478479104748,
+    "depth_MF": 0.8333914848583506,
+    "depth_RF": 0.9122714375564265,
+    "depth_LF": 0.9483415389883626,
+    "depth_TH": 0.8724864154283621,
+    "stroke_multiplier": 1.2121959367812165,
+    "max_extra": 1.5196759237750883,
+    "release_level": 6.1536273094198215,
+    "mix_midrange": 0.5211243256255854
+   },
+   "edits": 2,
+   "parameters": 14,
+   "sha256": "e69202c44bb955cec4f1e504d61df84545884ac23e2cad19eb73433a49be24a4"
+  },
+  {
+   "spec": {
+    "schedule": "periodic",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "midrange",
+    "attempts": 1,
+    "conditions": []
+   },
+   "x": [
+    0.6780800924323609,
+    0.36220525421145056,
+    0.3394986354472599,
+    0.29003993443055487,
+    1.0,
+    0.9034971093081114,
+    0.8308792157203033,
+    0.9136188462758461,
+    1.0,
+    0.9243710468038887,
+    0.2374069676936889,
+    0.12759228432085262,
+    0.08555229853742566,
+    0.4547790890470219
+   ],
+   "params": {
+    "threshold": 3.0342402772970827,
+    "decision_step": 103.46463050537406,
+    "ramp_in": 16.882452240654096,
+    "ramp_out": 30.30279541013884,
+    "depth_WR": 1.0,
+    "depth_FF": 0.9034971093081114,
+    "depth_MF": 0.8308792157203033,
+    "depth_RF": 0.9136188462758461,
+    "depth_LF": 1.0,
+    "depth_TH": 0.9243710468038887,
+    "stroke_multiplier": 1.237406967693689,
+    "period": 12.017575637646894,
+    "extra_window": 12.832844780613849,
+    "mix_midrange": 0.4547790890470219
+   },
+   "edits": 2,
+   "parameters": 14,
+   "sha256": "474a56c2d5751cd153957d63279b82a45ede4f9de052598742e94d0a86077e62"
+  }
+ ],
+ "training": [
+  {
+   "mean_candidate_success": [
+    0.656494140625,
+    0.65771484375,
+    0.692626953125,
+    0.701416015625
+   ]
+  },
+  {
+   "mean_candidate_success": [
+    0.6572265625,
+    0.6630859375,
+    0.67626953125,
+    0.69873046875
+   ]
+  },
+  {
+   "mean_candidate_success": [
+    0.66259765625,
+    0.638916015625,
+    0.665283203125,
+    0.68212890625
+   ]
+  }
+ ],
+ "selection": [
+  {
+   "cases": 512,
+   "successes": 342,
+   "drops": 25,
+   "labels": {
+    "success": 342,
+    "drop_early": 17,
+    "drop_late": 8,
+    "off_centre": 10,
+    "persistent_slow": 69,
+    "intermittent": 30,
+    "near_miss": 36
+   },
+   "authority": {
+    "fired_fraction": 0.26953125,
+    "success_among_fired": 0.39855072463768115,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 375,
+   "drops": 28,
+   "labels": {
+    "success": 375,
+    "drop_early": 18,
+    "drop_late": 10,
+    "off_centre": 13,
+    "persistent_slow": 77,
+    "intermittent": 9,
+    "near_miss": 10
+   },
+   "authority": {
+    "fired_fraction": 0.291015625,
+    "success_among_fired": 0.610738255033557,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 367,
+   "drops": 29,
+   "labels": {
+    "success": 367,
+    "drop_early": 18,
+    "drop_late": 11,
+    "off_centre": 13,
+    "persistent_slow": 64,
+    "intermittent": 27,
+    "near_miss": 12
+   },
+   "authority": {
+    "fired_fraction": 0.302734375,
+    "success_among_fired": 0.5612903225806452,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 1.1935484409332275
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 357,
+   "drops": 25,
+   "labels": {
+    "success": 357,
+    "drop_early": 16,
+    "drop_late": 9,
+    "off_centre": 9,
+    "persistent_slow": 72,
+    "intermittent": 26,
+    "near_miss": 23
+   },
+   "authority": {
+    "fired_fraction": 0.306640625,
+    "success_among_fired": 0.535031847133758,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  }
+ ],
+ "decision": {
+  "winner": 0,
+  "eligible": [
+   0,
+   1,
+   2
+  ],
+  "retained": "branch_0",
+  "successes": [
+   342,
+   375,
+   367,
+   357
+  ],
+  "drops": [
+   25,
+   28,
+   29,
+   25
+  ]
+ },
+ "winner": {
+  "spec": {
+   "schedule": "single",
+   "support_end": "timed",
+   "boost_end": "timed",
+   "target": "midrange",
+   "attempts": 1,
+   "conditions": []
+  },
+  "x": [
+   0.754751078055786,
+   0.2915047066586858,
+   0.5139914628773193,
+   0.15195697563084665,
+   0.9556052326043358,
+   1.0,
+   0.9073042628428801,
+   1.0,
+   0.9320779504459875,
+   0.808343361246967,
+   0.120143388518193,
+   0.6374537898909572
+  ],
+  "params": {
+   "threshold": 3.264253234167358,
+   "decision_step": 94.9805647990423,
+   "ramp_in": 22.989701200706175,
+   "ramp_out": 20.636988294159266,
+   "depth_WR": 0.9556052326043358,
+   "depth_FF": 1.0,
+   "depth_MF": 0.9073042628428801,
+   "depth_RF": 1.0,
+   "depth_LF": 0.9320779504459875,
+   "depth_TH": 0.808343361246967,
+   "stroke_multiplier": 1.120143388518193,
+   "mix_midrange": 0.6374537898909572
+  },
+  "edits": 1,
+  "parameters": 12,
+  "sha256": "bbbb68cacc74b02431edef1c36f30f1b71005e2f85d04ece7ed84cc9db9b4b34"
+ },
+ "tried": [
+  {
+   "edit": {
+    "component": "target",
+    "value": "hold"
+   },
+   "round": 0,
+   "outcome": "330 of 512 validation successes after 4 updates (parent structure branch: 336; entering parent: 310)"
+  },
+  {
+   "edit": {
+    "component": "target",
+    "value": "midrange"
+   },
+   "round": 0,
+   "outcome": "353 of 512 validation successes after 4 updates (parent structure branch: 336; entering parent: 310); SELECTED"
+  },
+  {
+   "edit": {
+    "component": "boost_end",
+    "value": "event"
+   },
+   "round": 1,
+   "outcome": "367 of 512 validation successes after 4 updates (parent structure branch: 375; entering parent: 342)"
+  },
+  {
+   "edit": {
+    "component": "schedule",
+    "value": "periodic"
+   },
+   "round": 1,
+   "outcome": "357 of 512 validation successes after 4 updates (parent structure branch: 375; entering parent: 342)"
+  }
+ ],
+ "proposals": [
+  {
+   "edit": {
+    "component": "boost_end",
+    "value": "event"
+   },
+   "rationale": "Rate-gated boost extension directly targets the substantial persistent-slow failures by giving incomplete recoveries more time without adding another potentially disruptive posture reset.",
+   "calls": [
+    "call_00012"
+   ],
+   "usage": [
+    {
+     "prompt": 1853,
+     "completion": 523,
+     "total": 2376,
+     "wall_s": 15.76811671257019
+    }
+   ],
+   "errors": []
+  },
+  {
+   "edit": {
+    "component": "schedule",
+    "value": "periodic"
+   },
+   "rationale": "Periodic rechecks can catch persistent slowdowns missed by the single decision near step 102 while allowing training to move the initial check earlier without forfeiting later recovery opportunities.",
+   "calls": [
+    "call_00017"
+   ],
+   "usage": [
+    {
+     "prompt": 1880,
+     "completion": 422,
+     "total": 2302,
+     "wall_s": 13.48823094367981
+    }
+   ],
+   "errors": []
+  }
+ ]
+}

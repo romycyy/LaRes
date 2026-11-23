@@ -1,0 +1,614 @@
+{
+ "block": 0,
+ "round": 1,
+ "arm": "grammar",
+ "entering_parent": {
+  "spec": {
+   "schedule": "single",
+   "support_end": "timed",
+   "boost_end": "timed",
+   "target": "reset",
+   "attempts": 1,
+   "conditions": [
+    {
+     "primitive": "trend",
+     "op": "gt"
+    }
+   ]
+  },
+  "x": [
+   0.6579202207402832,
+   0.4480563387654394,
+   0.5046446274985846,
+   0.4736993766114054,
+   0.961476210281534,
+   0.9166771273262394,
+   0.8928223194355573,
+   1.0,
+   0.9208785854159772,
+   0.8003643800217447,
+   0.0,
+   0.0975378658671656
+  ],
+  "params": {
+   "threshold": 2.9737606622208497,
+   "decision_step": 113.76676065185274,
+   "ramp_in": 22.66256196245046,
+   "ramp_out": 43.15895636279838,
+   "depth_WR": 0.961476210281534,
+   "depth_FF": 0.9166771273262394,
+   "depth_MF": 0.8928223194355573,
+   "depth_RF": 1.0,
+   "depth_LF": 0.9208785854159772,
+   "depth_TH": 0.8003643800217447,
+   "stroke_multiplier": 1.0,
+   "level_trend": -3.219697073062675
+  },
+  "edits": 1,
+  "parameters": 12,
+  "sha256": "1d1de22daf301f1e2a1a3489b3e92bdf2f1185a2cddf5e6e0e99dacf2048d067"
+ },
+ "branches": [
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": [
+     {
+      "primitive": "trend",
+      "op": "gt"
+     }
+    ]
+   },
+   "x": [
+    0.6579202207402832,
+    0.4480563387654394,
+    0.5046446274985846,
+    0.4736993766114054,
+    0.961476210281534,
+    0.9166771273262394,
+    0.8928223194355573,
+    1.0,
+    0.9208785854159772,
+    0.8003643800217447,
+    0.0,
+    0.0975378658671656
+   ],
+   "params": {
+    "threshold": 2.9737606622208497,
+    "decision_step": 113.76676065185274,
+    "ramp_in": 22.66256196245046,
+    "ramp_out": 43.15895636279838,
+    "depth_WR": 0.961476210281534,
+    "depth_FF": 0.9166771273262394,
+    "depth_MF": 0.8928223194355573,
+    "depth_RF": 1.0,
+    "depth_LF": 0.9208785854159772,
+    "depth_TH": 0.8003643800217447,
+    "stroke_multiplier": 1.0,
+    "level_trend": -3.219697073062675
+   },
+   "edits": 1,
+   "parameters": 12,
+   "sha256": "1d1de22daf301f1e2a1a3489b3e92bdf2f1185a2cddf5e6e0e99dacf2048d067",
+   "edit": null
+  },
+  {
+   "spec": {
+    "schedule": "periodic",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": [
+     {
+      "primitive": "trend",
+      "op": "gt"
+     }
+    ]
+   },
+   "x": [
+    0.6579202207402832,
+    0.4480563387654394,
+    0.5046446274985846,
+    0.4736993766114054,
+    0.961476210281534,
+    0.9166771273262394,
+    0.8928223194355573,
+    1.0,
+    0.9208785854159772,
+    0.8003643800217447,
+    0.0,
+    0.09090909090909091,
+    0.0,
+    0.0975378658671656
+   ],
+   "params": {
+    "threshold": 2.9737606622208497,
+    "decision_step": 113.76676065185274,
+    "ramp_in": 22.66256196245046,
+    "ramp_out": 43.15895636279838,
+    "depth_WR": 0.961476210281534,
+    "depth_FF": 0.9166771273262394,
+    "depth_MF": 0.8928223194355573,
+    "depth_RF": 1.0,
+    "depth_LF": 0.9208785854159772,
+    "depth_TH": 0.8003643800217447,
+    "stroke_multiplier": 1.0,
+    "period": 10.0,
+    "extra_window": 0.0,
+    "level_trend": -3.219697073062675
+   },
+   "edits": 2,
+   "parameters": 14,
+   "sha256": "f5889bfb595cf4b6152a5a68bfd1bc9a007e0752b2566f336576e8def8d62c86",
+   "edit": {
+    "component": "schedule",
+    "value": "periodic"
+   }
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": [
+     {
+      "primitive": "trend",
+      "op": "gt"
+     },
+     {
+      "primitive": "deficit",
+      "op": "lt"
+     }
+    ]
+   },
+   "x": [
+    0.6579202207402832,
+    0.4480563387654394,
+    0.5046446274985846,
+    0.4736993766114054,
+    0.961476210281534,
+    0.9166771273262394,
+    0.8928223194355573,
+    1.0,
+    0.9208785854159772,
+    0.8003643800217447,
+    0.0,
+    0.0975378658671656,
+    1.0,
+    0.45454545454545453
+   ],
+   "params": {
+    "threshold": 2.9737606622208497,
+    "decision_step": 113.76676065185274,
+    "ramp_in": 22.66256196245046,
+    "ramp_out": 43.15895636279838,
+    "depth_WR": 0.961476210281534,
+    "depth_FF": 0.9166771273262394,
+    "depth_MF": 0.8928223194355573,
+    "depth_RF": 1.0,
+    "depth_LF": 0.9208785854159772,
+    "depth_TH": 0.8003643800217447,
+    "stroke_multiplier": 1.0,
+    "level_trend": -3.219697073062675,
+    "level_deficit": 1.0,
+    "deficit_tau": 60.0
+   },
+   "edits": 2,
+   "parameters": 14,
+   "sha256": "f42aaccaf0065b147ba917aa8a442b21d6310a078e0ec1c2b59317ca53b45c3a",
+   "edit": {
+    "component": "conditions",
+    "add": {
+     "primitive": "deficit",
+     "op": "lt"
+    }
+   }
+  }
+ ],
+ "trained": [
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": [
+     {
+      "primitive": "trend",
+      "op": "gt"
+     }
+    ]
+   },
+   "x": [
+    0.6991598983894168,
+    0.487463867655853,
+    0.6092805310034963,
+    0.4652776005017514,
+    1.0,
+    0.9472554798926117,
+    0.9624589091861899,
+    0.9025939424962152,
+    0.8827710453601559,
+    0.6220316900106618,
+    0.0,
+    0.1868972385056404
+   ],
+   "params": {
+    "threshold": 3.0974796951682504,
+    "decision_step": 118.49566411870236,
+    "ramp_in": 26.324818585122372,
+    "ramp_out": 42.569432035122595,
+    "depth_WR": 1.0,
+    "depth_FF": 0.9472554798926117,
+    "depth_MF": 0.9624589091861899,
+    "depth_RF": 0.9025939424962152,
+    "depth_LF": 0.8827710453601559,
+    "depth_TH": 0.6220316900106618,
+    "stroke_multiplier": 1.0,
+    "level_trend": -2.5048220919548765
+   },
+   "edits": 1,
+   "parameters": 12,
+   "sha256": "7c67b21492ba1629d25699c5e8b408ddb65b62b6ad22994e31e88c81ca884b68"
+  },
+  {
+   "spec": {
+    "schedule": "periodic",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": [
+     {
+      "primitive": "trend",
+      "op": "gt"
+     }
+    ]
+   },
+   "x": [
+    0.692467629610427,
+    0.31631984752794967,
+    0.673197049783213,
+    0.4853567440670744,
+    1.0,
+    1.0,
+    0.9827477896367803,
+    0.9117871431705952,
+    0.7917994854024742,
+    0.5206921421978119,
+    0.0028548706691426257,
+    0.10689014899827835,
+    0.0,
+    0.037865772794546615
+   ],
+   "params": {
+    "threshold": 3.0774028888312808,
+    "decision_step": 97.95838170335395,
+    "ramp_in": 28.561896742412458,
+    "ramp_out": 43.97497208469521,
+    "depth_WR": 1.0,
+    "depth_FF": 1.0,
+    "depth_MF": 0.9827477896367803,
+    "depth_RF": 0.9117871431705952,
+    "depth_LF": 0.7917994854024742,
+    "depth_TH": 0.5206921421978119,
+    "stroke_multiplier": 1.0028548706691427,
+    "period": 10.878958194905309,
+    "extra_window": 0.0,
+    "level_trend": -3.697073817643627
+   },
+   "edits": 2,
+   "parameters": 14,
+   "sha256": "c390de285b9160ef89059d7aa0fa718512cd6382a6642d4010dc18a1240ed852"
+  },
+  {
+   "spec": {
+    "schedule": "single",
+    "support_end": "timed",
+    "boost_end": "timed",
+    "target": "reset",
+    "attempts": 1,
+    "conditions": [
+     {
+      "primitive": "trend",
+      "op": "gt"
+     },
+     {
+      "primitive": "deficit",
+      "op": "lt"
+     }
+    ]
+   },
+   "x": [
+    0.6652241861922417,
+    0.42170741291080144,
+    0.5954488745364205,
+    0.4828953456818911,
+    0.8285822146230762,
+    0.9540673193651801,
+    0.9164945825180312,
+    1.0,
+    0.8203045002264328,
+    0.6338020597722176,
+    0.0,
+    0.06583076096642711,
+    1.0,
+    0.5233540968114564
+   ],
+   "params": {
+    "threshold": 2.995672558576725,
+    "decision_step": 110.60488954929617,
+    "ramp_in": 25.840710608774717,
+    "ramp_out": 43.80267419773237,
+    "depth_WR": 0.8285822146230762,
+    "depth_FF": 0.9540673193651801,
+    "depth_MF": 0.9164945825180312,
+    "depth_RF": 1.0,
+    "depth_LF": 0.8203045002264328,
+    "depth_TH": 0.6338020597722176,
+    "stroke_multiplier": 1.0,
+    "level_trend": -3.4733539122685833,
+    "level_deficit": 1.0,
+    "deficit_tau": 67.5689506492602
+   },
+   "edits": 2,
+   "parameters": 14,
+   "sha256": "a5e1ede0804720aa1ae53cef80dadbbc576eb050f821d4711d65b7d8cf662153"
+  }
+ ],
+ "training": [
+  {
+   "mean_candidate_success": [
+    0.592041015625,
+    0.612060546875,
+    0.59521484375,
+    0.59912109375
+   ]
+  },
+  {
+   "mean_candidate_success": [
+    0.60107421875,
+    0.60693359375,
+    0.59375,
+    0.6083984375
+   ]
+  },
+  {
+   "mean_candidate_success": [
+    0.593505859375,
+    0.600341796875,
+    0.587646484375,
+    0.6064453125
+   ]
+  }
+ ],
+ "selection": [
+  {
+   "cases": 512,
+   "successes": 310,
+   "drops": 31,
+   "labels": {
+    "success": 310,
+    "drop_early": 15,
+    "drop_late": 16,
+    "off_centre": 7,
+    "persistent_slow": 73,
+    "intermittent": 42,
+    "near_miss": 49
+   },
+   "authority": {
+    "fired_fraction": 0.30859375,
+    "success_among_fired": 0.22151898734177214,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 311,
+   "drops": 31,
+   "labels": {
+    "success": 311,
+    "drop_early": 15,
+    "drop_late": 16,
+    "off_centre": 8,
+    "persistent_slow": 82,
+    "intermittent": 45,
+    "near_miss": 35
+   },
+   "authority": {
+    "fired_fraction": 0.326171875,
+    "success_among_fired": 0.23952095808383234,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 313,
+   "drops": 28,
+   "labels": {
+    "success": 313,
+    "drop_early": 15,
+    "drop_late": 13,
+    "off_centre": 7,
+    "persistent_slow": 100,
+    "intermittent": 36,
+    "near_miss": 28
+   },
+   "authority": {
+    "fired_fraction": 0.318359375,
+    "success_among_fired": 0.26380368098159507,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  },
+  {
+   "cases": 512,
+   "successes": 309,
+   "drops": 30,
+   "labels": {
+    "success": 309,
+    "drop_early": 16,
+    "drop_late": 14,
+    "off_centre": 6,
+    "persistent_slow": 82,
+    "intermittent": 57,
+    "near_miss": 28
+   },
+   "authority": {
+    "fired_fraction": 0.30078125,
+    "success_among_fired": 0.2077922077922078,
+    "mean_hold_steps_among_fired": 0.0,
+    "mean_extra_boost_steps_among_fired": 0.0
+   }
+  }
+ ],
+ "decision": {
+  "winner": 1,
+  "eligible": [
+   0,
+   1,
+   2
+  ],
+  "retained": "branch_1",
+  "successes": [
+   310,
+   311,
+   313,
+   309
+  ],
+  "drops": [
+   31,
+   31,
+   28,
+   30
+  ]
+ },
+ "winner": {
+  "spec": {
+   "schedule": "periodic",
+   "support_end": "timed",
+   "boost_end": "timed",
+   "target": "reset",
+   "attempts": 1,
+   "conditions": [
+    {
+     "primitive": "trend",
+     "op": "gt"
+    }
+   ]
+  },
+  "x": [
+   0.692467629610427,
+   0.31631984752794967,
+   0.673197049783213,
+   0.4853567440670744,
+   1.0,
+   1.0,
+   0.9827477896367803,
+   0.9117871431705952,
+   0.7917994854024742,
+   0.5206921421978119,
+   0.0028548706691426257,
+   0.10689014899827835,
+   0.0,
+   0.037865772794546615
+  ],
+  "params": {
+   "threshold": 3.0774028888312808,
+   "decision_step": 97.95838170335395,
+   "ramp_in": 28.561896742412458,
+   "ramp_out": 43.97497208469521,
+   "depth_WR": 1.0,
+   "depth_FF": 1.0,
+   "depth_MF": 0.9827477896367803,
+   "depth_RF": 0.9117871431705952,
+   "depth_LF": 0.7917994854024742,
+   "depth_TH": 0.5206921421978119,
+   "stroke_multiplier": 1.0028548706691427,
+   "period": 10.878958194905309,
+   "extra_window": 0.0,
+   "level_trend": -3.697073817643627
+  },
+  "edits": 2,
+  "parameters": 14,
+  "sha256": "c390de285b9160ef89059d7aa0fa718512cd6382a6642d4010dc18a1240ed852"
+ },
+ "tried": [
+  {
+   "edit": {
+    "component": "conditions",
+    "add": {
+     "primitive": "trend",
+     "op": "gt"
+    }
+   },
+   "round": 0,
+   "outcome": "313 of 512 validation successes after 4 updates (parent structure branch: 305; entering parent: 288); SELECTED"
+  },
+  {
+   "edit": {
+    "component": "conditions",
+    "add": {
+     "primitive": "transverse",
+     "op": "gt"
+    }
+   },
+   "round": 0,
+   "outcome": "299 of 512 validation successes after 4 updates (parent structure branch: 305; entering parent: 288)"
+  },
+  {
+   "edit": {
+    "component": "schedule",
+    "value": "periodic"
+   },
+   "round": 1,
+   "outcome": "313 of 512 validation successes after 4 updates (parent structure branch: 311; entering parent: 310); SELECTED"
+  },
+  {
+   "edit": {
+    "component": "conditions",
+    "add": {
+     "primitive": "deficit",
+     "op": "lt"
+    }
+   },
+   "round": 1,
+   "outcome": "309 of 512 validation successes after 4 updates (parent structure branch: 311; entering parent: 310)"
+  }
+ ],
+ "proposals": [
+  {
+   "edit": {
+    "component": "schedule",
+    "value": "periodic"
+   },
+   "rationale": "uniform draw",
+   "calls": [],
+   "usage": [],
+   "errors": []
+  },
+  {
+   "edit": {
+    "component": "conditions",
+    "add": {
+     "primitive": "deficit",
+     "op": "lt"
+    }
+   },
+   "rationale": "uniform draw",
+   "calls": [],
+   "usage": [],
+   "errors": []
+  }
+ ]
+}
