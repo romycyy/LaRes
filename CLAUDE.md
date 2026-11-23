@@ -758,6 +758,21 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   as float32 (-0.1000000015), so compare to a bound with a tolerance; "episodes" in a budget must say scored episodes or
   starts (starts are about twice the scored count); this study's manifests are `shadowhand_spin_q1_s<seed>.yaml`,
   outside the `pen_spin_stage3_*` glob older studies use for disjointness (glob both).
+- **R-129 result (D-089, supported; frozen-controller robustness, 2026-11-23; direction V2, Q2).**
+  `frozen_robustness.py` (`--study q2_frozen_robustness`; cells are named `<controller>@<condition>`; its own Isaac
+  child for a no-rollout preflight). `cases.apply_condition` scales the pen's mass, friction, radius, length, the
+  horizon and the reset vectors at env construction (`PenSpinBatchRunner(condition=)`; `protocols.run_cell` reads a
+  controller's `env_condition` and saves `runner.physical_record`, the simulator's own read-back). JOINT, the
+  transplant, D-072 and PPO, 204 cells, no fitting. **Primary: JOINT at 0.8x friction minus nominal -0.015
+  [-0.035, +0.005]** over 1,280 pairs (margin -0.05). **No retention loss to 30 s** (JOINT terminal success 0.781 vs
+  0.766 on the first six seconds; no drop after second 4). Mass / friction / radius / length at +/-10-20% move JOINT by
+  -0.023 to +0.041. **The weakness is wider resets: at 1.5x reset vectors JOINT falls 0.770 -> 0.486** (-0.281
+  [-0.331, -0.232]), the transplant -0.322, D-072 -0.141, PPO -0.125. The transplant matches JOINT within 0.035
+  everywhere. PPO: 0.994 nominal, 0.887 at 0.9x length. **Bites:** an evaluation cell does not record how many
+  environments triggered the re-capture (only the training child counts them); a six-second success inside a longer
+  run is `length >= 359` and the predicate on steps 299..358, and it differs from the six-second cell on 1-2 of 512
+  cases for the module controllers; `runner.py` imports Isaac at module level, so anything a test needs lives in
+  `cases.py`.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

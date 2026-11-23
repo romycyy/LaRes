@@ -1,0 +1,245 @@
+{
+ "config_sha256": "c47004442cc6248280622ee4540a9c60989bf912296c61af7d0245e7bb378a77",
+ "config": {
+  "actor": {
+   "bound": 0.1,
+   "cap": 0.1,
+   "coefficients": 32,
+   "feature_clip_sigmas": 3.0,
+   "rms_floor_posture": 0.01,
+   "rms_floor_velocity": 0.05,
+   "spin_target": 7.0
+  },
+  "assets": {
+   "joint": {
+    "path": "config/pen_spin/r121_joint_finalist/finalist.json",
+    "sha256": "1527eb5643a59f9b77858f0dc5852280badd1f6ec012c0efa7c30019c794713c"
+   },
+   "transplant": {
+    "path": "config/pen_spin/r126_transplant_finalist/finalist.json",
+    "sha256": "9e17b365c5176cc0a9e4adee77cf4d87d055d8982672d60a8478c446b2fe5415"
+   }
+  },
+  "cases": 128,
+  "centre_tolerance": 0.08,
+  "checkpoint": "logs/pen_spin/r040_ppo_expert/train/model_8239.pt",
+  "checkpoint_sha256": "f81be523a51cc5bb8bd095d5ed208ba8dd227a37ca05d5dc78283a24d89985d7",
+  "conditions": {
+   "friction_0.8": {
+    "friction": 0.8
+   },
+   "friction_1.2": {
+    "friction": 1.2
+   },
+   "horizon_12s": {
+    "horizon_s": 12.0
+   },
+   "horizon_30s": {
+    "horizon_s": 30.0
+   },
+   "length_0.9": {
+    "length": 0.9
+   },
+   "length_1.1": {
+    "length": 1.1
+   },
+   "mass_0.8": {
+    "mass": 0.8
+   },
+   "mass_1.2": {
+    "mass": 1.2
+   },
+   "nominal": {},
+   "radius_0.9": {
+    "radius": 0.9
+   },
+   "radius_1.1": {
+    "radius": 1.1
+   },
+   "reset_1.5": {
+    "reset_scale": 1.5
+   }
+  },
+  "control_dt": 0.016666666666666666,
+  "drop_margin": 0.05,
+  "expert_seed": 4020,
+  "incumbent_asset": "config/pen_spin/d058_fixed_stroke_incumbent",
+  "log_dir": "logs/pen_spin/r129_frozen_robustness",
+  "manifest_template": "config/manifests/pen_spin_stage3_robust_s{seed}.yaml",
+  "margin": -0.05,
+  "max_minutes": 240,
+  "module_bounds": {
+   "ramp_out": [
+    3.0,
+    80.0
+   ],
+   "threshold": [
+    1.0,
+    6.0
+   ]
+  },
+  "nominal_pen": {
+   "dynamic_friction": 1.0,
+   "length": 0.14,
+   "mass": 0.035,
+   "radius": 0.012,
+   "static_friction": 1.2
+  },
+  "normalization_path": "logs/pen_spin/r103_symbolic_reward/normalization.json",
+  "normalization_sha256": "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac",
+  "panel_seeds": [
+   5264,
+   5265,
+   5266,
+   5267
+  ],
+  "pool_seed": 5264,
+  "primary_extra_seeds": [
+   5268,
+   5269,
+   5270,
+   5271,
+   5272,
+   5273
+  ],
+  "reference_descriptor": "config/pen_spin/symbolic_reward_reference/reference.json",
+  "reference_residual": {
+   "cap": 0.10269089387249905,
+   "deadband": 0.2333555721435132,
+   "gain": 0.004655481049180921,
+   "tau": 0.18501188209260944
+  },
+  "reference_residual_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1",
+  "root_finalist": "config/pen_spin/r106_success_ars_finalist/finalist.json",
+  "root_theta_sha256": "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef"
+ },
+ "reference": {
+  "name": "d072_qualified_reference",
+  "decisions": [
+   "D-058",
+   "D-070",
+   "D-072"
+  ],
+  "construction": "JointMotionResidual(reference_residual, incumbent_asset): clamp(incumbent + 2 clip(g sign(v_f) max(|v_f| - v0, 0), -b, b) / (hi - lo), -1, 1)",
+  "incumbent_asset": "config/pen_spin/d058_fixed_stroke_incumbent",
+  "incumbent_json_sha256": "1ffcbece3d2f18b35f89461d1079b579f21891fc7f7f8576c3feb217ea711c9c",
+  "incumbent_files": {
+   "parent_source.py": "40782dcdf5a95589d0b34062919728fa92d4e5760fce890e3bd98833285e602d",
+   "state.pt": "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22",
+   "evaluated_source.py": "fdc1da8e2811d94c5bcd1bda2f0e97625a6ea805452e56d65726e587a418c062",
+   "constant_gain.json": "dacec45947d56133b39ca0edb773df4660d73768c0814e85d180e5423b1fcb69"
+  },
+  "stroke_gain_constant": 1.4081491479357957,
+  "residual_params": {
+   "gain": 0.004655481049180921,
+   "deadband": 0.2333555721435132,
+   "tau": 0.18501188209260944,
+   "cap": 0.10269089387249905
+  },
+  "residual_params_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1",
+  "residual_source_sha256": "0dc215bb762295319f273c70242beefbbcabe7e8baf4670fbe64586482318b4e"
+ },
+ "assets": {
+  "d072": {
+   "descriptor": "config/pen_spin/symbolic_reward_reference/reference.json",
+   "sha256": "42190ff0b2ef40859d733b5a8989f2854860c793a9fce5b93eed63dfb809af3f",
+   "incumbent_files": {
+    "parent_source.py": "40782dcdf5a95589d0b34062919728fa92d4e5760fce890e3bd98833285e602d",
+    "state.pt": "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22",
+    "evaluated_source.py": "fdc1da8e2811d94c5bcd1bda2f0e97625a6ea805452e56d65726e587a418c062",
+    "constant_gain.json": "dacec45947d56133b39ca0edb773df4660d73768c0814e85d180e5423b1fcb69"
+   }
+  },
+  "root_residual": {
+   "path": "config/pen_spin/r106_success_ars_finalist/finalist.json",
+   "sha256": "cab640259df407ce98c2c286f4331f7017ce8145ee36e3eeb2ed1b82fbea9982",
+   "theta_sha256": "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef"
+  },
+  "ppo": {
+   "checkpoint": "logs/pen_spin/r040_ppo_expert/train/model_8239.pt",
+   "sha256": "f81be523a51cc5bb8bd095d5ed208ba8dd227a37ca05d5dc78283a24d89985d7",
+   "seed": 4020
+  },
+  "normalization": {
+   "path": "logs/pen_spin/r103_symbolic_reward/normalization.json",
+   "sha256": "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac"
+  },
+  "joint": {
+   "path": "config/pen_spin/r121_joint_finalist/finalist.json",
+   "file_sha256": "fd419fd9293f9cee3b368271f7ad36e1c1bd74ba1e04e06b2869cd5c0aabe961",
+   "module_sha256": "1527eb5643a59f9b77858f0dc5852280badd1f6ec012c0efa7c30019c794713c",
+   "coordinates": 43,
+   "decision_step": 149.08168512240468
+  },
+  "transplant": {
+   "path": "config/pen_spin/r126_transplant_finalist/finalist.json",
+   "file_sha256": "a3a39e8d817c4d643ab73f1f452572da5c75239b01fe8982d2d6ffd0da455010",
+   "module_sha256": "9e17b365c5176cc0a9e4adee77cf4d87d055d8982672d60a8478c446b2fe5415",
+   "coordinates": 11,
+   "decision_step": 149.08168512240468
+  },
+  "code": {
+   "runner.py": "f075246efdcf390f420ae257d87e6e7c5fb329655d69a381ec97fe674cb4344c",
+   "protocols.py": "e6d2b1ea8cab47734e176438a352443640ffbc506cee806d7d254dd8182d493b",
+   "cases.py": "6aec39d9cebcd041a0b36e58112b98ae5cc041ae5f7613d5bac8a923519f94e6",
+   "recovery_module.py": "e41de7ab42545d0956a7c8d8577969d064d6c7eeeacc1fe3c276c3eaabc74816",
+   "symbolic_reward.py": "8de3ff3d430f24ae163e172dc1dfeb8673844d732c70da053364950902d3552a",
+   "ppo_expert.py": "e4fc77d3a92a9125ee1e8c1c3de63125beab69f0313dade42f2873cb78044ec7",
+   "shadow_hand_spin_env.py": "9ef7f0033a76813c87d8285769a811eaa07b58a5576bb35764374a0a694fc922",
+   "shadow_hand_spin_env_cfg.py": "5a1c458e31bfec363e9160b5150b66414db7be9df4b5aed7f15d83b0d93f1e4e",
+   "frozen_robustness.py": "1ed579edb6f740e7162deac54254933f62f32528504e0f7430f6e2a779ef03fc"
+  }
+ },
+ "manifests": {
+  "5264": {
+   "path": "config/manifests/pen_spin_stage3_robust_s5264.yaml",
+   "sha256": "27403bb7c7d0599c789df74097fadfa5a2ef283c953fd98fc9ce20196cac70c5"
+  },
+  "5265": {
+   "path": "config/manifests/pen_spin_stage3_robust_s5265.yaml",
+   "sha256": "83e28d523a35757e4aafdffb2e3f8f6e722ce9633880a2c0e6417d17b9dd7375"
+  },
+  "5266": {
+   "path": "config/manifests/pen_spin_stage3_robust_s5266.yaml",
+   "sha256": "645ac911ca8423363e9d873f7dbbfe5128c84cc7aea722dbedbc9d0502d72d03"
+  },
+  "5267": {
+   "path": "config/manifests/pen_spin_stage3_robust_s5267.yaml",
+   "sha256": "aa37453a2930d3c94bddaed06846dbdb71f25597ba7cc0c2c3071e6533cdcc67"
+  },
+  "5268": {
+   "path": "config/manifests/pen_spin_stage3_robust_s5268.yaml",
+   "sha256": "d36fe05fce34d8f4458b6b664c1f468d4768a99ccc8dda1e3a26567817cb9292"
+  },
+  "5269": {
+   "path": "config/manifests/pen_spin_stage3_robust_s5269.yaml",
+   "sha256": "62dfad469233b06c65f1f1aef306b91b99b665bd1edc8ade823d0324660764e8"
+  },
+  "5270": {
+   "path": "config/manifests/pen_spin_stage3_robust_s5270.yaml",
+   "sha256": "a381e99fcdb1edec057de7a13c51906dd72f3200e8c405748c58a9d17065b3d3"
+  },
+  "5271": {
+   "path": "config/manifests/pen_spin_stage3_robust_s5271.yaml",
+   "sha256": "5228674f418132b0de074d990bc82e4d9c46682a9262d9fc858b49423912f7be"
+  },
+  "5272": {
+   "path": "config/manifests/pen_spin_stage3_robust_s5272.yaml",
+   "sha256": "4ed9855df4c7b9ed9c92fe26deabe6966cd9e5afb77e1e05db77b453dd7a6a56"
+  },
+  "5273": {
+   "path": "config/manifests/pen_spin_stage3_robust_s5273.yaml",
+   "sha256": "c92b4ebee3fe74dd0781d16a40c5e9b7ed49688ed0b713fe6d1202534d4ab3ac"
+  }
+ },
+ "cells": 204,
+ "scheduled_case_transitions": 13086720,
+ "primary": {
+  "a": "joint@friction_0.8",
+  "b": "joint@nominal",
+  "margin": -0.05,
+  "rule": "supported: lower bound of the paired 95% interval above the margin; refuted: upper bound below it"
+ },
+ "six_second_rule": "no termination before step 359 and the per-step predicate on recorded steps 299..358",
+ "friction_note": "the pen material's coefficients are scaled; contact friction is PhysX's combination with the hand's material"
+}

@@ -1,0 +1,25 @@
+{
+ "max_episode_length": 360,
+ "episode_length_s": 6.0,
+ "control_dt": 0.016666666666666666,
+ "errors": [],
+ "mass": 0.03500000014901161,
+ "inertia": [
+  2.468307457093033e-06,
+  0.0,
+  0.0,
+  0.0,
+  7.249225018313155e-05,
+  0.0,
+  0.0,
+  0.0,
+  7.249225018313155e-05
+ ],
+ "static_friction": 1.2000000476837158,
+ "dynamic_friction": 1.0,
+ "collision_shapes": 1,
+ "capsules": 1,
+ "radius": 0.012,
+ "length": 0.14,
+ "capsule_axis": "X"
+}

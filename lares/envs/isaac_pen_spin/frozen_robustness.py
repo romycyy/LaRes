@@ -432,9 +432,9 @@ def run(protocol_cfg: dict, config_path: str, out_dir: str) -> dict:
         rm._dump(os.path.join(out_dir, "summary.json"), summary)
         return summary
     summary.update(analyse(cells, cfg))
-    summary["triggered"] = {c: {k: int(sum((rm._load(os.path.join(out_dir, "cells", f"s{s}", f"{cell_name(c, k)}_cell.json"))["controller_params"]
-                                             .get("recovery") or {}).get("triggered_environment_episodes", 0) for s in cfg["panel_seeds"]))
-                                for k in conditions(cfg)} for c in ("joint", "transplant")}
+    summary["triggered"] = {"unavailable": "an evaluation cell does not record how many environments triggered the re-capture "
+                                           "(the count lives in the training child); only each asset's frozen decision step is known",
+                            "decision_step": {c: asset_record(cfg)[c]["decision_step"] for c in ("joint", "transplant")}}
     summary["limitation"] = ("frozen controllers from one training lineage on a one-factor panel; no combined shifts; secondary cells have "
                              "512 cases; robustness here says nothing about which component provides it")
     rm._dump(os.path.join(out_dir, "summary.json"), summary)

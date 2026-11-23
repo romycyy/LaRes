@@ -53,7 +53,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "running",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The paired 95% interval for JOINT's six-second sustained-success difference, 0.8x friction minus nominal, lies entirely below -0.05. Other cells characterize the robustness envelope but cannot rescue this primary prediction.",
   "cost_estimate": {
@@ -77,12 +77,969 @@
     "started_at": "2026-11-23T05:07:58",
     "git_sha": "c9b79e1b5f883f33524397d6f3e099dd01fb2d8f",
     "dirty_worktree": true,
-    "log_dir": "logs/pen_spin/r129_frozen_robustness"
+    "log_dir": "logs/pen_spin/r129_frozen_robustness",
+    "finished_at": "2026-11-23T06:34:54"
   },
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "result": {
+    "metrics": {
+      "paired_success_difference": -0.01484375,
+      "paired_success_difference_ci95": [
+        -0.03499434023125275,
+        0.005306840231252753
+      ],
+      "manifest_clustered_ci95": [
+        -0.025849110248001232,
+        -0.003838389751998768
+      ],
+      "margin": -0.05,
+      "registered_verdict_rule": "supported",
+      "primary_pairs": 1280,
+      "primary_successes_shift_vs_nominal": [
+        966,
+        985
+      ],
+      "six_second_success": {
+        "joint": {
+          "nominal": 0.76953125,
+          "horizon_12s": 0.765625,
+          "horizon_30s": 0.765625,
+          "mass_0.8": 0.80859375,
+          "mass_1.2": 0.75390625,
+          "friction_0.8": 0.7546875,
+          "friction_1.2": 0.802734375,
+          "radius_0.9": 0.7734375,
+          "radius_1.1": 0.744140625,
+          "length_0.9": 0.787109375,
+          "length_1.1": 0.76171875,
+          "reset_1.5": 0.486328125
+        },
+        "transplant": {
+          "nominal": 0.796875,
+          "horizon_12s": 0.80078125,
+          "horizon_30s": 0.798828125,
+          "mass_0.8": 0.78515625,
+          "mass_1.2": 0.765625,
+          "friction_0.8": 0.77734375,
+          "friction_1.2": 0.767578125,
+          "radius_0.9": 0.748046875,
+          "radius_1.1": 0.73828125,
+          "length_0.9": 0.7734375,
+          "length_1.1": 0.7734375,
+          "reset_1.5": 0.474609375
+        },
+        "d072": {
+          "nominal": 0.4375,
+          "horizon_12s": 0.4375,
+          "horizon_30s": 0.4375,
+          "mass_0.8": 0.44140625,
+          "mass_1.2": 0.404296875,
+          "friction_0.8": 0.40625,
+          "friction_1.2": 0.4296875,
+          "radius_0.9": 0.47265625,
+          "radius_1.1": 0.36328125,
+          "length_0.9": 0.482421875,
+          "length_1.1": 0.412109375,
+          "reset_1.5": 0.296875
+        },
+        "ppo": {
+          "nominal": 0.994140625,
+          "horizon_12s": 0.994140625,
+          "horizon_30s": 0.994140625,
+          "mass_0.8": 0.99609375,
+          "mass_1.2": 0.998046875,
+          "friction_0.8": 0.998046875,
+          "friction_1.2": 0.99609375,
+          "radius_0.9": 0.99609375,
+          "radius_1.1": 0.98828125,
+          "length_0.9": 0.88671875,
+          "length_1.1": 0.9921875,
+          "reset_1.5": 0.869140625
+        }
+      },
+      "terminal_success_long_horizons": {
+        "joint": {
+          "horizon_12s": 0.775390625,
+          "horizon_30s": 0.78125
+        },
+        "transplant": {
+          "horizon_12s": 0.806640625,
+          "horizon_30s": 0.810546875
+        },
+        "d072": {
+          "horizon_12s": 0.44140625,
+          "horizon_30s": 0.443359375
+        },
+        "ppo": {
+          "horizon_12s": 0.994140625,
+          "horizon_30s": 0.994140625
+        }
+      },
+      "survival": {
+        "joint": {
+          "nominal": 0.94921875,
+          "horizon_12s": 0.953125,
+          "horizon_30s": 0.953125,
+          "mass_0.8": 0.951171875,
+          "mass_1.2": 0.947265625,
+          "friction_0.8": 0.94453125,
+          "friction_1.2": 0.951171875,
+          "radius_0.9": 0.96484375,
+          "radius_1.1": 0.947265625,
+          "length_0.9": 0.9609375,
+          "length_1.1": 0.9453125,
+          "reset_1.5": 0.8515625
+        },
+        "transplant": {
+          "nominal": 0.958984375,
+          "horizon_12s": 0.958984375,
+          "horizon_30s": 0.958984375,
+          "mass_0.8": 0.96875,
+          "mass_1.2": 0.951171875,
+          "friction_0.8": 0.951171875,
+          "friction_1.2": 0.96875,
+          "radius_0.9": 0.962890625,
+          "radius_1.1": 0.94921875,
+          "length_0.9": 0.958984375,
+          "length_1.1": 0.943359375,
+          "reset_1.5": 0.837890625
+        },
+        "d072": {
+          "nominal": 0.94140625,
+          "horizon_12s": 0.94140625,
+          "horizon_30s": 0.94140625,
+          "mass_0.8": 0.943359375,
+          "mass_1.2": 0.947265625,
+          "friction_0.8": 0.9375,
+          "friction_1.2": 0.943359375,
+          "radius_0.9": 0.943359375,
+          "radius_1.1": 0.927734375,
+          "length_0.9": 0.9609375,
+          "length_1.1": 0.939453125,
+          "reset_1.5": 0.8515625
+        },
+        "ppo": {
+          "nominal": 0.994140625,
+          "horizon_12s": 0.994140625,
+          "horizon_30s": 0.994140625,
+          "mass_0.8": 0.99609375,
+          "mass_1.2": 0.998046875,
+          "friction_0.8": 0.998046875,
+          "friction_1.2": 0.998046875,
+          "radius_0.9": 0.99609375,
+          "radius_1.1": 1.0,
+          "length_0.9": 0.982421875,
+          "length_1.1": 0.998046875,
+          "reset_1.5": 0.8828125
+        }
+      },
+      "rolling_fraction": {
+        "joint": {
+          "nominal": 0.674621344011142,
+          "horizon_12s": 0.744048265820584,
+          "horizon_30s": 0.7774686023485271,
+          "mass_0.8": 0.7095284209610028,
+          "mass_1.2": 0.6474799791086351,
+          "friction_0.8": 0.6664911211699164,
+          "friction_1.2": 0.6951710480501392,
+          "radius_0.9": 0.6990337743732591,
+          "radius_1.1": 0.6254678795264623,
+          "length_0.9": 0.7131517670612814,
+          "length_1.1": 0.6585077907381616,
+          "reset_1.5": 0.4670471361420613
+        },
+        "transplant": {
+          "nominal": 0.7081030205431755,
+          "horizon_12s": 0.7721390385952712,
+          "horizon_30s": 0.8044139105058367,
+          "mass_0.8": 0.7126458043175488,
+          "mass_1.2": 0.6643182016016713,
+          "friction_0.8": 0.6891919829387186,
+          "friction_1.2": 0.697853194637883,
+          "radius_0.9": 0.6801499390668524,
+          "radius_1.1": 0.6506408861420614,
+          "length_0.9": 0.7263013579387188,
+          "length_1.1": 0.6629417653203342,
+          "reset_1.5": 0.45019803272980496
+        },
+        "d072": {
+          "nominal": 0.4532338091922006,
+          "horizon_12s": 0.4531548809109875,
+          "horizon_30s": 0.45170276889938854,
+          "mass_0.8": 0.46511577298050144,
+          "mass_1.2": 0.421875,
+          "friction_0.8": 0.4213690372562674,
+          "friction_1.2": 0.4442407294568245,
+          "radius_0.9": 0.4835806928969359,
+          "radius_1.1": 0.38345447423398327,
+          "length_0.9": 0.5005059627437326,
+          "length_1.1": 0.42388797005571033,
+          "reset_1.5": 0.3303501479805014
+        },
+        "ppo": {
+          "nominal": 0.9743373520194984,
+          "horizon_12s": 0.9842500434631434,
+          "horizon_30s": 0.9901779200250138,
+          "mass_0.8": 0.9763285602367687,
+          "mass_1.2": 0.9776669133008355,
+          "friction_0.8": 0.9779171744428969,
+          "friction_1.2": 0.977541782729805,
+          "radius_0.9": 0.9773676880222841,
+          "radius_1.1": 0.9769596535515319,
+          "length_0.9": 0.960164954735376,
+          "length_1.1": 0.9776560323816155,
+          "reset_1.5": 0.8515298572423398
+        }
+      },
+      "longest_rolling_steps_mean": {
+        "joint": {
+          "nominal": 203.3609375,
+          "horizon_12s": 486.392578125,
+          "horizon_30s": 1326.490234375,
+          "mass_0.8": 216.474609375,
+          "mass_1.2": 195.685546875,
+          "friction_0.8": 199.89375,
+          "friction_1.2": 215.126953125,
+          "radius_0.9": 210.478515625,
+          "radius_1.1": 188.21875,
+          "length_0.9": 216.326171875,
+          "length_1.1": 199.87109375,
+          "reset_1.5": 128.23828125
+        },
+        "transplant": {
+          "nominal": 215.580078125,
+          "horizon_12s": 505.935546875,
+          "horizon_30s": 1376.396484375,
+          "mass_0.8": 215.962890625,
+          "mass_1.2": 199.8125,
+          "friction_0.8": 209.115234375,
+          "friction_1.2": 208.7578125,
+          "radius_0.9": 200.369140625,
+          "radius_1.1": 194.54296875,
+          "length_0.9": 218.125,
+          "length_1.1": 198.90625,
+          "reset_1.5": 124.91796875
+        },
+        "d072": {
+          "nominal": 142.10546875,
+          "horizon_12s": 300.5078125,
+          "horizon_30s": 779.0078125,
+          "mass_0.8": 144.853515625,
+          "mass_1.2": 132.64453125,
+          "friction_0.8": 131.388671875,
+          "friction_1.2": 141.0390625,
+          "radius_0.9": 153.298828125,
+          "radius_1.1": 120.859375,
+          "length_0.9": 156.376953125,
+          "length_1.1": 135.98046875,
+          "reset_1.5": 98.193359375
+        },
+        "ppo": {
+          "nominal": 346.435546875,
+          "horizon_12s": 704.373046875,
+          "horizon_30s": 1774.15234375,
+          "mass_0.8": 347.478515625,
+          "mass_1.2": 346.75,
+          "friction_0.8": 348.13671875,
+          "friction_1.2": 347.58203125,
+          "radius_0.9": 347.884765625,
+          "radius_1.1": 343.84765625,
+          "length_0.9": 297.197265625,
+          "length_1.1": 344.6484375,
+          "reset_1.5": 297.619140625
+        }
+      },
+      "joint_shift_minus_nominal": {
+        "joint@mass_0.8_minus_joint@nominal": [
+          0.041015625,
+          0.007944047033085093,
+          0.0740872029669149,
+          0.6977841325498686,
+          false
+        ],
+        "joint@mass_1.2_minus_joint@nominal": [
+          -0.013671875,
+          -0.043646688053392835,
+          0.016302938053392835,
+          1.0,
+          false
+        ],
+        "joint@friction_1.2_minus_joint@nominal": [
+          0.03515625,
+          0.0036311317313659427,
+          0.06668136826863405,
+          1.0,
+          false
+        ],
+        "joint@radius_0.9_minus_joint@nominal": [
+          0.005859375,
+          -0.02996249588055451,
+          0.04168124588055451,
+          1.0,
+          false
+        ],
+        "joint@radius_1.1_minus_joint@nominal": [
+          -0.0234375,
+          -0.0647550330512886,
+          0.017880033051288595,
+          1.0,
+          false
+        ],
+        "joint@length_0.9_minus_joint@nominal": [
+          0.01953125,
+          -0.018453769282132743,
+          0.05751626928213274,
+          1.0,
+          false
+        ],
+        "joint@length_1.1_minus_joint@nominal": [
+          -0.005859375,
+          -0.04042368540502442,
+          0.028704935405024418,
+          1.0,
+          false
+        ],
+        "joint@reset_1.5_minus_joint@nominal": [
+          -0.28125,
+          -0.33066189562437304,
+          -0.23183810437562696,
+          2.347315745461237e-24,
+          true
+        ]
+      },
+      "transplant_shift_minus_nominal": {
+        "transplant@mass_0.8_minus_transplant@nominal": [
+          -0.01171875,
+          -0.04429391341560643,
+          0.02085641341560643,
+          1.0,
+          false
+        ],
+        "transplant@mass_1.2_minus_transplant@nominal": [
+          -0.03125,
+          -0.06233516423831922,
+          -0.000164835761680783,
+          1.0,
+          false
+        ],
+        "transplant@friction_0.8_minus_transplant@nominal": [
+          -0.01953125,
+          -0.05115856875804206,
+          0.012096068758042061,
+          1.0,
+          false
+        ],
+        "transplant@friction_1.2_minus_transplant@nominal": [
+          -0.029296875,
+          -0.058689276955928696,
+          9.55269559286924e-05,
+          1.0,
+          false
+        ],
+        "transplant@radius_0.9_minus_transplant@nominal": [
+          -0.048828125,
+          -0.08562448671647836,
+          -0.012031763283521638,
+          0.4512221529830127,
+          false
+        ],
+        "transplant@radius_1.1_minus_transplant@nominal": [
+          -0.05859375,
+          -0.09627412871314481,
+          -0.020913371286855185,
+          0.11603074119616806,
+          false
+        ],
+        "transplant@length_0.9_minus_transplant@nominal": [
+          -0.0234375,
+          -0.05981845736978282,
+          0.012943457369782821,
+          1.0,
+          false
+        ],
+        "transplant@length_1.1_minus_transplant@nominal": [
+          -0.0234375,
+          -0.05941067193788368,
+          0.012535671937883679,
+          1.0,
+          false
+        ],
+        "transplant@reset_1.5_minus_transplant@nominal": [
+          -0.322265625,
+          -0.3695922829651389,
+          -0.2749389670348611,
+          2.412341903173873e-33,
+          true
+        ]
+      },
+      "d072_shift_minus_nominal": {
+        "d072@mass_0.8_minus_d072@nominal": [
+          0.00390625,
+          -0.030446088217755067,
+          0.03825858821775507,
+          1.0,
+          false
+        ],
+        "d072@mass_1.2_minus_d072@nominal": [
+          -0.033203125,
+          -0.06634085141118197,
+          -6.539858881803029e-05,
+          1.0,
+          false
+        ],
+        "d072@friction_0.8_minus_d072@nominal": [
+          -0.03125,
+          -0.06372772029147858,
+          0.001227720291478579,
+          1.0,
+          false
+        ],
+        "d072@friction_1.2_minus_d072@nominal": [
+          -0.0078125,
+          -0.0360290359581256,
+          0.0204040359581256,
+          1.0,
+          false
+        ],
+        "d072@radius_0.9_minus_d072@nominal": [
+          0.03515625,
+          -0.004642396701108165,
+          0.07495489670110816,
+          1.0,
+          false
+        ],
+        "d072@radius_1.1_minus_d072@nominal": [
+          -0.07421875,
+          -0.11579627985205995,
+          -0.032641220147940055,
+          0.024658023095002462,
+          true
+        ],
+        "d072@length_0.9_minus_d072@nominal": [
+          0.044921875,
+          0.004279681109268622,
+          0.08556406889073137,
+          1.0,
+          false
+        ],
+        "d072@length_1.1_minus_d072@nominal": [
+          -0.025390625,
+          -0.06392802245350503,
+          0.013146772453505026,
+          1.0,
+          false
+        ],
+        "d072@reset_1.5_minus_d072@nominal": [
+          -0.140625,
+          -0.19242371898150337,
+          -0.08882628101849663,
+          7.532634265674854e-06,
+          true
+        ]
+      },
+      "ppo_shift_minus_nominal": {
+        "ppo@mass_0.8_minus_ppo@nominal": [
+          0.001953125,
+          -0.006633701319203175,
+          0.010539951319203175,
+          1.0,
+          false
+        ],
+        "ppo@mass_1.2_minus_ppo@nominal": [
+          0.00390625,
+          -0.003768036024728058,
+          0.011580536024728059,
+          1.0,
+          false
+        ],
+        "ppo@friction_0.8_minus_ppo@nominal": [
+          0.00390625,
+          -0.003768036024728058,
+          0.011580536024728059,
+          1.0,
+          false
+        ],
+        "ppo@friction_1.2_minus_ppo@nominal": [
+          0.001953125,
+          -0.004697335613126525,
+          0.008603585613126526,
+          1.0,
+          false
+        ],
+        "ppo@radius_0.9_minus_ppo@nominal": [
+          0.001953125,
+          -0.006633701319203175,
+          0.010539951319203175,
+          1.0,
+          false
+        ],
+        "ppo@radius_1.1_minus_ppo@nominal": [
+          -0.005859375,
+          -0.017370804037092083,
+          0.005652054037092085,
+          1.0,
+          false
+        ],
+        "ppo@length_0.9_minus_ppo@nominal": [
+          -0.107421875,
+          -0.1359304812087463,
+          -0.07891326879125371,
+          2.931599979192578e-11,
+          true
+        ],
+        "ppo@length_1.1_minus_ppo@nominal": [
+          -0.001953125,
+          -0.012113762091520073,
+          0.008207512091520073,
+          1.0,
+          false
+        ],
+        "ppo@reset_1.5_minus_ppo@nominal": [
+          -0.125,
+          -0.15475145031897428,
+          -0.09524854968102574,
+          7.212290499437954e-14,
+          true
+        ]
+      },
+      "retention_terminal_minus_six_second": {
+        "joint@horizon_12s_terminal_minus_six_second": [
+          0.009765625,
+          0.0012191600150356918,
+          0.018312089984964308,
+          1.0,
+          false
+        ],
+        "joint@horizon_30s_terminal_minus_six_second": [
+          0.015625,
+          0.0035551723560264814,
+          0.02769482764397352,
+          0.5299169517912167,
+          false
+        ],
+        "transplant@horizon_12s_terminal_minus_six_second": [
+          0.005859375,
+          -0.005652054037092085,
+          0.017370804037092083,
+          1.0,
+          false
+        ],
+        "transplant@horizon_30s_terminal_minus_six_second": [
+          0.01171875,
+          -0.0003844527001805025,
+          0.023821952700180504,
+          1.0,
+          false
+        ],
+        "d072@horizon_12s_terminal_minus_six_second": [
+          0.00390625,
+          -0.0015149773628693377,
+          0.009327477362869338,
+          1.0,
+          false
+        ],
+        "d072@horizon_30s_terminal_minus_six_second": [
+          0.005859375,
+          -0.0007737327835180274,
+          0.012492482783518027,
+          1.0,
+          false
+        ],
+        "ppo@horizon_12s_terminal_minus_six_second": [
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          false
+        ],
+        "ppo@horizon_30s_terminal_minus_six_second": [
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          false
+        ]
+      },
+      "transplant_minus_joint": {
+        "transplant@nominal_minus_joint@nominal": [
+          0.029296875,
+          -0.008052858203709996,
+          0.06664660820370999,
+          1.0,
+          false
+        ],
+        "transplant@horizon_12s_minus_joint@horizon_12s": [
+          0.03515625,
+          -0.0023524492579474685,
+          0.07266494925794748,
+          1.0,
+          false
+        ],
+        "transplant@horizon_30s_minus_joint@horizon_30s": [
+          0.033203125,
+          -0.004515086387417246,
+          0.07092133638741724,
+          1.0,
+          false
+        ],
+        "transplant@mass_0.8_minus_joint@mass_0.8": [
+          -0.0234375,
+          -0.05941067193788368,
+          0.012535671937883679,
+          1.0,
+          false
+        ],
+        "transplant@mass_1.2_minus_joint@mass_1.2": [
+          0.01171875,
+          -0.025107746850061577,
+          0.04854524685006158,
+          1.0,
+          false
+        ],
+        "transplant@friction_0.8_minus_joint@friction_0.8": [
+          0.015625,
+          -0.022373670682135777,
+          0.05362367068213578,
+          1.0,
+          false
+        ],
+        "transplant@friction_1.2_minus_joint@friction_1.2": [
+          -0.03515625,
+          -0.07226955704954405,
+          0.0019570570495440476,
+          1.0,
+          false
+        ],
+        "transplant@radius_0.9_minus_joint@radius_0.9": [
+          -0.025390625,
+          -0.06236509136547663,
+          0.011583841365476633,
+          1.0,
+          false
+        ],
+        "transplant@radius_1.1_minus_joint@radius_1.1": [
+          -0.005859375,
+          -0.047045244804520374,
+          0.035326494804520374,
+          1.0,
+          false
+        ],
+        "transplant@length_0.9_minus_joint@length_0.9": [
+          -0.013671875,
+          -0.05029241316681353,
+          0.02294866316681353,
+          1.0,
+          false
+        ],
+        "transplant@length_1.1_minus_joint@length_1.1": [
+          0.01171875,
+          -0.026290535047943674,
+          0.049728035047943674,
+          1.0,
+          false
+        ],
+        "transplant@reset_1.5_minus_joint@reset_1.5": [
+          -0.01171875,
+          -0.051989527358679254,
+          0.028552027358679254,
+          1.0,
+          false
+        ]
+      },
+      "secondary_tests": 79,
+      "secondary_holm_rejections": [
+        "d072@friction_0.8_minus_joint@friction_0.8",
+        "d072@friction_1.2_minus_joint@friction_1.2",
+        "d072@horizon_12s_minus_joint@horizon_12s",
+        "d072@horizon_30s_minus_joint@horizon_30s",
+        "d072@length_0.9_minus_joint@length_0.9",
+        "d072@length_1.1_minus_joint@length_1.1",
+        "d072@mass_0.8_minus_joint@mass_0.8",
+        "d072@mass_1.2_minus_joint@mass_1.2",
+        "d072@nominal_minus_joint@nominal",
+        "d072@radius_0.9_minus_joint@radius_0.9",
+        "d072@radius_1.1_minus_d072@nominal",
+        "d072@radius_1.1_minus_joint@radius_1.1",
+        "d072@reset_1.5_minus_d072@nominal",
+        "d072@reset_1.5_minus_joint@reset_1.5",
+        "joint@reset_1.5_minus_joint@nominal",
+        "ppo@friction_0.8_minus_joint@friction_0.8",
+        "ppo@friction_1.2_minus_joint@friction_1.2",
+        "ppo@horizon_12s_minus_joint@horizon_12s",
+        "ppo@horizon_30s_minus_joint@horizon_30s",
+        "ppo@length_0.9_minus_joint@length_0.9",
+        "ppo@length_0.9_minus_ppo@nominal",
+        "ppo@length_1.1_minus_joint@length_1.1",
+        "ppo@mass_0.8_minus_joint@mass_0.8",
+        "ppo@mass_1.2_minus_joint@mass_1.2",
+        "ppo@nominal_minus_joint@nominal",
+        "ppo@radius_0.9_minus_joint@radius_0.9",
+        "ppo@radius_1.1_minus_joint@radius_1.1",
+        "ppo@reset_1.5_minus_joint@reset_1.5",
+        "ppo@reset_1.5_minus_ppo@nominal",
+        "transplant@reset_1.5_minus_transplant@nominal"
+      ]
+    },
+    "controls": {
+      "preflight_all_pass": true,
+      "nominal_prefix_consistency": {
+        "joint@horizon_12s": {
+          "cases": 512,
+          "agree": 511,
+          "agreement": 0.998046875
+        },
+        "joint@horizon_30s": {
+          "cases": 512,
+          "agree": 511,
+          "agreement": 0.998046875
+        },
+        "transplant@horizon_12s": {
+          "cases": 512,
+          "agree": 510,
+          "agreement": 0.99609375
+        },
+        "transplant@horizon_30s": {
+          "cases": 512,
+          "agree": 511,
+          "agreement": 0.998046875
+        },
+        "d072@horizon_12s": {
+          "cases": 512,
+          "agree": 512,
+          "agreement": 1.0
+        },
+        "d072@horizon_30s": {
+          "cases": 512,
+          "agree": 512,
+          "agreement": 1.0
+        },
+        "ppo@horizon_12s": {
+          "cases": 512,
+          "agree": 512,
+          "agreement": 1.0
+        },
+        "ppo@horizon_30s": {
+          "cases": 512,
+          "agree": 512,
+          "agreement": 1.0
+        }
+      },
+      "joint_30s_drops_by_second": [
+        15,
+        0,
+        1,
+        8,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "joint_30s_window_success_by_second": [
+        0.0,
+        0.4140625,
+        0.509765625,
+        0.521484375,
+        0.7265625,
+        0.765625,
+        0.771484375,
+        0.7734375,
+        0.775390625,
+        0.775390625,
+        0.775390625,
+        0.775390625,
+        0.775390625,
+        0.775390625,
+        0.77734375,
+        0.775390625,
+        0.77734375,
+        0.779296875,
+        0.78125,
+        0.779296875,
+        0.779296875,
+        0.779296875,
+        0.783203125,
+        0.78125,
+        0.77734375,
+        0.779296875,
+        0.779296875,
+        0.78125,
+        0.779296875,
+        0.78125
+      ],
+      "labels": {
+        "joint_nominal": {
+          "success": 985,
+          "drop_early": 43,
+          "drop_late": 22,
+          "off_centre": 26,
+          "persistent_slow": 121,
+          "intermittent": 45,
+          "near_miss": 38
+        },
+        "joint_reset_1.5": {
+          "success": 249,
+          "drop_early": 67,
+          "drop_late": 9,
+          "off_centre": 47,
+          "persistent_slow": 101,
+          "intermittent": 24,
+          "near_miss": 15
+        },
+        "ppo_length_0.9": {
+          "success": 454,
+          "drop_early": 2,
+          "drop_late": 7,
+          "off_centre": 0,
+          "persistent_slow": 0,
+          "intermittent": 0,
+          "near_miss": 49
+        },
+        "ppo_reset_1.5": {
+          "success": 445,
+          "drop_early": 46,
+          "drop_late": 14,
+          "off_centre": 7,
+          "persistent_slow": 0,
+          "intermittent": 0,
+          "near_miss": 0
+        }
+      },
+      "drops": {
+        "joint": {
+          "nominal": 65,
+          "horizon_12s": 24,
+          "horizon_30s": 24,
+          "mass_0.8": 25,
+          "mass_1.2": 27,
+          "friction_0.8": 71,
+          "friction_1.2": 25,
+          "radius_0.9": 18,
+          "radius_1.1": 27,
+          "length_0.9": 20,
+          "length_1.1": 28,
+          "reset_1.5": 76
+        },
+        "transplant": {
+          "nominal": 21,
+          "horizon_12s": 21,
+          "horizon_30s": 21,
+          "mass_0.8": 16,
+          "mass_1.2": 25,
+          "friction_0.8": 25,
+          "friction_1.2": 16,
+          "radius_0.9": 19,
+          "radius_1.1": 26,
+          "length_0.9": 21,
+          "length_1.1": 29,
+          "reset_1.5": 83
+        },
+        "d072": {
+          "nominal": 30,
+          "horizon_12s": 30,
+          "horizon_30s": 30,
+          "mass_0.8": 29,
+          "mass_1.2": 27,
+          "friction_0.8": 32,
+          "friction_1.2": 29,
+          "radius_0.9": 29,
+          "radius_1.1": 37,
+          "length_0.9": 20,
+          "length_1.1": 31,
+          "reset_1.5": 76
+        },
+        "ppo": {
+          "nominal": 3,
+          "horizon_12s": 3,
+          "horizon_30s": 3,
+          "mass_0.8": 2,
+          "mass_1.2": 1,
+          "friction_0.8": 1,
+          "friction_1.2": 1,
+          "radius_0.9": 2,
+          "radius_1.1": 0,
+          "length_0.9": 9,
+          "length_1.1": 1,
+          "reset_1.5": 60
+        }
+      },
+      "accounting": {
+        "cells": 204,
+        "missing": [],
+        "first_episodes": 26112,
+        "scored_transitions": 12558093,
+        "wall_minutes": 83.84744539658229,
+        "max_minutes": 240.0,
+        "reruns": [],
+        "llm_calls": 0,
+        "training": "none"
+      },
+      "triggered": {
+        "unavailable": "an evaluation cell does not record how many environments triggered the re-capture; the zeros the driver first wrote were a missing key, not a measurement (corrected in this local copy)",
+        "decision_step": {
+          "joint": 149.08168512240468,
+          "transplant": 149.08168512240468
+        }
+      }
+    },
+    "artifacts": [
+      "logs/pen_spin/r129_frozen_robustness/summary.json",
+      "logs/pen_spin/r129_frozen_robustness/frozen_config.json",
+      "logs/pen_spin/r129_frozen_robustness/accounting.json"
+    ],
+    "notes": "204 cells (4 controllers x 12 conditions x 4 manifests, plus JOINT nominal and 0.8x friction on 6 more), all complete, no rerun, 84 of 240 minutes, 12,558,093 scored transitions of 13,086,720 scheduled, no model calls, no fitting. Preflight (no rollout) read every condition back from the simulator: mass, both friction coefficients, capsule radius and length, horizon; all 12 passed, and every outcome cell re-checked its own physical record. PRIMARY: JOINT at 0.8x friction minus nominal JOINT on 1,280 pairs: -0.015, 95% interval [-0.035, +0.005] (manifest-clustered [-0.026, -0.004]); lower bound above -0.05, so SUPPORTED as non-inferiority at the registered margin (966 vs 985 successes; this is not an improvement and the clustered interval excludes zero on the negative side). Horizons: nothing is lost with time. JOINT's terminal success is 0.775 at 12 s and 0.781 at 30 s against 0.766 on the first six seconds of the same runs; in the 30 s cells all 24 drops occur in the first four seconds and per-second window success stays at 0.78 from second 6 to 30. Same for the transplant (0.807 / 0.811), D-072 (0.441 / 0.443) and PPO (0.994). One-factor physical shifts (512 pairs each, about +/-0.04 resolution): JOINT stays within -0.023 to +0.041 of nominal for mass, friction, radius and length; none is Holm-significant. The transplant is within -0.059 to -0.012 (radius 1.1x -0.059 [-0.096, -0.021], Holm p 0.12). D-072 loses 0.074 at radius 1.1x (Holm-significant). The expanded reset distribution (1.5x) is the real weakness: JOINT -0.281 [-0.331, -0.232] (0.770 -> 0.486), transplant -0.322, D-072 -0.141, PPO -0.125 (0.994 -> 0.869); JOINT's failures there shift to early drops (67 of 512) and off-centre (47). JOINT still beats D-072 there by 0.189. PPO competence control: 0.994 nominal and 0.99+ on mass, friction and radius, but 0.887 at 0.9x length (49 near-miss failures of 512) and 0.869 at 1.5x resets. Transplant minus JOINT is within +/-0.035 in all 12 conditions, none significant. Deviations: (1) the agreed per-cell re-capture trigger counts are UNAVAILABLE: evaluation cells do not record them (the driver first wrote zeros from a missing key; the local summary and the code now say unavailable); only the frozen decision steps (JOINT 149, transplant 149) are known, so no recovery-timing statement is made. (2) Nominal-prefix consistency is not exact for the module controllers: 1-2 of 512 cases differ between a longer run's first six seconds and the six-second cell (D-072 and PPO agree on all 512). (3) JOINT's nominal and 0.8x friction rows of the table pool ten manifests (1,280 cases); every other row is four manifests (512). (4) Friction is the pen material's coefficients; contact friction is PhysX's combination with the hand's material. Limits: one-factor only, frozen controllers of one lineage, secondary cells underpowered for a 0.05 margin."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": -0.01484375,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "supported",
+      "confidence": 0.85,
+      "reasoning": "By the frozen rule: JOINT at 0.8x friction minus nominal JOINT is -0.015 [-0.035, +0.005] over 1,280 pairs; the lower bound is above the -0.05 margin, so the non-inferiority prediction is supported (not an improvement; the manifest-clustered interval [-0.026, -0.004] suggests a small real loss inside the margin). Beyond the primary: no retention loss to 30 s (terminal success 0.781 vs 0.766 on the first six seconds; no drop after second 4), mass / friction / radius / length shifts leave JOINT within about +/-0.04 with nothing Holm-significant, but a 1.5x reset distribution costs JOINT -0.281 [-0.331, -0.232] and the transplant -0.322, more than it costs D-072 (-0.141) or PPO (-0.125). The hypothesis's mechanism (the residual compensating contact changes) is not tested: the transplant, with the untouched R-106 residual, is as robust as JOINT.",
+      "cited_artifacts": [],
+      "next_experiment": "The robustness gap is capture from wider resets, not dynamics or retention. That is a training-distribution question (propose separately, never retune on this panel). Proceed to Q3's archive-only diagnosis of recovery hand-back on JOINT/transplant traces, noting that evaluation cells do not record trigger events.",
+      "recorded_at": "2026-11-23T06:35:05",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "supported",
+      "confidence": 0.98,
+      "reasoning": "The named nominal JOINT control was measured: reduced friction produced 966 successes versus 985 nominal successes across 1,280 pairs, giving paired_success_difference = -0.01484375 with a 95% interval of [-0.03499434, 0.00530684] [logs/pen_spin/r129_frozen_robustness/summary.json]. The interval's lower bound exceeds the registered -0.05 margin, satisfying the support rule; the manifest-clustered interval [-0.02584911, -0.00383839] also remains above that margin [logs/pen_spin/r129_frozen_robustness/summary.json]. This supports non-inferiority, not improvement or residual-specific compensation: the primary interval includes zero, and the comparison does not isolate the residual's contribution [logs/pen_spin/r129_frozen_robustness/summary.json]. Robustness is not general across the panel: expanded resets reduce JOINT success by 0.28125, with interval [-0.33066, -0.23184] and a Holm-significant result [logs/pen_spin/r129_frozen_robustness/summary.json]. Missing recovery-trigger counts and imperfect nominal-prefix agreement limit recovery attribution and longer-horizon interpretation, without changing the registered primary contrast [logs/pen_spin/r129_frozen_robustness/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r129_frozen_robustness/summary.json"
+      ],
+      "next_experiment": "Audit archived JOINT spin/centre traces descriptively around the frozen recovery hand-back before deciding whether a state-dependent transition study is justified, reusing scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml with 0 simulator episodes and 0 LLM calls.",
+      "recorded_at": "2026-11-23T06:35:37",
+      "call_id": "call_00302"
+    }
+  ],
+  "decision_id": "D-089",
   "history": [
     {
       "at": "2026-11-23T05:00:47",
@@ -95,6 +1052,18 @@
       "from": "approved",
       "to": "running",
       "note": "git c9b79e1b5f (dirty)"
+    },
+    {
+      "at": "2026-11-23T06:34:54",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-23T06:35:45",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-089: supported"
     }
   ],
   "created_at": "2026-11-23T04:57:32",
