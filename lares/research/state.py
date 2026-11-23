@@ -61,8 +61,12 @@ def loop_guard(root) -> dict:
 
     A call that saved no idea at all (the advisor abstained, or every entry was unparseable) counts as rejected in
     full: nothing proposable came out of it, which is the condition the guard exists to detect.
+
+    Only calls made under the current direction count. The guard stops the loop to ask the user for a new
+    direction, so the user setting one (``set_direction``) is what answers it.
     """
-    proposals = load_jsonl(root, PROPOSALS_LOG)
+    since = load_direction(root).get("set_at", "")
+    proposals = [p for p in load_jsonl(root, PROPOSALS_LOG) if p.get("at", "") >= since]
     ideas = {i.id: i for i in load_ideas(root)}
     by_call: dict[str, list] = {}
     for p in proposals:

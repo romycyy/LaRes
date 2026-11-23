@@ -258,6 +258,7 @@ def main(request_path: str) -> None:
 
         if sr.config_sha256(protocol_cfg) != req["config_sha256"]:
             raise SystemExit("the config block changed since the driver froze it")
+        protocol_cfg = {**protocol_cfg, **req.get("cfg_overrides", {})}   # R-128: one lineage's seeds and schedule
         out = smoke(req, protocol_cfg, device) if req["mode"] == "smoke" else train(req, protocol_cfg, device)
         with open(req["response_path"], "w", encoding="utf-8") as f:
             json.dump(out, f, indent=1)

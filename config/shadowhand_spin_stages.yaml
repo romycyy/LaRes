@@ -1771,3 +1771,51 @@ research_protocols:
     discordance_floor: 0.05
     threshold: 0.02
     drop_margin: 0.05
+  # R-128 (Q1 of docs/NEXT_RESEARCH_DIRECTION_V2.md; no LLM): the construction recipe replicated in five independent
+  # training lineages from the D-072 reference. Stage A = R-106 (32-coefficient residual), B = R-116 (11-parameter
+  # re-capture module from the scripted point), C = R-118 CONTINUE, D = R-121 JOINT (43 coordinates, widened module
+  # ranges); schedules copied from the archived blocks above. Each row of `lineages` is one lineage's stage A/B/C/D
+  # seed (placements from the seed, directions from seed + 2000, as archived). All 20 endpoints, D-072 and the frozen
+  # historical JOINT asset are evaluated on 24 fresh manifests (training_replication.py).
+  #   python scripts/run_shadowhand_spin_stages.py --study q1_training_replication
+  q1_training_replication:
+    log_dir: "logs/pen_spin/r128_training_replication"
+    incumbent_asset: "config/pen_spin/d058_fixed_stroke_incumbent"
+    reference_descriptor: "config/pen_spin/symbolic_reward_reference/reference.json"
+    reference_residual: *d070_selected
+    reference_residual_sha256: *d070_selected_sha256
+    control_dt: 0.016666666666666666
+    pool_seed: 5240
+    actor: *sr_actor
+    normalization_path: "logs/pen_spin/r103_symbolic_reward/normalization.json"
+    normalization_sha256: "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac"
+    # the historical lineage, for the frozen R-121 JOINT cell only; each replicated lineage uses its own stage-A root
+    root_finalist: "config/pen_spin/r106_success_ars_finalist/finalist.json"
+    root_theta_sha256: "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef"
+    module_bounds: {threshold: [1.0, 6.0], ramp_out: [3.0, 80.0]}   # stage D and the historical asset; stages B and C use the original ranges
+    assets:
+      r121: {path: "config/pen_spin/r121_joint_finalist/finalist.json", sha256: "1527eb5643a59f9b77858f0dc5852280badd1f6ec012c0efa7c30019c794713c"}
+    centre_tolerance: 0.08
+    cases_per_slot: 512
+    lineages: [[5200, 5201, 5202, 5203], [5204, 5205, 5206, 5207], [5208, 5209, 5210, 5211], [5212, 5213, 5214, 5215], [5216, 5217, 5218, 5219]]
+    stages:
+      A: {updates: 12, nu: 0.02, alpha: 0.01, top: 4, rng_offset: 2000}
+      B: {updates: 12, nu: 0.1, alpha: 0.05}
+      C: {updates: 24, nu: 0.1, alpha: 0.05}
+      D: {updates: 24, nu: 0.1, alpha: 0.05}
+    # reconciliation with the archive (triage round 1): 4,096 scored episodes per update, about 8,200 episode starts
+    archived_accounting:
+      r106: {updates: 12, scored_episodes: 49152, starts: 98413, transitions: 17645568}
+      r116: {updates: 12, starts: 98458}
+      r118_continue: {updates: 24, starts: 196829}
+      r121_joint: {updates: 24, starts: 196905}
+    smoke_seed: 5220
+    smoke_aa_tolerance: 0.02
+    confirmation_seeds: [5240, 5241, 5242, 5243, 5244, 5245, 5246, 5247, 5248, 5249, 5250, 5251, 5252, 5253, 5254, 5255, 5256, 5257, 5258, 5259, 5260, 5261, 5262, 5263]
+    confirmation_cases: 128
+    confirmation_manifest_template: "config/manifests/shadowhand_spin_q1_s{seed}.yaml"
+    threshold: 0.30
+    step_threshold: 0.05
+    drop_margin: 0.05
+    start_ceiling: 3200000
+    max_minutes: 720

@@ -407,6 +407,11 @@ class TestTriage(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 cli.main(["--root", root, "propose", "--dry-run"])
             self.assertEqual(len(load_jsonl(root, PROPOSALS_LOG)), 2)
+            # A new direction from the user answers the guard: earlier calls no longer count.
+            import time
+            time.sleep(1.1)
+            set_direction("third", root)
+            self.assertEqual(loop_guard(root)["consecutive_all_rejected"], 0)
 
 
 class TestCli(unittest.TestCase):

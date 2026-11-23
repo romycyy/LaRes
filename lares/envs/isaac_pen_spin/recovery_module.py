@@ -691,6 +691,7 @@ def child_main(request_path: str) -> None:
     try:
         if sr.config_sha256(cfg) != req["config_sha256"]:
             raise SystemExit("the config block changed since the driver froze it")
+        cfg = {**cfg, **req.get("cfg_overrides", {})}       # R-128: one lineage's root, seed and schedule
         out = _child(req, cfg, device)
         _dump(req["response_path"], out)
         print("wrote", req["response_path"], flush=True)

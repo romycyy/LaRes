@@ -1,0 +1,231 @@
+{
+  "id": "R-128",
+  "title": "Q1: Five independent replications of the frozen construction recipe",
+  "hypothesis": "Shared-placement ARS reproducibly learns residual–recovery coordination that escapes persistent slow-roll states across independent training lineages.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.3,
+    "against": "D-072 frozen reference",
+    "rationale": "The equal-weight mean JOINT-endpoint gain across five independently trained lineages tests learning-procedure reproducibility; D-086 and D-087 evaluated frozen controllers rather than independent construction. Five lineages provide more information about training variance than additional cases for the historical lineage."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu connect 'cd ~/LaRes && source ~/IsaacLab/source_env.sh && python -u scripts/run_shadowhand_spin_stages.py --study q1_training_replication'",
+    "seeds": [
+      5200,
+      5201,
+      5202,
+      5203,
+      5204,
+      5205,
+      5206,
+      5207,
+      5208,
+      5209,
+      5210,
+      5211,
+      5212,
+      5213,
+      5214,
+      5215,
+      5216,
+      5217,
+      5218,
+      5219,
+      5220,
+      5240,
+      5241,
+      5242,
+      5243,
+      5244,
+      5245,
+      5246,
+      5247,
+      5248,
+      5249,
+      5250,
+      5251,
+      5252,
+      5253,
+      5254,
+      5255,
+      5256,
+      5257,
+      5258,
+      5259,
+      5260,
+      5261,
+      5262,
+      5263
+    ],
+    "manifests": [
+      "config/manifests/shadowhand_spin_q1_s5240.yaml",
+      "config/manifests/shadowhand_spin_q1_s5241.yaml",
+      "config/manifests/shadowhand_spin_q1_s5242.yaml",
+      "config/manifests/shadowhand_spin_q1_s5243.yaml",
+      "config/manifests/shadowhand_spin_q1_s5244.yaml",
+      "config/manifests/shadowhand_spin_q1_s5245.yaml",
+      "config/manifests/shadowhand_spin_q1_s5246.yaml",
+      "config/manifests/shadowhand_spin_q1_s5247.yaml",
+      "config/manifests/shadowhand_spin_q1_s5248.yaml",
+      "config/manifests/shadowhand_spin_q1_s5249.yaml",
+      "config/manifests/shadowhand_spin_q1_s5250.yaml",
+      "config/manifests/shadowhand_spin_q1_s5251.yaml",
+      "config/manifests/shadowhand_spin_q1_s5252.yaml",
+      "config/manifests/shadowhand_spin_q1_s5253.yaml",
+      "config/manifests/shadowhand_spin_q1_s5254.yaml",
+      "config/manifests/shadowhand_spin_q1_s5255.yaml",
+      "config/manifests/shadowhand_spin_q1_s5256.yaml",
+      "config/manifests/shadowhand_spin_q1_s5257.yaml",
+      "config/manifests/shadowhand_spin_q1_s5258.yaml",
+      "config/manifests/shadowhand_spin_q1_s5259.yaml",
+      "config/manifests/shadowhand_spin_q1_s5260.yaml",
+      "config/manifests/shadowhand_spin_q1_s5261.yaml",
+      "config/manifests/shadowhand_spin_q1_s5262.yaml",
+      "config/manifests/shadowhand_spin_q1_s5263.yaml"
+    ],
+    "episodes": 3200000,
+    "llm_calls": 0,
+    "code_changes": [
+      "Add lares/envs/isaac_pen_spin/training_replication.py only for missing multi-lineage orchestration and inference; reuse success_ars.py, recovery_module.py, recovery_retry.py, recovery_joint.py and ladder_confirmation.py for training, reconstruction and evaluation. Register the study in scripts/run_shadowhand_spin_stages.py and add an isolated section to config/shadowhand_spin_stages.yaml without altering historical sections or frozen assets.",
+      "Freeze five lineages before smoke or training. Assign stage A/B/C/D root seeds respectively as 5200-5203, 5204-5207, 5208-5211, 5212-5215 and 5216-5219. Derive disjoint placement and optimizer-direction streams from each root. Preserve shared placements within each update's antithetic comparisons and fresh stage-specific placement streams.",
+      "Copy archived initialization, inheritance, clipping, normalization and optimizer semantics exactly. A: 32 residual coefficients on D-072, 12 updates, nu=0.02, alpha=0.01, top=4. B: scripted initial 11-parameter single-decision recovery on that lineage's frozen A, 12 updates, nu=0.1, alpha=0.05, original ranges. C: continue those 11 parameters for 24 updates with unchanged settings. D: 24 JOINT updates of 11 module parameters plus 32 residual offsets, nu=0.1, alpha=0.05, threshold [1,6], ramp_out [3,80], archived coordinate scaling. Verify the complete archived R-103 normalization-file hash matching prefix 75239d0a before execution.",
+      "Reconciliation with the archive (recorded in the frozen configuration): every update scores 8 signed candidates (four antithetic pairs) on the same 512 placements as two 2,048-environment rollouts = 4,096 scored episodes and about 8,200 episode starts, because each rollout begins with a forced reset and each survivor auto-resets into an unscored episode on step 360. Archived: R-106 12 updates = 49,152 scored episodes, 98,413 starts, 17,645,568 transitions; R-116 98,458 starts; R-118 CONTINUE 196,829; R-121 JOINT 196,905. These counts are reproduced exactly; the driver refuses to proceed if a stage's scored-episode count differs from 4,096 x updates. Preserve the original 360-step, six-second Stage-3 task, exact sustained-success objective and evaluation contract. Freeze terminal means at all four milestones without checkpoint selection, schedule changes or extra optimization.",
+      "Use smoke seed 5220 with disjoint derived streams for at most four 2,048-environment rollouts, one per stage; supplement with simulator-free inheritance and reconstruction tests. Smoke is an implementation gate, not a tuning opportunity. A failed smoke stops simulator work and returns to the loop before another protocol.",
+      "Create and commit the 24 fresh confirmation manifests, each containing 128 cases, before viewing replication outcomes. Archived discordance 0.41 and target case-level half-width 0.025 imply ceil(1.96^2*0.41/0.025^2)=2,521 cases; use 3,072 cases for padding, without claiming this resolves training-level uncertainty. Reconstruct and evaluate all 20 endpoints, a separate D-072 baseline cell and the frozen historical config/pen_spin/r121_joint_finalist (hash-checked) on every manifest, each cell in a fresh process: 22 cells x 24 manifests. Report descriptive paired comparisons of each replicated JOINT endpoint against historical JOINT (raw paired intervals; outside the qualification family). Do not reuse R-124/R-126 cases. Frozen R-121 JOINT remains the historical experimental benchmark, not an additional training replicate.",
+      "Report every lineage's absolute success, paired gain and drop results at every milestone, plus equal-weight mean, median, standard deviation and range across lineages. For primary JOINT-minus-D-072 inference, fit the 5-by-24 matrix of manifest-mean paired differences with random lineage and shared-manifest intercepts and a residual interaction term, estimated by the balanced two-way ANOVA moment estimators truncated at zero (identical to REML for this balanced one-observation-per-cell layout when non-negative). Also report the plain t interval (4 df) on the five lineage means. Use variance sigma_lineage^2/5 + sigma_manifest^2/24 + sigma_residual^2/120 and a two-sided t interval with four degrees of freedom. Freeze support at lower bound >=0.30, refutation at upper bound <0.30, otherwise inconclusive. Explicitly acknowledge limited algorithm-level precision with five lineages.",
+      "For secondary frozen-controller qualification, predeclare 20 milestone-versus-construction-parent contrasts and five JOINT-versus-D-072 contrasts. Require a strictly positive paired t interval, Holm-significant success improvement across these 25 contrasts, and a one-sided 95% upper bound <=0.05 on challenger-minus-parent drop rate. Report raw paired intervals and drop bounds for every contrast; ties and intervals containing zero are not improvements. Qualification does not install any controller.",
+      "Failure handling. Infrastructure death (an Isaac child that exits without writing a terminal state: start-up allocator crash, timeout) is rerun with the identical request and seeds, at most twice per stage or cell, every rerun logged and charged. A nonfinite or out-of-range terminal mean is never rerun and ends that lineage's remaining stages: no seed retry, replacement lineage or earlier-checkpoint substitution. Continue the other declared lineages and evaluate every completed finite endpoint. Keep failures in the five-lineage accounting. For missing JOINT endpoints, report effect bounds by assigning missing endpoint success first zero and then one, explicitly as bounds rather than observations; apply the primary analysis to both extremes, supporting only if the conservative lower bound reaches 0.30 and refuting only if the optimistic upper bound is below 0.30. Otherwise report inconclusive.",
+      "Budget in episode STARTS (scored episodes in brackets): training about 590,600 per lineage, 2,953,000 for five [1,474,560 scored]; confirmation 22 x 24 x 128 = 67,584 scored, charged at two starts each = 135,168; smoke at most 16,400. Planned about 3,105,000 starts; enforce a 3,200,000-start ceiling and a 720-minute GPU wall-time ceiling (training about 60 minutes per lineage at the archived 39 s per update plus process overhead; 528 confirmation processes at about 30 s). No controller-generation or other experimental model calls. Stop the GPU box at session end. Preserve all existing assets and keep incumbent installation separate. Heterogeneous gains, failed constructions or mixed endpoint qualification lead to training-variance diagnosis; uniformly qualified endpoints with support for the primary prediction permit proposing Q2, not automatically running it."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "running",
+  "source": "advisor",
+  "falsified_by": "The primary two-level 95% interval has an upper bound below +0.30. Support requires its lower bound to reach +0.30; otherwise the magnitude prediction is inconclusive, even if the interval excludes zero.",
+  "cost_estimate": {
+    "episodes": 3200000,
+    "llm_calls": 0,
+    "wall_time_minutes": 720
+  },
+  "open_question_refs": [
+    "Q1"
+  ],
+  "briefing_sha256": "5fe355627df242440dbe7d4f223a70f7b4681fe273f5d9321567c80263a986d8",
+  "proposal_call_id": "call_00293",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-22T21:40:01",
+    "advisor_call_id": "call_00295",
+    "round": 2,
+    "note": "Independent construction replication is the correct next priority; D-086 and D-087 did not measure training-lineage variability. I accept the implementer's reconciliation of 4,096 scored episodes versus roughly 8,200 starts per update, the added historical JOINT reference, Isaac-environment launch, "
+  },
+  "run": {
+    "started_at": "2026-11-22T21:48:57",
+    "git_sha": "d7a7e97802dabd97d12f0f18888a762ce385bfae",
+    "dirty_worktree": true,
+    "log_dir": "logs/pen_spin/r128_training_replication"
+  },
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-22T21:40:01",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 2: both say approve"
+    },
+    {
+      "at": "2026-11-22T21:48:57",
+      "from": "approved",
+      "to": "running",
+      "note": "git d7a7e97802 (dirty)"
+    }
+  ],
+  "created_at": "2026-11-22T21:37:52",
+  "direction": "Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT controller. Prioritize independent training reproducibility, then robustness of frozen controllers. Reproduce the successful residual-plus-recovery construction across independent training seeds before claiming a reliable learning algorithm. Evaluate longer horizons and predeclared physical/reset perturbations without fitting. Use archived failures to decide whether recovery hand-back deserves a state-dependent transition study. Then investigate whether LLM-guided construction can discover useful recovery-module structure against grammar search and the hand-designed template under matched budgets. Preserve the original six-second task and evaluation contract. Use JOINT as the experimental reference, preserve all existing assets, and leave default-incumbent installation separate. Run one protocol at a time through the existing advisor/implementer loop. Continue justified follow-ups within this direction; honor its escalation and exhaustion rules. No new global budget ceiling is imposed; each protocol must declare finite simulator, wall-time and model-call costs before agreement. No controller-generation calls for Q1–Q3. Q4 requires a separately agreed generation budget. Advisor calls for the research loop remain permitted throughout.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "Independent construction is the correct first priority: D-086 and D-087 tested frozen controllers, not training reproducibility. However, 4,096 episodes per update does not reconcile with R-116's approximately 98,458 training starts over 12 updates, raising a material risk that this halves the archived learner's search budget rather than reproducing it. The confirmation also omits frozen R-121 JOINT, which the current direction requires as the experimental reference.",
+          "suggested_changes": [
+            "Reconcile the archived signed-candidate count, placements per candidate, rollout batching and starts per update for every stage before simulator work. Preserve those archived counts exactly alongside the stated initialization and optimizer semantics; do not substitute a cheaper learner under the replication label. Record the reconciliation in the frozen configuration.",
+            "Evaluate frozen config/pen_spin/r121_joint_finalist on all 24 confirmation manifests as an additional fresh-process cell. Report descriptive paired comparisons between each replicated JOINT endpoint and historical JOINT; retain the registered primary paired_success_difference increase threshold of 0.30 against D-072 and its existing falsification rule. These descriptive comparisons need not expand the qualification family.",
+            "Return a corrected finite episode ceiling and GPU wall-time estimate before agreement, retaining zero experimental LLM calls. Adding historical JOINT costs 3,072 episodes; if all training updates require 8,192 episodes, training becomes 2,949,120 episodes and the planned total becomes 3,024,896 including 67,584 confirmation and at most 8,192 smoke episodes, before initialization overhead. Replace the incompatible 1,600,000-start ceiling and justify the revised wall-time cap."
+          ],
+          "priority": 1,
+          "call_id": "call_00294",
+          "briefing_sha256": "dfe98d11e309acb0a37b8c6df457f121bdc06d3de2c4c8c461de3d81c3caef4b",
+          "at": "2026-11-22T21:38:51"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agree with revise and with all three changes; the mechanism (independent training replication) is new against D-075..D-087, which evaluated one lineage. Reconciliation from the archived accounting (logs/pen_spin/r106_exact_success_ars, r116_recovery_module, r118_recovery_retry, r121_recovery_joint research_result.json): R-106 trained 12 updates with 49,152 scored episodes (4,096 per update = 8 signed candidates x 512 placements, as two 2,048-env rollouts) and 98,413 episode STARTS, 17,645,568 transitions; R-116 98,458 starts over 12 updates; R-118 CONTINUE 196,829 over 24; R-121 JOINT 196,905 over 24. Starts are about twice scored episodes because every rollout that ends on step 360 auto-resets each survivor into an unscored episode and each rollout begins with a forced reset. So 4,096 scored episodes per update IS the archived learner, not a halved one; the proposal's error is only that it budgeted scored episodes against a start ceiling. Corrected budget: per lineage about 590,600 training starts (295,000 scored), five lineages about 2,953,000 starts; confirmation 22 cells (20 endpoints + D-072 + frozen R-121 JOINT) x 24 x 128 = 67,584 scored, charged at two starts each as before = 135,168; smoke at most 16,400 starts; ceiling 3,200,000 starts. Wall time: training 39 s per update archived -> about 60 min per lineage with process overhead (5 h), confirmation 528 fresh processes at about 30 s (4.4 h): cap 720 minutes. Three further edits I need for a runnable protocol: (1) the command must launch the driver under Isaac's environment through gpu connect, not gpu run's venv (D-071 bite): gpu connect 'cd ~/LaRes && source ~/IsaacLab/source_env.sh && python -u scripts/run_shadowhand_spin_stages.py --study q1_training_replication'. (2) The two-level model: the 5 x 24 matrix is balanced with one observation per cell, so I will use the balanced two-way ANOVA moment estimators truncated at zero, which coincide with REML for balanced data whenever the estimates are non-negative, with the stated variance formula and t on 4 df; no new dependency. I will additionally report the plain across-lineage t interval (4 df) on the five lineage means. (3) Failure rule: distinguish infrastructure death from divergence. An Isaac child that dies without producing a terminal state (the known malloc tcache start-up crash, or a timeout) is rerun with the identical request and seeds, at most twice per stage, each rerun logged and charged; a non-finite or out-of-range terminal mean is never rerun and ends the lineage as proposed.",
+          "changes_applied": [],
+          "at": "2026-11-22T21:39:15"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "Independent construction replication is the correct next priority; D-086 and D-087 did not measure training-lineage variability. I accept the implementer's reconciliation of 4,096 scored episodes versus roughly 8,200 starts per update, the added historical JOINT reference, Isaac-environment launch, balanced variance estimator and infrastructure-only retry rule. Five lineages remain the precision bottleneck: retain the prediction of paired_success_difference increasing by at least 0.30 against D-072, supported only by a primary interval lower bound >=0.30 and falsified by an upper bound <0.30; otherwise report inconclusive. The revised protocol appropriately reuses the existing driver, config and training/evaluation modules within ceilings of 3,200,000 simulator episode starts, 720 GPU minutes and zero experimental LLM calls.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00295",
+          "briefing_sha256": "b2a94d8b9244666bf75f6f2da380b9c61ec7d8227d314f3455ffafe10d66aa94",
+          "at": "2026-11-22T21:39:57"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve the revised protocol: it reproduces the archived learner exactly (4,096 scored episodes per update, verified against the archived accounting), freezes five lineages and 24 fresh manifests before any outcome, includes the frozen historical JOINT and D-072 cells, and has finite ceilings (3.2 M starts, 720 minutes, no model calls). Runnable with the existing training children; the only new code is orchestration and the two-level analysis.",
+          "changes_applied": [],
+          "at": "2026-11-22T21:40:01"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-22T21:39:37",
+      "round": 1,
+      "patch": {
+        "protocol": {
+          "code_changes": [
+            "Add lares/envs/isaac_pen_spin/training_replication.py only for missing multi-lineage orchestration and inference; reuse success_ars.py, recovery_module.py, recovery_retry.py, recovery_joint.py and ladder_confirmation.py for training, reconstruction and evaluation. Register the study in scripts/run_shadowhand_spin_stages.py and add an isolated section to config/shadowhand_spin_stages.yaml without altering historical sections or frozen assets.",
+            "Freeze five lineages before smoke or training. Assign stage A/B/C/D root seeds respectively as 5200-5203, 5204-5207, 5208-5211, 5212-5215 and 5216-5219. Derive disjoint placement and optimizer-direction streams from each root. Preserve shared placements within each update's antithetic comparisons and fresh stage-specific placement streams.",
+            "Copy archived initialization, inheritance, clipping, normalization and optimizer semantics exactly. A: 32 residual coefficients on D-072, 12 updates, nu=0.02, alpha=0.01, top=4. B: scripted initial 11-parameter single-decision recovery on that lineage's frozen A, 12 updates, nu=0.1, alpha=0.05, original ranges. C: continue those 11 parameters for 24 updates with unchanged settings. D: 24 JOINT updates of 11 module parameters plus 32 residual offsets, nu=0.1, alpha=0.05, threshold [1,6], ramp_out [3,80], archived coordinate scaling. Verify the complete archived R-103 normalization-file hash matching prefix 75239d0a before execution.",
+            "Reconciliation with the archive (recorded in the frozen configuration): every update scores 8 signed candidates (four antithetic pairs) on the same 512 placements as two 2,048-environment rollouts = 4,096 scored episodes and about 8,200 episode starts, because each rollout begins with a forced reset and each survivor auto-resets into an unscored episode on step 360. Archived: R-106 12 updates = 49,152 scored episodes, 98,413 starts, 17,645,568 transitions; R-116 98,458 starts; R-118 CONTINUE 196,829; R-121 JOINT 196,905. These counts are reproduced exactly; the driver refuses to proceed if a stage's scored-episode count differs from 4,096 x updates. Preserve the original 360-step, six-second Stage-3 task, exact sustained-success objective and evaluation contract. Freeze terminal means at all four milestones without checkpoint selection, schedule changes or extra optimization.",
+            "Use smoke seed 5220 with disjoint derived streams for at most four 2,048-environment rollouts, one per stage; supplement with simulator-free inheritance and reconstruction tests. Smoke is an implementation gate, not a tuning opportunity. A failed smoke stops simulator work and returns to the loop before another protocol.",
+            "Create and commit the 24 fresh confirmation manifests, each containing 128 cases, before viewing replication outcomes. Archived discordance 0.41 and target case-level half-width 0.025 imply ceil(1.96^2*0.41/0.025^2)=2,521 cases; use 3,072 cases for padding, without claiming this resolves training-level uncertainty. Reconstruct and evaluate all 20 endpoints, a separate D-072 baseline cell and the frozen historical config/pen_spin/r121_joint_finalist (hash-checked) on every manifest, each cell in a fresh process: 22 cells x 24 manifests. Report descriptive paired comparisons of each replicated JOINT endpoint against historical JOINT (raw paired intervals; outside the qualification family). Do not reuse R-124/R-126 cases. Frozen R-121 JOINT remains the historical experimental benchmark, not an additional training replicate.",
+            "Report every lineage's absolute success, paired gain and drop results at every milestone, plus equal-weight mean, median, standard deviation and range across lineages. For primary JOINT-minus-D-072 inference, fit the 5-by-24 matrix of manifest-mean paired differences with random lineage and shared-manifest intercepts and a residual interaction term, estimated by the balanced two-way ANOVA moment estimators truncated at zero (identical to REML for this balanced one-observation-per-cell layout when non-negative). Also report the plain t interval (4 df) on the five lineage means. Use variance sigma_lineage^2/5 + sigma_manifest^2/24 + sigma_residual^2/120 and a two-sided t interval with four degrees of freedom. Freeze support at lower bound >=0.30, refutation at upper bound <0.30, otherwise inconclusive. Explicitly acknowledge limited algorithm-level precision with five lineages.",
+            "For secondary frozen-controller qualification, predeclare 20 milestone-versus-construction-parent contrasts and five JOINT-versus-D-072 contrasts. Require a strictly positive paired t interval, Holm-significant success improvement across these 25 contrasts, and a one-sided 95% upper bound <=0.05 on challenger-minus-parent drop rate. Report raw paired intervals and drop bounds for every contrast; ties and intervals containing zero are not improvements. Qualification does not install any controller.",
+            "Failure handling. Infrastructure death (an Isaac child that exits without writing a terminal state: start-up allocator crash, timeout) is rerun with the identical request and seeds, at most twice per stage or cell, every rerun logged and charged. A nonfinite or out-of-range terminal mean is never rerun and ends that lineage's remaining stages: no seed retry, replacement lineage or earlier-checkpoint substitution. Continue the other declared lineages and evaluate every completed finite endpoint. Keep failures in the five-lineage accounting. For missing JOINT endpoints, report effect bounds by assigning missing endpoint success first zero and then one, explicitly as bounds rather than observations; apply the primary analysis to both extremes, supporting only if the conservative lower bound reaches 0.30 and refuting only if the optimistic upper bound is below 0.30. Otherwise report inconclusive.",
+            "Budget in episode STARTS (scored episodes in brackets): training about 590,600 per lineage, 2,953,000 for five [1,474,560 scored]; confirmation 22 x 24 x 128 = 67,584 scored, charged at two starts each = 135,168; smoke at most 16,400. Planned about 3,105,000 starts; enforce a 3,200,000-start ceiling and a 720-minute GPU wall-time ceiling (training about 60 minutes per lineage at the archived 39 s per update plus process overhead; 528 confirmation processes at about 30 s). No controller-generation or other experimental model calls. Stop the GPU box at session end. Preserve all existing assets and keep incumbent installation separate. Heterogeneous gains, failed constructions or mixed endpoint qualification lead to training-variance diagnosis; uniformly qualified endpoints with support for the primary prediction permit proposing Q2, not automatically running it."
+          ],
+          "episodes": 3200000,
+          "command": "gpu connect 'cd ~/LaRes && source ~/IsaacLab/source_env.sh && python -u scripts/run_shadowhand_spin_stages.py --study q1_training_replication'"
+        },
+        "cost_estimate": {
+          "episodes": 3200000,
+          "llm_calls": 0,
+          "wall_time_minutes": 720
+        }
+      },
+      "note": "Agreed round-1 changes: archive reconciliation of scored episodes vs starts, frozen historical JOINT cell, corrected start ceiling 3.2M and 720 min, Isaac-environment launch command, balanced moment estimators, infrastructure-rerun rule"
+    }
+  ]
+}
