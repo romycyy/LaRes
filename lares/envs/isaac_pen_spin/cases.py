@@ -320,3 +320,40 @@ def reduce_episodes(trace: dict) -> list[dict]:
             "return": float(np.nansum(trace["reward"][:L, i])),
         })
     return rows
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+#  Construction-time conditions (R-129)
+# ---------------------------------------------------------------------------------------------------------------------
+
+
+CONDITION_KEYS = ("mass", "friction", "radius", "length", "horizon_s", "reset_scale")
+
+
+def apply_condition(cfg, condition: dict | None) -> dict:
+    """R-129: a construction-time physical / horizon perturbation of the env config (multipliers of the nominal pen;
+    ``horizon_s`` in seconds; ``reset_scale`` is applied to the placement vectors by the runner). Mass is set
+    explicitly, so a size change leaves it alone; the collision shape and inertia follow the capsule. The success
+    predicate, centre tolerance and control rate are never touched. Returns the resolved nominal -> perturbed values."""
+    condition = dict(condition or {})
+    unknown = set(condition) - set(CONDITION_KEYS)
+    if unknown:
+        raise ValueError(f"unknown condition keys {sorted(unknown)}")
+    spawn = cfg.object_cfg.spawn
+    nominal = {"mass": float(spawn.mass_props.mass), "static_friction": float(spawn.physics_material.static_friction),
+               "dynamic_friction": float(spawn.physics_material.dynamic_friction), "radius": float(spawn.radius),
+               "length": float(spawn.height), "horizon_s": float(cfg.episode_length_s)}
+    m, f = float(condition.get("mass", 1.0)), float(condition.get("friction", 1.0))
+    r, h = float(condition.get("radius", 1.0)), float(condition.get("length", 1.0))
+    spawn.mass_props.mass = nominal["mass"] * m
+    spawn.physics_material = spawn.physics_material.replace(static_friction=nominal["static_friction"] * f,
+                                                            dynamic_friction=nominal["dynamic_friction"] * f)
+    spawn.radius, spawn.height = nominal["radius"] * r, nominal["length"] * h
+    marker = cfg.goal_object_cfg.markers["goal"]             # visual only; kept the pen's size
+    marker.radius, marker.height = spawn.radius, spawn.height
+    cfg.episode_length_s = float(condition.get("horizon_s", nominal["horizon_s"]))
+    return {"nominal": nominal, "condition": condition,
+            "expected": {"mass": nominal["mass"] * m, "static_friction": nominal["static_friction"] * f,
+                         "dynamic_friction": nominal["dynamic_friction"] * f, "radius": nominal["radius"] * r,
+                         "length": nominal["length"] * h, "horizon_s": float(cfg.episode_length_s),
+                         "reset_scale": float(condition.get("reset_scale", 1.0))}}

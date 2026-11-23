@@ -41,11 +41,44 @@ class MeasuredShadowHandSpinEnv(ShadowHandSpinEnv):
         self.transverse_rate = torch.norm(perp, dim=-1)
 
 
-def make_env(stage: int, num_envs: int, device: str = "cuda:0", enhanced_determinism: bool = False):
+apply_condition = cases.apply_condition   # numpy-only, so tests can exercise it without Isaac
+
+
+def physical_record(env) -> dict:
+    """What the simulator actually holds for environment 0's pen: mass, inertia, material, capsule size, horizon."""
+    out = {"max_episode_length": int(env.max_episode_length), "episode_length_s": float(env.cfg.episode_length_s),
+           "control_dt": float(env.cfg.sim.dt * env.cfg.decimation), "errors": []}
+    view = env.object.root_physx_view
+    try:
+        out["mass"] = float(view.get_masses().reshape(env.num_envs, -1)[0, 0])
+        out["inertia"] = [float(x) for x in view.get_inertias().reshape(env.num_envs, -1)[0]]
+        mat = view.get_material_properties().reshape(env.num_envs, -1, 3)[0]
+        out["static_friction"], out["dynamic_friction"] = float(mat[0, 0]), float(mat[0, 1])
+        out["collision_shapes"] = int(mat.shape[0])
+    except Exception as exc:  # noqa: BLE001 - recorded, the preflight gate fails on it
+        out["errors"].append(f"physx view: {exc!r}")
+    try:
+        import omni.usd
+        from pxr import Usd, UsdGeom
+
+        stage = omni.usd.get_context().get_stage()
+        caps = [p for p in Usd.PrimRange(stage.GetPrimAtPath("/World/envs/env_0/object")) if p.IsA(UsdGeom.Capsule)]
+        out["capsules"] = len(caps)
+        out["radius"], out["length"] = float(caps[0].GetAttribute("radius").Get()), float(caps[0].GetAttribute("height").Get())
+        out["capsule_axis"] = str(caps[0].GetAttribute("axis").Get())
+    except Exception as exc:  # noqa: BLE001
+        out["errors"].append(f"usd capsule: {exc!r}")
+    return out
+
+
+def make_env(stage: int, num_envs: int, device: str = "cuda:0", enhanced_determinism: bool = False,
+             condition: dict | None = None):
     import importlib
 
     cfg_mod = importlib.import_module("lares.envs.isaac_pen_spin.shadow_hand_spin_env_cfg")
     cfg = getattr(cfg_mod, cases.STAGES[stage].cfg_class)()
+    if condition:
+        apply_condition(cfg, condition)
     cfg.scene.num_envs = int(num_envs)
     cfg.sim.device = device
     cfg.sim.physx.enable_enhanced_determinism = bool(enhanced_determinism)
@@ -134,10 +167,12 @@ class ControllerContext:
 class PenSpinBatchRunner:
     """Run a controller on every case of a pen-spin manifest in one batched Isaac env."""
 
-    def __init__(self, stage: int, num_envs: int, device: str = "cuda:0", enhanced_determinism: bool = False):
+    def __init__(self, stage: int, num_envs: int, device: str = "cuda:0", enhanced_determinism: bool = False,
+                 condition: dict | None = None):
         self.stage = int(stage)
         self.enhanced_determinism = bool(enhanced_determinism)
-        self.env = make_env(self.stage, num_envs, device, self.enhanced_determinism)
+        self.condition = dict(condition or {})
+        self.env = make_env(self.stage, num_envs, device, self.enhanced_determinism, self.condition)
         self.num_envs = int(num_envs)
         self.runs = 0
 
@@ -150,7 +185,7 @@ class PenSpinBatchRunner:
         self.runs += 1
         if cases.stage_of(manifest) != self.stage:
             raise ValueError(f"{manifest.manifest_id} is not a stage-{self.stage} manifest")
-        vecs = cases.resolve_placements(manifest)
+        vecs = cases.resolve_placements(manifest) * float(self.condition.get("reset_scale", 1.0))
         n = len(vecs)
         if n != self.num_envs:
             raise ValueError(f"manifest has {n} cases, runner holds {self.num_envs} envs")

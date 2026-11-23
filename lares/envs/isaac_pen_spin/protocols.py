@@ -283,8 +283,14 @@ def run_cell(manifest_path: str, controller: str, out_path: str, device: str, re
 
     manifest = EvaluationManifest.load(manifest_path)
     ctrl = controller_factory(controller) if isinstance(controller, str) else controller
-    runner = PenSpinBatchRunner(cases.stage_of(manifest), len(manifest), device=device)
+    condition = getattr(ctrl, "env_condition", None)       # R-129: a construction-time physical / horizon perturbation
+    runner = PenSpinBatchRunner(cases.stage_of(manifest), len(manifest), device=device, condition=condition)
+    physical = None
     try:
+        if condition is not None:
+            from lares.envs.isaac_pen_spin.runner import physical_record
+
+            physical = physical_record(runner.env)
         if hasattr(ctrl, "attach"):  # a learned policy built against the live env's spaces
             ctrl.attach(runner.env)
         trace = runner.run(manifest, ctrl, record_obs=record_obs)
@@ -305,6 +311,8 @@ def run_cell(manifest_path: str, controller: str, out_path: str, device: str, re
                    f"{cases.SUSTAIN_WINDOW} steps (D-034)",
         "max_episode_length": int(trace["max_episode_length"]), "episodes": reduce_episodes(trace),
     }
+    if condition is not None:
+        result.update(condition=condition, physical=physical)
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2)
     return out_path

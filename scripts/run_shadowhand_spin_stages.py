@@ -75,6 +75,7 @@ PEN_SPIN_STUDIES = {
     "stage3_consolidated_ladder": "ladder_confirmation",           # R-124 (six frozen controllers on 24 fresh manifests)
     "parameter_block_transplant": "block_transplant",              # R-126 (residual / module block swaps between R-118 and JOINT)
     "q1_training_replication": "training_replication",             # R-128 (the recipe in five independent training lineages)
+    "q2_frozen_robustness": "frozen_robustness",                   # R-129 (frozen controllers on a one-factor perturbation panel)
 }
 
 

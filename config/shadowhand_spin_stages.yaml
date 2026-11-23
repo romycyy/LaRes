@@ -1819,3 +1819,50 @@ research_protocols:
     drop_margin: 0.05
     start_ceiling: 3200000
     max_minutes: 720
+  # R-129 (Q2 of docs/NEXT_RESEARCH_DIRECTION_V2.md; no training, no LLM): four frozen controllers on a one-factor
+  # panel of horizons, pen mass / friction / radius / length and reset scale (frozen_robustness.py). Multipliers are of
+  # the nominal pen; the success predicate, centre tolerance and 60 Hz control are unchanged. Primary: JOINT at 0.8x
+  # friction minus nominal JOINT on ten manifests, non-inferiority margin -0.05.
+  #   python scripts/run_shadowhand_spin_stages.py --study q2_frozen_robustness
+  q2_frozen_robustness:
+    log_dir: "logs/pen_spin/r129_frozen_robustness"
+    incumbent_asset: "config/pen_spin/d058_fixed_stroke_incumbent"
+    reference_descriptor: "config/pen_spin/symbolic_reward_reference/reference.json"
+    reference_residual: *d070_selected
+    reference_residual_sha256: *d070_selected_sha256
+    control_dt: 0.016666666666666666
+    pool_seed: 5264
+    actor: *sr_actor
+    normalization_path: "logs/pen_spin/r103_symbolic_reward/normalization.json"
+    normalization_sha256: "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac"
+    root_finalist: "config/pen_spin/r106_success_ars_finalist/finalist.json"
+    root_theta_sha256: "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef"
+    module_bounds: {threshold: [1.0, 6.0], ramp_out: [3.0, 80.0]}   # both module assets are stored in the JOINT ranges
+    assets:
+      joint: {path: "config/pen_spin/r121_joint_finalist/finalist.json", sha256: "1527eb5643a59f9b77858f0dc5852280badd1f6ec012c0efa7c30019c794713c"}
+      transplant: {path: "config/pen_spin/r126_transplant_finalist/finalist.json", sha256: "9e17b365c5176cc0a9e4adee77cf4d87d055d8982672d60a8478c446b2fe5415"}
+    centre_tolerance: 0.08
+    checkpoint: "logs/pen_spin/r040_ppo_expert/train/model_8239.pt"
+    checkpoint_sha256: "f81be523a51cc5bb8bd095d5ed208ba8dd227a37ca05d5dc78283a24d89985d7"
+    expert_seed: 4020
+    nominal_pen: {mass: 0.035, static_friction: 1.2, dynamic_friction: 1.0, radius: 0.012, length: 0.14}
+    conditions:
+      nominal: {}
+      horizon_12s: {horizon_s: 12.0}
+      horizon_30s: {horizon_s: 30.0}
+      mass_0.8: {mass: 0.8}
+      mass_1.2: {mass: 1.2}
+      friction_0.8: {friction: 0.8}
+      friction_1.2: {friction: 1.2}
+      radius_0.9: {radius: 0.9}
+      radius_1.1: {radius: 1.1}
+      length_0.9: {length: 0.9}
+      length_1.1: {length: 1.1}
+      reset_1.5: {reset_scale: 1.5}
+    panel_seeds: [5264, 5265, 5266, 5267]
+    primary_extra_seeds: [5268, 5269, 5270, 5271, 5272, 5273]
+    cases: 128
+    manifest_template: "config/manifests/pen_spin_stage3_robust_s{seed}.yaml"
+    margin: -0.05
+    drop_margin: 0.05
+    max_minutes: 240
