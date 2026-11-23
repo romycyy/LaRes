@@ -77,6 +77,7 @@ PEN_SPIN_STUDIES = {
     "q1_training_replication": "training_replication",             # R-128 (the recipe in five independent training lineages)
     "q2_frozen_robustness": "frozen_robustness",                   # R-129 (frozen controllers on a one-factor perturbation panel)
     "recovery_handback_archive": "recovery_handback_audit",        # R-130 (archive-only: failures that follow a healthy hand-back)
+    "recovery_reset_mixture": "reset_mixture",                     # R-133 (JOINT trained on nominal vs mixed nominal / 1.5x resets)
 }
 
 

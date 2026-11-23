@@ -1890,3 +1890,44 @@ research_protocols:
     slow_hit_max: 0.2
     near_hit_min: 0.8
     threshold: 0.06
+  # R-133 (follow-up to D-089; no LLM): five paired blocks from the frozen JOINT controller, 36 ARS updates of its 43
+  # coordinates; `nominal` trains on placements as drawn, `mixed` writes the last 256 of each update's 512 rows at
+  # reset scale 1.5; shared optimizer draws and latent placements (reset_mixture.py). Ten endpoints plus JOINT on twelve
+  # fresh nominal and twelve other fresh manifests under reset scale 1.5.
+  #   python scripts/run_shadowhand_spin_stages.py --study recovery_reset_mixture
+  recovery_reset_mixture:
+    log_dir: "logs/pen_spin/r133_reset_mixture"
+    incumbent_asset: "config/pen_spin/d058_fixed_stroke_incumbent"
+    reference_descriptor: "config/pen_spin/symbolic_reward_reference/reference.json"
+    reference_residual: *d070_selected
+    reference_residual_sha256: *d070_selected_sha256
+    control_dt: 0.016666666666666666
+    pool_seed: 5354
+    actor: *sr_actor
+    normalization_path: "logs/pen_spin/r103_symbolic_reward/normalization.json"
+    normalization_sha256: "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac"
+    root_finalist: "config/pen_spin/r106_success_ars_finalist/finalist.json"
+    root_theta_sha256: "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef"
+    module_bounds: {threshold: [1.0, 6.0], ramp_out: [3.0, 80.0]}
+    joint_asset: "config/pen_spin/r121_joint_finalist/finalist.json"
+    joint_sha256: "1527eb5643a59f9b77858f0dc5852280badd1f6ec012c0efa7c30019c794713c"
+    centre_tolerance: 0.08
+    cases_per_slot: 512
+    updates: 36
+    ars: {nu: 0.1, alpha: 0.05}
+    mixed_rows: 256
+    expanded_scale: 1.5
+    optimizer_seeds: [5344, 5345, 5346, 5347, 5348]
+    placement_seeds: [5349, 5350, 5351, 5352, 5353]
+    smoke_seed: 5344                # the smoke draws optimizer seed 5344's own placement stream, which training never uses
+                                    # (training placements come from the placement seeds); no seed outside the registered list
+    smoke_aa_sd_multiplier: 4.0
+    nominal_confirmation_seeds: [5354, 5355, 5356, 5357, 5358, 5359, 5360, 5361, 5362, 5363, 5364, 5365]
+    expanded_confirmation_seeds: [5366, 5367, 5368, 5369, 5370, 5371, 5372, 5373, 5374, 5375, 5376, 5377]
+    confirmation_cases: 128
+    confirmation_manifest_template: "config/manifests/pen_spin_stage3_resetmix_s{seed}.yaml"
+    threshold: 0.08
+    nominal_margin: 0.03
+    drop_margin: 0.05
+    start_ceiling: 3100000
+    max_minutes: 400

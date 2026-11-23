@@ -295,6 +295,16 @@ def make_controller(name: str, protocol_cfg: dict, out_dir: str | None = None):
 # ---------------------------------------------------------------------------------------------------------------------
 
 
+def mixed_rows(vecs, mix: dict | None) -> np.ndarray:
+    """R-133: the last ``mix["rows"]`` placement rows multiplied by ``mix["scale"]`` (the evaluator's reset-scale
+    semantics); ``None`` leaves the batch as drawn."""
+    if not mix:
+        return vecs
+    out = np.array(vecs, dtype=float, copy=True)
+    out[len(out) - int(mix["rows"]):] *= float(mix["scale"])
+    return out
+
+
 def ars_candidates(x, delta, nu: float, scale=1.0) -> np.ndarray:
     """``scale`` (per coordinate) keeps a widened coordinate's perturbation at its original physical size (R-121)."""
     return np.clip(np.concatenate([x + nu * scale * delta, x - nu * scale * delta]), 0.0, 1.0)
@@ -325,7 +335,7 @@ def _dump(path: str, payload) -> None:
         json.dump(payload, f, indent=1)
 
 
-def run_child(request: dict, stem: str) -> dict:
+def run_child(request: dict, stem: str, module: str = "lares.envs.isaac_pen_spin.recovery_module") -> dict:
     if os.path.exists(request["response_path"]):
         return _load(request["response_path"])
     marker = request["response_path"] + ".started"
@@ -334,7 +344,7 @@ def run_child(request: dict, stem: str) -> dict:
     _dump(stem + ".request.json", request)
     _dump(marker, {"started_at": time.strftime("%Y-%m-%dT%H:%M:%S")})
     with open(stem + ".log", "w", encoding="utf-8") as log:
-        proc = subprocess.run([sys.executable, "-u", "-m", "lares.envs.isaac_pen_spin.recovery_module", stem + ".request.json"],
+        proc = subprocess.run([sys.executable, "-u", "-m", module, stem + ".request.json"],
                               stdout=log, stderr=subprocess.STDOUT, timeout=4 * 3600)
     if proc.returncode != 0 or not os.path.exists(request["response_path"]):
         raise RuntimeError(f"child failed (exit {proc.returncode}); see {stem}.log")
@@ -546,7 +556,8 @@ def _child(req: dict, cfg: dict, device: str) -> dict:
             delta = rng.standard_normal((lay["directions"], draw_dim))[:, :dim]   # arms share the leading coordinates' draws
             cand = ars_candidates(x, delta, float(ars["nu"]), scale)
             raw = np.concatenate([x + float(ars["nu"]) * scale * delta, x - float(ars["nu"]) * scale * delta])
-            vecs = sa.tile(cases.placements(seed, lay["per"] * int(ars["iterations"]))[lay["per"] * u:lay["per"] * (u + 1)], lay["slots"])
+            base = cases.placements(int(req.get("placement_seed", seed)), lay["per"] * int(ars["iterations"]))[lay["per"] * u:lay["per"] * (u + 1)]
+            vecs = sa.tile(mixed_rows(base, req.get("reset_mix")), lay["slots"])
             slot_scores, trig, trig2, drops = [], [], [], []
             for r in range(2):
                 rc = sa.rollout_candidates(cand, r, lay)
