@@ -1,0 +1,149 @@
+{
+  "id": "R-132",
+  "title": "1. Diagnose recovery-training dependence on reset-table reuse",
+  "hypothesis": "Reusing a fixed reset table lets the first recovery module specialize to sampled grasp geometry, whereas refreshing that table improves generalization across training seeds.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "FIXED: matched 12-update recovery training with one reused reset table",
+    "rationale": "Measure REFRESH minus FIXED in six-second sustained success, averaging five paired training blocks equally, with a two-level 95% interval. Five points would explain a substantial part of the stage-B spread in D-088. Unlike that whole-recipe replication, this intervenes only on reset-table reuse at the stage where variance first appears; it does not compare construction schedules."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'source ~/IsaacLab/source_env.sh && python -u scripts/run_shadowhand_spin_stages.py --study recovery_layout_dependence'",
+    "seeds": [
+      5322,
+      5323,
+      5324,
+      5325,
+      5326,
+      5327,
+      5328,
+      5329,
+      5330,
+      5331,
+      5332,
+      5333,
+      5334,
+      5335,
+      5336,
+      5337,
+      5338,
+      5339,
+      5340,
+      5341,
+      5342,
+      5343
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_layout_train_s5327.yaml",
+      "config/manifests/pen_spin_stage3_layout_train_s5328.yaml",
+      "config/manifests/pen_spin_stage3_layout_train_s5329.yaml",
+      "config/manifests/pen_spin_stage3_layout_train_s5330.yaml",
+      "config/manifests/pen_spin_stage3_layout_train_s5331.yaml",
+      "config/manifests/pen_spin_stage3_layout_confirm_s5332.yaml",
+      "config/manifests/pen_spin_stage3_layout_confirm_s5333.yaml",
+      "config/manifests/pen_spin_stage3_layout_confirm_s5334.yaml",
+      "config/manifests/pen_spin_stage3_layout_confirm_s5335.yaml",
+      "config/manifests/pen_spin_stage3_layout_confirm_s5336.yaml",
+      "config/manifests/pen_spin_stage3_layout_confirm_s5337.yaml",
+      "config/manifests/pen_spin_stage3_layout_confirm_s5338.yaml",
+      "config/manifests/pen_spin_stage3_layout_confirm_s5339.yaml",
+      "config/manifests/pen_spin_stage3_layout_confirm_s5340.yaml",
+      "config/manifests/pen_spin_stage3_layout_confirm_s5341.yaml",
+      "config/manifests/pen_spin_stage3_layout_confirm_s5342.yaml",
+      "config/manifests/pen_spin_stage3_layout_confirm_s5343.yaml"
+    ],
+    "episodes": 1010000,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py: register recovery_layout_dependence, reusing training_replication.py training/evaluation helpers and the existing original recovery-module initialization.",
+      "scripts/run_shadowhand_spin_stages.py: begin with an archive-only audit of stage-B placement generation and parameter trajectories, including lineage 2's ramp-out and stroke multiplier; report historical reset reuse without changing the registered comparison.",
+      "scripts/run_shadowhand_spin_stages.py: train five paired FIXED/REFRESH blocks from the identical original module initialization on the unchanged frozen R-106 residual. Use seeds 5322–5326 for optimizer draws and 5327–5331 for placement streams. Both arms share the first table and optimizer draws; FIXED reuses that table, while REFRESH independently redraws nominal placements before subsequent updates. Preserve optimizer settings, parameter bounds, objective and 12-update budget.",
+      "scripts/run_shadowhand_spin_stages.py: freeze terminal means without selection; evaluate ten endpoints, frozen R-106 and frozen JOINT on twelve fresh 128-case manifests. Report paired effects, block variation and drops under the unchanged six-second contract. This is diagnostic, not an incumbent-installation protocol.",
+      "scripts/run_shadowhand_spin_stages.py: cap execution at 1,010,000 simulator starts and 180 minutes, including smoke checks; 120 updates entail 491,520 scored training episodes and approximately 984,000 starts, followed by 18,432 evaluation episodes. Preserve all existing assets and allow no automatic extension."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "rejected",
+  "source": "advisor",
+  "falsified_by": "A 95% interval upper bound below +0.05 refutes the registered magnitude; an upper bound at or below zero refutes the directional mechanism, while an interval spanning zero is inconclusive.",
+  "cost_estimate": {
+    "episodes": 1010000,
+    "llm_calls": 0,
+    "wall_time_minutes": 180
+  },
+  "open_question_refs": [
+    1
+  ],
+  "briefing_sha256": "bdb86f9c48a3136387d9caf215c23d18454d948a5a2d4b6634cf9b9b60d48ada",
+  "proposal_call_id": "call_00312",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-23T15:34:39",
+      "from": "proposed",
+      "to": "rejected",
+      "note": "triage round 2: both say reject"
+    }
+  ],
+  "created_at": "2026-11-23T15:32:12",
+  "direction": "Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT controller. Prioritize independent training reproducibility, then robustness of frozen controllers. Reproduce the successful residual-plus-recovery construction across independent training seeds before claiming a reliable learning algorithm. Evaluate longer horizons and predeclared physical/reset perturbations without fitting. Use archived failures to decide whether recovery hand-back deserves a state-dependent transition study. Then investigate whether LLM-guided construction can discover useful recovery-module structure against grammar search and the hand-designed template under matched budgets. Preserve the original six-second task and evaluation contract. Use JOINT as the experimental reference, preserve all existing assets, and leave default-incumbent installation separate. Run one protocol at a time through the existing advisor/implementer loop. Continue justified follow-ups within this direction; honor its escalation and exhaustion rules. No new global budget ceiling is imposed; each protocol must declare finite simulator, wall-time and model-call costs before agreement. No controller-generation calls for Q1–Q3. Q4 requires a separately agreed generation budget. Advisor calls for the research loop remain permitted throughout.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "Reset-table refresh isolates a plausible source of stage-B training variation without repeating the whole-recipe comparison. Its weakest point is committing 1,010,000 simulator starts, 180 minutes and zero generation calls before establishing whether historical training actually reused reset tables; the included archive audit should gate that spend. The primary contrast measures mean generalization conditional on frozen R-106, not reduced variability of the complete construction recipe. The predicted paired_success_difference increase of at least 0.05 over FIXED is refuted in magnitude if its 95% interval upper bound is below 0.05.",
+          "suggested_changes": [
+            "Make the existing archive-only audit a prerequisite to simulator agreement: establish from archived placement provenance or hashes whether historical and replicated stage-B training reused reset tables across updates, and report the parameter trajectories already requested. If tables were already refreshed, halt and return a revised causal rationale rather than automatically running the comparison.",
+            "Narrow the hypothesis to improved mean held-out sustained success from reset-table refresh on frozen R-106; treat training-block variability as secondary and do not infer improved whole-recipe reproducibility. Otherwise retain the existing script, config, five paired blocks, prediction, free seeds and finite cost caps."
+          ],
+          "priority": 1,
+          "call_id": "call_00313",
+          "briefing_sha256": "02874dd0b122f95f89dc85b85620515131da48c7bd5c02d1f2032e0ab36073b7",
+          "at": "2026-11-23T15:33:19"
+        },
+        "implementer": {
+          "position": "reject",
+          "reasoning": "The audit the advisor makes a prerequisite is already answered by the code and by R-128's frozen record, at zero cost, and it removes the hypothesis's premise: no stage-B training, historical or replicated, reused a reset table. recovery_module's training child draws cases.placements(training_seed, 512 x updates) once and uses rows [512 u : 512 (u+1)] for update u, i.e. 512 fresh placements every update (the same slicing R-106's child uses), and R-128's frozen_config.json records 5 x 72 x 512 = 184,320 training placement hashes checked pairwise distinct. So 'REFRESH' is what every lineage already did, and a FIXED arm would test a procedure nobody ran; a positive REFRESH-minus-FIXED result would say nothing about why stage B varied between 0.576 and 0.712 in D-088. By the advisor's own rule (tables already refreshed -> halt and return a revised rationale) the comparison should not run. The spread is more plausibly ordinary ARS variance over 12 updates of 4 direction pairs with about 0.012 of slot noise per candidate score (R-131's smoke), which five more blocks of the same procedure would only re-measure. I reject the idea as written; a revised rationale would be a new idea.",
+          "changes_applied": [],
+          "at": "2026-11-23T15:33:39"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "reject",
+          "reasoning": "I accept the implementer's audit: update-specific placement slices and 184,320 distinct placement hashes remove the historical reset-reuse premise. Comparing REFRESH with an artificial FIXED arm cannot diagnose the observed stage-B variation, so spending 1,010,000 simulator starts, 180 minutes and zero experiment LLM calls is unjustified. Falsified_by: documented fresh placements at every update defeats the proposed historical explanation; the predicted paired_success_difference increase of 0.05 against FIXED would separately be refuted in magnitude by a 95% upper bound below 0.05. Re-proposal requires evidence of actual reuse or an independently justified question about deliberately imposing reuse.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00314",
+          "briefing_sha256": "904f2032c97104f0d170095c1a48d48681850c5a6f53aae0f46e903243066597",
+          "at": "2026-11-23T15:34:18"
+        },
+        "implementer": {
+          "position": "reject",
+          "reasoning": "Unchanged: stage-B training placements were never reused (512 fresh rows per update in the training child; 184,320 distinct training hashes in R-128's frozen record), so the FIXED-versus-REFRESH contrast tests a procedure no lineage ran and cannot explain D-088's stage-B spread.",
+          "changes_applied": [],
+          "at": "2026-11-23T15:34:39"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "reject",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": []
+}

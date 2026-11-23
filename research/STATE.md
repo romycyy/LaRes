@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-23T15:29:33 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-23T15:35:12 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -11,15 +11,16 @@ Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT 
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 0 |
+| approved | 1 |
 | proposed | 0 |
 | deferred | 30 |
 | decided | 91 |
-| rejected | 10 |
+| rejected | 11 |
 
 ## Needs attention
 
-- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
+- **R-133** [approved] Mixed-reset training of the JOINT controller against matched nominal continuation
+  - `python scripts/research.py start R-133` then run its command
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
@@ -74,11 +75,11 @@ Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT 
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
-- R-131 round 3 · advisor approve / implementer approve → agreed (approved)
-- R-131 round 2 · advisor revise / implementer revise → agreed (proposed)
-- R-131 round 1 · advisor approve / implementer revise → disagreed (proposed)
-- R-130 round 1 · advisor approve / implementer approve → agreed (approved)
-- R-129 round 4 · advisor approve / implementer approve → agreed (approved)
+- R-133 round 3 · advisor approve / implementer approve → agreed (approved)
+- R-133 round 2 · advisor revise / implementer revise → agreed (proposed)
+- R-132 round 2 · advisor reject / implementer reject → agreed (rejected)
+- R-133 round 1 · advisor defer / implementer revise → disagreed (proposed)
+- R-132 round 1 · advisor revise / implementer reject → disagreed (proposed)
 
 ## Standing constraints
 

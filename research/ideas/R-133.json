@@ -1,0 +1,283 @@
+{
+  "id": "R-133",
+  "title": "Mixed-reset training of the JOINT controller against matched nominal continuation",
+  "hypothesis": "Jointly training JOINT's residual and recovery module on nominal and expanded resets broadens capture competence rather than merely extending its nominal-distribution plateau.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.08,
+    "against": "NOMINAL: matched 36-update JOINT continuation trained only on nominal resets",
+    "rationale": "Measure MIXED minus NOMINAL in six-second sustained success on fresh 1.5x-reset cases, averaging three paired training blocks equally with a two-level 95% interval. Eight points would recover a meaningful portion of D-089's 28-point reset deficit. Unlike D-085, the intervention changes training-distribution coverage, not controller capacity or continuation length."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'source ~/IsaacLab/source_env.sh && python -u scripts/run_shadowhand_spin_stages.py --study recovery_reset_mixture'",
+    "seeds": [
+      5344,
+      5345,
+      5346,
+      5347,
+      5348,
+      5349,
+      5350,
+      5351,
+      5352,
+      5353,
+      5354,
+      5355,
+      5356,
+      5357,
+      5358,
+      5359,
+      5360,
+      5361,
+      5362,
+      5363,
+      5364,
+      5365,
+      5366,
+      5367,
+      5368,
+      5369,
+      5370,
+      5371,
+      5372,
+      5373,
+      5374,
+      5375,
+      5376,
+      5377
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_resetmix_s5354.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5355.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5356.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5357.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5358.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5359.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5360.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5361.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5362.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5363.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5364.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5365.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5366.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5367.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5368.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5369.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5370.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5371.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5372.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5373.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5374.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5375.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5376.yaml",
+      "config/manifests/pen_spin_stage3_resetmix_s5377.yaml"
+    ],
+    "episodes": 3100000,
+    "llm_calls": 0,
+    "code_changes": [
+      "lares/envs/isaac_pen_spin/reset_mixture.py (a new study module in the package registry; scripts/run_shadowhand_spin_stages.py --study recovery_reset_mixture; config block in config/shadowhand_spin_stages.yaml): reuse recovery_module's training child and frozen_robustness's conditioned evaluation cells; the launcher holds no training code. One protocol; nothing runs concurrently.",
+      "Initialize ten runs from config/pen_spin/r121_joint_finalist/finalist.json (hash-checked). In five paired blocks, train the existing 43 coordinates for 36 ARS updates under unchanged JOINT bounds, objective, coordinate scaling and step sizes (4 antithetic direction pairs, nu 0.1, alpha 0.05, 512 shared placements per signed candidate). NOMINAL writes all 512 placements at reset scale 1.0. MIXED writes, in every update, the same fixed row allocation: 256 of the 512 shared latent placements at reset scale 1.0 and 256 at 1.5. Both arms of a block share optimizer draws and latent placements: optimizer seeds 5344-5348, placement seeds 5349-5353.",
+      "Apply the existing reset-scale semantics (the placement vector multiplied by the scale) when the training child writes placements. Freeze terminal means without ranking or selection. Evaluate the ten endpoints plus the unchanged frozen JOINT on twelve fresh nominal manifests (seeds 5354-5365) and twelve independently fresh manifests evaluated under reset scale 1.5 (seeds 5366-5377), 128 cases each: 11 policies x 24 manifests = 264 cells, each a fresh process. No D-089 case is used for training or selection.",
+      "Retain the original six-second task and evaluation contract. Primary: MIXED minus NOMINAL sustained success on the fresh expanded-reset cases, the equal-weight mean of the five paired blocks with a two-level 95% interval (blocks and manifests; 4 df); support needs the lower bound >= 0.08, refutation of the magnitude the upper bound < 0.08, an interval containing zero establishes no directional improvement. For usefulness also require, per MIXED endpoint, a positive paired interval against frozen JOINT on expanded resets, nominal-success non-inferiority with margin 0.03, and drop-rate non-inferiority with margin 0.05 in both conditions; correct the declared comparison family with Holm. Report training-block uncertainty separately; five blocks support no reliable-learning-algorithm claim.",
+      "Budget: 360 updates = 1,474,560 scored training episodes plus 33,792 confirmation episodes; at most 3,100,000 simulator starts and 400 minutes including one smoke (at most 17,000 starts: the MIXED row allocation is applied as declared, the JOINT initial point reproduces the frozen asset, scaled rows start further from nominal). Zero experiment LLM calls, no automatic extension, no confirmation-driven retuning, no seed retried. Preserve existing assets; incumbent installation stays separate."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "An expanded-reset 95% interval upper bound below +0.08 refutes the registered magnitude; an upper bound at or below zero refutes the directional mechanism, while an interval spanning zero is inconclusive.",
+  "cost_estimate": {
+    "episodes": 3100000,
+    "llm_calls": 0,
+    "wall_time_minutes": 400
+  },
+  "open_question_refs": [
+    2
+  ],
+  "briefing_sha256": "bdb86f9c48a3136387d9caf215c23d18454d948a5a2d4b6634cf9b9b60d48ada",
+  "proposal_call_id": "call_00312",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-23T15:35:11",
+    "advisor_call_id": "call_00315",
+    "round": 3,
+    "note": "I accept the implementer's revisions to five paired blocks and explicit 256/256 reset allocation, and agree that the invalidated R-132 premise creates no dependency. This tests whether broader training coverage improves expanded-reset capture beyond matched nominal continuation, rather than repeatin"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-23T15:35:11",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    }
+  ],
+  "created_at": "2026-11-23T15:32:12",
+  "direction": "Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT controller. Prioritize independent training reproducibility, then robustness of frozen controllers. Reproduce the successful residual-plus-recovery construction across independent training seeds before claiming a reliable learning algorithm. Evaluate longer horizons and predeclared physical/reset perturbations without fitting. Use archived failures to decide whether recovery hand-back deserves a state-dependent transition study. Then investigate whether LLM-guided construction can discover useful recovery-module structure against grammar search and the hand-designed template under matched budgets. Preserve the original six-second task and evaluation contract. Use JOINT as the experimental reference, preserve all existing assets, and leave default-incumbent installation separate. Run one protocol at a time through the existing advisor/implementer loop. Continue justified follow-ups within this direction; honor its escalation and exhaustion rules. No new global budget ceiling is imposed; each protocol must declare finite simulator, wall-time and model-call costs before agreement. No controller-generation calls for Q1–Q3. Q4 requires a separately agreed generation budget. Advisor calls for the research loop remain permitted throughout.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Changing training-distribution coverage directly addresses the expanded-reset weakness and is distinct from the failed nominal-continuation study. It correctly separates training from fresh frozen robustness evaluation, but its 1,800,000-start, 270-minute, zero-generation-call spend should wait for R-132's analysis rather than receive advance authorization. Three paired blocks limit learning-reliability claims, as the protocol acknowledges. The predicted paired_success_difference increase of at least 0.08 over NOMINAL on expanded resets is refuted in magnitude if its 95% interval upper bound is below 0.08.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00313",
+          "briefing_sha256": "02874dd0b122f95f89dc85b85620515131da48c7bd5c02d1f2032e0ab36073b7",
+          "at": "2026-11-23T15:33:19"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "The study is justified by D-089 and should not wait on R-132, whose premise is void (stage-B tables were never reused; see my R-132 position), so there is nothing for it to depend on. I would approve it with two changes. (1) Five paired blocks instead of three: with three blocks the two-level interval has 2 degrees of freedom (t = 4.30), so even a consistent +0.10 with a block sd of 0.03 gives a half-width of 0.075 and the registered +0.08 could not be supported; D-088 and D-091 were both inconclusive for exactly this reason. Five blocks cost 10 runs x 36 updates = 360 updates (about 2.95 M starts, about 4 h) plus 11 policies x 24 manifests = 264 cells (about 2.1 h): ceiling 3.1 M starts and 400 minutes, zero generation calls. Seeds: optimizer 5344-5348, placements 5349-5353, 24 manifest seeds after them. (2) Implementation notes for the record: the study is a module under lares/envs/isaac_pen_spin (the registry resolves modules there) reusing recovery_module's training child and frozen_robustness's conditioned cells; MIXED means that in every update 256 of the 512 shared placements are written at reset scale 1.0 and 256 at 1.5 (a fixed, predeclared split of the same latent vectors both arms draw), NOMINAL writes all 512 at 1.0; the expanded confirmation is twelve fresh manifests evaluated under the reset_scale 1.5 condition and never used for training.",
+          "changes_applied": [],
+          "at": "2026-11-23T15:33:41"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "I accept that R-132 is not a prerequisite: its premise fails, while expanded-reset training addresses a separate weakness left open by D-089. Five paired blocks and explicit placement-writing semantics are worthwhile, but they improve precision rather than guarantee a decisive magnitude test; D-088 and D-091 already used five blocks. Retain the prediction that MIXED increases paired_success_difference by at least 0.08 against matched NOMINAL continuation on expanded resets, with between-training-block uncertainty as the main limitation. Falsified_by: a 95% upper bound below 0.08 refutes the magnitude, while an interval containing zero establishes no directional improvement.",
+          "suggested_changes": [
+            "Replace three paired blocks with five: ten runs initialized from frozen R-121 JOINT, each receiving the unchanged 36-update, 43-coordinate training procedure; freeze terminal means without selection.",
+            "Use optimizer seeds 5344–5348, placement seeds 5349–5353, nominal confirmation seeds 5354–5365 and expanded confirmation seeds 5366–5377, all absent from the spent ledger. Update the manifest list and remove the dependency on R-132's analysis.",
+            "Reuse scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, with the existing recovery-module training child and frozen-robustness conditioned evaluation helpers. Register the study through the existing module registry rather than placing its training implementation in the launcher.",
+            "Predeclare the same fixed 256/256 row allocation in every update: MIXED writes half the 512 shared latent placements at reset scale 1.0 and half at 1.5; NOMINAL writes all at 1.0. Share optimizer draws and latent placements within each block, and use twelve fresh confirmation manifests per condition, never historical robustness cases.",
+            "Replace the cost declaration with 1,474,560 scored training episodes plus 33,792 confirmation episodes, capped at 3,100,000 total simulator starts and 400 minutes including smoke checks, with zero experiment LLM calls and no automatic extension.",
+            "Preserve equal weighting of the five paired blocks and the two-level 95% interval. Retain the frozen-JOINT expanded-reset improvement requirement, nominal-success non-inferiority margin 0.03, drop-rate non-inferiority margin 0.05 in both conditions, and the predeclared Holm family; preserve the six-second contract, existing assets and separate incumbent-installation decision."
+          ],
+          "priority": 1,
+          "call_id": "call_00314",
+          "briefing_sha256": "904f2032c97104f0d170095c1a48d48681850c5a6f53aae0f46e903243066597",
+          "at": "2026-11-23T15:34:18"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agreed: the advisor's round-2 list is my two changes (five paired blocks with the stated seeds and budget; module in the package registry; the fixed 256/256 row allocation) plus the unchanged inference and adoption rules. I apply them as written.",
+          "changes_applied": [],
+          "at": "2026-11-23T15:34:41"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the implementer's revisions to five paired blocks and explicit 256/256 reset allocation, and agree that the invalidated R-132 premise creates no dependency. This tests whether broader training coverage improves expanded-reset capture beyond matched nominal continuation, rather than repeating nominal-distribution tuning. The prediction is a paired_success_difference increase of at least 0.08 against NOMINAL on expanded resets, falsified in magnitude by a 95% upper bound below 0.08; five blocks remain the weakest point, and an interval containing zero establishes no directional improvement. The revised protocol justifies at most 3,100,000 simulator starts, 400 minutes and zero experiment LLM calls, without supporting a reliable-learning-algorithm claim or authorizing incumbent installation.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00315",
+          "briefing_sha256": "22fddd49b76167f04599c9822471fd87975e2db08715f882f0054c1028848512",
+          "at": "2026-11-23T15:35:02"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve the revised protocol: five paired blocks of JOINT continuation that differ only in the reset scale of half the training rows, shared optimizer draws and latent placements, terminal means frozen without selection, fresh nominal and fresh expanded confirmation with the frozen JOINT as reference, 3.1 M starts and 400 minutes, no model calls. It is the separate training-distribution study D-089 called for.",
+          "changes_applied": [],
+          "at": "2026-11-23T15:35:11"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 3
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-23T15:34:43",
+      "round": 2,
+      "patch": {
+        "title": "Mixed-reset training of the JOINT controller against matched nominal continuation",
+        "protocol": {
+          "code_changes": [
+            "lares/envs/isaac_pen_spin/reset_mixture.py (a new study module in the package registry; scripts/run_shadowhand_spin_stages.py --study recovery_reset_mixture; config block in config/shadowhand_spin_stages.yaml): reuse recovery_module's training child and frozen_robustness's conditioned evaluation cells; the launcher holds no training code. One protocol; nothing runs concurrently.",
+            "Initialize ten runs from config/pen_spin/r121_joint_finalist/finalist.json (hash-checked). In five paired blocks, train the existing 43 coordinates for 36 ARS updates under unchanged JOINT bounds, objective, coordinate scaling and step sizes (4 antithetic direction pairs, nu 0.1, alpha 0.05, 512 shared placements per signed candidate). NOMINAL writes all 512 placements at reset scale 1.0. MIXED writes, in every update, the same fixed row allocation: 256 of the 512 shared latent placements at reset scale 1.0 and 256 at 1.5. Both arms of a block share optimizer draws and latent placements: optimizer seeds 5344-5348, placement seeds 5349-5353.",
+            "Apply the existing reset-scale semantics (the placement vector multiplied by the scale) when the training child writes placements. Freeze terminal means without ranking or selection. Evaluate the ten endpoints plus the unchanged frozen JOINT on twelve fresh nominal manifests (seeds 5354-5365) and twelve independently fresh manifests evaluated under reset scale 1.5 (seeds 5366-5377), 128 cases each: 11 policies x 24 manifests = 264 cells, each a fresh process. No D-089 case is used for training or selection.",
+            "Retain the original six-second task and evaluation contract. Primary: MIXED minus NOMINAL sustained success on the fresh expanded-reset cases, the equal-weight mean of the five paired blocks with a two-level 95% interval (blocks and manifests; 4 df); support needs the lower bound >= 0.08, refutation of the magnitude the upper bound < 0.08, an interval containing zero establishes no directional improvement. For usefulness also require, per MIXED endpoint, a positive paired interval against frozen JOINT on expanded resets, nominal-success non-inferiority with margin 0.03, and drop-rate non-inferiority with margin 0.05 in both conditions; correct the declared comparison family with Holm. Report training-block uncertainty separately; five blocks support no reliable-learning-algorithm claim.",
+            "Budget: 360 updates = 1,474,560 scored training episodes plus 33,792 confirmation episodes; at most 3,100,000 simulator starts and 400 minutes including one smoke (at most 17,000 starts: the MIXED row allocation is applied as declared, the JOINT initial point reproduces the frozen asset, scaled rows start further from nominal). Zero experiment LLM calls, no automatic extension, no confirmation-driven retuning, no seed retried. Preserve existing assets; incumbent installation stays separate."
+          ],
+          "seeds": [
+            5344,
+            5345,
+            5346,
+            5347,
+            5348,
+            5349,
+            5350,
+            5351,
+            5352,
+            5353,
+            5354,
+            5355,
+            5356,
+            5357,
+            5358,
+            5359,
+            5360,
+            5361,
+            5362,
+            5363,
+            5364,
+            5365,
+            5366,
+            5367,
+            5368,
+            5369,
+            5370,
+            5371,
+            5372,
+            5373,
+            5374,
+            5375,
+            5376,
+            5377
+          ],
+          "manifests": [
+            "config/manifests/pen_spin_stage3_resetmix_s5354.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5355.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5356.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5357.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5358.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5359.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5360.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5361.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5362.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5363.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5364.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5365.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5366.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5367.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5368.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5369.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5370.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5371.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5372.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5373.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5374.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5375.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5376.yaml",
+            "config/manifests/pen_spin_stage3_resetmix_s5377.yaml"
+          ],
+          "episodes": 3100000
+        },
+        "cost_estimate": {
+          "episodes": 3100000,
+          "llm_calls": 0,
+          "wall_time_minutes": 400
+        }
+      },
+      "note": "Agreed round-2 changes: five paired blocks, stated seeds and manifests, package module, fixed 256/256 allocation, 3.1 M starts / 400 minutes"
+    }
+  ]
+}
