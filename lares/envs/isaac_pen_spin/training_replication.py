@@ -136,7 +136,7 @@ def divergent(stage: str, train: dict, bound: float) -> str | None:
     if not np.isfinite(v).all():
         return "non-finite terminal mean"
     lo, hi = (-bound, bound) if stage == "A" else (0.0, 1.0)
-    if v.min() < lo - 1e-9 or v.max() > hi + 1e-9:
+    if v.min() < lo - 1e-6 or v.max() > hi + 1e-6:          # a coefficient clipped at its bound is stored as float32
         return "terminal mean outside its range"
     return None
 
@@ -421,7 +421,10 @@ def run_child(kind: str, request: dict, stem: str, ledger: Ledger, key: str) -> 
     most ``MAX_RERUNS`` times, each attempt logged and its starts charged. ``None`` when every attempt died."""
     if os.path.exists(request["response_path"]):
         print("exists", request["response_path"], flush=True)
-        return rm._load(request["response_path"])
+        out = rm._load(request["response_path"])
+        if key not in ledger.data["starts"]:                 # finished after its driver stopped: charged on reuse
+            ledger.charge(key, int(out["starts"]), float(out.get("wall_time_s", 0.0)))
+        return out
     rm._dump(stem + ".request.json", request)
     for attempt in range(1 + MAX_RERUNS):
         log = f"{stem}.log" if attempt == 0 else f"{stem}.attempt{attempt + 1}.log"

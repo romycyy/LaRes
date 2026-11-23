@@ -89,6 +89,7 @@ class TestPlan(unittest.TestCase):
 
     def test_divergence(self):
         self.assertIsNone(tr.divergent("A", {"final_theta": [0.1] * 32}, 0.10))
+        self.assertIsNone(tr.divergent("A", {"final_theta": sr.theta_record([-0.10] * 32)}, 0.10))   # float32 of the bound
         self.assertIsNotNone(tr.divergent("A", {"final_theta": [0.2] * 32}, 0.10))
         self.assertIsNotNone(tr.divergent("B", {"final_x": [float("nan")] * 11}, 0.10))
         self.assertIsNone(tr.divergent("D", {"final_x": [0.0, 1.0] + [0.5] * 41}, 0.10))
@@ -162,6 +163,15 @@ class TestRerunRule(unittest.TestCase):
         self.assertEqual(res["starts"], 98000)
         self.assertEqual(ledger.data["starts"], {"L0_B:died": 8200, "L0_B": 98000})
         self.assertEqual([a["ok"] for a in ledger.data["attempts"]], [False, True])
+
+    def test_a_finished_response_is_reused_and_charged_once(self):
+        with tempfile.TemporaryDirectory() as out:
+            ledger = tr.Ledger(os.path.join(out, "accounting.json"), 10 ** 6, 60)
+            req = {"response_path": os.path.join(out, "train_A.json")}
+            rm._dump(req["response_path"], {"starts": 98000, "wall_time_s": 5.0})
+            for _ in range(2):
+                self.assertEqual(tr.run_child("A", req, os.path.join(out, "train_A"), ledger, "L1_A")["starts"], 98000)
+            self.assertEqual(ledger.data["starts"], {"L1_A": 98000})
 
     def test_three_deaths_end_the_stage(self):
         res, ledger = self._run([134, 134, 134])
