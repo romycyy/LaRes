@@ -809,6 +809,16 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   **Training-distribution coverage is not the lever for the wide-reset weakness in this controller family**; JOINT
   does not move under ARS continuation on either distribution (as in D-085). R-132 (reset-table reuse as the source of
   stage-B variance) was rejected at triage: every update already draws 512 fresh placements.
+- **R-134 / R-135 results (D-093 refuted, D-094 inconclusive; archive-only follow-ups, 2026-11-23).**
+  `stage_b_release_audit.py` (`--study stage_b_release_audit`): R-128's weak lineage shows no extra rolling
+  improvement at the end of recovery support (-0.037 [-0.064, -0.011] against +0.10); all five stage-B modules have
+  long ramp-outs, so lineage 2 is not distinctive there. `reset_geometry_audit.py` (`--study reset_geometry_audit`;
+  initial geometry reconstructed from the placement vector times the reset scale): the registered transverse-quartile
+  contrast for frozen JOINT at 1.5x resets is -0.056 [-0.177, +0.064] (512 cases) and -0.172 [-0.239, -0.105] in a
+  separate 1,536-case replication. **Unregistered but identical in both archives: success falls with the pen's
+  initial tilt, 0.81 / 0.59 / 0.38 / 0.16 across tilt quartiles, while axial displacement is flat**; the wide-reset
+  weakness looks like an initial-orientation effect and needs a prospective test. R-136 (selector audit of R-131) was
+  rejected: selection scores exist only for pre-continuation branches, never for the frozen finalists.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

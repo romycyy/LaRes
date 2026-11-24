@@ -1,0 +1,125 @@
+{
+ "study": "reset_geometry_audit",
+ "simulation": "none",
+ "units": "displacements in units of the env's reset position noise; tilt in radians",
+ "reconstruction": "placement vector x reset scale, as runner._write_placements writes it; not a recorded state",
+ "success_rate": -0.05643893356439314,
+ "success_rate_ci95": [
+  -0.17679068634601877,
+  0.06391281921723249
+ ],
+ "verdict": "inconclusive",
+ "threshold": -0.15,
+ "archives": {
+  "r129": {
+   "cases": 512,
+   "success": 0.486328125,
+   "standardized": {
+    "shared_strata": 9,
+    "strata": 9,
+    "coverage": 1.0,
+    "high_cases": 128,
+    "low_cases": 128,
+    "difference": -0.05643893356439314,
+    "ci95": [
+     -0.17679068634601877,
+     0.06391281921723249
+    ],
+    "verdict": "inconclusive"
+   },
+   "unstandardized_high_minus_low_transverse": -0.0703125,
+   "success_by_quartile": {
+    "transverse": [
+     0.515625,
+     0.53125,
+     0.453125,
+     0.4453125
+    ],
+    "axial": [
+     0.4296875,
+     0.484375,
+     0.4765625,
+     0.5546875
+    ],
+    "tilt": [
+     0.8125,
+     0.59375,
+     0.3828125,
+     0.15625
+    ]
+   },
+   "quartile_edges": {
+    "axial": [
+     0.32700244945609624,
+     0.6702112158032917,
+     1.01252064442503
+    ],
+    "transverse": [
+     0.8275485456334204,
+     1.1572418854482975,
+     1.4783714534348371
+    ],
+    "tilt": [
+     0.6412545605814062,
+     0.9499100254701927,
+     1.1443576876792794
+    ]
+   }
+  },
+  "r133": {
+   "cases": 1536,
+   "success": 0.4622395833333333,
+   "standardized": {
+    "shared_strata": 9,
+    "strata": 9,
+    "coverage": 1.0,
+    "high_cases": 384,
+    "low_cases": 384,
+    "difference": -0.17175193641664244,
+    "ci95": [
+     -0.23852675821408187,
+     -0.104977114619203
+    ],
+    "verdict": "inconclusive"
+   },
+   "unstandardized_high_minus_low_transverse": -0.15625,
+   "success_by_quartile": {
+    "transverse": [
+     0.5234375,
+     0.5026041666666666,
+     0.4557291666666667,
+     0.3671875
+    ],
+    "axial": [
+     0.4557291666666667,
+     0.4296875,
+     0.515625,
+     0.4479166666666667
+    ],
+    "tilt": [
+     0.8151041666666666,
+     0.5260416666666666,
+     0.3255208333333333,
+     0.18229166666666666
+    ]
+   },
+   "quartile_edges": {
+    "axial": [
+     0.3318646272819365,
+     0.6849755162691955,
+     1.0925243167791292
+    ],
+    "transverse": [
+     0.7965662566401599,
+     1.1315451992853185,
+     1.438962572345677
+    ],
+    "tilt": [
+     0.6708496257657368,
+     0.9372517982466266,
+     1.1439437188540704
+    ]
+   }
+  }
+ }
+}

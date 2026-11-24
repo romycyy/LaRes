@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-23T21:27:54 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-23T21:28:52 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -11,16 +11,15 @@ Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT 
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 1 |
+| approved | 0 |
 | proposed | 0 |
 | deferred | 30 |
-| decided | 93 |
+| decided | 94 |
 | rejected | 12 |
 
 ## Needs attention
 
-- **R-135** [approved] 2. Localize frozen JOINT's reset weakness without another rollout
-  - `python scripts/research.py start R-135` then run its command
+- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
@@ -57,6 +56,9 @@ Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT 
 
 ## Last 5 decisions
 
+- D-094 · R-135 · **inconclusive** · 2026-11-23
+  Archive-only audit of the frozen JOINT controller at 1.5x resets by reconstructed initial geometry. Registered: standardized highest-minus-lowest transverse-displacement quartile success -0.056 [-0.177, +0.064] on R-129's 512 cases (inconclusive against -0.15); separate replication on R-133's 1,536 cases -0.172 [-0.239, -0.105]. Descriptive and identical in both archives: success falls with the pen's initial tilt, 0.81 / 0.59 / 0.38 / 0.16 and 0.82 / 0.53 / 0.33 / 0.18 across tilt quartiles, while axial displacement is flat; the wide-reset weakness of D-089 is mostly an initial-orientation effect (unregistered; needs a prospective test). No episode was run.
+  Next: The wide-reset weakness looks like an initial-orientation effect; that is a new mechanism to test prospectively (for example frozen JOINT on resets that scale tilt and position separately) and, if it holds, a capture-authority question beyond this direction's scope. Hand the choice of direction back to the user.
 - D-093 · R-134 · **refuted** · 2026-11-23
   Archive-only audit of R-128's stage-B cells: among re-captured episodes the rolling-step fraction rises across the end of recovery support by 0.166 / 0.321 / 0.186 / 0.092 / 0.313 in lineages 0-4; the weak lineage 2 minus the mean of the others is -0.037 [-0.064, -0.011] against a predicted +0.10: refuted. All five stage-B modules have long ramp-outs and stroke multipliers near 1, so lineage 2 is not distinctive at that stage. No episode was run.
   Next: Do not pursue support-release explanations of the Q1 variance. Run the already approved R-135 archive audit, then let the loop's exhaustion rule return the decision to the user.
@@ -69,9 +71,6 @@ Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT 
 - D-090 · R-130 · **refuted** · 2026-11-23
   Q3 of direction V2, first spend (archive only, no episode): the archived JOINT and transplant cells of R-124 and R-126 aligned to the frozen module's decision (step 149, reconstructed per case from the trace), the end of its support (183) and the end of its stroke boost (243). Failures that follow a healthy hand-back within 30 steps are 48 of 3,072 JOINT cases (0.0156 [0.011, 0.020]) and 67 of 4,096 (0.0164 [0.012, 0.020]), the transplant 40 of 4,096, against a 0.06 gate; 0.018-0.021 even with a 60-step window. Q3 closes without a hand-back simulation. JOINT's failures are elsewhere: 7.8% of cases fail untriggered (mostly early drops), 7.2% trigger and roll again but are not rolling steadily when support and boost end, 3.2% trigger and never roll again. Trigger flags are reconstructed (stable under one-step re-indexing; no cell exceeds its recorded count).
   Next: Close Q3. The archive points elsewhere: 7.2% of cases trigger and re-capture without reaching steady rolling by the end of support and boost, 3.2% trigger and never roll again, 7.8% fail untriggered (mostly early drops). Move to Q4 (LLM vs grammar construction of the recovery module) with a separately agreed generation budget; R-129's reset-distribution weakness is a separate training-distribution question.
-- D-089 · R-129 · **supported** · 2026-11-23
-  Q2 of direction V2: four frozen controllers (R-121 JOINT, the R-126 transplant, D-072, the PPO expert) on a predeclared one-factor panel, 204 cells on ten fresh manifests, no fitting (frozen_robustness.py). Primary: JOINT at 0.8x pen friction minus nominal JOINT -0.015 [-0.035, +0.005] over 1,280 pairs, inside the -0.05 margin (non-inferiority supported; not an improvement). Horizons: no retention loss, JOINT's terminal success 0.775 at 12 s and 0.781 at 30 s against 0.766 on the first six seconds, no drop after second 4. Mass, friction, radius and length at +/-10-20% leave JOINT within -0.023 to +0.041 of nominal (512 pairs each, nothing Holm-significant). The expanded reset distribution (1.5x) is the weakness: JOINT 0.770 -> 0.486 (-0.281 [-0.331, -0.232]), transplant -0.322, D-072 -0.141, PPO -0.125. The transplant is within +/-0.035 of JOINT in every condition. PPO 0.994 nominal, 0.887 at 0.9x length. Re-capture trigger counts are unavailable in evaluation cells.
-  Next: The robustness gap is capture from wider resets, not dynamics or retention. That is a training-distribution question (propose separately, never retune on this panel). Proceed to Q3's archive-only diagnosis of recovery hand-back on JOINT/transplant traces, noting that evaluation cells do not record trigger events.
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 

@@ -26,7 +26,7 @@
     "needs_gpu": false,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The lower 95% interval bound on high-minus-low standardized success is above -0.15. Failure of common support or unavailable initial-state records makes the audit inconclusive rather than permitting replacement rollouts.",
   "cost_estimate": {
@@ -46,17 +46,201 @@
     "round": 3,
     "note": "I accept the corrected study entry point, reconstructed initial geometry and separately reported R-133 replication; this localizes frozen JOINT's reset weakness descriptively rather than repeating D-092's training intervention. Its weakest point remains sparse common support, and neither association"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-11-23T21:27:59",
+    "git_sha": "093247c1220b810d3a552d106005f638d813266e",
+    "dirty_worktree": false,
+    "log_dir": "logs/pen_spin/r135_reset_geometry",
+    "finished_at": "2026-11-23T21:28:33"
+  },
+  "result": {
+    "metrics": {
+      "success_rate": -0.05643893356439314,
+      "success_rate_ci95": [
+        -0.17679068634601877,
+        0.06391281921723249
+      ],
+      "registered_verdict_rule": "inconclusive",
+      "threshold": -0.15,
+      "replication_r133": {
+        "difference": -0.17175193641664244,
+        "ci95": [
+          -0.23852675821408187,
+          -0.104977114619203
+        ],
+        "verdict": "inconclusive"
+      },
+      "success_by_quartile": {
+        "r129": {
+          "transverse": [
+            0.515625,
+            0.53125,
+            0.453125,
+            0.4453125
+          ],
+          "axial": [
+            0.4296875,
+            0.484375,
+            0.4765625,
+            0.5546875
+          ],
+          "tilt": [
+            0.8125,
+            0.59375,
+            0.3828125,
+            0.15625
+          ]
+        },
+        "r133": {
+          "transverse": [
+            0.5234375,
+            0.5026041666666666,
+            0.4557291666666667,
+            0.3671875
+          ],
+          "axial": [
+            0.4557291666666667,
+            0.4296875,
+            0.515625,
+            0.4479166666666667
+          ],
+          "tilt": [
+            0.8151041666666666,
+            0.5260416666666666,
+            0.3255208333333333,
+            0.18229166666666666
+          ]
+        }
+      },
+      "unstandardized_high_minus_low_transverse": {
+        "r129": -0.0703125,
+        "r133": -0.15625
+      }
+    },
+    "controls": {
+      "support": {
+        "r129": {
+          "shared_strata": 9,
+          "strata": 9,
+          "coverage": 1.0,
+          "high_cases": 128,
+          "low_cases": 128
+        },
+        "r133": {
+          "shared_strata": 9,
+          "strata": 9,
+          "coverage": 1.0,
+          "high_cases": 384,
+          "low_cases": 384
+        }
+      },
+      "cases": {
+        "r129": 512,
+        "r133": 1536
+      },
+      "overall_success": {
+        "r129": 0.486328125,
+        "r133": 0.4622395833333333
+      },
+      "quartile_edges": {
+        "r129": {
+          "axial": [
+            0.32700244945609624,
+            0.6702112158032917,
+            1.01252064442503
+          ],
+          "transverse": [
+            0.8275485456334204,
+            1.1572418854482975,
+            1.4783714534348371
+          ],
+          "tilt": [
+            0.6412545605814062,
+            0.9499100254701927,
+            1.1443576876792794
+          ]
+        },
+        "r133": {
+          "axial": [
+            0.3318646272819365,
+            0.6849755162691955,
+            1.0925243167791292
+          ],
+          "transverse": [
+            0.7965662566401599,
+            1.1315451992853185,
+            1.438962572345677
+          ],
+          "tilt": [
+            0.6708496257657368,
+            0.9372517982466266,
+            1.1439437188540704
+          ]
+        }
+      },
+      "reconstruction": "placement vector x reset scale, as runner._write_placements writes it; not a recorded state",
+      "units": "displacements in units of the env's reset position noise; tilt in radians"
+    },
+    "artifacts": [
+      "logs/pen_spin/r135_reset_geometry/summary.json"
+    ],
+    "notes": "Archive only; no episode, no model call; definitions committed (867bf43) before the audit ran; initial geometry is reconstructed from the manifest placement vectors times the 1.5 reset scale, not recorded. REGISTERED (primary archive, R-129's 512 frozen-JOINT cases at 1.5x): success in the highest transverse-displacement quartile minus the lowest, standardized over all nine axial x tilt strata (full common support): -0.056, 95% interval [-0.177, +0.064]. It spans both zero and -0.15: INCONCLUSIVE. The predeclared separate replication (R-133's 1,536 frozen-JOINT cases at 1.5x): -0.172 [-0.239, -0.105], a clear deficit whose interval still spans -0.15, so the registered magnitude is not established there either; the two archives are not pooled. NOT REGISTERED, descriptive, identical in both archives: the failures track the pen's initial TILT far more than its displacement. Success by tilt quartile (lowest to highest): 0.812 / 0.594 / 0.383 / 0.156 in R-129 and 0.815 / 0.526 / 0.326 / 0.182 in R-133; by transverse quartile 0.516 / 0.531 / 0.453 / 0.445 and 0.523 / 0.503 / 0.456 / 0.367; by axial quartile it is flat (0.43-0.56 and 0.43-0.52). So at 1.5x resets the frozen JOINT keeps its nominal success (about 0.8) on the least-tilted quarter of cases and fails five times in six on the most-tilted quarter; the wide-reset weakness of D-089 is mostly an initial-orientation effect. This was not the registered hypothesis and is an association over reconstructed geometry; it needs its own prospective test before it is relied on."
+  },
+  "prediction_outcome": {
+    "metric": "success_rate",
+    "before": null,
+    "after": -0.05643893356439314,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.85,
+      "reasoning": "By the frozen rule the primary archive gives -0.056 [-0.177, +0.064] for the standardized highest-minus-lowest transverse-quartile success: it spans both zero and the registered -0.15. The separate 1,536-case replication gives -0.172 [-0.239, -0.105], a real deficit that still spans -0.15, and the archives are not pooled. The transverse-boundary hypothesis is therefore not established at its registered size. The unregistered, descriptive pattern is much larger and replicates exactly: success falls with initial tilt from about 0.81 to about 0.17 across quartiles in both archives, while axial displacement is flat.",
+      "cited_artifacts": [],
+      "next_experiment": "The wide-reset weakness looks like an initial-orientation effect; that is a new mechanism to test prospectively (for example frozen JOINT on resets that scale tilt and position separately) and, if it holds, a capture-authority question beyond this direction's scope. Hand the choice of direction back to the user.",
+      "recorded_at": "2026-11-23T21:28:36",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 0.99,
+      "reasoning": "The named lowest-quartile control was measured, and both archives retained all nine strata with full common-support coverage [logs/pen_spin/r135_reset_geometry/summary.json]. The primary standardized high-minus-low success_rate was -0.0564, with a 95% interval of [-0.1768, +0.0639]; it includes zero, so it provides no evidence of a directional difference [logs/pen_spin/r135_reset_geometry/summary.json]. That interval also crosses -0.15, satisfying neither the registered support rule nor the falsification rule [logs/pen_spin/r135_reset_geometry/summary.json]. The separately reported replication shows a deficit of -0.1718 [-0.2385, -0.1050], but its interval also crosses -0.15, leaving the predicted magnitude unresolved without pooling or substituting archives [logs/pen_spin/r135_reset_geometry/summary.json]. The descriptive tilt gradient does not establish that initial orientation causes most of the expanded-reset weakness [logs/pen_spin/r135_reset_geometry/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r135_reset_geometry/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-23T21:28:51",
+      "call_id": "call_00323"
+    }
+  ],
+  "decision_id": "D-094",
   "history": [
     {
       "at": "2026-11-23T21:26:27",
       "from": "proposed",
       "to": "approved",
       "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-23T21:27:59",
+      "from": "approved",
+      "to": "running",
+      "note": "git 093247c122"
+    },
+    {
+      "at": "2026-11-23T21:28:33",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-23T21:28:52",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-094: inconclusive"
     }
   ],
   "created_at": "2026-11-23T21:21:29",
