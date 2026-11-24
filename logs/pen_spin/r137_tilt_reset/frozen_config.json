@@ -1,0 +1,215 @@
+{
+ "config_sha256": "713ce99d727868494342b36a6272439a587d9eff7fcd617008c4782184b614ed",
+ "config": {
+  "actor": {
+   "bound": 0.1,
+   "cap": 0.1,
+   "coefficients": 32,
+   "feature_clip_sigmas": 3.0,
+   "rms_floor_posture": 0.01,
+   "rms_floor_velocity": 0.05,
+   "spin_target": 7.0
+  },
+  "assets": {
+   "joint": {
+    "path": "config/pen_spin/r121_joint_finalist/finalist.json",
+    "sha256": "1527eb5643a59f9b77858f0dc5852280badd1f6ec012c0efa7c30019c794713c"
+   },
+   "transplant": {
+    "path": "config/pen_spin/r126_transplant_finalist/finalist.json",
+    "sha256": "9e17b365c5176cc0a9e4adee77cf4d87d055d8982672d60a8478c446b2fe5415"
+   }
+  },
+  "cases": 128,
+  "centre_tolerance": 0.08,
+  "checkpoint": "logs/pen_spin/r040_ppo_expert/train/model_8239.pt",
+  "checkpoint_sha256": "f81be523a51cc5bb8bd095d5ed208ba8dd227a37ca05d5dc78283a24d89985d7",
+  "conditions": {
+   "full": {
+    "reset_other_scale": 1.5,
+    "reset_tilt_scale": 1.5
+   },
+   "nominal": {},
+   "position_only": {
+    "reset_other_scale": 1.5
+   },
+   "tilt_only": {
+    "reset_tilt_scale": 1.5
+   }
+  },
+  "control_dt": 0.016666666666666666,
+  "drop_margin": 0.05,
+  "expert_seed": 4020,
+  "incumbent_asset": "config/pen_spin/d058_fixed_stroke_incumbent",
+  "log_dir": "logs/pen_spin/r137_tilt_reset",
+  "manifest_template": "config/manifests/pen_spin_stage3_tilt_s{seed}.yaml",
+  "module_bounds": {
+   "ramp_out": [
+    3.0,
+    80.0
+   ],
+   "threshold": [
+    1.0,
+    6.0
+   ]
+  },
+  "normalization_path": "logs/pen_spin/r103_symbolic_reward/normalization.json",
+  "normalization_sha256": "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac",
+  "panel_seeds": [
+   5378,
+   5379,
+   5380,
+   5381
+  ],
+  "pool_seed": 5378,
+  "reference_descriptor": "config/pen_spin/symbolic_reward_reference/reference.json",
+  "reference_residual": {
+   "cap": 0.10269089387249905,
+   "deadband": 0.2333555721435132,
+   "gain": 0.004655481049180921,
+   "tau": 0.18501188209260944
+  },
+  "reference_residual_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1",
+  "root_finalist": "config/pen_spin/r106_success_ars_finalist/finalist.json",
+  "root_theta_sha256": "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef",
+  "threshold": 0.15
+ },
+ "reference": {
+  "name": "d072_qualified_reference",
+  "decisions": [
+   "D-058",
+   "D-070",
+   "D-072"
+  ],
+  "construction": "JointMotionResidual(reference_residual, incumbent_asset): clamp(incumbent + 2 clip(g sign(v_f) max(|v_f| - v0, 0), -b, b) / (hi - lo), -1, 1)",
+  "incumbent_asset": "config/pen_spin/d058_fixed_stroke_incumbent",
+  "incumbent_json_sha256": "1ffcbece3d2f18b35f89461d1079b579f21891fc7f7f8576c3feb217ea711c9c",
+  "incumbent_files": {
+   "parent_source.py": "40782dcdf5a95589d0b34062919728fa92d4e5760fce890e3bd98833285e602d",
+   "state.pt": "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22",
+   "evaluated_source.py": "fdc1da8e2811d94c5bcd1bda2f0e97625a6ea805452e56d65726e587a418c062",
+   "constant_gain.json": "dacec45947d56133b39ca0edb773df4660d73768c0814e85d180e5423b1fcb69"
+  },
+  "stroke_gain_constant": 1.4081491479357957,
+  "residual_params": {
+   "gain": 0.004655481049180921,
+   "deadband": 0.2333555721435132,
+   "tau": 0.18501188209260944,
+   "cap": 0.10269089387249905
+  },
+  "residual_params_sha256": "2a509ef5ffc148cab2a513bc2c7339cca9a620b50dec2f7a988fd2b041c58cd1",
+  "residual_source_sha256": "0dc215bb762295319f273c70242beefbbcabe7e8baf4670fbe64586482318b4e"
+ },
+ "assets": {
+  "d072": {
+   "descriptor": "config/pen_spin/symbolic_reward_reference/reference.json",
+   "sha256": "42190ff0b2ef40859d733b5a8989f2854860c793a9fce5b93eed63dfb809af3f",
+   "incumbent_files": {
+    "parent_source.py": "40782dcdf5a95589d0b34062919728fa92d4e5760fce890e3bd98833285e602d",
+    "state.pt": "c61ecd5142a45c25311a80592d5e29a5edc540bde87248efa30d7771c0380f22",
+    "evaluated_source.py": "fdc1da8e2811d94c5bcd1bda2f0e97625a6ea805452e56d65726e587a418c062",
+    "constant_gain.json": "dacec45947d56133b39ca0edb773df4660d73768c0814e85d180e5423b1fcb69"
+   }
+  },
+  "root_residual": {
+   "path": "config/pen_spin/r106_success_ars_finalist/finalist.json",
+   "sha256": "cab640259df407ce98c2c286f4331f7017ce8145ee36e3eeb2ed1b82fbea9982",
+   "theta_sha256": "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef"
+  },
+  "ppo": {
+   "checkpoint": "logs/pen_spin/r040_ppo_expert/train/model_8239.pt",
+   "sha256": "f81be523a51cc5bb8bd095d5ed208ba8dd227a37ca05d5dc78283a24d89985d7",
+   "seed": 4020
+  },
+  "normalization": {
+   "path": "logs/pen_spin/r103_symbolic_reward/normalization.json",
+   "sha256": "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac"
+  },
+  "joint": {
+   "path": "config/pen_spin/r121_joint_finalist/finalist.json",
+   "file_sha256": "fd419fd9293f9cee3b368271f7ad36e1c1bd74ba1e04e06b2869cd5c0aabe961",
+   "module_sha256": "1527eb5643a59f9b77858f0dc5852280badd1f6ec012c0efa7c30019c794713c",
+   "coordinates": 43,
+   "decision_step": 149.08168512240468
+  },
+  "transplant": {
+   "path": "config/pen_spin/r126_transplant_finalist/finalist.json",
+   "file_sha256": "a3a39e8d817c4d643ab73f1f452572da5c75239b01fe8982d2d6ffd0da455010",
+   "module_sha256": "9e17b365c5176cc0a9e4adee77cf4d87d055d8982672d60a8478c446b2fe5415",
+   "coordinates": 11,
+   "decision_step": 149.08168512240468
+  },
+  "code": {
+   "runner.py": "ba462aa6e8abf8bce20d5cc3bfcda5def4ae11fa54e493cfa77adbc1c4a35c6f",
+   "protocols.py": "e6d2b1ea8cab47734e176438a352443640ffbc506cee806d7d254dd8182d493b",
+   "cases.py": "f0ba4595eb95be369473acc1d8d170229aa54f7e8757d5bc304557fe20c7b01f",
+   "recovery_module.py": "934304492f4a7a20d4b4f56ca74b522fcd8e51d385642e8161a86f2ca6ccd166",
+   "symbolic_reward.py": "8de3ff3d430f24ae163e172dc1dfeb8673844d732c70da053364950902d3552a",
+   "ppo_expert.py": "e4fc77d3a92a9125ee1e8c1c3de63125beab69f0313dade42f2873cb78044ec7",
+   "shadow_hand_spin_env.py": "9ef7f0033a76813c87d8285769a811eaa07b58a5576bb35764374a0a694fc922",
+   "shadow_hand_spin_env_cfg.py": "5a1c458e31bfec363e9160b5150b66414db7be9df4b5aed7f15d83b0d93f1e4e",
+   "frozen_robustness.py": "6841f293a719c030a5ecd9c028ead93e21446679895f71fc0a59ce0f5b2a8a01"
+  }
+ },
+ "manifests": {
+  "5378": {
+   "path": "config/manifests/pen_spin_stage3_tilt_s5378.yaml",
+   "sha256": "db73f9014b279a6b7e279f9281096781b0f15e2b7b40f8ab64fde0aac7dd17d0"
+  },
+  "5379": {
+   "path": "config/manifests/pen_spin_stage3_tilt_s5379.yaml",
+   "sha256": "fa16fa1c3f1984e742bbd90cae6c3ed3b2763ad744818337d0a3b6bd2a89dbe9"
+  },
+  "5380": {
+   "path": "config/manifests/pen_spin_stage3_tilt_s5380.yaml",
+   "sha256": "178d9a77c7a0ba328a5239fb21b33e0b074deb56d04023286b7c31ef86f805c1"
+  },
+  "5381": {
+   "path": "config/manifests/pen_spin_stage3_tilt_s5381.yaml",
+   "sha256": "45e84f5ca57961dfff1393790fc2d5cbdb90a0268ddf12ebdf2939319d7e3914"
+  }
+ },
+ "delivery": {
+  "nominal": {
+   "condition": {},
+   "mean_tilt_rad": 0.5990191699003928,
+   "mean_transverse": 0.7731174322548082,
+   "mean_axial": 0.48520015883301226,
+   "mean_abs_joint_draw": 0.5019450105280264
+  },
+  "tilt_only": {
+   "condition": {
+    "reset_tilt_scale": 1.5
+   },
+   "mean_tilt_rad": 0.894602804045197,
+   "mean_transverse": 0.7736051898438601,
+   "mean_axial": 0.4799141467492769,
+   "mean_abs_joint_draw": 0.5019450105280264
+  },
+  "position_only": {
+   "condition": {
+    "reset_other_scale": 1.5
+   },
+   "mean_tilt_rad": 0.5990191699003928,
+   "mean_transverse": 1.1596761483822124,
+   "mean_axial": 0.7278002382495184,
+   "mean_abs_joint_draw": 0.7529175157920397
+  },
+  "full": {
+   "condition": {
+    "reset_tilt_scale": 1.5,
+    "reset_other_scale": 1.5
+   },
+   "mean_tilt_rad": 0.894602804045197,
+   "mean_transverse": 1.16040778476579,
+   "mean_axial": 0.7198712201239154,
+   "mean_abs_joint_draw": 0.7529175157920397
+  }
+ },
+ "primary": {
+  "a": "joint@tilt_only",
+  "b": "joint@position_only",
+  "threshold": -0.15,
+  "rule": "supported: the paired 95% interval wholly at or below the threshold; refuted: wholly above it"
+ }
+}

@@ -37,7 +37,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "A paired 95% t interval wholly above -0.15 refutes the registered effect size; an interval crossing -0.15 is inconclusive, and an interval including zero establishes no directional difference.",
   "cost_estimate": {
@@ -57,17 +57,274 @@
     "round": 1,
     "note": "Separately scaling reset components prospectively tests the tilt mechanism left unregistered by D-094, making this a justified frozen-robustness follow-up rather than another training study. Its weakest point is the 4,096 descriptive-comparator episodes, but those establish whether sensitivity is sp"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-11-23T21:33:11",
+    "git_sha": "47aeaaec0ed88d019b0a879ead22017c7e2faf79",
+    "dirty_worktree": false,
+    "log_dir": "logs/pen_spin/r137_tilt_reset",
+    "finished_at": "2026-11-23T21:51:22"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": -0.138671875,
+      "paired_success_difference_ci95": [
+        -0.18862630794161026,
+        -0.08871744205838974
+      ],
+      "manifest_clustered_ci95": [
+        -0.16429992629793688,
+        -0.11304382370206312
+      ],
+      "registered_verdict_rule": "inconclusive",
+      "threshold": -0.15,
+      "includes_zero": false,
+      "pairs": 512,
+      "successes_tilt_vs_position": [
+        283,
+        354
+      ],
+      "success": {
+        "joint": {
+          "nominal": 0.77734375,
+          "tilt_only": 0.552734375,
+          "position_only": 0.69140625,
+          "full": 0.4609375
+        },
+        "ppo": {
+          "nominal": 0.998046875,
+          "tilt_only": 0.892578125,
+          "position_only": 0.990234375,
+          "full": 0.87890625
+        },
+        "d072": {
+          "nominal": 0.423828125,
+          "tilt_only": 0.3203125,
+          "position_only": 0.384765625,
+          "full": 0.302734375
+        }
+      },
+      "descriptive_contrasts": {
+        "joint@tilt_only_minus_joint@nominal": [
+          -0.224609375,
+          -0.27245434504838567,
+          -0.17676440495161433
+        ],
+        "joint@position_only_minus_joint@nominal": [
+          -0.0859375,
+          -0.13010258186754536,
+          -0.04177241813245464
+        ],
+        "joint@full_minus_joint@nominal": [
+          -0.31640625,
+          -0.36540472809497765,
+          -0.26740777190502235
+        ],
+        "ppo@tilt_only_minus_ppo@nominal": [
+          -0.10546875,
+          -0.13216357970719275,
+          -0.07877392029280725
+        ],
+        "ppo@position_only_minus_ppo@nominal": [
+          -0.0078125,
+          -0.017196202073823517,
+          0.0015712020738235175
+        ],
+        "ppo@full_minus_ppo@nominal": [
+          -0.119140625,
+          -0.14729531334056106,
+          -0.09098593665943892
+        ],
+        "d072@tilt_only_minus_d072@nominal": [
+          -0.103515625,
+          -0.15410966578281549,
+          -0.05292158421718452
+        ],
+        "d072@position_only_minus_d072@nominal": [
+          -0.0390625,
+          -0.08843239258862429,
+          0.010307392588624294
+        ],
+        "d072@full_minus_d072@nominal": [
+          -0.12109375,
+          -0.17298028326571796,
+          -0.06920721673428203
+        ],
+        "ppo@tilt_only_minus_ppo@position_only": [
+          -0.09765625,
+          -0.12511722745733722,
+          -0.07019527254266278
+        ],
+        "d072@tilt_only_minus_d072@position_only": [
+          -0.064453125,
+          -0.11639377338469087,
+          -0.012512476615309125
+        ]
+      }
+    },
+    "controls": {
+      "drops_of_512": {
+        "joint": {
+          "nominal": 30,
+          "tilt_only": 71,
+          "position_only": 38,
+          "full": 87
+        },
+        "ppo": {
+          "nominal": 1,
+          "tilt_only": 49,
+          "position_only": 4,
+          "full": 57
+        },
+        "d072": {
+          "nominal": 26,
+          "tilt_only": 79,
+          "position_only": 32,
+          "full": 80
+        }
+      },
+      "delivery": {
+        "nominal": {
+          "condition": {},
+          "mean_tilt_rad": 0.5990191699003928,
+          "mean_transverse": 0.7731174322548082,
+          "mean_axial": 0.48520015883301226,
+          "mean_abs_joint_draw": 0.5019450105280264
+        },
+        "tilt_only": {
+          "condition": {
+            "reset_tilt_scale": 1.5
+          },
+          "mean_tilt_rad": 0.894602804045197,
+          "mean_transverse": 0.7736051898438601,
+          "mean_axial": 0.4799141467492769,
+          "mean_abs_joint_draw": 0.5019450105280264
+        },
+        "position_only": {
+          "condition": {
+            "reset_other_scale": 1.5
+          },
+          "mean_tilt_rad": 0.5990191699003928,
+          "mean_transverse": 1.1596761483822124,
+          "mean_axial": 0.7278002382495184,
+          "mean_abs_joint_draw": 0.7529175157920397
+        },
+        "full": {
+          "condition": {
+            "reset_tilt_scale": 1.5,
+            "reset_other_scale": 1.5
+          },
+          "mean_tilt_rad": 0.894602804045197,
+          "mean_transverse": 1.16040778476579,
+          "mean_axial": 0.7198712201239154,
+          "mean_abs_joint_draw": 0.7529175157920397
+        }
+      },
+      "joint_labels": {
+        "nominal": {
+          "success": 398,
+          "drop_early": 17,
+          "drop_late": 13,
+          "off_centre": 5,
+          "persistent_slow": 49,
+          "intermittent": 15,
+          "near_miss": 15
+        },
+        "tilt_only": {
+          "success": 283,
+          "drop_early": 60,
+          "drop_late": 11,
+          "off_centre": 28,
+          "persistent_slow": 86,
+          "intermittent": 21,
+          "near_miss": 23
+        },
+        "position_only": {
+          "success": 354,
+          "drop_early": 27,
+          "drop_late": 11,
+          "off_centre": 26,
+          "persistent_slow": 64,
+          "intermittent": 21,
+          "near_miss": 9
+        },
+        "full": {
+          "success": 236,
+          "drop_early": 78,
+          "drop_late": 9,
+          "off_centre": 43,
+          "persistent_slow": 107,
+          "intermittent": 23,
+          "near_miss": 16
+        }
+      },
+      "accounting": {
+        "cells": 48,
+        "episodes": 6144,
+        "llm_calls": 0,
+        "training": "none"
+      }
+    },
+    "artifacts": [
+      "logs/pen_spin/r137_tilt_reset/summary.json",
+      "logs/pen_spin/r137_tilt_reset/frozen_config.json"
+    ],
+    "notes": "48 cells (3 frozen controllers x 4 reset conditions x 4 fresh manifests, 6,144 episodes), no fitting, no model calls. One cell died at simulator start-up with the known allocator crash (malloc: unaligned tcache chunk) before writing anything; the driver was rerun and resumed at that cell, as documented for this crash; no completed cell was rerun. CONFIRMATORY: JOINT under tilt-only 1.5x minus JOINT under position-and-joints-only 1.5x on 512 identical cases: -0.139, paired 95% interval [-0.189, -0.089] (manifest-clustered [-0.164, -0.113]; 283 vs 354 successes; 54 wins, 125 losses). The interval excludes zero, so tilt scaling is clearly the more damaging perturbation, but it crosses the registered -0.15: INCONCLUSIVE on the registered magnitude. Descriptive: against nominal (0.777), JOINT loses 0.225 [-0.272, -0.177] under tilt-only, 0.086 [-0.130, -0.042] under position-only and 0.316 under both (0.461, reproducing D-089's full 1.5x result on new cases); the two effects are roughly additive. Tilt-only also costs the PPO expert 0.105 (0.998 -> 0.893; position-only costs it 0.008) and D-072 0.104, so wider initial tilt is harder for every controller; JOINT loses about twice as much as either. Under tilt-only JOINT's early drops rise from 27 to 60 of 512 and persistent-slow failures from 64 to 86. Delivery (reconstructed): mean initial tilt 0.599 rad nominal and position-only, 0.895 rad tilt-only and full; position and joint draws unchanged under tilt-only. Limits: one frozen lineage, one scale, position and joint draws scaled together, 512 pairs."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": -0.138671875,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "inconclusive",
+      "confidence": 0.85,
+      "reasoning": "By the frozen rule: -0.139 [-0.189, -0.089] crosses the registered -0.15, so the effect size is neither supported nor refuted; the interval excludes zero, so the direction is established: scaling initial tilt hurts frozen JOINT more than scaling position and joint offsets (0.553 vs 0.691 on the same cases; -0.225 vs -0.086 against nominal). The loss is not specific to JOINT (PPO -0.105, D-072 -0.104 under tilt-only) but is about twice as large for it.",
+      "cited_artifacts": [],
+      "next_experiment": "The wide-reset weakness is mostly an initial-orientation effect, shared in part by the expert. Improving it is a capture-authority question (early drops before the module acts), outside what ARS continuation, mixtures or module edits changed in this direction: a new direction for the user.",
+      "recorded_at": "2026-11-23T21:51:25",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "inconclusive",
+      "confidence": 0.99,
+      "reasoning": "The named control was measured: frozen JOINT succeeded on 0.552734375 of tilt-only cases versus 0.69140625 under position-and-joints-only scaling [logs/pen_spin/r137_tilt_reset/summary.json]. Across 512 pairs, paired_success_difference was -0.138671875, with paired 95% t interval [-0.188626308, -0.088717442] [logs/pen_spin/r137_tilt_reset/summary.json]. The interval crosses the registered -0.15 boundary, so the predicted magnitude is neither supported nor refuted [logs/pen_spin/r137_tilt_reset/summary.json]. It excludes zero, establishing that tilt-only scaling was more damaging than the named control, but that directional finding does not satisfy the registered prediction [logs/pen_spin/r137_tilt_reset/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r137_tilt_reset/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-23T21:51:42",
+      "call_id": "call_00326"
+    }
+  ],
+  "decision_id": "D-095",
   "history": [
     {
       "at": "2026-11-23T21:31:25",
       "from": "proposed",
       "to": "approved",
       "note": "triage round 1: both say approve"
+    },
+    {
+      "at": "2026-11-23T21:33:11",
+      "from": "approved",
+      "to": "running",
+      "note": "git 47aeaaec0e"
+    },
+    {
+      "at": "2026-11-23T21:51:22",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-23T21:51:43",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-095: inconclusive"
     }
   ],
   "created_at": "2026-11-23T21:29:53",

@@ -819,6 +819,13 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   initial tilt, 0.81 / 0.59 / 0.38 / 0.16 across tilt quartiles, while axial displacement is flat**; the wide-reset
   weakness looks like an initial-orientation effect and needs a prospective test. R-136 (selector audit of R-131) was
   rejected: selection scores exist only for pre-continuation branches, never for the frozen finalists.
+- **R-137 result (D-095, inconclusive on -0.15; direction established; 2026-11-23).** `tilt_reset_robustness.py`
+  (`--study tilt_reset_robustness`); `cases.scale_placements` gives a condition separate scales for the placement
+  vector's rotation draws (`reset_tilt_scale`, rows 3-4) and its position and joint draws (`reset_other_scale`), with
+  `reset_scale` unchanged. Frozen JOINT on 512 fresh identical cases: **tilt-only 1.5x minus position-only 1.5x -0.139
+  [-0.189, -0.089]**; against nominal 0.777 it loses 0.225 under tilt-only, 0.086 under position-only, 0.316 under
+  both. PPO loses 0.105 and D-072 0.104 under tilt-only. The wide-reset weakness of D-089 is mostly initial
+  orientation, about twice as costly for JOINT as for the expert; D-092 showed training on wider resets does not fix it.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override
