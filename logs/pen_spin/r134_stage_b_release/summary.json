@@ -1,0 +1,162 @@
+{
+ "study": "stage_b_release_audit",
+ "simulation": "none",
+ "window_steps": 30,
+ "weak_lineage": 2,
+ "gate_statistics": -0.03744974340052867,
+ "gate_statistics_ci95": [
+  -0.06429170536546486,
+  -0.010607781435592496
+ ],
+ "threshold": 0.1,
+ "verdict": "refuted",
+ "spans_zero": false,
+ "lineage_mean_change": {
+  "L0": 0.1664292980671414,
+  "L1": 0.3211725293132328,
+  "L2": 0.18571428571428572,
+  "L3": 0.09223638470451913,
+  "L4": 0.3128179043743642
+ },
+ "manifest_clustered": {
+  "mean": -0.03567937747326666,
+  "ci95": [
+   -0.05740611013640466,
+   -0.013952644810128662
+  ],
+  "manifests": 24
+ },
+ "lineages": {
+  "L0": {
+   "timeline": {
+    "decision_step": 129,
+    "threshold": 3.87228812326642,
+    "centre_tolerance": 0.08,
+    "rate_window": 30,
+    "support_steps": 67,
+    "support_end": 195
+   },
+   "stage_b_params": {
+    "threshold": 3.87228812326642,
+    "decision_step": 129.06470884466478,
+    "ramp_in": 28.97476526924857,
+    "ramp_out": 37.6253054287865,
+    "depth_WR": 0.7297827296781132,
+    "depth_FF": 0.9299183199295348,
+    "depth_MF": 0.9670412560387222,
+    "depth_RF": 0.8172559801467552,
+    "depth_LF": 0.7115549590912829,
+    "depth_TH": 0.9256055507830825,
+    "stroke_multiplier": 1.2339125730319893
+   },
+   "cases": 3072,
+   "reconstructed_triggers": 1076,
+   "eligible": 983
+  },
+  "L1": {
+   "timeline": {
+    "decision_step": 111,
+    "threshold": 3.4811598406369244,
+    "centre_tolerance": 0.08,
+    "rate_window": 30,
+    "support_steps": 64,
+    "support_end": 174
+   },
+   "stage_b_params": {
+    "threshold": 3.4811598406369244,
+    "decision_step": 110.66142212012379,
+    "ramp_in": 23.585164564794745,
+    "ramp_out": 39.75500757095229,
+    "depth_WR": 0.8809242315767333,
+    "depth_FF": 1.0,
+    "depth_MF": 0.9964027097793374,
+    "depth_RF": 0.9560815918442532,
+    "depth_LF": 0.4060984120934007,
+    "depth_TH": 0.648482235930897,
+    "stroke_multiplier": 1.0585391727367783
+   },
+   "cases": 3072,
+   "reconstructed_triggers": 1064,
+   "eligible": 995
+  },
+  "L2": {
+   "timeline": {
+    "decision_step": 145,
+    "threshold": 3.6504981196441126,
+    "centre_tolerance": 0.08,
+    "rate_window": 30,
+    "support_steps": 72,
+    "support_end": 216
+   },
+   "stage_b_params": {
+    "threshold": 3.6504981196441126,
+    "decision_step": 145.32675550659795,
+    "ramp_in": 28.849854384914273,
+    "ramp_out": 42.41922145519772,
+    "depth_WR": 0.9302907732203125,
+    "depth_FF": 0.8770318176198305,
+    "depth_MF": 0.9902663658097605,
+    "depth_RF": 0.9453408205504866,
+    "depth_LF": 1.0,
+    "depth_TH": 0.6567879391470292,
+    "stroke_multiplier": 1.023784046215957
+   },
+   "cases": 3072,
+   "reconstructed_triggers": 1063,
+   "eligible": 966
+  },
+  "L3": {
+   "timeline": {
+    "decision_step": 119,
+    "threshold": 2.9312411919185797,
+    "centre_tolerance": 0.08,
+    "rate_window": 30,
+    "support_steps": 46,
+    "support_end": 164
+   },
+   "stage_b_params": {
+    "threshold": 2.9312411919185797,
+    "decision_step": 119.08304978449385,
+    "ramp_in": 23.125090504427668,
+    "ramp_out": 22.506174447520056,
+    "depth_WR": 0.9279340744906925,
+    "depth_FF": 0.9079278942886176,
+    "depth_MF": 0.980229246998554,
+    "depth_RF": 0.9367828872077589,
+    "depth_LF": 0.31235771877776675,
+    "depth_TH": 0.7153839600487455,
+    "stroke_multiplier": 1.0077508113954643
+   },
+   "cases": 3072,
+   "reconstructed_triggers": 899,
+   "eligible": 863
+  },
+  "L4": {
+   "timeline": {
+    "decision_step": 115,
+    "threshold": 3.8155766908362443,
+    "centre_tolerance": 0.08,
+    "rate_window": 30,
+    "support_steps": 59,
+    "support_end": 173
+   },
+   "stage_b_params": {
+    "threshold": 3.8155766908362443,
+    "decision_step": 115.16942156262905,
+    "ramp_in": 23.50841527876336,
+    "ramp_out": 34.76168192689984,
+    "depth_WR": 0.9107161989937494,
+    "depth_FF": 0.8207185153520603,
+    "depth_MF": 0.9312739569807684,
+    "depth_RF": 0.8939146323158861,
+    "depth_LF": 0.3386447029728193,
+    "depth_TH": 0.6574306849738445,
+    "stroke_multiplier": 1.0080754810490096
+   },
+   "cases": 3072,
+   "reconstructed_triggers": 1039,
+   "eligible": 983
+  }
+ },
+ "caveat": "triggers are reconstructed from traces; one weak lineage; an association around the end of support, not a cause"
+}

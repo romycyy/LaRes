@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-23T21:26:29 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-23T21:27:54 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -11,16 +11,14 @@ Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT 
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 2 |
+| approved | 1 |
 | proposed | 0 |
 | deferred | 30 |
-| decided | 92 |
+| decided | 93 |
 | rejected | 12 |
 
 ## Needs attention
 
-- **R-134** [approved] 1. Archive-first: does long recovery ramp-out suppress Stage-B rolling?
-  - `python scripts/research.py start R-134` then run its command
 - **R-135** [approved] 2. Localize frozen JOINT's reset weakness without another rollout
   - `python scripts/research.py start R-135` then run its command
 
@@ -59,6 +57,9 @@ Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT 
 
 ## Last 5 decisions
 
+- D-093 · R-134 · **refuted** · 2026-11-23
+  Archive-only audit of R-128's stage-B cells: among re-captured episodes the rolling-step fraction rises across the end of recovery support by 0.166 / 0.321 / 0.186 / 0.092 / 0.313 in lineages 0-4; the weak lineage 2 minus the mean of the others is -0.037 [-0.064, -0.011] against a predicted +0.10: refuted. All five stage-B modules have long ramp-outs and stroke multipliers near 1, so lineage 2 is not distinctive at that stage. No episode was run.
+  Next: Do not pursue support-release explanations of the Q1 variance. Run the already approved R-135 archive audit, then let the loop's exhaustion rule return the decision to the user.
 - D-092 · R-133 · **refuted** · 2026-11-23
   Follow-up to D-089: five paired blocks of JOINT continuation (36 ARS updates of 43 coordinates) that differ only in writing half of each training batch at reset scale 1.5 (reset_mixture.py). MIXED minus NOMINAL on fresh expanded resets +0.004 [-0.012, +0.021] against a registered +0.08: refuted, no directional improvement. Expanded-reset success: frozen JOINT 0.462, NOMINAL arm 0.465, MIXED arm 0.469; nominal resets 0.771 / 0.766 / 0.767; no endpoint improves on JOINT in either condition and 0 of 5 MIXED endpoints are useful. Training-distribution coverage is not the lever for the wide-reset weakness in this controller family. 3.03 M starts, 336 minutes, no model calls.
   Next: Training-distribution coverage is not the lever for the wide-reset weakness inside this controller family. With Q1-Q4 and both named follow-ups decided, do not propose further ARS continuation or mixture variants; the remaining failure mass (early drops before the module acts, off-centre and persistent-slow captures from wide resets) points at capture authority, which is a new direction for the user to set.
@@ -71,9 +72,6 @@ Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT 
 - D-089 · R-129 · **supported** · 2026-11-23
   Q2 of direction V2: four frozen controllers (R-121 JOINT, the R-126 transplant, D-072, the PPO expert) on a predeclared one-factor panel, 204 cells on ten fresh manifests, no fitting (frozen_robustness.py). Primary: JOINT at 0.8x pen friction minus nominal JOINT -0.015 [-0.035, +0.005] over 1,280 pairs, inside the -0.05 margin (non-inferiority supported; not an improvement). Horizons: no retention loss, JOINT's terminal success 0.775 at 12 s and 0.781 at 30 s against 0.766 on the first six seconds, no drop after second 4. Mass, friction, radius and length at +/-10-20% leave JOINT within -0.023 to +0.041 of nominal (512 pairs each, nothing Holm-significant). The expanded reset distribution (1.5x) is the weakness: JOINT 0.770 -> 0.486 (-0.281 [-0.331, -0.232]), transplant -0.322, D-072 -0.141, PPO -0.125. The transplant is within +/-0.035 of JOINT in every condition. PPO 0.994 nominal, 0.887 at 0.9x length. Re-capture trigger counts are unavailable in evaluation cells.
   Next: The robustness gap is capture from wider resets, not dynamics or retention. That is a training-distribution question (propose separately, never retune on this panel). Proceed to Q3's archive-only diagnosis of recovery hand-back on JOINT/transplant traces, noting that evaluation cells do not record trigger events.
-- D-088 · R-128 · **inconclusive** · 2026-11-23
-  Q1 of direction V2: the R-106 -> R-116 -> R-118 -> R-121 construction recipe repeated in five independent training lineages from the D-072 reference (training_replication.py), every endpoint evaluated with D-072 and the frozen historical JOINT asset on 24 fresh manifests (3,072 cases per policy). Equal-weight mean JOINT-stage gain over D-072 +0.308, two-level 95% interval [0.247, 0.370] on 4 df: inconclusive against the registered +0.30, far from zero. Per-lineage JOINT-stage success 0.751, 0.750, 0.667, 0.767, 0.781 (mean 0.743, sd 0.044) against D-072 0.435 and the historical JOINT 0.792, which beats all five (the historical lineage was a favourable draw). Stage means: A 0.546 (sd 0.010), B 0.651 (0.052), C 0.730 (0.036), D 0.743. All five stage-D endpoints qualify against D-072; stages A, B, C qualify over their parent in 5 of 5 lineages; the JOINT stage qualifies over stage C in 1 of 5. No child death, no rerun; 3,105,435 starts, 422 minutes, no model calls. An implementer bug in the divergence check (float32 bound) was fixed before any outcome; finished stages were reused unchanged.
-  Next: Treat the recipe as reproducible in sign and large in size but with a between-lineage sd of about 0.04 and one clearly weaker lineage; keep the historical JOINT asset as the frozen reference for Q2 (robustness of frozen controllers), reporting policy robustness separately from learning reliability. A training-variance diagnosis of stage B (lineage 2's long ramp-out) is a candidate follow-up, archive-first.
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 

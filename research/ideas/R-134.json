@@ -26,7 +26,7 @@
     "needs_gpu": false,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "The upper 95% interval bound on lineage 2's excess release-associated improvement is below 0.10; an interval spanning the threshold is inconclusive, and one spanning zero establishes no directional difference.",
   "cost_estimate": {
@@ -46,17 +46,152 @@
     "round": 3,
     "note": "I accept the applied entry-point and trigger-reconstruction corrections: this addresses D-088's weak-lineage release pattern without reopening D-090's healthy-hand-back question. Its weakest point is survivor-conditioned release alignment, which cannot establish support suppression or recipe reliabi"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-11-23T21:27:02",
+    "git_sha": "867bf43f68719624d218cdaf15ce5a72e99c777e",
+    "dirty_worktree": false,
+    "log_dir": "logs/pen_spin/r134_stage_b_release",
+    "finished_at": "2026-11-23T21:27:33"
+  },
+  "result": {
+    "metrics": {
+      "gate_statistics": -0.03744974340052867,
+      "gate_statistics_ci95": [
+        -0.06429170536546486,
+        -0.010607781435592496
+      ],
+      "manifest_clustered": {
+        "mean": -0.03567937747326666,
+        "ci95": [
+          -0.05740611013640466,
+          -0.013952644810128662
+        ],
+        "manifests": 24
+      },
+      "lineage_mean_change": {
+        "L0": 0.1664292980671414,
+        "L1": 0.3211725293132328,
+        "L2": 0.18571428571428572,
+        "L3": 0.09223638470451913,
+        "L4": 0.3128179043743642
+      },
+      "registered_verdict_rule": "refuted",
+      "threshold": 0.1
+    },
+    "controls": {
+      "lineages": {
+        "L0": {
+          "decision_step": 129,
+          "support_end": 195,
+          "ramp_out": 37.6253054287865,
+          "stroke_multiplier": 1.2339125730319893,
+          "threshold": 3.87228812326642,
+          "reconstructed_triggers": 1076,
+          "eligible": 983,
+          "cases": 3072
+        },
+        "L1": {
+          "decision_step": 111,
+          "support_end": 174,
+          "ramp_out": 39.75500757095229,
+          "stroke_multiplier": 1.0585391727367783,
+          "threshold": 3.4811598406369244,
+          "reconstructed_triggers": 1064,
+          "eligible": 995,
+          "cases": 3072
+        },
+        "L2": {
+          "decision_step": 145,
+          "support_end": 216,
+          "ramp_out": 42.41922145519772,
+          "stroke_multiplier": 1.023784046215957,
+          "threshold": 3.6504981196441126,
+          "reconstructed_triggers": 1063,
+          "eligible": 966,
+          "cases": 3072
+        },
+        "L3": {
+          "decision_step": 119,
+          "support_end": 164,
+          "ramp_out": 22.506174447520056,
+          "stroke_multiplier": 1.0077508113954643,
+          "threshold": 2.9312411919185797,
+          "reconstructed_triggers": 899,
+          "eligible": 863,
+          "cases": 3072
+        },
+        "L4": {
+          "decision_step": 115,
+          "support_end": 173,
+          "ramp_out": 34.76168192689984,
+          "stroke_multiplier": 1.0080754810490096,
+          "threshold": 3.8155766908362443,
+          "reconstructed_triggers": 1039,
+          "eligible": 983,
+          "cases": 3072
+        }
+      }
+    },
+    "artifacts": [
+      "logs/pen_spin/r134_stage_b_release/summary.json"
+    ],
+    "notes": "Archive only (R-128's stage-B cells, five lineages x 24 shared manifests, 3,072 cases each); no episode, no model call; definitions committed (867bf43) before the audit ran. Among reconstructed-triggered cases still in play 30 steps after support ends (863-995 per lineage), the rolling-step fraction rises by 0.166 / 0.321 / 0.186 / 0.092 / 0.313 across the end of support in lineages 0-4. Lineage 2's change minus the mean of the other four is -0.037, 95% interval [-0.064, -0.011] (manifest-clustered [-0.057, -0.014]): the upper bound is far below +0.10, so the hypothesis is REFUTED; lineage 2 shows, if anything, slightly less release-associated improvement. The premise was also off at this stage: all five stage-B modules have long ramp-outs (22-42 steps) and stroke multipliers near 1 (1.01-1.23), so lineage 2 (42.4, 1.02) is not distinctive after 12 updates; its long ramp-out only stands out at the later stages. Triggers are reconstructed, one lineage is one lineage, and the comparison is an association around the end of support."
+  },
+  "prediction_outcome": {
+    "metric": "gate_statistics",
+    "before": null,
+    "after": -0.03744974340052867,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.9,
+      "reasoning": "By the frozen rule: lineage 2's post-minus-pre rolling change around the end of support minus the other four lineages' mean is -0.037 [-0.064, -0.011]; the upper bound is below +0.10 (and below zero). The stage-B modules of all five lineages look alike (ramp-out 22-42 steps, stroke multiplier near 1), so the weak lineage's stage-B deficit is not a support-release effect.",
+      "cited_artifacts": [],
+      "next_experiment": "Do not pursue support-release explanations of the Q1 variance. Run the already approved R-135 archive audit, then let the loop's exhaustion rule return the decision to the user.",
+      "recorded_at": "2026-11-23T21:27:35",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "Against the registered equal-weight mean of the other four Stage-B lineages, lineage 2's gate_statistics contrast was -0.03745, with a 95% interval of [-0.06429, -0.01061] [logs/pen_spin/r134_stage_b_release/summary.json]. Its upper bound is below the predicted increase of +0.10, satisfying the registered falsification rule [logs/pen_spin/r134_stage_b_release/summary.json]. The manifest-clustered sensitivity agrees: mean -0.03568, interval [-0.05741, -0.01395], also entirely negative [logs/pen_spin/r134_stage_b_release/summary.json]. This supports less release-associated improvement in the weak lineage relative to the named control, but the survivor-conditioned, release-aligned comparison establishes neither causal support suppression nor recipe reliability [logs/pen_spin/r134_stage_b_release/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r134_stage_b_release/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-23T21:27:53",
+      "call_id": "call_00322"
+    }
+  ],
+  "decision_id": "D-093",
   "history": [
     {
       "at": "2026-11-23T21:26:24",
       "from": "proposed",
       "to": "approved",
       "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-23T21:27:02",
+      "from": "approved",
+      "to": "running",
+      "note": "git 867bf43f68"
+    },
+    {
+      "at": "2026-11-23T21:27:33",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-23T21:27:54",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-093: refuted"
     }
   ],
   "created_at": "2026-11-23T21:21:29",
