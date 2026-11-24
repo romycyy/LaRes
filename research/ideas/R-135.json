@@ -1,0 +1,154 @@
+{
+  "id": "R-135",
+  "title": "2. Localize frozen JOINT's reset weakness without another rollout",
+  "hypothesis": "Expanded resets expose a transverse-position capture-basin boundary, so initial displacement perpendicular to the pen axis predicts frozen JOINT failure beyond axial displacement and tilt.",
+  "prediction": {
+    "metric": "success_rate",
+    "direction": "decrease",
+    "threshold": 0.15,
+    "against": "R-129: frozen JOINT on the lowest transverse-displacement quartile of expanded resets",
+    "rationale": "Compare highest versus lowest transverse-displacement quartiles, standardized over predeclared axial-displacement and tilt tertiles on common support. A 0.15 success deficit would localize a substantial part of D-089's 0.281 reset penalty. D-092 tested training-distribution coverage, not this geometric localization; this is descriptive robustness analysis, not authorization for capture-controller development."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'source ~/IsaacLab/source_env.sh && timeout 900s python -u scripts/run_shadowhand_spin_stages.py --study reset_geometry_audit'",
+    "seeds": [],
+    "manifests": [],
+    "episodes": 0,
+    "llm_calls": 0,
+    "code_changes": [
+      "lares/envs/isaac_pen_spin/reset_geometry_audit.py (new, archive only; registered in scripts/run_shadowhand_spin_stages.py with a block in config/shadowhand_spin_stages.yaml). Primary archive: R-129's 512 frozen-JOINT cases under reset scale 1.5 (logs/pen_spin/r129_frozen_robustness/cells/s<seed>/joint@reset_1.5_cell.json, 4 manifests). Separate replication, never pooled and never chosen between after results: R-133's 1,536 frozen-JOINT cases under reset scale 1.5 (logs/pen_spin/r133_reset_mixture/confirmation/expanded/s<seed>/joint_cell.json, 12 manifests).",
+      "Initial states are reconstructed, not recorded: a case's reset is cases.resolve_placements(manifest) times the recorded reset scale (position offset = rows 0-2 times the env's position noise; tilt = the rotation built from rows 3-4 as the runner writes it). Frozen definitions: the initial pen long axis is the tilted x axis; axial displacement = |offset . axis|; transverse displacement = norm of the offset perpendicular to the axis; tilt = the initial rotation angle. Within each archive: transverse quartiles, axial tertiles and tilt tertiles by rank (ties by case order).",
+      "Registered quantity (success_rate): sustained success in the highest transverse quartile minus the lowest, standardized over the axial-by-tilt strata present in both extreme quartiles with weights proportional to the pooled count of the two quartiles in each stratum; a case-level 95% interval from the per-stratum binomial variances. Report support counts and the coverage of the common support (at least 6 of 9 strata and 60% of both quartiles' cases, otherwise inconclusive). Supported (a decrease of at least 0.15) with the upper bound <= -0.15; refuted with the lower bound > -0.15; otherwise inconclusive. Also report unstandardized success by quartile for transverse, axial and tilt.",
+      "Ceiling: 0 simulator episodes, 0 LLM calls, 15 minutes; no new seeds, manifests, fitting or replacement rollouts; reconstruction failures are reported, not patched."
+    ],
+    "needs_gpu": false,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "The lower 95% interval bound on high-minus-low standardized success is above -0.15. Failure of common support or unavailable initial-state records makes the audit inconclusive rather than permitting replacement rollouts.",
+  "cost_estimate": {
+    "episodes": 0,
+    "llm_calls": 0,
+    "wall_time_minutes": 15
+  },
+  "open_question_refs": [
+    2
+  ],
+  "briefing_sha256": "bfce6beac16acdcc2c8ece4825e82d2807cab8710db4e84021849255744df5f9",
+  "proposal_call_id": "call_00318",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-23T21:26:27",
+    "advisor_call_id": "call_00321",
+    "round": 3,
+    "note": "I accept the corrected study entry point, reconstructed initial geometry and separately reported R-133 replication; this localizes frozen JOINT's reset weakness descriptively rather than repeating D-092's training intervention. Its weakest point remains sparse common support, and neither association"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-23T21:26:27",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    }
+  ],
+  "created_at": "2026-11-23T21:21:29",
+  "direction": "Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT controller. Prioritize independent training reproducibility, then robustness of frozen controllers. Reproduce the successful residual-plus-recovery construction across independent training seeds before claiming a reliable learning algorithm. Evaluate longer horizons and predeclared physical/reset perturbations without fitting. Use archived failures to decide whether recovery hand-back deserves a state-dependent transition study. Then investigate whether LLM-guided construction can discover useful recovery-module structure against grammar search and the hand-designed template under matched budgets. Preserve the original six-second task and evaluation contract. Use JOINT as the experimental reference, preserve all existing assets, and leave default-incumbent installation separate. Run one protocol at a time through the existing advisor/implementer loop. Continue justified follow-ups within this direction; honor its escalation and exhaustion rules. No new global budget ceiling is imposed; each protocol must declare finite simulator, wall-time and model-call costs before agreement. No controller-generation calls for Q1–Q3. Q4 requires a separately agreed generation budget. Advisor calls for the research loop remain permitted throughout.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This can localize frozen JOINT's reset vulnerability descriptively without repeating D-092's training-coverage intervention or authorizing capture-controller development. Its weakest point is potentially sparse common support after quartiling and stratification, which may leave the geometric comparison inconclusive. falsified_by: the lower 95% interval bound on standardized highest-minus-lowest transverse-quartile success exceeds -0.15. The finite cost is 0 simulator episodes, 0 LLM calls and 15 minutes using the existing summarizer and frozen JOINT reference.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00319",
+          "briefing_sha256": "11fbd24e3f73d2eb8c0685a1e70931ebc61324ea663c9cf00a7abc219bda9d2e",
+          "at": "2026-11-23T21:22:46"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Worth doing at zero episodes: it localizes D-089's weakness descriptively. Two corrections. (1) Entry point, as for R-134: scripts/summarise_experiments.py summarises MetaWorld experiment records and has no such mode; use scripts/run_shadowhand_spin_stages.py --study reset_geometry_audit with config/shadowhand_spin_stages.yaml and a module lares/envs/isaac_pen_spin/reset_geometry_audit.py, run on the box where the cells are. Initial states are not recorded in cells but are exactly reconstructable: a case's reset is its manifest placement vector times the reset scale (cases.resolve_placements; position offset rows 0-2, tilt rows 3-4), and R-133's smoke verified the written offsets to 1.5e-6. (2) Data: R-129 has only 512 JOINT cases at 1.5x (4 manifests), too few for 4 quartiles x 9 strata. D-092's archive adds 1,536 fresh frozen-JOINT cases at 1.5x (12 manifests). Register R-129's 512 as the named source and R-133's 1,536 as a predeclared replication reported beside it, with the same frozen definitions: transverse displacement = the component of the initial position offset perpendicular to the pen's initial long axis, axial = the component along it, tilt = the initial rotation magnitude; quartiles and tertiles computed within each archive; standardization over the axial x tilt strata present in both extreme quartiles.",
+          "changes_applied": [],
+          "at": "2026-11-23T21:23:23"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "I accept both implementer corrections: the MetaWorld summarizer is unsuitable, and R-133 supplies a useful separately reported archive replication without new rollouts. Reconstructing initial geometry from manifest placements is appropriate, but sparse common support remains the weakest point, especially for R-129's four manifests. This can describe reset vulnerability after R-134, not establish a causal capture boundary or authorize controller development.",
+          "suggested_changes": [
+            "Use scripts/run_shadowhand_spin_stages.py with config/shadowhand_spin_stages.yaml and a new lares/envs/isaac_pen_spin/reset_geometry_audit.py module. Run via gpu run with ~/IsaacLab/source_env.sh sourced and a 900-second timeout.",
+            "Register R-129's 512 frozen-JOINT expanded-reset cases as primary and R-133's 1,536 frozen-JOINT expanded-reset cases as a separate replication; do not pool them or select between them after seeing results.",
+            "Reconstruct offsets using cases.resolve_placements and the recorded reset scale. Define transverse and axial displacement relative to the initial pen long axis and tilt as initial rotation magnitude; freeze within-archive quartile/tertile boundaries, tie handling and common-support weights before outcome comparisons.",
+            "Retain prediction: success_rate decreases by at least 0.15 in the highest transverse-displacement quartile versus frozen JOINT in the lowest quartile, standardized over shared axial-by-tilt strata within each archive. Report support counts and coverage; falsified_by: lower 95% bound on high-minus-low success above -0.15, while threshold-crossing intervals or inadequate common support are inconclusive and zero-crossing intervals provide no directional evidence.",
+            "Retain the finite ceiling of 0 simulator episodes, 0 LLM calls and 15 minutes runtime, with no new seeds, manifests, fitting or replacement rollouts; report reconstruction failures rather than substituting data."
+          ],
+          "priority": 2,
+          "call_id": "call_00320",
+          "briefing_sha256": "da2d931e9cbef5727186745f7eab22432e68220077e420048f22a89084424bc6",
+          "at": "2026-11-23T21:24:06"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agreed: the advisor's round-2 list is my corrections (study-module entry point, archive sources, frozen definitions) with the inference limits stated; I apply it as written.",
+          "changes_applied": [],
+          "at": "2026-11-23T21:24:34"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the corrected study entry point, reconstructed initial geometry and separately reported R-133 replication; this localizes frozen JOINT's reset weakness descriptively rather than repeating D-092's training intervention. Its weakest point remains sparse common support, and neither association nor replication would establish a causal capture boundary or authorize controller development. Retain the prediction that success_rate decreases by at least 0.15 in R-129's highest versus lowest transverse-displacement quartile after the registered standardization, with R-133 reported separately; falsified_by: a lower 95% bound on high-minus-low success above -0.15, while inadequate support or threshold-crossing intervals are inconclusive and zero-crossing intervals provide no directional evidence. Approve the sequential archive audit at 0 simulator episodes, 0 LLM calls and 15 minutes through scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, without pooling archives or adding rollouts.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00321",
+          "briefing_sha256": "86b34cb6a6540a9a2ef358f27eeaa0d311c1d613de03de99d94e0def005dbd36",
+          "at": "2026-11-23T21:25:01"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve the revised archive-only audit: definitions, sources and the decision rule are fixed before any outcome is computed, it costs no episode and no model call, and its inference limits are stated.",
+          "changes_applied": [],
+          "at": "2026-11-23T21:26:27"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 3
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-23T21:24:39",
+      "round": 2,
+      "patch": {
+        "protocol": {
+          "script": "scripts/run_shadowhand_spin_stages.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "gpu run 'source ~/IsaacLab/source_env.sh && timeout 900s python -u scripts/run_shadowhand_spin_stages.py --study reset_geometry_audit'",
+          "code_changes": [
+            "lares/envs/isaac_pen_spin/reset_geometry_audit.py (new, archive only; registered in scripts/run_shadowhand_spin_stages.py with a block in config/shadowhand_spin_stages.yaml). Primary archive: R-129's 512 frozen-JOINT cases under reset scale 1.5 (logs/pen_spin/r129_frozen_robustness/cells/s<seed>/joint@reset_1.5_cell.json, 4 manifests). Separate replication, never pooled and never chosen between after results: R-133's 1,536 frozen-JOINT cases under reset scale 1.5 (logs/pen_spin/r133_reset_mixture/confirmation/expanded/s<seed>/joint_cell.json, 12 manifests).",
+            "Initial states are reconstructed, not recorded: a case's reset is cases.resolve_placements(manifest) times the recorded reset scale (position offset = rows 0-2 times the env's position noise; tilt = the rotation built from rows 3-4 as the runner writes it). Frozen definitions: the initial pen long axis is the tilted x axis; axial displacement = |offset . axis|; transverse displacement = norm of the offset perpendicular to the axis; tilt = the initial rotation angle. Within each archive: transverse quartiles, axial tertiles and tilt tertiles by rank (ties by case order).",
+            "Registered quantity (success_rate): sustained success in the highest transverse quartile minus the lowest, standardized over the axial-by-tilt strata present in both extreme quartiles with weights proportional to the pooled count of the two quartiles in each stratum; a case-level 95% interval from the per-stratum binomial variances. Report support counts and the coverage of the common support (at least 6 of 9 strata and 60% of both quartiles' cases, otherwise inconclusive). Supported (a decrease of at least 0.15) with the upper bound <= -0.15; refuted with the lower bound > -0.15; otherwise inconclusive. Also report unstandardized success by quartile for transverse, axial and tilt.",
+            "Ceiling: 0 simulator episodes, 0 LLM calls, 15 minutes; no new seeds, manifests, fitting or replacement rollouts; reconstruction failures are reported, not patched."
+          ]
+        }
+      },
+      "note": "Agreed round-2 changes"
+    }
+  ]
+}

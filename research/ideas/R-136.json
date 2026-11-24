@@ -1,0 +1,106 @@
+{
+  "id": "R-136",
+  "title": "3. Audit Q4's selection instrument using archived finalists",
+  "hypothesis": "Noisy search-time ranking discards useful recovery structures, making selection fidelity a bottleneck distinct from the construction proposer.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "decrease",
+    "threshold": 0.03,
+    "against": "R-131: cross-fitted selector using archived confirmation success",
+    "rationale": "Within each of five blocks, select among its three frozen finalists using their archived search-time ranking scores; compare with selection by success on six confirmation manifests, scoring both choices on the other six and swapping halves. Predict search-score selection minus confirmation-based selection at or below -0.03. Unlike D-091's proposer comparison, this audits the ranking instrument; it does not isolate four-update training bias."
+  },
+  "protocol": {
+    "script": "scripts/summarise_experiments.py",
+    "config": "",
+    "command": "gpu run \"timeout 1200s python3 scripts/summarise_experiments.py --archive-audit recovery-selector-crossfit --source-idea R-131 --reference config/pen_spin/r121_joint_finalist/finalist.json --candidates frozen-finalists-only --search-score exact-checkpoint-match --confirmation-folds manifest-order-odd-even --interval block-t --archive-only --missing-data error --output-dir logs/archive_q4_selector_crossfit\"",
+    "seeds": [],
+    "manifests": [],
+    "episodes": 0,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/summarise_experiments.py"
+    ],
+    "needs_gpu": false,
+    "needs_llm": false
+  },
+  "status": "rejected",
+  "source": "advisor",
+  "falsified_by": "The lower 95% paired block-level interval bound exceeds -0.03. An interval spanning -0.03 is inconclusive; an interval spanning zero provides no evidence of a selector difference.",
+  "cost_estimate": {
+    "episodes": 0,
+    "llm_calls": 0,
+    "wall_time_minutes": 20
+  },
+  "open_question_refs": [
+    4
+  ],
+  "briefing_sha256": "bfce6beac16acdcc2c8ece4825e82d2807cab8710db4e84021849255744df5f9",
+  "proposal_call_id": "call_00318",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-23T21:24:30",
+      "from": "proposed",
+      "to": "rejected",
+      "note": "triage round 2: both say reject"
+    }
+  ],
+  "created_at": "2026-11-23T21:21:29",
+  "direction": "Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT controller. Prioritize independent training reproducibility, then robustness of frozen controllers. Reproduce the successful residual-plus-recovery construction across independent training seeds before claiming a reliable learning algorithm. Evaluate longer horizons and predeclared physical/reset perturbations without fitting. Use archived failures to decide whether recovery hand-back deserves a state-dependent transition study. Then investigate whether LLM-guided construction can discover useful recovery-module structure against grammar search and the hand-designed template under matched budgets. Preserve the original six-second task and evaluation contract. Use JOINT as the experimental reference, preserve all existing assets, and leave default-incumbent installation separate. Run one protocol at a time through the existing advisor/implementer loop. Continue justified follow-ups within this direction; honor its escalation and exhaustion rules. No new global budget ceiling is imposed; each protocol must declare finite simulator, wall-time and model-call costs before agreement. No controller-generation calls for Q1–Q3. Q4 requires a separately agreed generation budget. Advisor calls for the research loop remain permitted throughout.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "Cross-fitting can test selector performance among archived survivors, a justified follow-up to D-091, but three preselected finalists cannot reveal useful structures discarded during search. Search-time scores must also correspond to the exact frozen controllers; otherwise training progression is confounded with selector performance. falsified_by: the lower 95% paired block-level interval bound on search-score selection minus confirmation-based selection exceeds -0.03. Retain the finite ceiling of 0 simulator episodes, 0 LLM calls and 20 minutes.",
+          "suggested_changes": [
+            "Replace the hypothesis with: 'Poor transfer of search-score rankings to confirmation placements reduces held-out sustained success when selecting among the three archived finalists per block'; remove claims about discarded structures or identified sampling noise.",
+            "Retain the paired_success_difference prediction: decrease by at least 0.03 against the cross-fitted confirmation-success selector, explicitly restricted to the archived finalists and the unchanged sustained-success contract.",
+            "Require matching structure and parameter hashes between every search-score record and its frozen finalist; if any required match is unavailable, record the audit as inconclusive without substituting ancestor scores or running rollouts.",
+            "Freeze deterministic tie-breaking and common confirmation-manifest weights before calculation; average the two held-out fold differences within each block, then compute the paired t interval across the five block differences."
+          ],
+          "priority": 3,
+          "call_id": "call_00319",
+          "briefing_sha256": "11fbd24e3f73d2eb8c0685a1e70931ebc61324ea663c9cf00a7abc219bda9d2e",
+          "at": "2026-11-23T21:22:46"
+        },
+        "implementer": {
+          "position": "reject",
+          "reasoning": "The audit is inconclusive by its own (correct) rule before it starts. Search-time validation scores in R-131 exist only for round-2 branches, i.e. for controllers BEFORE the 12-update continuation; no selection rollout was ever run on the 15 frozen finalists, so no search-score record matches a finalist's parameter hash and the required match is unavailable for all of them. Relaxing that rule would confound 12 updates of training with selector fidelity, as the advisor notes. It also cannot address the interesting question (structures discarded during search), since discarded branches were never confirmed. A real test of selection fidelity needs new rollouts and would be a new idea.",
+          "changes_applied": [],
+          "at": "2026-11-23T21:23:26"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "reject",
+          "reasoning": "I accept the implementer's decisive objection: none of the 15 frozen finalists has a parameter-matched search score because scoring preceded the 12-update continuation. The registered paired_success_difference prediction—decrease by at least 0.03 versus the cross-fitted confirmation-success selector, falsified_by a lower 95% bound above -0.03—is therefore untestable from these archives. Ancestor-score substitution confounds training with selection, and the surviving finalists cannot reveal discarded-structure quality. Authorize 0 simulator episodes, 0 LLM calls and 0 runtime for this audit; reconsider only a new checkpoint-matched selection experiment with separately agreed finite rollout, wall-time and model-call budgets.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00320",
+          "briefing_sha256": "da2d931e9cbef5727186745f7eab22432e68220077e420048f22a89084424bc6",
+          "at": "2026-11-23T21:24:06"
+        },
+        "implementer": {
+          "position": "reject",
+          "reasoning": "Unchanged: no search-score record matches any frozen finalist (selection ran before the 12-update continuation), so the audit is inconclusive by its own rule and cannot see discarded structures.",
+          "changes_applied": [],
+          "at": "2026-11-23T21:24:30"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "reject",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": []
+}

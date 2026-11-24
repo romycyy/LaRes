@@ -1931,3 +1931,32 @@ research_protocols:
     drop_margin: 0.05
     start_ceiling: 3100000
     max_minutes: 400
+  # R-134 (archive only): rolling around the end of recovery support in R-128's stage-B endpoints, weak lineage 2
+  # against the other four (stage_b_release_audit.py). Definitions frozen here before any outcome.
+  #   python scripts/run_shadowhand_spin_stages.py --study stage_b_release_audit
+  stage_b_release_audit:
+    log_dir: "logs/pen_spin/r134_stage_b_release"
+    pool_seed: 0
+    source_log_dir: "logs/pen_spin/r128_training_replication"
+    lineages: 5
+    manifests: 24
+    weak_lineage: 2
+    window_steps: 30
+    centre_tolerance: 0.08
+    threshold: 0.10
+  # R-135 (archive only): the frozen JOINT controller's success across the expanded reset distribution by reconstructed
+  # initial geometry (reset_geometry_audit.py); R-129's 512 cases are primary, R-133's 1,536 a separate replication.
+  #   python scripts/run_shadowhand_spin_stages.py --study reset_geometry_audit
+  reset_geometry_audit:
+    log_dir: "logs/pen_spin/r135_reset_geometry"
+    pool_seed: 0
+    primary_archive: "r129"
+    archives:
+      r129: {cells: "logs/pen_spin/r129_frozen_robustness/cells/s*/joint@reset_1.5_cell.json", manifests: 4, reset_scale: 1.5}
+      r133: {cells: "logs/pen_spin/r133_reset_mixture/confirmation/expanded/s*/joint_cell.json", manifests: 12, reset_scale: 1.5}
+    transverse_quantiles: 4
+    axial_strata: 3
+    tilt_strata: 3
+    min_shared_strata: 6
+    min_coverage: 0.6
+    threshold: 0.15

@@ -1,0 +1,155 @@
+{
+  "id": "R-134",
+  "title": "1. Archive-first: does long recovery ramp-out suppress Stage-B rolling?",
+  "hypothesis": "In the weak replication lineage (lineage 2 of R-128), rolling among re-captured episodes improves around the end of recovery support by more than in the other four lineages. The inference is limited to this lineage's release-associated rolling pattern: no causal attribution and no claim about the recipe's reliability.",
+  "prediction": {
+    "metric": "gate_statistics",
+    "direction": "increase",
+    "threshold": 0.1,
+    "against": "R-128: equal-weight mean of the other four Stage-B lineages",
+    "rationale": "Measure the change in rolling-step fraction from the 30 steps before support ends to the 30 steps afterward; lineage 2 should show at least 0.10 more release-associated improvement. This tests the Stage-B variance mechanism suggested by D-088, not D-090's healthy-hand-back failures. All proposals cost zero episodes; Q1 priority breaks the information-per-episode tie."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'source ~/IsaacLab/source_env.sh && timeout 900s python -u scripts/run_shadowhand_spin_stages.py --study stage_b_release_audit'",
+    "seeds": [],
+    "manifests": [],
+    "episodes": 0,
+    "llm_calls": 0,
+    "code_changes": [
+      "lares/envs/isaac_pen_spin/stage_b_release_audit.py (new, archive only; registered in scripts/run_shadowhand_spin_stages.py with a block in config/shadowhand_spin_stages.yaml), reusing recovery_handback_audit's trigger reconstruction. Reads only R-128's archived Stage-B cells logs/pen_spin/r128_training_replication/confirmation/s<seed>/L<k>_B_cell.{json,npz} (five lineages x 24 shared manifests) and each lineage's frozen stage-B parameters; no simulator episode, no model call, no new seed or manifest.",
+      "Frozen before any outcome is computed: each lineage's decision step and support end come from its own stage-B parameters; a case is eligible if its reconstructed trigger fired and it is still in play 30 steps after its support end; the statistic per case is the rolling-step fraction (the success predicate) in the 30 steps after support ends minus the 30 steps before. No case is excluded on its post-release rolling. Report eligible counts per lineage.",
+      "Registered quantity (gate_statistics): lineage 2's mean post-minus-pre change minus the equal-weight mean of the other four lineages' mean changes, with a case-level 95% interval (cases of the 24 shared manifests) and a manifest-clustered interval beside it. Supported with the lower bound >= 0.10; refuted with the upper bound < 0.10; otherwise inconclusive; an interval spanning zero establishes no directional difference.",
+      "Ceiling: 0 simulator episodes, 0 LLM calls, 15 minutes. If required archive data are missing the audit is inconclusive; no replacement rollout."
+    ],
+    "needs_gpu": false,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "The upper 95% interval bound on lineage 2's excess release-associated improvement is below 0.10; an interval spanning the threshold is inconclusive, and one spanning zero establishes no directional difference.",
+  "cost_estimate": {
+    "episodes": 0,
+    "llm_calls": 0,
+    "wall_time_minutes": 15
+  },
+  "open_question_refs": [
+    1
+  ],
+  "briefing_sha256": "bfce6beac16acdcc2c8ece4825e82d2807cab8710db4e84021849255744df5f9",
+  "proposal_call_id": "call_00318",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-23T21:26:24",
+    "advisor_call_id": "call_00321",
+    "round": 3,
+    "note": "I accept the applied entry-point and trigger-reconstruction corrections: this addresses D-088's weak-lineage release pattern without reopening D-090's healthy-hand-back question. Its weakest point is survivor-conditioned release alignment, which cannot establish support suppression or recipe reliabi"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-23T21:26:24",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 3: both say approve"
+    }
+  ],
+  "created_at": "2026-11-23T21:21:29",
+  "direction": "Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT controller. Prioritize independent training reproducibility, then robustness of frozen controllers. Reproduce the successful residual-plus-recovery construction across independent training seeds before claiming a reliable learning algorithm. Evaluate longer horizons and predeclared physical/reset perturbations without fitting. Use archived failures to decide whether recovery hand-back deserves a state-dependent transition study. Then investigate whether LLM-guided construction can discover useful recovery-module structure against grammar search and the hand-designed template under matched budgets. Preserve the original six-second task and evaluation contract. Use JOINT as the experimental reference, preserve all existing assets, and leave default-incumbent installation separate. Run one protocol at a time through the existing advisor/implementer loop. Continue justified follow-ups within this direction; honor its escalation and exhaustion rules. No new global budget ceiling is imposed; each protocol must declare finite simulator, wall-time and model-call costs before agreement. No controller-generation calls for Q1–Q3. Q4 requires a separately agreed generation budget. Advisor calls for the research loop remain permitted throughout.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This is the highest-priority archive diagnostic: it tests the Stage-B variance signature identified by D-088 without reopening D-090's healthy-hand-back question. Its weakest point is that release-associated improvement cannot distinguish support suppression from residual strength or elapsed recovery time. falsified_by: the upper 95% interval bound on lineage 2's excess release-associated improvement versus the other four lineages is below 0.10. The finite cost is 0 simulator episodes, 0 LLM calls and 15 minutes using the existing script and frozen JOINT reference.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00319",
+          "briefing_sha256": "11fbd24e3f73d2eb8c0685a1e70931ebc61324ea663c9cf00a7abc219bda9d2e",
+          "at": "2026-11-23T21:22:46"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "A zero-episode archive diagnostic of the one weak lineage is a fair use of the direction's Q1 follow-up, and I would approve it after one correction needed for it to run at all: scripts/plot_training_dynamics.py has no archive-audit mode and is a plotting script for training logs; the per-case cells of R-128 live on the GPU box under logs/pen_spin/r128_training_replication/confirmation/s<seed>/L<k>_B_cell.{json,npz}, and archive audits here are study modules. So: script scripts/run_shadowhand_spin_stages.py, config config/shadowhand_spin_stages.yaml, command gpu run 'source ~/IsaacLab/source_env.sh && python -u scripts/run_shadowhand_spin_stages.py --study stage_b_release_audit', code in lares/envs/isaac_pen_spin/stage_b_release_audit.py reusing recovery_handback_audit's trigger reconstruction and timeline (each lineage's own stage-B parameters give its own decision step and support end; triggers are reconstructed, not recorded). The statistic stays as registered: among reconstructed-triggered cases still in play, rolling-step fraction in the 30 steps after support ends minus the 30 before, lineage 2 minus the equal-weight mean of the other four, with a case-level interval from the 24 shared manifests (manifest-clustered beside it). One lineage is one lineage: the result describes it and supports no claim about the recipe.",
+          "changes_applied": [],
+          "at": "2026-11-23T21:23:21"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "revise",
+          "reasoning": "I accept the implementer's entry-point correction: the recorded plotting command cannot perform this audit, and the proposed study module can reuse the existing hand-back reconstruction. This remains the first-priority follow-up to D-088, but release alignment cannot distinguish support suppression from elapsed recovery time or inherited residual strength. Because the corrections have not been applied, the protocol as written is not runnable.",
+          "suggested_changes": [
+            "Remove 'rather than reflecting a weak inherited residual' from the hypothesis; explicitly limit inference to this lineage's release-associated rolling pattern, not causal attribution or recipe reliability.",
+            "Use scripts/run_shadowhand_spin_stages.py with config/shadowhand_spin_stages.yaml and a new lares/envs/isaac_pen_spin/stage_b_release_audit.py module reusing recovery_handback_audit. Run via gpu run with ~/IsaacLab/source_env.sh sourced and a 900-second timeout.",
+            "Read only R-128's archived Stage-B cells; reconstruct each lineage's trigger and support end from its own parameters. Freeze eligibility and rolling-step definitions before computing outcomes, report eligible counts, and do not exclude cases based on post-release rolling.",
+            "Retain prediction: gate_statistics increase by at least 0.10 for lineage 2's 30-step post-minus-pre release change versus the equal-weight mean change of the other four lineages. Use the 24 shared manifests, report a case-level 95% interval and manifest-clustered sensitivity; falsified_by: upper 95% bound below 0.10, with threshold-crossing intervals inconclusive and zero-crossing intervals providing no directional evidence.",
+            "Retain the finite ceiling of 0 simulator episodes, 0 LLM calls and 15 minutes runtime; allocate no new seeds or manifests, preserve frozen assets, and stop without replacement rollouts if required archive data are unavailable."
+          ],
+          "priority": 1,
+          "call_id": "call_00320",
+          "briefing_sha256": "da2d931e9cbef5727186745f7eab22432e68220077e420048f22a89084424bc6",
+          "at": "2026-11-23T21:24:06"
+        },
+        "implementer": {
+          "position": "revise",
+          "reasoning": "Agreed: the advisor's round-2 list is my corrections (study-module entry point, archive sources, frozen definitions) with the inference limits stated; I apply it as written.",
+          "changes_applied": [],
+          "at": "2026-11-23T21:24:32"
+        },
+        "outcome": "agreed"
+      },
+      {
+        "round": 3,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "I accept the applied entry-point and trigger-reconstruction corrections: this addresses D-088's weak-lineage release pattern without reopening D-090's healthy-hand-back question. Its weakest point is survivor-conditioned release alignment, which cannot establish support suppression or recipe reliability. Retain the prediction that gate_statistics increases by at least 0.10 versus the equal-weight mean release-associated change of the other four R-128 Stage-B lineages; falsified_by: an upper 95% interval bound below 0.10, with threshold-crossing intervals inconclusive and zero-crossing intervals providing no directional evidence. Approve 0 simulator episodes, 0 LLM calls and 15 minutes through scripts/run_shadowhand_spin_stages.py and config/shadowhand_spin_stages.yaml, using the registered archive-only module.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00321",
+          "briefing_sha256": "86b34cb6a6540a9a2ef358f27eeaa0d311c1d613de03de99d94e0def005dbd36",
+          "at": "2026-11-23T21:25:01"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve the revised archive-only audit: definitions, sources and the decision rule are fixed before any outcome is computed, it costs no episode and no model call, and its inference limits are stated.",
+          "changes_applied": [],
+          "at": "2026-11-23T21:26:24"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 3
+  },
+  "escalation": {},
+  "revisions": [
+    {
+      "at": "2026-11-23T21:24:37",
+      "round": 2,
+      "patch": {
+        "hypothesis": "In the weak replication lineage (lineage 2 of R-128), rolling among re-captured episodes improves around the end of recovery support by more than in the other four lineages. The inference is limited to this lineage's release-associated rolling pattern: no causal attribution and no claim about the recipe's reliability.",
+        "protocol": {
+          "script": "scripts/run_shadowhand_spin_stages.py",
+          "config": "config/shadowhand_spin_stages.yaml",
+          "command": "gpu run 'source ~/IsaacLab/source_env.sh && timeout 900s python -u scripts/run_shadowhand_spin_stages.py --study stage_b_release_audit'",
+          "code_changes": [
+            "lares/envs/isaac_pen_spin/stage_b_release_audit.py (new, archive only; registered in scripts/run_shadowhand_spin_stages.py with a block in config/shadowhand_spin_stages.yaml), reusing recovery_handback_audit's trigger reconstruction. Reads only R-128's archived Stage-B cells logs/pen_spin/r128_training_replication/confirmation/s<seed>/L<k>_B_cell.{json,npz} (five lineages x 24 shared manifests) and each lineage's frozen stage-B parameters; no simulator episode, no model call, no new seed or manifest.",
+            "Frozen before any outcome is computed: each lineage's decision step and support end come from its own stage-B parameters; a case is eligible if its reconstructed trigger fired and it is still in play 30 steps after its support end; the statistic per case is the rolling-step fraction (the success predicate) in the 30 steps after support ends minus the 30 steps before. No case is excluded on its post-release rolling. Report eligible counts per lineage.",
+            "Registered quantity (gate_statistics): lineage 2's mean post-minus-pre change minus the equal-weight mean of the other four lineages' mean changes, with a case-level 95% interval (cases of the 24 shared manifests) and a manifest-clustered interval beside it. Supported with the lower bound >= 0.10; refuted with the upper bound < 0.10; otherwise inconclusive; an interval spanning zero establishes no directional difference.",
+            "Ceiling: 0 simulator episodes, 0 LLM calls, 15 minutes. If required archive data are missing the audit is inconclusive; no replacement rollout."
+          ]
+        }
+      },
+      "note": "Agreed round-2 changes"
+    }
+  ]
+}
