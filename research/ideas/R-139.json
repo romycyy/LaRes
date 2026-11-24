@@ -1,0 +1,106 @@
+{
+  "id": "R-139",
+  "title": "Frozen JOINT: test whether tilt and friction robustness interact",
+  "hypothesis": "Initial tilt increases JOINT's dependence on tangential contact purchase, making low friction more damaging under tilted resets than under nominal resets.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "decrease",
+    "threshold": 0.08,
+    "against": "baseline",
+    "rationale": "Baseline is the additive prediction from frozen JOINT's nominal, tilt-only and friction-only cells. Predict a negative interaction of at least 0.08: success(both) minus success(tilt-only) minus success(friction-only) plus success(nominal) <= -0.08. D-089 and D-095 establish marginal effects but do not test this contact-by-reset interaction. This is one terminal frozen-controller robustness measurement, not a capture-controller modification."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --protocol frozen-tilt-friction-factorial --controller config/pen_spin/r121_joint_finalist/finalist.json --manifest config/manifests/pen_spin_tilt_friction_s5400.yaml --manifest-seed 5400 --cases 512 --tilt-scales 1.0 1.5 --friction-scales 1.0 0.8 --horizon-seconds 6 --output logs/pen_spin/frozen_tilt_friction_s5400 --max-wall-minutes 20'",
+    "seeds": [
+      5400
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_tilt_friction_s5400.yaml"
+    ],
+    "episodes": 2048,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py: add the four-cell frozen factorial protocol by reusing the existing robustness rollout and reset-scaling implementations; freeze and hash all cells before evaluation, retain identical placement draws across cells, preserve the six-second evaluator, and report the paired interaction interval.",
+      "config/manifests/pen_spin_tilt_friction_s5400.yaml"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "rejected",
+  "source": "advisor",
+  "falsified_by": "The lower 95% bound on the interaction is above -0.08; an interval spanning -0.08 is inconclusive. A zero-inclusive interaction interval is not evidence of coupling.",
+  "cost_estimate": {
+    "episodes": 2048,
+    "llm_calls": 0,
+    "wall_time_minutes": 20
+  },
+  "open_question_refs": [
+    2
+  ],
+  "briefing_sha256": "4ebcf417fdc1dd111a4cf640af807432087cc609af0c61b10964a30137ad7c01",
+  "proposal_call_id": "call_00327",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-23T21:56:56",
+      "from": "proposed",
+      "to": "rejected",
+      "note": "triage round 2: both say reject"
+    }
+  ],
+  "created_at": "2026-11-23T21:54:31",
+  "direction": "Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT controller. Prioritize independent training reproducibility, then robustness of frozen controllers. Reproduce the successful residual-plus-recovery construction across independent training seeds before claiming a reliable learning algorithm. Evaluate longer horizons and predeclared physical/reset perturbations without fitting. Use archived failures to decide whether recovery hand-back deserves a state-dependent transition study. Then investigate whether LLM-guided construction can discover useful recovery-module structure against grammar search and the hand-designed template under matched budgets. Preserve the original six-second task and evaluation contract. Use JOINT as the experimental reference, preserve all existing assets, and leave default-incumbent installation separate. Run one protocol at a time through the existing advisor/implementer loop. Continue justified follow-ups within this direction; honor its escalation and exhaustion rules. No new global budget ceiling is imposed; each protocol must declare finite simulator, wall-time and model-call costs before agreement. No controller-generation calls for Q1–Q3. Q4 requires a separately agreed generation budget. Advisor calls for the research loop remain permitted throughout.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "The registered paired_success_difference decrease of at least 0.08 versus the additive nominal/tilt-only/friction-only baseline tests an interaction not settled by the marginal robustness results. Its weakest point is decision value after the interaction is measured, but the terminal, no-fitting scope keeps the 2,048-episode, 0-model-call, 20-minute experiment bounded and within direction. Review the higher-priority replication audit before authorizing this next robustness protocol. falsified_by: the interaction's lower 95% bound exceeds -0.08; a threshold-spanning interval is inconclusive, and a zero-inclusive interval establishes no coupling.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00328",
+          "briefing_sha256": "1a76e7a6a1b1ac2d93c324158067762522fc5cef312aedbb50e554c2b3555d2f",
+          "at": "2026-11-23T21:55:32"
+        },
+        "implementer": {
+          "position": "reject",
+          "reasoning": "No decision depends on it and it cannot resolve its own prediction. D-089 found friction at 0.8x costs JOINT about 0.015 and D-095 found tilt costs 0.225; the proposed interaction of at least 0.08 would be a difference of differences on 512 pairs, whose standard error is about 0.04-0.05 (each paired contrast here has se about 0.025), so the 95% interval would be about +/-0.09 wide and almost surely span the threshold. It is also a frozen-controller characterization with no follow-up it could enable inside this direction: training on wider resets did not help (D-092) and capture authority is outside the direction. I reject rather than defer because a larger version would still have no use for its answer.",
+          "changes_applied": [],
+          "at": "2026-11-23T21:55:54"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "reject",
+          "reasoning": "This interaction is distinct from the established marginal effects and fits frozen-controller robustness, but the proposal identifies no consequential robustness claim requiring it. I accept the implementer's value objection to spending 2,048 episodes, 0 LLM calls and 20 minutes, but not inevitable inconclusiveness: marginal standard errors do not establish the paired interaction variance without covariance information. The registered paired_success_difference decrease of at least 0.08 versus the additive nominal/tilt-only/friction-only baseline is falsified_by a lower 95% bound above -0.08; threshold-spanning results are inconclusive, and zero-inclusive intervals establish no coupling. Reconsider only with a concrete predeclared use for the joint-perturbation result and a covariance-aware precision justification.",
+          "suggested_changes": [],
+          "priority": 2,
+          "call_id": "call_00329",
+          "briefing_sha256": "789b7ee1a943ad0bebaef09bb26dc3cd7025f22a3e055b3205f8d5aeaed2a9a0",
+          "at": "2026-11-23T21:56:48"
+        },
+        "implementer": {
+          "position": "reject",
+          "reasoning": "Unchanged from round 1: no decision depends on the result and the direction asks not to invent further diagnostics or confirmations.",
+          "changes_applied": [],
+          "at": "2026-11-23T21:56:56"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "reject",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": []
+}

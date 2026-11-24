@@ -1,0 +1,110 @@
+{
+  "id": "R-140",
+  "title": "Q4 instrument calibration with parameter-matched frozen candidates",
+  "hypothesis": "Placement-sampling noise in the 512-case ranking panel misorders recovery candidates, so a larger panel selects endpoints with higher independent success.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "increase",
+    "threshold": 0.02,
+    "against": "baseline",
+    "rationale": "Within each of R-131's five blocks, baseline selects among its three frozen finalists using the unchanged ranking rule on 512 fresh cases; treatment uses 2,048 cases. Predict an equal-weight, five-block held-out success gain of at least 0.02. Unlike rejected R-136, both scores will be measured prospectively at exactly the evaluated parameters. This isolates placement noise, not the separate four-update training-depth limitation."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --protocol q4-frozen-ranking-calibration --archive-protocol R-131 --reference config/pen_spin/r121_joint_finalist/finalist.json --ranking-manifest config/manifests/pen_spin_q4_rank_s5410.yaml --ranking-seed 5410 --ranking-cases 2048 --small-ranking-cases 512 --evaluation-manifest config/manifests/pen_spin_q4_eval_s5411.yaml --evaluation-seed 5411 --evaluation-cases 1024 --horizon-seconds 6 --output logs/pen_spin/q4_frozen_ranking_calibration --max-wall-minutes 60'",
+    "seeds": [
+      5410,
+      5411
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_q4_rank_s5410.yaml",
+      "config/manifests/pen_spin_q4_eval_s5411.yaml"
+    ],
+    "episodes": 41984,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py: add parameter-matched scoring of the 15 archived R-131 finalists with the unchanged ranking rule; nest the 512-case panel inside 2,048 cases, lock both selections before opening evaluation results, and evaluate at most ten selected endpoints plus JOINT on 1,024 independent paired cases.",
+      "scripts/run_shadowhand_spin_stages.py: hash frozen parameters before scoring and evaluation, use a five-block t interval for the primary contrast, reuse evaluations for identical selections, and prohibit training, generation, installation, or extrapolation to search-time training-depth effects.",
+      "config/manifests/pen_spin_q4_rank_s5410.yaml",
+      "config/manifests/pen_spin_q4_eval_s5411.yaml"
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "rejected",
+  "source": "advisor",
+  "falsified_by": "The upper 95% bound on the five-block held-out gain is below 0.02; an interval spanning 0.02 is inconclusive. Identical selections give exactly zero gain and do not support enlarging this ranking panel.",
+  "cost_estimate": {
+    "episodes": 41984,
+    "llm_calls": 0,
+    "wall_time_minutes": 60
+  },
+  "open_question_refs": [
+    4
+  ],
+  "briefing_sha256": "4ebcf417fdc1dd111a4cf640af807432087cc609af0c61b10964a30137ad7c01",
+  "proposal_call_id": "call_00327",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-23T21:56:58",
+      "from": "proposed",
+      "to": "rejected",
+      "note": "triage round 2: both say reject"
+    }
+  ],
+  "created_at": "2026-11-23T21:54:31",
+  "direction": "Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT controller. Prioritize independent training reproducibility, then robustness of frozen controllers. Reproduce the successful residual-plus-recovery construction across independent training seeds before claiming a reliable learning algorithm. Evaluate longer horizons and predeclared physical/reset perturbations without fitting. Use archived failures to decide whether recovery hand-back deserves a state-dependent transition study. Then investigate whether LLM-guided construction can discover useful recovery-module structure against grammar search and the hand-designed template under matched budgets. Preserve the original six-second task and evaluation contract. Use JOINT as the experimental reference, preserve all existing assets, and leave default-incumbent installation separate. Run one protocol at a time through the existing advisor/implementer loop. Continue justified follow-ups within this direction; honor its escalation and exhaustion rules. No new global budget ceiling is imposed; each protocol must declare finite simulator, wall-time and model-call costs before agreement. No controller-generation calls for Q1–Q3. Q4 requires a separately agreed generation budget. Advisor calls for the research loop remain permitted throughout.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "defer",
+          "reasoning": "Prospective parameter-matched scoring fixes R-136's measurement flaw and predicts a paired_success_difference increase of at least 0.02 for 2,048-case selection versus 512-case selection. Its limitation is scope: ranking terminal finalists cannot establish whether placement noise corrupted four-update search-time rankings or explain training-depth effects. The 41,984-episode, 0-model-call, 60-minute calibration is worth considering after the higher-priority reproducibility and frozen-robustness protocols, not concurrently. falsified_by: the five-block gain's upper 95% bound is below +0.02; identical selections yield exactly zero gain, while a threshold-spanning interval is inconclusive.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00328",
+          "briefing_sha256": "1a76e7a6a1b1ac2d93c324158067762522fc5cef312aedbb50e554c2b3555d2f",
+          "at": "2026-11-23T21:55:32"
+        },
+        "implementer": {
+          "position": "reject",
+          "reasoning": "It cannot answer the question that matters and cannot resolve the one it asks. As the advisor notes, ranking the 15 terminal finalists says nothing about whether 512-placement, 4-update rankings misordered branches during search. And its own contrast is a five-block t interval on a +0.02 gain when the arms' finalists within a block differ by a few points with a between-block sd of 0.03-0.05 (D-091): the interval half-width will be several times the threshold, so the outcome is inconclusive in advance at 42,000 episodes. D-091's conclusion (no search arm beat the template at this budget) does not change either way.",
+          "changes_applied": [],
+          "at": "2026-11-23T21:55:56"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "reject",
+          "reasoning": "Parameter-matched scoring fixes R-136's measurement flaw, but terminal-finalist ranking does not test the four-update search-time selection bottleneck identified by D-091. I accept the implementer's scope and spending objections to 41,984 episodes, 0 LLM calls and 60 minutes without a committed downstream decision, although finalist spread alone does not establish the variance of selection gains or guarantee inconclusiveness. The registered paired_success_difference increase of at least 0.02 for 2,048-case selection versus 512-case selection is falsified_by an upper five-block 95% bound below +0.02; identical selections yield zero gain, and a threshold-spanning interval is inconclusive. Reconsider only with parameter-matched candidates representative of actual search-time decisions, a predeclared consequence for the selection instrument, and precision justified for that contrast.",
+          "suggested_changes": [],
+          "priority": 3,
+          "call_id": "call_00329",
+          "briefing_sha256": "789b7ee1a943ad0bebaef09bb26dc3cd7025f22a3e055b3205f8d5aeaed2a9a0",
+          "at": "2026-11-23T21:56:48"
+        },
+        "implementer": {
+          "position": "reject",
+          "reasoning": "Unchanged from round 1: no decision depends on the result and the direction asks not to invent further diagnostics or confirmations.",
+          "changes_applied": [],
+          "at": "2026-11-23T21:56:58"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "reject",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": []
+}

@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-23T21:51:43 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-23T21:59:25 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -15,7 +15,9 @@ Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT 
 | proposed | 0 |
 | deferred | 30 |
 | decided | 95 |
-| rejected | 12 |
+| rejected | 15 |
+
+**Loop guard:** the last 2 propose call(s) were rejected in full at triage. After two in a row the loop stops and asks the user for a new direction.
 
 ## Needs attention
 
@@ -74,11 +76,11 @@ Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT 
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
-- R-137 round 1 · advisor approve / implementer approve → agreed (approved)
-- R-135 round 3 · advisor approve / implementer approve → agreed (approved)
-- R-134 round 3 · advisor approve / implementer approve → agreed (approved)
-- R-135 round 2 · advisor revise / implementer revise → agreed (proposed)
-- R-134 round 2 · advisor revise / implementer revise → agreed (proposed)
+- R-140 round 2 · advisor reject / implementer reject → agreed (rejected)
+- R-139 round 2 · advisor reject / implementer reject → agreed (rejected)
+- R-138 round 2 · advisor reject / implementer reject → agreed (rejected)
+- R-140 round 1 · advisor defer / implementer reject → disagreed (proposed)
+- R-139 round 1 · advisor defer / implementer reject → disagreed (proposed)
 
 ## Standing constraints
 

@@ -1,0 +1,101 @@
+{
+  "id": "R-138",
+  "title": "Archive-first: localize replication variance before recovery hand-back",
+  "hypothesis": "The weak Q1 lineage loses recovery opportunities before rolling restarts, rather than losing established rolling when support ends.",
+  "prediction": {
+    "metric": "gate_statistics",
+    "direction": "increase",
+    "threshold": 0.05,
+    "against": "R-128",
+    "rationale": "Compare lineage 2 with the equal-weight mean of the other four Stage-B lineages: the all-case fraction that triggers recovery while retained but never achieves a Stage-3 rolling step before boost ends should be at least 0.05 higher. D-093 examined already re-captured episodes, excluding this mechanism; D-090 examined historical JOINT, not replication variance. This is descriptive localization, not causal attribution."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run bash -lc 'source ~/IsaacLab/source_env.sh && python scripts/run_shadowhand_spin_stages.py --config config/shadowhand_spin_stages.yaml --protocol q1-recovery-entry-audit --archive-protocol R-128 --weak-lineage 2 --reference config/pen_spin/r121_joint_finalist/finalist.json --output logs/pen_spin/q1_recovery_entry_audit --max-wall-minutes 15'",
+    "seeds": [],
+    "manifests": [],
+    "episodes": 0,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py: add the archive-only protocol selector, reconstruct trigger-to-boost-end events using existing trace logic, and report case-clustered intervals across all five lineages; do not launch simulations or reopen the refuted release hypothesis."
+    ],
+    "needs_gpu": false,
+    "needs_llm": false
+  },
+  "status": "rejected",
+  "source": "advisor",
+  "falsified_by": "The upper 95% bound on the specified lineage difference is below 0.05; an interval spanning 0.05 is inconclusive. Failure to reconstruct the event from existing traces also makes the audit inconclusive, without authorizing new rollouts.",
+  "cost_estimate": {
+    "episodes": 0,
+    "llm_calls": 0,
+    "wall_time_minutes": 15
+  },
+  "open_question_refs": [
+    1
+  ],
+  "briefing_sha256": "4ebcf417fdc1dd111a4cf640af807432087cc609af0c61b10964a30137ad7c01",
+  "proposal_call_id": "call_00327",
+  "approval": {},
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-23T21:56:53",
+      "from": "proposed",
+      "to": "rejected",
+      "note": "triage round 2: both say reject"
+    }
+  ],
+  "created_at": "2026-11-23T21:54:31",
+  "direction": "Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT controller. Prioritize independent training reproducibility, then robustness of frozen controllers. Reproduce the successful residual-plus-recovery construction across independent training seeds before claiming a reliable learning algorithm. Evaluate longer horizons and predeclared physical/reset perturbations without fitting. Use archived failures to decide whether recovery hand-back deserves a state-dependent transition study. Then investigate whether LLM-guided construction can discover useful recovery-module structure against grammar search and the hand-designed template under matched budgets. Preserve the original six-second task and evaluation contract. Use JOINT as the experimental reference, preserve all existing assets, and leave default-incumbent installation separate. Run one protocol at a time through the existing advisor/implementer loop. Continue justified follow-ups within this direction; honor its escalation and exhaustion rules. No new global budget ceiling is imposed; each protocol must declare finite simulator, wall-time and model-call costs before agreement. No controller-generation calls for Q1–Q3. Q4 requires a separately agreed generation budget. Advisor calls for the research loop remain permitted throughout.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "This prioritizes training reproducibility and tests a cohort excluded by D-093: gate_statistics should increase by at least 0.05 for lineage 2 versus the equal-weight mean of R-128's other four Stage-B lineages. The post-selected weak lineage limits interpretation to descriptive localization, but the archive-only cost is appropriate: 0 episodes, 0 model calls and 15 minutes. falsified_by: the upper 95% bound is below +0.05; unavailable events or a threshold-spanning interval are inconclusive and authorize no new rollouts.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00328",
+          "briefing_sha256": "1a76e7a6a1b1ac2d93c324158067762522fc5cef312aedbb50e554c2b3555d2f",
+          "at": "2026-11-23T21:55:32"
+        },
+        "implementer": {
+          "position": "reject",
+          "reasoning": "This is a second post-hoc story about one post-selected lineage. D-093 already looked at lineage 2's stage-B cells and found nothing distinctive there (its stage-B module resembles the others; its release change is slightly below theirs). A new statistic on the same n = 1 lineage, chosen after the first one failed, cannot localize 'replication variance': whatever it shows describes one ARS trajectory, has no stated consequence for any next step, and five lineages give no way to tell a mechanism from an idiosyncrasy. The direction's rule is not to invent repeated diagnostics; zero episodes does not make it informative. The reproducibility question D-088 left open is the between-lineage spread, and only more lineages (a new, costly idea the user should choose) would narrow it.",
+          "changes_applied": [],
+          "at": "2026-11-23T21:55:52"
+        },
+        "outcome": "disagreed"
+      },
+      {
+        "round": 2,
+        "advisor": {
+          "decision": "reject",
+          "reasoning": "This examines a pre-rolling failure cohort excluded by D-093, but provides no decision that its descriptive result would change. I accept the implementer's repeated-post-selection and missing-decision objections; 0 episodes, 0 LLM calls and 15 minutes do not make another diagnostic informative about training reproducibility. The registered gate_statistics increase of at least 0.05 for lineage 2 versus the equal-weight mean of R-128's other four Stage-B lineages is falsified_by an upper 95% bound below +0.05; a threshold-spanning interval or unavailable trace reconstruction is inconclusive. Reconsider only with a prospectively specified, decision-linked contrast across independent training lineages rather than another statistic selected around lineage 2.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00329",
+          "briefing_sha256": "789b7ee1a943ad0bebaef09bb26dc3cd7025f22a3e055b3205f8d5aeaed2a9a0",
+          "at": "2026-11-23T21:56:48"
+        },
+        "implementer": {
+          "position": "reject",
+          "reasoning": "Unchanged from round 1: no decision depends on the result and the direction asks not to invent further diagnostics or confirmations.",
+          "changes_applied": [],
+          "at": "2026-11-23T21:56:53"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "reject",
+    "agreed_round": 2
+  },
+  "escalation": {},
+  "revisions": []
+}
