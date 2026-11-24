@@ -185,7 +185,7 @@ class PenSpinBatchRunner:
         self.runs += 1
         if cases.stage_of(manifest) != self.stage:
             raise ValueError(f"{manifest.manifest_id} is not a stage-{self.stage} manifest")
-        vecs = cases.resolve_placements(manifest) * float(self.condition.get("reset_scale", 1.0))
+        vecs = cases.scale_placements(cases.resolve_placements(manifest), self.condition)
         n = len(vecs)
         if n != self.num_envs:
             raise ValueError(f"manifest has {n} cases, runner holds {self.num_envs} envs")

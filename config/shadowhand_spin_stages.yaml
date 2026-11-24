@@ -1960,3 +1960,38 @@ research_protocols:
     min_shared_strata: 6
     min_coverage: 0.6
     threshold: 0.15
+  # R-137 (prospective follow-up to D-094; no training, no LLM): frozen JOINT, PPO and D-072 under four reset conditions
+  # that scale the rotation draws and the position / joint draws separately (tilt_reset_robustness.py). Confirmatory:
+  # JOINT tilt-only minus JOINT position-only on 512 identical cases, predicted at most -0.15.
+  #   python scripts/run_shadowhand_spin_stages.py --study tilt_reset_robustness
+  tilt_reset_robustness:
+    log_dir: "logs/pen_spin/r137_tilt_reset"
+    incumbent_asset: "config/pen_spin/d058_fixed_stroke_incumbent"
+    reference_descriptor: "config/pen_spin/symbolic_reward_reference/reference.json"
+    reference_residual: *d070_selected
+    reference_residual_sha256: *d070_selected_sha256
+    control_dt: 0.016666666666666666
+    pool_seed: 5378
+    actor: *sr_actor
+    normalization_path: "logs/pen_spin/r103_symbolic_reward/normalization.json"
+    normalization_sha256: "75239d0a0367c95c3e9fd06b78abf8887d5e2124bf5f2bea1fc77061cea856ac"
+    root_finalist: "config/pen_spin/r106_success_ars_finalist/finalist.json"
+    root_theta_sha256: "8a7abf11b5d5995af441f55943339f1f2785b054479e122a75e6520142e98bef"
+    module_bounds: {threshold: [1.0, 6.0], ramp_out: [3.0, 80.0]}   # both module assets are stored in the JOINT ranges
+    assets:
+      joint: {path: "config/pen_spin/r121_joint_finalist/finalist.json", sha256: "1527eb5643a59f9b77858f0dc5852280badd1f6ec012c0efa7c30019c794713c"}
+      transplant: {path: "config/pen_spin/r126_transplant_finalist/finalist.json", sha256: "9e17b365c5176cc0a9e4adee77cf4d87d055d8982672d60a8478c446b2fe5415"}
+    centre_tolerance: 0.08
+    checkpoint: "logs/pen_spin/r040_ppo_expert/train/model_8239.pt"
+    checkpoint_sha256: "f81be523a51cc5bb8bd095d5ed208ba8dd227a37ca05d5dc78283a24d89985d7"
+    expert_seed: 4020
+    conditions:
+      nominal: {}
+      tilt_only: {reset_tilt_scale: 1.5}
+      position_only: {reset_other_scale: 1.5}
+      full: {reset_tilt_scale: 1.5, reset_other_scale: 1.5}
+    panel_seeds: [5378, 5379, 5380, 5381]
+    cases: 128
+    manifest_template: "config/manifests/pen_spin_stage3_tilt_s{seed}.yaml"
+    threshold: 0.15
+    drop_margin: 0.05

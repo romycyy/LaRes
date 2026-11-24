@@ -327,7 +327,20 @@ def reduce_episodes(trace: dict) -> list[dict]:
 # ---------------------------------------------------------------------------------------------------------------------
 
 
-CONDITION_KEYS = ("mass", "friction", "radius", "length", "horizon_s", "reset_scale")
+CONDITION_KEYS = ("mass", "friction", "radius", "length", "horizon_s", "reset_scale", "reset_tilt_scale", "reset_other_scale")
+TILT_ROWS = (3, 4)                                           # the placement vector's two rotation draws
+
+
+def scale_placements(vecs, condition: dict | None) -> np.ndarray:
+    """A condition's reset scaling of placement vectors: ``reset_scale`` multiplies every row group; R-137 adds
+    ``reset_tilt_scale`` for the two rotation draws and ``reset_other_scale`` for the position and joint draws."""
+    c = condition or {}
+    v = np.array(vecs, dtype=float, copy=True) * float(c.get("reset_scale", 1.0))
+    tilt = np.zeros(v.shape[1], dtype=bool)
+    tilt[list(TILT_ROWS)] = True
+    v[:, tilt] *= float(c.get("reset_tilt_scale", 1.0))
+    v[:, ~tilt] *= float(c.get("reset_other_scale", 1.0))
+    return v
 
 
 def apply_condition(cfg, condition: dict | None) -> dict:

@@ -78,5 +78,55 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(thin["verdict"], "inconclusive")
 
 
+class TestTiltConditions(unittest.TestCase):
+    def test_row_groups_and_scalar_equivalence(self):
+        from lares.envs.isaac_pen_spin import cases
+        from lares.envs.isaac_pen_spin import tilt_reset_robustness as tr
+
+        cfg = ALL[tr.STUDY]
+        v = np.random.default_rng(0).uniform(-1, 1, (16, cases.PLACEMENT_DIM))
+        np.testing.assert_array_equal(cases.scale_placements(v, {}), v)
+        np.testing.assert_array_equal(cases.scale_placements(v, None), v)
+        t = cases.scale_placements(v, {"reset_tilt_scale": 1.5})
+        np.testing.assert_array_equal(t[:, 3:5], 1.5 * v[:, 3:5])
+        np.testing.assert_array_equal(np.delete(t, [3, 4], axis=1), np.delete(v, [3, 4], axis=1))
+        o = cases.scale_placements(v, {"reset_other_scale": 1.5})
+        np.testing.assert_array_equal(o[:, 3:5], v[:, 3:5])
+        np.testing.assert_array_equal(np.delete(o, [3, 4], axis=1), 1.5 * np.delete(v, [3, 4], axis=1))
+        np.testing.assert_array_equal(cases.scale_placements(v, {"reset_tilt_scale": 1.5, "reset_other_scale": 1.5}), cases.scale_placements(v, {"reset_scale": 1.5}))
+        self.assertEqual(v.max() <= 1.0, True)                                    # the input is untouched
+        self.assertEqual(sorted(tr.conditions(cfg)), ["full", "nominal", "position_only", "tilt_only"])
+        self.assertEqual((len(tr.plan(cfg)), len(tr.plan(cfg)) * 128), (48, 6144))
+        self.assertEqual(tr.build_manifests(cfg), [])
+        d = tr.delivery(cfg)
+        self.assertAlmostEqual(d["tilt_only"]["mean_tilt_rad"] / d["nominal"]["mean_tilt_rad"], 1.5, delta=0.05)
+        self.assertAlmostEqual(d["position_only"]["mean_tilt_rad"], d["nominal"]["mean_tilt_rad"])
+        self.assertAlmostEqual(d["position_only"]["mean_abs_joint_draw"] / d["nominal"]["mean_abs_joint_draw"], 1.5)
+        self.assertEqual(d["full"]["mean_tilt_rad"], d["tilt_only"]["mean_tilt_rad"])
+        for bad in ("joint", "transplant@nominal", "joint@wide"):
+            with self.assertRaises(ValueError):
+                tr.make_controller(bad, cfg)
+
+    def test_primary_rule(self):
+        from lares.envs.isaac_pen_spin import tilt_reset_robustness as tr
+
+        cfg = ALL[tr.STUDY]
+        rng = np.random.default_rng(0)
+
+        def rows(prob):
+            out = {}
+            for s, c, k in tr.plan(cfg):
+                u = np.random.default_rng(s).random(128)
+                out[(s, c, k)] = [{"task_hash": f"h{s}_{i}", "sustained": bool(u[i] < prob(c, k)), "completed": True, "tail_hit_fraction": 1.0,
+                                   "length": 359, "final_center_dist": 0.01} for i in range(128)]
+            return out
+
+        a = tr.analyse(rows(lambda c, k: 0.8 - (0.35 if k in ("tilt_only", "full") else 0.03 if k == "position_only" else 0.0)), cfg)
+        self.assertEqual((a["primary"]["verdict"], a["primary"]["pairs"]), ("supported", 512))
+        b = tr.analyse(rows(lambda c, k: 0.8 - (0.05 if k != "nominal" else 0.0)), cfg)
+        self.assertEqual(b["primary"]["verdict"], "refuted")
+        del rng
+
+
 if __name__ == "__main__":
     unittest.main()

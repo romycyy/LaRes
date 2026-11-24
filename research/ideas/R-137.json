@@ -1,0 +1,102 @@
+{
+  "id": "R-137",
+  "title": "1. Prospectively isolate JOINT's initial-tilt sensitivity",
+  "hypothesis": "Initial pen-axis misalignment, rather than larger position and joint offsets, is the dominant reset perturbation reducing frozen JOINT's rolling success.",
+  "prediction": {
+    "metric": "paired_success_difference",
+    "direction": "decrease",
+    "threshold": 0.15,
+    "against": "baseline: frozen R-121 JOINT under position-and-joints-only 1.5x resets on identical cases",
+    "rationale": "Predict JOINT success under tilt-only scaling minus position-and-joints-only scaling is at most -0.15, with the paired 95% t interval wholly below -0.15. This substantial fraction of D-089's approximately 0.28 full-reset loss prospectively tests D-094's replicated but unregistered tilt association. Fixed 512 pairs provide an informative contrast without another training run."
+  },
+  "protocol": {
+    "script": "scripts/run_shadowhand_spin_stages.py",
+    "config": "config/shadowhand_spin_stages.yaml",
+    "command": "gpu run 'source ~/IsaacLab/source_env.sh && python -u scripts/run_shadowhand_spin_stages.py --study tilt_reset_robustness'",
+    "seeds": [
+      5378,
+      5379,
+      5380,
+      5381
+    ],
+    "manifests": [
+      "config/manifests/pen_spin_stage3_tilt_s5378.yaml",
+      "config/manifests/pen_spin_stage3_tilt_s5379.yaml",
+      "config/manifests/pen_spin_stage3_tilt_s5380.yaml",
+      "config/manifests/pen_spin_stage3_tilt_s5381.yaml"
+    ],
+    "episodes": 6144,
+    "llm_calls": 0,
+    "code_changes": [
+      "scripts/run_shadowhand_spin_stages.py: register tilt_reset_robustness using the existing frozen_robustness.py evaluation machinery and existing config; freeze all four 128-case manifests and the analysis specification before evaluation.",
+      "Existing cases.apply_condition and PenSpinBatchRunner(condition=) implementations: add separate scales for placement rotation rows 3-4 and the position/joint rows, retaining scalar reset_scale compatibility. Predeclare nominal=(1,1), tilt-only=(1.5,1), position-and-joints-only=(1,1.5), full=(1.5,1.5). Preserve all other reset semantics and physics.",
+      "Existing reset-condition tests: verify row selection, unchanged nominal behavior, and exact equivalence between full grouped 1.5x scaling and existing scalar 1.5x scaling without simulator episodes.",
+      "Existing frozen robustness evaluation machinery: evaluate frozen R-121 JOINT, frozen PPO expert and D-072 in all four conditions on identical base cases: 3 controllers x 4 conditions x 4 manifests x 128 cases. Preserve the original 360-step six-second task, per-step success definition and existing sustained-success scoring contract; no fitting, selection or installation.",
+      "Existing robustness reporting: register only the JOINT tilt-only minus position-and-joints-only contrast as confirmatory, pooling 512 paired case differences with the existing paired-t interval. Report remaining cells descriptively, including nominal/full continuity and PPO competence; archive transformed placements and initial tilt to verify intervention delivery. Stop after this protocol, with no adaptive sampling or controller-generation calls and a 60-minute wall-time cap."
+    ],
+    "needs_gpu": true,
+    "needs_llm": false
+  },
+  "status": "approved",
+  "source": "advisor",
+  "falsified_by": "A paired 95% t interval wholly above -0.15 refutes the registered effect size; an interval crossing -0.15 is inconclusive, and an interval including zero establishes no directional difference.",
+  "cost_estimate": {
+    "episodes": 6144,
+    "llm_calls": 0,
+    "wall_time_minutes": 60
+  },
+  "open_question_refs": [
+    2
+  ],
+  "briefing_sha256": "5302b85ec626dc3cbcac5236ae6c4e92c770f0ea810e7b0e3982694ed25ead37",
+  "proposal_call_id": "call_00324",
+  "approval": {
+    "by": "advisor+implementer",
+    "at": "2026-11-23T21:31:25",
+    "advisor_call_id": "call_00325",
+    "round": 1,
+    "note": "Separately scaling reset components prospectively tests the tilt mechanism left unregistered by D-094, making this a justified frozen-robustness follow-up rather than another training study. Its weakest point is the 4,096 descriptive-comparator episodes, but those establish whether sensitivity is sp"
+  },
+  "run": {},
+  "result": {},
+  "prediction_outcome": {},
+  "verdicts": [],
+  "decision_id": "",
+  "history": [
+    {
+      "at": "2026-11-23T21:31:25",
+      "from": "proposed",
+      "to": "approved",
+      "note": "triage round 1: both say approve"
+    }
+  ],
+  "created_at": "2026-11-23T21:29:53",
+  "direction": "Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT controller. Prioritize independent training reproducibility, then robustness of frozen controllers. Reproduce the successful residual-plus-recovery construction across independent training seeds before claiming a reliable learning algorithm. Evaluate longer horizons and predeclared physical/reset perturbations without fitting. Use archived failures to decide whether recovery hand-back deserves a state-dependent transition study. Then investigate whether LLM-guided construction can discover useful recovery-module structure against grammar search and the hand-designed template under matched budgets. Preserve the original six-second task and evaluation contract. Use JOINT as the experimental reference, preserve all existing assets, and leave default-incumbent installation separate. Run one protocol at a time through the existing advisor/implementer loop. Continue justified follow-ups within this direction; honor its escalation and exhaustion rules. No new global budget ceiling is imposed; each protocol must declare finite simulator, wall-time and model-call costs before agreement. No controller-generation calls for Q1–Q3. Q4 requires a separately agreed generation budget. Advisor calls for the research loop remain permitted throughout.",
+  "triage": {
+    "rounds": [
+      {
+        "round": 1,
+        "advisor": {
+          "decision": "approve",
+          "reasoning": "Separately scaling reset components prospectively tests the tilt mechanism left unregistered by D-094, making this a justified frozen-robustness follow-up rather than another training study. Its weakest point is the 4,096 descriptive-comparator episodes, but those establish whether sensitivity is specific to JOINT or reflects general reset difficulty. The registered paired_success_difference decrease of at least 0.15 against JOINT's position-and-joints-only condition is falsified by a paired 95% interval wholly above -0.15; crossing that boundary is inconclusive, and including zero provides no directional evidence. The existing script/config, free seeds 5378–5381, 6,144 episodes, 60-minute cap and zero model calls make this a bounded spend without fitting or installation.",
+          "suggested_changes": [],
+          "priority": 1,
+          "call_id": "call_00325",
+          "briefing_sha256": "4e3a2ff05356ccdc5fd41dad28b09337dcb1fe43a84afcded58b0bab36386188",
+          "at": "2026-11-23T21:30:27"
+        },
+        "implementer": {
+          "position": "approve",
+          "reasoning": "Approve: a prospective, frozen-controller test of the one strong unregistered pattern from D-094, on fresh cases, with the contrast, its size and its interval fixed in advance; 48 cells, about 25 minutes, no fitting, no model calls. The runner extension is small (separate scales for the rotation rows and for the position and joint rows, with the scalar reset scale unchanged and tested equal to scaling both groups).",
+          "changes_applied": [],
+          "at": "2026-11-23T21:31:25"
+        },
+        "outcome": "agreed"
+      }
+    ],
+    "outcome": "approve",
+    "agreed_round": 1
+  },
+  "escalation": {},
+  "revisions": []
+}

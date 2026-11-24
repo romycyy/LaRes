@@ -1,6 +1,6 @@
 # Research state
 
-_Generated 2026-11-23T21:28:52 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
+_Generated 2026-11-23T21:31:27 by `python scripts/research.py state` from `research/ideas/`, `research/decisions.jsonl`, `research/direction.json`. Do not edit by hand._
 
 ## Direction
 
@@ -11,7 +11,7 @@ Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT 
 | escalated | 0 |
 | analysed | 0 |
 | running | 0 |
-| approved | 0 |
+| approved | 1 |
 | proposed | 0 |
 | deferred | 30 |
 | decided | 94 |
@@ -19,7 +19,8 @@ Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT 
 
 ## Needs attention
 
-- Nothing open. Next: `python scripts/research.py propose` (uses the direction above), then `triage`.
+- **R-137** [approved] 1. Prospectively isolate JOINT's initial-tilt sensitivity
+  - `python scripts/research.py start R-137` then run its command
 
 ## Deferred (right idea, not now; `triage R-xxx` re-opens one)
 
@@ -74,11 +75,11 @@ Continue Stage-3 Shadow Hand axial-rolling research from the frozen R-121 JOINT 
 
 ## Last 5 triage rounds (full log: `research/triage.jsonl`)
 
+- R-137 round 1 · advisor approve / implementer approve → agreed (approved)
 - R-135 round 3 · advisor approve / implementer approve → agreed (approved)
 - R-134 round 3 · advisor approve / implementer approve → agreed (approved)
 - R-135 round 2 · advisor revise / implementer revise → agreed (proposed)
 - R-134 round 2 · advisor revise / implementer revise → agreed (proposed)
-- R-136 round 2 · advisor reject / implementer reject → agreed (rejected)
 
 ## Standing constraints
 
