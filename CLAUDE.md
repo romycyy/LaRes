@@ -799,6 +799,16 @@ D-034). `cases.py` and `layout.py` are numpy-only: manifests from pool seeds, th
   512 placements cannot separate structures a few points apart; streams keyed by a `SeedSequence` over the full
   (block, arm, round, branch, role, update) tuple need no further integer seeds; a `gpu run` whose ssh session drops
   leaves the driver running on the box (check `pgrep` before relaunching).
+- **R-133 result (D-092, refuted; mixed-reset training, 2026-11-23; follow-up to D-089).** `reset_mixture.py`
+  (`--study recovery_reset_mixture`; its own Isaac child for a two-rollout smoke; cells `<policy>@<condition>` through
+  `frozen_robustness.Conditioned`). Five paired blocks of JOINT continuation (36 ARS updates, 43 coordinates, shared
+  optimizer draws and latent placements): `nominal` trains on placements as drawn, `mixed` writes the last 256 of
+  each update's 512 rows at reset scale 1.5 (`recovery_module.mixed_rows`; the training child also takes
+  `placement_seed`). **MIXED minus NOMINAL on fresh 1.5x resets +0.004 [-0.012, +0.021]** (registered +0.08).
+  Expanded-reset success: JOINT 0.462, nominal arm 0.465, mixed arm 0.469; nominal resets 0.771 / 0.766 / 0.767.
+  **Training-distribution coverage is not the lever for the wide-reset weakness in this controller family**; JOINT
+  does not move under ARS continuation on either distribution (as in D-085). R-132 (reset-table reuse as the source of
+  stage-B variance) was rejected at triage: every update already draws 512 fresh placements.
 - **Adding a study (2026-11-03).** `scripts/run_full_evolution.py` dispatches `--study` through the `PEN_SPIN_STUDIES`
   registry (`PenSpinStudy`: name, config key, module, `run`, `freeze_extra`); the argparse choices, the
   `--freeze-manifests` loop and `main()` all read it, and `_study_block` holds the shared preamble (config block, override

@@ -1,0 +1,65 @@
+{
+ "mode": "smoke",
+ "gates": {
+  "joint_order": {
+   "passes": true
+  },
+  "parent_is_the_asset": {
+   "sha256": "1527eb5643a59f9b77858f0dc5852280badd1f6ec012c0efa7c30019c794713c",
+   "passes": true
+  },
+  "scorer_live": {
+   "successes": 1647,
+   "passes": true
+  },
+  "equal_slots_agree": {
+   "max_abs_slot_difference": 0.017578125,
+   "noise_scaled_bound": 0.049513420161019644,
+   "passes": true
+  },
+  "mixed_rows_written": {
+   "max_abs_position_error": 1.5484491566811198e-06,
+   "scaled_rows": 1024,
+   "mean_offset_ratio_scaled_over_nominal": 1.5022568702697754,
+   "passes": true
+  },
+  "expanded_rows_are_harder": {
+   "nominal_rows_success": 0.7939453125,
+   "expanded_rows_success": 0.5615234375,
+   "passes": true
+  }
+ },
+ "aa": {
+  "slot_success": [
+   0.802734375,
+   0.814453125,
+   0.802734375,
+   0.796875
+  ],
+  "pairwise_discordance": [
+   0.08203125,
+   0.09765625,
+   0.068359375,
+   0.07421875,
+   0.064453125,
+   0.083984375
+  ],
+  "mean_discordance": 0.07845052083333333,
+  "slot_differences": [
+   -0.01171875,
+   0.0,
+   0.005859375,
+   0.01171875,
+   0.017578125,
+   0.005859375
+  ],
+  "sd_of_slot_differences": 0.01009219584590923,
+  "max_abs_slot_difference": 0.017578125,
+  "cases": 512
+ },
+ "starts": 10253,
+ "throughput": {
+  "transitions_per_s": 35358.959719309314
+ },
+ "passes": true
+}

@@ -87,7 +87,7 @@
     "needs_gpu": true,
     "needs_llm": false
   },
-  "status": "approved",
+  "status": "decided",
   "source": "advisor",
   "falsified_by": "An expanded-reset 95% interval upper bound below +0.08 refutes the registered magnitude; an upper bound at or below zero refutes the directional mechanism, while an interval spanning zero is inconclusive.",
   "cost_estimate": {
@@ -107,17 +107,537 @@
     "round": 3,
     "note": "I accept the implementer's revisions to five paired blocks and explicit 256/256 reset allocation, and agree that the invalidated R-132 premise creates no dependency. This tests whether broader training coverage improves expanded-reset capture beyond matched nominal continuation, rather than repeatin"
   },
-  "run": {},
-  "result": {},
-  "prediction_outcome": {},
-  "verdicts": [],
-  "decision_id": "",
+  "run": {
+    "started_at": "2026-11-23T15:41:22",
+    "git_sha": "8a11069b51f47a11e74c2d41d15f6674d5a2a325",
+    "dirty_worktree": false,
+    "log_dir": "logs/pen_spin/r133_reset_mixture",
+    "finished_at": "2026-11-23T21:18:08"
+  },
+  "result": {
+    "metrics": {
+      "paired_success_difference": 0.004296875,
+      "paired_success_difference_ci95": [
+        -0.012219244352263446,
+        0.02081299435226345
+      ],
+      "per_block": [
+        -0.004557291666666667,
+        -0.008463541666666666,
+        0.016276041666666668,
+        -0.0013020833333333333,
+        0.01953125
+      ],
+      "registered_verdict_rule": "refuted",
+      "interval_contains_zero": true,
+      "mixed_minus_nominal_on_nominal_resets": [
+        0.0015625,
+        -0.013957840666774227,
+        0.017082840666774228
+      ],
+      "arm_success": {
+        "nominal": {
+          "nominal": {
+            "n": 5,
+            "mean": 0.7657552083333334,
+            "median": 0.7669270833333334,
+            "sd": 0.011214180896976109,
+            "min": 0.7493489583333334,
+            "max": 0.779296875
+          },
+          "mixed": {
+            "n": 5,
+            "mean": 0.7673177083333333,
+            "median": 0.7701822916666666,
+            "sd": 0.009761283757287149,
+            "min": 0.7526041666666666,
+            "max": 0.77734375
+          }
+        },
+        "expanded": {
+          "nominal": {
+            "n": 5,
+            "mean": 0.4651041666666667,
+            "median": 0.462890625,
+            "sd": 0.010723429012960691,
+            "min": 0.4505208333333333,
+            "max": 0.4772135416666667
+          },
+          "mixed": {
+            "n": 5,
+            "mean": 0.4694010416666667,
+            "median": 0.4700520833333333,
+            "sd": 0.007771703376506074,
+            "min": 0.4583333333333333,
+            "max": 0.4772135416666667
+          }
+        }
+      },
+      "frozen_joint": {
+        "nominal": 0.7708333333333334,
+        "expanded": 0.4622395833333333
+      },
+      "success_by_policy": {
+        "nominal": {
+          "joint": 0.7708333333333334,
+          "b0_nominal": 0.779296875,
+          "b0_mixed": 0.77734375,
+          "b1_nominal": 0.76171875,
+          "b1_mixed": 0.7526041666666666,
+          "b2_nominal": 0.7669270833333334,
+          "b2_mixed": 0.7630208333333334,
+          "b3_nominal": 0.771484375,
+          "b3_mixed": 0.7734375,
+          "b4_nominal": 0.7493489583333334,
+          "b4_mixed": 0.7701822916666666
+        },
+        "expanded": {
+          "joint": 0.4622395833333333,
+          "b0_nominal": 0.462890625,
+          "b0_mixed": 0.4583333333333333,
+          "b1_nominal": 0.4739583333333333,
+          "b1_mixed": 0.4654947916666667,
+          "b2_nominal": 0.4609375,
+          "b2_mixed": 0.4772135416666667,
+          "b3_nominal": 0.4772135416666667,
+          "b3_mixed": 0.4759114583333333,
+          "b4_nominal": 0.4505208333333333,
+          "b4_mixed": 0.4700520833333333
+        }
+      },
+      "usefulness": {
+        "b0_mixed": {
+          "expanded_gain_over_joint": [
+            -0.00390625,
+            -0.026685447750586965,
+            0.018872947750586965
+          ],
+          "nominal_difference_from_joint": [
+            0.006510416666666667,
+            -0.015686749048150116,
+            0.02870758238148345
+          ],
+          "nominal_non_inferior": true,
+          "drops_non_inferior": true,
+          "drop_upper_95": {
+            "expanded": 0.013136358933740436,
+            "nominal": 0.01271823743466707
+          },
+          "holm_p": 1.0,
+          "useful": false
+        },
+        "b1_mixed": {
+          "expanded_gain_over_joint": [
+            0.0032552083333333335,
+            -0.019844363902506334,
+            0.026354780569172998
+          ],
+          "nominal_difference_from_joint": [
+            -0.018229166666666668,
+            -0.04033626436743472,
+            0.003877931034101379
+          ],
+          "nominal_non_inferior": false,
+          "drops_non_inferior": true,
+          "drop_upper_95": {
+            "expanded": 0.013214513857863886,
+            "nominal": 0.02515332030645468
+          },
+          "holm_p": 1.0,
+          "useful": false
+        },
+        "b2_mixed": {
+          "expanded_gain_over_joint": [
+            0.014973958333333334,
+            -0.008254950539976,
+            0.03820286720664267
+          ],
+          "nominal_difference_from_joint": [
+            -0.0078125,
+            -0.030008612720610714,
+            0.014383612720610714
+          ],
+          "nominal_non_inferior": false,
+          "drops_non_inferior": true,
+          "drop_upper_95": {
+            "expanded": 0.022949769412394537,
+            "nominal": 0.015074822792537631
+          },
+          "holm_p": 1.0,
+          "useful": false
+        },
+        "b3_mixed": {
+          "expanded_gain_over_joint": [
+            0.013671875,
+            -0.005815398935845817,
+            0.03315914893584582
+          ],
+          "nominal_difference_from_joint": [
+            0.0026041666666666665,
+            -0.01726772475972639,
+            0.022476058093059727
+          ],
+          "nominal_non_inferior": true,
+          "drops_non_inferior": true,
+          "drop_upper_95": {
+            "expanded": 0.005558773194734112,
+            "nominal": 0.005690131636495166
+          },
+          "holm_p": 1.0,
+          "useful": false
+        },
+        "b4_mixed": {
+          "expanded_gain_over_joint": [
+            0.0078125,
+            -0.01355959853057765,
+            0.02918459853057765
+          ],
+          "nominal_difference_from_joint": [
+            -0.0006510416666666666,
+            -0.02160260741983268,
+            0.020300524086499343
+          ],
+          "nominal_non_inferior": true,
+          "drops_non_inferior": true,
+          "drop_upper_95": {
+            "expanded": -0.0002840643308648985,
+            "nominal": 0.010511624801073604
+          },
+          "holm_p": 1.0,
+          "useful": false
+        },
+        "b0_nominal": {
+          "expanded_gain_over_joint": [
+            0.0006510416666666666,
+            -0.021876853148859888,
+            0.023178936482193224
+          ],
+          "nominal_difference_from_joint": [
+            0.008463541666666666,
+            -0.01309798225214239,
+            0.03002506558547572
+          ],
+          "nominal_non_inferior": true,
+          "drops_non_inferior": true,
+          "drop_upper_95": {
+            "expanded": 0.015598135826895097,
+            "nominal": 0.01237462059140079
+          },
+          "holm_p": 1.0,
+          "useful": false
+        },
+        "b1_nominal": {
+          "expanded_gain_over_joint": [
+            0.01171875,
+            -0.010546467226035076,
+            0.033983967226035076
+          ],
+          "nominal_difference_from_joint": [
+            -0.009114583333333334,
+            -0.03130945154183814,
+            0.013080284875171473
+          ],
+          "nominal_non_inferior": false,
+          "drops_non_inferior": true,
+          "drop_upper_95": {
+            "expanded": 0.017268925880010673,
+            "nominal": 0.011635793836878818
+          },
+          "holm_p": 1.0,
+          "useful": false
+        },
+        "b2_nominal": {
+          "expanded_gain_over_joint": [
+            -0.0013020833333333333,
+            -0.02327991359129379,
+            0.020675746924627127
+          ],
+          "nominal_difference_from_joint": [
+            -0.00390625,
+            -0.025734296253708516,
+            0.017921796253708516
+          ],
+          "nominal_non_inferior": true,
+          "drops_non_inferior": true,
+          "drop_upper_95": {
+            "expanded": 0.004846327221002801,
+            "nominal": 0.016050494864900636
+          },
+          "holm_p": 1.0,
+          "useful": false
+        },
+        "b3_nominal": {
+          "expanded_gain_over_joint": [
+            0.014973958333333334,
+            -0.006273676884059885,
+            0.03622159355072655
+          ],
+          "nominal_difference_from_joint": [
+            0.0006510416666666666,
+            -0.019425493970835674,
+            0.02072757730416901
+          ],
+          "nominal_non_inferior": true,
+          "drops_non_inferior": true,
+          "drop_upper_95": {
+            "expanded": 0.0050875834992415775,
+            "nominal": 0.008853195952486358
+          },
+          "holm_p": 1.0,
+          "useful": false
+        },
+        "b4_nominal": {
+          "expanded_gain_over_joint": [
+            -0.01171875,
+            -0.034057138693525196,
+            0.010619638693525196
+          ],
+          "nominal_difference_from_joint": [
+            -0.021484375,
+            -0.04420311794428784,
+            0.0012343679442878425
+          ],
+          "nominal_non_inferior": false,
+          "drops_non_inferior": true,
+          "drop_upper_95": {
+            "expanded": 0.012772171876879108,
+            "nominal": 0.030659760597400554
+          },
+          "holm_p": 1.0,
+          "useful": false
+        }
+      },
+      "useful_mixed_endpoints": 0
+    },
+    "controls": {
+      "drops_of_1536": {
+        "nominal": {
+          "joint": 79,
+          "b0_nominal": 88,
+          "b0_mixed": 88,
+          "b1_nominal": 87,
+          "b1_mixed": 104,
+          "b2_nominal": 93,
+          "b2_mixed": 91,
+          "b3_nominal": 83,
+          "b3_mixed": 78,
+          "b4_nominal": 113,
+          "b4_mixed": 85
+        },
+        "expanded": {
+          "joint": 278,
+          "b0_nominal": 286,
+          "b0_mixed": 283,
+          "b1_nominal": 289,
+          "b1_mixed": 282,
+          "b2_nominal": 271,
+          "b2_mixed": 296,
+          "b3_nominal": 271,
+          "b3_mixed": 272,
+          "b4_nominal": 282,
+          "b4_mixed": 264
+        }
+      },
+      "labels_expanded": {
+        "joint": {
+          "success": 710,
+          "drop_early": 234,
+          "drop_late": 44,
+          "off_centre": 122,
+          "persistent_slow": 307,
+          "intermittent": 69,
+          "near_miss": 50
+        },
+        "b0_mixed": {
+          "success": 704,
+          "drop_early": 238,
+          "drop_late": 45,
+          "off_centre": 165,
+          "persistent_slow": 285,
+          "intermittent": 60,
+          "near_miss": 39
+        },
+        "b0_nominal": {
+          "success": 711,
+          "drop_early": 240,
+          "drop_late": 46,
+          "off_centre": 174,
+          "persistent_slow": 281,
+          "intermittent": 50,
+          "near_miss": 34
+        },
+        "b2_mixed": {
+          "success": 733,
+          "drop_early": 225,
+          "drop_late": 71,
+          "off_centre": 113,
+          "persistent_slow": 287,
+          "intermittent": 58,
+          "near_miss": 49
+        },
+        "b4_mixed": {
+          "success": 722,
+          "drop_early": 229,
+          "drop_late": 35,
+          "off_centre": 135,
+          "persistent_slow": 321,
+          "intermittent": 65,
+          "near_miss": 29
+        }
+      },
+      "smoke_gates": {
+        "joint_order": {
+          "passes": true
+        },
+        "parent_is_the_asset": {
+          "sha256": "1527eb5643a59f9b77858f0dc5852280badd1f6ec012c0efa7c30019c794713c",
+          "passes": true
+        },
+        "scorer_live": {
+          "successes": 1647,
+          "passes": true
+        },
+        "equal_slots_agree": {
+          "max_abs_slot_difference": 0.017578125,
+          "noise_scaled_bound": 0.049513420161019644,
+          "passes": true
+        },
+        "mixed_rows_written": {
+          "max_abs_position_error": 1.5484491566811198e-06,
+          "scaled_rows": 1024,
+          "mean_offset_ratio_scaled_over_nominal": 1.5022568702697754,
+          "passes": true
+        },
+        "expanded_rows_are_harder": {
+          "nominal_rows_success": 0.7939453125,
+          "expanded_rows_success": 0.5615234375,
+          "passes": true
+        }
+      },
+      "accounting": {
+        "smoke_starts": 10253,
+        "training_starts": 2955367,
+        "training_scored_episodes": 1474560,
+        "training_transitions": 529367040,
+        "confirmation_cells": 264,
+        "confirmation_episodes": 33792,
+        "charged_total": 3033204,
+        "ceiling": 3100000,
+        "driver_wall_minutes_this_launch": 335.54494260549546,
+        "max_minutes": 400.0,
+        "llm_calls": 0
+      },
+      "variance_components": {
+        "lineage": 3.800825639204547e-05,
+        "manifest": 3.5742557410037985e-05,
+        "residual": 0.0014883792761600375
+      },
+      "training_mean_candidate_success_first_last": {
+        "b0_nominal": [
+          0.756103515625,
+          0.759521484375
+        ],
+        "b0_mixed": [
+          0.61083984375,
+          0.6435546875
+        ],
+        "b1_nominal": [
+          0.727294921875,
+          0.721923828125
+        ],
+        "b1_mixed": [
+          0.59765625,
+          0.59326171875
+        ],
+        "b2_nominal": [
+          0.758544921875,
+          0.759765625
+        ],
+        "b2_mixed": [
+          0.60791015625,
+          0.61865234375
+        ],
+        "b3_nominal": [
+          0.73779296875,
+          0.7392578125
+        ],
+        "b3_mixed": [
+          0.577392578125,
+          0.60693359375
+        ],
+        "b4_nominal": [
+          0.721435546875,
+          0.73388671875
+        ],
+        "b4_mixed": [
+          0.588134765625,
+          0.621826171875
+        ]
+      }
+    },
+    "artifacts": [
+      "logs/pen_spin/r133_reset_mixture/summary.json",
+      "logs/pen_spin/r133_reset_mixture/frozen_config.json",
+      "logs/pen_spin/r133_reset_mixture/finalists.json",
+      "logs/pen_spin/r133_reset_mixture/smoke.json"
+    ],
+    "notes": "Five paired blocks from the frozen JOINT controller, 36 ARS updates of its 43 coordinates per run, shared optimizer draws and latent placements; NOMINAL trained on placements as drawn, MIXED with the last 256 of each update's 512 rows at reset scale 1.5. Ten endpoints plus JOINT on twelve fresh nominal manifests and twelve other fresh manifests under reset scale 1.5 (1,536 cases per policy per condition; 264 cells). 3,033,204 charged starts of 3,100,000; 336 of 400 minutes; no model calls; no child failed, nothing rerun. PRIMARY: MIXED minus NOMINAL on fresh expanded resets +0.004, two-level 95% interval [-0.012, +0.021] (per block -0.005, -0.008, +0.016, -0.001, +0.020): the upper bound is far below the registered +0.08, so the magnitude is REFUTED, and the interval contains zero, so no directional improvement either. On nominal resets MIXED minus NOMINAL is +0.002 [-0.014, +0.017]. Levels: on expanded resets JOINT 0.462, NOMINAL arm 0.465 (sd 0.011 across blocks), MIXED arm 0.469 (sd 0.008); on nominal resets JOINT 0.771, NOMINAL 0.766, MIXED 0.767. No endpoint of either arm improves on the frozen JOINT in either condition (0 of 5 MIXED endpoints useful; every expanded-reset interval against JOINT contains zero). Expanded-reset failures are unchanged in kind: about 235 early drops, 300 persistent slow and 120-165 off-centre of 1,536. So half of every training batch at 1.5x reset scale, for 36 updates of all 43 coordinates, does not move the controller: the weakness to wider resets is not a matter of the training distribution within this controller family at this budget. Consistent with D-085 (JOINT plateaued under ARS continuation) and with the early-drop share of the failures, which happen before the module acts and which the residual's 0.10-capped authority has not been able to change (D-080, D-085). Smoke: all gates passed (the parent is the frozen asset; four identical slots within the noise-scaled bound, 0.018 against 0.050; written pen offsets of the scaled rows 1.502 times the nominal ones with 1.5e-6 position error; 0.794 success on nominal rows against 0.562 on scaled rows of the same batch). Deviation: the smoke drew the placement stream of optimizer seed 5344, which training never uses, because the registered seed list left no seed for a smoke. Limits: one expanded scale, one mixture ratio, one parent, five blocks."
+  },
+  "prediction_outcome": {
+    "metric": "paired_success_difference",
+    "before": null,
+    "after": 0.004296875,
+    "matched": null
+  },
+  "verdicts": [
+    {
+      "source": "implementer",
+      "verdict": "refuted",
+      "confidence": 0.9,
+      "reasoning": "By the frozen rule: MIXED minus NOMINAL on fresh 1.5x resets is +0.004 with a two-level 95% interval of [-0.012, +0.021]; the upper bound is below the registered +0.08 (magnitude refuted) and the interval contains zero (no directional improvement). Neither arm moves off the frozen JOINT in either condition (expanded 0.462 / 0.465 / 0.469; nominal 0.771 / 0.766 / 0.767), no MIXED endpoint meets the usefulness rule, and the blocks agree closely (sd about 0.01), so this is a tight null rather than an imprecise one.",
+      "cited_artifacts": [],
+      "next_experiment": "Training-distribution coverage is not the lever for the wide-reset weakness inside this controller family. With Q1-Q4 and both named follow-ups decided, do not propose further ARS continuation or mixture variants; the remaining failure mass (early drops before the module acts, off-centre and persistent-slow captures from wide resets) points at capture authority, which is a new direction for the user to set.",
+      "recorded_at": "2026-11-23T21:18:11",
+      "call_id": ""
+    },
+    {
+      "source": "advisor",
+      "verdict": "refuted",
+      "confidence": 0.99,
+      "reasoning": "MIXED minus the measured matched NOMINAL control was +0.00430, with a two-level 95% interval of [-0.01222, +0.02081]; its upper bound is below the registered +0.08 threshold, refuting the predicted magnitude [logs/pen_spin/r133_reset_mixture/summary.json]. Because the interval includes zero, the directional benefit remains inconclusive: neither improvement nor harm is established [logs/pen_spin/r133_reset_mixture/summary.json]. No MIXED endpoint met the usefulness criteria, and every expanded-reset success interval against frozen JOINT included zero [logs/pen_spin/r133_reset_mixture/summary.json]. This refutes the registered intervention at the tested budget, not training-distribution changes generally or any particular explanation for the null result [logs/pen_spin/r133_reset_mixture/summary.json].",
+      "cited_artifacts": [
+        "logs/pen_spin/r133_reset_mixture/summary.json"
+      ],
+      "next_experiment": "none",
+      "recorded_at": "2026-11-23T21:18:32",
+      "call_id": "call_00316"
+    }
+  ],
+  "decision_id": "D-092",
   "history": [
     {
       "at": "2026-11-23T15:35:11",
       "from": "proposed",
       "to": "approved",
       "note": "triage round 3: both say approve"
+    },
+    {
+      "at": "2026-11-23T15:41:22",
+      "from": "approved",
+      "to": "running",
+      "note": "git 8a11069b51"
+    },
+    {
+      "at": "2026-11-23T21:18:08",
+      "from": "running",
+      "to": "analysed",
+      "note": "prediction matched=None"
+    },
+    {
+      "at": "2026-11-23T21:18:33",
+      "from": "analysed",
+      "to": "decided",
+      "note": "D-092: refuted"
     }
   ],
   "created_at": "2026-11-23T15:32:12",
